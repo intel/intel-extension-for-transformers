@@ -112,7 +112,7 @@ def generate_dummy_past_key_values(input_bs, model):
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
     return past_key_values
 
-def get_example_inputs_for_trace(model, return_type="tuple"):
+def get_example_inputs_for_trace(model, return_type="dict"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
@@ -123,12 +123,12 @@ def get_example_inputs_for_trace(model, return_type="tuple"):
     attention_mask = torch.ones(input_bs, input_len + 1)
     attention_mask[:,0] = 0
     example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    # do inference to check example_inputs formats
-    model(*example_inputs)
     if return_type != "tuple":
         example_inputs = {
             "input_ids": input_ids,
             "past_key_values": tuple(past_key_values),
             "attention_mask": attention_mask
         }
+        # do inference to check example_inputs correct.
+        out = models(**example_inputs)
     return example_inputs
