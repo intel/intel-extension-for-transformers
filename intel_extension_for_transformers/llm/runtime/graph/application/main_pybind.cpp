@@ -362,6 +362,10 @@ PYBIND11_MODULE(baichuan_cpp, m)
 
 PYBIND11_MODULE(polyglot_cpp, m)
 
+#elif MODEL_NAME_ID == 14
+
+PYBIND11_MODULE(mistral_cpp, m)
+
 #endif
 {
   m.doc() = "cpp model python binding";
