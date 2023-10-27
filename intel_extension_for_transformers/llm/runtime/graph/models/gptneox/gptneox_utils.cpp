@@ -296,6 +296,6 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
     printf("get GPTNEOX beam search kv cache update function. \n");
 #endif
   }
-
+  lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
