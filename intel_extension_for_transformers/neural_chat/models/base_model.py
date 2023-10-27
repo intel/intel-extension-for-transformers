@@ -149,6 +149,7 @@ class BaseModel(ABC):
             query_include_prompt = True
 
         # plugin pre actions
+        link = []
         for plugin_name in get_registered_plugins():
             if is_plugin_enabled(plugin_name):
                 plugin_instance = get_plugin_instance(plugin_name)
@@ -157,11 +158,13 @@ class BaseModel(ABC):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template, link
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query."
+                            return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
@@ -184,16 +187,7 @@ class BaseModel(ABC):
                             continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
-
-        return response
+        return response, link
 
     def predict(self, query, config=None):
         """
@@ -231,7 +225,9 @@ class BaseModel(ABC):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
@@ -253,15 +249,6 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         response = plugin_instance.post_llm_inference_actions(response)
-
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
 
         return response
 
