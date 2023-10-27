@@ -2,7 +2,7 @@
 
 
 You can find install guidelines in [installation.md](installation.md).
-=======
+
 These documents offer a comprehensive description of Intel Extension for Transformers:
 
 
@@ -21,7 +21,7 @@ These documents offer a comprehensive description of Intel Extension for Transfo
 
 
 We also provide examples in [examples.md](examples.md). P.S., smoothquant, weight-only quantization, and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
-=======
+
 **API Documentation**:
 
 
@@ -41,7 +41,7 @@ Explore various tutorials for different tasks in [tutorials/pytorch/](tutorials/
 
 [publication.md](publication.md) lists the publications related to this project, some of them can be found in [pubs/](pubs/).
 [release.md](release.md) provides links to all releases. License and legal information can be found in [legal.md](legal.md)
-=======
+
 # Other Functionalities Documentation
 
 **Utilities**:
