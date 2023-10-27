@@ -130,5 +130,5 @@ def get_example_inputs_for_trace(model, return_type="dict"):
             "attention_mask": attention_mask
         }
         # do inference to check example_inputs correct.
-        out = models(**example_inputs)
+        out = model(**example_inputs)
     return example_inputs
