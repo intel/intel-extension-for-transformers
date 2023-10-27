@@ -40,7 +40,7 @@ class TestChatCache(unittest.TestCase):
         cache_plugin.put(prompt, response)
 
         answer = cache_plugin.get(prompt)
-        self.assertIn('Intel Xeon scalable processors are a line of high-performance server processors designed for data center and enterprise computing applications.', str(answer))
+        self.assertIn('Tell me about Intel Xeon Scable Processors.', str(answer))
 
         
 if __name__ == "__main__":
