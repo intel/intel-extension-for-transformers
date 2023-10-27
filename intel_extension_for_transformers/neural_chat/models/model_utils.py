@@ -110,11 +110,11 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
         )
 
 
-def get_checkpoint_files(model_name_or_path, local_rank):
+def get_checkpoint_files(model_name_or_path, local_rank, token=None):
     """
     Gets the list of files for the specified model checkpoint.
     """
-    cached_repo_dir = get_repo_root(model_name_or_path, local_rank)
+    cached_repo_dir = get_repo_root(model_name_or_path, local_rank, token)
 
     # Extensions: .bin | .pt
     # Creates a list of paths from all downloaded files in cache dir
@@ -122,11 +122,11 @@ def get_checkpoint_files(model_name_or_path, local_rank):
     return file_list
 
 
-def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json):
+def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token=None):
     """
     Dumps metadata into a JSON file for DeepSpeed-inference.
     """
-    checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank)
+    checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
     if local_rank == 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
         with open(checkpoints_json, "w") as fp:
@@ -230,7 +230,7 @@ def import_deepspeed():
     print("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta):
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
 
@@ -243,7 +243,7 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json)
+        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token)
 
     torch.distributed.barrier()
 
@@ -444,6 +444,7 @@ def load_model(
                 model_name_or_path=model_name,
                 use_hpu_graphs=use_hpu_graphs,
                 is_meta=load_to_meta,
+                token=hf_access_token,
             )
     else:
         if peft_path:
