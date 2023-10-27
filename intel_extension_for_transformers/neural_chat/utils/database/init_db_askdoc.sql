@@ -16,5 +16,6 @@ create table feedback
     question varchar(500),
     answer varchar(500),
     feedback_result tinyint,
+    feedback_time datetime,
     unique (feedback_id)
 );

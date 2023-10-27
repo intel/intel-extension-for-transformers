@@ -152,8 +152,10 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
                 answer: [{answer}], feedback: [{feedback_str}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
-    sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
-    logger.info(f'[askdoc - feedback] sql: {sql}')
+    cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + answer + \
+        '", ' + str(feedback) + ', "' + cur_time + '")'
+    logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
             mysql_db.insert(sql, None)
@@ -182,10 +184,16 @@ def get_feedback_from_db():
             output = io.StringIO()
             writer = csv.DictWriter(
                 output, 
-                fieldnames=['feedback_id', 'question', 'answer', 'feedback_result']
+                fieldnames=[
+                    'feedback_id', 
+                    'question', 
+                    'answer', 
+                    'feedback_result', 
+                    'feedback_time']
             )
             writer.writeheader()
             for row in feedback_list:
+                row['feedback_result'] = 'like' if ( row['feedback_result'] == 0 ) else 'dislike'
                 writer.writerow(row)
                 yield output.getvalue()
                 output.seek(0)
