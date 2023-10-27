@@ -25,6 +25,7 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 3.1     | Enabling Chatbot with BF16 Optimization on SPR        | Learn how to optimize chatbot using mixed precision on SPR | [Notebook](./notebooks/amp_optimization_on_spr.ipynb) |
 | 3.2     | Enabling Chatbot with BF16 Optimization on Habana Gaudi1/Gaudi2 | Learn how to optimze chatbot using mixed precision on Habana Gaudi1/Gaudi2 | [Notebook](./notebooks/amp_optimization_on_habana_gaudi.ipynb) |
 | 3.3     | Enabling Chatbot with BitsAndBytes Optimization on Nvidia A100 | Learn how to optimize chatbot using BitsAndBytes on Nvidia A100 | [Notebook](./notebooks/weight_only_optimization_on_nv_a100.ipynb) |
+| 3.4     | Enabling Chatbot with Weight Only INT4 Optimization on SPR | Learn how to optimize chatbot using ITREX LLM graph Weight Only INT4 on SPR | [Notebook](./notebooks/itrex_llm_graph_int4_optimization_on_spr.ipynb) |
 | 4       | Fine-Tuning Chatbots                           |                                                            |                                                         |
 | 4.1     | Fine-tuning on SPR (Single Node)               | Learn how to fine-tune chatbot on SPR with single node | [Notebook](./notebooks/single_node_finetuning_on_spr.ipynb) |
 | 4.2     | Fine-tuning on SPR (Multiple Nodes)            | Learn how to fine-tune chatbot on SPR with multiple nodes | [Notebook](./notebooks/multi_node_finetuning_on_spr.ipynb) |
