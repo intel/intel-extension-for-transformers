@@ -102,6 +102,7 @@ class Agent_QA():
             if 'qa' not in intent.lower():
                 print("Chat with AI Agent.")
                 prompt = generate_prompt(query)
+                links = [None]
             else:
                 print("Chat with QA agent.")
                 if self.retriever:
@@ -109,6 +110,7 @@ class Agent_QA():
                     prompt = generate_qa_prompt(query, context)
                 else:
                     prompt = generate_prompt(query)
+                    links = [None]
         elif self.search_type == "similarity_score_threshold":
             context, links = self.retriever.get_context(query)
             if 'qa' not in intent.lower() and context == "":
@@ -124,4 +126,5 @@ class Agent_QA():
                     prompt = generate_qa_enterprise(query, context)
                 else:
                     prompt = generate_prompt(query)
+                    links = [None]
         return prompt, links

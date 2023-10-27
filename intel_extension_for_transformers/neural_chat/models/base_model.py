@@ -253,7 +253,10 @@ class BaseModel(ABC):
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         response = plugin_instance.post_llm_inference_actions(response)
 
-        return response
+        if link != []:
+            return response, link
+        else:
+            return response
 
     def chat_stream(self, query, config=None):
         """
