@@ -3,6 +3,6 @@ Welcome to the Text Chatbot! This example introduces how to deploy the Text Chat
 | Section              | Link                      |
 | ---------------------| --------------------------|
 | Backend Setup        | [Backend README](./backend/README.md) |
-| Frontend Setup       | [Frontend README](./frontend/README.md) |
+| Frontend Setup       | [Frontend README](../../ui/textbot/README.md) |
 
 
