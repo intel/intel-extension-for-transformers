@@ -4,7 +4,7 @@ fschat
 intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
-paddlepaddle
+paddlepaddle==2.4.2
 paddlespeech==1.4.1
 shortuuid
 gptcache
