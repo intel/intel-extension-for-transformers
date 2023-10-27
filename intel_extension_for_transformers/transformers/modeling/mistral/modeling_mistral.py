@@ -52,19 +52,19 @@ from transformers.modeling_outputs import (
         SequenceClassifierOutputWithPast
         )
 from transformers.modeling_utils import PreTrainedModel
-from transformers.utils import (
+from transformers.utils import (  # pylint: disable=E0611
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
-    is_flash_attn_available, # pylint disable=E0611
+    is_flash_attn_available,
     logging,
     replace_return_docstrings,
 )
-from transformers.models.mistral.configuration_mistral import MistralConfig # pylint disable=E0401
+from transformers.models.mistral.configuration_mistral import MistralConfig # pylint: disable=E0401, E0611
 
 
 if is_flash_attn_available():
-    from flash_attn import flash_attn_func, flash_attn_varlen_func   # pylint disable=E0401
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # pylint disable=E0401 # noqa
+    from flash_attn import flash_attn_func, flash_attn_varlen_func   # pylint: disable=E0401
+    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # pylint: disable=E0401 # noqa
 
     _flash_supports_window_size = "window_size" in list(inspect.signature(flash_attn_func).parameters)
 
