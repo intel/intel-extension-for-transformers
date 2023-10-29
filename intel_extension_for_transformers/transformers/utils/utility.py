@@ -88,6 +88,8 @@ def generate_dummy_past_key_values(input_bs, model):
     num_attention_heads = normalized_config.num_attention_heads
     hidden_size = normalized_config.hidden_size
     d_k = hidden_size // num_attention_heads
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
 
     if model.config.model_type == "bloom":
         pkv = ()
@@ -97,6 +99,12 @@ def generate_dummy_past_key_values(input_bs, model):
             else:
                 new_shape = [input_bs * num_attention_heads, 1, d_k]
             pkv = pkv + (torch.ones(size=new_shape),)
+    elif model.config.model_type == "mistral":
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+    elif model.config.model_type == "qwen":
+        new_shape = [input_bs, 1, num_attention_heads, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
         new_shape = [input_bs, num_attention_heads, 1, d_k]
         dummy_tensor = torch.ones(size=new_shape)

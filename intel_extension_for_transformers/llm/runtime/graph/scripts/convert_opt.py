@@ -78,7 +78,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     hparams = model.config.to_dict()
     
     print("Model loaded: ", dir_model)
-    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
     fout = open(fname_out, "wb")
 
     print(hparams)
@@ -106,10 +105,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
 
-    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id else 1))
-    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id else 2))
-    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id else -1))
-    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id else -1))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     vocab_size = hparams["vocab_size"]
     encoder = tokenizer.vocab

@@ -32,7 +32,7 @@ class IntentDetector:
         params["prompt"] = prompt
         params["temperature"] = 0.001
         params["top_k"] = 1
-        params["max_new_tokens"] = 5
+        params["max_new_tokens"] = 10
         intent = predict(**params)
         return intent
 

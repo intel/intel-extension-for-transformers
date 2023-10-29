@@ -35,6 +35,9 @@ from argparse import REMAINDER, ArgumentParser
 from optimum.habana.distributed import DistributedRunner
 from optimum.utils import logging
 
+import os
+os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
 
 logger = logging.get_logger(__name__)
 

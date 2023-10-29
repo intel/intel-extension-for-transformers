@@ -41,7 +41,7 @@ class TestChatbotBuilder(unittest.TestCase):
         plugins.retrieval.args["persist_dir"] = "./output"
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
-        
+
 
 if __name__ == '__main__':
     unittest.main()

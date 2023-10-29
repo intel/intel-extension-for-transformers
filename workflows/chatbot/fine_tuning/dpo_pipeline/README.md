@@ -17,13 +17,13 @@ We select 12k examples from [Orca](https://arxiv.org/abs/2306.02707) style datas
 ## 3. Training
 
 ```
-python dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-hf" --output_dir "llama2_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
+python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
 ```
 
 
 ## 4. Evaluation
 
-We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1),  our finetuned `llama-2-7b` model, and a finetuned `llama-2-7b` model [pankajmathur/orca_mini_v3_7b](https://huggingface.co/pankajmathur/orca_mini_v3_7b) that has a relative high score in [open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard), which prove that the performance of model can be significantly improved. The evaluation metrics is same as [open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) which uses [Eleuther AI Language Model Evaluation Harness](https://github.com/EleutherAI/lm-evaluation-harness/tree/master), a unified framework to test generative language models on a large number of different evaluation tasks.
+We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1). The evaluation metrics is same as [open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) which uses [Eleuther AI Language Model Evaluation Harness](https://github.com/EleutherAI/lm-evaluation-harness/tree/master), a unified framework to test generative language models on a large number of different evaluation tasks.
 
 #### mpt architecture
 | Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ | Evaluation by |
@@ -32,18 +32,5 @@ We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-
 | [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 49.95 | 46.5 | 75.55 | 37.60 | 40.17 | ours |
 | [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) | **51.41**   | 50.09 | 76.69 | 38.79 | 40.07 | ours |
 | **[Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) with DPO** | **52.39** | 51.54  | 76.45 | 39.47| 42.10 | ours |
-
-
-#### llama-2 architecture
-
-| Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ | Evaluation by |
-| --- | --- | --- | --- | --- | --- | --- |
-|[meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf)|54.275 | 52.90  | 78.63 | 46.61  | 38.96|ours |
-| [meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)|55.81 | 53.50  | 78.60 | 46.53  | 44.60  |ours |
-| Our Finetuned | **57.4** | 54.78 | 78.77 | 51.2  | 44.85 | ours |
-| **Our Finetuned with DPO** | **59.58** | 57.34 | 78.61 | 50.8  | 51.6 | ours |
-| [pankajmathur/orca_mini_v3_7b](https://huggingface.co/pankajmathur/orca_mini_v3_7b)  | **59.86** | 56.91 | 79.64 | 52.37  | 50.51 | [open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) |
-| **[pankajmathur/orca_mini_v3_7b](https://huggingface.co/pankajmathur/orca_mini_v3_7b) with DPO** | **60.92** | 59.22 | 79.92 | 51.84  | 52.71 | ours |
-
 
 

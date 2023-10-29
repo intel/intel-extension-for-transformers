@@ -20,7 +20,7 @@ import os
 import time
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, AMPConfig, LoadingModelConfig
+    PipelineConfig, GenerationConfig, MixedPrecisionConfig, LoadingModelConfig
 )
 
 
@@ -117,6 +117,11 @@ def parse_args():
         help="Whether to use jit trace. It should speed up generation.",
     )
     parser.add_argument(
+        "--ipex_int8",
+        action="store_true",
+        help="Whether to use int8 IPEX quantized model. It should speed up generation.",
+    )
+    parser.add_argument(
         "--seed",
         default=27,
         type=int,
@@ -206,11 +211,12 @@ def main():
         loading_config=LoadingModelConfig(
             use_hpu_graphs=args.use_hpu_graphs,
             cpu_jit=args.jit,
+            ipex_int8=args.ipex_int8,
             use_cache=args.use_kv_cache,
             peft_path=args.peft_model_path,
             use_deepspeed=True if use_deepspeed and args.habana else False,
         ),
-        optimization_config=AMPConfig(dtype=args.dtype)
+        optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
     chatbot = build_chatbot(config)
     gen_config = GenerationConfig(
@@ -225,6 +231,7 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
+        ipex_int8=args.ipex_int8
     )
 
     if args.habana:

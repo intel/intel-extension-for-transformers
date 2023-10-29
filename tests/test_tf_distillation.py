@@ -16,12 +16,12 @@ class TestDistillation(unittest.TestCase):
     def setUpClass(self):
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased')
+            'hf-internal-testing/tiny-random-distilbertl')
         self.teacher_model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased-finetuned-sst-2-english')
+            'hf-internal-testing/tiny-random-DistilBertForSequenceClassification')
 
         raw_datasets = load_dataset("glue", "sst2")["validation"]
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-DistilBertForSequenceClassification")
         non_label_column_names = [
             name for name in raw_datasets.column_names if name != "label"
         ]
@@ -107,13 +107,13 @@ class TestDistillation(unittest.TestCase):
             eval_func=eval_func,
             train_func=self.optimizer.build_train_func
         )
-        distilled_model = self.optimizer.distill(
+        distilled_model2 = self.optimizer.distill(
             distillation_config=distillation_conf,
             teacher_model=self.teacher_model,
             eval_func=None,
             train_func=None
         )
-        # distilled_weight = copy.deepcopy(distilled_model.model.classifier.get_weights())
+        self.assertEqual(distilled_model.signatures['serving_default'].output_shapes['Identity'], distilled_model2.signatures['serving_default'].output_shapes['Identity'])
 
 
 if __name__ == "__main__":

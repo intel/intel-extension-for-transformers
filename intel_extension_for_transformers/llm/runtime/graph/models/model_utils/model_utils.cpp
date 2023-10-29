@@ -62,9 +62,16 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   int32_t k_size, v_size;
   get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
 
-  const int64_t layer_ne_k = batch_size * beam_size * k_size;
-  const int64_t layer_ne_v = batch_size * beam_size * v_size;
+  int64_t layer_ne_k = batch_size * beam_size * k_size;
+  int64_t layer_ne_v = batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
+#ifdef NE_TP_MODEL
+  // when use TP, cached kv will also have smaller size
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  layer_ne_k /= world_size;
+  layer_ne_v /= world_size;
+#endif
 
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
 
@@ -88,9 +95,10 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       auto& k_cache = model->layers[il].k_cache;
       auto& v_cache = model->layers[il].v_cache;
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
-        const auto head_size = hparams.n_embd / hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.multi_query_group_num);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.multi_query_group_num);
+        const int head_size = hparams.n_embd / hparams.n_head;
+        const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
+        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, heads_kv);
+        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, heads_kv);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -106,6 +114,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       ne_set_name(k_cache, "cache_k");
       ne_set_name(v_cache, "cache_v");
     }
+    const bool run_mha_reordered = model->layers[0].k_cache->type == NE_TYPE_JBLAS;
+    fprintf(stderr, "%s: run_mha_reordered = %d\n", __func__, run_mha_reordered);
   } else {
     cache.k = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_layer * layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
     const auto k_align_off = reinterpret_cast<uintptr_t>(cache.k->data) % NE_ALIGNMENT;
@@ -863,7 +873,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -876,7 +886,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -926,7 +936,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -939,7 +949,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -1120,6 +1130,11 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
+  if (params.beam_search) {
+    ctx->beam_search = true;
+    ctx->beam_size = params.beam_size;
+    ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  }
   const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
@@ -1132,12 +1147,6 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   // reserve memory for context buffers
   if (!params.vocab_only) {
-    if (params.beam_search) {
-      ctx->beam_search = true;
-      ctx->beam_size = params.beam_size;
-      ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
-    }
-
     const auto& hparams = ctx->model.hparams;
 
     const attn_shape_t attn_shape = {
@@ -1149,6 +1158,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
         /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
     };
     const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
+    fprintf(stderr, "%s: support_jblas_kv = %d\n", __func__, support_jblas_kv);
+
     const ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
                                 : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
                                 : params.kv_type == KV_MEM_TYPE_AUTO
@@ -1156,8 +1167,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
                                     : NE_TYPE_COUNT;
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
-    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
-                       (arch == MODEL_CHATGLM2 ? &ctx->model : nullptr))) {
+    if (!kv_cache_init(
+            ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
+            ((arch == MODEL_CHATGLM2 || arch == MODEL_CHATGLM || arch == MODEL_BAICHUAN) ? &ctx->model : nullptr))) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
@@ -1167,15 +1179,14 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       const size_t memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                      ? ne_nelements(ctx->model.kv_self.k) + ne_nelements(ctx->model.kv_self.v)
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
     } else if (ctx->model.layers[0].k_cache != nullptr) {
       const auto k_cache = ctx->model.layers[0].k_cache;
       const auto v_cache = ctx->model.layers[0].v_cache;
       const size_t layer_memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                            ? ne_nelements(k_cache) + ne_nelements(v_cache)
                                            : ne_nbytes(k_cache) + ne_nbytes(v_cache);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__,
-              layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
     } else {
       NE_ASSERT(("KV-cache not allocated!", false));
     }
@@ -2085,14 +2096,14 @@ void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& e
 void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
+  // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
+  NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
   // first step
   if (n_past == n_prompt_tokens) {
     // cpy batch 1 to all batches
-#pragma omp parallel for
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {
+#pragma omp parallel for collapse(2)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
       for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-        NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
         // [n_embd, N]
         memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                    (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2100,6 +2111,11 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                static_cast<char*>(ctx->model.kv_self.k->data) +
                    i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
                ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
+      }
+    }
+#pragma omp parallel for collapse(3)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+      for (int j = 1; j < kv_n_ctx_block; ++j) {
         // [N, n_embd]
         for (int k = 0; k < n_embd; ++k) {
           memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -2131,7 +2147,7 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
           len = n_ctx;
         }
 #pragma omp parallel for
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
           // [n_embd, N]
           memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                      (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2141,6 +2157,9 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                      i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
                      cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
                  ne_element_size(ctx->model.kv_self.k) * n_embd * len);
+        }
+#pragma omp parallel for collapse(2)
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
           // [N, n_embd]
           for (int k = 0; k < n_embd; ++k) {
             memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -2470,6 +2489,9 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   kv_reorder = ctx->bs_kv_reorder;
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("WARNING: using default kv cache update function. \n");
+#endif
   }
   beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
   requests_done.push_back(false);

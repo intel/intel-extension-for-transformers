@@ -66,7 +66,7 @@ Copy the [generate.py](./generate.py) script to Gaudi instance and place it in t
 Run the Docker container with Habana runtime and necessary environment variables:
 
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
 apt-get update
 apt-get install git-lfs
 git-lfs install
@@ -76,7 +76,7 @@ pip install optimum
 pip install git+https://github.com/huggingface/optimum-habana.git
 pip install peft
 pip install einops
-pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
+pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.12.0
 ```
 
 ## Run the inference
@@ -89,31 +89,24 @@ python generate.py --base_model_path "mosaicml/mpt-7b-chat" \
              --tokenizer_name "EleutherAI/gpt-neox-20b" \
              --use_hpu_graphs \
              --use_kv_cache \
+             --task chat \
              --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
-And you can use `deepspeed` to speedup the inference. currently, TP is not supported for mpt
+And you can use `deepspeed` to run the large model.
 
 ```bash
 python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
-        --base_model_path "mosaicml/mpt-7b-chat" \
+        --base_model_path "meta-llama/Llama-2-70b-chat-hf" \
         --habana \
-        --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_hpu_graphs \
         --use_kv_cache \
+        --task chat \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
 Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox, mpt, llama. You can use the parameter `use_hpu_graphs` to speed up the inference.
 
-```bash
-python generate.py --base_model_path "EleutherAI/gpt-j-6b" \
-             --habana \
-             --use_kv_cache \
-             --use_hpu_graphs \
-             --tokenizer_name "EleutherAI/gpt-j-6b" \
-             --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
-```
 
 # Additional Notes
 

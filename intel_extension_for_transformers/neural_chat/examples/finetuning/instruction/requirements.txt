@@ -1,0 +1,15 @@
+datasets
+torch==2.1.0
+transformers>=4.32.0
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops
+uvicorn
+yacs
+fastapi
+shortuuid
+pydub
+python-multipart
