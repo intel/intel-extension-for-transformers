@@ -247,14 +247,14 @@ class DPOTrainer(Trainer):
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
 
         prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
-        metrics[f"{prefix}rewards/chosen"] = chosen_rewards.cpu().numpy().mean()
-        metrics[f"{prefix}rewards/rejected"] = rejected_rewards.cpu().numpy().mean()
-        metrics[f"{prefix}rewards/accuracies"] = reward_accuracies.cpu().numpy().mean()
-        metrics[f"{prefix}rewards/margins"] = (chosen_rewards - rejected_rewards).cpu().numpy().mean()
-        metrics[f"{prefix}logps/rejected"] = policy_rejected_logps.detach().cpu().numpy().mean()
-        metrics[f"{prefix}logps/chosen"] = policy_chosen_logps.detach().cpu().numpy().mean()
-        metrics[f"{prefix}logits/rejected"] = policy_rejected_logits.detach().cpu().numpy().mean()
-        metrics[f"{prefix}logits/chosen"] = policy_chosen_logits.detach().cpu().numpy().mean()
+        metrics[f"{prefix}rewards/chosen"] = chosen_rewards.mean()
+        metrics[f"{prefix}rewards/rejected"] = rejected_rewards.mean()
+        metrics[f"{prefix}rewards/accuracies"] = reward_accuracies.mean()
+        metrics[f"{prefix}rewards/margins"] = (chosen_rewards - rejected_rewards).mean()
+        metrics[f"{prefix}logps/rejected"] = policy_rejected_logps.detach().mean()
+        metrics[f"{prefix}logps/chosen"] = policy_chosen_logps.detach().mean()
+        metrics[f"{prefix}logits/rejected"] = policy_rejected_logits.detach().mean()
+        metrics[f"{prefix}logits/chosen"] = policy_chosen_logits.detach().mean()
 
         return losses.mean(), metrics
 
