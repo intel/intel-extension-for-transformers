@@ -197,6 +197,12 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 ## Acknowledgements
 * Excellent open-source projects: [bitsandbytes](https://github.com/TimDettmers/bitsandbytes), [FastChat](https://github.com/lm-sys/FastChat), [fastRAG](https://github.com/IntelLabs/fastRAG), [ggml](https://github.com/ggerganov/ggml), [gptq](https://github.com/IST-DASLab/gptq), [llama.cpp](https://github.com/ggerganov/llama.cpp), [lm-evauation-harness](https://github.com/EleutherAI/lm-evaluation-harness), [peft](https://github.com/huggingface/peft), [trl](https://github.com/huggingface/trl), [streamingllm](https://github.com/mit-han-lab/streaming-llm) and many others.
 
+## All Thanks To Our Contributors 
+
+<a href="https://github.com/intel/intel-extension-for-transformers/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=intel/intel-extension-for-transformers" />
+</a>
+
 * Thanks to all the [contributors](./docs/contributors.md).
 
 ## 💁Collaborations
