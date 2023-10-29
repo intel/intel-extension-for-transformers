@@ -282,9 +282,7 @@ class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
-  lctx.t_start_us = ne_time_us();
-
-  std::unique_ptr<IModel> ms(new GPTNEOX());
+  std::unique_ptr<GPTNEOX> ms(new GPTNEOX());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
   if (lctx.beam_search) {
@@ -293,6 +291,4 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
     printf("get GPTNEOX beam search kv cache update function. \n");
 #endif
   }
-
-  lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }

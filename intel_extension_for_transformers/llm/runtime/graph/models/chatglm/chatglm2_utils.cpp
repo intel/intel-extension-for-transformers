@@ -45,7 +45,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
                          void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new CHATGLM2());
+  std::unique_ptr<CHATGLM2> ms(new CHATGLM2());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 

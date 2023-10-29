@@ -42,14 +42,11 @@
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
-  lctx.t_start_us = ne_time_us();
-
-  std::unique_ptr<IModel> ms(new BAICHUAN());
+  std::unique_ptr<BAICHUAN> ms(new BAICHUAN());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.support_jblas_kv = true;
-  lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
 void BAICHUAN::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
