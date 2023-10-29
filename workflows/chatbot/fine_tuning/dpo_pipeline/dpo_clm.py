@@ -1,6 +1,5 @@
 # 0. imports
 import sys
-sys.path.append("/data3/lkk/new_test/tmp/intel-extension-for-transformers/")
 import os
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List
