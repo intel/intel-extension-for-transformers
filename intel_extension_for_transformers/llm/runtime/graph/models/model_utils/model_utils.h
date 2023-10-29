@@ -94,7 +94,7 @@ MODEL_API int model_apply_lora_from_file(struct model_context* ctx, const char* 
                                          int n_threads);
 
 // Returns the number of tokens in the KV cache
-MODEL_API int model_get_kv_cache_token_total(const struct model_context* ctx);
+MODEL_API int model_get_kv_cache_token_count(const struct model_context* ctx);
 
 // Sets the current rng seed.
 MODEL_API void model_set_rng_seed(struct model_context* ctx, int seed);

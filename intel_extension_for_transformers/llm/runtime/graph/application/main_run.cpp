@@ -393,12 +393,17 @@ int main(int argc, char** argv) {
         n_past = std::max(1, params.n_keep);
 
         int n_discard = params.n_discard;
-        if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
-        // drop n_discard tokens
-        embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard, last_n_tokens.end() - embd.size());
+        if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
+          if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
+          // drop n_discard tokens
+          embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
+                      last_n_tokens.end() - embd.size());
 
-        // stop saving session if we run out of context
-        path_session.clear();
+          // stop saving session if we run out of context
+          path_session.clear();
+        } else {
+          NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
+        }
       }
 
       // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)

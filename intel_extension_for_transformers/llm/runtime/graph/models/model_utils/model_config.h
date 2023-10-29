@@ -75,6 +75,7 @@ struct gpt_params {
   std::string lora_base = "";     // base model path for the lora adapter
 
   KV_MEM_TYPE memory_type = KV_MEM_TYPE_AUTO;  // Memory kv data type
+  bool shift_roped_k = false;                  // whether to store non-RoPEd K cache
   bool random_prompt = false;                  // do not randomize prompt if none provided
   bool use_color = false;                      // use color to distinguish generations and inputs
   bool interactive = false;                    // interactive mode
