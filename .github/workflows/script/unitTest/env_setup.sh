@@ -7,7 +7,7 @@ if [ ${inc} != 0 ]; then
 fi
 
 echo "Install neural_compressor binary..."
-pip install neural-compressor
+
 n=0
 until [ "$n" -ge 5 ]; do
     git clone https://github.com/intel/neural-compressor.git /neural-compressor
