@@ -274,7 +274,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
                                         0, 0,                         // nb (jblas managed)
                                         il * v_size);                 // offset
         // jblas alway view V as (D, n_head, seq)
-        const auto Vcur_plain = ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd * N, 0), n_embd / n_head, n_head, N);
+        const auto Vcur_plain =
+            ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd_gqa * N, 0), n_embd_gqa / n_head_kv, n_head_kv, N);
         ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
       }
 
