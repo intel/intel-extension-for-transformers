@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+gd540131 documentation</title>
+  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+gd9d0a32 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -146,6 +146,17 @@ Please clone a ITREX repo to this path.</p>
 </pre></div>
 </div>
 </section>
+<section id="on-nvidia-gpu-environment">
+<h3>On Nvidia GPU Environment<a class="headerlink" href="#on-nvidia-gpu-environment" title="Link to this heading"></a></h3>
+<p>If you need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-f<span class="w"> </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>nvgpu
+</pre></div>
+</div>
+<p>If you don’t need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>nvgpu
+</pre></div>
+</div>
+</section>
 </section>
 <section id="create-docker-container">
 <h2>5. Create Docker Container<a class="headerlink" href="#create-docker-container" title="Link to this heading"></a></h2>
@@ -160,6 +171,12 @@ Please clone a ITREX repo to this path.</p>
 <section id="id2">
 <h3>On Habana Gaudi Environment<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>-e<span class="w"> </span>https_proxy<span class="w"> </span>-e<span class="w"> </span>http_proxy<span class="w"> </span>-e<span class="w"> </span>HTTPS_PROXY<span class="w"> </span>-e<span class="w"> </span>HTTP_PROXY<span class="w"> </span>-e<span class="w"> </span>no_proxy<span class="w"> </span>-e<span class="w"> </span>NO_PROXY<span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w">  </span>-v<span class="w"> </span>/absolute/path/to/flan-t5-xl:/flan<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>chatbot_finetuning:latest<span class="w"> </span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>On Nvidia GPU Environment<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-it<span class="w"> </span>--disable-content-trust<span class="w"> </span>--privileged<span class="w"> </span>--name<span class="o">=</span><span class="s2">&quot;chatbot&quot;</span><span class="w"> </span>--hostname<span class="o">=</span><span class="s2">&quot;chatbot-container&quot;</span><span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-e<span class="w"> </span>https_proxy<span class="w"> </span>-e<span class="w"> </span>http_proxy<span class="w"> </span>-e<span class="w"> </span>HTTPS_PROXY<span class="w"> </span>-e<span class="w"> </span>HTTP_PROXY<span class="w"> </span>-e<span class="w"> </span>no_proxy<span class="w"> </span>-e<span class="w"> </span>NO_PROXY<span class="w"> </span>-v<span class="w"> </span>/dev/shm:/dev/shm<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/flan-t5-xl:/flan<span class="w"> </span>-v<span class="w"> </span>/absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json<span class="w"> </span><span class="s2">&quot;chatbot_finetune&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -430,7 +447,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f19da6e9510> 
+   <jinja2.runtime.BlockReference object at 0x7f43c7d816c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
