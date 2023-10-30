@@ -111,3 +111,5 @@ compile_run(run_opt       main_run.cpp opt       opt)
 compile_run(run_bloom     main_run.cpp bloom     bloom)
 compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)
 compile_run(run_chatglm   main_run.cpp chatglm  chatglm)
+
+

@@ -420,6 +420,10 @@ NE_API struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor*
 
 NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
+// conv_1d with padding = half
+// alias for ggml_conv_1d(a, b, s, a->ne[0]/2, d)
+NE_API struct ne_tensor* ne_conv_1d_ph(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, int s, int d);
+
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
                                        struct ne_tensor* v, float scale, ne_attn_flags_t flags);
 NE_API struct ne_tensor* ne_flash_attn_update_k(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
