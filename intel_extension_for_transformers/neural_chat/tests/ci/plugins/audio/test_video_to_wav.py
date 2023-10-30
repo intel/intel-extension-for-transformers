@@ -24,11 +24,11 @@ import unittest
 
 class TestVideo2Wav(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree("/raw", ignore_errors=True)
-        os.mkdir("/raw")
+        shutil.rmtree("./raw", ignore_errors=True)
+        os.mkdir("./raw")
 
     def tearDown(self) -> None:
-        shutil.rmtree("/raw", ignore_errors=True)
+        shutil.rmtree("./raw", ignore_errors=True)
     
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
@@ -46,7 +46,7 @@ class TestVideo2Wav(unittest.TestCase):
             is_mono = shlex.quote(args.is_mono)
             convert_video_to_wav(path, output_sample_rate, is_mono) 
         
-        self.assertTrue(os.path.exists('/raw/intel.wav'))
+        self.assertTrue(os.path.exists('./raw/intel.wav'))
 
     def test_video_to_wav_folder(self):
         parser = argparse.ArgumentParser(__doc__)
@@ -64,7 +64,7 @@ class TestVideo2Wav(unittest.TestCase):
             is_mono = shlex.quote(args.is_mono)
             convert_video_to_wav(path, output_sample_rate, is_mono) 
         
-        self.assertTrue(os.path.exists('/raw/intel.wav'))
+        self.assertTrue(os.path.exists('./raw/intel.wav'))
 
 if __name__ == "__main__":
     unittest.main()
