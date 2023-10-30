@@ -37,16 +37,16 @@ class UnitTest(unittest.TestCase):
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(30)
+            time.sleep(40)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.client_executor = TextChatClientExecutor()
 
-    def test_text_chat(self):
+    def test_text_chat_with_cache(self):
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
             server_ip="127.0.0.1",
-            port=7000)
+            port=8080)
         self.assertEqual(result.status_code, 200)
         print(json.loads(result.text))
 
@@ -54,7 +54,7 @@ class UnitTest(unittest.TestCase):
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
             server_ip="127.0.0.1",
-            port=7000,
+            port=8080,
             stream=True)
         self.assertEqual(result.status_code, 200)
         for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):

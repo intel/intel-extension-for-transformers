@@ -188,7 +188,6 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         if (plugin_name == "safety_checker" and is_generator(response)) or \
-                           # can't cache the response in streaming mode, handle it in restful api
                            plugin_name == "cache":
                             continue
                         response = plugin_instance.post_llm_inference_actions(response)
