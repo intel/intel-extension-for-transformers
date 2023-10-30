@@ -25,7 +25,7 @@ import requests
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/server/askdoc.yaml"
+            "intel_extension_for_transformers/neural_chat/tests/ci/server/askdoc.yaml"
         if os.path.exists(yaml_file_path):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
