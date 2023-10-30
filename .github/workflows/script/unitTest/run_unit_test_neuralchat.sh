@@ -3,7 +3,7 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.neural-chat-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests/ci/"
 # get parameters
 PATTERN='[-a-zA-Z0-9_]*='
 PERF_STABLE_CHECK=true
