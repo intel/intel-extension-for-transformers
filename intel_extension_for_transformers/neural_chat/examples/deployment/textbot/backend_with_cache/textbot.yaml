@@ -60,6 +60,8 @@ device: "cpu"
 #     bnb_4bit_use_double_quant: True
 #     bnb_4bit_compute_dtype: "bfloat16"
 
+cache:
+    enable: true
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat']

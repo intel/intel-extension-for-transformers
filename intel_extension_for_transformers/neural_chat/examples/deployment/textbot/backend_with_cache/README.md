@@ -1,4 +1,4 @@
-This README is intended to guide you through setting up the backend for a text chatbot using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
+This README is intended to guide you through setting up the backend for a text chatbot with cache plugin using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
 
 
 # Setup Conda
@@ -45,6 +45,7 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | port                | 8000                                   |
 | model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
 | device              | "cpu"                                  |
+| cache.enable        | true                                  |
 | tasks_list          | ['textchat']                           |
 
 
