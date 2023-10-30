@@ -38,7 +38,7 @@ class NamedEntityRecognitionINT():
     """
 
     def __init__(self, 
-                 model_path="/home/tme/Llama-2-7b-chat-hf/", 
+                 model_path="meta-llama/Llama-2-7b-chat-hf", 
                  spacy_model="en_core_web_lg", 
                  compute_dtype="fp32", 
                  weight_dtype="int8",

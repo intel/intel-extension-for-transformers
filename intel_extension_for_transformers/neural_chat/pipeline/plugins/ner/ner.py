@@ -41,7 +41,7 @@ class NamedEntityRecognition():
     """
 
     def __init__(self, 
-                 model_path="./Llama-2-7b-chat-hf/", 
+                 model_path="meta-llama/Llama-2-7b-chat-hf", 
                  spacy_model="en_core_web_lg", 
                  bf16: bool=False, 
                  device="cpu") -> None:
