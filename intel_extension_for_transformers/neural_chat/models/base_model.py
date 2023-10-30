@@ -158,7 +158,8 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                return response
+                                print(f"Get response: {response} from cache")
+                                return response['choices'][0]['text'], link
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
@@ -205,6 +206,7 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
+        original_query = query
         config.device = self.device
         config.use_hpu_graphs = self.use_hpu_graphs
         config.cpu_jit = self.cpu_jit
@@ -227,6 +229,11 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "cache":
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                            if response:
+                                print(f"Get response: {response} from cache")
+                                return response['choices'][0]['text']
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
@@ -254,7 +261,7 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         if plugin_name == "cache":
-                            response = plugin_instance.post_llm_inference_actions(query, response)
+                            plugin_instance.post_llm_inference_actions(original_query, response)
                         else:
                             response = plugin_instance.post_llm_inference_actions(response)
 

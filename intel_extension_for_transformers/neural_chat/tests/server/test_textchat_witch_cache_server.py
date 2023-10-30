@@ -20,10 +20,19 @@ import unittest
 import time
 import os
 import json
+import shutil
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
+        if os.path.exists("./gptcache_data") and os.path.isdir("./gptcache_data"):
+            try:
+                shutil.rmtree("./gptcache_data")
+                print(f"The directory gptcache_data has been successfully deleted.")
+            except Exception as e:
+                print(f"An error occurred while deleting the directory: {e}")
+        else:
+            print(f"The directory gptcache_data does not exist.")
         yaml_file_path = "/intel-extension-for-transformers/" + \
             "intel_extension_for_transformers/neural_chat/tests/server/textchat_cache.yaml"
         if os.path.exists(yaml_file_path):
@@ -42,17 +51,42 @@ class UnitTest(unittest.TestCase):
             print("Error while executing command:", e)
         self.client_executor = TextChatClientExecutor()
 
-    def test_text_chat_with_cache(self):
+    def tearDown(self) -> None:
+        if os.path.exists("./gptcache_data") and os.path.isdir("./gptcache_data"):
+            try:
+                shutil.rmtree("./gptcache_data")
+                print(f"The directory gptcache_data has been successfully deleted.")
+            except Exception as e:
+                print(f"An error occurred while deleting the directory: {e}")
+        else:
+            print(f"The directory gptcache_data does not exist.")
+        return super().tearDown()
+
+    def test_text_nonstreaming_chat_with_cache(self):
+        start_time = time.time()
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
             server_ip="127.0.0.1",
             port=8080)
         self.assertEqual(result.status_code, 200)
         print(json.loads(result.text))
+        inference_time_without_cache = time.time() - start_time
+        print("Inference time without cache ", inference_time_without_cache)
 
         start_time = time.time()
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
+            server_ip="127.0.0.1",
+            port=8080)
+        self.assertEqual(result.status_code, 200)
+        print(json.loads(result.text))
+        inference_time_with_cache = time.time() - start_time
+        print("Inference time with cache ", inference_time_with_cache)
+        self.assertGreater(inference_time_without_cache, inference_time_with_cache)
+
+        start_time = time.time()
+        result = self.client_executor(
+            prompt="What is the largest city in China?",
             server_ip="127.0.0.1",
             port=8080,
             stream=True)
@@ -64,15 +98,17 @@ class UnitTest(unittest.TestCase):
 
         start_time = time.time()
         result = self.client_executor(
-            prompt="Tell me about Intel Xeon processors.",
+            prompt="What is the largest city in China?",
             server_ip="127.0.0.1",
-            port=7000,
+            port=8080,
             stream=True)
         self.assertEqual(result.status_code, 200)
         for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):
             print(chunk)
         inference_time_with_cache = time.time() - start_time
         print("Inference time with cache ", inference_time_with_cache)
+
+        self.assertGreater(inference_time_without_cache, inference_time_with_cache)
 
 if __name__ == "__main__":
     unittest.main()
