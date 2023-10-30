@@ -23,7 +23,6 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     Seq2SeqTrainingArguments,
 )
-import neural_compressor
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
@@ -289,16 +288,20 @@ class TestQuantization(unittest.TestCase):
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
 
-    @unittest.skipIf(neural_compressor.__version__ < "2.4", "Please source install neural-compressor.")
-    def test_quantization_for_llm_sq(self):
+    def test_quantization_for_llm(self):
         model_name_or_path = "facebook/opt-125m"
-        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        # smooth-quant
         from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
             SmoothQuantConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig
         )
+        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
+        dummy_input = fp32_model.dummy_inputs["input_ids"]
 
+        # smooth-quant
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
                                     calib_iters=5
@@ -308,19 +311,6 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
-
-
-    def test_quantization_for_llm(self):
-        model_name_or_path = "facebook/opt-125m"
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        from intel_extension_for_transformers.transformers import (
-            MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
-            BitsAndBytesConfig
-        )
-        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
-        dummy_input = fp32_model.dummy_inputs["input_ids"]
 
         # weight-only
         #RTN
