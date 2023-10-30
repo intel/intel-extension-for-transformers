@@ -25,6 +25,7 @@ from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
 import json
+from ...plugins import plugins, is_plugin_enabled
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
@@ -82,6 +83,7 @@ class TextChatAPIRouter(APIRouter):
                 if attr == "stream":
                     continue
                 setattr(config, attr, value)
+            response = ""
             if request.stream:
                 generator, link = chatbot.predict_stream(query=request.prompt, config=config)
                 def stream_generator():
@@ -90,8 +92,11 @@ class TextChatAPIRouter(APIRouter):
                             "text": output,
                             "error_code": 0,
                         }
+                        response += output + ' '
                         yield json.dumps(ret).encode() + b"\0"
                     yield f"data: [DONE]\n\n"
+                if is_plugin_enabled("cache"):
+                    plugins["cache"]["instance"].post_llm_inference_actions(request.prompt, response)
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             else:
                 response = chatbot.predict(query=request.prompt, config=config)

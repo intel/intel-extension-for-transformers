@@ -155,6 +155,10 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "cache":
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                            if response:
+                                return response
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
@@ -183,7 +187,9 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
-                        if plugin_name == "safety_checker" and is_generator(response):
+                        if (plugin_name == "safety_checker" and is_generator(response)) or \
+                           # can't cache the response in streaming mode, handle it in restful api
+                           plugin_name == "cache":
                             continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
