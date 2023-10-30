@@ -253,7 +253,10 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
-                        response = plugin_instance.post_llm_inference_actions(response)
+                        if plugin_name == "cache":
+                            response = plugin_instance.post_llm_inference_actions(query, response)
+                        else:
+                            response = plugin_instance.post_llm_inference_actions(response)
 
         return response
 

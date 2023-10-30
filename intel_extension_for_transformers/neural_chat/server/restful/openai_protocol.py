@@ -35,7 +35,7 @@ class ChatCompletionRequest(BaseModel):
     top_k: Optional[int] = 1
     repetition_penalty: Optional[float] = 1.0
     max_new_tokens: Optional[int] = 128
-    stream: Optional[bool] = False
+    stream: Optional[bool] = True
 
 
 class ChatCompletionResponse(BaseModel):
