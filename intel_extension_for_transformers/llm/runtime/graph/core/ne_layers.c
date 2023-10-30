@@ -7670,8 +7670,8 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   NE_ASSERT(src1->type == NE_TYPE_I32);
   NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
 
-  const float freq_base = 10000.0f;
-  const float freq_scale = 1.0f;
+  static const float freq_base = 10000.0f;
+  static const float freq_scale = 1.0f;
 
   const int64_t n_past = ((int32_t*)src1->data)[0];
   const int64_t n_dims = ((int32_t*)src1->data)[1];
