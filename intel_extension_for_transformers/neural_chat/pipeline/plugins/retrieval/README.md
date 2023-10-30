@@ -50,7 +50,7 @@ config = PipelineConfig(plugins=plugins)
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot(config)
-response = chatbot.predict("What is IDM 2.0?")
+response, link = chatbot.predict("What is IDM 2.0?")
 ```
 
 Checkout the full example [retrieval_chat.py](../../../examples/retrieval/retrieval_chat.py) and have a try!
