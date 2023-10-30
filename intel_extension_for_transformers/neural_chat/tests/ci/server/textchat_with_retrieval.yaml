@@ -21,18 +21,15 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 127.0.0.1
-port: 9000
+port: 8000
 
-model_name_or_path: "facebook/opt-125m"
+model_name_or_path: "/tf_dataset2/models/nlp_toolkit/opt-125m"
 device: "cpu"
 
 retrieval:
     enable: true
     args:
-        input_path: "./askdoc"
-        persist_dir: "./out_persist"
-        response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
-        append: True
+        input_path: "../../assets/docs/"
 
-tasks_list: ['textchat', 'retrieval']
-
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat']

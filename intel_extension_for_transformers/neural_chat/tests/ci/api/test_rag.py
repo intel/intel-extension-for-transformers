@@ -33,7 +33,7 @@ class TestChatbotBuilder(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../assets/docs/sample.txt"
         plugins.retrieval.args["persist_dir"] = "./test_for_accuracy"
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")

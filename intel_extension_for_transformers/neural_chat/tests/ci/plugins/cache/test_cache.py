@@ -19,18 +19,23 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
 
-from huggingface_hub import login
-login("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")
-
 class TestChatCache(unittest.TestCase):
     def setUp(self):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("./gptcache_data") and os.path.isdir("./gptcache_data"):
+            try:
+                shutil.rmtree("./gptcache_data")
+                print(f"The directory gptcache_data has been successfully deleted.")
+            except Exception as e:
+                print(f"An error occurred while deleting the directory: {e}")
+        else:
+            print(f"The directory gptcache_data does not exist.")
         return super().tearDown()
     
     def test_chat_cache(self):
-        cache_plugin = ChatCache()
+        cache_plugin = ChatCache(embedding_model_dir="/tf_dataset2/models/nlp_toolkit/instructor-large")
         cache_plugin.init_similar_cache_from_config()
 
         prompt = "Tell me about Intel Xeon Scable Processors."

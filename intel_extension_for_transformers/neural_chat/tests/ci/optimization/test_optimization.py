@@ -17,6 +17,7 @@
 
 import unittest
 import torch
+import re, os
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
@@ -29,10 +30,18 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
+        for filename in os.getcwd():
+            if re.match(r'ne_.*_fp32.bin', filename) or re.match(r'ne_.*_q.bin', filename):
+                file_path = os.path.join(os.getcwd(), filename)
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted file: {filename}")
+                except OSError as e:
+                    print(f"Error deleting file {filename}: {str(e)}")
         return super().tearDown()
 
     def test_build_chatbot_with_AMP(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
                                 optimization_config = MixedPrecisionConfig())
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -46,7 +55,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_weight_only_quant(self):
         loading_config = LoadingModelConfig(use_llm_runtime=False)
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
             loading_config=loading_config
         )
@@ -58,7 +67,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_llm_runtime(self):
         loading_config = LoadingModelConfig(use_llm_runtime=True)
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int8"),
             loading_config=loading_config
         )
@@ -71,7 +80,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
-                model_name_or_path="facebook/opt-125m",
+                model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
                 device='cuda',
                 optimization_config=BitsAndBytesConfig(
                         load_in_4bit=True,

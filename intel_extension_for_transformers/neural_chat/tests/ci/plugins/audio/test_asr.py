@@ -37,9 +37,9 @@ class TestASR(unittest.TestCase):
             self.device = "hpu"
         else:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        self.asr = AudioSpeechRecognition("/tf_dataset2/models/nlp_toolkit/whisper-small", device=self.device)
         if self.device == "cpu" and self.is_ipex_available:
-            self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
+            self.asr_bf16 = AudioSpeechRecognition("/tf_dataset2/models/nlp_toolkit/whisper-small", bf16=True)
         else:
             self.asr_bf16 = None
 

@@ -27,7 +27,7 @@ class TestMptTrace(unittest.TestCase):
         return super().tearDown()
     
     def test_mpt_trace(self):
-        config = PipelineConfig(optimization_config=AMPConfig(), model_name_or_path='/models/mpt-7b-chat')
+        config = PipelineConfig(optimization_config=AMPConfig(), model_name_or_path='/tf_dataset2/models/nlp_toolkit/mpt-7b')
         chatbot = build_chatbot(config)
         response = chatbot.predict(query="hello")
         self.assertIsNotNone(response)

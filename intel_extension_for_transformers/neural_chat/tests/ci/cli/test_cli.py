@@ -26,7 +26,7 @@ class UnitTest(unittest.TestCase):
         logger.info(f'Testing CLI request === Text Chat ===')
         command = 'neuralchat predict \
                     --query "Tell me about Intel." \
-                    --model_name_or_path "facebook/opt-125m"'
+                    --model_name_or_path "/tf_dataset2/models/nlp_toolkit/opt-125m"'
         result = None
         try:
             result = subprocess.run(command, capture_output = True, check=True,
@@ -53,11 +53,11 @@ class UnitTest(unittest.TestCase):
         if os.path.exists(audio_path):
             command = f'neuralchat predict \
                         --query {audio_path} \
-                        --model_name_or_path "facebook/opt-125m"'
+                        --model_name_or_path "/tf_dataset2/models/nlp_toolkit/opt-125m"'
         else:
             command = f'neuralchat predict \
                         --query "../../assets/audio/sample.wav" \
-                        --model_name_or_path "facebook/opt-125m"'
+                        --model_name_or_path "/tf_dataset2/models/nlp_toolkit/opt-125m"'
         result = None
         try:
             result = subprocess.run(command, capture_output = True, check=True,
