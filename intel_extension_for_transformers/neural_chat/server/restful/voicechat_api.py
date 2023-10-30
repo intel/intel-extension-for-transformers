@@ -51,7 +51,7 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             config = GenerationConfig(audio_output_path=audio_output_path)
-            result = chatbot.chat_stream(query=prompt, config=config)
+            result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
                 for path in result:
                     with open(path,mode="rb") as file:

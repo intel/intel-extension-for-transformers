@@ -83,7 +83,7 @@ class TextChatAPIRouter(APIRouter):
                     continue
                 setattr(config, attr, value)
             if request.stream:
-                generator = chatbot.predict_stream(query=request.prompt, config=config)
+                generator, link = chatbot.predict_stream(query=request.prompt, config=config)
                 def stream_generator():
                     for output in generator:
                         ret = {
