@@ -1,0 +1,32 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.server.restful.photoai_utils`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.server.restful.photoai_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.photoai_utils.latitude_and_longitude_convert_to_decimal_system
+   intel_extension_for_transformers.neural_chat.server.restful.photoai_utils.find_GPS_image
+
+
+
+.. py:function:: latitude_and_longitude_convert_to_decimal_system(*arg)
+
+   Convert latitude&longitude into decimal system
+
+
+.. py:function:: find_GPS_image(pic_path)
+
+   generate GPS and timestamp from image
+
+

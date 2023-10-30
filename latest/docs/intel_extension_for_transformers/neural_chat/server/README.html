@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Server Command Line &mdash; Intel® Extension for Transformers 0.1.dev1+gd9d0a32 documentation</title>
+  <title>NeuralChat Server Command Line &mdash; Intel® Extension for Transformers 0.1.dev1+gd7a1d8d documentation</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
@@ -102,7 +102,7 @@
 <ul class="simple">
 <li><p>Command Line (Recommended)</p></li>
 </ul>
-<p>NeuralChat provides a default chatbot configuration in <code class="docutils literal notranslate"><span class="pre">./conf/neuralchat.yaml</span></code>. User could customize the behavior of this chatbot by modifying the value of these fields in the configuration file to specify which LLM model and plugins to be used.</p>
+<p>NeuralChat provides a default chatbot configuration in <code class="docutils literal notranslate"><span class="pre">./config/neuralchat.yaml</span></code>. User could customize the behavior of this chatbot by modifying the value of these fields in the configuration file to specify which LLM model and plugins to be used.</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -294,16 +294,70 @@
 <td>true, false</td>
 </tr>
 <tr>
+<td>ner</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.model_path</td>
+<td>"meta-llama/Llama-2-7b-chat-hf"</td>
+<td>A valid directory path of llm model</td>
+</tr>
+<tr>
+<td></td>
+<td>args.spacy_model</td>
+<td>"en_core_web_lg"</td>
+<td>A valid name of downloaded spacy model</td>
+</tr>
+<tr>
+<td></td>
+<td>args.bf16</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td>ner_int</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.model_path</td>
+<td>"meta-llama/Llama-2-7b-chat-hf"</td>
+<td>A valid directory path of llm model</td>
+</tr>
+<tr>
+<td></td>
+<td>args.spacy_model</td>
+<td>"en_core_web_lg"</td>
+<td>A valid name of downloaded spacy model</td>
+</tr>
+<tr>
+<td></td>
+<td>args.compute_dtype</td>
+<td>"fp32"</td>
+<td>"fp32", "int8"</td>
+</tr>
+<tr>
+<td></td>
+<td>args.weight_dtype</td>
+<td>"int8"</td>
+<td>"int8", "int4"</td>
+</tr>
+<tr>
 <td>tasks_list</td>
 <td></td>
 <td>['textchat', 'retrieval']</td>
-<td>List of task names, including 'textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'</td>
+<td>List of task names, including 'textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'photoai'</td>
 </tr>
 </tbody>
-</table><p>First set the service-related configuration parameters, similar to <code class="docutils literal notranslate"><span class="pre">./conf/neuralchat.yaml</span></code>. Set <code class="docutils literal notranslate"><span class="pre">tasks_list</span></code>, which represents the supported tasks included in the service to be started.
+</table><p>First set the service-related configuration parameters, similar to <code class="docutils literal notranslate"><span class="pre">./config/neuralchat.yaml</span></code>. Set <code class="docutils literal notranslate"><span class="pre">tasks_list</span></code>, which represents the supported tasks included in the service to be started.
 <strong>Note:</strong> If the service can be started normally in the container, but the client access IP is unreachable, you can try to replace the <code class="docutils literal notranslate"><span class="pre">host</span></code> address in the configuration file with the local IP address.</p>
 <p>Then start the service:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/conf/neuralchat.yaml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/config/neuralchat.yaml
 </pre></div>
 </div>
 <ul class="simple">
@@ -313,7 +367,7 @@
 
 <span class="n">server_executor</span> <span class="o">=</span> <span class="n">NeuralChatServerExecutor</span><span class="p">()</span>
 <span class="n">server_executor</span><span class="p">(</span>
-    <span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;./conf/neuralchat.yaml&quot;</span><span class="p">,</span> 
+    <span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;./config/neuralchat.yaml&quot;</span><span class="p">,</span> 
     <span class="n">log_file</span><span class="o">=</span><span class="s2">&quot;./log/neuralchat.log&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -378,7 +432,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f43c76e4130> 
+   <jinja2.runtime.BlockReference object at 0x7f584ca050f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

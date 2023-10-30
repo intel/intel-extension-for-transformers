@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`photoai`
+=================
+
+.. py:module:: photoai
+
+
