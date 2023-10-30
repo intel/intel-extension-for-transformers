@@ -288,8 +288,6 @@ struct beam {
   // Cumulative beam score (log-softmax here)
   float score = 0.0f;
   // record related indices
-  // 0 - batch_size-1
-  // int infer_bs_idx = -1;
   // 0 - request_bs-1
   int request_idx = -1;
   // 0 - num_beams-1
@@ -378,9 +376,7 @@ struct beam_hypotheses {
     return *std::max_element(beams.begin(), beams.end(), by_score);
   }
 
-  void clear() {
-    beams.clear();
-  }
+  void clear() { beams.clear(); }
 };
 
 struct logits_info;
