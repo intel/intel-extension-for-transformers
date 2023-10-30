@@ -145,3 +145,49 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
+## NVIDIA GPU environment
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04 as nvgpu
+
+ARG ITREX_VER=main
+ARG PYTHON_VERSION=3.9
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+
+# See http://bugs.python.org/issue19846
+ENV LANG C.UTF-8
+
+# Install system dependencies
+SHELL ["/bin/bash", "--login", "-c"]
+RUN apt-get update \
+    && apt-get install -y build-essential \
+    && apt-get install -y wget numactl git \
+    && apt-get install -y openssh-server \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download ITREX code
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+
+# Install miniconda
+ENV CONDA_DIR /opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda
+
+# Put conda in path so we can use conda activate
+SHELL ["/bin/bash", "--login", "-c"]
+ENV PATH=$CONDA_DIR/bin:$PATH
+RUN conda init bash && \
+    unset -f conda && \
+    export PATH=$CONDA_DIR/bin/:${PATH} && \
+    conda config --add channels intel && \
+    conda create -yn neuralchat python=${PYTHON_VERSION} && \
+    echo "conda activate neuralchat" >> ~/.bashrc && \
+    echo "export PYTHONPATH=/intel-extension-for-transformers" >> ~/.bashrc && \
+    source ~/.bashrc
+
+RUN source activate && conda activate neuralchat && cd /intel-extension-for-transformers && \
+    pip install -r ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning/requirements.txt && \
+    pip install -r ./intel_extension_for_transformers/neural_chat/requirements.txt
+
+WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+
+CMD ["/usr/sbin/sshd", "-D"]
