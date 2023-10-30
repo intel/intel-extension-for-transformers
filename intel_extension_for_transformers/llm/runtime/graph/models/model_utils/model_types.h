@@ -154,7 +154,7 @@ struct model_layer {
 struct model_kv_cache {
   struct ne_tensor* k;
   struct ne_tensor* v;
-  struct ne_tensor* cossin = NULL;  // cached cos/-sin value for shifting RoPE
+  struct ne_tensor* cossin = NULL;  // cached cos/sin value for shifting RoPE
 
   struct ne_context* ctx = NULL;
 

@@ -7858,7 +7858,7 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
       cossin = malloc(ne0 * sizeof(ne_fp16_t));
       for (int i0 = 0; i0 < ne0; i0 += 2) {
         cossin[i0 + 0] = NE_FP32_TO_FP16(cosf(theta));
-        cossin[i0 + 1] = NE_FP32_TO_FP16(sinf(-theta));  // sin is negate to ease the use of fp16 instructions
+        cossin[i0 + 1] = NE_FP32_TO_FP16(sinf(theta));
         theta *= theta_scale;
       }
     }
@@ -7880,8 +7880,8 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
             const float cos = NE_FP16_TO_FP32(cossin[i0 + 0]);
             const float sin = NE_FP16_TO_FP32(cossin[i0 + 1]);
 
-            dst_data[0] = NE_FP32_TO_FP16(x0 * cos + x1 * sin);
-            dst_data[1] = NE_FP32_TO_FP16(x1 * cos - x0 * sin);
+            dst_data[0] = NE_FP32_TO_FP16(x0 * cos - x1 * sin);
+            dst_data[1] = NE_FP32_TO_FP16(x1 * cos + x0 * sin);
           }
         }
       }

@@ -135,21 +135,21 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   if (shift_roped_k) {  // prepare rope helper for fused-attention
     const auto cossin_dtype = wtype == NE_TYPE_JBLAS ? NE_TYPE_F16 : wtype;
     cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
-    ne_set_name(cache.cossin, "cos-sin(-1)");
+    ne_set_name(cache.cossin, "cossin(-1)");
     float theta = -1;
     float theta_scale = std::pow(10000.f, -2.0f / head_size);
     if (cossin_dtype == NE_TYPE_F16) {
       const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
       for (int i = 0; i < head_size; i += 2) {
         data[i + 0] = NE_FP32_TO_FP16(std::cos(theta));
-        data[i + 1] = NE_FP32_TO_FP16(std::sin(-theta));
+        data[i + 1] = NE_FP32_TO_FP16(std::sin(theta));
         theta *= theta_scale;
       }
     } else if (cossin_dtype == NE_TYPE_F32) {
       const auto data = reinterpret_cast<float*>(cache.cossin->data);
       for (int i = 0; i < head_size; i += 2) {
         data[i + 0] = std::cos(theta);
-        data[i + 1] = std::sin(-theta);
+        data[i + 1] = std::sin(theta);
         theta *= theta_scale;
       }
     } else {
