@@ -24,7 +24,7 @@ from intel_extension_for_transformers.neural_chat.server import VoiceChatClientE
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/server/voicechat.yaml"
+            "intel_extension_for_transformers/neural_chat/tests/ci/server/voicechat.yaml"
         if os.path.exists(yaml_file_path):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
