@@ -15,18 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
+# Kill the exist and re-run
+ps -ef |grep 'photoai' |awk '{print $2}' |xargs kill -9
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
+# KMP
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
 
-model_name_or_path: "starcoder_int8"
-tokenizer_name_or_path: "bigcode/starcoder"
-device: "cpu"
-ipex_int8: True
+# OMP
+export OMP_NUM_THREADS=56
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+# tc malloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
+# environment variables
+export MYSQL_PASSWORD="root"
+export MYSQL_HOST="127.0.0.1"
+export MYSQL_DB="ai_photos"
+
+numactl -l -C 0-55 python -m photoai 2>&1 | tee run.log

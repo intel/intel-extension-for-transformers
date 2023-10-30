@@ -15,18 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
+import os
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(
+        config_file="./photoai.yaml",
+        log_file="./photoai.log")
 
-model_name_or_path: "starcoder_int8"
-tokenizer_name_or_path: "bigcode/starcoder"
-device: "cpu"
-ipex_int8: True
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+if __name__ == "__main__":
+    main()
