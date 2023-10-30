@@ -44,6 +44,7 @@ from .voicechat_api import router as voicechat_router
 from .retrieval_api import router as retrieval_router
 from .text2image_api import router as text2image_router
 from .finetune_api import router as finetune_router
+from .photoai_api import router as photoai_router
 
 _router = APIRouter()
 
@@ -53,7 +54,8 @@ api_router_mapping = {
     'voicechat': voicechat_router,
     'retrieval': retrieval_router,
     'text2image': text2image_router,
-    'finetune': finetune_router
+    'finetune': finetune_router,
+    'photoai': photoai_router
 }
 
 def setup_router(api_list, chatbot):

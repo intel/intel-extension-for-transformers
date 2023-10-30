@@ -60,6 +60,20 @@ If you don't need to set proxy settings:
 docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target hpu
 ```
 
+### On Nvidia GPU Environment
+
+If you need to set proxy settings:
+
+```bash
+docker build --network=host --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target nvgpu
+```
+
+If you don't need to set proxy settings:
+
+```bash
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target nvgpu
+```
+
 ## 5. Create Docker Container
 Before creating your docker container, make sure the model has been downloaded to local. 
 
@@ -71,6 +85,10 @@ docker run -it --disable-content-trust --privileged --name="chatbot" --hostname=
 ### On Habana Gaudi Environment
 ```bash
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest 
+```
+### On Nvidia GPU Environment
+```bash
+docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
 ```
 
 # Finetune
