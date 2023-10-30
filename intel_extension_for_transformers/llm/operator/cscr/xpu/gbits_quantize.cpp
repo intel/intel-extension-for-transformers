@@ -1,6 +1,50 @@
-#include "utils.hpp"
+#include "common.hpp"
 #include <ipex.h>
 #include <torch/extension.h>
+
+void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
+                      int ld_src, int ld_dst, float *scales, int blocksize) {
+  int raw_blocksize = blocksize;
+  for (int i = 0; i < col; i++) {
+    int align_row_loop = row / blocksize * blocksize;
+    int j = 0;
+
+    auto s4_fullrange_calc_store_scale_and_quantv_sym = [&](int blocksize) {
+      float amax = 0.f, max = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto v = srcptr[(j + ij) * ld_src + i];
+        if (amax < std::abs(v)) {
+          amax = std::abs(v);
+          max = v;
+        }
+      }
+      float scale = max / -8.f;
+      float rscale = scale != 0.f ? 1.f / scale : 0.f;
+      scales[j / raw_blocksize * ld_dst + i] = scale;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto quant_v = srcptr[(j + ij) * ld_src + i] * rscale;
+        int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+        dstptr[(j + ij) * ld_dst + i] = x << 4;
+      }
+    };
+    for (; j < align_row_loop; j += blocksize)
+      s4_fullrange_calc_store_scale_and_quantv_sym(blocksize);
+    if (j < row)
+      s4_fullrange_calc_store_scale_and_quantv_sym(row - align_row_loop);
+  }
+}
+
+void compress_s8_s4(const int8_t *srcptr, gblas::int4x2 *dstptr, int row,
+                    int col, int ld_src, int ld_dst) {
+  for (int j = 0; j < row; j++) {
+    for (int ii = 0; ii < col; ii += 2) {
+      gblas::int4x2 tmp;
+      tmp.x = gblas::int4x2::convert(srcptr[j * ld_src + ii + 0]);
+      tmp.y = gblas::int4x2::convert(srcptr[j * ld_src + ii + 1]);
+      dstptr[j * ld_dst / 2 + ii / 2] = tmp;
+    }
+  }
+}
 
 torch::Tensor quantize(float *weight, int k, int n, int blksize, bool transpose,
                        std::string weight_type, std::string cmpt_type) {
