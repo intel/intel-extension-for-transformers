@@ -72,7 +72,7 @@ jobs:
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
           -v /dataset/tf_dataset2:/tf_dataset2 \
-          -v /dataset/cache:/root/.cache \
+          -v /dataset/cache/huggingface:/root/.cache/huggingface \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build

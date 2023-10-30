@@ -71,7 +71,7 @@ jobs:
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v /dataset/tf_dataset2:/tf_dataset2 \
-          -v /dataset/cache:/root/.cache \
+          -v /dataset/cache/huggingface:/root/.cache/huggingface \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
