@@ -48,7 +48,7 @@ class TestFinetuning(unittest.TestCase):
         os.remove(test_data_file)
 
     def test_finetune_clm(self):
-        model_args = ModelArguments(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m")
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
         training_args = TrainingArguments(
             output_dir='./tmp',
@@ -66,7 +66,7 @@ class TestFinetuning(unittest.TestCase):
         finetune_model(finetune_cfg)
 
     def test_finetune_seq2seq(self):
-        model_args = ModelArguments(model_name_or_path="/tf_dataset2/models/nlp_toolkit/flan-t5-small")
+        model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)
         training_args = Seq2SeqTrainingArguments(
             output_dir='./tmp',

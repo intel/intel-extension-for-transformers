@@ -41,7 +41,7 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_AMP(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 optimization_config = MixedPrecisionConfig())
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -55,7 +55,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_weight_only_quant(self):
         loading_config = LoadingModelConfig(use_llm_runtime=False)
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
             loading_config=loading_config
         )
@@ -67,7 +67,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_llm_runtime(self):
         loading_config = LoadingModelConfig(use_llm_runtime=True)
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int8"),
             loading_config=loading_config
         )
@@ -80,7 +80,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
-                model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+                model_name_or_path="facebook/opt-125m",
                 device='cuda',
                 optimization_config=BitsAndBytesConfig(
                         load_in_4bit=True,

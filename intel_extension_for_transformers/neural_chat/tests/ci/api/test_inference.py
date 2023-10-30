@@ -33,7 +33,7 @@ class UnitTest(unittest.TestCase):
         return super().tearDown()
 
     def test_text_chat(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
@@ -42,7 +42,7 @@ class UnitTest(unittest.TestCase):
     def test_retrieval(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../assets/docs/"
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
@@ -55,7 +55,7 @@ class UnitTest(unittest.TestCase):
         plugins.retrieval.args["append"] = True
         plugins.retrieval.args["input_path"] = "../../assets/docs/"
         plugins.retrieval.args["persist_dir"] = "./check_append"
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
@@ -63,7 +63,7 @@ class UnitTest(unittest.TestCase):
         self.assertIsNotNone(response)
         
         plugins.retrieval.args["append"] = False
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
@@ -76,7 +76,7 @@ class UnitTest(unittest.TestCase):
     def test_voice_chat(self):
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"] = "./response.wav"
-        pipeline_config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(config=pipeline_config)
         gen_config = GenerationConfig(max_new_tokens=64)
@@ -89,13 +89,13 @@ class UnitTest(unittest.TestCase):
     def test_quantization(self):
         config = MixedPrecisionConfig()
         model = AutoModelForCausalLM.from_pretrained(
-                "/tf_dataset2/models/nlp_toolkit/opt-125m",
+                "facebook/opt-125m",
                 low_cpu_mem_usage=True,
             )
         optimize_model(model=model, config=config)
 
     def test_text_chat_stream(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""
         results, link = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.")

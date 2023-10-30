@@ -30,7 +30,7 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_default_config(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -38,8 +38,8 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_pipelinecfg(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
-                                tokenizer_name_or_path="/tf_dataset2/models/nlp_toolkit/gpt-neox-20b")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -47,7 +47,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_generationcfg(self):
-        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         config = GenerationConfig(max_new_tokens=512, temperature=0.1)
@@ -58,7 +58,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"]="./output_audio.wav"
-        pipeline_config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
@@ -76,7 +76,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
-        pipeline_config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
@@ -87,7 +87,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../../../README.md"
-        pipeline_config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/opt-125m",
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
