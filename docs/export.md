@@ -14,7 +14,7 @@
 
 
 ## Introduction
-We support exporting PyTorch models into ONNX models with our well-desighed API `trainer.export_to_onnx`. Users can get FP32 (Float precision 32 bit), BF16 (Bfloat 16 bit) and INT8 (Integer 8 bit) ONNX model with the same interface.
+We support exporting PyTorch models into ONNX models with our well-designed API `trainer.export_to_onnx`. Users can get FP32 (Float precision 32 bit), BF16 (Bfloat 16 bit) and INT8 (Integer 8 bit) ONNX model with the same interface.
 
 
 ## Supported Model Export Matrix
