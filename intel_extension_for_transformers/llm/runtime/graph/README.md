@@ -37,6 +37,16 @@ LLM Runtime supports the following models:
 
 
 ## How to Use
+There are two methods for utilizing the LLM runtime:
+</br>
+A Transformer-based API
+</br>
+A straightforward Python script for LLM runtime.
+
+## Transformer-based API
+### 1. Install
+
+
 
 ### 1. Install LLM Runtime
 Install from binary
@@ -51,7 +61,7 @@ Warning: If you want to use ```from_pretrain``` API, please follow [installation
 ```shell
 # Linux
 # make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build llm runtime  with these cmds
+# You can't use from_pretrain API if you build llm runtime with these cmds
 git submodule update --init --recursive
 mkdir build
 cd build
