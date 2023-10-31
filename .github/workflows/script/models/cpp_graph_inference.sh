@@ -18,39 +18,39 @@ function main() {
         convert_script="${working_dir}/scripts/convert_llama.py"
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
-        input_model="/tf_dataset2/models/nlp_toolkit/llama-7b-hf"
+        input_model="/dataset/tf_dataset2/models/nlp_toolkit/llama-7b-hf"
         precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
     elif [[ "${model}" == "gpt-neox-20b" ]]; then
         convert_script="${working_dir}/scripts/convert_gptneox.py"
         quant_script="./build/bin/quant_gptneox"
         infer_cmd="./build/bin/run_gptneox"
-        input_model="/tf_dataset2/models/nlp_toolkit/gpt-neox-20b"
+        input_model="/dataset/tf_dataset2/models/nlp_toolkit/gpt-neox-20b"
         precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
     elif [[ "${model}" == "mpt-7b" ]]; then
         convert_script="${working_dir}/scripts/convert_mpt.py"
         quant_script="./build/bin/quant_mpt"
         infer_cmd="./build/bin/run_mpt"
-        input_model="/tf_dataset2/models/nlp_toolkit/mpt-7b"
+        input_model="/dataset/tf_dataset2/models/nlp_toolkit/mpt-7b"
         precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
     elif [[ "${model}" == "falcon-7b" ]]; then
         convert_script="${working_dir}/scripts/convert_falcon.py"
         quant_script="./build/bin/quant_falcon"
         infer_cmd="./build/bin/run_falcon"
-        input_model="/tf_dataset2/models/nlp_toolkit/falcon-7b"
+        input_model="/dataset/tf_dataset2/models/nlp_toolkit/falcon-7b"
         precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
     elif [[ "${model}" == "gptj-6b" ]]; then
         convert_script="${working_dir}/scripts/convert_gptj.py"
         quant_script="./build/bin/quant_gptj"
         infer_cmd="./build/bin/run_gptj"
         model_name="EleutherAI/gpt-j-6b"
-        input_model="/tf_dataset2/models/pytorch/gpt-j-6B"
+        input_model="/dataset/tf_dataset2/models/pytorch/gpt-j-6B"
         precision_list=("q4_j_b128" "q4_j_b128_asym")
     elif [[ "${model}" == "starcoder-3b" ]]; then
         convert_script="${working_dir}/scripts/convert_starcoder.py"
         quant_script="./build/bin/quant_starcoder"
         infer_cmd="./build/bin/run_starcoder"
         model_name="bigcode/starcoder"
-        input_model="/tf_dataset2/models/pytorch/starcode_3b"
+        input_model="/dataset/tf_dataset2/models/pytorch/starcode_3b"
         precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
     fi
 
