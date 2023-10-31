@@ -9,11 +9,11 @@ import ShylaBandhuAvatar from "$lib/components/talkbot/imgs/Shyla-Bandhu-Avatar.
 import indiaYouthVoice from "./assets/india.mp3"
 import midAgeMantVoice from "./assets/mid-age-man.mp3"
 import HumaVoice from "./assets/welcome_huma.wav"
-import PatVoice from "./assets/welcome_pat.wav"
+import PatVoice from "./assets/mid-age-man.mp3"
 import WeiVoice from "./assets/welcome_wei.wav"
 
 import humaAvatar from "$lib/components/talkbot/imgs/huma.jpg";
-import JohnAvatar from "$lib/components/talkbot/imgs/John.jpg";
+import JohnAvatar from "$lib/components/talkbot/imgs/John-Avatar.jpg";
 import annAvatar from "$lib/components/talkbot/imgs/wei.jpg";
 
 
@@ -39,7 +39,7 @@ export const TalkingKnowledgeLibrary = [
 ]
 
 export const TalkingTemplateLibrary = [
-    { name: "", avatar: JohnAvatar, audio: PatVoice, knowledge: 'Young_Pat', identify: "pat" },
+    { name: "", avatar: JohnAvatar, audio: PatVoice, knowledge: 'Young_Pat', identify: "default_male" },
     { name: "", avatar: annAvatar, audio: WeiVoice, knowledge: 'Young_Wei', identify: "wei" },
     { name: "", avatar: humaAvatar, audio: HumaVoice, knowledge: 'Young_Huma', identify: "huma" },
     // { name: "Andy Grove", avatar: andyAvatar, audio: AndyVoice, knowledge: 'Young_Andy', identify: "andy" },
