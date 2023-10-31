@@ -118,7 +118,8 @@ class BaseModel(ABC):
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
-                   hf_access_token=kwargs["hf_access_token"])
+                   hf_access_token=kwargs["hf_access_token"],
+                   use_llm_runtime=kwargs["use_llm_runtime"])
 
     def predict_stream(self, query, config=None):
         """

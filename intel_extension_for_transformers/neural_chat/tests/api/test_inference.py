@@ -19,9 +19,11 @@ import os
 import unittest
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, AMPConfig,
+    PipelineConfig, GenerationConfig,
 )
 from intel_extension_for_transformers.neural_chat import plugins
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
+from transformers import AutoModelForCausalLM
 
 class UnitTest(unittest.TestCase):
     def setUp(self):
@@ -85,8 +87,12 @@ class UnitTest(unittest.TestCase):
         self.assertTrue(os.path.exists("./response.wav"))
 
     def test_quantization(self):
-        config = AMPConfig()
-        optimize_model(model="facebook/opt-125m", config=config)
+        config = MixedPrecisionConfig()
+        model = AutoModelForCausalLM.from_pretrained(
+                "facebook/opt-125m",
+                low_cpu_mem_usage=True,
+            )
+        optimize_model(model=model, config=config)
 
     def test_text_chat_stream(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
