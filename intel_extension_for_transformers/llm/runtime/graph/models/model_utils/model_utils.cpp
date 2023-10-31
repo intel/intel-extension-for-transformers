@@ -79,7 +79,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
   cache.seq_cells.resize(batch_size * beam_size);
   for (int i = 0; i < cache.seq_cells.size(); ++i) {
-    cache.seq_cells[i].token_cells.resize(hparams.n_ctx);
+    cache.seq_cells[i].token_cells.resize(n_ctx);
   }
 
   struct ne_init_params params;
@@ -2049,7 +2049,7 @@ void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& se
   const uint32_t n_head = ctx->model.hparams.n_head_kv > 0 ? ctx->model.hparams.n_head_kv : ctx->model.hparams.n_head;
   const uint32_t head_dim = ctx->model.hparams.n_embd / ctx->model.hparams.n_head;
   const uint32_t n_embd = n_head * head_dim;
-  const uint32_t n_ctx = ctx->model.hparams.n_ctx;
+  const uint32_t n_ctx = ctx->n_ctx;
   const size_t k_elem_size = ne_element_size(ctx->model.kv_self.k);
   const size_t v_elem_size = ne_element_size(ctx->model.kv_self.v);
 #pragma omp parallel for collapse(2)
@@ -2334,7 +2334,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
 
 void beam_search_flow::fill_next_beams_by_top_scores() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
-  std::vector<model_token> embd_inp;
+  std::vector<model_input> next_inputs;
   int batch_size = 0;
   request_running_indices.clear();
   std::vector<int> beam_indices;
@@ -2345,9 +2345,6 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
       // cur_beams[i].clear();
       continue;
     }
-    // (batch, 1)
-    // ordered by request_idx
-    embd_inp.push_back(cur_beams[i].token_ids.back());
     if (request_running_indices.empty()) {
       request_running_indices.push_back(cur_beams[i].request_idx);
     } else {
@@ -2355,6 +2352,16 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
         request_running_indices.push_back(cur_beams[i].request_idx);
       }
     }
+    // (batch, 1)
+    // ordered by request_idx
+    next_inputs.push_back(model_input{
+        /*.tokens              =*/&cur_beams[i].token_ids.back(),
+        /*.n_tokens           =*/1,
+        /*.n_prompt_tokens    =*/n_prompt_tokens[request_running_indices.back()],
+        /*.n_past             =*/n_past[request_running_indices.back()],
+        /*.n_total            =*/n_total[request_running_indices.back()],
+        /*.request_idx        =*/request_running_indices.back(),
+    });
     batch_size++;
     beam_indices.push_back(cur_beams[i].beam_idx);
     beams_score.push_back(cur_beams[i].score);
@@ -2362,19 +2369,19 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   MODEL_ASSERT(request_running_indices.size() * beam_size == batch_size);
   ctx->batch_size = batch_size;
   ctx->request_running_bs = request_running_indices.size();
-  int n_tokens = 1;
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("========================================================================================= \n");
   printf("next_tokens for inference: \n");
   printf("request_running_bs: %d, batch_size for inference: %d\n", ctx->request_running_bs, ctx->batch_size);
-  for (auto kk : embd_inp) {
+  for (int k = 0; k < next_inputs.size(); ++k) {
+    model_token kk = *(next_inputs[k].tokens);
     printf("%d: %s \n", kk, (ctx->vocab.id_to_token.at(kk).tok).c_str());
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  // TODO modify eval for different n_past in batch dim
-  model_eval(ctx, embd_inp.data(), n_tokens, n_past[0], n_total, num_threads);
+
+  model_eval(ctx, next_inputs, num_threads);
 
   const int sample_scale = 2;
   std::vector<int> num_beams(ctx->request_running_bs, beam_size);
@@ -2557,20 +2564,26 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
   return beam_hypos[request_idx].top1();
 }
 
-std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, const int& n_tokens,
-                                                const int& n_threads) {
-  if (n_tokens > model_n_ctx(ctx)) {
-    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(ctx) - 4);
-    return std::vector<model_token>();
+std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<model_input>& inputs,
+                                                             const int& n_threads) {
+  // n_past, n_tokens, n_prompt_tokens should be same among batches in static batching inference
+  n_tokens.assign(request_bs, inputs[0].n_tokens);
+  if (n_tokens[0] > model_n_ctx(ctx)) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens[0], model_n_ctx(ctx) - 4);
+    return std::vector<std::vector<model_token>>();
   }
   num_threads = n_threads;
-  n_prompt_tokens[0] = n_tokens;
-  std::vector<model_token> beam_search_response;
-  std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
+  n_past.assign(request_bs, 0);
+  n_prompt_tokens.assign(request_bs, n_tokens[0]);
+  n_total.assign(request_bs, 0);
+  std::vector<std::vector<model_token>> beam_search_response(request_bs);
+  // std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens * request_bs);
 
-  ctx->batch_size = 1;
-  ctx->request_running_bs = 1;
-  request_running_indices.push_back(0);
+  ctx->batch_size = request_bs;
+  ctx->request_running_bs = request_bs;
+  for (int i = 0; i < request_bs; ++i) {
+    request_running_indices.push_back(i);
+  }
   const uint32_t max_new_tokens = ctx->generation_conf.max_new_tokens;
 
   // Loop ends in: 1. all requests done; or 2. reach max_new_tokens length
@@ -2584,42 +2597,52 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
         "V shape = [N, head_dim, n_head]\n");
 #endif
   }
-  // beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
-  // requests_done.push_back(false);
   for (int n = 0; n < max_new_tokens; ++n) {
     // first step
     if (n_past[0] == 0) {
-      model_eval(ctx, embd.data(), n_tokens, n_past[0], n_total, num_threads);
-      n_past[0] += n_tokens;
-      n_total += n_tokens;
+      model_eval(ctx, inputs, num_threads);
+      std::for_each(n_past.begin(), n_past.end(), [&](auto& n) { n += n_tokens[0]; });
+      std::for_each(n_total.begin(), n_total.end(), [&](auto& n) { n += n_tokens[0]; });
       kv_reorder->update(n_past, n_prompt_tokens, request_running_indices);
-      std::vector<beam_next_token> next_tokens = beam_top_k_next_tokens(ctx, {0.0f}, {1}, {0}, beam_size);
-      MODEL_ASSERT(next_tokens.size() == beam_size);
-      cur_beams.clear();
+      std::vector<float> beam_scores(ctx->batch_size, 0.0f);
+      std::vector<int> num_beams(ctx->request_running_bs, 1);
+      std::vector<int> beam_indices(ctx->batch_size, 0);
+      std::vector<beam_next_token> next_tokens =
+          beam_top_k_next_tokens(ctx, beam_scores, num_beams, beam_indices, beam_size);
+      MODEL_ASSERT(next_tokens.size() == ctx->request_running_bs * beam_size);
       // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
       printf("========================================================================================== \n");
       printf("top_k next_tokens: \n");
-      for (auto kk : next_tokens) {
-        printf("%d: %s, score: %12.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(),
-               kk.score, kk.beam_idx);
+      int kk = 0;
+      for (int bb = 0; bb < ctx->request_running_bs; ++bb) {
+        printf("------batch_%d------\n", bb);
+        for (; kk < next_tokens.size(); ++kk) {
+          printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
+                 (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
+                 next_tokens[kk].beam_idx);
+          if ((kk + 1) % (beam_size) == 0) break;
+        }
       }
       printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-      for (int i = 0; i < beam_size; ++i) {
-        beam b;
-        b.ctx = ctx;
-        b.token_ids.push_back(next_tokens[i].id);
-        b.score = next_tokens[i].score;
-        b.beam_idx = i;
-        b.request_idx = 0;
-        cur_beams.push_back(b);
+#pragma omp parallel for
+      for (int rb = 0; rb < request_running_indices.size(); ++rb) {
+        for (int i = 0; i < beam_size; ++i) {
+          beam b;
+          b.ctx = ctx;
+          b.token_ids.push_back(next_tokens[i + rb * beam_size].id);
+          b.score = next_tokens[i + rb * beam_size].score;
+          b.beam_idx = i;
+          b.request_idx = request_running_indices[rb];
+          cur_beams[request_running_indices[rb] * beam_size + i] = std::move(b);
+        }
       }
     } else {
       fill_next_beams_by_top_scores();
       std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
-      n_past[0] += 1;
-      n_total += 1;
+      std::for_each(n_past.begin(), n_past.end(), [&](auto& n) { n++; });
+      std::for_each(n_total.begin(), n_total.end(), [&](auto& n) { n++; });
       kv_reorder->update(n_past, n_prompt_tokens, request_running_indices, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
     }
@@ -2650,7 +2673,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
     }
   }
 
-  const beam& top_b = finalize(0);
+  beam top_b = finalize(0);
 
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON  // DEBUG: print final beam result
   printf("========================================================================================= \n");
@@ -2660,16 +2683,13 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   printf("========================================================================================= \n");
 #endif
 
-  beam_search_response.clear();
-  for (const auto& id : top_b.token_ids) {
-    beam_search_response.push_back(id);
-  }
+  beam_search_response[0] = top_b.token_ids;
   return beam_search_response;
 }
 
-std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                                     const int& n_tokens, const int& n_threads) {
+std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,
+                                                  const std::vector<model_input>& inputs, const int& n_threads) {
   lctx->generation_conf.max_new_tokens = n_predict;
-  beam_search_flow bsf(lctx);
-  return bsf.loop(tokens_inp, n_tokens, n_threads);
+  beam_search_flow bsf(lctx, inputs.size());
+  return bsf.loop(inputs, n_threads);
 }

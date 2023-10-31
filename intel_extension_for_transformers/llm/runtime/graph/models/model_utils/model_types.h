@@ -365,6 +365,26 @@ typedef struct model_token_data_array {
 
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
+struct model_input {
+  // embd or next token
+  model_token* tokens = nullptr;
+  // tokens length
+  uint32_t n_tokens = 0;
+  // prompt length
+  uint32_t n_prompt_tokens = 0;
+  // kv cache n_past
+  uint32_t n_past = 0;
+  // text tokens length (prompt + all next tokens)
+  // the number of tokens evaluated so far (including evicted tokens if there is any)
+  uint32_t n_total = 0;
+  // request id
+  int request_idx = -1;
+  // TODO padding related, mask
+  // bool padding = false;
+  // int padding_side = 0; (left or right)
+  // uint32_t padding length = 0;
+};
+
 struct model_context_params {
   model_archs arch;  // arch of models (GPT-J, LLAMA)
   int n_ctx;         // text context

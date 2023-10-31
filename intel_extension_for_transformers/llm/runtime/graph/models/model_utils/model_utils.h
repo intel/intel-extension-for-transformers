@@ -119,12 +119,12 @@ MODEL_API bool model_save_session_file(struct model_context* ctx, const char* pa
                                        size_t n_token_total);
 
 // Run the model inference to obtain the logits and probabilities for the next
+// model_input has some necessary members for inference (more details please see model_types.h):
 // token. tokens + n_tokens is the provided batch of new tokens to process
 // n_past is the offset to which the kv is cached to
 // n_total is the number of tokens evaluated in previous eval calls
 // Returns 0 on success
-MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-                         int n_threads);
+MODEL_API int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads);
 
 // Convert the provided text into tokens.
 // The tokens pointer must be large enough to hold the resulting tokens.
@@ -402,7 +402,7 @@ class logits_processor {
 class beam_search_kv_cache_reorder {
  public:
   explicit beam_search_kv_cache_reorder(model_context* lctx)
-      : ctx(lctx), n_ctx(lctx->model.hparams.n_ctx), kv_n_ctx_block(lctx->kv_n_ctx_block) {}
+      : ctx(lctx), n_ctx(lctx->n_ctx), kv_n_ctx_block(lctx->kv_n_ctx_block) {}
   virtual ~beam_search_kv_cache_reorder() {}
 
   virtual void update(const std::vector<uint32_t>& n_past, const std::vector<uint32_t>& n_prompt_tokens,
@@ -427,13 +427,17 @@ class beam_search_flow {
     }
     requests_done.assign(batch_size, false);
     request_running_indices.reserve(batch_size);
-    n_past.assign(batch_size, 0);
-    n_prompt_tokens.assign(batch_size, 0);
+    n_tokens.reserve(batch_size);
+    n_past.reserve(batch_size);
+    n_prompt_tokens.reserve(batch_size);
+    n_total.reserve(batch_size);
   }
   ~beam_search_flow() {}
 
   // public interface
-  std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
+  // static batching (padding inputs or batch = 1)
+  std::vector<std::vector<model_token>> loop(const std::vector<model_input>& inputs, const int& n_threads);
+  // continuous batching (scheduling from the outside)
   void step(model_token* dst);  // TODO one step
 
  private:
@@ -453,16 +457,19 @@ class beam_search_flow {
   std::vector<beam_hypotheses> beam_hypos;
   std::vector<bool> requests_done;
   std::vector<int> request_running_indices;
-  uint32_t n_total = 0;
+  std::vector<uint32_t> n_tokens;
   std::vector<uint32_t> n_past;
   std::vector<uint32_t> n_prompt_tokens;
+  std::vector<uint32_t> n_total;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
 };
 
-MODEL_API std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                                               const int& n_tokens, const int& n_threads);
+// static batching generation
+MODEL_API std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,
+                                                            const std::vector<model_input>& inputs,
+                                                            const int& n_threads);
 
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL

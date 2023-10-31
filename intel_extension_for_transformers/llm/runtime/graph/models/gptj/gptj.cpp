@@ -45,17 +45,17 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    vector of  model_input
 //   - n_threads: number of threads to use
 //
-static bool gptj_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                     const int n_past, const int n_total, const int n_threads) {
+static bool gptj_model_eval_internal(model_context& lctx, const std::vector<model_input>& inputs, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int batch_size = lctx.batch_size;  // num of beams of all batches
-  const int N = n_tokens;
+  MODEL_ASSERT(batch_size == inputs.size());
+  // TODO static batching for now
+  const int N = inputs[0].n_tokens;
+  const int n_past = inputs[0].n_past;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -132,7 +132,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
   for (int i = 0; i < batch_size; ++i) {
-    memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
+    memcpy(static_cast<model_token*>(embd->data) + i * N, inputs[i].tokens, N * ne_element_size(embd));
   }
 
 #ifdef NE_TP_MODEL
@@ -527,9 +527,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!gptj_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads) {
+  if (!gptj_model_eval_internal(*ctx, inputs, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
