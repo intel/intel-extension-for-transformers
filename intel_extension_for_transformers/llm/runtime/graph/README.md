@@ -46,7 +46,7 @@ pip install intel-extension-for-transformers
 </br>
 Build from source <br />
 Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
-
+<br />
 
 ```shell
 # Linux
