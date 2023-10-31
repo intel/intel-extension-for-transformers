@@ -38,12 +38,10 @@ LLM Runtime supports the following models:
 
 ## How to Use
 There are two methods for utilizing the LLM runtime:
-</br>
 - A Transformer-based API
-</br>
-- A straightforward Python script for LLM runtime.
+- A straightforward Python script for LLM runtime
 
-## Transformer-based API
+## How to use: Transformer-based API
 ### 1. Install
 Install from binary
 ```shell
@@ -114,15 +112,14 @@ Argument description of generate function:
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 
 
+## How to use: Straightforward Python script
+Build from source
+> :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How to use: Transformer-based API)
+
+
 
 ----------------------------------
 
-### 1. Install LLM Runtime
-Install from binary
-```shell
-pip install intel-extension-for-transformers
-```
-</br>
 Build from source </br>
 Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
 
