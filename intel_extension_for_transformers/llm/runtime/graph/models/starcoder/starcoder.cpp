@@ -162,14 +162,14 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
       // head_dim, n_head, N --> N, head_dim, n_head
       struct ne_tensor* Vcur = ne_view_3d(ctx0, cur, head_dim, n_head, N, head_dim * sizeof(float), fused_qkv_row_nb,
                                           2 * sizeof(float) * n_embd);
+      struct ne_tensor* Kcur_permuted = ne_permute(ctx0, Kcur, 0, 2, 1, 3);
+      // head_dim, n_head_kv, N --> N, head_dim, n_head_kv
+      struct ne_tensor* Vcur_permuted = ne_permute(ctx0, Vcur, 1, 2, 0, 3);
       const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
       // store transposed key and value to memory (k_v cache)
       if (!run_mha_reordered) {
         if (N >= 1) {
           // n_embd / n_head as col
-          struct ne_tensor* Kcur_permuted = ne_permute(ctx0, Kcur, 0, 2, 1, 3);
-          // head_dim, n_head_kv, N --> N, head_dim, n_head_kv
-          struct ne_tensor* Vcur_permuted = ne_permute(ctx0, Vcur, 1, 2, 0, 3);
           struct ne_tensor* k = ne_view_3d(
               ctx0, kv_self.k, head_dim, N, n_head, ne_element_size(kv_self.k) * head_dim,
               ne_element_size(kv_self.k) * head_dim * n_ctx,
@@ -180,8 +180,8 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
                          n_ctx * ne_element_size(kv_self.v) * head_dim,
                          il * n_ctx * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
           // concat
-          ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-          ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
+          ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_permuted, k));
+          ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_permuted, v));
         }
 
         // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
