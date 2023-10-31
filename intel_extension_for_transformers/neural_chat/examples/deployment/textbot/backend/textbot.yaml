@@ -20,29 +20,13 @@
 #################################################################################
 #                             SERVER SETTING                                    #
 #################################################################################
-host: 127.0.0.1
-port: 8888
+host: 0.0.0.0
+port: 8000
 
-model_name_or_path: "Intel/neural-chat-7b-v1-1"
+model_name_or_path: "starcoder_int8"
+tokenizer_name_or_path: "bigcode/starcoder"
 device: "cpu"
-
-asr:
-    enable: true
-    args:
-        # support cpu, hpu, xpu, cuda
-        device: "cpu"
-        # support openai/whisper series
-        model_name_or_path: "openai/whisper-small"
-        # only can be set to true when the device is set to "cpu"
-        bf16: false
-
-tts:
-    enable: true
-    args:
-        device: "cpu"
-        voice: "default"
-        stream_mode: true
-        output_audio_path: "./output_audio"
+ipex_int8: True
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['voicechat']
+tasks_list: ['textchat']
