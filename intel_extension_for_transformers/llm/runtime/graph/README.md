@@ -45,9 +45,10 @@ pip install intel-extension-for-transformers
 ```
 
 Build from source <br />
-Warning: Don't create the build folder in intel-extension-for-transformers folder.
-You should start in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder.  
-Only API in Section 3.Run LLM with Python Script and Advanced usage work well with "Build from source" and you can't use API in Section 2. Run LLM with Python API. If you want to use ```from_pretrain``` API, please back to main page and try to build whole project, the document is [here](../../../docs/installation.md).
+Warning: Don't create the build folder in intel-extension-for-transformers folder.<br />
+You should start in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder. 
+<br /> 
+Only API in Section 3.Run LLM with Python Script and Advanced usage work well with "Build from source" and you can't use API in Section 2. Run LLM with Python API. If you want to use ```from_pretrain``` API, please back to main page and try to build whole project, the document is [here](../../../../docs/installation.md).
 
 
 ```shell
