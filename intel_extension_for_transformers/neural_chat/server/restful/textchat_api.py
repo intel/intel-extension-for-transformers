@@ -24,7 +24,7 @@ from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
-import json
+import json, types
 from ...plugins import plugins, is_plugin_enabled
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
