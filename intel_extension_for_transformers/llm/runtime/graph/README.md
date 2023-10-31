@@ -49,7 +49,7 @@ Install from binary
 pip install intel-extension-for-transformers
 ```
 
-### 2. Run LLM with Python API
+### 2. Run LLM with Transformer-based API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
@@ -111,6 +111,29 @@ Argument description of generate function:
 | early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+
+### 3. Chat with LLaMA2
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    print("> ", end="")
+    prompt = input().strip()
+    if prompt == "quit":
+        break
+    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
+    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
+```
+
 
 
 ## How to use: Straightforward Python script
@@ -247,25 +270,4 @@ Argument description of inference.py:
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
-### 4. Chat with LLaMA2
-```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-
-model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-streamer = TextStreamer(tokenizer)
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-
-while True:
-    print("> ", end="")
-    prompt = input().strip()
-    if prompt == "quit":
-        break
-    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
-    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
-```
 
