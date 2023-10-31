@@ -114,19 +114,11 @@ Argument description of generate function:
 
 ## How to use: Straightforward Python script
 Build from source
-> :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How to use: Transformer-based API)
-
-
-
-----------------------------------
-
-Build from source </br>
-Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
+> :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 
 ```shell
 # Linux
 # make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build llm runtime with these cmds
 git submodule update --init --recursive
 mkdir build
 cd build
@@ -138,7 +130,6 @@ ninja
 # Windows
 # Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
 # make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build llm runtime with these cmds
 mkdir build
 cd build
 cmake ..
@@ -147,7 +138,7 @@ cmake --build . -j
 Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
 
 
-### 3. Run LLM with Python Script
+### 1. Run LLM with Python Script
 You can run LLM with one-click python script including conversion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
@@ -276,3 +267,4 @@ while True:
     outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
                 num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
 ```
+
