@@ -32,17 +32,6 @@
 
 
 import transformers
-from .gptj.modeling_gptj import GPTJForCausalLM
-from .llama.modeling_llama import LlamaForCausalLM
-from .bloom.modeling_bloom import BloomForCausalLM
-from .gpt_neox.modeling_gpt_neox import GPTNeoXForCausalLM
-from .opt.modeling_opt import OPTForCausalLM
 from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM
 # to use modeling modification base transformers 4.30.2:
 transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM = GPTBigCodeForCausalLM
-# to use modeling modification base transformers 4.28.1:
-transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
-transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
-transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
-transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
-transformers.models.opt.modeling_opt.OPTForCausalLM = OPTForCausalLM

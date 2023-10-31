@@ -163,6 +163,7 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
+            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             calib_func = quantization_config.calib_func
             if calib_func is None:
                 if quantization_config.tokenizer is None:
