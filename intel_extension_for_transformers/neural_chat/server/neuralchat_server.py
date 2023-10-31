@@ -119,7 +119,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
 
         pipeline_config = PipelineConfig(**params)
         self.chatbot = build_chatbot(pipeline_config)
-
         # init api
         api_list = list(task for task in config.tasks_list)
         api_router = setup_router(api_list, self.chatbot)

@@ -31,7 +31,8 @@ class GlobalPlugins:
             "cache": {"enable": False, "class": None, "args": {}, "instance": None},
             "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
             "ner": {"enable": False, "class": None, "args": {}, "instance": None},
-            "ner_int": {"enable": False, "class": None, "args": {}, "instance": None}
+            "ner_int": {"enable": False, "class": None, "args": {}, "instance": None},
+            "face_animation": {"enable": False, "class": None, "args": {}, "instance": None}
         })
 
 global_plugins = GlobalPlugins()

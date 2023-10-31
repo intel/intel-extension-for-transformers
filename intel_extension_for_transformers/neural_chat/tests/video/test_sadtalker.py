@@ -34,26 +34,24 @@ class TestSadTalker(unittest.TestCase):
         self.source_image = os.path.join(self.cur_directory, "sample_img.jpg")
         self.driven_audio = os.path.join(self.assets_path, "audio/welcome.wav")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.sadtalker = SadTalker(device=self.device)
+        self.sadtalker = SadTalker(device=self.device, bf16=True, p_num=4, enhancer=None, output_video_path='response.mp4')
 
     @classmethod
     def tearDownClass(self):
         for dir in ['logs', 'enhancer_logs', 'workspace', 'results']:
             shutil.rmtree(dir, ignore_errors=True)
         os.remove('response.mp4')
-        os.remove('response2.mp4')
         os.chdir(self.cur_directory)
         os.remove(self.source_image)
 
     def test_sadtalker_without_enhancer(self):
-        self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio, output_video_path="./response.mp4",
-                bf16=True, result_dir="./results", p_num=4, enhancer=None)
+        self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
         self.assertTrue(os.path.exists("./response.mp4"))
 
     def test_sadtalker_with_enhancer(self):
-        self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio, output_video_path="./response2.mp4",
-                bf16=True, result_dir="./results", p_num=4, enhancer='gfpgan')
-        self.assertTrue(os.path.exists("./response2.mp4"))
+        self.sadtalker.enhancer = 'gfpgan'
+        self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
+        self.assertTrue(os.path.exists("./response.mp4"))
 
 if __name__ == "__main__":
     unittest.main()

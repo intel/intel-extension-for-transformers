@@ -68,7 +68,6 @@ class CropAndExtract():
         coeff_path =  os.path.join(save_dir, pic_name+'.mat')  
         png_path =  os.path.join(save_dir, pic_name+'.png')  
 
-        #load input
         if not os.path.isfile(input_path):
             raise ValueError('input_path must be a valid path to video/image file')
         elif input_path.split('.')[-1] in ['jpg', 'png', 'jpeg']:
