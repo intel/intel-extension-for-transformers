@@ -22,7 +22,7 @@ import signal
 
 class SadTalker():
     """Faster Talking Face Animation."""
-    def __init__(self, device="cpu", bf16=False, p_num=1, enhancer="gfpgan", output_video_path="./response.wav",
+    def __init__(self, device="cpu", bf16=False, p_num=1, enhancer="gfpgan", output_video_path="./response.mp4",
                  result_dir="./results"):
         # prepare the models
         cur_dir = os.path.dirname(os.path.abspath(__file__))

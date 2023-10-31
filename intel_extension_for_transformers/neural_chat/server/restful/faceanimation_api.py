@@ -55,7 +55,7 @@ class FaceAnimationAPIRouter(APIRouter):
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
-            logger.info('Face animation finished.')
+            logger.info(f'Face animation finished. Generated video path: {video_path}')
             return FileResponse(video_path)
 
 
