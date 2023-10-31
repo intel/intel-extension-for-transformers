@@ -21,19 +21,16 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 8888
+port: 9000
 
-model_name_or_path: "Intel/neural-chat-7b-v1-1"
-device: "cpu"
+model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
+device: "auto"
 
 asr:
     enable: true
     args:
-        # support cpu, hpu, xpu, cuda
         device: "cpu"
-        # support openai/whisper series
         model_name_or_path: "openai/whisper-small"
-        # only can be set to true when the device is set to "cpu"
         bf16: false
 
 tts:
@@ -44,5 +41,13 @@ tts:
         stream_mode: true
         output_audio_path: "./output_audio"
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['voicechat']
+ner:
+    enable: true
+    args:
+        device: "cpu"
+        model_path: "./Llama-2-7b-chat-hf"
+        spacy_model: "en_core_web_lg"
+        bf16: true
+
+
+tasks_list: ['voicechat', 'photoai']
