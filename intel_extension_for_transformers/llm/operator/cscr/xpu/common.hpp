@@ -7,7 +7,7 @@
 #include <math.h>
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/sycl.hpp>
-#include <torch/extension.h>
+//#include <torch/extension.h>
 
 #include <vector>
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -32,30 +32,12 @@ struct int4x2 : bit4x2 {
     dst = dst < -8 ? -8 : dst;
     return static_cast<int8_t>(dst);
   }
+
+  operator uint8_t() const {
+    return static_cast<uint8_t>((x & 0x0F) | ((y & 0x0F) << 4));
+  }
 };
 } // namespace gblas
-
-template <typename data_type>
-inline data_type *alloc_device_and_init(
-    size_t size,
-    std::function<void(data_type *data, size_t elements)> init_func,
-    sycl::queue &queue, sycl::device &device, sycl::context &context) {
-  auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
-
-  for (size_t i = 0; i < size; ++i) {
-    init_func(host_ptr, i);
-  }
-
-  auto device_ptr = static_cast<data_type *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, size * sizeof(data_type), device, context));
-
-  queue.memcpy((void *)device_ptr, (void *)host_ptr, size * sizeof(data_type))
-      .wait();
-
-  free(host_ptr);
-
-  return device_ptr;
-}
 
 class CompressWei4Bit {
 public:

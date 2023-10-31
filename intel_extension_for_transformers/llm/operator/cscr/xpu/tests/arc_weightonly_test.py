@@ -18,7 +18,7 @@ import torch
 import intel_extension_for_pytorch
 import gbits_linear
 import gbits_quantize
-#import gbits_dequantize
+import gbits_dequantize
 import inspect
 from functools import wraps
 
@@ -54,20 +54,20 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     compress_wei = gbits_quantize.forward(
         raw_wei, transpose, blocksize, compute_type, weight_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    #gbits_dequantize.forward(
-    #    compress_wei, revert_wei, transpose, compute_type, weight_type)
+    gbits_dequantize.forward(
+        compress_wei, revert_wei, transpose, "fp32", weight_type)
     bias = torch.rand(n, dtype=torch.float)*10
-    #if dump_tensor_info:
-    #    print(revert_wei)
+    if dump_tensor_info:
+        print(revert_wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
     if compute_type == "fp16":
         tar_dst = tar_dst.to(torch.float16)
-    #if transpose:
-    #    revert_wei = torch.transpose(revert_wei, 0, 1)
-    #ref_dst = torch.matmul(ref_activation, revert_wei)
-    ref_dst = torch.matmul(ref_activation, raw_wei)
+    if transpose:
+        revert_wei = torch.transpose(revert_wei, 0, 1)
+    ref_dst = torch.matmul(ref_activation, revert_wei)
     gbits_linear.forward(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
+    tar_dst = tar_dst.to(torch.float)
     if add_bias:
         ref_dst += bias
     if dump_tensor_info:
@@ -76,6 +76,9 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     if torch.allclose(tar_dst, ref_dst, rtol=0.03):
         print("ok")
     else:
+        print(tar_dst)
+        print(ref_dst)
+        print(torch.max(torch.abs(tar_dst - ref_dst)))
         print("fail")
 
 configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}

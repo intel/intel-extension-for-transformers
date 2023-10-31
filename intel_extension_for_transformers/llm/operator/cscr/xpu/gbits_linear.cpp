@@ -114,7 +114,7 @@ void linear_fp32(sycl::queue queue, float *A, float *B, float *C,
   e.wait();
 }
 
-void xetla_linear_fp16(sycl::queue queue, fp16 *A, fp16 *B, fp16 *C,
+void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k);
 
 template <typename DST_T>
@@ -136,20 +136,15 @@ static void gbits_linear(const torch::Tensor &activation,
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
   auto queue = xpu::get_queue_from_stream(c10_stream);
 
-  torch::Tensor revert_weight;
-  if (compute_type == "fp32")
-    revert_weight = torch::zeros(activation.sizes()[1] * ldo,
-    torch::kFloat32);
-  else
-    revert_weight = torch::zeros(activation.sizes()[1] * ldo,
-    torch::kFloat16);
-  CompressWei4Bit obj(weight.data_ptr<int8_t>());
-
   uint32_t matrix_m = activation.sizes()[0];
   uint32_t matrix_n = ldo;
   uint32_t matrix_k = activation.sizes()[1];
 
+  torch::Tensor revert_weight;
+  CompressWei4Bit obj(weight.data_ptr<int8_t>());
   if (compute_type == "fp32") {
+    revert_weight = torch::zeros(activation.sizes()[1] * ldo,
+      torch::kFloat32);
     gpu_dequant<float>(queue, &obj, revert_weight.data_ptr<float>(),
                    false, compute_type, weight_type);
     float *A = activation.data_ptr<float>();
@@ -158,26 +153,9 @@ static void gbits_linear(const torch::Tensor &activation,
     linear_fp32(queue, A, B, C, matrix_m, matrix_n, matrix_k);
   }
   else {
-    gpu_dequant<at::Half>(queue, &obj, revert_weight.data_ptr<at::Half>(),
-                   false, compute_type, weight_type);
-    uint32_t size_a = matrix_m * matrix_k;
-    uint32_t size_b = matrix_k * matrix_n;
-    uint32_t size_c = matrix_m * matrix_n;
-    fp16 *A = (fp16 *)malloc_device(sizeof(fp16)*size_a, queue.get_device(), queue.get_context());
-    queue.memcpy(A, activation.data_ptr<at::Half>(), sizeof(fp16)*size_a);
-    fp16 *B = (fp16 *)malloc_device(sizeof(fp16)*size_b, queue.get_device(), queue.get_context());
-    queue.memcpy(B, revert_weight.data_ptr<at::Half>(), sizeof(fp16)*size_b);
-    fp16 *C = (fp16 *)malloc_device(sizeof(fp16)*size_c, queue.get_device(), queue.get_context());
-    queue.memcpy(C, output.data_ptr<at::Half>(), sizeof(fp16)*size_c);
-    std::cout << queue.get_device().get_info<sycl::info::device::name>() << std::endl;
-    //fp16 *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
-    //fp16 *B = reinterpret_cast<fp16 *>(revert_weight.data_ptr<at::Half>());
-    //fp16 *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
-    xetla_linear_fp16(queue, A, B, C, matrix_m, matrix_n, matrix_k);
-    queue.memcpy(output.data_ptr<at::Half>(), C, sizeof(fp16)*size_c).wait();
-    sycl::free(A, queue.get_context());
-    sycl::free(B, queue.get_context());
-    sycl::free(C, queue.get_context());
+    auto *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
+    auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
+    xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n, matrix_k);
   }
 }
 

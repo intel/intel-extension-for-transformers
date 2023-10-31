@@ -18,7 +18,7 @@ setup(
     name='gbits_dequantize',
     ext_modules=[
         DPCPPExtension(
-        name='gbits_dequantize', 
+        name='gbits_dequantize',
         extra_compile_args={'cxx': ['-std=c++17', '-fPIC']},
         sources=['gbits_dequantize.cpp'],
         )
