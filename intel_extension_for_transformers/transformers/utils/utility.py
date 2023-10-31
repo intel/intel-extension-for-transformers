@@ -88,6 +88,7 @@ def generate_dummy_past_key_values(input_bs, model):
     num_attention_heads = normalized_config.num_attention_heads
     hidden_size = normalized_config.hidden_size
     d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
     if hasattr(normalized_config, "num_key_value_heads"):
         num_key_value_heads = normalized_config.num_key_value_heads
 
@@ -95,24 +96,26 @@ def generate_dummy_past_key_values(input_bs, model):
         pkv = ()
         for nb_pkv in range(nb_pkv):
             if nb_pkv % 2 == 0:
-                new_shape = [input_bs * num_attention_heads, d_k, 1]
+                new_shape = [input_bs * num_key_value_heads, d_k, 1]
             else:
-                new_shape = [input_bs * num_attention_heads, 1, d_k]
+                new_shape = [input_bs * num_key_value_heads, 1, d_k]
             pkv = pkv + (torch.ones(size=new_shape),)
     elif model.config.model_type == "mistral":
         new_shape = [input_bs, num_key_value_heads, 1, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     elif model.config.model_type == "qwen":
-        new_shape = [input_bs, 1, num_attention_heads, d_k]
+        new_shape = [input_bs, 1, num_key_value_heads, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
-        new_shape = [input_bs, num_attention_heads, 1, d_k]
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
     return past_key_values
 
-def get_example_inputs_for_trace(model, return_type="tuple"):
+def get_example_inputs_for_trace(model, return_type="dict"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
@@ -123,12 +126,12 @@ def get_example_inputs_for_trace(model, return_type="tuple"):
     attention_mask = torch.ones(input_bs, input_len + 1)
     attention_mask[:,0] = 0
     example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    # do inference to check example_inputs formats
-    model(*example_inputs)
     if return_type != "tuple":
         example_inputs = {
             "input_ids": input_ids,
             "past_key_values": tuple(past_key_values),
             "attention_mask": attention_mask
         }
+        # do inference to check example_inputs correct.
+        out = model(**example_inputs)
     return example_inputs
