@@ -56,7 +56,7 @@ class UnitTest(unittest.TestCase):
                         --model_name_or_path "facebook/opt-125m"'
         else:
             command = f'neuralchat predict \
-                        --query "../../assets/audio/sample.wav" \
+                        --query "../../../assets/audio/sample.wav" \
                         --model_name_or_path "facebook/opt-125m"'
         result = None
         try:

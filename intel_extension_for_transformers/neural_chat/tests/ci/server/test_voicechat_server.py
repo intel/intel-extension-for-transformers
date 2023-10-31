@@ -56,7 +56,7 @@ class UnitTest(unittest.TestCase):
                 port=9000)
         else:
             self.client_executor(
-                audio_input_path="../../assets/audio/sample.wav",
+                audio_input_path="../../../assets/audio/sample.wav",
                 server_ip="127.0.0.1",
                 port=9000)
         self.assertEqual(os.path.exists("audio_0.wav"), True)
