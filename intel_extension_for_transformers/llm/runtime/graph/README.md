@@ -43,17 +43,15 @@ Install from binary
 ```shell
 pip install intel-extension-for-transformers
 ```
-
+</br>
 Build from source <br />
 Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
-<br />
-<br /> 
 
 
 ```shell
 # Linux
-# make sure your path: intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build with these cmds
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+# You can't use from_pretrain API if you build llm runtime  with these cmds
 git submodule update --init --recursive
 mkdir build
 cd build
@@ -64,8 +62,8 @@ ninja
 ```powershell
 # Windows
 # Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
-# make sure your path: intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build with these cmds
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+# You can't use from_pretrain API if you build llm runtime with these cmds
 mkdir build
 cd build
 cmake ..
