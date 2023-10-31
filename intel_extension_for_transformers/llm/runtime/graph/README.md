@@ -38,8 +38,9 @@ LLM Runtime supports the following models:
 
 ## How to Use
 There are two methods for utilizing the LLM runtime:
-- A Transformer-based API
-- A straightforward Python script for LLM runtime
+- [Transformer-based API](#How-to-use-Transformer-based-API)
+- [Straightforward Python script](#How-to-use-Straightforward-Python-script)
+
 
 ## How to use: Transformer-based API
 ### 1. Install
