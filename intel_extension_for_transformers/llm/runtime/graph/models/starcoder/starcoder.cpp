@@ -171,12 +171,12 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
           // head_dim, n_head_kv, N --> N, head_dim, n_head_kv
           struct ne_tensor* Vcur_permuted = ne_permute(ctx0, Vcur, 1, 2, 0, 3);
           struct ne_tensor* k = ne_view_3d(
-              ctx0, kv_self.k, n_embd / n_head, N, n_head, ne_element_size(kv_self.k) * n_embd / n_head,
-              ne_element_size(kv_self.k) * n_embd / n_head * n_ctx,
-              il * n_ctx * ne_element_size(kv_self.k) * n_embd + n_past * ne_element_size(kv_self.k) * n_embd / n_head);
+              ctx0, kv_self.k, head_dim, N, n_head, ne_element_size(kv_self.k) * head_dim,
+              ne_element_size(kv_self.k) * head_dim * n_ctx,
+              il * n_ctx * ne_element_size(kv_self.k) * n_embd + n_past * ne_element_size(kv_self.k) * head_dim);
           // N as col, n_embd as row
           struct ne_tensor* v =
-              ne_view_3d(ctx0, kv_self.v, N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
+              ne_view_3d(ctx0, kv_self.v, N, head_dim, n_head, n_ctx * ne_element_size(kv_self.v),
                          n_ctx * ne_element_size(kv_self.v) * head_dim,
                          il * n_ctx * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
           // concat
@@ -190,9 +190,9 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
 
         // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
         // [64, n_past + N, 12]
-        struct ne_tensor* K = ne_view_3d(
-            ctx0, kv_self.k, n_embd / n_head, N + n_past, n_head, ne_element_size(kv_self.k) * n_embd / n_head,
-            ne_element_size(kv_self.k) * n_embd / n_head * n_ctx, il * n_ctx * ne_element_size(kv_self.k) * n_embd);
+        struct ne_tensor* K =
+            ne_view_3d(ctx0, kv_self.k, head_dim, N + n_past, n_head, ne_element_size(kv_self.k) * head_dim,
+                       ne_element_size(kv_self.k) * head_dim * n_ctx, il * n_ctx * ne_element_size(kv_self.k) * n_embd);
 
         // GG: flash attention
         // struct ne_tensor * V =
@@ -224,9 +224,9 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
 
         // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
         // [n_past + N, 64, 12]
-        struct ne_tensor* V_trans = ne_view_3d(
-            ctx0, kv_self.v, N + n_past, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-            n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+        struct ne_tensor* V_trans =
+            ne_view_3d(ctx0, kv_self.v, N + n_past, head_dim, n_head, n_ctx * ne_element_size(kv_self.v),
+                       n_ctx * ne_element_size(kv_self.v) * head_dim, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
 
         // KQV = transpose(V) * KQ_soft_max
         // [64, N, 12]
