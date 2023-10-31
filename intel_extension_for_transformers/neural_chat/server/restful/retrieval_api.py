@@ -120,13 +120,22 @@ async def retrieval_chat(request: AskDocRequest):
                     "text": output,
                     "error_code": 0,
                 }
-                logger.info(f"[askdoc - chat] {ret}")
+                if '<' in output and '>' in output:
+                    output = output.replace('<', '').replace('>', '').replace(' ', '')
+                    if output.endswith('.') or output.endswith('\n'):
+                        output = output[:-1]
+                if '](' in output:
+                    output = output.split('](')[-1].replace(')', '')
+                    if output.endswith('.') or output.endswith('\n'):
+                        output = output[:-1]
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
-                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}" />'
+                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}"> {res.group()} </a>'
+                    logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    formatted_str = ret['text'].replace('\n', '<br/>')
+                    formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
             if link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
@@ -134,10 +143,12 @@ async def retrieval_chat(request: AskDocRequest):
                     if single_link == None:
                         continue
                     raw_link = single_link["source"]
-                    formatted_link = f"""<a style="color: blue; text-decoration: underline; \
-                                    border: 1px solid #0068B5; padding: 8px; margin: \
-                                    8px 8px 0px 0px; border-radius: 20px;"  \
-                                    href="{raw_link}">{raw_link}</a><br/>"""
+                    formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
+                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
+                            border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
+                            background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
+                            href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
+                    logger.info(f"[askdoc - chat] link below: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")

@@ -97,9 +97,10 @@ class Agent_QA():
     def pre_llm_inference_actions(self, model_name, query):
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
+        context = ''
         if self.retriever and self.search_type == "similarity_score_threshold":
             context, links = self.retriever.get_context(query)
-        if 'qa' not in intent.lower():
+        if 'qa' not in intent.lower() and context == '':
             print("Chat with AI Agent.")
             prompt = generate_prompt(query)
         else:
