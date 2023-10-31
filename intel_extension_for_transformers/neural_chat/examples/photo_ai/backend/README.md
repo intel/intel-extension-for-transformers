@@ -11,7 +11,7 @@ First, you need to install and configure the Conda environment:
 ```shell
 # Download and install Miniconda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash `Miniconda*.sh`
+bash Miniconda*.sh
 source ~/.bashrc
 ```
 
