@@ -468,8 +468,8 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
           "discarded)\n",
           params.n_discard);
   fprintf(stderr,
-          "  --shift-roped-k       RoPE-shift the cache K instead of recomputing after reaching context size (default: "
-          "disabled)\n");
+          "  --shift-roped-k       use ring-buffer and thus do not need re-computing after reaching context size "
+          "(default: disabled)\n");
   if (model_mlock_supported()) {
     fprintf(stderr, "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
   }
