@@ -45,6 +45,11 @@ pip install intel-extension-for-transformers
 ```
 
 Build from source
+Warning: Don't create the build folder in intel-extension-for-transformers folder.
+You should start in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder.  
+If you follow the steps of below source build, you can't use API in Section 2. Run LLM with Python API. Only API in Section 3.Run LLM with Python Script and Advanced usage work well.
+
+
 ```shell
 # Linux
 git submodule update --init --recursive
