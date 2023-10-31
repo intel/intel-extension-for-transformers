@@ -295,3 +295,68 @@ class DPOTrainer(Trainer):
         del self._stored_metrics[train_eval]
         # pylint: disable=E1101
         return super().log(logs)
+
+
+if is_optimum_habana_available(): # pragma: no cover
+    from optimum.habana import GaudiConfig, GaudiTrainer
+    class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
+        r"""Initialize habana
+        """
+
+        def __init__(
+            self,
+            model: Union[PreTrainedModel, nn.Module] = None,
+            ref_model: Optional[Union[PreTrainedModel, nn.Module]] = None,
+            beta: float = 0.1,
+            args: TrainingArguments = None,
+            data_collator: Optional[DataCollator] = None,
+            label_pad_token_id: int = -100,
+            padding_value: int = 0,
+            train_dataset: Optional[Dataset] = None,
+            eval_dataset: Optional[Union[Dataset, Dict[str, Dataset]]] = None,
+            tokenizer: Optional[PreTrainedTokenizerBase] = None,
+            max_length: Optional[int] = None,
+            peft_config: Optional[Dict] = None,
+            disable_dropout: bool = True,
+        ):
+            model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
+            model = get_peft_model(model, peft_config)
+            model.print_trainable_parameters()
+
+            self.is_peft_model = is_peft_available() and isinstance(model, PeftModel)
+
+            self.ref_model = ref_model
+
+            if disable_dropout: # pragma: no cover
+                disable_dropout_in_model(model)
+                disable_dropout_in_model(self.ref_model)
+
+            self.label_pad_token_id = label_pad_token_id
+            self.padding_value = padding_value
+
+            self.beta = beta
+
+            self._stored_metrics = defaultdict(lambda: defaultdict(list))
+
+            args.remove_unused_columns = False
+            gaudi_config = GaudiConfig()
+            gaudi_config.use_fused_adam = True
+            gaudi_config.use_fused_clip_norm = True
+
+            GaudiTrainer.__init__(
+                self,
+                model=model,
+                gaudi_config=gaudi_config,
+                args=args,
+                data_collator=data_collator,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset,
+                tokenizer=tokenizer,
+            )
+
+            if self.is_deepspeed_enabled: # pragma: no cover
+                # Read more about the issue in https://github.com/huggingface/trl/pull/687
+                self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
+                self.ref_model.eval()
+            else:
+                self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)

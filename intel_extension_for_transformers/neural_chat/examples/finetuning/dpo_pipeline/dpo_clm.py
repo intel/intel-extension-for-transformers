@@ -472,7 +472,7 @@ if __name__ == "__main__":
     if not hasattr(training_args, "use_habana"):
         from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
     else:
-        from utils import GaudiDPOTrainer as DPOTrainer
+        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(
