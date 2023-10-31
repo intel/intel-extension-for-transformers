@@ -6,7 +6,7 @@ template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
 void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
                                      sycl::buffer<int8_t, 2> &src,
                                      sycl::buffer<DST_T, 2> &dst,
-                                     sycl::buffer<float, 1> &scale, int k,
+                                     sycl::buffer<fp16, 1> &scale, int k,
                                      int n, int blksize, int k_pos, int n_pos) {
   q.submit([&](sycl::handler &h) {
     sycl::accessor s4_wei{src, h};
@@ -30,7 +30,7 @@ void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
 void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q, int8_t *src, DST_T *dst,
-                                     float *scale, int k, int n, int blksize,
+                                     fp16 *scale, int k, int n, int blksize,
                                      int k_pos, int n_pos) {
   q.submit([&](sycl::handler &h) {
     sycl::range global{TILE_K, TILE_N};
@@ -57,10 +57,10 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
                  const std::string &weight_type) {
   int8_t *bit4_wei =
       reinterpret_cast<int8_t *>(compress_wei->get_4bit_wei_ptr());
-  float *scale = reinterpret_cast<float *>(compress_wei->get_scale_ptr());
+  fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr());
   sycl::buffer<DST_T, 2> dst_buf(
       dequant_weight, sycl::range<2>(compress_wei->_K, compress_wei->_N));
-  sycl::buffer<float, 1> scale_buf(
+  sycl::buffer<fp16, 1> scale_buf(
       scale, sycl::range<1>(compress_wei->_K / compress_wei->_blksize *
                             compress_wei->_N));
   sycl::buffer<int8_t, 2> src_buf(
@@ -87,7 +87,7 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
 
 // device mem impl
 template <typename DST_T>
-void gpu_dequant(sycl::queue &q, int8_t *src, DST_T *dst, float *scale, int k,
+void gpu_dequant(sycl::queue &q, int8_t *src, DST_T *dst, fp16 *scale, int k,
                  int n, int blksize) {
   constexpr int KTILE = 1024, NTILE = 1024;
   constexpr int LOCAL_K = 32, LOCAL_N = 32;

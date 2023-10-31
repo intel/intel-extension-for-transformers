@@ -2,8 +2,6 @@
 #include "common.hpp"
 #define DEVICE_MEM_ALIGNMENT (64)
 
-using fp16 = gpu::xetla::fp16;
-
 template <typename T1, typename T3>
 void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
                   T3 *C, uint32_t matrix_m, uint32_t matrix_n,
@@ -68,18 +66,20 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     using perf_tuning_knob = gpu::xetla::group::perf_tuning_knob_t<sg_tile_k,
             prefetch_distance, periodic_sync_interval>;
     using compute_policy
-            = gpu::xetla::group::compute_policy_int4_dequantize_xmx<compute_attr,
-                    perf_tuning_knob, data_type_scale, data_type_zero_pt,
-                    dequant_s, gpu::xetla::gpu_arch::Xe>;
+            = gpu::xetla::group::compute_policy_bit4_dequantize_xmx<compute_attr,
+                    perf_tuning_knob,
+                    gpu::xetla::group::quant_type::S4_FULLRANGE,
+                    data_type_scale, dequant_s, gpu::xetla::gpu_arch::Xe>;
     using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
             mem_desc_a_t, mem_desc_b_t>;
 
     using epilogue_t = gpu::xetla::group::epilogue_t<
             gpu::xetla::group::epilogue_policy_unaligned<gpu::xetla::gpu_arch::Xe>, tile_shape,
             mem_desc_c_t>;
+    using group_swizzle = gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Xe>;
     using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    global_kslicing, local_kslicing, gpu::xetla::gpu_arch::Xe>,
+                    group_swizzle, global_kslicing, local_kslicing>,
             gemm_t, epilogue_t>;
 
     size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);
@@ -90,30 +90,13 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
             malloc_host(size_acc * sizeof(data_type_acc), context));
     auto *Cnt_h = static_cast<uint32_t *>(
             malloc_host(size_cnt * sizeof(uint32_t), context));
-    auto *scale_h = static_cast<data_type_scale *>(
-            malloc_host(size_scale * sizeof(data_type_scale), context));
-    auto *zero_pt_h = static_cast<data_type_zero_pt *>(
-            malloc_host(size_zero_pt * sizeof(data_type_zero_pt), context));
-    auto *B_h = static_cast<data_type_b *>(
-            malloc_host(size_b * sizeof(data_type_b), context));
 
-    for (unsigned i = 0; i < size_zero_pt; ++i) {
-        zero_pt_h[i] = 0.f;
-    }
     for (unsigned i = 0; i < size_acc; ++i) {
         Acc_h[i] = 0;
     }
     for (unsigned i = 0; i < size_cnt; ++i) {
         Cnt_h[i] = 0;
     }
-    for (unsigned i = 0; i < size_scale; ++i) {
-        scale_h[i] = static_cast<data_type_scale *>(B->get_scale_ptr())[i];
-    }
-    for (unsigned i = 0; i < size_b; ++i) {
-        B_h[i] = static_cast<data_type_b *>(B->get_4bit_wei_ptr())[i];
-    }
-
-    
 
     auto *A_d = static_cast<data_type_a *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
@@ -133,33 +116,27 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     auto *scale_d = static_cast<data_type_scale *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                     size_scale * sizeof(data_type_scale), device, context));
-    auto *zero_pt_d = static_cast<data_type_zero_pt *>(
-            aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_zero_pt * sizeof(data_type_zero_pt), device, context));
 
     queue.memcpy((void *)A_d, (void *)A, size_a * sizeof(data_type_a)).wait();
-    queue.memcpy((void *)B_d, (void *)B->get_4bit_wei_ptr(), size_b * sizeof(data_type_b)).wait();
+    queue.memcpy((void *)B_d, (void *)(B->get_4bit_wei_ptr()), size_b * sizeof(data_type_b)).wait();
     queue.memcpy((void *)C_d, (void *)C, size_c * sizeof(data_type_c)).wait();
     queue.memcpy((void *)Acc_d, (void *)Acc_h, size_acc * sizeof(data_type_acc))
             .wait();
     queue.memcpy((void *)Cnt_d, (void *)Cnt_h, size_cnt * sizeof(uint32_t))
             .wait();
-    queue.memcpy((void *)scale_d, (void *)B->get_scale_ptr(),
+    queue.memcpy((void *)scale_d, (void *)(B->get_scale_ptr()),
                  size_scale * sizeof(data_type_scale))
-            .wait();
-    queue.memcpy((void *)zero_pt_d, (void *)zero_pt_h,
-                 size_zero_pt * sizeof(data_type_zero_pt))
             .wait();
 
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A_d,
-            matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n,
-            zero_pt_d, matrix_n, Acc_d, Cnt_d);
-
+            matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n, Acc_d,
+            Cnt_d);
     cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
                   << std::endl;
+        exit(0);
     }
 
     size_t ops = 2 * matrix_m * matrix_n * matrix_k;
@@ -182,29 +159,23 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
             int start_out = i * dequant_s * matrix_n + j * 2;
             int start_scale = i * size_scale_n + j * 2;
             for (int ii = 0; ii < dequant_s; ii++) {
-                uint8_t data_in = B_h[start_in + ii * matrix_n / 2];
-                uint8_t data_zero_pt = zero_pt_h[start_zero_pt];
-                int8_t data_0 = int8_t(data_in & 0x0f);
-                int8_t data_1 = int8_t(data_in >> 4);
-                int8_t zero_pt_0 = int8_t((data_zero_pt & 0x0f) + 1);
-                int8_t zero_pt_1 = int8_t((data_zero_pt >> 4) + 1);
+                uint8_t data_in = reinterpret_cast<uint8_t *>(B->get_scale_ptr())[start_in + ii * matrix_n / 2];
+                int8_t data_0 = int8_t(data_in & 0x0f) - 8;
+                int8_t data_1 = int8_t(data_in >> 4) - 8;
                 dequantize_b[start_out + ii * matrix_n]
-                        = fp16(data_0 - zero_pt_0) * scale_h[start_scale];
+                        = fp16(data_0) * reinterpret_cast<data_type_scale *>(B->get_scale_ptr())[start_scale];
                 dequantize_b[start_out + ii * matrix_n + 1]
-                        = fp16(data_1 - zero_pt_1) * scale_h[start_scale + 1];
+                        = fp16(data_1) * reinterpret_cast<data_type_scale *>(B->get_scale_ptr())[start_scale + 1];
             }
         }
     }
 
     queue.memcpy((void *)C, (void *)C_d, size_c * sizeof(data_type_c)).wait();
 
-    free(scale_h, context);
-    free(zero_pt_h, context);
     free(A_d, context);
     free(B_d, context);
     free(C_d, context);
     free(scale_d, context);
-    free(zero_pt_d, context);
     free(Acc_h, context);
     free(Cnt_h, context);
     free(Acc_d, context);

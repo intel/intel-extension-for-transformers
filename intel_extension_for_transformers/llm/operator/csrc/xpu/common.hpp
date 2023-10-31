@@ -13,6 +13,8 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define DEVICE_MEM_ALIGNMENT (64)
 
+using fp16 = sycl::half;
+
 namespace gblas {
 struct bit4x2 {
   int8_t x : 4;
@@ -31,10 +33,6 @@ struct int4x2 : bit4x2 {
     dst = dst > 7 ? 7 : dst;
     dst = dst < -8 ? -8 : dst;
     return static_cast<int8_t>(dst);
-  }
-
-  operator uint8_t() const {
-    return static_cast<uint8_t>((x & 0x0F) | ((y & 0x0F) << 4));
   }
 };
 } // namespace gblas
@@ -109,7 +107,7 @@ private:
     return offset;
   }
   size_t get_4bit_wei_size() { return _N * _K / 2; }
-  size_t get_scale_size() { return _K / _blksize * _N * sizeof(float); }
+  size_t get_scale_size() { return _K / _blksize * _N * sizeof(fp16); }
   size_t get_zp_size() { return 0; }
   size_t get_buf_size() {
     return get_4bit_wei_size() + get_scale_size() + get_zp_size();

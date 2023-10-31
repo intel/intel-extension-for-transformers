@@ -3,7 +3,7 @@
 #include <torch/extension.h>
 
 void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
-                      int ld_src, int ld_dst, float *scales, int blocksize) {
+                      int ld_src, int ld_dst, fp16 *scales, int blocksize) {
   int raw_blocksize = blocksize;
   for (int i = 0; i < col; i++) {
     int align_row_loop = row / blocksize * blocksize;
@@ -18,8 +18,8 @@ void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
           max = v;
         }
       }
-      float scale = max / -8.f;
-      float rscale = scale != 0.f ? 1.f / scale : 0.f;
+      fp16 scale = max / -8.f;
+      fp16 rscale = scale != 0.f ? 1.f / scale : 0.f;
       scales[j / raw_blocksize * ld_dst + i] = scale;
       for (size_t ij = 0; ij < blocksize; ij++) {
         auto quant_v = srcptr[(j + ij) * ld_src + i] * rscale;
@@ -55,7 +55,7 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize, bool transpose,
   assert(!transpose);
   if (weight_type == "s4fullrange_scalef32") {
     std::vector<int8_t> s8quant_tmp(k * n);
-    float *scale = reinterpret_cast<float *>(compress_wei.get_scale_ptr());
+    fp16 *scale = reinterpret_cast<fp16 *>(compress_wei.get_scale_ptr());
     s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, n, n, scale, blksize);
     gblas::int4x2 *wei =
         reinterpret_cast<gblas::int4x2 *>(compress_wei.get_4bit_wei_ptr());

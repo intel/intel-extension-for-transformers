@@ -76,8 +76,6 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     if torch.allclose(tar_dst, ref_dst, rtol=0.03):
         print("ok")
     else:
-        print(tar_dst)
-        print(ref_dst)
         print(torch.max(torch.abs(tar_dst - ref_dst)))
         print("fail")
 
