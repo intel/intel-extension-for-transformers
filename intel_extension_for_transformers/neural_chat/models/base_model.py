@@ -212,7 +212,7 @@ class BaseModel(ABC):
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
-
+        
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
@@ -220,6 +220,7 @@ class BaseModel(ABC):
             query_include_prompt = True
 
         # plugin pre actions
+        link = []
         for plugin_name in get_registered_plugins():
             if is_plugin_enabled(plugin_name):
                 plugin_instance = get_plugin_instance(plugin_name)
