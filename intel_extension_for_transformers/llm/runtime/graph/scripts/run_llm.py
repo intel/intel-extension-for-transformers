@@ -40,10 +40,10 @@ model = Model()
 model.init_from_bin("llama", "/home/zhenweil/temp/ne_llama_q.bin", num_beams=1, do_sample=True, ctx_size = 1024, n_discard=-1, n_keep=4, threads=28, inf=False, seed=1) # n_keep=4, ctx_size = 15, n_discard=1
 # import pdb; pdb.set_trace()
 # # # # import pudb; pudb.set_trace()
-outputs = model.generate(inputs, streamer=streamer, interactive=False, ingore_prompt=False)
+outputs = model.generate(inputs, streamer=streamer, interactive=False, ignore_prompt=False)
 
 # prompt = "Please help calculate: one + one + one = ?"
 # inputs = tokenizer(prompt, return_tensors="pt").input_ids
-# outputs = model.generate(inputs, streamer=streamer, interactive=False, ingore_prompt=True)
+# outputs = model.generate(inputs, streamer=streamer, interactive=False, ignore_prompt=True)
 # # print()
 # # print(tokenizer.batch_decode(outputs))

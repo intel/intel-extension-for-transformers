@@ -57,7 +57,8 @@ class Model {
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p, float temperature,
-                  int min_new_tokens, float length_penalty, bool early_stopping, int n_keep, int n_discard, bool inf);
+                  int min_new_tokens, float length_penalty, bool early_stopping, int n_keep, int n_discard, bool inf,
+                  bool ignore_eos);
   void reinit();
   std::vector<model_token> generate(const std::vector<model_token>& input_ids);
   std::vector<model_token> generate_tokens(const std::vector<model_token>& input_ids);
@@ -82,7 +83,8 @@ class Model {
   bool token_eos = false;
   long int generate_count = 0;
   bool inf_out = false;
-  long long int count = 0;
+  long long int count = 500000;
+  bool ignore_eos_ = false;
 
   model_token post_process(float* logits);
   model_token post_greedy_search(float* logits);
@@ -94,7 +96,7 @@ class Model {
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
                        int threads, float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p,
                        float temperature, int min_new_tokens, float length_penalty, bool early_stopping, int n_keep,
-                       int n_discard, bool inf) {
+                       int n_discard, bool inf, bool ignore_eos) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -118,6 +120,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.n_keep = n_keep;
   params.n_discard = n_discard;
   inf_out = inf;
+  ignore_eos_ = ignore_eos;
 
   printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
          params.top_p);
@@ -172,8 +175,11 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   n_past += curr_input_ids.size();
 
   float* logits = model_get_logits(ctx);
-  logits[ctx->vocab.eos_token_id] = -99999;
-  logits[13] = -99999;
+  if (ignore_eos_) {
+    logits[ctx->vocab.eos_token_id] = -99999;
+    logits[13] = -99999;
+  }
+
   model_token next_token_id = post_process(logits);
   // fprintf(stderr, "\ntoken id: %d\n", next_token_id);
   // if (next_token_id == 13)
@@ -234,6 +240,8 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
     n_past += curr_input_ids.size();
 
     float* logits = model_get_logits(ctx);
+    if (ignore_eos_)
+      logits[ctx->vocab.eos_token_id] = -99999;
     model_token next_token_id = post_process(logits);
     curr_input_ids = {next_token_id};
     output_ids.push_back(next_token_id);
@@ -415,7 +423,7 @@ PYBIND11_MODULE(mistral_cpp, m)
            py::arg("threads") = 8, py::arg("repetition_penalty") = 1.1f, py::arg("num_beams") = 1,
            py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95, py::arg("temperature") = 0.8,
            py::arg("min_new_tokens") = 0, py::arg("length_penalty") = 1.0, py::arg("early_stopping") = false,
-           py::arg("n_keep") = 0, py::arg("n_discard") = -1, py::arg("inf") = false)
+           py::arg("n_keep") = 0, py::arg("n_discard") = -1, py::arg("inf") = false, py::arg("ignore_eos") = false)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
