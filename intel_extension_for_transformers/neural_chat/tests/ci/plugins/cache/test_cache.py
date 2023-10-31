@@ -40,7 +40,7 @@ class TestChatCache(unittest.TestCase):
         cache_plugin.init_similar_cache_from_config()
 
         prompt = "Tell me about Intel Xeon Scable Processors."
-        config = PipelineConfig()
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         response = chatbot.predict(prompt)
         cache_plugin.put(prompt, response)
