@@ -39,47 +39,17 @@ LLM Runtime supports the following models:
 ## How to Use
 There are two methods for utilizing the LLM runtime:
 </br>
-A Transformer-based API
+- A Transformer-based API
 </br>
-A straightforward Python script for LLM runtime.
+- A straightforward Python script for LLM runtime.
 
 ## Transformer-based API
 ### 1. Install
-
-
-
-### 1. Install LLM Runtime
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
 ```
-</br>
-Build from source <br />
-Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
-<br />
 
-```shell
-# Linux
-# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build llm runtime with these cmds
-git submodule update --init --recursive
-mkdir build
-cd build
-cmake .. -G Ninja
-ninja
-```
-
-```powershell
-# Windows
-# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
-# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
-# You can't use from_pretrain API if you build llm runtime with these cmds
-mkdir build
-cd build
-cmake ..
-cmake --build . -j
-```
-Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
 ### 2. Run LLM with Python API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
@@ -143,6 +113,41 @@ Argument description of generate function:
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 
+
+
+----------------------------------
+
+### 1. Install LLM Runtime
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
+</br>
+Build from source </br>
+Warning: If you want to use ```from_pretrain``` API, please follow [installation.md](../../../../docs/installation.md) to build whole project.
+
+```shell
+# Linux
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+# You can't use from_pretrain API if you build llm runtime with these cmds
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake .. -G Ninja
+ninja
+```
+
+```powershell
+# Windows
+# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+# You can't use from_pretrain API if you build llm runtime with these cmds
+mkdir build
+cd build
+cmake ..
+cmake --build . -j
+```
+Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
 
 
 ### 3. Run LLM with Python Script
