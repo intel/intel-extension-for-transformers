@@ -149,14 +149,14 @@ int main(int argc, char** argv) {
   if (params.mem_test) {
     {
       const std::vector<model_token> tmp(params.n_batch, ctx->vocab.bos_token_id);
-      model_eval(ctx, tmp.data(), tmp.size(), 0, params.n_threads);
+      model_eval(ctx, tmp.data(), tmp.size(), 0, 0, params.n_threads);
     }
 
     {
       const std::vector<model_token> tmp = {
           0,
       };
-      model_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_threads);
+      model_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_predict - 1, params.n_threads);
     }
 
     model_print_timings(ctx);
@@ -182,13 +182,13 @@ int main(int argc, char** argv) {
       std::fclose(fp);
 
       session_tokens.resize(params.n_ctx);
-      size_t n_token_count_out = 0;
+      size_t n_token_total_out = 0;
       if (!model_load_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.capacity(),
-                                   &n_token_count_out)) {
+                                   &n_token_total_out)) {
         fprintf(stderr, "%s: error: failed to load session file '%s'\n", __func__, path_session.c_str());
         return 1;
       }
-      session_tokens.resize(n_token_count_out);
+      session_tokens.resize(n_token_total_out);
 
       fprintf(stderr, "%s: loaded a session with prompt size of %d tokens\n", __func__, (int)session_tokens.size());
     } else {
@@ -355,7 +355,8 @@ int main(int argc, char** argv) {
   bool input_echo = true;
   bool need_to_save_session = !path_session.empty() && n_matching_session_tokens < embd_inp.size();
 
-  int n_past = 0;
+  int n_past = 0;   // offset to which the kv-cache will be stored
+  int n_total = 0;  // total number of tokens evaluated
   int n_remain = params.n_predict;
   int n_consumed = 0;
   int n_session_consumed = 0;
@@ -392,12 +393,17 @@ int main(int argc, char** argv) {
         n_past = std::max(1, params.n_keep);
 
         int n_discard = params.n_discard;
-        if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
-        // drop n_discard tokens
-        embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard, last_n_tokens.end() - embd.size());
+        if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
+          if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
+          // drop n_discard tokens
+          embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
+                      last_n_tokens.end() - embd.size());
 
-        // stop saving session if we run out of context
-        path_session.clear();
+          // stop saving session if we run out of context
+          path_session.clear();
+        } else {
+          NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
+        }
       }
 
       // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
@@ -409,6 +415,7 @@ int main(int argc, char** argv) {
             break;
           }
 
+          n_total++;
           n_past++;
           n_session_consumed++;
 
@@ -429,11 +436,12 @@ int main(int argc, char** argv) {
         if (n_eval > params.n_batch) {
           n_eval = params.n_batch;
         }
-        if (model_eval(ctx, &embd[i], n_eval, n_past, params.n_threads)) {
+        if (model_eval(ctx, &embd[i], n_eval, n_past, n_total, params.n_threads)) {
           fprintf(stderr, "%s : failed to eval\n", __func__);
           return 1;
         }
         n_past += n_eval;
+        n_total += n_eval;
       }
 
       {
@@ -608,7 +616,7 @@ int main(int argc, char** argv) {
         }
       }
 
-      if (n_past > 0 && is_interacting) {
+      if (n_total > 0 && is_interacting) {
         if (params.instruct) {
           printf("\n> ");
         }
@@ -658,7 +666,7 @@ int main(int argc, char** argv) {
         input_echo = false;  // do not echo this again
       }
 
-      if (n_past > 0) {
+      if (n_total > 0) {
         is_interacting = false;
       }
     }
