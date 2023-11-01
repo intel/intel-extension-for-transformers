@@ -202,3 +202,4 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 ## 💁Collaborations
 
 Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:itrex.maintainers@intel.com), and we look forward to our collaborations on Intel Extension for Transformers!
+
