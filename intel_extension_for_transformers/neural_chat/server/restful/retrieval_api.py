@@ -130,7 +130,8 @@ async def retrieval_chat(request: AskDocRequest):
                         output = output[:-1]
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
-                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}"> {res.group()} </a>'
+                    formatted_link = f'''<a style="color: blue; text-decoration: \
+                        underline;"   href="{res.group()}"> {res.group()} </a>'''
                     logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
                 else:
@@ -170,7 +171,8 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     )
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
+            answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
     logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
