@@ -301,7 +301,7 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-try: # pragma: no cover
+try:
     from optimum.habana import GaudiConfig, GaudiTrainer
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
         r"""Initialize habana
