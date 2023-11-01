@@ -16,7 +16,8 @@
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
-void basic_gemm_run(uint32_t iter) {
+template <gpu_arch arch_tag_>
+void basic_gemm_run(sycl::queue queue, uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
@@ -35,11 +36,6 @@ void basic_gemm_run(uint32_t iter) {
     using data_type_c = bf16;
     using data_type_acc = float;
 
-    // Turn on the profiling property to facilitate subsequent profiling
-    sycl::property_list properties {sycl::property::queue::enable_profiling()};
-
-    // Define SYCL queue, context and device
-    auto queue = sycl::queue(properties);
     auto context = queue.get_info<info::queue::context>();
     auto device = queue.get_info<info::queue::device>();
 
@@ -109,8 +105,8 @@ void basic_gemm_run(uint32_t iter) {
                 // wrap the nd_range to XeTLA range
 
                 // Performance tuning setting based on different shapes
-                static constexpr uint32_t periodic_sync_interval = 8;
-                static constexpr uint32_t prefetch_distance = 3;
+                static constexpr uint32_t periodic_sync_interval = 0;
+                static constexpr uint32_t prefetch_distance = 1;
                 // should larger than 8
                 static constexpr uint32_t k_stride = 32;
 
@@ -189,13 +185,14 @@ void basic_gemm_run(uint32_t iter) {
 
                 // Step 6: real calculation with accumulator varibales which suppose
                 // will be in register.
-                gemm_t::matAcc_t matAcc;
+                typename gemm_t::matAcc_t matAcc;
                 matAcc.init(0);
 
-                gemm_t::arguments_t gemm_args(md_a, md_b, inner_loop_count);
+                typename gemm_t::arguments_t gemm_args(
+                        md_a, md_b, inner_loop_count);
 
                 // the results is in the matAcc rather than real output C
-                gemm_t::work_group_t g(item.get_local_linear_id());
+                typename gemm_t::work_group_t g(item.get_local_linear_id());
                 gemm(g, matAcc, gemm_args);
 
                 // Step 7: write the results from matACC to real output C
@@ -226,6 +223,20 @@ void basic_gemm_run(uint32_t iter) {
 int main() {
     // This case shows how to use batch-reduce (br) GEMM microkernel to
     // solve a standard GEMM
-    basic_gemm_run(10);
+    // Turn on the profiling property to facilitate subsequent profiling
+    sycl::property_list properties {sycl::property::queue::enable_profiling()};
+
+    // Define SYCL queue, context and device
+    auto queue = sycl::queue(properties);
+    auto device = queue.get_device();
+
+    // Detect the execution size, 8 for Arc, 16 for PVC.
+    int ExecSize
+            = device.get_info<ext::intel::info::device::gpu_eu_simd_width>();
+    if (ExecSize == 8) {
+        basic_gemm_run<gpu_arch::Arc>(queue, 10);
+    } else {
+        basic_gemm_run<gpu_arch::Xe>(queue, 10);
+    }
     return (0);
 }

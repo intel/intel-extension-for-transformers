@@ -35,7 +35,8 @@ struct check_prefetch_type {
     static constexpr bool is_global_block_1d_xe
             = ((payload_t::memory_space == mem_space::global)
                     && (payload_t::tile_desc::tile_size_y == 1)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag == gpu_arch::Xe
+                            || payload_t::arch_tag == gpu_arch::Arc));
 
     static constexpr bool is_local_xe
             = ((payload_t::memory_space == mem_space::local)
@@ -87,19 +88,23 @@ tile_prefetch(payload_t &payload) {
     using prefetch_dtype = typename payload_t::prefetch_dtype;
     constexpr uint32_t prefetch_len
             = tile_desc::tile_size_x / payload_t::scale_factor;
-    if constexpr (prefetch_len >= 64) {
+    // TODO (read from arch register info)
+    constexpr uint32_t reg_in_bytes
+            = payload_t::arch_tag == gpu_arch::Xe ? 64 : 32;
+    if constexpr (prefetch_len >= reg_in_bytes) {
 #pragma unroll
-        for (int j = 0; j < prefetch_len / 64; j++) {
-            uint32_t offset_x = j * 64 * payload_t::scale_factor;
+        for (int j = 0; j < prefetch_len / reg_in_bytes; j++) {
+            uint32_t offset_x = j * reg_in_bytes * payload_t::scale_factor;
             uint32_t address_offset = offset_x * sizeof(dtype);
-            xetla_prefetch_global<prefetch_dtype, 64, data_size::default_size,
-                    L1, L2>(
+            xetla_prefetch_global<prefetch_dtype, reg_in_bytes,
+                    data_size::default_size, L1, L2>(
                     payload.base_ptr, payload.base_offset + address_offset);
         }
     }
-    constexpr uint32_t tail_len = prefetch_len % 64;
-    uint32_t tail_offset = prefetch_len / 64 * 64 * payload_t::scale_factor;
-    detail::process_1d_tail<tail_len, 32, L1, L2, payload_t>(
+    constexpr uint32_t tail_len = prefetch_len % reg_in_bytes;
+    uint32_t tail_offset = prefetch_len / reg_in_bytes * reg_in_bytes
+            * payload_t::scale_factor;
+    detail::process_1d_tail<tail_len, reg_in_bytes / 2, L1, L2, payload_t>(
             payload, tail_offset);
 }
 

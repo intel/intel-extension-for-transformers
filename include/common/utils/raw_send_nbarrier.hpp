@@ -1,18 +1,18 @@
 /*******************************************************************************
-* Copyright (c) 2022-2023 Intel Corporation
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
+ * Copyright (c) 2022-2023 Intel Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
 
 /// @file
 /// C++ API
@@ -35,23 +35,27 @@ enum class nbarrier_role : uint8_t {
 ///
 /// @brief xetla nbarrier definition API.
 ///  This is the API to define a named barrier within subgroup.
-/// @tparam num_producers is the number of subgroups participating the barrier as producer.
-/// @tparam num_consumers is the number of subgroups participating the barrier as consumer.
+/// @tparam num_producers is the number of subgroups participating the barrier
+/// as producer.
+/// @tparam num_consumers is the number of subgroups participating the barrier
+/// as consumer.
 ///
 template <uint8_t num_producers = 1, uint8_t num_consumers = 1,
         gpu_arch arch_tag = gpu_arch::Xe>
 struct xetla_nbarrier_t {
     ///
     /// @brief Description of named barrier objection.
-    /// Structure is defined in [here](https://gfxspecs.intel.com/Predator/Home/Index/57499).
+    /// Structure is defined in
+    /// [here](https://gfxspecs.intel.com/Predator/Home/Index/57499).
     ///
     xetla_vector<uint32_t, 16> nbar;
     uint32_t barrier_id;
 
     /// @param role is the role of subgroup when participating the barrier.
     /// @param nbarrier_id [in] is the id of the barrier.
-    /// note:  all subgroups participating the barrier should have the same barrier_id.
-    /// Here is the bspec link https://gfxspecs.intel.com/Predator/Home/Index/54006
+    /// note:  all subgroups participating the barrier should have the same
+    /// barrier_id. Here is the bspec link
+    /// https://gfxspecs.intel.com/Predator/Home/Index/54006
     __XETLA_API void init_nbarrier(uint8_t nbarrier_id,
             nbarrier_role role = nbarrier_role::producer_consumer) {
         nbar[2] = (uint32_t)nbarrier_id | uint32_t((uint8_t)role << 14)
@@ -74,6 +78,45 @@ struct xetla_nbarrier_t {
     /// @brief named barrier wait within subgroup.
     ///
     __XETLA_API void wait() { named_barrier_wait(barrier_id); }
+
+    /// @brief named barrier signal from subgroup.
+    ///
+    __XETLA_API void arrive_wait() {
+        arrive();
+        wait();
+    }
+};
+
+template <uint8_t num_producers, uint8_t num_consumers>
+struct xetla_nbarrier_t<num_producers, num_consumers, gpu_arch::Arc> {
+    ///
+    /// @brief Description of named barrier objection.
+    /// Structure is defined in
+    /// [here](https://gfxspecs.intel.com/Predator/Home/Index/57499).
+    ///
+    // xetla_vector<uint32_t, 16> nbar;
+    // uint32_t barrier_id;
+
+    /// @param role is the role of subgroup when participating the barrier.
+    /// @param nbarrier_id [in] is the id of the barrier.
+    /// note:  all subgroups participating the barrier should have the same
+    /// barrier_id. Here is the bspec link
+    /// https://gfxspecs.intel.com/Predator/Home/Index/54006
+    __XETLA_API void init_nbarrier(uint8_t nbarrier_id,
+            nbarrier_role role = nbarrier_role::producer_consumer) {}
+
+    /// @brief Generic work-group split barrier.
+    ///
+    __XETLA_API void arrive() {
+        // __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::signal>();
+    }
+
+    /// @brief named barrier wait within subgroup.
+    ///
+    __XETLA_API void wait() {
+        // __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::wait>();
+        __ESIMD_NS::barrier();
+    }
 
     /// @brief named barrier signal from subgroup.
     ///

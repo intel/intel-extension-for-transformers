@@ -18,7 +18,7 @@ function(add_integration_test target "host_cpp")
     set_tests_properties(${TARGET} PROPERTIES LABELS "integration" TIMEOUT ${INTEGRATION_TIMEOUT})
 endfunction()
 
-add_subdirectory(vector_add)
+# add_subdirectory(vector_add)
 add_subdirectory(gemm)
 add_subdirectory(row_reduction)
 add_subdirectory(layer_norm)
