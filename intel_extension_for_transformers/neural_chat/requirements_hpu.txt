@@ -4,8 +4,10 @@ peft
 fschat
 num2words
 speechbrain
-paddlepaddle
+paddlepaddle==2.4.2
+paddlenlp==2.5.2
 paddlespeech==1.4.1
+paddle2onnx==1.0.6
 shortuuid
 gptcache
 evaluate
