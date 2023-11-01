@@ -66,7 +66,7 @@ Users could follow below commands to get the checkpoints from github repository 
 git lfs install
 git clone https://huggingface.co/meta-llama/Llama-2-7b
 ```
-#### MPT 
+### MPT
 To acquire the checkpoints and tokenizer, the user can get those files from [mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b).
 Users could follow below commands to get the checkpoints from github repository.
 ```bash
@@ -75,6 +75,22 @@ git clone https://huggingface.co/mosaicml/mpt-7b
 ```
 For missing GPTNeoTokenizer issue, we advise the user to modify the local `tokenizer_config.json` file according to the following recommendation:
 1. The `tokenizer_class` in `tokenizer_config.json` should be changed from `GPTNeoXTokenizer` to `GPTNeoXTokenizerFast`;
+
+### Falcon
+To acquire the checkpoints and tokenizer, the user can get those files from [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b).
+Users could follow below commands to get the checkpoints from github repository.
+```bash
+git lfs install
+git clone https://huggingface.co/tiiuae/falcon-7b
+```
+
+### Mistral
+To acquire the checkpoints and tokenizer, the user can get those files from [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1).
+Users could follow below commands to get the checkpoints from github repository.
+```bash
+git lfs install
+git clone https://huggingface.co/mistralai/Mistral-7B-v0.1
+```
 
 ### FLAN-T5
 The user can obtain the [release model](https://huggingface.co/google/flan-t5-xl) from Huggingface.
@@ -254,6 +270,56 @@ python finetune_clm.py \
         --trust_remote_code True \
         --use_fast_tokenizer True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --no_cuda \
+```
+
+**For Falcon**, use the below command line for finetuning on the Alpaca dataset.
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "tiiuae/falcon-7b" \
+        --bf16 True \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 1e-4 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./falcon_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer True \
+        --no_cuda \
+```
+
+**For Mistral**, use the below command line for finetuning on the Alpaca dataset.
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "mistralai/Mistral-7B-v0.1" \
+        --bf16 True \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 1e-4 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./mistral_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer True \
         --no_cuda \
 ```
 
