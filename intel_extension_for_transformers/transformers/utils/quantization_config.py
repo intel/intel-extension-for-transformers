@@ -309,4 +309,5 @@ class SmoothQuantConfig:
     calib_iters: int = 100
     alpha: float = 0.5
     op_type_dict: dict = None
+    op_name_dict: dict = None
     excluded_precisions: list = field(default_factory=list)

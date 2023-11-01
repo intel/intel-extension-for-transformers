@@ -43,7 +43,7 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
         elif model_name == "mpt":
             import intel_extension_for_transformers.llm.runtime.graph.mpt_cpp as cpp_model
-        elif model_name == "starcoder":
+        elif model_name == "gpt_bigcode" or model_name == "starcoder":
             import intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp as cpp_model
         elif model_name == "opt":
             import intel_extension_for_transformers.llm.runtime.graph.opt_cpp as cpp_model
@@ -84,7 +84,6 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-
     def init_from_bin(self, model_name, model_path, **kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
@@ -94,6 +93,7 @@ class Model:
         self.__import_package(model_name)
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
+
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
         if self.model is None:
@@ -120,8 +120,12 @@ class Model:
                 sys.exit(1)
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
+            if interactive:
+                self.model.reset_token_end()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
+                if len(out) == 0:
+                    break
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
             streamer.end()

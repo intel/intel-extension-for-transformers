@@ -39,6 +39,7 @@ jobs:
                  pip uninstall intel-extension-for-transformers -y; \
                  pip install -r requirements.txt; \
                  python setup.py install; \
+                 pip install -r intel_extension_for_transformers/neural_chat/requirements.txt; \
                  python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container

@@ -27,6 +27,8 @@ class SparseBM25Retriever():
     def query_the_database(self, query):
         documents = self.retriever.retrieve(query)
         context = ""
+        links = []
         for doc in documents:
             context = context + doc.content + " "
-        return context.strip()
+            links.append(doc.meta)
+        return context.strip(), links

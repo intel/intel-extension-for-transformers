@@ -241,7 +241,7 @@ def check_submodules():
 
 if __name__ == '__main__':
     ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr/cpu', lib_only=True)]
+        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc/cpu', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
