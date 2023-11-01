@@ -10,7 +10,9 @@ tasks:
   - init: |
       sudo apt-get update
       sudo apt-get install -y docker.io
-    command: docker-compose up
+      docker-compose build
+      docker-compose up
+    command: python app.py
 
 ports:
   - 8888
@@ -19,3 +21,4 @@ vscode:
   extensions:
     - ms-python.python
     - dbaeumer.vscode-eslint
+
