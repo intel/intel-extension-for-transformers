@@ -496,7 +496,7 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
     <th>Task</th>
     <th>Dataset</th>
     <th>Distillation Teacher</th>
-    <th>Pruning Approch</th>
+    <th>Pruning Approach</th>
     <th>Pruning Type</th>
   </tr>
 </thead>
