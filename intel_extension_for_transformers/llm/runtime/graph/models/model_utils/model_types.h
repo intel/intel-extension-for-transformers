@@ -379,6 +379,8 @@ struct model_input {
   uint32_t n_total = 0;
   // request id
   int request_idx = -1;
+  // beam id in beam search
+  int beam_idx = 0;
   // TODO padding related, mask
   // bool padding = false;
   // int padding_side = 0; (left or right)

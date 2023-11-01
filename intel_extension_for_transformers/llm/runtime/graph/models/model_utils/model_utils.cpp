@@ -2358,6 +2358,7 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
         /*.n_past             =*/n_past[request_running_indices.back()],
         /*.n_total            =*/n_total[request_running_indices.back()],
         /*.request_idx        =*/request_running_indices.back(),
+        /*.beam_idx           =*/cur_beams[i].beam_idx,
     });
     batch_size++;
     beam_indices.push_back(cur_beams[i].beam_idx);
@@ -2597,7 +2598,6 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
   n_prompt_tokens.assign(request_bs, n_tokens[0]);
   n_total.assign(request_bs, 0);
   std::vector<std::vector<model_token>> beam_search_response(request_bs);
-  MODEL_ASSERT(beam_search_response.size() == request_bs);  // remove
 
   ctx->batch_size = request_bs;
   ctx->request_running_bs = request_bs;

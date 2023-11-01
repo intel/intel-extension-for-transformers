@@ -56,7 +56,11 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
   // TODO static batching for now
   const int N = inputs[0].n_tokens;
   const int n_past = inputs[0].n_past;
-
+  const int beam_size = lctx.beam_search ? lctx.beam_size : 1;
+  std::vector<int> block_ids;
+  for (int i = 0; i < batch_size; ++i) {
+    block_ids.push_back(inputs[i].request_idx * beam_size + inputs[i].beam_idx);
+  }
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -189,7 +193,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
       std::vector<ne_tensor*> Vcur_bs(batch_size);
       std::vector<ne_tensor*> k_bs(batch_size);
       std::vector<ne_tensor*> v_bs(batch_size);
+      // cache = [tokens, beams, requests, layers],
+      // tokens = [head_dim, head_num, n_ctx] (may different orders)
       for (int i = 0; i < batch_size; ++i) {
+        const int block_idx = block_ids[i];
         if (run_mha_fp16) {
           // batch V
           Vcur_bs[i] =
@@ -199,7 +206,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
           v_bs[i] =
               ne_view_1d(ctx0, kv_self.v, head_size * n_head * N * 1,
                          (ne_element_size(kv_self.v) * head_size * n_head) * (il * n_ctx * kv_n_ctx_block + n_past) +
-                             i * n_ctx * head_size * n_head * ne_element_size(kv_self.v));
+                             block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.v));
           // batch K
           Kcur_bs[i] = ne_permute(
               ctx0,
@@ -208,11 +215,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
                                        i * ne_element_size(Kcur) * head_size * n_head * N),
                             head_size, n_head, N, 1),
               1, 2, 0, 3);
-          k_bs[i] = ne_view_4d(
-              ctx0, kv_self.k, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.k),
-              n_ctx * ne_element_size(kv_self.k) * head_size, n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
-              ((il * n_ctx) * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block +
-               i * n_ctx * head_size * n_head * ne_element_size(kv_self.k) + n_past * ne_element_size(kv_self.k)));
+          k_bs[i] = ne_view_4d(ctx0, kv_self.k, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.k),
+                               n_ctx * ne_element_size(kv_self.k) * head_size,
+                               n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
+                               ((il * n_ctx) * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block +
+                                block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.k) +
+                                n_past * ne_element_size(kv_self.k)));
         } else {
           // batch K
           Kcur_bs[i] =
@@ -225,7 +233,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
               ctx0, kv_self.k, n_embd / n_head, N, n_head, 1, ne_element_size(kv_self.k) * n_embd / n_head,
               ne_element_size(kv_self.k) * n_embd / n_head * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
               ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
-               i * n_ctx * n_embd * ne_element_size(kv_self.k) +
+               block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
                n_embd / n_head * n_past * ne_element_size(kv_self.k)));
 
           // batch V
@@ -236,11 +244,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
                                        i * ne_element_size(Vcur) * head_size * n_head * N),
                             head_size, n_head, N, 1),
               1, 2, 0, 3);
-          v_bs[i] = ne_view_4d(
-              ctx0, kv_self.v, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.v),
-              n_ctx * ne_element_size(kv_self.v) * head_size, n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
-              ((il * n_ctx) * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block +
-               i * n_ctx * head_size * n_head * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
+          v_bs[i] = ne_view_4d(ctx0, kv_self.v, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.v),
+                               n_ctx * ne_element_size(kv_self.v) * head_size,
+                               n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
+                               ((il * n_ctx) * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block +
+                                block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.v) +
+                                n_past * ne_element_size(kv_self.v)));
         }
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));

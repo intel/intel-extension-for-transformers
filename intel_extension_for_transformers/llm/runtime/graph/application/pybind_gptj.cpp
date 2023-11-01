@@ -47,6 +47,7 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
       /*.n_past             =*/static_cast<uint32_t>(n_past),
       /*.n_total            =*/static_cast<uint32_t>(n_past),
       /*.request_idx        =*/0,
+      /*.beam_idx           =*/0,
   }};
   if (model_eval(ctx, inputs, n_threads)) {
     fprintf(stderr, "%s : failed to eval\n", __func__);
@@ -74,7 +75,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.temp = temp;
   params.repeat_penalty = repeat_penalty;
   params.perplexity = perplexity;
-  params.batch_size = batch_size;
+  params.batch_size = 2;  // batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
   params.memory_type = KV_MEM_TYPE_F16;  // TODO MEMORY_AUTO for MHA
@@ -113,6 +114,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
         /*.n_past             =*/0,
         /*.n_total            =*/0,
         /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
     }};
     res = beam_search(lctx, n_predict, inputs, n_threads)[0];
   } else {
@@ -174,14 +176,30 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
     std::vector<model_input> inputs = {model_input{
-        /*.tokens             =*/embd_inp.data(),
-        /*.n_tokens           =*/static_cast<uint32_t>(embd_inp.size()),
-        /*.n_prompt_tokens    =*/0,
-        /*.n_past             =*/0,
-        /*.n_total            =*/0,
-        /*.request_idx        =*/0,
-    }};
-    embd = beam_search(lctx, n_predict, inputs, N_threads)[0];
+                                           /*.tokens             =*/embd_inp.data(),
+                                           /*.n_tokens           =*/static_cast<uint32_t>(embd_inp.size()),
+                                           /*.n_prompt_tokens    =*/0,
+                                           /*.n_past             =*/0,
+                                           /*.n_total            =*/0,
+                                           /*.request_idx        =*/0,
+                                           /*.beam_idx           =*/0,
+                                       },
+                                       model_input{
+                                           /*.tokens             =*/embd_inp.data(),
+                                           /*.n_tokens           =*/static_cast<uint32_t>(embd_inp.size()),
+                                           /*.n_prompt_tokens    =*/0,
+                                           /*.n_past             =*/0,
+                                           /*.n_total            =*/0,
+                                           /*.request_idx        =*/1,
+                                           /*.beam_idx           =*/0,
+                                       }};
+    auto ret = beam_search(lctx, n_predict, inputs, N_threads);
+    embd = ret[1];
+    for (int i = 0; i < ret.size(); ++i) {
+      std::cout << "batch " << i << " outputs: " << std::endl;
+      for (auto t : ret[i]) std::cout << t << ",";
+      std::cout << std::endl;
+    }
     for (auto id : embd_inp) {
       res += model_token_to_str(lctx, id);
     }
