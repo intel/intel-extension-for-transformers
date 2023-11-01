@@ -1,8 +1,8 @@
 transformers>=4.32.0
 peft
 fschat
-torch==2.0.1
-torchaudio==2.0.2
+torch==2.1.0
+torchaudio==2.1.0
 intel_extension_for_pytorch
 num2words
 speechbrain
@@ -29,7 +29,7 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-sentence_transformers
+git+https://github.com/UKPLab/sentence-transformers.git
 unstructured
 markdown
 rouge_score
@@ -37,3 +37,9 @@ openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
+spacy
+neural-compressor==2.3.1
+onnxruntime==1.15.0
+pymysql
+deepface
+exifread

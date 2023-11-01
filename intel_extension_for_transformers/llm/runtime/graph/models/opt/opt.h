@@ -48,7 +48,6 @@ static const model_scratch opt_mem_req(int n_layers) {
       return {3072ull * MB, 3072ull * MB, 6144ull * MB};
     case 64:
       return {4096ull * MB, 4096ull * MB, 8192ull * MB};
-    // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }
@@ -60,13 +59,13 @@ class OPT : public IModel {
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab, word_embed_proj_dim, max_seq_len;
   bool do_layer_norm_before = true;
-  int n_ctx, n_gpu_layer;
+  int n_gpu_layer;
   ne_type memory_type;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+  void init(const char* path_model, model_context& lctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
             bool vocab_only_) override;
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };

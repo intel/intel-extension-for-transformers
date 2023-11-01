@@ -42,12 +42,13 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 
 static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                        const int n_past, const int n_threads) {
+                                        const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -61,7 +62,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = n_embd / n_head / 2;
@@ -234,7 +236,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
                        0);                                                                  // offset
         *reinterpret_cast<ATTN_FWD_LAYOUT*>(&value_layer->nb[0]) = kv_cache_info.v_layout;  // us nb0 for layout
 
-        ne_attn_flags_t attn_flags = 0;
+        ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
         if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, query_layer, key_layer, value_layer, attn_scale, attn_flags);
         cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
@@ -338,8 +340,9 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!chatglm_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!chatglm_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

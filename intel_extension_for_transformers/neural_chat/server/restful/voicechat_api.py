@@ -22,6 +22,7 @@ from ...cli.log import logger
 from fastapi import File, UploadFile, Form
 from pydub import AudioSegment
 from ...config import GenerationConfig
+from ...plugins import plugins
 import base64
 import torch
 
@@ -47,11 +48,12 @@ class VoiceChatAPIRouter(APIRouter):
         except Exception as e:
             raise Exception(e)
 
-    async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
+    async def handle_voice_chat_request(self, prompt: str, voice: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
+            plugins.tts.args["voice"] = voice
             config = GenerationConfig(audio_output_path=audio_output_path)
-            result = chatbot.chat_stream(query=prompt, config=config)
+            result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
                 for path in result:
                     with open(path,mode="rb") as file:
@@ -90,6 +92,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
+    file_name = file_name +'.wav'
     audio.export(f"{file_name}", format="wav")
     asr_result = router.handle_voice_asr_request(file_name)
     return {"asr_result": asr_result}
@@ -105,7 +108,7 @@ async def talkingbot(request: Request):
 
     logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
 
-    return await router.handle_voice_chat_request(text, audio_output_path)
+    return await router.handle_voice_chat_request(text, voice, audio_output_path)
 
 @router.post("/v1/talkingbot/create_embedding")
 async def create_speaker_embedding(file: UploadFile = File(...)):
@@ -120,5 +123,5 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 
-    router.handle_create_speaker_embedding(spk_id)
+    await router.handle_create_speaker_embedding(spk_id)
     return {"spk_id": spk_id}

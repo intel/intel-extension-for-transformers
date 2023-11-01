@@ -47,3 +47,27 @@ class FinetuneRequest(RequestBaseModel):
     overwrite_output_dir: bool = True
     dataset_concatenation: bool = False
     peft: str = 'lora'
+
+
+class AskDocRequest(RequestBaseModel):
+    query: str
+    domain: str
+    blob: Optional[str]
+    filename: Optional[str]
+    knowledge_base_id: Optional[str] = 'default'
+    embedding: Optional[str] = 'dense'
+    params: Optional[dict] = None
+    debug: Optional[bool] = False
+    stream: bool = True
+
+
+class FeedbackRequest(RequestBaseModel):
+    """
+    Request class for feedback api
+    'feedback_id': set to be auto_increment, no need to pass as argument
+    'feedback': 0 for 'like', 1 for 'dislike'
+    """
+    # feedback_id: Optional[int] = None
+    question: str
+    answer: str
+    feedback: Optional[int] = 0

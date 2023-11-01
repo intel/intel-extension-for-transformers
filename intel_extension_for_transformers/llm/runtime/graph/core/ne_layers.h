@@ -81,8 +81,9 @@ extern "C" {
 
 // Attention flags
 typedef enum NE_ATTN_FLAG {
+  NE_ATTN_FLAG_NONE = 0,
   NE_ATTN_FLAG_IS_CAUSAL = 1 << 1,
-  NE_ATTN_FLAG_IS_ALIBI = 1 << 2,
+  NE_ATTN_FLAG_IS_ALIBI8 = 1 << 2,
 } NE_ATTN_FLAG;
 typedef uint32_t ne_attn_flags_t;
 
@@ -260,6 +261,7 @@ NE_API struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a);
 
 NE_API struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a);
 
+NE_API struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a);
 // a - x
 // b - dy
 NE_API struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
@@ -399,6 +401,11 @@ NE_API struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, in
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                                          int prompt_size);
+
+// shift all tokens by a give p (n_shift)
+// Optionally give a 1d tensor of precomputed interleaved cos/sin value of n_shift*scale^k for k \in [0, n_dims)
+NE_API struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims,
+                                               int mode, int prompt_size, int n_keep, struct ne_tensor* cossin);
 
 // rotary position embedding backward, i.e compute dx from dy
 // a - dy
