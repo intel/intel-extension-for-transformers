@@ -175,4 +175,17 @@ def main():
             from PIL import Image
             from io import BytesIO
             pipe = StableDiffusionImg2ImgPipeline.from_pretrained(args.input_model)
-            url = "https
+	        url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
+	        response = requests.get(url)
+	        init_image = Image.open(BytesIO(response.content)).convert("RGB")
+	        init_image = init_image.resize((768, 512))
+
+	        prompt = "A fantasy landscape, trending on artstation"
+	        images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
+	        images[0].save("fantasy_landscape.png")
+
+	    return
+
+
+if __name__ == '__main__':
+    main()
