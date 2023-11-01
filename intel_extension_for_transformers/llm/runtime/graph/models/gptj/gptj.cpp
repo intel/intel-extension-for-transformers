@@ -68,6 +68,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;  // max number fo tokens to keep in the kv-cache
   const int n_keep = lctx.n_keep;
+  const bool shift_roped_k = lctx.shift_roped_k;
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
   int n_head = hparams.n_head;
   const int head_size = n_embd / n_head;
   const int n_vocab = hparams.n_vocab;
@@ -259,14 +261,14 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                       head_size, n_ctx, n_head, batch_size,  // ne
                                       0, 0, k_size,                          // nb (jblas managed)
                                       il * kv_n_ctx_block * k_size);         // offset
-      ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
+      ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, is_ring_full));
       const auto v_cache = ne_view_4d(ctx0, kv_self.v,                       // tensor
                                       head_size, n_ctx, n_head, batch_size,  // ne
                                       0, 0, v_size,                          // nb (jblas managed)
                                       il * kv_n_ctx_block * v_size);         // offset
       // jblas alway view V as (D, n_head, seq, bs)
       const auto Vcur_plain = ne_reshape_4d(ctx0, Vcur, head_size, n_head, N, batch_size);
-      ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
+      ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past, is_ring_full));
     }
 
     struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);

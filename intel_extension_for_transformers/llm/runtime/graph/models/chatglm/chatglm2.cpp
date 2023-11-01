@@ -64,6 +64,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;
   const int n_keep = lctx.n_keep;
+  const bool shift_roped_k = lctx.shift_roped_k;
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = n_embd / n_head / 2;
@@ -214,12 +216,12 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
                                           head_size, n_ctx, num_kv_heads,  // ne
                                           0, 0,                            // nb (jblas managed)
                                           0);                              // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, key_layer, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, key_layer, n_past, is_ring_full));
           const auto v_cache = ne_view_3d(ctx0, model.layers[il].v_cache,  // tensor
                                           head_size, n_ctx, num_kv_heads,  // ne
                                           0, 0,                            // nb (jblas managed)
                                           0);                              // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, value_layer, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, value_layer, n_past, is_ring_full));
         }
 
         query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);                            // [heads, N, head_size]
