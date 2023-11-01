@@ -1,4 +1,4 @@
-<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px"> Talking Bot</h1>
+<h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Talking Bot</h1>
 
 ### 📸 Project Screenshots
 
