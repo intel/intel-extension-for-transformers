@@ -264,17 +264,18 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       const auto v_size = kv_cache_info.v_bytes;
       // store key and value to memory
       {
-        const auto k_cache = ne_view_3d(ctx0, kv_self.k,           // tensor
-                                        head_size, n_ctx, n_head,  // ne
-                                        0, 0,                      // nb (jblas managed)
-                                        il * k_size);              // offset
+        const auto k_cache = ne_view_3d(ctx0, kv_self.k,              // tensor
+                                        head_size, n_ctx, n_head_kv,  // ne
+                                        0, 0,                         // nb (jblas managed)
+                                        il * k_size);                 // offset
         ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
-        const auto v_cache = ne_view_3d(ctx0, kv_self.v,           // tensor
-                                        head_size, n_ctx, n_head,  // ne
-                                        0, 0,                      // nb (jblas managed)
-                                        il * v_size);              // offset
+        const auto v_cache = ne_view_3d(ctx0, kv_self.v,              // tensor
+                                        head_size, n_ctx, n_head_kv,  // ne
+                                        0, 0,                         // nb (jblas managed)
+                                        il * v_size);                 // offset
         // jblas alway view V as (D, n_head, seq)
-        const auto Vcur_plain = ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd * N, 0), n_embd / n_head, n_head, N);
+        const auto Vcur_plain =
+            ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd_gqa * N, 0), n_embd_gqa / n_head_kv, n_head_kv, N);
         ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
       }
 
@@ -283,14 +284,14 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
       struct ne_tensor* K =
           ne_view_3d(ctx0, kv_self.k,                                             // tensor
-                     head_size, n_cached, n_head,                                 // ne
+                     head_size, n_cached, n_head_kv,                              // ne
                      kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,  // nb (jblas managed)
                      il * k_size);                                                // offset
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;    // us nb0 for layout
       ne_set_name(K, "K");
       struct ne_tensor* V =
           ne_view_3d(ctx0, kv_self.v,                                                    // tensor
-                     n_cached, head_size, n_head,                                        // ne
+                     n_cached, head_size, n_head_kv,                                     // ne
                      kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num,  // nb (jblas managed)
                      il * v_size);                                                       // offset
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout

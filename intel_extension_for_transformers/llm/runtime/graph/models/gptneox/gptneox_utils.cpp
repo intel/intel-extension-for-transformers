@@ -285,6 +285,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   std::unique_ptr<GPTNEOX> ms(new GPTNEOX());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
+  lctx.support_jblas_kv = true;
   if (lctx.beam_search) {
     lctx.bs_kv_reorder = std::make_shared<gptneox_beam_search_kv_cache_reorder>(&lctx);
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
