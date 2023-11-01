@@ -20,9 +20,10 @@ import os
 import time
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, MixedPrecisionConfig, LoadingModelConfig
+    PipelineConfig, GenerationConfig, LoadingModelConfig
 )
 
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 
 def parse_args():
     parser = argparse.ArgumentParser()
