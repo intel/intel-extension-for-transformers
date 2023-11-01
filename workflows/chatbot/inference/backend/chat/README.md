@@ -4,7 +4,7 @@ First, install and configure the Conda environment:
 
 ```shell
 wget  https://repo.anaconda.com/miniconda/Miniconda3-py310_22.11.1-1-Linux-x86_64.sh
-bash `Miniconda*.sh`
+bash Miniconda*.sh
 source ~/.bashrc
 ```
 
