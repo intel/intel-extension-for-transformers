@@ -25,20 +25,43 @@ from diffusers import DPMSolverMultistepScheduler
 import os
 
 
-def benchmark(pipe, neural_engine_graph, generator, steps=20):
-    print('Benchmark start...')
+def benchmark(pipe, generator, neural_engine_graph = None, steps = 20, backend = "ITREX"):
     warmup = 4
     total = 8
     total_time = 0
-    with torch.no_grad():
-        prompt = "a photo of an astronaut riding a horse on mars"
-        for i in range(total):
-            start2 = time.time()
-            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=steps, generator=generator).images[0]
-            end2 = time.time()
-            if i >= warmup:
-                total_time += end2 - start2
-            print("Total inference latency: ", str(end2 - start2) + "s")
+    prompt = "a photo of an astronaut riding a horse on mars"
+    if backend == "pytorch":
+        print('The backend is Pytorch. Benchmark start...')
+        with torch.no_grad():
+            for i in range(total):
+                start2 = time.time()
+                pipe(prompt, num_inference_steps=steps, generator=generator).images[0]
+                end2 = time.time()
+                if i >= warmup:
+                    total_time += end2 - start2
+                print("Total inference latency: ", str(end2 - start2) + "s")
+    elif backend == "IPEX":
+        print('The backend is IPEX. Benchmark start...')
+        with torch.no_grad():
+            for i in range(total):
+                start2 = time.time()
+                pipe(prompt, num_inference_steps=steps, generator=generator).images[0]
+                end2 = time.time()
+                if i >= warmup:
+                    total_time += end2 - start2
+                print("Total inference latency: ", str(end2 - start2) + "s")
+                
+    elif backend == "ITREX":
+        print('The backend is ITREX, Benchmark start...')
+        with torch.no_grad():
+            for i in range(total):
+                start2 = time.time()
+                pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=steps, generator=generator).images[0]
+                end2 = time.time()
+                if i >= warmup:
+                    total_time += end2 - start2
+                print("Total inference latency: ", str(end2 - start2) + "s")
+
     print("Average Latency: ", (total_time) / (total - warmup), "s")
     print("Average Throughput: {:.5f} samples/sec".format((total - warmup) / (total_time)))
 
@@ -98,48 +121,58 @@ def parse_args():
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
     parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
-    parser.add_argument("--steps", type=int, default=20, help="denoising steps")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
+    parser.add_argument("--steps", type=int, default=20, help="denoising steps")
+    parser.add_argument("--backend", type=str, default="ITREX", help="The backend of the stable diffusion")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
-    if args.pipeline == "text2img":
-        dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
-        pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, scheduler=dpm)
-        pipe.safety_checker = lambda images, clip_input: (images, False)
+    if args.backend == "pytorch":
+        from diffusers import StableDiffusionPipeline
+
         generator = torch.Generator("cpu").manual_seed(args.seed)
+        original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
+        
         if args.mode == "latency":
-            benchmark(pipe, neural_engine_graph, generator, args.steps)
+            benchmark(original_pipe, generator = generator, steps = args.steps, backend = "pytorch")
             return
+    elif args.backend == "IPEX":
+        from diffusers import StableDiffusionPipeline
+        import intel_extension_for_pytorch as ipex
+        
+        generator = torch.Generator("cpu").manual_seed(args.seed)
+        original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
+        pipe.text_encoder = ipex.optimize(pipe.text_encoder, dtype=torch.float32)
+        pipe.unet = ipex.optimize(pipe.unet, dtype=torch.float32)
+        pipe.vae = ipex.optimize(pipe.vae, dtype=torch.float32)
 
-        if args.mode == "accuracy":
-            from diffusers import StableDiffusionPipeline
-            original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
-            accuracy(pipe, original_pipe, neural_engine_graph, generator)
-            return
+        if args.mode == "latency":
+            benchmark(original_pipe, generator = generator, steps = args.steps, backend = "pytorch")
+            return        
+    elif args.backend == "ITREX":
+        neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
+        if args.pipeline == "text2img":
+            dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
+            pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, scheduler=dpm)
+            generator = torch.Generator("cpu").manual_seed(args.seed)
+            if args.mode == "latency":
+                benchmark(pipe, generator = generator, neural_engine_graph = neural_engine_graph, steps = args.steps, backend = "ITREX")
+                return
 
-        executor(pipe, neural_engine_graph, args.prompt, args.name, args.size, generator)
+            if args.mode == "accuracy":
+                from diffusers import StableDiffusionPipeline
+                original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
+                accuracy(pipe, original_pipe, neural_engine_graph, generator)
+                return
 
-    if args.pipeline == "img2img":
-        from diffusion_utils_img2img import StableDiffusionImg2ImgPipeline
-        import requests
-        from PIL import Image
-        from io import BytesIO
-        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(args.input_model)
-        url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
-        response = requests.get(url)
-        init_image = Image.open(BytesIO(response.content)).convert("RGB")
-        init_image = init_image.resize((768, 512))
+            executor(pipe, neural_engine_graph, args.prompt, args.name, args.size, generator)
 
-        prompt = "A fantasy landscape, trending on artstation"
-        images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
-        images[0].save("fantasy_landscape.png")
-
-    return
-
-
-if __name__ == '__main__':
-    main()
+        if args.pipeline == "img2img":
+            from diffusion_utils_img2img import StableDiffusionImg2ImgPipeline
+            import requests
+            from PIL import Image
+            from io import BytesIO
+            pipe = StableDiffusionImg2ImgPipeline.from_pretrained(args.input_model)
+            url = "https
