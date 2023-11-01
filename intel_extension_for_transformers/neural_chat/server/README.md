@@ -16,13 +16,13 @@ NeuralChat provides a default chatbot configuration in `./config/neuralchat.yaml
 | ------------------------- | ------------------------ | --------------------------------------- | --------------------------------- |
 | host                      |                          | 0.0.0.0                                 | Any valid IP address              |
 | port                      |                          | 8000                                    | Any valid port number             |
-| model_name_or_path        |                          | "meta-llama/Llama-2-7b-chat-hf"        | A valid model name or path        |
-| tokenizer_name_or_path        |                          | ""        | A tokenizer name or path        |
-| peft_model_path        |                          | ""        | A peft model path        |
+| model_name_or_path        |                          | "meta-llama/Llama-2-7b-chat-hf"         | A valid model name or path        |
+| tokenizer_name_or_path    |                          | ""                                      | A tokenizer name or path          |
+| peft_model_path           |                          | ""                                      | A peft model path                 |
 | device                    |                          | "auto"                                  | "cpu", "hpu", "xpu", "cuda"       |
 | asr                       | enable                   | false                                   | true, false                       |
 |                           | args.device              | "cpu"                                   | "cpu", "hpu", "xpu", "cuda"       |
-|                           | args.model_name_or_path  | "openai/whisper-small"                 | A valid ASR model name or path    |
+|                           | args.model_name_or_path  | "openai/whisper-small"                  | A valid ASR model name or path    |
 |                           | args.bf16                | false                                   | true, false                       |
 | tts                       | enable                   | false                                   | true, false                       |
 |                           | args.device              | "cpu"                                   | "cpu", "hpu", "xpu", "cuda"       |
