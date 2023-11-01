@@ -301,7 +301,7 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-if is_optimum_habana_available(): # pragma: no cover
+try: # pragma: no cover
     from optimum.habana import GaudiConfig, GaudiTrainer
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
         r"""Initialize habana
@@ -364,3 +364,6 @@ if is_optimum_habana_available(): # pragma: no cover
                 self.ref_model.eval()
             else:
                 self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
+
+except:
+    pass
