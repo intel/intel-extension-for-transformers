@@ -31,7 +31,7 @@ class TestCutVideo(unittest.TestCase):
     
     def test_cut_video(self):
             parser = argparse.ArgumentParser(__doc__)
-            parser.add_argument("--path", type=str, default="/media")
+            parser.add_argument("--path", type=str, default="/media/intel.mp4")
             parser.add_argument("--min", type=str, default='1')
             parser.add_argument("--sr", type=str, default='16000')
             parser.add_argument("--out_path", type=str, default="../raw")
