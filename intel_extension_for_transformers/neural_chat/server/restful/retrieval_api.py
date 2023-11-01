@@ -27,6 +27,7 @@ from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackR
 from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
+from ...utils.record_request import record_request
 from ...plugins import plugins
 
 
@@ -73,6 +74,12 @@ async def retrieval_endpoint(request: RetrievalRequest) -> RetrievalResponse:
 async def retrieval_upload(file: UploadFile = File(...)):
     global plugins
     filename = file.filename
+    try:
+        record_request(request_url="/v1/askdoc/upload",
+                    request_body={'filename': filename},
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - upload] Fail to record request into db. {e}")
     path_prefix = "/home/sdp/askdoc_upload/enterprise_docs/"
     print(f"[askdoc - upload] filename: {filename}")
     if '/' in filename:
@@ -96,6 +103,13 @@ async def retrieval_upload(file: UploadFile = File(...)):
 
 @router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
+    try:
+        record_request(request_url="/v1/askdoc/chat",
+                    request_body=request,
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
+
     chatbot = router.get_chatbot()
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
@@ -143,6 +157,12 @@ async def retrieval_chat(request: AskDocRequest):
 @router.post("/v1/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
+    try:
+        record_request(request_url="/v1/askdoc/feedback",
+                    request_body=request,
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
     mysql_db = MysqlDb()
     question, answer, feedback = request.question, request.answer, request.feedback
     feedback_str = 'dislike' if int(feedback) else 'like'
@@ -164,6 +184,13 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
 
 @router.get("/v1/askdoc/downloadFeedback")
 def get_feedback_from_db():
+    try:
+        record_request(request_url="/v1/askdoc/downloadFeedback",
+                    request_body={},
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - download] Fail to record request into db. {e}")
+    
     mysql_db = MysqlDb()
     sql = f"SELECT * FROM feedback ;"
     try:
