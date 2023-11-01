@@ -309,9 +309,8 @@ struct beam {
   void clear() {
     token_ids.clear();
     score = 0.0f;
-    // infer_bs_idx = -1;
-    // request_idx = -1;
-    // beam_idx = -1;
+    request_idx = -1;
+    beam_idx = -1;
     done = false;
   }
 };
@@ -427,6 +426,7 @@ class beam_search_flow {
     }
     requests_done.assign(batch_size, false);
     request_running_indices.reserve(batch_size);
+    next_done_request_ids.reserve(batch_size);
     n_tokens.reserve(batch_size);
     n_past.reserve(batch_size);
     n_prompt_tokens.reserve(batch_size);
@@ -447,6 +447,7 @@ class beam_search_flow {
                                                       const int& dim = -1);
   void fill_next_beams_by_top_scores();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
+  void update_status();
   const beam& finalize(const int& request_idx);
 
   model_context* ctx = nullptr;
@@ -457,6 +458,7 @@ class beam_search_flow {
   std::vector<beam_hypotheses> beam_hypos;
   std::vector<bool> requests_done;
   std::vector<int> request_running_indices;
+  std::vector<int> next_done_request_ids;
   std::vector<uint32_t> n_tokens;
   std::vector<uint32_t> n_past;
   std::vector<uint32_t> n_prompt_tokens;

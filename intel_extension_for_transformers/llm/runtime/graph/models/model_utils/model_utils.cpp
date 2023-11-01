@@ -2341,10 +2341,7 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   std::vector<float> beams_score;
   // filter cur_beams
   for (int i = 0; i < cur_beams.size(); ++i) {
-    if (cur_beams[i].done) {
-      // cur_beams[i].clear();
-      continue;
-    }
+    if (cur_beams[i].done) continue;
     if (request_running_indices.empty()) {
       request_running_indices.push_back(cur_beams[i].request_idx);
     } else {
@@ -2536,6 +2533,23 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
   return kv_reorder_indices;
 }
 
+void beam_search_flow::update_status() {
+  // check if done
+  next_done_request_ids.clear();
+  for (int h = 0; h < beam_hypos.size(); ++h) {
+    if (requests_done[h]) continue;
+    const bool enough_new_tokens = (cur_beams[h * beam_size].token_ids.size() == ctx->generation_conf.max_new_tokens);
+    if (beam_hypos[h].is_done() || enough_new_tokens) {
+      requests_done[h] = true;
+      next_done_request_ids.push_back(h);
+      // mark  done beams of current request_idx
+      // batch reduction
+      std::for_each(cur_beams.begin() + h * beam_size, cur_beams.begin() + (h + 1) * beam_size,
+                    [&](auto& b) { b.done = true; });
+    }
+  }
+}
+
 // Return beam with highest probability.
 const beam& beam_search_flow::finalize(const int& request_idx) {
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
@@ -2547,7 +2561,7 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  if (!requests_done[request_idx]) {
+  if (!beam_hypos[request_idx].is_done()) {
     for (int i = 0; i < beam_size; ++i) {
       beam b = cur_beams[request_idx * beam_size + i];
       beam_hypos[request_idx].add(b, n_prompt_tokens[request_idx]);
@@ -2558,10 +2572,16 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
       b.print();
     }
     printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
-    printf("========================================================================================= \n");
 #endif
   }
-  return beam_hypos[request_idx].top1();
+  const beam& top_b = beam_hypos[request_idx].top1();
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("final beam of request_idx %h:\n", h);
+  top_b.print();
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+  printf("========================================================================================= \n");
+#endif
+  return top_b;
 }
 
 std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<model_input>& inputs,
@@ -2577,7 +2597,7 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
   n_prompt_tokens.assign(request_bs, n_tokens[0]);
   n_total.assign(request_bs, 0);
   std::vector<std::vector<model_token>> beam_search_response(request_bs);
-  // std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens * request_bs);
+  MODEL_ASSERT(beam_search_response.size() == request_bs);  // remove
 
   ctx->batch_size = request_bs;
   ctx->request_running_bs = request_bs;
@@ -2658,32 +2678,19 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
     printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
 
-    // check if done
-    for (int h = 0; h < beam_hypos.size(); ++h) {
-      if (requests_done[h]) {
-        continue;
-      }
-      if (beam_hypos[h].is_done()) {
-        requests_done[h] = true;
-      }
+    update_status();
+    // collect request final generation result if done
+    for (const auto& didx : next_done_request_ids) {
+      const beam& top_b = finalize(didx);
+      beam_search_response[didx] = top_b.token_ids;
     }
+    // return if all requests done in static batching
     auto const done_or_not = [](const bool& flag) { return flag; };
     if (std::all_of(requests_done.begin(), requests_done.end(), done_or_not)) {
       break;
     }
   }
 
-  beam top_b = finalize(0);
-
-#ifdef NE_BEAM_SEARCH_VERBOSE_ON  // DEBUG: print final beam result
-  printf("========================================================================================= \n");
-  printf("final beam:\n");
-  top_b.print();
-  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
-  printf("========================================================================================= \n");
-#endif
-
-  beam_search_response[0] = top_b.token_ids;
   return beam_search_response;
 }
 
