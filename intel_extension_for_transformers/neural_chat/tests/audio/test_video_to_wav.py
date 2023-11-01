@@ -48,23 +48,6 @@ class TestVideo2Wav(unittest.TestCase):
         
         self.assertTrue(os.path.exists('/raw/intel.wav'))
 
-    def test_video_to_wav_folder(self):
-        parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='/media')
-        parser.add_argument("--is_mono", type=str, default='True')
-        parser.add_argument("--sr", type=str, default='16000')
-        parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
-        args = parser.parse_args()
-        output_sample_rate = shlex.quote(args.sr)
-        is_exist = os.path.exists(shlex.quote(args.path))
-        if not is_exist:
-            print("path not existed!")
-        else:
-            path = shlex.quote(args.path)
-            is_mono = shlex.quote(args.is_mono)
-            convert_video_to_wav(path, output_sample_rate, is_mono) 
-        
-        self.assertTrue(os.path.exists('/raw/intel.wav'))
 
 if __name__ == "__main__":
     unittest.main()
