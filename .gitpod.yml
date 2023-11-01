@@ -3,22 +3,5 @@
 
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
 
-image:
-  file: .gitpod.dockerfile
-
-tasks:
-  - init: |
-      sudo apt-get update
-      sudo apt-get install -y docker.io
-      docker-compose build
-      docker-compose up
+  - init: pip install -r requirements.txt
     command: python app.py
-
-ports:
-  - 8888
-
-vscode:
-  extensions:
-    - ms-python.python
-    - dbaeumer.vscode-eslint
-
