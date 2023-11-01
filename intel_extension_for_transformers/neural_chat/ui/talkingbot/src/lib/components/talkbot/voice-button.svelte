@@ -1,4 +1,5 @@
 <script lang="ts">
+	import chatResponse from "$lib/modules/chat/network";
 	import stopRecordingIcon from "$lib/assets/stop-recording.svg";
     import VoiceButton from './imgs/voice-button.svelte'
 	import { onDestroy } from "svelte";
@@ -41,15 +42,17 @@
 						chunks.push(event.data)
 					);
 
-					audioRecorder.addEventListener("stop", () => {
-						console.log(chunks);
+					audioRecorder.addEventListener("stop", async () => {
+						dispatch('start')
 						const blob = new Blob(chunks, { type: "audio/mp3; codecs=opus" });
+						const res = await chatResponse.fetchAudioText(blob);
 						audioSrc = window.URL.createObjectURL(blob);
 						
-						chatMessages = [
-							...chatMessages,
-							{ role: MESSAGE_ROLE.USER, content: audioSrc },
-						];
+						chatMessages = [...chatMessages, {
+							role: MESSAGE_ROLE.USER,
+							content: audioSrc,
+							text: res.asr_result
+						}]
 						chunks = [];
 						dispatch('done')
 					});
