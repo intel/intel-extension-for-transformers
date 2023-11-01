@@ -41,6 +41,9 @@ tiktoken==0.4.0
 lm_eval
 accelerate
 cchardet
+pymysql
+deepface
+exifread
 spacy
 neural-compressor==2.3.1
 pymysql

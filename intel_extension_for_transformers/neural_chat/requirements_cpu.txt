@@ -44,3 +44,6 @@ torchaudio==2.1.0
 spacy
 neural-compressor==2.3.1
 pymysql
+deepface
+exifread
+

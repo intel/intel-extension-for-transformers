@@ -11,6 +11,20 @@ The Neural Chat API offers an easy way to create and utilize chatbot models whil
 1. Dense Retrieval: This method is based on document embeddings, enhancing the accuracy of retrieval. Learn more about [here](https://medium.com/@aikho/deep-learning-in-information-retrieval-part-ii-dense-retrieval-1f9fecb47de9).
 2. Sparse Retrieval: Using TF-IDF, this method efficiently retrieves relevant information. Explore this approach in detail [here](https://medium.com/itnext/deep-learning-in-information-retrieval-part-i-introduction-and-sparse-retrieval-12de0423a0b9).
 
+We have already provided support for a wide range of pre-trained embedding models featured on the [HuggingFace text embedding leaderboard](https://huggingface.co/spaces/mteb/leaderboard). Users can conveniently choose an embedding model in two ways: they can either specify the model by its name on HuggingFace or download a model and save it under the default name. Below is a list of some supported embedding models available in our plugin. Users can select their preferred embedding model based on various factors such as model size, embedding dimensions, maximum sequence length, and average ranking score.
+|  Model   | Model Size (GB)  |Embedding Dimensions  |Max Sequence Length  |Average Ranking Score  |
+|  :----:  | :----:  | :----:  | :----: |:----: |
+| [bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)  | 1.34 |1024  |512  |64.23|
+| [bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5)  | 0.44 |768  |512  |63.55|
+| [	gte-large](https://huggingface.co/thenlper/gte-large)  | 0.67 |1024  |512  |63.13|
+| [stella-base-en-v2](https://huggingface.co/infgrad/stella-base-en-v2)  | 0.22 |768  |512 |62.61|
+| [gte-base](https://huggingface.co/thenlper/gte-base)  | 0.44 |768  |512  |62.39|
+| [	e5-large-v2](https://huggingface.co/intfloat/e5-large-v2)  | 1.34 |1024  |512  |62.25|
+| [instructor-xl](https://huggingface.co/hkunlp/instructor-xl)  | 4.96 |768  |512  |61.79|
+| [instructor-large](https://huggingface.co/hkunlp/instructor-large)  | 1.34 |768  |512  |61.59|
+
+In addition, our plugin seamlessly integrates the online embedding model, Google Palm2 embedding. To set up this feature, please follow the [Google official guideline](https://developers.generativeai.google/tutorials/embeddings_quickstart) to obtain your API key. Once you have your API key, you can activate the Palm2 embedding service by setting the `embedding_model` parameter to 'Google'.
+
 The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The `Agent_QA` initializes itself using the provided `input_path` to construct a local database. During a conversation, the user's query is first passed to the `IntentDetector` to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the `IntentDetector` determines that the user's query requires an answer, the retriever is activated to search the database using the user's query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs). 
 
 # Usage
@@ -51,7 +65,7 @@ process [bool]: Select to process the too long document into small chucks. Defau
 
 input_path [str]: The user local path to a file folder or a specific file path. The code itself will check the path is a folder or a file. If it is a folder, the code will process all the files in the given folder. If it is a file, the code will prcess this single file.
 
-embedding_model [str]: the user specific document embedding model for dense retrieval. The user could selecte a specific embedding model from "https://huggingface.co/spaces/mteb/leaderboard". Default to "hkunlp/instructor-large". 
+embedding_model [str]: the user specific document embedding model for dense retrieval. The user could selecte a specific embedding model from "https://huggingface.co/spaces/mteb/leaderboard". Default to "BAAI/bge-base-en-v1.5". 
 
 max_length [int]: The max context length in the processed chucks. Should be combined with "process". Default to "512".
 

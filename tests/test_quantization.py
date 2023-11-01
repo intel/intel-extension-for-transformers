@@ -293,8 +293,8 @@ class TestQuantization(unittest.TestCase):
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
             SmoothQuantConfig,
+            WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -311,6 +311,7 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+
         # weight-only
         #RTN
         woq_config = WeightOnlyQuantConfig()
