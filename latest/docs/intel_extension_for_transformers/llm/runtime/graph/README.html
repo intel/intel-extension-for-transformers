@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g0656f42 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g8be2d9b documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -129,33 +129,23 @@
 </section>
 <section id="how-to-use">
 <h2>How to Use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h2>
-<section id="install-llm-runtime">
-<h3>1. Install LLM Runtime<a class="headerlink" href="#install-llm-runtime" title="Link to this heading"></a></h3>
+<p>There are two methods for utilizing the LLM runtime:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p></li>
+<li><p><a class="reference external" href="#How-to-use-Straightforward-Python-script">Straightforward Python script</a></p></li>
+</ul>
+</section>
+<section id="how-to-use-transformer-based-api">
+<h2>How to use: Transformer-based API<a class="headerlink" href="#how-to-use-transformer-based-api" title="Link to this heading"></a></h2>
+<section id="install">
+<h3>1. Install<a class="headerlink" href="#install" title="Link to this heading"></a></h3>
 <p>Install from binary</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
 </pre></div>
 </div>
-<p>Build from source</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux</span>
-git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
-mkdir<span class="w"> </span>build
-<span class="nb">cd</span><span class="w"> </span>build
-cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
-ninja
-</pre></div>
-</div>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="c"># Windows</span>
-<span class="c"># Install VisualStudio 2022 and open &#39;Developer PowerShell for VS 2022&#39;</span>
-<span class="n">mkdir</span> <span class="n">build</span>
-<span class="nb">cd </span><span class="n">build</span>
-<span class="n">cmake</span> <span class="p">..</span>
-<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span>
-</pre></div>
-</div>
-<p>Note: add compile args <code class="docutils literal notranslate"><span class="pre">-DNE_AVX512=OFF</span> <span class="pre">-DNE_AVX512_VBMI=OFF</span> <span class="pre">-DNE_AVX512_VNNI=OFF</span></code> to <code class="docutils literal notranslate"><span class="pre">cmake</span></code> when compiling it on a CPU without AVX512</p>
 </section>
-<section id="run-llm-with-python-api">
-<h3>2. Run LLM with Python API<a class="headerlink" href="#run-llm-with-python-api" title="Link to this heading"></a></h3>
+<section id="run-llm-with-transformer-based-api">
+<h3>2. Run LLM with Transformer-based API<a class="headerlink" href="#run-llm-with-transformer-based-api" title="Link to this heading"></a></h3>
 <p>You can use Python API to run Hugging Face model simply. Here is the sample code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
@@ -214,8 +204,57 @@ ninja
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |</p>
 </section>
+<section id="chat-with-llama2">
+<h3>3. Chat with LLaMA2<a class="headerlink" href="#chat-with-llama2" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>  <span class="c1"># or local path to model</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="nb">input</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">prompt</span> <span class="o">==</span> <span class="s2">&quot;quit&quot;</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="n">b_prompt</span> <span class="o">=</span> <span class="s2">&quot;[INST]</span><span class="si">{}</span><span class="s2">[/INST]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>  <span class="c1"># prompt template for llama2</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">b_prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">num_beams</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">ctx_size</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="how-to-use-straightforward-python-script">
+<h2>How to use: Straightforward Python script<a class="headerlink" href="#how-to-use-straightforward-python-script" title="Link to this heading"></a></h2>
+<p>Build from source</p>
+<blockquote>
+<div><p>:warning: <strong>If you want to use <code class="docutils literal notranslate"><span class="pre">from_pretrain</span></code> API</strong>: please follow <a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p>
+</div></blockquote>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux</span>
+<span class="c1"># make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder</span>
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
+ninja
+</pre></div>
+</div>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="c"># Windows</span>
+<span class="c"># Install VisualStudio 2022 and open &#39;Developer PowerShell for VS 2022&#39;</span>
+<span class="c"># make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder</span>
+<span class="n">mkdir</span> <span class="n">build</span>
+<span class="nb">cd </span><span class="n">build</span>
+<span class="n">cmake</span> <span class="p">..</span>
+<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span>
+</pre></div>
+</div>
+<p>Note: add compile args <code class="docutils literal notranslate"><span class="pre">-DNE_AVX512=OFF</span> <span class="pre">-DNE_AVX512_VBMI=OFF</span> <span class="pre">-DNE_AVX512_VNNI=OFF</span></code> to <code class="docutils literal notranslate"><span class="pre">cmake</span></code> when compiling it on a CPU without AVX512</p>
 <section id="run-llm-with-python-script">
-<h3>3. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
+<h3>1. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
 <p>You can run LLM with one-click python script including conversion, quantization and inference.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">scripts</span><span class="o">/</span><span class="n">run</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">model</span><span class="o">-</span><span class="n">path</span><span class="w"> </span><span class="o">--</span><span class="n">weight_dtype</span><span class="w"> </span><span class="n">int4</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;She opened the door and see&quot;</span>
 </pre></div>
@@ -316,29 +355,6 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 <h3>3. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
 <p>We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to <a class="reference external" href="./tensor_parallelism.html">tensor_parallelism.html</a> to enable this feature.</p>
 </section>
-<section id="chat-with-llama2">
-<h3>4. Chat with LLaMA2<a class="headerlink" href="#chat-with-llama2" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
-
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>  <span class="c1"># or local path to model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
-<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="nb">input</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">prompt</span> <span class="o">==</span> <span class="s2">&quot;quit&quot;</span><span class="p">:</span>
-        <span class="k">break</span>
-    <span class="n">b_prompt</span> <span class="o">=</span> <span class="s2">&quot;[INST]</span><span class="si">{}</span><span class="s2">[/INST]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>  <span class="c1"># prompt template for llama2</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">b_prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
-    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">num_beams</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">ctx_size</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
 </section>
 </section>
 
@@ -356,7 +372,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f6140cc6a10> 
+   <jinja2.runtime.BlockReference object at 0x7f3b703a9e70> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
