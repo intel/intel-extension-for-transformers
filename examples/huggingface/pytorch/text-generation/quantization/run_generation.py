@@ -109,6 +109,8 @@ elif args.sq:
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
             "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
+    elif re.search("mistral", config.model_type) or re.search("baichuan", config.model_type):
+        op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
