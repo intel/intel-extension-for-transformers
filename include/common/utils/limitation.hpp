@@ -609,8 +609,7 @@ template <gpu_arch arch = gpu_arch::Xe, class enable = void>
 struct gemm {};
 
 template <gpu_arch arch>
-struct gemm<arch,
-        std::enable_if_t<(arch == gpu_arch::Xe) || (arch == gpu_arch::Arc)>> {
+struct gemm<arch, std::enable_if_t<(arch <= gpu_arch::Xe)>> {
     struct default_fpu {
         template <typename dtype_a, typename dtype_b, typename dtype_mma_a,
                 typename dtype_mma_b, typename dtype_mma_acc>

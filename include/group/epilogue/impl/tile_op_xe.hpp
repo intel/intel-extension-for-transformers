@@ -32,9 +32,7 @@ namespace gpu::xetla::group {
 template <typename tile_op_t_, typename tile_shape_, typename mem_desc_c_t_,
         gpu_arch arch_tag_>
 class epilogue_t<epilogue_policy_tile_op<tile_op_t_, arch_tag_>, tile_shape_,
-        mem_desc_c_t_,
-        std::enable_if_t<(
-                arch_tag_ == gpu_arch::Xe || arch_tag_ == gpu_arch::Arc)>> {
+        mem_desc_c_t_, std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
 public:
     using epilogue_policy = epilogue_policy_tile_op<tile_op_t_, arch_tag_>;
     using tile_op_t = typename epilogue_policy::tile_op_t;
@@ -119,14 +117,17 @@ public:
     __XETLA_API KERNEL_FUNC void operator()(work_group_t &g, matAcc_t &matAcc,
             mem_desc_c_t mem_desc_c, arguments_t args = {},
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
-        using mat_tile_desc = typename matAcc_t::tile_desc;
+        // using mat_tile_desc = typename matAcc_t::tile_desc;
+        using mat_tile_desc = subgroup::tile_desc_t<matAcc_t::tile_size_x,
+                matAcc_t::tile_size_y, matAcc_t::block_size_x,
+                matAcc_t::block_size_y, reg_layout::tiled>;
         using matC_t = subgroup::tile_t<dtype_c, mat_tile_desc>;
         using matC_payload_t = subgroup::mem_payload_t<mem_desc_c_t,
                 mat_tile_desc, msg_type_c, arch_tag>;
         update_sg_tile_tdesc(g, mem_desc_c);
-        tile_op_t tile_op;
-        tile_op(matAcc, mem_desc_c.coord, args.tile_op_args, slm_base,
-                nbarrier_base);
+        // tile_op_t tile_op;
+        // tile_op(matAcc, mem_desc_c.coord, args.tile_op_args, slm_base,
+        //         nbarrier_base);
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);
         subgroup::elemwise_cvt(matC, matAcc);

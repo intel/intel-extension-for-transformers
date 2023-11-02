@@ -37,8 +37,7 @@ class gemm_t<compute_policy_unaligned_xmx<compute_attr_, perf_tuning_knob_,
         mem_desc_a_t_, // memory attribute of matA
         mem_desc_b_t_, // memory attribute of matB
         pre_processing_t_, // pre_processing functor
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)
-                || (arch_tag_ == gpu_arch::Arc)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
 public:
     using mem_desc_a_t = mem_desc_a_t_;
     using mem_desc_b_t = mem_desc_b_t_;

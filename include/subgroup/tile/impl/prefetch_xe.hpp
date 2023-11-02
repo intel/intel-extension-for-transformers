@@ -35,8 +35,7 @@ struct check_prefetch_type {
     static constexpr bool is_global_block_1d_xe
             = ((payload_t::memory_space == mem_space::global)
                     && (payload_t::tile_desc::tile_size_y == 1)
-                    && (payload_t::arch_tag == gpu_arch::Xe
-                            || payload_t::arch_tag == gpu_arch::Arc));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_local_xe
             = ((payload_t::memory_space == mem_space::local)

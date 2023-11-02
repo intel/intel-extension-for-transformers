@@ -22,9 +22,9 @@ using namespace gpu::xetla;
 constexpr int ITER = 1;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_acc = float>
+        typename data_type_acc = float, typename data_type_bias = float>
 int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        uint32_t m, uint32_t k, uint32_t n,
+        data_type_bias *bias, uint32_t m, uint32_t k, uint32_t n,
         mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     buff_cmp::buff_vals<data_type_c> data(C, m, n, n);
@@ -33,6 +33,12 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
             m, n, k, mem_layout_a_, mem_layout_b_, A, B, gold_C.data());
     buff_cmp::buff_vals<data_type_c, data_type_acc> other(
             gold_C.data(), m, n, n);
+
+    // BiasAdd
+    for (uint32_t i = 0; i < gold_C.size(); ++i) {
+        uint32_t col = gold_C.size() % n;
+        gold_C[i] += bias[col];
+    }
 
     bool result = buff_cmp::xetla_buff_cmp(data, other, "gemm validation");
 
@@ -173,6 +179,7 @@ void dequantize_gemm_run(int iter) {
     using data_type_scale = fp16;
     using data_type_acc_in = fp16;
     using data_type_acc = float;
+    using data_type_bias = float;
 
     constexpr size_t size_a = matrix_m * matrix_k;
     constexpr size_t size_b = matrix_k * matrix_n / 2;
@@ -186,6 +193,7 @@ void dequantize_gemm_run(int iter) {
     constexpr size_t size_zero_pt = size_zero_pt_m * size_zero_pt_n;
 
     constexpr size_t size_c = matrix_m * matrix_n;
+    constexpr size_t size_bias = matrix_n;
     uint32_t lda = matrix_k;
     uint32_t ldb = matrix_n;
     uint32_t ldc = matrix_n;
@@ -226,9 +234,18 @@ void dequantize_gemm_run(int iter) {
     using gemm_t = xetla::group::gemm_t<compute_policy, tile_shape,
             mem_desc_a_t, mem_desc_b_t>;
 
+    using bias_op_t = gpu::xetla::subgroup::bias_add_op_t<data_type_bias,
+            gpu::xetla::gpu_arch::Arc>;
+    using tile_op_t = gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
+
     using epilogue_t = xetla::group::epilogue_t<
             xetla::group::epilogue_policy_unaligned<gpu_arch::Arc>, tile_shape,
             mem_desc_c_t>;
+
+    //     using epilogue_t = xetla::group::epilogue_t<
+    //             xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Arc>,
+    //             tile_shape, mem_desc_c_t>;
+
     using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Arc>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
@@ -253,6 +270,8 @@ void dequantize_gemm_run(int iter) {
             malloc_host(size_scale * sizeof(data_type_scale), context));
     auto *zero_pt_h = static_cast<data_type_zero_pt *>(
             malloc_host(size_zero_pt * sizeof(data_type_zero_pt), context));
+    auto *bias_h = static_cast<data_type_bias *>(
+            malloc_host(size_bias * sizeof(data_type_bias), context));
 
     auto *A_d = static_cast<data_type_a *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
@@ -275,6 +294,9 @@ void dequantize_gemm_run(int iter) {
     auto *zero_pt_d = static_cast<data_type_zero_pt *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                     size_zero_pt * sizeof(data_type_zero_pt), device, context));
+    auto *bias_d = static_cast<data_type_bias *>(
+            aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
+                    size_bias * sizeof(data_type_bias), device, context));
 
     for (unsigned i = 0; i < size_a; ++i) {
         A_h[i] = random_float();
@@ -297,6 +319,9 @@ void dequantize_gemm_run(int iter) {
     for (unsigned i = 0; i < size_cnt; ++i) {
         Cnt_h[i] = 0;
     }
+    for (unsigned i = 0; i < size_bias; ++i) {
+        bias_h[i] = random_float();
+    }
 
     queue.memcpy((void *)A_d, (void *)A_h, size_a * sizeof(data_type_a)).wait();
     queue.memcpy((void *)B_d, (void *)B_h, size_b * sizeof(data_type_b)).wait();
@@ -311,8 +336,18 @@ void dequantize_gemm_run(int iter) {
     queue.memcpy((void *)zero_pt_d, (void *)zero_pt_h,
                  size_zero_pt * sizeof(data_type_zero_pt))
             .wait();
+    queue.memcpy((void *)bias_d, (void *)bias_h,
+                 size_bias * sizeof(data_type_bias))
+            .wait();
 
     // set up gemm arguments
+    bias_op_t::shape_t bias_add_shape(matrix_n, 1, matrix_n);
+    using epilogue_args_t = epilogue_t::arguments_t;
+
+    //     epilogue_args_t epilogue_args({//epilogue_args init list
+    //             // It accepts the base pointer to matrix D, and its dimensions
+    //             {bias_d, bias_add_shape}});
+
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A_d,
             matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n, Acc_d,
             Cnt_d);
@@ -331,7 +366,7 @@ void dequantize_gemm_run(int iter) {
             prof.cpu_start();
             auto e_esimd = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<Test>(
-                        nd_range, [=](nd_item<3> item) KERNEL_MAIN {
+                        nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;
@@ -372,8 +407,8 @@ void dequantize_gemm_run(int iter) {
 
     queue.memcpy((void *)C_h, (void *)C_d, size_c * sizeof(data_type_c)).wait();
     ASSERT_EQ(0,
-            gemm_result_validate(A_h, dequantize_b.data(), C_h, matrix_m,
-                    matrix_k, matrix_n));
+            gemm_result_validate(A_h, dequantize_b.data(), C_h, bias_h,
+                    matrix_m, matrix_k, matrix_n));
 
     free(A_h, context);
     free(B_h, context);

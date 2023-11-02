@@ -75,7 +75,7 @@ class gemm_universal_t<dispatch_policy_int4_dequantize_kslicing<group_swizzle_,
     using work_group_t = typename gemm_t::work_group_t;
     static constexpr uint32_t work_group_size = work_group_t::size;
 
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = group_swizzle_t::arch_tag;
     static_assert(arch_tag == gemm_t::arch_tag, "arch_tag should be the same");
     static_assert(
             arch_tag == epilogue_t::arch_tag, "arch_tag should be the same");
@@ -203,7 +203,6 @@ public:
                 matB_base_t matB_base_, uint32_t matB_ld_,
                 matC_base_t matC_base_, uint32_t matC_ld_,
                 scale_base_t scale_base_, uint32_t scale_ld_,
-                // zero_pt_base_t zero_pt_base_, uint32_t zero_pt_ld_,
                 acc_base_t acc_base_ = {}, cnt_base_t cnt_base_ = {},
                 epilogue_args_t epilogue_args_ = {})
             : matrix_m(matrix_m_)
@@ -217,8 +216,6 @@ public:
             , matC_ld(matC_ld_)
             , scale_base(scale_base_)
             , scale_ld(scale_ld_)
-            //     , zero_pt_base(zero_pt_base_)
-            //     , zero_pt_ld(zero_pt_ld_)
             , acc_base(acc_base_)
             , cnt_base(cnt_base_)
             , epilogue_args(epilogue_args_) {}
@@ -234,8 +231,6 @@ public:
             , matC_ld(args.matC_ld)
             , scale_base(args.scale_base)
             , scale_ld(args.scale_ld)
-            //     , zero_pt_base(args.zero_pt_base)
-            //     , zero_pt_ld(args.zero_pt_ld)
             , acc_base(args.acc_base)
             , cnt_base(args.cnt_base)
             , epilogue_args(args.epilogue_args) {}
@@ -254,8 +249,6 @@ public:
             this->matC_ld = args.matC_ld;
             this->scale_base = args.scale_base;
             this->scale_ld = args.scale_ld;
-            //     this->zero_pt_base = args.zero_pt_base;
-            //     this->zero_pt_ld = args.zero_pt_ld;
             this->acc_base = args.acc_base;
             this->cnt_base = args.cnt_base;
             this->epilogue_args = args.epilogue_args;

@@ -130,7 +130,7 @@ struct arch_attr_t<gpu_arch::Arc> {
     template <grf_mode grf_num_mode = grf_mode::normal>
     using register_attr = register_attr_t<grf_num_mode, gpu_arch::Arc>;
 
-    using mma_attr = mma_attr_t<gpu_arch::Xe>;
+    using mma_attr = mma_attr_t<gpu_arch::Arc>;
 
     static constexpr uint32_t max_wg_num = 64;
 };

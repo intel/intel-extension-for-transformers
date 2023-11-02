@@ -225,21 +225,27 @@ struct is_floating_to_integer {
 };
 
 template <typename tile_desc_, mem_space memory_space,
-        mem_layout memory_layout = mem_layout::row_major>
+        mem_layout memory_layout = mem_layout::row_major,
+        gpu_arch arch_tag = gpu_arch::Xe>
 struct msg_type_query {
     static constexpr msg_type value = memory_space == mem_space::global
             ? (((tile_desc_::tile_size_y == 1)
                        && (memory_layout == mem_layout::row_major))
                             ? msg_type::block_1d
-                            : msg_type::block_2d)
+                            : (arch_tag == gpu_arch::Xe
+                                            ? msg_type::block_2d
+                                            : msg_type::unaligned_2d))
             : (((tile_desc_::tile_size_y == 1)
                        && (memory_layout == mem_layout::row_major))
                             ? msg_type::block_1d
                             : msg_type::scatter);
 };
 
-template <typename tile_desc_, mem_space memory_space>
-constexpr msg_type msg_type_v = msg_type_query<tile_desc_, memory_space>::value;
+template <typename tile_desc_, mem_space memory_space,
+        mem_layout memory_layout = mem_layout::row_major,
+        gpu_arch arch_tag = gpu_arch::Xe>
+constexpr msg_type msg_type_v = msg_type_query<tile_desc_, memory_space,
+        memory_layout, arch_tag>::value;
 
 template <typename dtype, uint32_t tile_size_x, uint32_t tile_size_y,
         gpu_arch arch_tag, mem_layout mem_layout_ = mem_layout::row_major,

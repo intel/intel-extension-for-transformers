@@ -78,14 +78,13 @@ template <typename compute_attr_, typename perf_tuning_knob_,
         gpu_arch arch_tag_>
 struct compute_policy_bit4_dequantize_xmx<compute_attr_, perf_tuning_knob_,
         bit4_type_, dtype_scale_, dequant_s_, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)
-                || (arch_tag_ == gpu_arch::Arc)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using compute_attr = compute_attr_;
     using perf_tuning_knob = perf_tuning_knob_;
     static constexpr int k_stride = perf_tuning_knob::k_stride;
     static constexpr int stages = perf_tuning_knob::stages;
     static constexpr int sync_freq = perf_tuning_knob::sync_freq;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
     using dtype_mma_acc = typename compute_attr::dtype_acc;
     using dtype_mma_a = typename compute_attr::dtype_a;
     using dtype_mma_b = typename compute_attr::dtype_b;

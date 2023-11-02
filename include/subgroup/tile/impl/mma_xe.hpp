@@ -28,8 +28,7 @@ template <typename matAcc_dst_t_, typename matAcc_src_t_, typename matB_t_,
         typename matA_t_, gpu_arch arch_tag_>
 struct tile_mma_t<matAcc_dst_t_, matAcc_src_t_, matB_t_, matA_t_,
         mma_engine::xmx, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)
-                || (arch_tag_ == gpu_arch::Arc)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using matA_t = matA_t_;
     using matB_t = matB_t_;
     using matSrc_t = matAcc_src_t_;

@@ -30,8 +30,7 @@ namespace gpu::xetla::group {
 /// @brief gemm default pre_processing functor. Specialized for Xe architecture.
 template <typename tile_shape_, gpu_arch arch_tag>
 class pre_processing_default_t<tile_shape_, arch_tag,
-        std::enable_if_t<(arch_tag == gpu_arch::Xe)
-                || (arch_tag == gpu_arch::Arc)>> {
+        std::enable_if_t<(arch_tag <= gpu_arch::Xe)>> {
     using tile_shape = tile_shape_;
     using work_group_t = typename tile_shape::work_group_t;
 

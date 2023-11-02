@@ -379,7 +379,7 @@ struct bias_add_op_t {};
 /// @brief Is the bias_add op functor, specialized for Xe architecture.
 template <typename dtype_bias_, gpu_arch arch_tag>
 struct bias_add_op_t<dtype_bias_, arch_tag,
-        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag <= gpu_arch::Xe)>> {
     using dtype_bias = dtype_bias_;
     using mem_desc_bias_t
             = mem_desc_t<dtype_bias, mem_layout::row_major, mem_space::global>;
