@@ -1,3 +1,7 @@
+# Enable graph cpp model process
+<img src="imgs/Enable_cpp_model.PNG" width=1200 height=300 alt="Enable cpp model">
+<br>
+
 # 1.	Model conversion
 ## 1.1.	Hyperparamters
 The term **"hyperparamters"** describes a value that is used to configure the behavior of a large language model; this is in contrast to the model's parameters, which are the weight that were derived in the training process that was used to create the model. Each model defines its own hyperparameter structure that defines the hyperparameter values accepted by that model. Valid ITREX graph files must list these values in the correct order, and each value must be represented using the correct data type. Although hyperparameters are different across models, some attributes appear in the hyperparameters for most models:
