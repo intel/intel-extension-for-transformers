@@ -1,3 +1,17 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 #pragma once
 
 #include <assert.h>
@@ -120,7 +134,8 @@ private:
 };
 
 template <typename _T>
-static inline void transpose2d(const _T* srcptr, _T* dstptr, int row, int col, int ld_src, int ld_dst) {
+static inline void transpose2d(const _T *srcptr, _T *dstptr, int row, int col,
+                               int ld_src, int ld_dst) {
   for (int i = 0; i < col; i++) {
     for (size_t j = 0; j < row; j++) {
       dstptr[j + i * ld_dst] = srcptr[j * ld_src + i];

@@ -1,13 +1,27 @@
-#include <torch/extension.h>
-#include <ipex.h>
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 #include "common.hpp"
+#include <ipex.h>
+#include <torch/extension.h>
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
 void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
                                      sycl::buffer<int8_t, 2> &src,
                                      sycl::buffer<DST_T, 2> &dst,
-                                     sycl::buffer<fp16, 1> &scale, int k,
-                                     int n, int blksize, int k_pos, int n_pos) {
+                                     sycl::buffer<fp16, 1> &scale, int k, int n,
+                                     int blksize, int k_pos, int n_pos) {
   q.submit([&](sycl::handler &h) {
     sycl::accessor s4_wei{src, h};
     sycl::accessor fp32_wei{dst, h};
@@ -80,10 +94,10 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
       }
     }
     q.wait();
-    transpose2d<float>(tmp_buf, dequant_weight, compress_wei->_K, compress_wei->_N, compress_wei->_N, compress_wei->_K);
+    transpose2d<float>(tmp_buf, dequant_weight, compress_wei->_K,
+                       compress_wei->_N, compress_wei->_N, compress_wei->_K);
     delete[] tmp_buf;
-  }
-  else {
+  } else {
     sycl::buffer<DST_T, 2> dst_buf(
         tmp_buf, sycl::range<2>(compress_wei->_K, compress_wei->_N));
     for (int i = 0; i < compress_wei->_K; i += KTILE) {
