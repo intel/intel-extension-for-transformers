@@ -2,10 +2,10 @@
 #include "common.hpp"
 #define DEVICE_MEM_ALIGNMENT (64)
 
-template <typename T1, typename T3>
-void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
-                  T3 *C, uint32_t matrix_m, uint32_t matrix_n,
-                  uint32_t matrix_k) {
+template <typename T>
+void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B,
+                  T *C, uint32_t matrix_m, uint32_t matrix_n,
+                  uint32_t matrix_k, bool with_bias, float *D) {
     static constexpr size_t wg_tile_m = 8;
     static constexpr size_t wg_tile_n = 256;
     static constexpr size_t sg_tile_m = 8;
@@ -21,13 +21,14 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     using data_type_scale = gpu::xetla::fp16;
     using data_type_acc_in = gpu::xetla::fp16;
     using data_type_acc = float;
-    using data_type_a = gpu::xetla::fp16;
+    using data_type_a = T;
     using data_type_b = gpu::xetla::int4x2;
-    using data_type_c = gpu::xetla::fp16;
+    using data_type_c = T;
 
 
     size_t size_a = matrix_m * matrix_k;
     size_t size_b = matrix_k * matrix_n / 2;
+    size_t size_d = 1 * matrix_n;
 
     size_t size_scale_m = matrix_k / dequant_s;
     size_t size_scale_n = matrix_n;
@@ -54,6 +55,13 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     static constexpr uint32_t periodic_sync_interval = 0;
     static constexpr uint32_t prefetch_distance = 0;
 
+    data_type_acc *D_d = static_cast<data_type_acc *>(
+            aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
+                    size_d * sizeof(data_type_acc), device, context));
+    if (with_bias) {
+        queue.memcpy((void *)D_d, (void *)D, size_d * sizeof(data_type_acc)).wait();
+    }
+
     using mem_desc_a_t = gpu::xetla::mem_desc_t<data_type_a, gpu::xetla::mem_layout::row_major,
             gpu::xetla::mem_space::global>;
     using mem_desc_b_t = gpu::xetla::mem_desc_t<data_type_b, gpu::xetla::mem_layout::row_major,
@@ -73,15 +81,25 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
             mem_desc_a_t, mem_desc_b_t>;
 
+    using bias_op_t = gpu::xetla::subgroup::bias_add_op_t<float, gpu::xetla::gpu_arch::Xe>;;
+    using tile_op_t = gpu::xetla::subgroup::chained_tile_op_t<
+            bias_op_t // apply elementwise BiasAdd
+            >;
     using epilogue_t = gpu::xetla::group::epilogue_t<
-            gpu::xetla::group::epilogue_policy_unaligned<gpu::xetla::gpu_arch::Xe>, tile_shape,
+            gpu::xetla::group::epilogue_policy_unaligned<tile_op_t, gpu::xetla::gpu_arch::Xe>, tile_shape,
             mem_desc_c_t>;
     using group_swizzle = gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Xe>;
     using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
                     group_swizzle, global_kslicing, local_kslicing>,
             gemm_t, epilogue_t>;
-
+    bias_op_t::shape_t bias_add_shape(matrix_n, 1, matrix_n);
+    // [ReLuBias] pass arguments of chained_tile_op_t<> to epilogue_args
+    using epilogue_args_t = epilogue_t::arguments_t;
+    epilogue_args_t epilogue_args({//epilogue_args init list
+            // [ReLuBias] 2. bias_add_op_t
+            // It accepts the base pointer to matrix D, and its dimensions
+            {D_d, bias_add_shape}});
     size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);
     size_t size_cnt = gemm_op_t::get_cnt_buf_size(matrix_m, matrix_n);
 
@@ -131,7 +149,7 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A_d,
             matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n, Acc_d,
-            Cnt_d);
+            Cnt_d, epilogue_args);
     cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
@@ -175,6 +193,7 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
     free(A_d, context);
     free(B_d, context);
     free(C_d, context);
+    free(D_d, context);
     free(scale_d, context);
     free(Acc_h, context);
     free(Cnt_h, context);
@@ -184,6 +203,12 @@ void xetla_linear(sycl::queue queue, T1 *A, CompressWei4Bit *B,
 
 void xetla_linear_fp16(sycl::queue queue, fp16* A, CompressWei4Bit* B, fp16* C,
                        uint32_t matrix_m, uint32_t matrix_n,
-                       uint32_t matrix_k) {
-  return xetla_linear(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+                       uint32_t matrix_k, bool with_bias, float *bias) {
+  return xetla_linear(queue, A, B, C, matrix_m, matrix_n, matrix_k, with_bias, bias);
+}
+
+void xetla_linear_fp32(sycl::queue queue, float* A, CompressWei4Bit* B, float* C,
+                       uint32_t matrix_m, uint32_t matrix_n,
+                       uint32_t matrix_k, bool with_bias, float *bias) {
+  return xetla_linear(queue, A, B, C, matrix_m, matrix_n, matrix_k, with_bias, bias);
 }

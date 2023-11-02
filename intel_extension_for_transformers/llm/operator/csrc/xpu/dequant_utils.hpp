@@ -58,8 +58,6 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
   int8_t *bit4_wei =
       reinterpret_cast<int8_t *>(compress_wei->get_4bit_wei_ptr());
   fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr());
-  sycl::buffer<DST_T, 2> dst_buf(
-      dequant_weight, sycl::range<2>(compress_wei->_K, compress_wei->_N));
   sycl::buffer<fp16, 1> scale_buf(
       scale, sycl::range<1>(compress_wei->_K / compress_wei->_blksize *
                             compress_wei->_N));
@@ -70,14 +68,33 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
   constexpr int LOCAL_K = 32, LOCAL_N = 32;
   using namespace std::chrono;
   auto m_start = high_resolution_clock::now();
-  for (int i = 0; i < compress_wei->_K; i += KTILE) {
-    for (int j = 0; j < compress_wei->_N; j += NTILE) {
-      gpu_dequant_s4fullrange_f32_KxN<KTILE, NTILE / 2, LOCAL_K, LOCAL_N>(
-          q, src_buf, dst_buf, scale_buf, compress_wei->_K, compress_wei->_N,
-          compress_wei->_blksize, i, j);
+  if (transpose) {
+    float *tmp_buf = new float[compress_wei->_K * compress_wei->_N];
+    sycl::buffer<DST_T, 2> dst_buf(
+        tmp_buf, sycl::range<2>(compress_wei->_K, compress_wei->_N));
+    for (int i = 0; i < compress_wei->_K; i += KTILE) {
+      for (int j = 0; j < compress_wei->_N; j += NTILE) {
+        gpu_dequant_s4fullrange_f32_KxN<KTILE, NTILE / 2, LOCAL_K, LOCAL_N>(
+            q, src_buf, dst_buf, scale_buf, compress_wei->_K, compress_wei->_N,
+            compress_wei->_blksize, i, j);
+      }
     }
+    q.wait();
+    transpose2d<float>(tmp_buf, dequant_weight, compress_wei->_K, compress_wei->_N, compress_wei->_N, compress_wei->_K);
+    delete[] tmp_buf;
   }
-  q.wait();
+  else {
+    sycl::buffer<DST_T, 2> dst_buf(
+        tmp_buf, sycl::range<2>(compress_wei->_K, compress_wei->_N));
+    for (int i = 0; i < compress_wei->_K; i += KTILE) {
+      for (int j = 0; j < compress_wei->_N; j += NTILE) {
+        gpu_dequant_s4fullrange_f32_KxN<KTILE, NTILE / 2, LOCAL_K, LOCAL_N>(
+            q, src_buf, dst_buf, scale_buf, compress_wei->_K, compress_wei->_N,
+            compress_wei->_blksize, i, j);
+      }
+    }
+    q.wait();
+  }
   auto m_end = high_resolution_clock::now();
   std::cout << "GPU dequant cost"
             << duration_cast<nanoseconds>(m_end - m_start).count() / 1e6 << "ms"
