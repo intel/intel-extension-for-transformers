@@ -247,6 +247,7 @@ class _BaseQBitsAutoModelClass:
                 backend="ipex",
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
                 recipes=recipes,
                 example_inputs=example_inputs,
             )
