@@ -42,7 +42,7 @@ class TestCutVideo(unittest.TestCase):
             if not os.path.exists(args.path):
                 raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
 
-            outdir = '/raw'
+            outdir = '../assets/raw'
 
             cut_video(args, outdir)
 
