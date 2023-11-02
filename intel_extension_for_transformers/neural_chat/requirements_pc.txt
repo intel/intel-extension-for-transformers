@@ -20,7 +20,7 @@ beautifulsoup4
 InstructorEmbedding
 chromadb
 fastapi
-pydantic
+pydantic==1.10.13
 starlette
 yacs
 uvicorn
