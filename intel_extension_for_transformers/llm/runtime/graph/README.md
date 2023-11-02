@@ -204,7 +204,7 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 
-# to convert model with peft adapter, you need to merge the peft adapter into the model first, use below command to merge the peft adapter and save the merged model, afterwards you can use 'scripts/convert.py' just like above mentioned.
+# To convert model with PEFT(Parameter-Efficient Fine-Tuning) adapter, you need to merge the PEFT adapter into the model first, use below command to merge the PEFT adapter and save the merged model, afterwards you can use 'scripts/convert.py' just like above mentioned.
 python scripts/load_peft_and_merge.py --model_name_or_path meta-llama/Llama-2-7b-hf --peft_name_or_path dfurman/llama-2-7b-instruct-peft --save_path ./Llama-2-7b-hf-instruct-peft
 
 # quantize weights of fp32 ggml bin
