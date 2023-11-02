@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.models.neuralchat_model &mdash; Intel® Extension for Transformers 0.1.dev1+g6f2d854 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.models.neuralchat_model &mdash; Intel® Extension for Transformers 0.1.dev1+gef20c78 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -88,59 +88,6 @@
              
   <section id="module-intel_extension_for_transformers.neural_chat.models.neuralchat_model">
 <span id="intel-extension-for-transformers-neural-chat-models-neuralchat-model"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.models.neuralchat_model" title="intel_extension_for_transformers.neural_chat.models.neuralchat_model"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.models.neuralchat_model</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.models.neuralchat_model" title="Link to this heading"></a></h1>
-<section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
-<section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel" title="intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralChatModel</span></code></a></p></td>
-<td><p>A base class for LLM.</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.neuralchat_model.</span></span><span class="sig-name descname"><span class="pre">NeuralChatModel</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/neuralchat_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel" title="Link to this definition"></a></dt>
-<dd><p>A base class for LLM.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel.match">
-<span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/neuralchat_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel.match" title="Link to this definition"></a></dt>
-<dd><p>Check if the provided model_path matches the current model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_path</strong> (<em>str</em>) – Path to a model.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if the model_path matches, False otherwise.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel.get_default_conv_template">
-<span class="sig-name descname"><span class="pre">get_default_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastchat.conversation.Conversation</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/neuralchat_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.neuralchat_model.NeuralChatModel.get_default_conv_template" title="Link to this definition"></a></dt>
-<dd><p>Get the default conversation template for the given model path.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_path</strong> (<em>str</em>) – Path to the model.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A default conversation template.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="../../../../conversation/index.html#conversation.Conversation" title="conversation.Conversation">Conversation</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-</section>
 </section>
 
 
@@ -157,7 +104,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f8476664730> 
+   <jinja2.runtime.BlockReference object at 0x7f440bf91ed0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
