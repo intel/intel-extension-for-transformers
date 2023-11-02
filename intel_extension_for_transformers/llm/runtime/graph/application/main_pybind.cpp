@@ -96,7 +96,6 @@ class Model {
   static size_t jblas_quantize(const float* src_w, 
                    void* dstpr, const quant_params_internal params, int nthread, int n, int k);
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> dst) {
-    // 获取NumPy数组的指针
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
     int8_t* dst_ptr = dst.mutable_data();
@@ -115,7 +114,6 @@ class Model {
     q_params.scale_dtype = quant_sdtype::fp32;
     q_params.compute_dtype = quant_comp::int8;
     q_params.group_size = 32;
-    // printf("quantize: %d, %d\n", src_w.shape(0), src_w.shape(1));
     return Model::jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, 8, src_w.shape(0), src_w.shape(1));
   }
  private:
