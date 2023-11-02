@@ -1,6 +1,3 @@
-# Enable graph cpp model process
-<img src="imgs/Enable_cpp_model.PNG" width=1200 height=150 alt="Enable cpp model">
-<br>
 
 ## Before you start
 ITREX LLM C++ Runtime has already supported some popular models like `LLAMA`,`GPT-J`, `GPT-NEOX`, `DOLLY`, etc.These LLMs have similar architectures and some of them share the same architect (`DOLLY` and `GPT-NEOX`). Before adding a new model, you can checkout its architecture (from Huggingface `config.json`) whether is in our [supported list](https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68).
@@ -83,7 +80,9 @@ The Korean prompt would have the output like:
 
 Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using more `transformers` style python codes and `INT4` type. Please refer to `Python API` section for more details.
 
-
+# Enable graph cpp model process
+<img src="imgs/Enable_cpp_model.PNG" width=1200 height=150 alt="Enable cpp model">
+<br>
 # 1.	Model conversion
 
 ## 1.1.	Hyperparamters
