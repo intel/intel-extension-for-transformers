@@ -80,3 +80,23 @@ TEST(tile_elemwise_op_res_add, esimd) {
                     elemwise_reduce_op_t<reduce_op::sum, float, gpu_arch::Xe>>>(
             nd_range, result_validate);
 }
+
+TEST(tile_elemwise_op_linear_op, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate = std::bind(
+            tile_elemwise_linear_op_validate<float>, _1, _2, _3, 128, 16, 32);
+    kernel_run<float,
+            tile_elemwise_op_func<float, 128, 64, 128, 16, 32, 16, 16,
+                    linear_op_t<float, gpu_arch::Xe>>>(
+            nd_range, result_validate);
+}
+
+TEST(tile_elemwise_op_linear_op_2, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate = std::bind(
+            tile_elemwise_linear_op_validate<float>, _1, _2, _3, 128, 16, 24);
+    kernel_run<float,
+            tile_elemwise_op_func<float, 128, 64, 128, 16, 24, 16, 16,
+                    linear_op_t<float, gpu_arch::Xe>>>(
+            nd_range, result_validate);
+}

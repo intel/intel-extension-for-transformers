@@ -1136,4 +1136,123 @@ struct scalar_mul_op_t<dtype_in_, arch_tag,
     }
 };
 
+/// @brief Is the linear_op functor.
+/// Multiply matAcc with a scalar, then add a bias, update the output in place.
+/// Used in epilogue::tile_op or chained_tile_op.
+/// @tparam dtype_in Is the data type of multiplier buffer.
+/// @tparam arch_tag Is the hardware architecture tag.
+template <typename dtype_in, gpu_arch arch_tag, class enable = void>
+struct linear_op_t {};
+/// @brief Is the linear_op functor, specialized for Xe architecture.
+template <typename dtype_in_, gpu_arch arch_tag>
+struct linear_op_t<dtype_in_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
+    using dtype_in = dtype_in_;
+    using mem_desc_in_t
+            = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;
+    using shape_t = typename mem_desc_in_t::shape_t;
+    using coord_t = typename mem_desc_in_t::coord_t;
+    using base_t = typename mem_desc_in_t::base_t;
+
+    struct arguments_t {
+        shape_t shape;
+        base_t base;
+        dtype_in alpha;
+        dtype_in beta;
+        inline arguments_t() = default;
+        inline arguments_t(
+                base_t base_, shape_t shape_, dtype_in alpha_, dtype_in beta_)
+            : base(base_), shape(shape_), alpha(alpha_), beta(beta_) {}
+    };
+
+    template <typename matAcc_t>
+    __XETLA_API KERNEL_FUNC void operator()(matAcc_t &matAcc,
+            const coord_t &coord, const arguments_t &args,
+            uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
+        using dtype_acc = matAcc_t::dtype;
+        static constexpr uint32_t tile_size_x = matAcc_t::tile_size_x;
+        static constexpr uint32_t tile_size_y = matAcc_t::tile_size_y;
+        static constexpr uint32_t block_size_x = matAcc_t::block_size_x;
+        static constexpr uint32_t block_size_y = matAcc_t::block_size_y;
+        static constexpr uint32_t num_block_x = matAcc_t::num_block_x;
+        static constexpr uint32_t num_block_y = matAcc_t::num_block_y;
+        static constexpr uint32_t tile_elems = matAcc_t::tile_elems;
+        static constexpr uint32_t block_elems = matAcc_t::block_elems;
+        static constexpr uint32_t remained_size_y = tile_size_y % block_size_y;
+
+        using mat_in_tile_desc_t = tile_desc_t<tile_size_x, block_size_y,
+                block_size_x, block_size_y, reg_layout::tiled>;
+        using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
+        using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
+                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
+                mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+        using mat_in_tile_acc_t = tile_t<dtype_acc, mat_in_tile_desc_t>;
+        mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
+        mat_in_tile_t mat_in;
+        mat_in_payload_t mat_in_payload(mem_desc_in);
+        mat_in_tile_acc_t mat_in_acc;
+
+        dtype_acc alpha = dtype_acc(args.alpha);
+        dtype_acc beta = dtype_acc(args.beta);
+        matAcc.reg *= alpha;
+
+#pragma unroll
+        for (uint32_t i = 0; i < num_block_y; ++i) {
+            tile_load<cache_hint::cached, cache_hint::cached>(
+                    mat_in, mat_in_payload);
+            elemwise_cvt(mat_in_acc, mat_in);
+            mat_in_acc.reg *= beta;
+#pragma unroll
+            for (uint32_t j = 0; j < num_block_x; ++j) {
+                auto dst_reg = matAcc.reg.xetla_select<block_elems, 1>(
+                        (i * num_block_x + j) * block_elems);
+                auto src_reg = mat_in_acc.reg.xetla_select<block_elems, 1>(
+                        j * block_elems);
+                dst_reg = reduce_helper<reduce_op::sum, dtype_acc, block_elems>(
+                        src_reg, dst_reg);
+            }
+            mat_in_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                    block_size_y);
+        }
+        // process the tail
+        if constexpr (remained_size_y > 0) {
+            constexpr uint32_t tail_start_y = num_block_y * block_size_y;
+            constexpr uint32_t tail_block_elems
+                    = remained_size_y * block_size_x;
+
+            using mat_tail_in_tile_desc_t
+                    = tile_desc_t<tile_size_x, remained_size_y, block_size_x,
+                            remained_size_y, reg_layout::tiled>;
+            using mat_tail_in_tile_t
+                    = tile_t<dtype_in, mat_tail_in_tile_desc_t>;
+            using mat_tail_in_payload_t = mem_payload_t<dtype_in,
+                    mat_tail_in_tile_desc_t,
+                    msg_type_v<mat_tail_in_tile_desc_t, mem_desc_in_t::space>,
+                    mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+            using mat_tail_in_tile_acc_t
+                    = tile_t<dtype_acc, mat_tail_in_tile_desc_t>;
+
+            mat_tail_in_tile_t mat_tail_in;
+            mat_tail_in_payload_t mat_tail_in_payload(mem_desc_in);
+            mat_tail_in_tile_acc_t mat_tail_in_acc;
+            mat_tail_in_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                    tail_start_y);
+            tile_load<cache_hint::cached, cache_hint::cached>(
+                    mat_tail_in, mat_tail_in_payload);
+            elemwise_cvt(mat_tail_in_acc, mat_tail_in);
+            mat_tail_in_acc.reg *= beta;
+#pragma unroll
+            for (int j = 0; j < num_block_x; ++j) {
+                auto dst_reg = matAcc.reg.xetla_select<tail_block_elems, 1>(
+                        tail_start_y * tile_size_x + j * tail_block_elems);
+                auto src_reg
+                        = mat_tail_in_acc.reg.xetla_select<tail_block_elems, 1>(
+                                j * tail_block_elems);
+                dst_reg = reduce_helper<reduce_op::sum, dtype_acc,
+                        tail_block_elems>(src_reg, dst_reg);
+            }
+        }
+    }
+};
+
 } // namespace gpu::xetla::subgroup

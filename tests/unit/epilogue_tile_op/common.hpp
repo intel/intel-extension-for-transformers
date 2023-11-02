@@ -181,3 +181,29 @@ int tile_elemwise_res_add_validate(dtype *A, dtype *B, dtype *C, unsigned Sizex,
     std::cout << (err_cnt > 0 ? "FAILED\n" : "PASSED\n");
     return err_cnt;
 }
+
+template <typename dtype>
+int tile_elemwise_linear_op_validate(dtype *A, dtype *B, dtype *C,
+        unsigned Sizex, unsigned Blockx, unsigned Blocky) {
+    int err_cnt = 0;
+    for (unsigned i = 0; i < Blocky; ++i) {
+        for (unsigned j = 0; j < Blockx; ++j) {
+            dtype golden = A[i * Sizex + j] * 4;
+            if (abs(golden - C[i * Sizex + j]) / (golden + 0.000001) > 0.001) {
+                if (++err_cnt < 10) {
+                    std::cout << "failed at index " << i * Blockx + j << ", "
+                              << C[i * Sizex + j] << " != " << golden << "\n";
+                }
+            }
+        }
+    }
+
+    unsigned Size = Blockx * Blocky;
+    if (err_cnt > 0) {
+        std::cout << "pass rate: "
+                  << ((float)(Size - err_cnt) / (float)Size) * 100.0f << "% ("
+                  << (Size - err_cnt) << "/" << Size << ")\n";
+    }
+    std::cout << (err_cnt > 0 ? "FAILED\n" : "PASSED\n");
+    return err_cnt;
+}

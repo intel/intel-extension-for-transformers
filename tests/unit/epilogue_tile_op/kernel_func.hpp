@@ -180,3 +180,32 @@ struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
         epilogue(g, matAcc, mem_desc_c, epilogue_args);
     }
 };
+
+template <typename dtype, int swidth, int sheight, int spitch, int twidth,
+        int theight, int bwidth, int bheight>
+struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
+        bwidth, bheight, linear_op_t<dtype, gpu_arch::Xe>> {
+    using matAcc_t = tile_t<dtype,
+            tile_desc_t<twidth, theight, bwidth, bheight, reg_layout::tiled>>;
+    using tile_shape = tile_shape_t<twidth, theight, twidth, theight>;
+    using mem_desc_c_t
+            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
+
+    using epilogue_policy
+            = epilogue_policy_tile_op<linear_op_t<dtype, gpu_arch::Xe>,
+                    gpu_arch::Xe>;
+    using epilogue_t = epilogue_t<epilogue_policy, tile_shape, mem_desc_c_t>;
+    using work_group_t = typename tile_shape::work_group_t;
+    using epilogue_args_t = typename epilogue_t::arguments_t;
+
+    static KERNEL_FUNC inline void run(
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
+        matAcc_t matAcc;
+        matAcc.reg = 0;
+        mem_desc_c_t mem_desc_c {{c}, {swidth, sheight, spitch}, {0, 0}};
+        work_group_t g(item->get_local_linear_id());
+        epilogue_args_t epilogue_args({{a}, {swidth, sheight, spitch}, 0.4, 4});
+        epilogue_t epilogue;
+        epilogue(g, matAcc, mem_desc_c, epilogue_args);
+    }
+};
