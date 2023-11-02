@@ -2088,60 +2088,70 @@ void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_i
   }
 }
 
-void ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
-                                  struct ne_tensor* dst, const int64_t& ne0, const int64_t& ne1, const int64_t& ne2,
-                                  const int64_t& ne3, const std::vector<int>& block_ids, const int& layer_idx,
-                                  const bool& concat_k) {
+ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
+                                        const int64_t& ne0, const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
+                                        const std::vector<int>& block_ids, const int& layer_idx, const bool& concat_k) {
   MODEL_ASSERT(ne3 == block_ids.size());  // moctx->batch_size
   struct ne_tensor* cache = concat_k ? moctx->model.kv_self.k : moctx->model.kv_self.v;
   // K = [head_dim, n_past+N, n_head, batch_size]
   // V = [N_past+N, head_dim, n_head, batch_size]
   const uint32_t n_embd_kv = concat_k ? ne0 * ne2 : ne1 * ne2;
-  MODEL_ASSERT(ne0 == dst->ne[0]);
-  MODEL_ASSERT(ne1 == dst->ne[1]);
-  MODEL_ASSERT(ne2 == dst->ne[2]);
-  MODEL_ASSERT(ne3 == dst->ne[3]);
+  struct ne_tensor* dst;
   if (concat_k) {
     MODEL_ASSERT(ne1 <= moctx->n_ctx);
   } else {
     MODEL_ASSERT(ne0 <= moctx->n_ctx);
   }
   const size_t elem_size = ne_element_size(cache);
-  const size_t nb0 = concat_k ? elem_size * ne0 : elem_size * moctx->n_ctx;
-  const size_t nb1 = concat_k ? nb0 * moctx->n_ctx : nb0 * ne1;
-  const size_t nb2 = nb0 * nb1 * ne2;
+  const size_t nb1 = concat_k ? elem_size * ne0 : elem_size * moctx->n_ctx;
+  const size_t nb2 = concat_k ? nb1 * moctx->n_ctx : nb1 * ne1;
+  const size_t nb3 = nb2 * ne2;
   int cont_bs = 1;
   int start_idx = block_ids[0];
   int id = 1;
   size_t dst_off = 0;
-  while (id <= block_ids.size()) {
+  while (id < block_ids.size()) {
     if (block_ids[id] - block_ids[id - 1] <= 1) {
       cont_bs++;
       id++;
       continue;
     } else {
+      dst = ne_new_tensor_4d(nectx, cache->type, ne0, ne1, ne2, ne3, NE_SIZE_CALC);
       struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
                                            elem_size * ne0 * ne1 * ne2, dst_off);
       dst_off += elem_size * ne0 * ne1 * ne2 * cont_bs;
       size_t off = layer_idx * moctx->n_ctx * elem_size * n_embd_kv * moctx->kv_n_ctx_block +
                    start_idx * moctx->n_ctx * elem_size * n_embd_kv;
       ne_build_forward_expand(
-          cgraph, ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb0, nb1, nb2, off), dst_i));
+          cgraph, ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb1, nb2, nb3, off), dst_i));
       start_idx = block_ids[id];
       cont_bs = 1;
       id++;
     }
   }
+
+  size_t off = layer_idx * moctx->n_ctx * elem_size * n_embd_kv * moctx->kv_n_ctx_block +
+               start_idx * moctx->n_ctx * elem_size * n_embd_kv;
+  if (start_idx == block_ids[0]) {
+    // continuous among all batch tokens
+    return ne_view_4d(nectx, cache, ne0, ne1, ne2, ne3, nb1, nb2, nb3, off);
+  } else {
+    // last cont batch
+    struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
+                                         elem_size * ne0 * ne1 * ne2, dst_off);
+    ne_build_forward_expand(cgraph,
+                            ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb1, nb2, nb3, off), dst_i));
+  }
+  return dst;
 }
 
-void model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
-                               struct ne_tensor* dst, const int64_t& ne0, const int64_t& ne1, const int64_t& ne2,
-                               const int64_t& ne3, const std::vector<int>& block_ids, const int& layer_idx,
-                               const bool& concat_k) {
+ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
+                                     const int64_t& ne0, const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
+                                     const std::vector<int>& block_ids, const int& layer_idx, const bool& concat_k) {
   if (moctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
-    ne_model_kv_cache_seq_concat(cgraph, moctx, nectx, dst, ne0, ne1, ne2, ne3, block_ids, layer_idx, concat_k);
+    return ne_model_kv_cache_seq_concat(cgraph, moctx, nectx, ne0, ne1, ne2, ne3, block_ids, layer_idx, concat_k);
   } else {
-    return;  // jblas
+    return nullptr;  // jblas
   }
 }
 

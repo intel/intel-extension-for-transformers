@@ -271,16 +271,16 @@ MODEL_API void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq
                                       const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
 
 // concat several seqs into a continuous batch from kv cache
-MODEL_API void ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
-                                            struct ne_context* nectx, struct ne_tensor* dst, const int64_t& ne0,
-                                            const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
-                                            const std::vector<int>& block_ids, const int& layer_idx,
-                                            const bool& concat_k);
-MODEL_API void model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
-                                         struct ne_context* nectx, struct ne_tensor* dst, const int64_t& ne0,
-                                         const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
-                                         const std::vector<int>& block_ids, const int& layer_idx,
-                                         const bool& concat_k = true);
+MODEL_API ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
+                                                  struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
+                                                  const int64_t& ne2, const int64_t& ne3,
+                                                  const std::vector<int>& block_ids, const int& layer_idx,
+                                                  const bool& concat_k);
+MODEL_API ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
+                                               struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
+                                               const int64_t& ne2, const int64_t& ne3,
+                                               const std::vector<int>& block_ids, const int& layer_idx,
+                                               const bool& concat_k = true);
 
 #ifdef __cplusplus
 }
