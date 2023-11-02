@@ -248,6 +248,7 @@ class HuggingFaceAutoLM(BaseLM):
                 max_cpu_memory,
                 offload_folder,
             )
+        self._device = device
         if model_format == "torch":
             self.model = self._create_auto_model(
                 pretrained=pretrained,
@@ -278,7 +279,6 @@ class HuggingFaceAutoLM(BaseLM):
             self.model.eval()
             torch.set_grad_enabled(False)
 
-            self._device = device
             if use_accelerate and "lm_head" in self.model.hf_device_map:
                 # `accelerate` can place `lm_head` weights on a different device than
                 # the user specified one so we force `self._device` to be the same as
@@ -365,7 +365,7 @@ class HuggingFaceAutoLM(BaseLM):
                     **model_kwargs,
                 )
         else:
-            from auto_gptq import AutoGPTQForCausalLM
+            from auto_gptq import AutoGPTQForCausalLM    # pylint: disable=E0401
 
             model = AutoGPTQForCausalLM.from_quantized(
                 pretrained,
@@ -549,7 +549,7 @@ class HuggingFaceAutoLM(BaseLM):
 
             token_context = self.tok_encode_batch(context)
 
-            responses = self._model_generate(
+            responses = self._model_generate(     # pylint: disable=E1123, E1120
                 inputs=token_context,
                 max_tokens=max_tokens,
                 stop=until,
@@ -789,7 +789,7 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
                     ),
                 )
             )
-            contexts, conts = utils.split_and_pad_windows(
+            contexts, conts = utils.split_and_pad_windows(  # pylint: disable=E1101
                 rolling_token_windows,
                 pad_token_id=self.eot_token_id,
                 max_seq_len=self.max_length,
