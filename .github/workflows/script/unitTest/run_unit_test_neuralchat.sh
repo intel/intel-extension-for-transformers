@@ -84,9 +84,6 @@ function main() {
     pip install git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
     pip install --upgrade git+https://github.com/UKPLab/sentence-transformers.git
     pip install -U sentence-transformers
-    VIDEO_DIR='/media'
-    cd ${VIDEO_DIR} || exit 1
-    curl -OL https://raw.githubusercontent.com/Liangyx2/intel_video/master/intel.mp4
     cd ${WORKING_DIR} || exit 1
     if [ -f "requirements.txt" ]; then
         python -m pip install --default-timeout=100 -r requirements.txt
