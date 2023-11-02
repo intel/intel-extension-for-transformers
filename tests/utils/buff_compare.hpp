@@ -252,10 +252,10 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
     std::cout << "\t\t"
               << "data_idx: " << data.idx_mapping[aulpidx]
               << " gold_idx: " << other.idx_mapping[aulpidx]
-              << " abserr: " << aulpte[aulpidx] << std::endl;
+              << " abserr: " << (float)aulpte[aulpidx] << std::endl;
     std::cout << "\t\t"
               << "data_val: " << ulp_data[aulpidx]
-              << " gold_val: " << ulp_other[aulpidx] << std::endl;
+              << " gold_val: " << (float)ulp_other[aulpidx] << std::endl;
 
     size_t ulp_threshold = ulp_tol;
     double small_num_threshold = abs_tol;
