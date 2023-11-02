@@ -301,8 +301,8 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-try:
-    from optimum.habana import GaudiConfig, GaudiTrainer
+if is_optimum_habana_available():
+    from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
         r"""Initialize habana
         """
@@ -365,5 +365,3 @@ try:
             else:
                 self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
 
-except:
-    pass
