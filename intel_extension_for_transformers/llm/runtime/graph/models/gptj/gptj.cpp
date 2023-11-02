@@ -318,10 +318,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
         K = ne_permute(ctx0, K, 0, 2, 1, 3);
       }
     } else {
-      K = ne_view_4d(ctx0, kv_self.k, head_size, n_cached, n_head, batch_size, ne_element_size(kv_self.k) * head_size,
-                     ne_element_size(kv_self.k) * head_size * n_ctx,
-                     ne_element_size(kv_self.k) * head_size * n_head * n_ctx,
-                     il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block);
+      K = ne_new_tensor_4d(ctx0, kv_self.k->type, head_size, n_cached, n_head, batch_size, NE_SIZE_CALC);
+      model_kv_cache_seq_concat(&gf, &lctx, ctx0, K, head_size, n_cached, n_head, batch_size, block_ids, il);
       K = ne_permute(ctx0, K, 0, 2, 1, 3);
       if (is_ring_full) {
         struct ne_tensor* cossin_cache = nullptr;
@@ -333,10 +331,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
       K = ne_permute(ctx0, K, 0, 2, 1, 3);
 
       // split cached V into n_head heads
-      V = ne_view_4d(ctx0, kv_self.v, n_cached, head_size, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
-                     n_ctx * ne_element_size(kv_self.v) * head_size,
-                     n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
-                     il * n_ctx * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block);
+      V = ne_new_tensor_4d(ctx0, kv_self.v->type, n_cached, head_size, n_head, batch_size, NE_SIZE_CALC);
+      model_kv_cache_seq_concat(&gf, &lctx, ctx0, V, n_cached, head_size, n_head, batch_size, block_ids, il, false);
     }
     ne_set_name(K, "K");
     ne_set_name(V, "V");
