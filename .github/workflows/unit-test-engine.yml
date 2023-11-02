@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/unit-test-engine.yml"
       - ".github/workflows/script/unitTest/**"
+      - "requirements.txt"
+      - "setup.py"
       - "intel_extension_for_transformers/llm/runtime/deprecated/**"
       - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
       - "!intel_extension_for_transformers/llm/runtime/graph/**"

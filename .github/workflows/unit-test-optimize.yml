@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - intel_extension_for_transformers/transformers/**
+      - requirements.txt
+      - setup.py
       - intel_extension_for_transformers/utils/**
       - intel_extension_for_transformers/llm/evaluation/**
       - intel_extension_for_transformers/llm/quantization/**

@@ -45,6 +45,6 @@
 		</span>
 	</div>
 
-	<span class="relative mt-2 text-xs text-gray-600 dark:text-gray-400  text-ellipsis overflow-hidden whitespace-nowrap">{name}</span>
+	<span class="relative mt-2 text-xs text-gray-600  text-ellipsis overflow-hidden whitespace-nowrap">{name}</span>
 
 </div>

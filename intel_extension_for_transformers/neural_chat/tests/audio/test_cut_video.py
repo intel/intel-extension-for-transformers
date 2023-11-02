@@ -23,15 +23,15 @@ import unittest
 
 class TestCutVideo(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('/raw', ignore_errors=True)
-        os.mkdir('/raw')
+        shutil.rmtree('../assets/raw', ignore_errors=True)
+        os.mkdir('../assets/raw')
 
     def tearDown(self) -> None:
-        shutil.rmtree('/raw', ignore_errors=True)
+        shutil.rmtree('../assets/raw', ignore_errors=True)
     
     def test_cut_video(self):
             parser = argparse.ArgumentParser(__doc__)
-            parser.add_argument("--path", type=str, default="/media")
+            parser.add_argument("--path", type=str, default="../assets/video/intel.mp4")
             parser.add_argument("--min", type=str, default='1')
             parser.add_argument("--sr", type=str, default='16000')
             parser.add_argument("--out_path", type=str, default="../raw")
@@ -42,11 +42,11 @@ class TestCutVideo(unittest.TestCase):
             if not os.path.exists(args.path):
                 raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
 
-            outdir = '/raw'
+            outdir = '../assets/raw'
 
             cut_video(args, outdir)
 
-            self.assertTrue(os.path.exists('/raw/intel_0.wav'))
+            self.assertTrue(os.path.exists('../assets/raw/intel_0.wav'))
 
 if __name__ == "__main__":
     unittest.main()
