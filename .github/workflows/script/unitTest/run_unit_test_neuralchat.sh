@@ -30,7 +30,7 @@ function pytest() {
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     echo -e '
 # Kill the neuralchat server processes
-ports="7000 8000 9000"
+ports="6000 7000 8000 9000"
 # Loop through each port and find associated PIDs
 for port in $ports; do
     # Use lsof to find the processes associated with the port
