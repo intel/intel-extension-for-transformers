@@ -38,15 +38,19 @@ data.tofile(fout)
 - Model layer:
 - Set buffer size: We need to set the corresponding buffer size in model.h according to the n_layers of the model.(not n_layer)
 - Model_load_internal: This function include model init and model load, The model init function initializes the model's hyperparameter, such as n_layer and n_embd parameters. 
+```cpp
 n_embd = hparams.n_embd;
 n_vocab = hparams.n_vocab;
 n_layer = hparams.n_layer;
-- The weights of the model in the ITREX Graph file will be loaded in model load function. Here, we'll re-read some of the parameters and weights of the converted binary,include ffn, attention, and norm weight and bias, We'll use the mapping between the name and the weight to read the weight we need. It is shown below.
+```
+The weights of the model in the ITREX Graph file will be loaded in model load function. Here, we'll re-read some of the parameters and weights of the converted binary,include ffn, attention, and norm weight and bias, We'll use the mapping between the name and the weight to read the weight we need. It is shown below.
+```cpp
 model.others[0] = ml->get_tensor("gpt_neox.embed_in.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+```
 Here we use get_tensor function to read gpt_neox_embed_in.weight with a shape of (n_vocab,n_embd) tensor into model.others[0].
 ## 2.2.	Inference process
 - Model_eval_internal: This function can be equivalent to the forward process in pytorch, which has the same computational process. In gptneox.cpp, the model_eval_internal here will perform a complete operation on the input values, such as ffn, layernorm, mha, etc. Here's a layernorm operation:
-```python
+```cpp
 cur = ne_norm(ctx0, inpL);
 cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur),
 ne_repeat(ctx0, model.layers[il].norm[1], cur));
