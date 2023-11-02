@@ -144,12 +144,12 @@ def main():
         
         generator = torch.Generator("cpu").manual_seed(args.seed)
         original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
-        pipe.text_encoder = ipex.optimize(pipe.text_encoder, dtype=torch.float32)
-        pipe.unet = ipex.optimize(pipe.unet, dtype=torch.float32)
-        pipe.vae = ipex.optimize(pipe.vae, dtype=torch.float32)
+        original_pipe.text_encoder = ipex.optimize(original_pipe.text_encoder, dtype=torch.float32)
+        original_pipe.unet = ipex.optimize(original_pipe.unet, dtype=torch.float32)
+        original_pipe.vae = ipex.optimize(original_pipe.vae, dtype=torch.float32)
 
         if args.mode == "latency":
-            benchmark(original_pipe, generator = generator, steps = args.steps, backend = "pytorch")
+            benchmark(original_pipe, generator = generator, steps = args.steps, backend = "IPEX")
             return        
     elif args.backend == "ITREX":
         neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
@@ -175,16 +175,15 @@ def main():
             from PIL import Image
             from io import BytesIO
             pipe = StableDiffusionImg2ImgPipeline.from_pretrained(args.input_model)
-	        url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
-	        response = requests.get(url)
-	        init_image = Image.open(BytesIO(response.content)).convert("RGB")
-	        init_image = init_image.resize((768, 512))
+            url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
+            response = requests.get(url)
+            init_image = Image.open(BytesIO(response.content)).convert("RGB")
+            init_image = init_image.resize((768, 512))
+            prompt = "A fantasy landscape, trending on artstation"
+            images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
+            images[0].save("fantasy_landscape.png")
 
-	        prompt = "A fantasy landscape, trending on artstation"
-	        images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
-	        images[0].save("fantasy_landscape.png")
-
-	    return
+        return
 
 
 if __name__ == '__main__':
