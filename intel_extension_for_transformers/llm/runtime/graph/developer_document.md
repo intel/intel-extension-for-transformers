@@ -236,6 +236,8 @@ Most of our model examples only support single prompt processing. You need to ad
 We support binding LLM runtime to transformer-based Python API, which is more convenient for customers to use. You need to modify the following files. 
 Please refer to [how-to-use-transformer-based-api](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/README.md#how-to-use-transformer-based-api)  of using Python API.
 
+> The Python API will automatically call the convert script and quantization script to convert the hugging face model into a quantified model. Please ensure that the scripts have been added.
+
 Files need to be modified:
 - `intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt`
 - `intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp`
