@@ -1,12 +1,12 @@
 datasets>=1.17
 mlflow
-nlpaug
+nlpaug==1.1.9
 sacremoses
 neural-compressor
 onnx>=1.10
 onnxruntime
 --find-links https://download.pytorch.org/cpu/whl/torch_stable.html
-torch==2.0.1+cpu
+torch==2.1.0
 transformers
 intel-tensorflow==2.12.0
 torchprofile

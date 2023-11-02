@@ -74,9 +74,7 @@ typedef DWORD thread_ret_t;
 static int pthread_create(pthread_t* out, void* unused, thread_ret_t (*func)(void*), void* arg) {
   (void)unused;
   HANDLE handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, NULL);
-  if (handle == NULL) {
-    return EAGAIN;
-  }
+  if (handle == NULL) return EAGAIN;
 
   *out = handle;
   return 0;
@@ -1331,9 +1329,7 @@ struct ne_tensor* ne_dump_tensor(struct ne_context* ctx, struct ne_tensor* a) {
 struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
   bool is_node = false;
 
-  if (!inplace && (a->grad)) {
-    is_node = true;
-  }
+  if (!inplace && (a->grad)) is_node = true;
 
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
@@ -2937,8 +2933,8 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 // ne_rope
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                               int prompt_size, bool inplace) {
-  NE_ASSERT(n_past >= 0);
+                               int prompt_size, bool inplace, int n_keep, struct ne_tensor* cossin) {
+  NE_ASSERT(n_past >= 0 || n_keep >= 0);
   bool is_node = false;
 
   if (!inplace && a->grad) {
@@ -2949,12 +2945,13 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
   ((int32_t*)b->data)[3] = prompt_size;
+  ((int32_t*)b->data)[4] = n_keep;  // set to non-negative value to enable shift mode
 
   ne_scratch_load(ctx);
 
@@ -2962,18 +2959,24 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
   result->src1 = b;
+  result->opt[0] = cossin;
 
   return result;
 }
 
 struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                           int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                                   int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL);
+}
+
+struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims, int mode,
+                                        int prompt_size, int n_keep, struct ne_tensor* cossin) {
+  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin);
 }
 
 // ne_rope_back
@@ -7664,14 +7667,17 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
   }
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
 
-  float freq_base = 10000.0f;
-  float freq_scale = 1.0f;
+  static const float freq_base = 10000.0f;
+  static const float freq_scale = 1.0f;
 
   const int64_t n_past = ((int32_t*)src1->data)[0];
   const int64_t n_dims = ((int32_t*)src1->data)[1];
   const int64_t mode = ((int32_t*)src1->data)[2];
   const int64_t prompt_size = ((int32_t*)src1->data)[3];
+  const int64_t n_keep = ((int32_t*)src1->data)[4];
 
   assert(n_past >= 0);
 
@@ -7699,12 +7705,15 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
   const float theta_scale = powf(freq_base, -2.0f / n_dims);
 
+  const bool skip = mode & 1;
   const bool is_neox = mode & 2;
   const bool is_glm = mode & 4;
+  const bool is_shift = n_keep >= 0;
+  NE_ASSERT(("RoPE shift not supported!", !is_shift));
 
   for (int64_t i3 = 0; i3 < ne3; i3++) {
-    for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
-      const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
+    for (int64_t i2 = (skip ? n_past : 0); i2 < ne2; i2++) {
+      const int64_t p = skip ? i2 : n_past + i2;
       for (int64_t i1 = 0; i1 < ne1; i1++) {
         if (ir++ < ir0) continue;
         if (ir > ir1) break;
@@ -7742,7 +7751,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
             const float cos_theta = cosf(theta);
             const float sin_theta = sinf(theta);
 
-            theta *= theta_scale;
+            theta *= theta_scale;  // theta = i2 * theta_scale^(i0/2)
 
             const float* const src = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
             float* dst_data = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
@@ -7784,18 +7793,19 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
 static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         const struct ne_tensor* src1, struct ne_tensor* dst) {
-  NE_ASSERT(src1->type == NE_TYPE_I32);
-  NE_ASSERT(ne_nelements(src1) == 3);
-
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
   }
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
 
   const int n_past = ((int32_t*)src1->data)[0];
   const int n_dims = ((int32_t*)src1->data)[1];
   const int mode = ((int32_t*)src1->data)[2];
+  const int prompt_size = ((int32_t*)src1->data)[3];
+  const int n_keep = ((int32_t*)src1->data)[4];
 
-  assert(n_past >= 0);
+  assert(n_past >= 0 || n_keep >= 0);
 
   const size_t nb00 = src0->nb[0];
   const size_t nb01 = src0->nb[1];
@@ -7834,11 +7844,55 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
 
   const float theta_scale = powf(10000.0, -2.0f / n_dims);
 
+  const bool skip = mode & 1;
   const bool is_neox = mode & 2;
+  const bool is_glm = mode & 4;
+  NE_ASSERT(("glm mode RoPE is not implemented!", !is_glm));
+  const bool is_shift = n_keep >= 0;
+  NE_ASSERT(("shift RoPE is only implemented for the vanilla mode", !is_shift || !(is_glm || is_neox || skip)));
+
+  if (is_shift) {
+    float theta = n_past;
+    ne_fp16_t* cossin = (dst->opt[0] != NULL) ? dst->opt[0]->data : NULL;
+    if (cossin == NULL) {
+      cossin = malloc(ne0 * sizeof(ne_fp16_t));
+      for (int i0 = 0; i0 < ne0; i0 += 2) {
+        cossin[i0 + 0] = NE_FP32_TO_FP16(cosf(theta));
+        cossin[i0 + 1] = NE_FP32_TO_FP16(sinf(theta));
+        theta *= theta_scale;
+      }
+    }
+
+    for (int64_t i3 = 0; i3 < ne3; i3++) {
+      for (int64_t i2 = 0; i2 < ne2; i2++) {    // along seq
+        for (int64_t i1 = 0; i1 < ne1; i1++) {  // along head num
+          if (ir++ < ir0) continue;
+          if (ir > ir1) break;
+          if (i2 < n_keep) continue;  // The "break" will break `ir`
+
+          for (int64_t i0 = 0; i0 < ne0; i0 += 2) {  // along head size
+            const ne_fp16_t* const src =
+                (ne_fp16_t*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
+            ne_fp16_t* dst_data = (ne_fp16_t*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
+
+            const float x0 = NE_FP16_TO_FP32(src[0]);
+            const float x1 = NE_FP16_TO_FP32(src[1]);
+            const float cos = NE_FP16_TO_FP32(cossin[i0 + 0]);
+            const float sin = NE_FP16_TO_FP32(cossin[i0 + 1]);
+
+            dst_data[0] = NE_FP32_TO_FP16(x0 * cos - x1 * sin);
+            dst_data[1] = NE_FP32_TO_FP16(x1 * cos + x0 * sin);
+          }
+        }
+      }
+    }
+    if (dst->opt[0] == NULL) free(cossin);
+    return;
+  }
 
   for (int64_t i3 = 0; i3 < ne3; i3++) {
-    for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
-      const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
+    for (int64_t i2 = (skip ? n_past : 0); i2 < ne2; i2++) {
+      const int64_t p = skip ? i2 : n_past + i2;
       for (int64_t i1 = 0; i1 < ne1; i1++) {
         if (ir++ < ir0) continue;
         if (ir > ir1) break;

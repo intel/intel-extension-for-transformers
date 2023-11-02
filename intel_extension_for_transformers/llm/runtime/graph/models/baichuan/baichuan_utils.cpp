@@ -39,21 +39,18 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
-  lctx.t_start_us = ne_time_us();
-
-  std::unique_ptr<IModel> ms(new BAICHUAN());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  std::unique_ptr<BAICHUAN> ms(new BAICHUAN());
+  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
-  lctx.t_load_us = ne_time_us() - lctx.t_start_us;
+  lctx.support_jblas_kv = true;
 }
 
-void BAICHUAN::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-                    bool use_mlock_, bool vocab_only_) {
-  n_ctx = n_ctx_;
+void BAICHUAN::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+                    bool vocab_only_) {
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -65,9 +62,7 @@ void BAICHUAN::init(const char* path_model, model_context& lctx, int n_ctx_, int
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
-  hparams.n_ctx = n_ctx;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
-  fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
   fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
   fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
@@ -141,15 +136,14 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     // ffn GEMM
     layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight",
                                   {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
-    layer.ffn[1] =
-        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
-                                  {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, n_embd / hparams.n_head, max_len,
-                                       hparams.n_head);  // [n_head, maxlen, head_size]
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, max_len, n_embd / hparams.n_head,
-                                       hparams.n_head);  // [n_head, head_size, maxlen]
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
+                                  {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
+    layer.ffn[2] =
+        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+
+    layer.v_cache == nullptr;
+    layer.k_cache == nullptr;
   }
 
   // print memory requirements

@@ -241,12 +241,12 @@ def check_submodules():
 
 if __name__ == '__main__':
     ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', lib_only=True)]
+        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.Model", "intel_extension_for_transformers/llm/runtime/graph/"),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
             ])
     cmdclass={'build_ext': CMakeBuild}
 

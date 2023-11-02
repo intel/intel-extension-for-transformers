@@ -24,11 +24,6 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
-def prepare_env(device):
-    if device == "hpu":
-        os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-        os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
-
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
@@ -70,7 +65,8 @@ def build_chatbot(config: PipelineConfig=None):
     elif "opt" in config.model_name_or_path or \
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path:
+         "bloom" in config.model_name_or_path or \
+         "starcoder" in config.model_name_or_path:
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
@@ -103,6 +99,12 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
                     plugins[plugin_name]['class'] = SafetyChecker
+                elif plugin_name == "ner":
+                    from .pipeline.plugins.ner.ner import NamedEntityRecognition
+                    plugins[plugin_name]['class'] = NamedEntityRecognition
+                elif plugin_name == "ner_int":
+                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
+                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 print(f"create {plugin_name} plugin instance...")
@@ -119,14 +121,14 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["device"] = config.device
     parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
     parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["ipex_int8"] = config.loading_config.ipex_int8
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
-    # Set necessary env variables
-    prepare_env(config.device)
     adapter.load_model(parameters)
 
     return adapter
@@ -142,12 +144,14 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config):
+def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
     Args:
-        config (OptimizationConfig): Configuration for optimizing the model.
+        model: large language model
+        config (OptimizationConfig): The configuration required for optimizing the model.
+        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model)
+    model = optimization.optimize(model, use_llm_runtime)
     return model

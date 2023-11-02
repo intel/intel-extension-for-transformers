@@ -163,6 +163,7 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
+            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             calib_func = quantization_config.calib_func
             if calib_func is None:
                 if quantization_config.tokenizer is None:
@@ -246,6 +247,7 @@ class _BaseQBitsAutoModelClass:
                 backend="ipex",
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
                 recipes=recipes,
                 example_inputs=example_inputs,
             )
@@ -259,7 +261,12 @@ class _BaseQBitsAutoModelClass:
             else:
                 calib_func = calib_func
             model.config.torchscript = True
-            model = quantization.fit(model, conf, calib_func=calib_func)
+            model = quantization.fit(
+                                    model, 
+                                    conf,
+                                    calib_func=calib_func,
+                                    calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
+                                    )
             logger.info("SmoothQuant done.")
         return model
 
@@ -274,3 +281,6 @@ class AutoModel(_BaseQBitsAutoModelClass):
 
 class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
+
+class GPTBigCodeForCausalLM(_BaseQBitsAutoModelClass):
+    ORIG_MODEL = transformers.GPTBigCodeForCausalLM

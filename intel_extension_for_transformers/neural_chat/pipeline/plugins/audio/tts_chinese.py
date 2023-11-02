@@ -15,34 +15,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddlespeech.server.bin.paddlespeech_client import TTSOnlineClientExecutor
+import paddle
+from paddlespeech.cli.tts import TTSExecutor
 
-class ChineseTextToSpeech():  # pragma: no cover
-    def __init__(self, output_audio_path="./response.wav", spk_id=0,
-                 stream_mode=False, server_ip="127.0.0.1", port=443, protocol="http", device="cpu"):
-        self.server_ip = server_ip
-        self.port = port
-        self.protocol = protocol
-        self.executor = TTSOnlineClientExecutor()
-        self.stream_mode = stream_mode
-        self.spk_id = spk_id
-        self.output_audio_path = output_audio_path
-        self.device = device
+class ChineseTextToSpeech():
+    def __init__(self):
+        self.tts_executor = TTSExecutor()
 
-    def text2speech(self, text):
-        """Chinese text to speech and dump to the output_audio_path."""
-        self.executor(input=text, server_ip=self.server_ip, port=self.port, protocol=self.protocol,
-                    spk_id=self.spk_id, output=self.output_audio_path, play=False)
-        return self.output_audio_path
+    def text2speech(self, input, output_audio_path):
+        "Chinese text to speech and dump to the output_audio_path."
+        self.tts_executor(
+            text=input,
+            output=output_audio_path,
+            am='fastspeech2_csmsc',
+            am_config=None,
+            am_ckpt=None,
+            am_stat=None,
+            spk_id=0,
+            phones_dict=None,
+            tones_dict=None,
+            speaker_dict=None,
+            voc='pwgan_csmsc',
+            voc_config=None,
+            voc_ckpt=None,
+            voc_stat=None,
+            lang='zh',
+            device=paddle.get_device())
+        return output_audio_path
 
-    def stream_text2speech(self, generator):
-        """Stream the generation of audios with an LLM text generator."""
-        for idx, response in enumerate(generator):
-            self.output_audio_path = f"{self.output_audio_path}_{idx}.wav"
-            yield self.text2speech(response)
-
-    def post_llm_inference_actions(self, text_or_generator):
-        if self.stream_mode:
-            return self.stream_text2speech(text_or_generator)
-        else:
-            return self.text2speech(text_or_generator)
+    def post_llm_inference_actions(self, text, output_audio_path):
+        return self.text2speech(text, output_audio_path)

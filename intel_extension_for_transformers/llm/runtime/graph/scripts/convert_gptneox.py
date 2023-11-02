@@ -113,17 +113,38 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     
-    fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
-    fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
-    # Is this correct??
-    dot_token = tokenizer.encode(".")[0]
-    for i in range(hparams["vocab_size"]):
-        text = tokenizer.decode([i]).encode('utf-8')
+    # write vocab
+    vocab_size = hparams["vocab_size"]
+    encoder = tokenizer.vocab
+    # Add added_tokens (special tokens) to the encoder
+    encoder.update(tokenizer.get_added_vocab())
+    byte_encoder = bytes_to_unicode()
+    byte_decoder = {v:k for k, v in byte_encoder.items()}
+
+    counter = 0
+    # sort by value
+    for key in sorted(encoder, key=encoder.get):
+        # workaround for key error when c not found
+        text=""
+        for c in key:
+            if c not in byte_decoder:
+                text += c
+            else:
+                text += chr(byte_decoder[c] )
+        text = bytearray( text, encoding="utf-8" )
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
+        counter += 1
+    # Repeat last token until vocab_size
+    while counter < vocab_size:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        counter += 1
 
     list_vars = model.state_dict()
 

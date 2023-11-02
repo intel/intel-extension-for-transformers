@@ -50,7 +50,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data);
 
@@ -114,15 +114,17 @@ MODEL_API size_t model_set_state_data(struct model_context* ctx, uint8_t* src);
 
 // Save/load session file
 MODEL_API bool model_load_session_file(struct model_context* ctx, const char* path_session, model_token* tokens_out,
-                                       size_t n_token_capacity, size_t* n_token_count_out);
+                                       size_t n_token_capacity, size_t* n_token_total_out);
 MODEL_API bool model_save_session_file(struct model_context* ctx, const char* path_session, const model_token* tokens,
-                                       size_t n_token_count);
+                                       size_t n_token_total);
 
 // Run the model inference to obtain the logits and probabilities for the next
 // token. tokens + n_tokens is the provided batch of new tokens to process
-// n_past is the number of tokens to use from previous eval calls
+// n_past is the offset to which the kv is cached to
+// n_total is the number of tokens evaluated in previous eval calls
 // Returns 0 on success
-MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads);
+MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+                         int n_threads);
 
 // Convert the provided text into tokens.
 // The tokens pointer must be large enough to hold the resulting tokens.
@@ -152,8 +154,6 @@ MODEL_API float* model_get_embeddings(struct model_context* ctx);
 MODEL_API const char* model_token_to_str(const struct model_context* ctx, model_token token);
 
 // Special tokens
-MODEL_API model_token model_token_bos();
-MODEL_API model_token model_token_eos();
 MODEL_API model_token model_token_nl();
 
 // Sampling functions
@@ -371,8 +371,10 @@ class beam_search_kv_cache_reorder {
  public:
   explicit beam_search_kv_cache_reorder(model_context* lctx)
       : ctx(lctx),
-        n_ctx(lctx->model.hparams.n_ctx),
+        n_ctx(lctx->n_ctx),
         n_embd(lctx->model.hparams.n_embd),
+        head_dim(lctx->model.hparams.n_embd / lctx->model.hparams.n_head),
+        n_head(lctx->model.hparams.n_head),
         kv_n_ctx_block(lctx->kv_n_ctx_block) {}
   ~beam_search_kv_cache_reorder() {}
 
@@ -380,12 +382,13 @@ class beam_search_kv_cache_reorder {
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
- private:
+ protected:
   model_context* ctx = nullptr;
   const uint32_t n_ctx;
   const uint32_t n_embd;
   // const uint32_t n_head_kv;
-  // const uint32_t head_dim;
+  const uint32_t head_dim;
+  const uint32_t n_head;
   const uint32_t kv_n_ctx_block;
 };
 
@@ -418,6 +421,7 @@ class beam_search_flow {
   std::vector<beam_hypotheses> beam_hypos;
   std::vector<bool> requests_done;
   uint32_t n_past = 0;
+  uint32_t n_total = 0;
   uint32_t n_prompt_tokens = 0;
   int num_threads = 4;  // default by 4
   logits_processor lp;

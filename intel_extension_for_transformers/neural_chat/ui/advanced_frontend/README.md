@@ -1,8 +1,5 @@
-<h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Neural Chat</h1>
+<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px"> Neural Chat</h1>
 
-<h2>🚀 Demo</h2>
-
-[http://neuralstudio.intel.com/NeuralChat](http://neuralstudio.intel.com/NeuralChat)
 
 <h2>📸 Project Screenshots:</h2>
 
@@ -59,4 +56,4 @@ This project is to provide instructions and guidance on how to use OpenAI. Howev
 
 1. OpenAI Policies: OpenAI may have its own policies and regulations, such as API usage limits, pricing plans, service agreements, etc. Please make sure you are aware of and comply with OpenAI's relevant policies to avoid any violations.
 
-2. If you have any questions or issues related to OpenAI while using this service, we take no responsibility for them..
+2. If you have any questions or issues related to OpenAI while using this service, we take no responsibility for them.

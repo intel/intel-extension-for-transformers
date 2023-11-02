@@ -57,14 +57,24 @@
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
-                          const int batch_size, const int beam_size, model_struct* model) {
+                          const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
+                          model_struct* model) {
   const auto n_layer = hparams.n_layer;
+  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
+  const auto head_size = hparams.n_embd / hparams.n_head;
   int32_t k_size, v_size;
-  get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
+  get_batch_kv_elements_from_gpt_params(heads_kv, head_size, n_ctx, wtype, &k_size, &v_size);
 
-  const int64_t layer_ne_k = batch_size * beam_size * k_size;
-  const int64_t layer_ne_v = batch_size * beam_size * v_size;
+  int64_t layer_ne_k = batch_size * beam_size * k_size;
+  int64_t layer_ne_v = batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
+#ifdef NE_TP_MODEL
+  // when use TP, cached kv will also have smaller size
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  layer_ne_k /= world_size;
+  layer_ne_v /= world_size;
+#endif
 
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
 
@@ -88,9 +98,10 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       auto& k_cache = model->layers[il].k_cache;
       auto& v_cache = model->layers[il].v_cache;
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
-        const auto head_size = hparams.n_embd / hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.multi_query_group_num);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.multi_query_group_num);
+        const int head_size = hparams.n_embd / hparams.n_head;
+        const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
+        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv);
+        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -106,6 +117,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       ne_set_name(k_cache, "cache_k");
       ne_set_name(v_cache, "cache_v");
     }
+    const bool run_mha_reordered = model->layers[0].k_cache->type == NE_TYPE_JBLAS;
+    fprintf(stderr, "%s: run_mha_reordered = %d\n", __func__, run_mha_reordered);
   } else {
     cache.k = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_layer * layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
     const auto k_align_off = reinterpret_cast<uintptr_t>(cache.k->data) % NE_ALIGNMENT;
@@ -119,13 +132,38 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     ne_set_name(cache.v, "cache_v");
   }
 
+  if (shift_roped_k) {  // prepare rope helper for fused-attention
+    const auto cossin_dtype = wtype == NE_TYPE_JBLAS ? NE_TYPE_F16 : wtype;
+    cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
+    ne_set_name(cache.cossin, "cossin(-1)");
+    float theta = -1;
+    float theta_scale = std::pow(10000.f, -2.0f / head_size);
+    if (cossin_dtype == NE_TYPE_F16) {
+      const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
+      for (int i = 0; i < head_size; i += 2) {
+        data[i + 0] = NE_FP32_TO_FP16(std::cos(theta));
+        data[i + 1] = NE_FP32_TO_FP16(std::sin(theta));
+        theta *= theta_scale;
+      }
+    } else if (cossin_dtype == NE_TYPE_F32) {
+      const auto data = reinterpret_cast<float*>(cache.cossin->data);
+      for (int i = 0; i < head_size; i += 2) {
+        data[i + 0] = std::cos(theta);
+        data[i + 1] = std::sin(theta);
+        theta *= theta_scale;
+      }
+    } else {
+      NE_ASSERT(("Unexpected cossin type!", false));
+    }
+  }
   return true;
 }
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
-      /*arch                         =*/MODEL_LLAMA,
+      /*.arch                        =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
+      /*.n_keep                      =*/0,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
       /*.kv_type                     =*/KV_MEM_TYPE_AUTO,
@@ -137,6 +175,7 @@ struct model_context_params model_context_default_params() {
       /*.batch_size                  =*/1,
       /*.beam_search                 =*/false,
       /*.beam_size                   =*/1,
+      /*.shift_roped_k               =*/false,
       /*.progress_callback           =*/nullptr,
       /*.progress_callback_user_data =*/nullptr,
   };
@@ -165,13 +204,15 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                       bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, bool use_mmap,
+                       bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
+    lctx.t_start_us = ne_time_us();
     lctx.model.arch = arch;
-    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+    model_load_internal(fname, arch, lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
+    lctx.t_load_us = ne_time_us() - lctx.t_start_us;
     return true;
   } catch (const std::string& err) {
     fprintf(stderr, "error loading model: %s\n", err.c_str());
@@ -863,7 +904,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -876,7 +917,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -926,7 +967,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -939,7 +980,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -1120,11 +1161,19 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
+  ctx->n_ctx = params.n_ctx;
+  ctx->n_keep = params.n_keep;
+  ctx->shift_roped_k = params.shift_roped_k;
+  if (params.beam_search) {
+    ctx->beam_search = true;
+    ctx->beam_size = params.beam_size;
+    ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  }
   const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
-  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock,
-                  params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
+  if (!model_load(path_model, arch, *ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock, params.vocab_only,
+                  params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
     return nullptr;
@@ -1132,23 +1181,22 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   // reserve memory for context buffers
   if (!params.vocab_only) {
-    if (params.beam_search) {
-      ctx->beam_search = true;
-      ctx->beam_size = params.beam_size;
-      ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
-    }
-
     const auto& hparams = ctx->model.hparams;
 
+    if (params.shift_roped_k) {
+      NE_ASSERT(("Current model does not support shifting RoPE-ed K cache", arch == MODEL_LLAMA));
+    }
     const attn_shape_t attn_shape = {
         /* .batch_size = */ ctx->batch_size * ctx->beam_size,
         /* .head_num = */ static_cast<int>(hparams.n_head),
         /* .heads_kv = */ static_cast<int>(hparams.n_head_kv),
         /* .head_size = */ static_cast<int>(hparams.n_embd / hparams.n_head),
         /* .sl_q = */ 1,  // for next-token inference
-        /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
+        /* .sl_kv = */ static_cast<int>(ctx->n_ctx),
     };
     const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
+    fprintf(stderr, "%s: support_jblas_kv = %d\n", __func__, support_jblas_kv);
+
     const ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
                                 : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
                                 : params.kv_type == KV_MEM_TYPE_AUTO
@@ -1156,8 +1204,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
                                     : NE_TYPE_COUNT;
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
-    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
-                       (arch == MODEL_CHATGLM2 ? &ctx->model : nullptr))) {
+    const bool kv_in_layers = (arch == MODEL_CHATGLM2 || arch == MODEL_CHATGLM || arch == MODEL_BAICHUAN);
+    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->n_ctx, ctx->batch_size, ctx->beam_size,
+                       params.shift_roped_k, (kv_in_layers ? &ctx->model : nullptr))) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
@@ -1167,22 +1216,21 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       const size_t memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                      ? ne_nelements(ctx->model.kv_self.k) + ne_nelements(ctx->model.kv_self.v)
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
     } else if (ctx->model.layers[0].k_cache != nullptr) {
       const auto k_cache = ctx->model.layers[0].k_cache;
       const auto v_cache = ctx->model.layers[0].v_cache;
       const size_t layer_memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                            ? ne_nelements(k_cache) + ne_nelements(v_cache)
                                            : ne_nbytes(k_cache) + ne_nbytes(v_cache);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__,
-              layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
     } else {
       NE_ASSERT(("KV-cache not allocated!", false));
     }
 
     // resized during inference
     if (params.logits_all) {
-      ctx->logits.reserve(hparams.n_ctx * hparams.n_vocab);
+      ctx->logits.reserve(ctx->n_ctx * hparams.n_vocab);
     } else {
       ctx->logits.reserve(hparams.n_vocab);
     }
@@ -1481,6 +1529,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
 
   lparams.arch = params.model_arch;
   lparams.n_ctx = params.n_ctx;
+  lparams.n_keep = params.n_keep;
   lparams.n_gpu_layers = params.n_gpu_layers;
   lparams.seed = params.seed;
   lparams.kv_type = params.memory_type;
@@ -1491,6 +1540,11 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   lparams.batch_size = params.batch_size;
   lparams.beam_search = params.beam_search;
   lparams.beam_size = params.beam_size;
+  NE_ASSERT(("non-RoPEd K cache is not supported by this model!",  //
+             !lparams.shift_roped_k || lparams.arch == MODEL_LLAMA));
+  lparams.shift_roped_k = params.shift_roped_k;
+
+  NE_ASSERT(("Start size cannot be greater than the maximun context size!", lparams.n_keep < lparams.n_ctx));
 
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 
@@ -1503,7 +1557,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
       /* .heads_kv = */ static_cast<int>(model_hparams.n_head_kv + model_hparams.multi_query_group_num),
       /* .head_size = */ static_cast<int>(model_hparams.n_embd / model_hparams.n_head),
       /* .sl_q = */ 1,  // Note: make sure that jblas reordered attn supports next token inferencing
-      /* .sl_kv = */ static_cast<int>(model_hparams.n_ctx),
+      /* .sl_kv = */ static_cast<int>(lparams.n_ctx),
   };
   const auto k_cache_example = lctx->model.kv_self.k != nullptr ? lctx->model.kv_self.k           // llama.cpp style
                                                                 : lctx->model.layers[0].k_cache;  // chatglm style
@@ -1526,18 +1580,16 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   return lctx;
 }
 
-void get_batch_kv_elements_from_gpt_params(const struct model_hparams& hparams, ne_type wtype, int32_t* k_size,
+void get_batch_kv_elements_from_gpt_params(int heads_kv, int head_size, int n_ctx, ne_type wtype, int32_t* k_size,
                                            int32_t* v_size) {
-  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
-  const auto head_size = hparams.n_embd / hparams.n_head;
   if (wtype == NE_TYPE_F16 || wtype == NE_TYPE_F32) {
-    *k_size = hparams.n_ctx * heads_kv * head_size;
-    *v_size = hparams.n_ctx * heads_kv * head_size;
+    *k_size = n_ctx * heads_kv * head_size;
+    *v_size = n_ctx * heads_kv * head_size;
   } else if (wtype == NE_TYPE_JBLAS) {
     kv_shape_t kv_shape = {
-        /* .heads_kv = */ heads_kv,
-        /* .head_size = */ head_size,
-        /* .sl_kv_max = */ hparams.n_ctx,
+        /* .heads_kv = */ static_cast<uint32_t>(heads_kv),
+        /* .head_size = */ static_cast<uint32_t>(head_size),
+        /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
     };
     kv_cache_info_t kv_cache_info;
     jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
@@ -1638,7 +1690,7 @@ size_t model_copy_state_data(struct model_context* ctx, uint8_t* dst) {
     const auto& hparams = ctx->model.hparams;
     const int n_layer = hparams.n_layer;
     const int n_embd = hparams.n_embd;
-    const int n_ctx = hparams.n_ctx;
+    const int n_ctx = ctx->n_ctx;
 
     const size_t kv_size = kv_self.buf.size;
     const int kv_ntok = model_get_kv_cache_token_count(ctx);
@@ -1749,7 +1801,7 @@ size_t model_set_state_data(struct model_context* ctx, uint8_t* src) {
     const auto& hparams = ctx->model.hparams;
     const int n_layer = hparams.n_layer;
     const int n_embd = hparams.n_embd;
-    const int n_ctx = hparams.n_ctx;
+    const int n_ctx = ctx->n_ctx;
 
     size_t kv_size;
     int kv_ntok;
@@ -1912,7 +1964,7 @@ std::vector<model_token> model_tokenize(struct model_context* ctx, const std::st
 
 int model_n_vocab(const struct model_context* ctx) { return ctx->vocab.id_to_token.size(); }
 
-int model_n_ctx(const struct model_context* ctx) { return ctx->model.hparams.n_ctx; }
+int model_n_ctx(const struct model_context* ctx) { return ctx->n_ctx; }
 
 int model_n_embd(const struct model_context* ctx) { return ctx->model.hparams.n_embd; }
 
@@ -1927,10 +1979,6 @@ const char* model_token_to_str(const struct model_context* ctx, model_token toke
 
   return ctx->vocab.id_to_token[token].tok.c_str();
 }
-
-model_token model_token_bos() { return 1; }
-
-model_token model_token_eos() { return 2; }
 
 model_token model_token_nl() { return 13; }
 
@@ -2089,14 +2137,14 @@ void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& e
 void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
+  // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
+  NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
   // first step
   if (n_past == n_prompt_tokens) {
     // cpy batch 1 to all batches
-#pragma omp parallel for
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {
+#pragma omp parallel for collapse(2)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
       for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-        NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
         // [n_embd, N]
         memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                    (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2104,6 +2152,11 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                static_cast<char*>(ctx->model.kv_self.k->data) +
                    i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
                ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
+      }
+    }
+#pragma omp parallel for collapse(3)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+      for (int j = 1; j < kv_n_ctx_block; ++j) {
         // [N, n_embd]
         for (int k = 0; k < n_embd; ++k) {
           memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -2135,7 +2188,7 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
           len = n_ctx;
         }
 #pragma omp parallel for
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
           // [n_embd, N]
           memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                      (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2145,6 +2198,9 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                      i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
                      cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
                  ne_element_size(ctx->model.kv_self.k) * n_embd * len);
+        }
+#pragma omp parallel for collapse(2)
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
           // [N, n_embd]
           for (int k = 0; k < n_embd; ++k) {
             memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -2273,7 +2329,7 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   ctx->batch_size = batch_size;
   int n_tokens = 1;
 
-  model_eval(ctx, embd_inp.data(), n_tokens, n_past, num_threads);
+  model_eval(ctx, embd_inp.data(), n_tokens, n_past, n_total, num_threads);
 
   const int sample_scale = 2;
   std::vector<beam_next_token> next_tokens =
@@ -2474,14 +2530,18 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   kv_reorder = ctx->bs_kv_reorder;
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("WARNING: using default kv cache update function. \n");
+#endif
   }
   beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
   requests_done.push_back(false);
   for (int n = 0; n < max_new_tokens; ++n) {
     // first step
     if (n_past == 0) {
-      model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
+      model_eval(ctx, embd.data(), n_tokens, n_past, n_total, num_threads);
       n_past += n_tokens;
+      n_total += n_tokens;
       kv_reorder->update(n_past, n_tokens);
       std::vector<beam_next_token> next_tokens = beam_top_k_next_tokens(ctx, 0, {0.0f}, {1}, {0}, beam_size);
       MODEL_ASSERT(next_tokens.size() == beam_size);
@@ -2508,6 +2568,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       fill_next_beams_by_top_scores();
       std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
       n_past += 1;
+      n_total += 1;
       kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
       next_beams.clear();

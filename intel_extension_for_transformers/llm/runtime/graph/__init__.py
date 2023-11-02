@@ -18,7 +18,7 @@ import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
-model_maps = {"gpt_neox": "gptneox"}
+model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
 
 class Model:
     def __init__(self):
@@ -43,7 +43,7 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
         elif model_name == "mpt":
             import intel_extension_for_transformers.llm.runtime.graph.mpt_cpp as cpp_model
-        elif model_name == "starcoder":
+        elif model_name == "gpt_bigcode" or model_name == "starcoder":
             import intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp as cpp_model
         elif model_name == "opt":
             import intel_extension_for_transformers.llm.runtime.graph.opt_cpp as cpp_model
@@ -55,6 +55,8 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
         elif model_name == "baichuan":
             import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
+        elif model_name == "polyglot":
+            import intel_extension_for_transformers.llm.runtime.graph.polyglot_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
@@ -82,7 +84,6 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-
     def init_from_bin(self, model_name, model_path, **kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
@@ -93,7 +94,8 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer=None, interactive=False, **kwargs):
+
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
@@ -102,18 +104,31 @@ class Model:
             self.generate_round = 0
 
         ret = [[]]
-        if self.generate_round == 0:
+        if self.generate_round == 0 and not ignore_prompt:
             ret = input_ids.tolist()
 
         # TODO support multi batch
         assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        beam_search = False
+        if ("num_beams" in kwargs and kwargs["num_beams"] > 1) and not \
+            kwargs.get("do_sample", False):
+            beam_search = True
         if streamer:
-            if self.generate_round == 0:
+            if beam_search:
+                print("ERROR, can not use streamer when use beam search for generation!")
+                import sys
+                sys.exit(1)
+            if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
+            if interactive:
+                self.model.reset_token_end()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
+                if len(out) == 0:
+                    break
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
+            streamer.end()
         else:
             ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
         

@@ -37,7 +37,7 @@ short stories, and make jokes.</s>\n""",
 # neuralchat-v1.1 prompt template
 register_conv_template(
     Conversation(
-        name="neural-chat-7b-v1.1",
+        name="neural-chat-7b-v1-1",
         system_template="""<|im_start|>system
 {system_message}""",
         system_message="""- You are a helpful assistant chatbot trained by Intel.
@@ -115,14 +115,43 @@ register_conv_template(
     )
 )
 
+
+# Rag with threshold
+register_conv_template(
+    Conversation(
+        name="rag_with_threshold",
+        system_message="You are served as an AI agent to help the user complete a task." + \
+            " You are required to comprehend the usr query and then use the given context to" + \
+            " generate a suitable response.\n\n",
+        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+
 # Intent template
 register_conv_template(
     Conversation(
         name="intent",
-        system_message="Please identify the intent of the provided context." + \
+        system_message="Please identify the intent of the user query." + \
             " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
             " or engaging in conversation.\n",
-        roles=("Context:", "Intent:"),
+        roles=("### User Query: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# NER template
+register_conv_template(
+    Conversation(
+        name="ner",
+        system_message="""Please determine the precise time mentioned in the user's query. 
+            Your response should consist only of an accurate time in the format 
+            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+            If the user query does not include any time reference, please reply with 'None'.\n""",
+        roles=("Current Time: ", "User Query: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -141,3 +170,4 @@ class PromptTemplate:
 
     def get_prompt(self) -> str:
         return self.conv.get_prompt()
+    

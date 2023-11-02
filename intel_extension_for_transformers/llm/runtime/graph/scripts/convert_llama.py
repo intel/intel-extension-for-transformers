@@ -1027,7 +1027,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
 
         self.fout.write(struct.pack("i", 1)) # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
-        self.fout.write(struct.pack("i", 1))
+        self.fout.write(struct.pack("i", 2))
 
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
