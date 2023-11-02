@@ -96,12 +96,12 @@ fout.write(struct.pack("i", hparams["num_attention_heads"]))
 fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
 fout.write(struct.pack("i", hparams["num_hidden_layers"]))
 ```
-The above fout is the file we need to get, and here the num_attention, n_head_kv, and num_hidden_layer from hparams is written into fout.
+The above `fout` is the file we need to get, and here the `num_attention`, `n_head_kv`, and `num_hidden_layer` from hparams is written into fout.
 
 ## 1.2.	Vocabulary
 As the name implies, a model's vocabulary comprises components that are used by the model to generate language (text). However, unlike the vocabulary of a human, which consists of words, the vocabulary of a large language model consists of "tokens". A token can be an entire word, but oftentimes they are word fragments. Just like humans can compose millions of words from just a dozen or two letters, large language models use tokens to express a large number of words from a relatively smaller number of components. Consider a vocabulary with the following tokens: `whi`, `ch`, `le`, `who`, and `a`; this vocabulary can be used to create the English words `"which"`, `"while"`, `"who"`, `"a"`, and `"leach"`. How would the behavior change if the model contained the following tokens: `wh`, `ich`, `ile`, `o`, and `leach`? Choices such as these allow model-creators to tune the behavior and performance of their models.
 
-As described above, the model's hyperparameters typically contains a value that specifies the number of tokens in the vocabulary. The vocabulary is encoded as a list of tokens, each of which includes a 32-bit integer that specifies the length of the token.If your model has some new tokenizers, we suggest using python tokenizer from transformers and feed the input_ids to model python Api (python example in scripts floder).
+As described above, the model's hyperparameters typically contain a value that specifies the number of tokens in the vocabulary. The vocabulary is encoded as a list of tokens, each of which includes a 32-bit integer that specifies the length of the token. If your model has some new tokenizers, we suggest using a python tokenizer from transformers and feeding the input_ids to model Python API (python example in scripts folder)
 Here we will use [convert_gptneox.py](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L122) as an example to processed the vocabulary of gptneox and written it into fout.
 ```python
 encoder = tokenizer.vocab
@@ -111,7 +111,7 @@ byte_decoder = {v:k for k, v in byte_encoder.items()}
 ```
 
 ## 1.3.	Model weights
-The final, and largest, component of a ITREX GRAPH file is the weights of the LLM that the file represents. Abstractly, a large language model is software that is used to generate language - just like software that is used to generate images can be improved by increasing the number of colors with which images can be rendered, large language models can be improved by increasing the number of weights in the model. The total number of weights in a model are referred to as the "size" of that model. For example, the dolly-v2-3b implementation of the gpt-neox-20B language model architecture is available in a number of sizes, like 3B and 20B, which stands for 3 billion and 20 billion, respectively. These numbers refer to the total number of weights in that model. As described in the hyperparameters section, weights are grouped together in sets called "layers", which, like hyperparameters, have structures that are uniquely defined by the model architecture; within a layer, weights are grouped together in structures called "tensors". So, for instance, both dolly-v2-3B and gpt-neox-20B use layers that comprise the same tensors, but dolly-v2-3B has relatively fewer layers when compared to gpt-neox-20B.
+The final, and largest, component of a ITREX GRAPH file is the weights of the LLM that the file represents. Abstractly, a large language model is software that is used to generate language - just like software that is used to generate images can be improved by increasing the number of colors with which images can be rendered, large language models can be improved by increasing the number of weights in the model. The total number of weights in a model is referred to as the "size" of that model. For example, the dolly-v2-3b implementation of the gpt-neox-20b language model architecture is available in several sizes, like 3B and 20B, which stand for 3 billion and 20 billion, respectively. These numbers refer to the total number of weights in that model. As described in the hyperparameters section, weights are grouped in sets called "layers", which, like hyperparameters, have structures that are uniquely defined by the model architecture; within a layer, weights are grouped in structures called "tensors". So, for instance, both dolly-v2-3B and gpt-neox-20B use layers that comprise the same tensors, but dolly-v2-3B has relatively fewer layers when compared to gpt-neox-20B.
 Here we will use [convert_gptneox.py](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L149) as an example to convert model weights to fout.
 ```python
 fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
@@ -228,7 +228,42 @@ Most of our model examples only support single prompt processing. You need to ad
 
 ## 2.3.	Application
 - Q4_0 quant : We can quantize the model generated by convert by adding a quant layer class to quantize it into an int4 low-bit file, so as to obtain better inference performance. Register quant layer class in your new_model_utils.cpp, just like [gptneox_utils.cpp](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox_utils.cpp#L163), replace `gptneox_quant_layer` to your `new_model_quant_layer`.
-- Add new CMakeList.txt: You need to add the newly added model to the following CMakeList.txt. New model CMakeList.txt just like [gptneox_CMakeList.txt](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/CMakeLists.txt), and [models_CMakeList.txt](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt).
+```diff
++class new_quant_layer : public quant_layer_base {
++ public:
++ virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
++                                                 ne_type type) override {
++    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'
++    if (layername == "model.embed_tokens.weight") {
++      // special layer process, can be loaded by config file
++      return quant_params_internal();  // return q4_0 to cover the usage of getrow
++    }
++    quantize &= (ne.size() == 2);
++    if (quantize) {
++      return mGCfg;  // use global quant config
++    } else {
++      return quant_params_internal{quant_bits::count};  // non-quant
++    }
++  }
++};
++REGISTER_QUANT_LAYER_CLASS(new_model);
+```
+- Add new CMakeLists.txt: We need to add the newly added model to the following CMakeList.txt. New model CMakeList.txt just like [gptneox_CMakeLists.txt](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/CMakeLists.txt),
+```diff
++set(TARGET new_model)
++add_library_w_warning(${TARGET} new_model.cpp new_model_utils.cpp ${MODEL_UTILS_SOURCE})
++target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
++set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
++target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
+```
+ and and new_model to [models_CMakeLists.txt](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt).
+ ```diff
+add_subdirectory(opt)
+add_subdirectory(bloom)
+add_subdirectory(chatglm)
+add_subdirectory(baichuan)
++add_subdirectory(baichuan)
+ ```
 
 ### Python bindings and scripts
 1. Modify codes for python API
