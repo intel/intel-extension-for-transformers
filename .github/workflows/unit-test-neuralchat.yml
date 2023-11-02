@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
       - 'intel_extension_for_transformers/neural_chat/**'
+      - 'requirements.txt'
+      - 'setup.py'
       - 'intel_extension_for_transformers/llm/finetuning/**'
       - 'intel_extension_for_transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/transformers/**'
