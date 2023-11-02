@@ -125,8 +125,79 @@ data.tofile(fout)
 # 2.	Model enablements
 
 ## 2.1.	Model loading
-- Model type: Refers to the type of the model, This can be compared to the model type in the Transformers library, we can see model_class in [model_type.h](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68), here defines the basic properties of an ITREX graph model,include model_hparams, model_layer, model_struct.etc. If you has new cpp model you should update [model_archs](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68) and [model_name_to_arch()](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L395).
+- Model type: Refers to the type of the model, This can be compared to the model type in the Transformers library, we can see model_class in [model_type.h](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68), here defines the basic properties of an ITREX graph model,include model_hparams, model_layer, model_struct.etc. If you has new cpp model you should update [model_archs](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68)
+```diff
+enum model_archs {
+  MODEL_UNKNOWN,
+  MODEL_LLAMA,
+  MODEL_GPTJ,
+  MODEL_MPT,
+  MODEL_GPTNEOX,
+  MODEL_STARCODER,
+  MODEL_FALCON,
+  MODEL_OPT,
+  MODEL_BLOOM,
+  MODEL_BAICHUAN,
+  MODEL_CHATGLM2,
+  MODEL_CHATGLM,
++ MODEL_NEW
+};
+```
+and update [model_name_to_arch()](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L395).
+```diff
+ private:
+  model_name_to_arch() {}
+  // update this table if has new cpp model
+  std::unordered_map<std::string, model_archs> name2arch_ = {
+      {"unknown", MODEL_UNKNOWN},   {"llama", MODEL_LLAMA},
+      {"gptj", MODEL_GPTJ},         {"mpt", MODEL_MPT},
+      {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
+      {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm", MODEL_CHATGLM},
+-     {"baichuan", MODEL_BAICHUAN}};
++     {"baichuan", MODEL_BAICHUAN}},{"new_model", MODEL_NEW_MODEL}};
+};
+```
 - Set buffer size: You need to set the corresponding buffer size in model.h according to the size of parameters for the model, just like [gptneox.h](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h), you should update [enum gptneox_model](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L21), [model_scratch](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L26) and [model class](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L39).
+```diff
++#ifndef NEW_MODEL_H
++#define NEW_MODEL_H
+
++#include "models/model_utils/model_files.h"
++#include "models/model_utils/model_types.h"
+
++enum baichuan_model {
++  NEW_MDOEL_UNKNOWN,
++  NEW_MODEL_13B,
++};
+
++static const model_scratch new_model_mem_req(int n_layers) {
++  switch (n_layers) {
++    case N:
++      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
++    default:
++      MODEL_ASSERT(false);
+  }
++}
+
++class NEW_MODEL : public IModel {
++ private:
++  model_archs name = MODEL_NEW_MODEL;
++  std::unique_ptr<model_model_loader> ml;
++  uint32_t n_layer, n_embd, n_ff, n_vocab;
++  int n_ctx, n_gpu_layer;
++  bool use_mmap, use_mlock, vocab_only;
++  model_scratch scratch;
+
++ public:
++  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
++            bool vocab_only_) override;
++  void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
++};
+
++#endif  // NEW_MODEL_H
+```
 - Model_load_internal: This function include model init and model load, The [model init function](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox_utils.cpp#L42) initializes the model's hyperparameter, such as n_layer and n_embd parameters. 
 ```cpp
 n_embd = hparams.n_embd;
@@ -142,6 +213,9 @@ model.others[3] = ml->get_tensor("embed_out.weight", {n_embd, n_vocab}, NE_BACKE
 ```
 Here we use get_tensor function to read gpt_neox_embed_in.weight with a shape of (n_vocab,n_embd) tensor into model.others[0].
 
+So when enabling a new model, we should implement the new_model_utils.cpp of the new model.
+
+
 ## 2.2.	Inference process
 - Model_eval_internal: This function can be equivalent to the forward process in pytorch, which has the same computational process. In [gptneox.cpp](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.cpp), the model_eval_internal here will perform a complete operation on the input values, such as ffn, layernorm, mha, etc. Here's a layernorm operation:
 ```cpp
@@ -154,6 +228,8 @@ It is equivalent to in [gptneox.modeling](https://github.com/huggingface/transfo
 self.input_layernorm(hidden_states)
 ```
 The inpL in the code above is equivalent to the hidden_states in the pytorch code, and we combine ne_norm, ne_add, and ne_mul to equivalentize self.input_layernorm.
+
+When enabling a new model, we should implement the new_model.cpp of the new model.
 
 Most of our model examples only support single prompt processing. You need to add `batch-dim` for tensors and concat `KV cache` per-batch if you want to try multi-batch inference.
 ```diff
@@ -263,7 +339,7 @@ add_subdirectory(opt)
 add_subdirectory(bloom)
 add_subdirectory(chatglm)
 add_subdirectory(baichuan)
-+add_subdirectory(baichuan)
++add_subdirectory(new_model)
  ```
 
 ## 2.4. Python API
