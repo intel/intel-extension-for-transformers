@@ -1,4 +1,4 @@
-# Step-by-Step
+git+https://github.com/huggingface/optimum-intel.git@74912c0caa7dfb8979f59cbc94b57f5d6a448c30# Step-by-Step
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
 
 |Validated models| Smoothquant alpha |
@@ -21,6 +21,7 @@ We provide the inference benchmarking script `run_generation.py` for large langu
 |[facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b)| 0.5 |
 |[mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat)| 1.0 |
 |[Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1)| 1.0 |
+
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
 
