@@ -32,7 +32,9 @@ namespace gpu::xetla::group {
 template <typename tile_op_t_, typename tile_shape_, typename mem_desc_c_t_,
         gpu_arch arch_tag_>
 class epilogue_t<epilogue_policy_tile_op<tile_op_t_, arch_tag_>, tile_shape_,
-        mem_desc_c_t_, std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        mem_desc_c_t_,
+        std::enable_if_t<(
+                arch_tag_ == gpu_arch::Xe || arch_tag_ == gpu_arch::Arc)>> {
 public:
     using epilogue_policy = epilogue_policy_tile_op<tile_op_t_, arch_tag_>;
     using tile_op_t = typename epilogue_policy::tile_op_t;
@@ -98,9 +100,10 @@ private:
     }
 
 public:
-    static constexpr msg_type msg_type_c
-            = (mem_space_c == mem_space::global ? msg_type::block_2d
-                                                : msg_type::scatter);
+    static constexpr msg_type msg_type_c = (mem_space_c == mem_space::global
+                    ? (arch_tag == gpu_arch::Xe ? msg_type::block_2d
+                                                : msg_type::unaligned_2d)
+                    : msg_type::scatter);
 
     /// @brief Default epilogue.
     /// 1) Call tile_op/chained_tile_op 2) Convert dtype_acc to dtype_c

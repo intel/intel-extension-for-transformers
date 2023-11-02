@@ -27,4 +27,4 @@ add_link_options(-fsycl -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -
 link_libraries(-lgtest -lgtest_main)
 
 add_subdirectory(tests)
-# add_subdirectory(examples)
+add_subdirectory(examples)
