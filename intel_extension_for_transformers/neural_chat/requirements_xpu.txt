@@ -17,7 +17,7 @@ librosa
 beautifulsoup4
 InstructorEmbedding
 chromadb
-fastapi
+fastapi==0.103.2
 pydantic==1.10.13
 starlette
 yacs
