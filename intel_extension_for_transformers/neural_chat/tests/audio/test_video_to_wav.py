@@ -24,15 +24,15 @@ import unittest
 
 class TestVideo2Wav(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree("/raw", ignore_errors=True)
-        os.mkdir("/raw")
+        shutil.rmtree("../assets/raw", ignore_errors=True)
+        os.mkdir("../assets/raw")
 
     def tearDown(self) -> None:
-        shutil.rmtree("/raw", ignore_errors=True)
+        shutil.rmtree("../assets/raw", ignore_errors=True)
     
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='/media/intel.mp4')
+        parser.add_argument("--path", type=str, default='../assets/video/intel.mp4')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
         parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
@@ -46,7 +46,7 @@ class TestVideo2Wav(unittest.TestCase):
             is_mono = shlex.quote(args.is_mono)
             convert_video_to_wav(path, output_sample_rate, is_mono) 
         
-        self.assertTrue(os.path.exists('/raw/intel.wav'))
+        self.assertTrue(os.path.exists('../assets/raw/intel.wav'))
 
     def test_video_to_wav_folder(self):
         parser = argparse.ArgumentParser(__doc__)
