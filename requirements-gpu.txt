@@ -3,7 +3,9 @@ cmake
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
- --extra-index-url https://download.pytorch.org/whl/cpu
 accelerate
 datasets
 texttable
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us
+torch==2.0.1a0
+intel_extension_for_pytorch==2.0.110+xpu

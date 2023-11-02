@@ -16,8 +16,13 @@
 # limitations under the License.
 
 """Utility."""
-
+import importlib
+import sys
 import torch
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 
 def get_gpu_family():
@@ -45,3 +50,16 @@ def get_gpu_family():
     if 'Arc(TM)' in name:
         return 'arc'
     assert False, "Unsupport GPU device: {}".format(name)
+
+
+_ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+_ipex_version = "N/A"
+if _ipex_available:
+    try:
+        _ipex_version = importlib_metadata.version("intel_extension_for_pytorch")
+    except importlib_metadata.PackageNotFoundError:
+        _ipex_available = False
+
+
+def is_ipex_available():
+    return _ipex_available

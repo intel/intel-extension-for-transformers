@@ -15,20 +15,20 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(CMAKE_C_COMPILER "icx")
 set(CMAKE_CXX_COMPILER "icpx")
 
-project(xetla_linear LANGUAGES C CXX)
+project(xetla_kernel LANGUAGES C CXX)
 
 add_compile_options(-fsycl -fPIC)
 add_link_options(-fsycl -lpthread -lm -fPIC)
 
-file(GLOB xetla_linear xetla_linear.cpp)
+file(GLOB xetla_kernel_src xetla_kernel.cpp)
 
 # Define our library target
-add_library(${PROJECT_NAME} STATIC ${xetla_linear})
+add_library(xetla_kernel STATIC ${xetla_kernel_src})
 
 # Xetla Enable C++20
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET xetla_kernel PROPERTY CXX_STANDARD 20)
 
-target_include_directories(xetla_linear PRIVATE
+target_include_directories(xetla_kernel PRIVATE
 ../../../library/xetla
 ../../../library/xetla/include
 )

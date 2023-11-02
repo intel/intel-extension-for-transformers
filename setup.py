@@ -1,4 +1,5 @@
 """Setup and install modules."""
+import importlib
 import os
 import subprocess
 import sys
@@ -7,6 +8,34 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+    Addtional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import torch
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        return 'flex'
+    if 'GPU Max' in name:
+        return 'max'
+    if 'Arc(TM)' in name:
+        return 'arc'
+    assert False, "Unsupport GPU device: {}".format(name)
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -22,7 +51,16 @@ SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
 
-if not SKIP_RUNTIME:
+ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+USE_ARC = False
+if ipex_available and get_gpu_family() == "arc":
+    from torch.xpu.cpp_extension import DPCPPExtension, DpcppBuildExtension
+    SKIP_RUNTIME = True
+    RUNTIME_ONLY = False
+    USE_ARC = True
+
+
+if not SKIP_RUNTIME or USE_ARC:
     from cmake import CMAKE_BIN_DIR
     from cpuinfo import get_cpu_info
     cpu_flags = get_cpu_info()['flags']
@@ -64,7 +102,7 @@ class CMakeExtension(Extension):
         self.optional = lib_only  # we only deliver shared object but not as a python extension module
 
 
-class CMakeBuild(build_ext):
+class AutoBuild(DpcppBuildExtension):
     """Extension builder."""
 
     _copy_targes: bool = False
@@ -74,6 +112,8 @@ class CMakeBuild(build_ext):
         if file_name.endswith(".dll") or file_name.endswith(".exe"):
             return True
         if file_name.endswith(".so") or ".so." in file_name:
+            return True
+        if file_name.endswith(".a"):
             return True
         if sys.platform == "linux" and ('.' not in file_name):
             return True
@@ -89,7 +129,7 @@ class CMakeBuild(build_ext):
             ["git", "submodule", "--quiet", "foreach", f'echo $sm_path'], cwd=repo).decode("utf-8").splitlines()
         for sm in submodules:
             sm_path = os.path.join(repo, sm)
-            files.extend(CMakeBuild._get_files(sm_path, sm_path))
+            files.extend(AutoBuild._get_files(sm_path, sm_path))
         return files
 
     def get_source_files(self):
@@ -105,7 +145,13 @@ class CMakeBuild(build_ext):
                          for f in self._get_files(ext.sourcedir, cwd))
         return files
 
-    def build_extension(self, ext: CMakeExtension) -> None:
+    def build_extension(self, ext) -> None:
+        if isinstance(ext, CMakeExtension):
+            self.build_extension_cmake(ext)
+        else:
+            super().build_extension(ext)
+
+    def build_extension_cmake(self, ext: CMakeExtension) -> None:
         # Must be in this form due to bug in .resolve() only fixed in Python 3.10+
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)
         extdir = ext_fullpath.parent.resolve()
@@ -114,8 +160,10 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={output_dir}",
             f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={output_dir}",
+            f"-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={output_dir}",
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{CMAKE_BUILD_TYPE.upper()}={output_dir}",
             f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{CMAKE_BUILD_TYPE.upper()}={output_dir}",
+            f"-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_{CMAKE_BUILD_TYPE.upper()}={output_dir}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={CMAKE_BUILD_TYPE}",
             f"-DNE_VERSION_STRING={self.distribution.get_version()}",
@@ -198,7 +246,7 @@ class CMakeBuild(build_ext):
         subprocess.run(build_command, cwd=build_dir, check=True, env=my_env)
         if (self._copy_targes):
             for f in next(os.walk(output_dir))[2]:
-                if CMakeBuild._is_target_file(f):
+                if AutoBuild._is_target_file(f):
                     self.copy_file(
                         os.path.join(output_dir, f),
                         os.path.join(cwd, *ext.name.split('.')[:-1], f)
@@ -240,15 +288,31 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr/cpu', lib_only=True)]
+    if USE_ARC:
+        ext_modules = [
+            CMakeExtension(
+                'intel_extension_for_transformers.xetla_kernel',
+                'intel_extension_for_transformers/llm/operator/csrc/xpu',
+                lib_only=True,
+            ),
+            DPCPPExtension(
+                    name='intel_extension_for_transformers.gbits',
+                    sources=['intel_extension_for_transformers/llm/operator/csrc/xpu/gbits_kernel.cpp'],
+                    extra_compile_args={'cxx':['-std=c++17', '-fPIC']},
+                    library_dirs=["intel_extension_for_transformers"],
+                    libraries=["xetla_kernel"],
+            ),
+        ]
+    else:
+        ext_modules = [CMakeExtension(
+            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc/cpu', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
             ])
-    cmdclass={'build_ext': CMakeBuild}
+    cmdclass={'build_ext': AutoBuild}
 
     setup(
         name="intel-extension-for-transformers",
@@ -268,7 +332,7 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass=cmdclass if not SKIP_RUNTIME else {},
+        cmdclass=cmdclass if not SKIP_RUNTIME or USE_ARC else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
