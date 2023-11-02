@@ -129,7 +129,7 @@ def evaluate(model,
             model_args, kwargs
         )
     elif isinstance(model, transformers.PreTrainedModel):
-        lm = get_model("hf-causal")(    # disable: pylint=E1125
+        lm = get_model("hf-causal")(    # pylint disable=E1125
             pretrained=model,
             batch_size=batch_size,
             max_batch_size=max_batch_size,
