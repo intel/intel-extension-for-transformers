@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g3c4e47b documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g6f2d854 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -292,6 +292,9 @@ python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtyp
 git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>model_path
 
+<span class="c1"># To convert model with PEFT(Parameter-Efficient Fine-Tuning) adapter, you need to merge the PEFT adapter into the model first, use below command to merge the PEFT adapter and save the merged model, afterwards you can use &#39;scripts/convert.py&#39; just like above mentioned.</span>
+python<span class="w"> </span>scripts/load_peft_and_merge.py<span class="w"> </span>--model_name_or_path<span class="w"> </span>meta-llama/Llama-2-7b-hf<span class="w"> </span>--peft_name_or_path<span class="w"> </span>dfurman/llama-2-7b-instruct-peft<span class="w"> </span>--save_path<span class="w"> </span>./Llama-2-7b-hf-instruct-peft
+
 <span class="c1"># quantize weights of fp32 ggml bin</span>
 <span class="c1"># model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly</span>
 <span class="c1"># optimized INT4 model with group size 128 (recommended)</span>
@@ -372,7 +375,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f376d6a4520> 
+   <jinja2.runtime.BlockReference object at 0x7f8478a01d80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
