@@ -45,6 +45,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   std::unique_ptr<STARCODER> ms(new STARCODER());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
+  lctx.support_jblas_kv = true;
 }
 
 void STARCODER::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
