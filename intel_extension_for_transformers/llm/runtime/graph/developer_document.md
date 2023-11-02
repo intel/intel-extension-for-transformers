@@ -1,5 +1,5 @@
 # Enable graph cpp model process
-<img src="imgs/Enable_cpp_model.PNG" width=1200 height=300 alt="Enable cpp model">
+<img src="imgs/Enable_cpp_model.PNG" width=1200 height=150 alt="Enable cpp model">
 <br>
 
 # 1.	Model conversion
