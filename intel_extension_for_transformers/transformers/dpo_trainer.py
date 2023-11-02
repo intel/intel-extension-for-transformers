@@ -301,9 +301,8 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-if is_optimum_habana_available():
-    # pylint: disable=E0611
-    from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
+if is_optimum_habana_available(): # pragma: no cover
+    from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
         r"""Initialize habana
         """
