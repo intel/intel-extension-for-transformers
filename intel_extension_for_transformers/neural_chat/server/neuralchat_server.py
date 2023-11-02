@@ -99,6 +99,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         ipex_int8 = config.get("ipex_int8", False)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
+        peft_model_path = config.get("peft_model_path", "")
 
         # Update plugins based on YAML configuration
         for plugin_name, plugin_config in plugins.items():
@@ -107,7 +108,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 plugin_config["enable"] = True
                 plugin_config["args"] = yaml_config.get("args", {})
  
-        loading_config = LoadingModelConfig(ipex_int8=ipex_int8)
+        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, peft_path=peft_model_path)
         # Create a dictionary of parameters for PipelineConfig
         params = {
             "model_name_or_path": model_name_or_path,
