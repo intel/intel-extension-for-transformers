@@ -28,7 +28,7 @@ class TestVideo2Wav(unittest.TestCase):
         os.mkdir("../assets/raw")
 
     def tearDown(self) -> None:
-        shutil.rmtree("/raw", ignore_errors=True)
+        shutil.rmtree("../assets/raw", ignore_errors=True)
     
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
