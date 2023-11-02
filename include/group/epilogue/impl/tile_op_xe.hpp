@@ -125,9 +125,9 @@ public:
         using matC_payload_t = subgroup::mem_payload_t<mem_desc_c_t,
                 mat_tile_desc, msg_type_c, arch_tag>;
         update_sg_tile_tdesc(g, mem_desc_c);
-        // tile_op_t tile_op;
-        // tile_op(matAcc, mem_desc_c.coord, args.tile_op_args, slm_base,
-        //         nbarrier_base);
+        tile_op_t tile_op;
+        tile_op(matAcc, mem_desc_c.coord, args.tile_op_args, slm_base,
+                nbarrier_base);
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);
         subgroup::elemwise_cvt(matC, matAcc);
