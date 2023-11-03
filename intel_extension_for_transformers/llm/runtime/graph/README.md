@@ -274,3 +274,6 @@ Argument description of inference.py:
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
 
+### 4. Contribution
+
+You can consider adding your own models via [graph developer document](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/developer_document.md).
