@@ -46,14 +46,14 @@ class UnitTest(unittest.TestCase):
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
             server_ip="127.0.0.1",
-            port=7000)
+            port=9090)
         self.assertEqual(result.status_code, 200)
         print(json.loads(result.text))
 
         result = self.client_executor(
             prompt="Tell me about Intel Xeon processors.",
             server_ip="127.0.0.1",
-            port=7000,
+            port=9090,
             stream=True)
         self.assertEqual(result.status_code, 200)
         for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):

@@ -49,7 +49,7 @@ class UnitTest(unittest.TestCase):
         os.system("ps -ef |grep 'askdoc.yaml' |awk '{print $2}' |xargs kill -9")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:9000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
         request = {
             "query": "What is Intel oneAPI Compiler?",
             "domain": "test",

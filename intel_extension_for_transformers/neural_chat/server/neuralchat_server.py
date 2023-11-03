@@ -123,7 +123,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
         bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
         bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
-        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime, peft_path=peft_model_path)
+        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+                                            peft_path=peft_model_path)
         if optimization_type == "weight_only":
             optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
         elif optimization_type == "mix_precision":

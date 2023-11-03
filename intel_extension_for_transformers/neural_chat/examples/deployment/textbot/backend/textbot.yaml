@@ -51,7 +51,7 @@ optimization:
 # mix precision bf16
 # optimization:
 #     optimization_type: "mix_precision"
-#     mix_precision_dtype: "bf16"
+#     mix_precision_dtype: "bfloat16"
 
 # bits and bytes
 # optimization:
