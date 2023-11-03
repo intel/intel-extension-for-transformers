@@ -674,6 +674,14 @@ private:
     //             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
     //             mem_layout_a, mem_space_a, wg_size_x, arch_tag>;
 
+    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_a,
+            // Arc only support 1D prefetch
+            subgroup::tile_desc_t<arch_tag == gpu_arch::Xe
+                            ? tile_size_x_b
+                            : tile_size_x_a * tile_size_y_a,
+                    arch_tag == gpu_arch::Xe ? tile_size_y_b : 1, 1, 1>,
+            mem_layout_a, mem_space_a, wg_size_x, arch_tag>;
+
     //note: plane format, row-major
     //note: 4bit x 2, row-major
     using matB_tile_desc_t = subgroup::tile_desc_t<tile_size_x_b / pack_ratio,
@@ -685,6 +693,14 @@ private:
             mem_layout_b, mem_space_b, arch_tag>;
     //     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
     //             matB_tile_desc_t, mem_layout_b, mem_space_b, wg_size_y, arch_tag>;
+
+    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
+            // Arc only support 1D prefetch
+            subgroup::tile_desc_t<arch_tag == gpu_arch::Xe
+                            ? tile_size_x_b
+                            : tile_size_x_b * tile_size_y_b,
+                    arch_tag == gpu_arch::Xe ? tile_size_y_b : 1, 1, 1>,
+            mem_layout_b, mem_space_b, wg_size_y, arch_tag>;
 
     using matB_acc_tile_desc_t
             = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b,
@@ -720,9 +736,9 @@ private:
     using scale_payload_t = subgroup::mem_payload_t<dtype_scale,
             scale_tile_desc_t, msg_type::unaligned_2d, mem_layout::row_major,
             mem_space::global, arch_tag>;
-    //     using scale_prefetch_payload_t
-    //             = subgroup::prefetch_payload_t<dtype_scale, scale_tile_desc_t,
-    //                     mem_layout::row_major, mem_space::global, 1, arch_tag>;
+    using scale_prefetch_payload_t
+            = subgroup::prefetch_payload_t<dtype_scale, scale_tile_desc_t,
+                    mem_layout::row_major, mem_space::global, 1, arch_tag>;
 
     using tile_mma = subgroup::tile_mma_t<matAcc_t, matAcc_t, matB_acc_t,
             matA_acc_t, mma_engine::xmx, arch_tag>;
@@ -850,12 +866,12 @@ public:
         matA_payload_t matA_payload(args.matA_base_desc);
         matB_payload_t matB_payload(args.matB_base_desc);
         scale_payload_t scale_payload(args.scale_base_desc);
-        // matA_prefetch_payload_t matA_prefetch_payload(
-        //         args.matA_base_desc, sg_idx);
+        matA_prefetch_payload_t matA_prefetch_payload(
+                args.matA_base_desc, sg_idx);
         // matB_prefetch_payload_t matB_prefetch_payload(
         //         args.matB_base_desc, sg_idy);
-        // scale_prefetch_payload_t scale_prefetch_payload(
-        //         args.scale_base_desc, 0);
+        scale_prefetch_payload_t scale_prefetch_payload(
+                args.scale_base_desc, 0);
 
         xetla_nbarrier_t<wg_size_x, wg_size_x, gpu_arch::Arc> nbarrier_a;
         nbarrier_a.init_nbarrier(
@@ -867,25 +883,25 @@ public:
         int scale_prefetch_addr_i = 0;
         int scale_load_addr_i = 0;
         SW_BARRIER();
-        // #pragma unroll
-        // for (int i = 0; i < stages; i++) {
-        //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-        //             matA_prefetch_payload);
-        //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-        //             matB_prefetch_payload);
-        //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-        //             scale_prefetch_payload);
-        //     scale_prefetch_addr_i++;
-        //     matA_prefetch_payload.template update_tdesc<update_dir_a>(
-        //             matA_t::tile_size_x);
-        //     matB_prefetch_payload.template update_tdesc<update_dir_b>(
-        //             matB_t::tile_size_y);
-        //     if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
-        //         scale_prefetch_payload
-        //                 .template update_tdesc<tdesc_update_dir::y_dir>(
-        //                         scale_t::tile_size_y);
-        //     }
-        // }
+#pragma unroll
+        for (int i = 0; i < stages; i++) {
+            subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                    matA_prefetch_payload);
+            //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+            //             matB_prefetch_payload);
+            subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                    scale_prefetch_payload);
+            scale_prefetch_addr_i++;
+            matA_prefetch_payload.template update_tdesc<update_dir_a>(
+                    matA_t::tile_size_x);
+            //     matB_prefetch_payload.template update_tdesc<update_dir_b>(
+            //             matB_t::tile_size_y);
+            if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
+                scale_prefetch_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                scale_t::tile_size_y);
+            }
+        }
 
         for (int i = 0; i < args.inner_loop_count; i++) {
             if constexpr (enable_periodic_sync) {
@@ -902,15 +918,15 @@ public:
                     scale, scale_payload);
             scale_load_addr_i++;
             SW_BARRIER();
-            //     if constexpr (stages != 0) {
-            //         subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-            //                 matA_prefetch_payload);
-            //         subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-            //                 matB_prefetch_payload);
-            //         subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-            //                 scale_prefetch_payload);
-            //         scale_prefetch_addr_i++;
-            //     }
+            if constexpr (stages != 0) {
+                subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                        matA_prefetch_payload);
+                // subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                //         matB_prefetch_payload);
+                subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                        scale_prefetch_payload);
+                scale_prefetch_addr_i++;
+            }
             SW_BARRIER();
             matA_payload.template update_tdesc<update_dir_a>(
                     matA_t::tile_size_x);
@@ -920,17 +936,17 @@ public:
                 scale_payload.template update_tdesc<tdesc_update_dir::y_dir>(
                         scale_t::tile_size_y);
             }
-            //     if constexpr (stages != 0) {
-            //         matA_prefetch_payload.template update_tdesc<update_dir_a>(
-            //                 matA_t::tile_size_x);
-            //         matB_prefetch_payload.template update_tdesc<update_dir_b>(
-            //                 matB_t::tile_size_y);
-            //         if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
-            //             scale_prefetch_payload
-            //                     .template update_tdesc<tdesc_update_dir::y_dir>(
-            //                             scale_t::tile_size_y);
-            //         }
-            //     }
+            if constexpr (stages != 0) {
+                matA_prefetch_payload.template update_tdesc<update_dir_a>(
+                        matA_t::tile_size_x);
+                // matB_prefetch_payload.template update_tdesc<update_dir_b>(
+                //         matB_t::tile_size_y);
+                if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
+                    scale_prefetch_payload
+                            .template update_tdesc<tdesc_update_dir::y_dir>(
+                                    scale_t::tile_size_y);
+                }
+            }
             SW_BARRIER();
             matA_acc_t matA_acc;
             matB_acc_t matB_acc;
