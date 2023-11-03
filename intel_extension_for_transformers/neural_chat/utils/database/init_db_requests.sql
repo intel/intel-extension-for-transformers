@@ -14,24 +14,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Create the Chatbot Database: fastrag
-Create empty Tables: feedback
-                     '0' represents like, 
-                     '1' represents dislike
+Create the Chatbot Database: requests
+Create empty Tables: requests
 
 */
 
-drop database if exists fastrag;
-create database fastrag;
-use fastrag;
+drop database if exists requests;
+create database requests;
+use requests;
 
-drop table if exists feedback;
-create table feedback
+drop table if exists record;
+create table record
 (
-    feedback_id tinyint unsigned primary key auto_increment,
-    question varchar(1000),
-    answer varchar(3000),
-    feedback_result tinyint,
-    feedback_time datetime,
-    unique (feedback_id)
+    record_id tinyint unsigned primary key auto_increment,
+    request_url varchar(500),
+    request_body varchar(2000),
+    user_id varchar(100),
+    captured_time datetime,
+    unique (record_id)
 );

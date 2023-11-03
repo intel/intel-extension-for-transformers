@@ -33,7 +33,7 @@ class TestSplitAudio(unittest.TestCase):
             # Usage: split_audio.py --ag (0~3) --in_path <input path> --out_path <output path>
             parser = argparse.ArgumentParser(__doc__)
             parser.add_argument("--ag", type=int, default=3)
-            parser.add_argument("--in_path", type=str, default="../../../../assets/audio/sample.wav")
+            parser.add_argument("--in_path", type=str, default="../assets/audio/sample.wav")
             parser.add_argument("--out_path", type=str, default="../split",
                                 help="please use relative path")
             parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
