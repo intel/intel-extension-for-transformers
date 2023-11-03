@@ -27,8 +27,6 @@ function pytest() {
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
     export GLOG_minloglevel=2
 
-    itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-
     # Kill the neuralchat server processes
     ports="6000 7000 8000 9000"
     # Loop through each port and find associated PIDs
@@ -45,19 +43,33 @@ function pytest() {
         fi
     done
 
+    itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
     sort run.sh -o run.sh
-    echo "exit" >> run.sh
+    echo -e '
+ports="6000 7000 8000 9000"
+for port in $ports; do
+    pids=$(lsof -ti :$port)
+    if [ -n "$pids" ]; then
+        echo "Processes running on port $port: $pids"
+        kill $pids
+        echo "Terminated processes on port $port."
+    else
+        echo "No processes found on port $port."
+    fi
+done
+' >> run.sh
     coverage erase
 
     # run UT
     sleep 1
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
     cat run.sh | tee ${ut_log_name}
+    sleep 1
     $BOLD_YELLOW && echo "------UT start-------" && $RESET
     bash -x run.sh 2>&1 | tee -a ${ut_log_name}
-    $BOLD_YELLOW && echo "------UT end -------" && $RESET
     sleep 1
+    $BOLD_YELLOW && echo "------UT end -------" && $RESET
 
     # run coverage report
     coverage report -m --rcfile=${COVERAGE_RCFILE} | tee ${coverage_log_dir}/coverage.log
