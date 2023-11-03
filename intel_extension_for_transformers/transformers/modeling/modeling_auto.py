@@ -141,7 +141,9 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
     if check_xpu_type(device_map, "max"):
-        save_low_bit_weight_by_ipex(self, save_directory, convert_dtype_str2torch(self.quantization_config.compute_dtype))
+        save_low_bit_weight_by_ipex(
+            self, save_directory, convert_dtype_str2torch(self.quantization_config.compute_dtype)
+        )
 
 
 def int4_type_list():
@@ -213,7 +215,8 @@ class _BaseQBitsAutoModelClass:
                         "Quantization_config.weight_dtype should be one of {}.".format(int4_type_list())
 
                     assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
-                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(quantization_config.compute_dtype, torch_dtype)
+                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(
+                            quantization_config.compute_dtype, torch_dtype)
 
             elif load_in_8bit:
                 if quantization_config is None:
@@ -225,7 +228,8 @@ class _BaseQBitsAutoModelClass:
                         "Quantization_config.weight_dtype should be 'int8' ."
 
                     assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
-                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(quantization_config.compute_dtype, torch_dtype)
+                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(
+                            quantization_config.compute_dtype, torch_dtype)
 
 
 

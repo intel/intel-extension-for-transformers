@@ -336,7 +336,9 @@ def get_bits(config):
     return bits
 
 
-def load_quantized_model_by_ipex(raw_model, config, quan_weight_path, amp_dtype=torch.float16, device=torch.device("xpu")):
+def load_quantized_model_by_ipex(
+        raw_model, config, quan_weight_path, amp_dtype=torch.float16, device=torch.device("xpu")
+):
     import intel_extension_for_pytorch as ipex
 
     bits = get_bits(config)
