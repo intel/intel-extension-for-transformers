@@ -68,6 +68,7 @@ jobs:
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
+          -v /dataset/cache/huggingface:/root/.cache/huggingface \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build

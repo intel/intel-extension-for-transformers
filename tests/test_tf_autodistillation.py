@@ -133,7 +133,7 @@ class TestAutoDistillation(unittest.TestCase):
                 autodistillation_config,
                 self.teacher_model,
                 model_cls=TFAutoModelForSequenceClassification,
-                train_func=self.optimizer.build_train_func,
+                train_func=None,
                 eval_func=self.optimizer.builtin_eval_func
             )
             # check best model architectures

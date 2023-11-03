@@ -20,14 +20,15 @@ import os
 from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceInstructEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
+    HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
 from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=True, embedding_model="hkunlp/instructor-large", max_length=512,
+                 process=True, embedding_model="BAAI/bge-base-en-v1.5", max_length=512,
                  index_name=None):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
@@ -36,9 +37,27 @@ class DocumentIndexing:
         self.document_store = document_store
         self.process = process
         self.persist_dir = persist_dir
-        self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
+        
+        try:
+            if "instruct" in embedding_model:
+                self.embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
+            elif "bge" in embedding_model:
+                self.embeddings = HuggingFaceBgeEmbeddings(
+                    model_name=embedding_model,
+                    encode_kwargs={'normalize_embeddings': True},
+                    query_instruction="Represent this sentence for searching relevant passages:")
+            elif "Google" == embedding_model:
+                self.embeddings = GooglePalmEmbeddings()
+            else:
+                self.embeddings = HuggingFaceEmbeddings(
+                    model_name=embedding_model,
+                    encode_kwargs={"normalize_embeddings": True},
+                )
+        except Exception as e:
+            print("Please selet a proper embedding model")
+            
         
         
     def parse_document(self, input):
@@ -52,7 +71,7 @@ class DocumentIndexing:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
                 chuck = [[content.strip(),input]]
-        elif input.endswith("jsonl") or input.endswith("xlsx"):
+        elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv"):
             chuck = laod_structured_data(input, self.process, self.max_length)
         else:
             print("This file is ignored. Will support this file format soon.")
@@ -74,7 +93,7 @@ class DocumentIndexing:
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck
-                elif filename.endswith("jsonl") or filename.endswith("xlsx"):
+                elif filename.endswith("jsonl") or filename.endswith("xlsx") or input.endswith("csv"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
@@ -83,8 +102,7 @@ class DocumentIndexing:
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
-            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         else:
             if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)
@@ -114,8 +132,7 @@ class DocumentIndexing:
                     new_doc = Document(page_content=data, metadata=metadata)
                     documents.append(new_doc)
                 assert documents!= [], "The given file/files cannot be loaded." 
-                embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
-                vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
+                vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
                                                  persist_directory=self.persist_dir)
                 vectordb.persist()
                 print("The local knowledge base has been successfully built!")

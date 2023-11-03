@@ -24,6 +24,8 @@ host: 0.0.0.0
 port: 8000
 
 model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
+# tokenizer_name_or_path: ""
+# peft_model_path: ""
 device: "auto"
 
 asr:
@@ -77,6 +79,7 @@ safety_checker:
 ner:
     enable: false
     args:
+        device: "cpu"
         model_path: "meta-llama/Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         bf16: False
@@ -84,10 +87,11 @@ ner:
 ner_int:
     enable: false
     args:
+        device: "cpu"
         model_path: "meta-llama/Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         compute_dtype: "fp32"
         weight_dtype: "int8"
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'， 'photoai']
 tasks_list: ['textchat', 'retrieval']
