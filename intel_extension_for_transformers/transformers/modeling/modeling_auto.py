@@ -33,7 +33,7 @@
 
 import warnings
 
-import torch
+# import torch
 import transformers
 from intel_extension_for_transformers.transformers import (
     BitsAndBytesConfig,
