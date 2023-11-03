@@ -137,12 +137,12 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
 
 @router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
-    try:
-        record_request(request_url="/v1/askdoc/chat",
-                    request_body=request,
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
+    # try:
+    #     record_request(request_url="/v1/askdoc/chat",
+    #                 request_body=request,
+    #                 user_id='default')
+    # except Exception as e:
+    #     logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
 
     chatbot = router.get_chatbot()
     
