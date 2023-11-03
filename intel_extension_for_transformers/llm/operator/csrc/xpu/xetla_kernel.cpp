@@ -101,7 +101,8 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   auto context = queue.get_info<sycl::info::queue::context>();
   auto device = queue.get_info<sycl::info::queue::device>();
 
-  std::cout << "Running on " << device.get_info<sycl::info::device::name>()
+  if (initer.verbose)
+    std::cout << "Running on " << device.get_info<sycl::info::device::name>()
             << "\n";
 
   using tile_shape = gpu::xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
@@ -225,7 +226,8 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   auto context = queue.get_info<sycl::info::queue::context>();
   auto device = queue.get_info<sycl::info::queue::device>();
 
-  std::cout << "Running on " << device.get_info<sycl::info::device::name>()
+  if (initer.verbose)
+    std::cout << "Running on " << device.get_info<sycl::info::device::name>()
             << "\n";
 
   using tile_shape = gpu::xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,

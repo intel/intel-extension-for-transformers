@@ -21,7 +21,6 @@
 #include <math.h>
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/sycl.hpp>
-//#include <torch/extension.h>
 
 #include <vector>
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -50,6 +49,27 @@ struct int4x2 : bit4x2 {
   }
 };
 } // namespace gblas
+
+class Timer {
+ public:
+  void start() { m_start = std::chrono::high_resolution_clock::now(); }
+  void stop() { m_end = std::chrono::high_resolution_clock::now(); }
+  double get_elapsed_time() const { return duration_cast<std::chrono::nanoseconds>(m_end - m_start).count() / 1e6; }
+
+ private:
+  std::chrono::high_resolution_clock::time_point m_start;
+  std::chrono::high_resolution_clock::time_point m_end;
+};
+static Timer timer;
+
+class env_initer {
+ public:
+  env_initer() {
+    verbose = std::getenv("GBITS_VERBOSE") != nullptr;
+  }
+  bool verbose;
+};
+static env_initer initer;
 
 class CompressWei4Bit {
 public:

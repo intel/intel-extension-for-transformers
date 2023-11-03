@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#pragma once
+
 #include "common.hpp"
 #include <ipex.h>
 #include <torch/extension.h>
@@ -67,8 +69,6 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
       sycl::range<2>(compress_wei->_K, compress_wei->_N / 2));
   constexpr int KTILE = 1024, NTILE = 1024;
   constexpr int LOCAL_K = 32, LOCAL_N = 32;
-  using namespace std::chrono;
-  auto m_start = high_resolution_clock::now();
   for (int i = 0; i < compress_wei->_K; i += KTILE) {
     for (int j = 0; j < compress_wei->_N; j += NTILE) {
       gpu_dequant_s4fullrange_f32_KxN<KTILE, NTILE / 2, LOCAL_K, LOCAL_N>(
@@ -76,9 +76,52 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
           compress_wei->_blksize, i, j, transpose);
     }
   }
-  auto m_end = high_resolution_clock::now();
-  std::cout << "GPU dequant cost"
-            << duration_cast<nanoseconds>(m_end - m_start).count() / 1e6 << "ms"
-            << std::endl;
   return;
 }
+
+void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
+                      int ld_src, int ld_dst, fp16 *scales, int blocksize, bool trans) {
+  int raw_blocksize = blocksize;
+  for (int i = 0; i < col; i++) {
+    int align_row_loop = row / blocksize * blocksize;
+    int j = 0;
+
+    auto s4_fullrange_calc_store_scale_and_quantv_sym = [&](int blocksize, bool trans) {
+      float amax = 0.f, max = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        int idx = trans ? i * ld_src + ij + j : (j + ij) * ld_src + i;
+        auto v = srcptr[idx];
+        if (amax < std::abs(v)) {
+          amax = std::abs(v);
+          max = v;
+        }
+      }
+      fp16 scale = max / -8.f;
+      fp16 rscale = scale != 0.f ? 1.f / scale : 0.f;
+      scales[j / raw_blocksize * ld_dst + i] = scale;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        int idx = trans ? i * ld_src + ij + j : (j + ij) * ld_src + i;
+        auto quant_v = srcptr[idx] * rscale;
+        int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+        dstptr[(j + ij) * ld_dst + i] = x << 4;
+      }
+    };
+    for (; j < align_row_loop; j += blocksize)
+      s4_fullrange_calc_store_scale_and_quantv_sym(blocksize, trans);
+    if (j < row)
+      s4_fullrange_calc_store_scale_and_quantv_sym(row - align_row_loop, trans);
+  }
+}
+
+void compress_s8_s4(const int8_t *srcptr, gblas::int4x2 *dstptr, int row,
+                    int col, int ld_src, int ld_dst) {
+  for (int j = 0; j < row; j++) {
+    for (int ii = 0; ii < col; ii += 2) {
+      gblas::int4x2 tmp;
+      tmp.x = gblas::int4x2::convert(srcptr[j * ld_src + ii + 0]);
+      tmp.y = gblas::int4x2::convert(srcptr[j * ld_src + ii + 1]);
+      dstptr[j * ld_dst / 2 + ii / 2] = tmp;
+    }
+  }
+}
+

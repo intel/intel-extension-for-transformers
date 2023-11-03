@@ -16,9 +16,7 @@
 # limitations under the License.
 import torch
 import intel_extension_for_pytorch
-import gbits_linear
-import gbits_quantize
-import gbits_dequantize
+import gbits
 import inspect
 from functools import wraps
 
@@ -51,10 +49,10 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = gbits_quantize.forward(
+    compress_wei = gbits.quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    gbits_dequantize.forward(
+    gbits.dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
@@ -65,7 +63,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
-    gbits_linear.forward(
+    gbits.linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
     tar_dst = tar_dst.to(torch.float)
     if add_bias:

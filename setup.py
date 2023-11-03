@@ -297,7 +297,7 @@ if __name__ == '__main__':
             ),
             DPCPPExtension(
                     name='intel_extension_for_transformers.gbits',
-                    sources=['intel_extension_for_transformers/llm/operator/csrc/xpu/gbits_kernel.cpp'],
+                    sources=['intel_extension_for_transformers/llm/operator/csrc/xpu/gbits.cpp'],
                     extra_compile_args={'cxx':['-std=c++17', '-fPIC']},
                     library_dirs=["intel_extension_for_transformers"],
                     libraries=["xetla_kernel"],
