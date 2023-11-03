@@ -30,7 +30,7 @@ function pytest() {
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
 
     # Kill the neuralchat server processes
-    ports="7000 8000 9000"
+    ports="6000 7000 8000 9000"
     # Loop through each port and find associated PIDs
     for port in $ports; do
         # Use lsof to find the processes associated with the port
