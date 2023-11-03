@@ -125,7 +125,6 @@ def _replace_linear(
         current_key_name.append(name)
 
         if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
-            from .nn import QuantizedLinearCPU  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -155,6 +154,7 @@ def _replace_linear(
                     #     )
                     #     is_replaced = True
                     if device == "cpu" or device == torch.device("cpu"):
+                        from .nn.cpu import QuantizedLinearCPU  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
                         model._modules[name] = QuantizedLinearCPU(
                             in_features,
                             out_features,
@@ -165,8 +165,19 @@ def _replace_linear(
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme
                         )
-                    elif device == "xpu" or device == torch.device("xpu"):
-                        pass
+                    elif device == "device" or device == torch.device("xpu"):
+                        from .nn.gpu import QuantizedLinearGPU
+                        model._modules[name] = QuantizedLinearGPU(
+                            in_features,
+                            out_features,
+                            module.bias is not None,
+                            compute_dtype=quantization_config.compute_dtype,
+                            compress_statistics=False,
+                            weight_dtype=weight_dtype,
+                            blocksize=quantization_config.group_size,
+                            scheme=quantization_config.scheme,
+                            device=device
+                        )
                     else:
                         raise Exception("{} device Unsupport weight only quantization!".format(device))
 
@@ -179,6 +190,9 @@ def _replace_linear(
                     model._modules[name].set_weights_bias(
                         module.weight.data, None if module.bias is None else module.bias.data
                     )
+        elif device != "cpu" and device != torch.device("cpu") and len(list(module.children())) == 0:
+            module.to(device)
+
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,
@@ -186,6 +200,7 @@ def _replace_linear(
                 current_key_name,
                 quantization_config,
                 is_replaced=is_replaced,
+                device=device,
                 empty_weights=empty_weights,
             )
         # Remove the last key for recursion

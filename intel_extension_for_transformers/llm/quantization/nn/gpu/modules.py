@@ -85,6 +85,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
+        self.device = device
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -96,8 +97,8 @@ class QuantizedLinearGPU(torch.nn.Linear):
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
-        out = torch.zeros(m, self.out_features, dtype=x.dtype)
-        bias = None if self.bias is None else self.bias.data
+        out = torch.zeros(m, self.out_features, dtype=x.dtype).to(self.device)
+        bias = torch.zeros(0) if self.bias is None else self.bias.data
         gbits.linear(
             x.view(m, shape[-1]), self.weight.data, bias, out,
             self.out_features, self.bias is not None, self.compute_dtype, self.weight_dtype)
@@ -115,6 +116,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
         )
+        self.weight.to(self.device)
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 

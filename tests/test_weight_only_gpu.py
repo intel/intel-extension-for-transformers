@@ -121,5 +121,55 @@ class TestWeightOnly(unittest.TestCase):
 
         return True
 
+class TestArcWeightOnly(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.workspace = "./woq_config_ipex_tmp"
+        # if workspace not exist, create it
+        if not os.path.exists(cls.workspace):
+            os.mkdir(cls.workspace)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.workspace, ignore_errors=True)
+
+
+    def test_int4_ipex_arc(self):
+        name = get_gpu_family()
+        if name != 'arc':
+            print("There is no Arc GPU, skip this function {}".format('test_int4_ipex_arc'))
+            return True
+
+        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+        import intel_extension_for_pytorch as ipex
+
+        device_map = "xpu"
+
+        model_name ="fxmarty/tiny-llama-fast-tokenizer"
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float)
+        model.seqlen = 2048
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        prompt = "how to test the code?"
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        output = model(input_ids)
+
+        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=16)
+        config.calib_dataloader = DataLoader(
+            DummyDataset(model_name, model.seqlen),
+            batch_size=1,
+            shuffle=False,
+        )
+        qmodel = convert_to_quantized_model(model, config, device=torch.device(device_map))
+        output_quant = qmodel(input_ids.to(torch.device("xpu")))
+        fp16_logits = output['logits']
+        quan_logits = output_quant['logits'].to('cpu')
+        print("fp16 logits {}".format(fp16_logits.shape))
+        print("int4 logits {}".format(quan_logits.shape))
+
+        return True
+
 if __name__ == "__main__":
     unittest.main()
