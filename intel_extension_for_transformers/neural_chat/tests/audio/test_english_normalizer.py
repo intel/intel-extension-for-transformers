@@ -28,9 +28,10 @@ class TestTTS(unittest.TestCase):
         pass
 
     def test_correct_number(self):
-        text = "3000 people among 1.2 billion people."
-        result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "three thousand people among one point two billion people.")
+        text = "3000 people among 1.2 billion people under -40 degrees."
+        result = self.normalizer.correct_abbreviation(text)
+        result = self.normalizer.correct_number(result)
+        self.assertEqual(result, "three thousand people among one point two billion people under minus forty degrees.")
 
     def test_correct_abbreviation(self):
         text = "TTS a great technology."
@@ -48,10 +49,10 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(result, "first second third fourth fifth eleventh twelfth twenty first twenty second.")
 
     def test_correct_conjunctions(self):
-        text = "CVPR-15 ICML-21"
+        text = "CVPR-15 ICML-21 PM2.5"
         text = self.normalizer.correct_abbreviation(text)
         result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "cee vee pee ar fifteen I cee em el twenty-one.")
+        self.assertEqual(result, "cee vee pea ar fifteen I cee em el twenty-one pea em two point five.")
 
 if __name__ == "__main__":
     unittest.main()
