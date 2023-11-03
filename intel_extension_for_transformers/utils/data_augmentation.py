@@ -297,7 +297,6 @@ class DataAugmentation:
             XLNetLMHeadModel,
             XLNetTokenizer, pipeline,
         )
-        from .utils import EOS
 
         MODEL_CLASSES = {
             "gpt2": (GPT2LMHeadModel, GPT2Tokenizer),

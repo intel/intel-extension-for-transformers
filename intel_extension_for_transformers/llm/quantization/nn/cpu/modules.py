@@ -20,8 +20,6 @@ import os
 import torch
 from functools import reduce
 from operator import mul
-from peft.tuners.lora import LoraLayer
-from ...autograd import matmul_4bit
 
 
 torch.ops.load_library(

@@ -20,8 +20,6 @@ import os
 import torch
 from functools import reduce
 from operator import mul
-from peft.tuners.lora import LoraLayer
-from ...autograd import matmul_4bit
 
 
 torch.ops.load_library(
@@ -29,7 +27,7 @@ torch.ops.load_library(
 )
 
 
-class ParamsGPU(torch.nn.Parameter):
+class ParamsGBits(torch.nn.Parameter):
     def __new__(
             cls,
             data=None,
@@ -118,7 +116,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
         weight = torch.ops.weight_only_jblasop.qbits_quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
         weight.resize_(shape)
-        self.weight = ParamsQBits(
+        self.weight = ParamsGBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
         )
