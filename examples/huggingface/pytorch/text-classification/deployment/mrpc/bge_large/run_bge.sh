@@ -21,10 +21,12 @@ OUTPUT_DIR=$(pwd)
 LOG_NAME="bert_base_mrpc.log"
 DATASET="mrpc"
 MODEL_NAME_OR_PATH="textattack/bert-base-uncased-MRPC"
-BATCH_SIZE=8
-WARM_UP=100
-SEQUENCE_LEN=128
-ITERATION=1000
+BATCH_SIZE=4
+#WARM_UP=100
+WARM_UP=1
+SEQUENCE_LEN=512
+ITERATION=11
+#ITERATION=1000
 PRECISION="int8"
 CACHE_DIR="./tmp"
 MODE="performance"
@@ -186,7 +188,8 @@ elif [[ ${MODE} == "latency" ]]; then
 elif [[ ${MODE} == "throughput" ]]; then
     echo "------------MULTI-INSTANCE BENCHMARK---------"
     benchmark_cmd="python run_executor.py --input_model=${inference_model} --mode=performance --batch_size=${BATCH_SIZE} --seq_len=${SEQUENCE_LEN} --warm_up=${WARM_UP} --iteration=${ITERATION} --task_name=${DATASET} --dataset_name=glue --tokenizer_dir=./model_and_tokenizer ${mode_cmd} "
-    ncores_per_socket=${ncores_per_socket:=$( lscpu | grep 'Core(s) per socket' | cut -d: -f2 | xargs echo -n)}
+    #ncores_per_socket=${ncores_per_socket:=$( lscpu | grep 'Core(s) per socket' | cut -d: -f2 | xargs echo -n)}
+    ncores_per_socket=48
     benchmark_pids=()
     ncores_per_instance=4
     export OMP_NUM_THREADS=${ncores_per_instance}
