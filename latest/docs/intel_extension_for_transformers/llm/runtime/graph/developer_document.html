@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Before you start &mdash; Intel® Extension for Transformers 0.1.dev1+gcf8f13a documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Before you start</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/graph/developer_document.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="before-you-start">
+<h1>Before you start<a class="headerlink" href="#before-you-start" title="Link to this heading"></a></h1>
+<p>ITREX LLM C++ Runtime has already supported some popular models like <code class="docutils literal notranslate"><span class="pre">LLAMA</span></code>,<code class="docutils literal notranslate"><span class="pre">GPT-J</span></code>, <code class="docutils literal notranslate"><span class="pre">GPT-NEOX</span></code>, <code class="docutils literal notranslate"><span class="pre">DOLLY</span></code>, etc.These LLMs have similar architectures and some of them share the same architect (<code class="docutils literal notranslate"><span class="pre">DOLLY</span></code> and <code class="docutils literal notranslate"><span class="pre">GPT-NEOX</span></code>). Before adding a new model, you can checkout its architecture (from Huggingface <code class="docutils literal notranslate"><span class="pre">config.json</span></code>) whether is in our <a class="reference external" href="./models/model_utils/model_types.h#L68">supported list</a>.</p>
+<p>However, LLM inference thing is complicated. It may have its own: 1. special tokenizer (or vocab); 2. architecture (or forward pipeline); 3. operators (or kernels). Generally speaking, the first and second points appear frequently for transformers-LLMs. I will show you how to run a new model as soon as possible when your model hasn’t any problems like above or only the problem 1. The next sections will discuss about the problem 2 and the problem 3 is beyond the scope of this document.</p>
+<p>For simplicity, we take <a class="reference external" href="https://huggingface.co/EleutherAI/polyglot-ko-5.8b">polyglot</a> as the example model. It has the same architecture as <code class="docutils literal notranslate"><span class="pre">GPT-NEOX</span></code> but only fewer layers.</p>
+<p>Firstly, we need to add its temp buffer in its <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h">related model-arch header file</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/README.html#1-install-llm-runtime">re-compile</a>.</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span>static const model_scratch gptneox_mem_req(int n_layers) {
+<span class="w"> </span> switch (n_layers) {
+<span class="w"> </span>   case 44:
+<span class="w"> </span>     return {2048ull * MB, 2048ull * MB, 4096ull * MB};
+<span class="w"> </span>   case 32:
+<span class="w"> </span>     return {512ull * MB, 512ull * MB, 1026ull * MB};
+<span class="gi">+   case 28:  // 5.8B</span>
+<span class="gi">+     return {512ull * MB, 512ull * MB, 1024ull * MB};</span>
+<span class="w"> </span>   default:
+<span class="w"> </span>     MODEL_ASSERT(false);
+<span class="w"> </span> }
+}
+</pre></div>
+</div>
+<p>Secondly, convert its PyTorch FP32 weights into our format (<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/README.html#1-convert-and-quantize-llm">reference section</a>).</p>
+<p>command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>EleutherAI/polyglot-ko-5.8b
+</pre></div>
+</div>
+<p>Finally, use <code class="docutils literal notranslate"><span class="pre">transformers</span></code> tokenizer to encode prompt and decode return tokens instead of re-implementing C++ tokenizer.</p>
+<p>For checking text generation results, we recommend you to run this naive python codes below to align our runtime engine outputs with PyTorch (<code class="docutils literal notranslate"><span class="pre">FP32</span> <span class="pre">data</span> <span class="pre">type,</span> <span class="pre">greedy</span> <span class="pre">search</span></code>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.graph</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;EleutherAI/polyglot-ko-5.8b&quot;</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;she open the door and see&quot;</span>
+<span class="c1"># prompt = &quot;옛날 옛적에 어린 소녀가 있었어요&quot;</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+
+<span class="c1"># pt infer</span>
+<span class="n">pt_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pt_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">pt_outputs</span> <span class="o">=</span> <span class="n">pt_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">pt_ans</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">pt_outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clean_up_tokenization_spaces</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====pytorch result======&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pt_ans</span><span class="p">)</span>
+
+<span class="c1"># itrex infer</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">init_from_bin</span><span class="p">(</span><span class="s2">&quot;polyglot&quot;</span><span class="p">,</span> <span class="s2">&quot;ne-f32.bin&quot;</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<span class="n">ans</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clean_up_tokenization_spaces</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====itrex result======&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ans</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The English prompt would have the output like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">=====</span>pytorch<span class="w"> </span><span class="nv">result</span><span class="o">======</span>
+she<span class="w"> </span>open<span class="w"> </span>the<span class="w"> </span>door<span class="w"> </span>and<span class="w"> </span>see<span class="w"> </span>him.<span class="w"> </span>She<span class="w"> </span>looks<span class="w"> </span>at<span class="w"> </span>him<span class="w"> </span>and<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;How do you do?&quot;</span><span class="w"> </span>He<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;Fine.&quot;</span><span class="w"> </span>She<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;What do you want?&quot;</span><span class="w"> </span>He<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;I want to go home.&quot;</span><span class="w"> </span>She<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;Where are you going?&quot;</span><span class="w"> </span>He<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;I&#39;m going home.&quot;</span><span class="w"> </span>She<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;Where are you going?&quot;</span><span class="w"> </span>He<span class="w"> </span>says,<span class="w"> </span><span class="s2">&quot;I&#39;m</span>
+
+<span class="s2">=====itrex result======</span>
+<span class="s2">she open the door and see him. She looks at him and says, &quot;</span>How<span class="w"> </span><span class="k">do</span><span class="w"> </span>you<span class="w"> </span><span class="k">do</span>?<span class="s2">&quot; He says, &quot;</span>Fine.<span class="s2">&quot; She says, &quot;</span>What<span class="w"> </span><span class="k">do</span><span class="w"> </span>you<span class="w"> </span>want?<span class="s2">&quot; He says, &quot;</span>I<span class="w"> </span>want<span class="w"> </span>to<span class="w"> </span>go<span class="w"> </span>home.<span class="s2">&quot; She says, &quot;</span>Where<span class="w"> </span>are<span class="w"> </span>you<span class="w"> </span>going?<span class="s2">&quot; He says, &quot;</span>I<span class="s1">&#39;m going home.&quot; She says, &quot;Where are you going?&quot; He says, &quot;I&#39;</span>m
+</pre></div>
+</div>
+<p>The Korean prompt would have the output like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">=====</span>pytorch<span class="w"> </span><span class="nv">result</span><span class="o">======</span>
+옛날<span class="w"> </span>옛적에<span class="w"> </span>어린<span class="w"> </span>소녀가<span class="w"> </span>있었어요.<span class="w"> </span>그<span class="w"> </span>소녀는<span class="w"> </span>어느<span class="w"> </span>날,<span class="w"> </span>숲<span class="w"> </span>속에서<span class="w"> </span>길을<span class="w"> </span>잃고<span class="w"> </span>헤매다가<span class="w"> </span>한<span class="w"> </span>마리의<span class="w"> </span>동물을<span class="w"> </span>만나게<span class="w"> </span>되었어요.<span class="w"> </span>그<span class="w"> </span>동물은<span class="w"> </span>소녀에게<span class="w"> </span>길을<span class="w"> </span>안내해<span class="w"> </span>주겠다고<span class="w"> </span>하였어요.<span class="w"> </span>소녀는<span class="w"> </span>그<span class="w"> </span>동물을<span class="w"> </span>따라<span class="w"> </span>숲<span class="w"> </span>속으로<span class="w"> </span>들어갔어요.<span class="w"> </span>한참을<span class="w"> </span>걷고<span class="w"> </span>있는데,<span class="w"> </span>갑자기<span class="w"> </span>동물이<span class="w"> </span>소녀를<span class="w"> </span>땅<span class="w"> </span>속으로<span class="w"> </span>끌고<span class="w"> </span>들어가는<span class="w"> </span>것이었어요.<span class="w"> </span>소녀는<span class="w"> </span>깜짝<span class="w"> </span>놀라서<span class="w"> </span>소리쳤어요.<span class="w"> </span><span class="s2">&quot;안돼! 나를 죽이려고 하는 거야?&quot;</span><span class="w"> </span>그러자<span class="w"> </span>동물은<span class="w"> </span>소녀에게<span class="w"> </span>조용히<span class="w"> </span>말했어요.<span class="w"> </span><span class="s2">&quot;쉿! 조용히 해. 내 말을 잘 들어봐. 저 앞에</span>
+
+<span class="s2">=====itrex result======</span>
+<span class="s2">옛날 옛적에 어린 소녀가 있었어요. 그 소녀는 어느 날, 숲 속에서 길을 잃고 헤매다가 한 마리의 동물을 만나게 되었어요. 그 동물은 소녀에게 길을 안내해 주겠다고 하였어요. 소녀는 그 동물을 따라 숲 속으로 들어갔어요. 한참을 걷고 있는데, 갑자기 동물이 소녀를 땅 속으로 끌고 들어가는 것이었어요. 소녀는 깜짝 놀라서 소리쳤어요. &quot;</span>안돼!<span class="w"> </span>나를<span class="w"> </span>죽이려고<span class="w"> </span>하는<span class="w"> </span>거야?<span class="s2">&quot; 그러자 동물은 소녀에게 조용히 말했어요. &quot;</span>쉿!<span class="w"> </span>조용히<span class="w"> </span>해.<span class="w"> </span>내<span class="w"> </span>말을<span class="w"> </span>잘<span class="w"> </span>들어봐.<span class="w"> </span>저<span class="w"> </span>앞에
+</pre></div>
+</div>
+<p>Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using python codes of <code class="docutils literal notranslate"><span class="pre">transformers</span></code> style liked and <code class="docutils literal notranslate"><span class="pre">INT4</span></code> data type. Please refer to <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">API</span></code> section for more details.</p>
+</section>
+<section id="enable-graph-cpp-model-process">
+<h1>Enable graph cpp model process<a class="headerlink" href="#enable-graph-cpp-model-process" title="Link to this heading"></a></h1>
+<p>We enable a CPP model in the following four steps.</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR;
+    Convert--&gt;Load;
+    Load--&gt;Inference;
+    Inference--&gt;Optimize;
+</pre></div>
+</div>
+</section>
+<section id="model-conversion">
+<h1>1.	Model conversion<a class="headerlink" href="#model-conversion" title="Link to this heading"></a></h1>
+<p>We need to implement corresponding serialization methods from pytorch format, which is mainly divided into the following three steps.</p>
+<section id="hyperparamters">
+<h2>1.1.	Hyperparamters<a class="headerlink" href="#hyperparamters" title="Link to this heading"></a></h2>
+<p>The term <strong>“hyperparamters”</strong> describes a value that is used to configure the behavior of a large language model; this is in contrast to the model’s parameters, which are the weight that were derived in the training process that was used to create the model. Each model defines its own hyperparameter structure that defines the hyperparameter values accepted by that model. Valid ITREX graph files must list these values in the correct order, and each value must be represented using the correct data type. Although hyperparameters are different across models, some attributes appear in the hyperparameters for most models:</p>
+<ul class="simple">
+<li><p>n_vocab: the size of the model’s vocabulary</p></li>
+<li><p>n_embd: the size of the model’s “ embedding layer”, which is used during prompt ingestion.</p></li>
+<li><p>n_layer: the number of layers in the model; each layer represents a set of weights.
+Here we will use <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L96">convert_gptneox.py</a> as an example,</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="n">hparams</span><span class="p">[</span><span class="s2">&quot;num_attention_heads&quot;</span><span class="p">]))</span>
+<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="n">hparams</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_head_kv&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>  <span class="c1"># multi-query attention</span>
+<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="n">hparams</span><span class="p">[</span><span class="s2">&quot;num_hidden_layers&quot;</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>The above <code class="docutils literal notranslate"><span class="pre">fout</span></code> is the file we need to get, and the <code class="docutils literal notranslate"><span class="pre">num_attention</span></code>, <code class="docutils literal notranslate"><span class="pre">n_head_kv</span></code>, and <code class="docutils literal notranslate"><span class="pre">num_hidden_layer</span></code> from hparams is written into fout.</p>
+</section>
+<section id="vocabulary">
+<h2>1.2.	Vocabulary<a class="headerlink" href="#vocabulary" title="Link to this heading"></a></h2>
+<p>As the name implies, a model’s vocabulary comprises components that are used by the model to generate language (text). However, unlike the vocabulary of a human, which consists of words, the vocabulary of a large language model consists of “tokens”. A token can be an entire word, but oftentimes they are word fragments. Just like humans can compose millions of words from just a dozen or two letters, large language models use tokens to express a large number of words from a relatively smaller number of components. Consider a vocabulary with the following tokens: <code class="docutils literal notranslate"><span class="pre">whi</span></code>, <code class="docutils literal notranslate"><span class="pre">ch</span></code>, <code class="docutils literal notranslate"><span class="pre">le</span></code>, <code class="docutils literal notranslate"><span class="pre">who</span></code>, and <code class="docutils literal notranslate"><span class="pre">a</span></code>; this vocabulary can be used to create the English words <code class="docutils literal notranslate"><span class="pre">&quot;which&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;while&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;who&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;leach&quot;</span></code>. How would the behavior change if the model contained the following tokens: <code class="docutils literal notranslate"><span class="pre">wh</span></code>, <code class="docutils literal notranslate"><span class="pre">ich</span></code>, <code class="docutils literal notranslate"><span class="pre">ile</span></code>, <code class="docutils literal notranslate"><span class="pre">o</span></code>, and <code class="docutils literal notranslate"><span class="pre">leach</span></code>? Choices such as these allow model-creators to tune the behavior and performance of their models.</p>
+<p>As described above, the model’s hyperparameters typically contain a value that specifies the number of tokens in the vocabulary. The vocabulary is encoded as a list of tokens, each of which includes a 32-bit integer that specifies the length of the token. If your model has some new tokenizers, we suggest using a python tokenizer from transformers and feeding the input_ids to model Python API (python example in scripts folder)
+Here we will use <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L122">convert_gptneox.py</a> as an example to processed the vocabulary of gptneox and written it into <code class="docutils literal notranslate"><span class="pre">fout</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">encoder</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">vocab</span>
+<span class="n">encoder</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">get_added_vocab</span><span class="p">())</span>
+<span class="n">byte_encoder</span> <span class="o">=</span> <span class="n">bytes_to_unicode</span><span class="p">()</span>
+<span class="n">byte_decoder</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">byte_encoder</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</pre></div>
+</div>
+</section>
+<section id="model-weights">
+<h2>1.3.	Model weights<a class="headerlink" href="#model-weights" title="Link to this heading"></a></h2>
+<p>Finally, and largest, component of a ITREX GRAPH file is the weights of the LLM that the file represents. Abstractly, a large language model is software that is used to generate language - just like software that is used to generate images can be improved by increasing the number of colors with which images can be rendered, large language models can be improved by increasing the number of weights in the model. The total number of weights in a model is referred to as the “size” of that model. For example, the dolly-v2-3b implementation of the gpt-neox-20b language model architecture is available in several sizes, like 3B and 20B, which stand for 3 billion and 20 billion, respectively. These numbers refer to the total number of weights in that model.</p>
+<p>As described in the hyperparameters section, weights are grouped in sets called “layers”, which, like hyperparameters, have structures that are uniquely defined by the model architecture; within a layer, weights are grouped in structures called “tensors”. So, for instance, both dolly-v2-3B and gpt-neox-20B use layers that comprise the same tensors, but dolly-v2-3B has relatively fewer layers when compared to gpt-neox-20B.
+Here we will use <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L149">convert_gptneox.py</a> as an example to convert model weights to <code class="docutils literal notranslate"><span class="pre">fout</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;iii&quot;</span><span class="p">,</span> <span class="n">n_dims</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">),</span> <span class="n">ftype_cur</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_dims</span><span class="p">):</span>
+<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">n_dims</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">]))</span>
+<span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">fout</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="model-enablements">
+<h1>2.	Model enablements<a class="headerlink" href="#model-enablements" title="Link to this heading"></a></h1>
+<section id="model-loading">
+<h2>2.1.	Model loading<a class="headerlink" href="#model-loading" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Model type: Refers to the type of the model, This can be compared to the model type in the Transformers library, we can see model_class in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68">model_type.h</a>, here defines the basic properties of an ITREX graph model, including model_hparams, model_layer, model_struct.etc. If you have a new cpp model you should update <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L68">model_archs</a>.</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span>enum model_archs {
+<span class="w"> </span> MODEL_UNKNOWN,
+<span class="w"> </span> MODEL_LLAMA,
+<span class="w"> </span> MODEL_GPTJ,
+<span class="w"> </span> MODEL_MPT,
+<span class="w"> </span> MODEL_GPTNEOX,
+<span class="w"> </span> MODEL_STARCODER,
+<span class="w"> </span> MODEL_FALCON,
+<span class="w"> </span> MODEL_OPT,
+<span class="w"> </span> MODEL_BLOOM,
+<span class="w"> </span> MODEL_BAICHUAN,
+<span class="w"> </span> MODEL_CHATGLM2,
+<span class="w"> </span> MODEL_CHATGLM,
+<span class="gi">+ MODEL_NEW</span>
+};
+</pre></div>
+</div>
+<p>and update <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/model_utils/model_types.h#L395">model_name_to_arch()</a>.</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>private:
+<span class="w"> </span> model_name_to_arch() {}
+<span class="w"> </span> // update this table if has new cpp model
+<span class="w"> </span> std::unordered_map&lt;std::string, model_archs&gt; name2arch_ = {
+<span class="w"> </span>     {&quot;unknown&quot;, MODEL_UNKNOWN},   {&quot;llama&quot;, MODEL_LLAMA},
+<span class="w"> </span>     {&quot;gptj&quot;, MODEL_GPTJ},         {&quot;mpt&quot;, MODEL_MPT},
+<span class="w"> </span>     {&quot;opt&quot;, MODEL_OPT},           {&quot;gptneox&quot;, MODEL_GPTNEOX},
+<span class="w"> </span>     {&quot;dolly&quot;, MODEL_GPTNEOX},     {&quot;starcoder&quot;, MODEL_STARCODER},
+<span class="w"> </span>     {&quot;falcon&quot;, MODEL_FALCON},     {&quot;bloom&quot;, MODEL_BLOOM},
+<span class="w"> </span>     {&quot;chatglm2&quot;, MODEL_CHATGLM2}, {&quot;chatglm&quot;, MODEL_CHATGLM},
+<span class="gd">-     {&quot;baichuan&quot;, MODEL_BAICHUAN}};</span>
+<span class="gi">+     {&quot;baichuan&quot;, MODEL_BAICHUAN}},{&quot;new_model&quot;, MODEL_NEW_MODEL}};</span>
+};
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Set buffer size: we need to set the corresponding buffer size in model.h according to the size of parameters for the model, just like <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h">gptneox.h</a>, you should update <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L21">enum gptneox_model</a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L26">model_scratch</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.h#L39">model class</a>.</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gi">+#ifndef NEW_MODEL_H</span>
+<span class="gi">+#define NEW_MODEL_H</span>
+
+<span class="gi">+#include &quot;models/model_utils/model_files.h&quot;</span>
+<span class="gi">+#include &quot;models/model_utils/model_types.h&quot;</span>
+
+<span class="gi">+enum new_model {</span>
+<span class="gi">+  NEW_MDOEL_UNKNOWN,</span>
+<span class="gi">+  NEW_MODEL_13B,</span>
+<span class="gi">+};</span>
+
+<span class="gi">+static const model_scratch new_model_mem_req(int n_layers) {</span>
+<span class="gi">+  switch (n_layers) {</span>
+<span class="gi">+    case N:</span>
+<span class="gi">+      return {8192ull * MB, 8192ull * MB, 8192ull * MB};</span>
+<span class="gi">+    default:</span>
+<span class="gi">+      MODEL_ASSERT(false);</span>
+<span class="w"> </span> }
+<span class="gi">+}</span>
+
+<span class="gi">+class NEW_MODEL : public IModel {</span>
+<span class="gi">+ private:</span>
+<span class="gi">+  model_archs name = MODEL_NEW_MODEL;</span>
+<span class="gi">+  std::unique_ptr&lt;model_model_loader&gt; ml;</span>
+<span class="gi">+  uint32_t n_layer, n_embd, n_ff, n_vocab;</span>
+<span class="gi">+  int n_ctx, n_gpu_layer;</span>
+<span class="gi">+  bool use_mmap, use_mlock, vocab_only;</span>
+<span class="gi">+  model_scratch scratch;</span>
+
+<span class="gi">+ public:</span>
+<span class="gi">+  void init(const char* path_model, model_context&amp; lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,</span>
+<span class="gi">+            bool vocab_only_) override;</span>
+<span class="gi">+  void load(model_context&amp; lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;</span>
+<span class="gi">+};</span>
+
+<span class="gi">+#endif  // NEW_MODEL_H</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Model_load_internal: This function include model init and model load, The <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox_utils.cpp#L42">model init function</a> initializes the model’s hyperparameter, such as <code class="docutils literal notranslate"><span class="pre">n_layer</span></code> and <code class="docutils literal notranslate"><span class="pre">n_embd</span> <span class="pre">parameters</span></code>.</p></li>
+</ul>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">n_embd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hparams</span><span class="p">.</span><span class="n">n_embd</span><span class="p">;</span>
+<span class="n">n_vocab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hparams</span><span class="p">.</span><span class="n">n_vocab</span><span class="p">;</span>
+<span class="n">n_layer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hparams</span><span class="p">.</span><span class="n">n_layer</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The weights of the model in the ITREX Graph file will be loaded in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox_utils.cpp#L71">model load function</a>. Here, we’ll re-read some of the parameters and weights of the converted binary,include ffn, attention, and norm weight and bias, We’ll use the mapping between the name and the weight to read the weight we need. It is shown below.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="p">.</span><span class="n">others</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ml</span><span class="o">-&gt;</span><span class="n">get_tensor</span><span class="p">(</span><span class="s">&quot;gpt_neox.embed_in.weight&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">n_embd</span><span class="p">,</span><span class="w"> </span><span class="n">n_vocab</span><span class="p">},</span><span class="w"> </span><span class="n">NE_BACKEND_CPU</span><span class="p">);</span>
+<span class="n">model</span><span class="p">.</span><span class="n">others</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ml</span><span class="o">-&gt;</span><span class="n">get_tensor</span><span class="p">(</span><span class="s">&quot;gpt_neox.final_layer_norm.weight&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">n_embd</span><span class="p">},</span><span class="w"> </span><span class="n">NE_BACKEND_CPU</span><span class="p">);</span>
+<span class="n">model</span><span class="p">.</span><span class="n">others</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ml</span><span class="o">-&gt;</span><span class="n">get_tensor</span><span class="p">(</span><span class="s">&quot;gpt_neox.final_layer_norm.bias&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">n_embd</span><span class="p">},</span><span class="w"> </span><span class="n">NE_BACKEND_CPU</span><span class="p">);</span>
+<span class="n">model</span><span class="p">.</span><span class="n">others</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ml</span><span class="o">-&gt;</span><span class="n">get_tensor</span><span class="p">(</span><span class="s">&quot;embed_out.weight&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">n_embd</span><span class="p">,</span><span class="w"> </span><span class="n">n_vocab</span><span class="p">},</span><span class="w"> </span><span class="n">NE_BACKEND_CPU</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Here we use get_tensor function to read <code class="docutils literal notranslate"><span class="pre">gpt_neox_embed_in.weight</span></code> with a shape of <code class="docutils literal notranslate"><span class="pre">(n_vocab,n_embd)</span></code> tensor into <code class="docutils literal notranslate"><span class="pre">model.others[0]</span></code>.</p>
+<p>So when enabling a new model, we should implement the <code class="docutils literal notranslate"><span class="pre">new_model_utils.cpp</span></code> of the new model.</p>
+</section>
+<section id="inference-process">
+<h2>2.2.	Inference process<a class="headerlink" href="#inference-process" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Model_eval_internal: This function can be equivalent to the forward process in pytorch, which has the same computational process. In <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox.cpp">gptneox.cpp</a>, the model_eval_internal here will perform a complete operation on the input values, such as ffn, layernorm, mha, etc. Here’s a layernorm operation:</p></li>
+</ul>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">cur</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ne_norm</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">inpL</span><span class="p">);</span>
+<span class="n">cur</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ne_add</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">ne_mul</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">ne_repeat</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="n">layers</span><span class="p">[</span><span class="n">il</span><span class="p">].</span><span class="n">norm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">cur</span><span class="p">),</span><span class="w"> </span><span class="n">cur</span><span class="p">),</span>
+<span class="n">ne_repeat</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="n">layers</span><span class="p">[</span><span class="n">il</span><span class="p">].</span><span class="n">norm</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">cur</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>It is equivalent to in <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neox/modeling_gpt_neox.py#L441C12-L441C12">gptneox.modeling</a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">input_layernorm</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">inpL</span></code> in the code above is equivalent to the <code class="docutils literal notranslate"><span class="pre">hidden_states</span></code> in the pytorch code, and we combine ne_norm, ne_add, and ne_mul to equivalentize self.input_layernorm.</p>
+<p>When enabling a new model, we should implement the <code class="docutils literal notranslate"><span class="pre">new_model.cpp</span></code> of the new model.</p>
+<p>Most of our model examples only support single prompt processing. You need to add <code class="docutils literal notranslate"><span class="pre">batch-dim</span></code> for tensors and concat <code class="docutils literal notranslate"><span class="pre">KV</span> <span class="pre">cache</span></code> per-batch if you want to try multi-batch inference.</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span>// copy batch inputs
+<span class="gd">-  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);</span>
+<span class="gi">+  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);</span>
+<span class="w"> </span> ne_set_name(embd, &quot;embd&quot;);
+<span class="gd">-  memcpy(embd-&gt;data, tokens, N * ne_element_size(embd));</span>
+<span class="gi">+  for (int i = 0; i &lt; batch_size; ++i) {</span>
+<span class="gi">+    memcpy(static_cast&lt;model_token*&gt;(embd-&gt;data) + i * N, tokens + i * N, N * ne_element_size(embd));</span>
+<span class="gi">+  }</span>
+
+// add batch-dim for tensors
+<span class="gd">-  struct ne_tensor* Qcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur-&gt;nb[1] / n_head,  cur-&gt;nb[1], 0 * sizeof(float) * n_embd / n_head));</span>
+<span class="gd">-  struct ne_tensor* Kcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur-&gt;nb[1] / n_head, cur-&gt;nb[1], 1 * sizeof(float) * n_embd / n_head));</span>
+<span class="gd">-  struct ne_tensor* Vcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur-&gt;nb[1] / n_head, cur-&gt;nb[1], 2 * sizeof(float) * n_embd / n_head));</span>
+<span class="gi">+  struct ne_tensor* Qcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, head_dim, n_head, N * batch_size, cur-&gt;nb[1] / n_head, cur-&gt;nb[1], 0 * sizeof(float) * head_dim));</span>
+<span class="gi">+  struct ne_tensor* Kcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, head_dim, n_head, N * batch_size, cur-&gt;nb[1] / n_head, cur-&gt;nb[1], 1 * sizeof(float) * head_dim));</span>
+<span class="gi">+  struct ne_tensor* Vcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, head_dim, n_head, N * batch_size, cur-&gt;nb[1] / n_head, cur-&gt;nb[1], 2 * sizeof(float) * head_dim));</span>
+
+// concat kv cache per-batch
+<span class="gd">-  struct ne_tensor* k =</span>
+<span class="gd">-        ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));</span>
+<span class="gd">-  struct ne_tensor* v =</span>
+<span class="gd">-        ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),</span>
+<span class="gd">-                       (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));</span>
+
+<span class="gd">-  ne_build_forward_expand(&amp;gf, ne_cpy(ctx0, Kcur, k));</span>
+<span class="gd">-  ne_build_forward_expand(&amp;gf, ne_cpy(ctx0, Vcur, v));</span>
+<span class="gi">+  std::vector&lt;ne_tensor*&gt; Kcur_bs(batch_size);</span>
+<span class="gi">+  std::vector&lt;ne_tensor*&gt; Vcur_bs(batch_size);</span>
+<span class="gi">+  std::vector&lt;ne_tensor*&gt; k_bs(batch_size);</span>
+<span class="gi">+  std::vector&lt;ne_tensor*&gt; v_bs(batch_size);</span>
+<span class="gi">+  for (int i = 0; i &lt; batch_size; ++i) {</span>
+<span class="w"> </span>   // batch K
+<span class="gi">+    Kcur_bs[i] = ne_permute(ctx0,</span>
+<span class="gi">+                            ne_view_4d(ctx0, Kcur, head_dim, n_head, N, 1, ne_element_size(Kcur) * head_dim,</span>
+<span class="gi">+                                        ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,</span>
+<span class="gi">+                                        i * ne_element_size(Kcur) * n_embd * N),</span>
+<span class="gi">+                            0, 2, 1, 3);</span>
+<span class="gi">+    k_bs[i] = ne_view_4d(</span>
+<span class="gi">+        ctx0, kv_self.k, head_dim, N, n_head, 1, ne_element_size(kv_self.k) * head_dim,</span>
+<span class="gi">+        ne_element_size(kv_self.k) * head_dim * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,</span>
+<span class="gi">+        ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +</span>
+<span class="gi">+          i * n_ctx * n_embd * ne_element_size(kv_self.k) + head_dim * n_past * ne_element_size(kv_self.k)));</span>
+
+<span class="w"> </span>   // batch V
+<span class="gi">+    Vcur_bs[i] = ne_permute(ctx0,</span>
+<span class="gi">+                            ne_reshape_4d(ctx0,</span>
+<span class="gi">+                                          ne_view_2d(ctx0, Vcur, n_embd, N, ne_element_size(Vcur) * n_embd,</span>
+<span class="gi">+                                                      i * ne_element_size(Vcur) * n_embd * N),</span>
+<span class="gi">+                                          head_dim, n_head, N, 1),</span>
+<span class="gi">+                            1, 2, 0, 3);</span>
+<span class="gi">+    v_bs[i] =</span>
+<span class="gi">+        ne_view_4d(ctx0, kv_self.v, N, head_dim, n_head, 1, n_ctx * ne_element_size(kv_self.v),</span>
+<span class="gi">+                    n_ctx * ne_element_size(kv_self.v) * head_dim, n_ctx * ne_element_size(kv_self.v) * n_embd,</span>
+<span class="gi">+                    ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +</span>
+<span class="gi">+                    i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));</span>
+<span class="gi">+    ne_build_forward_expand(&amp;gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));</span>
+<span class="gi">+    ne_build_forward_expand(&amp;gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));</span>
+<span class="gi">+  }</span>
+
+// copy batch output logits out
+<span class="w"> </span> // return result for just the last token
+<span class="gi">+  size_t bs_stride = n_vocab * N;</span>
+<span class="gd">-  logits_out.resize(n_vocab);</span>
+<span class="gd">-  memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);</span>
+<span class="gi">+  logits_out.resize(n_vocab * batch_size);</span>
+<span class="gi">+  for (int i = 0; i &lt; batch_size; ++i) {</span>
+<span class="gi">+    memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);</span>
+<span class="gi">+  }</span>
+</pre></div>
+</div>
+</section>
+<section id="application">
+<h2>2.3.	Application<a class="headerlink" href="#application" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Q4_0 quant : We can quantize the model generated by convert by adding a quant layer class to quantize it into an int4 low-bit file, so as to obtain better inference performance. Register quant layer class in your new_model_utils.cpp, just like <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/gptneox_utils.cpp#L163">gptneox_utils.cpp</a>, replace <code class="docutils literal notranslate"><span class="pre">gptneox_quant_layer</span></code> to your <code class="docutils literal notranslate"><span class="pre">new_model_quant_layer</span></code>.</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gi">+class new_quant_layer : public quant_layer_base {</span>
+<span class="gi">+ public:</span>
+<span class="gi">+ virtual quant_params_internal get_layer_config(std::string layername, std::vector&lt;int64_t&gt; ne,</span>
+<span class="gi">+                                                 ne_type type) override {</span>
+<span class="gi">+    bool quantize = layername.rfind(&quot;weight&quot;) == layername.size() - 6;  // size(&quot;weight&quot;) = 6</span>
+<span class="gi">+    if (layername == &quot;model.embed_tokens.weight&quot;) {</span>
+<span class="gi">+      // special layer process, can be loaded by config file</span>
+<span class="gi">+      return quant_params_internal();  // return q4_0 to cover the usage of getrow</span>
+<span class="gi">+    }</span>
+<span class="gi">+    quantize &amp;= (ne.size() == 2);  // quantize only linear layers, which are two-dim</span>
+<span class="gi">+    if (quantize) {</span>
+<span class="gi">+      return mGCfg;  // use global quant config</span>
+<span class="gi">+    } else {</span>
+<span class="gi">+      return quant_params_internal{quant_bits::count};  // non-quant</span>
+<span class="gi">+    }</span>
+<span class="gi">+  }</span>
+<span class="gi">+};</span>
+<span class="gi">+REGISTER_QUANT_LAYER_CLASS(new_model);</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Add new CMakeLists.txt: We need to add the newly added model to the following CMakeList.txt. New model CMakeList.txt just like <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/gptneox/CMakeLists.txt">gptneox_CMakeLists.txt</a>,</p></li>
+</ul>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gi">+set(TARGET new_model)</span>
+<span class="gi">+add_library_w_warning(${TARGET} new_model.cpp new_model_utils.cpp ${MODEL_UTILS_SOURCE})</span>
+<span class="gi">+target_compile_features(${TARGET} PUBLIC cxx_std_11) # don&#39;t bump</span>
+<span class="gi">+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)</span>
+<span class="gi">+target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)</span>
+</pre></div>
+</div>
+<p>and and new_model to <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt">models_CMakeLists.txt</a>.</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span>add_subdirectory(opt)
+add_subdirectory(bloom)
+add_subdirectory(chatglm)
+add_subdirectory(baichuan)
+<span class="gi">+add_subdirectory(new_model)</span>
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h2>2.4. Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h2>
+<p>We support binding LLM runtime to transformer-based Python API, which is more convenient for customers to use. You need to modify the following files.
+Please refer to <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/README.html#how-to-use-transformer-based-api">how-to-use-transformer-based-api</a>  of using Python API.</p>
+<blockquote>
+<div><p>The Python API will automatically call the convert script and quantization script to convert the hugging face model into a quantified model. Please ensure that the scripts have been added.</p>
+</div></blockquote>
+<p>Files need to be modified:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers/llm/runtime/graph/__init__.py</span></code></p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">new_model</span></code> will be added, modify the code as follows:</p>
+<div class="highlight-diff notranslate"><div class="highlight"><pre><span></span><span class="gh">diff --git a/intel_extension_for_transformers/llm/runtime/graph/__init__.py b/intel_extension_for_transformers/llm/runtime/graph/__init__.py</span>
+<span class="gh">index aaeab8d16a..12a835e652 100644</span>
+<span class="gd">--- a/intel_extension_for_transformers/llm/runtime/graph/__init__.py</span>
+<span class="gi">+++ b/intel_extension_for_transformers/llm/runtime/graph/__init__.py</span>
+<span class="gu">@@ -57,6 +57,8 @@ class Model:</span>
+<span class="w"> </span>            import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
+<span class="w"> </span>        elif model_name == &quot;polyglot&quot;:
+<span class="w"> </span>            import intel_extension_for_transformers.llm.runtime.graph.polyglot_cpp as cpp_model
+<span class="gi">+        elif model_name == &quot;new_model&quot;: # read from config.json-&gt;model_type</span>
+<span class="gi">+            import intel_extension_for_transformers.llm.runtime.graph.new_model_cpp as cpp_model</span>
+<span class="w"> </span>        else:
+<span class="w"> </span>            raise TypeError(&quot;Unspported model type {}!&quot;.format(model_name))
+<span class="w"> </span>        self.module = cpp_model
+<span class="gh">diff --git a/intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt b/intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt</span>
+<span class="gh">index d86107d26e..36d30cabe3 100644</span>
+<span class="gd">--- a/intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt</span>
+<span class="gi">+++ b/intel_extension_for_transformers/llm/runtime/graph/application/CMakeLists.txt</span>
+<span class="gu">@@ -67,6 +67,7 @@ compile_quant(quant_chatglm   quant_model.cpp chatglm   chatglm)</span>
+<span class="w"> </span>compile_quant(quant_chatglm2  quant_model.cpp chatglm2  chatglm2)
+<span class="w"> </span>compile_quant(quant_baichuan  quant_model.cpp baichuan  baichuan)
+<span class="w"> </span>compile_quant(quant_mistral   quant_model.cpp mistral   llama)
+<span class="gi">+compile_quant(quant_new_model   quant_model.cpp new_model   new_model)</span>
+<span class="w"> </span>
+<span class="w"> </span># all models running
+<span class="w"> </span>if (NE_PYTHON_API)
+<span class="gu">@@ -88,6 +89,7 @@ set(mymap_chatglm 11)</span>
+<span class="w"> </span>set(mymap_baichuan 12)
+<span class="w"> </span>set(mymap_polyglot 13)
+<span class="w"> </span>set(mymap_mistral 14)
+<span class="gi">+set(mymap_new_model 15)</span>
+<span class="w"> </span>
+<span class="w"> </span>function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
+<span class="w"> </span> add_executable_w_warning(${TARGET} ${SRC})
+<span class="gu">@@ -120,3 +122,4 @@ compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)</span>
+<span class="w"> </span>compile_run(run_chatglm   main_run.cpp chatglm   chatglm)
+<span class="w"> </span>compile_run(run_baichuan  main_run.cpp baichuan  baichuan)
+<span class="w"> </span>compile_run(run_mistral   main_run.cpp mistral   llama)
+<span class="gi">+compile_run(run_new_model   main_run.cpp new_model   new_model)</span>
+<span class="gh">diff --git a/intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp b/intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp</span>
+<span class="gh">index 894be0134d..a9a57c0a9e 100644</span>
+<span class="gd">--- a/intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp</span>
+<span class="gi">+++ b/intel_extension_for_transformers/llm/runtime/graph/application/main_pybind.cpp</span>
+<span class="gu">@@ -471,6 +471,10 @@ PYBIND11_MODULE(polyglot_cpp, m)</span>
+<span class="w"> </span>
+<span class="w"> </span>PYBIND11_MODULE(mistral_cpp, m)
+<span class="w"> </span>
+<span class="gi">+#elif MODEL_NAME_ID == 15</span>
+<span class="gi">+</span>
+<span class="gi">+PYBIND11_MODULE(new_model_cpp, m)</span>
+<span class="gi">+</span>
+<span class="w"> </span>#endif
+<span class="w"> </span>{
+<span class="w"> </span>  m.doc() = &quot;cpp model python binding&quot;;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-optimization">
+<h1>3.	Performance optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h1>
+<section id="quantize-model-and-use-jblas-library-for-better-performance">
+<h2>3.1.	Quantize model and use Jblas library for better performance<a class="headerlink" href="#quantize-model-and-use-jblas-library-for-better-performance" title="Link to this heading"></a></h2>
+<p>Quantize model and use the jblas library for inference can lead to better performance.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert the model directly use model path</span>
+python<span class="w"> </span>scripts/convert_new_model.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>new_model_path
+<span class="c1"># optimized INT4 model with group size 128 (recommended)</span>
+./build/bin/quant_new_model<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">128</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8
+</pre></div>
+</div>
+<p>Then you can use the model to inference according to the process in the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph">README</a>.</p>
+</section>
+<section id="mha-fusion">
+<h2>3.2.	MHA fusion<a class="headerlink" href="#mha-fusion" title="Link to this heading"></a></h2>
+<p>We can improve the performance by fusion the multihead attention process.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/fused_attention.html">MHA-Fusion Introduction</a></p></li>
+<li><p><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/pull/567">MHA-Fusion example</a></p></li>
+</ul>
+</section>
+<section id="ffn-fusion">
+<h2>3.3.	FFN fusion<a class="headerlink" href="#ffn-fusion" title="Link to this heading"></a></h2>
+<p>We can improve the performance by fusion the FFN process.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/pull/160">FFN-Fusion example</a></p></li>
+</ul>
+</section>
+</section>
+<section id="a-complete-example">
+<h1>4. A complete example<a class="headerlink" href="#a-complete-example" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/pull/376">Enable baichuan</a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7ffbd17551e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
