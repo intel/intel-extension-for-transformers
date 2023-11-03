@@ -29,8 +29,9 @@ drop table if exists feedback;
 create table feedback
 (
     feedback_id tinyint unsigned primary key auto_increment,
-    question varchar(500),
-    answer varchar(500),
+    question varchar(1000),
+    answer varchar(3000),
     feedback_result tinyint,
+    feedback_time datetime,
     unique (feedback_id)
 );

@@ -19,6 +19,7 @@ import io
 import re
 import csv
 import datetime
+from datetime import timedelta, timezone
 from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File
 from ...config import GenerationConfig
@@ -133,13 +134,23 @@ async def retrieval_chat(request: AskDocRequest):
                     "text": output,
                     "error_code": 0,
                 }
-                logger.info(f"[askdoc - chat] {ret}")
+                if '<' in output and '>' in output:
+                    output = output.replace('<', '').replace('>', '').replace(' ', '')
+                    if output.endswith('.') or output.endswith('\n'):
+                        output = output[:-1]
+                if '](' in output:
+                    output = output.split('](')[-1].replace(')', '')
+                    if output.endswith('.') or output.endswith('\n'):
+                        output = output[:-1]
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
-                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}" />'
+                    formatted_link = f'''<a style="color: blue; text-decoration: \
+                        underline;"   href="{res.group()}"> {res.group()} </a>'''
+                    logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    formatted_str = ret['text'].replace('\n', '<br/>')
+                    formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
             if link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
@@ -147,8 +158,12 @@ async def retrieval_chat(request: AskDocRequest):
                     if single_link == None:
                         continue
                     raw_link = single_link["source"]
-                    formatted_link = f"""<a style="color: blue; text-decoration: underline;"   
-                                        href="{raw_link}">{raw_link}</a><br/>"""
+                    formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
+                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
+                            border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
+                            background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
+                            href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
+                    logger.info(f"[askdoc - chat] link below: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
@@ -168,8 +183,17 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     feedback_str = 'dislike' if int(feedback) else 'like'
     logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
                 answer: [{answer}], feedback: [{feedback_str}]''')
-    sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
-    logger.info(f'[askdoc - feedback] sql: {sql}')
+    question = question.replace('"', "'")
+    answer = answer.replace('"', "'")
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
+            answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
+    logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
             mysql_db.insert(sql, None)
@@ -197,7 +221,7 @@ def get_feedback_from_db():
         feedback_list = mysql_db.fetch_all(sql)
             
     except:
-        raise Exception("""Exception occurred when querying data from MySQL, 
+        raise Exception("""Exception occurred when querying data from MySQL, \
                         please check the db session and your syntax.""")
     else:
         mysql_db._close()
@@ -205,10 +229,16 @@ def get_feedback_from_db():
             output = io.StringIO()
             writer = csv.DictWriter(
                 output, 
-                fieldnames=['feedback_id', 'question', 'answer', 'feedback_result']
+                fieldnames=[
+                    'feedback_id', 
+                    'question', 
+                    'answer', 
+                    'feedback_result', 
+                    'feedback_time']
             )
             writer.writeheader()
             for row in feedback_list:
+                row['feedback_result'] = 'like' if ( row['feedback_result'] == 0 ) else 'dislike'
                 writer.writerow(row)
                 yield output.getvalue()
                 output.seek(0)
