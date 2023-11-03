@@ -211,6 +211,14 @@ class WeightOnlyQuantConfig(PretrainedConfig):
     def __repr__(self):
         return f"{self.__class__.__name__} {self.to_json_string()}"
 
+    def rm_unspport_serial_items(self, config_dict):
+        unsupport_serial_items = [ "calib_func", "calib_dataloader"]
+        for key in unsupport_serial_items:
+            if config_dict.get(key) is not None:
+                del config_dict[key]
+
+        return config_dict
+
     def to_json_string(self, use_diff: bool = True) -> str:
         """
         Serializes this instance to a JSON string.
@@ -228,6 +236,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             config_dict = self.to_diff_dict()
         else:
             config_dict = self.to_dict()
+
+        config_dict = self.rm_unspport_serial_items(config_dict)
         return json.dumps(config_dict, indent=2, sort_keys=True) + "\n"
 
     def to_diff_dict(self) -> Dict[str, Any]:

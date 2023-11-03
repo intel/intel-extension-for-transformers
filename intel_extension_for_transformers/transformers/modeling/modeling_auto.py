@@ -34,6 +34,8 @@
 import json
 import os
 import transformers
+import torch
+
 from ..utils import (
     BitsAndBytesConfig,
     MixedPrecisionConfig,
@@ -50,16 +52,50 @@ from ..utils.utility import (
     WEIGHTS_INDEX_NAME,
 )
 from ...llm.quantization.utils import replace_linear
-from ...utils.utils import get_gpu_family
+from ...utils.utils import get_gpu_family, supported_gpus
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
+from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch, convert_dtype_torch2str
+
 from typing import Union
 
 torch = LazyImport("torch")
 
 
+def device_is_xpu(device_map):
+    use_xpu = (
+            True
+            if device_map == torch.device("xpu")
+            or device_map == "xpu"
+            else False
+        )
+
+    return use_xpu
+
+def check_xpu_type(device_map, gpu_type="max"):
+    if gpu_type not in supported_gpus():
+        assert False, "unsupported gpu type {}".format(gpu_type)
+
+    if not device_is_xpu(device_map):
+        return False
+
+    import intel_extension_for_pytorch
+    assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
+    name = get_gpu_family()
+    return name == gpu_type
+
+def save_low_bit_weight_by_ipex(model, save_directory, param_dtype):
+    quantized_ckpt = "{}/torch.pt".format(save_directory)
+
+    new_model = model.to(param_dtype)
+    model_state = new_model.state_dict()
+    torch.save(model_state, quantized_ckpt)
+    print("Save quantized model weight by ipex to {}".format(quantized_ckpt))
+
 def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
     assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
+    device_map = self.device_map
+
     if os.path.isfile(save_directory):
         logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
         return
@@ -104,6 +140,16 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
 
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
+    if check_xpu_type(device_map, "max"):
+        save_low_bit_weight_by_ipex(self, save_directory, convert_dtype_str2torch(self.quantization_config.compute_dtype))
+
+
+def int4_type_list():
+    return ['nf4',
+            'int4_fullrange',
+            'int4_clip',
+            'fp4_e2m1'
+            'fp4_e2m1_bnb']
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
@@ -160,24 +206,28 @@ class _BaseQBitsAutoModelClass:
             if load_in_4bit:
                 if quantization_config is None:
                     quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="nf4"
+                        compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="nf4"
                     )
                 else:
-                    assert (
-                        "4" in quantization_config.weight_dtype
-                        and quantization_config.compute_dtype == torch_dtype
-                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
-                    f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+                    assert (quantization_config.weight_dtype in int4_type_list()), \
+                        "Quantization_config.weight_dtype should be one of {}.".format(int4_type_list())
+
+                    assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
+                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(quantization_config.compute_dtype, torch_dtype)
+
             elif load_in_8bit:
                 if quantization_config is None:
                     quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="int8"
+                        compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="int8"
                     )
                 else:
-                    assert (
-                        quantization_config.weight_dtype == "int8"
-                        and quantization_config.compute_dtype == torch_dtype
-                    ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
+                    assert (quantization_config.weight_dtype == "int8"), \
+                        "Quantization_config.weight_dtype should be 'int8' ."
+
+                    assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
+                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(quantization_config.compute_dtype, torch_dtype)
+
+
 
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
@@ -351,7 +401,7 @@ class _BaseQBitsAutoModelClass:
                 calib_func = calib_func
             model.config.torchscript = True
             model = quantization.fit(
-                                    model, 
+                                    model,
                                     conf,
                                     calib_func=calib_func,
                                     calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
@@ -571,6 +621,7 @@ class _BaseQBitsAutoModelClass:
                 model, quantization_config=quantization_config, device=device_map, empty_weights=True
             )
         elif intel_gpu == "max":
+            #handle for max in next code
             pass
         else:
             raise Exception("Unsupport device: {}.{}".format(device_map, intel_gpu))
@@ -627,6 +678,15 @@ class _BaseQBitsAutoModelClass:
                 pass
         for param in model.parameters():
             param.requires_grad_(False)
+
+        if intel_gpu == "max":
+            from intel_extension_for_transformers.llm.quantization.utils import load_quantized_model_by_ipex
+            quantized_ckpt = "{}/torch.pt".format(pretrained_model_name_or_path)
+            print("load quantized weight by ipex from {}".format(quantized_ckpt))
+            model = load_quantized_model_by_ipex(model, quantization_config, quantized_ckpt, \
+                                                amp_dtype=torch.float16, device=device_map)
+
+
         return model
 
 

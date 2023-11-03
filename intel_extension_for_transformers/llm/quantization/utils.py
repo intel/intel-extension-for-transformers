@@ -213,7 +213,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 + " from transformer import AutoTokenizer \n"
                 + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
             )
-            exit(0)           
+            exit(0)
 
         def tokenize_function(examples):
             if "prompt" in examples:
@@ -305,29 +305,64 @@ def convert_to_quantized_model(model, config, device="cpu"):
 def convert_dtype_str2torch(str_dtype):
     if str_dtype == "int8":
         return torch.int8
-    elif str_dtype == "fp32":
+    elif str_dtype == "fp32" or str_dtype == "auto":
         return torch.float
     elif str_dtype == "fp16":
         return torch.float16
     elif str_dtype == "bf16":
         return torch.bfloat16
     else:
-        assert False, "Unsupport dtype {} for by IPEX backend".format(str_dtype)
+        assert False, "Unsupport str dtype {} to torch dtype".format(str_dtype)
 
-def convert_to_quantized_model_by_ipex(model, config, device=torch.device("cpu")):
-    import intel_extension_for_pytorch as ipex
-    tmp_quan_weight_path = "./itrex_tmp_quantized_weight.pt"
+def convert_dtype_torch2str(dtype):
+    if dtype == torch.int8:
+        return "int8"
+    elif dtype == torch.float:
+        return "fp32"
+    elif dtype == torch.float16:
+        return "fp16"
+    elif dtype == torch.bfloat16:
+        return "bf16"
+    else:
+        assert False, "Unsupport pytorch dtype {} to str dtype".format(dtype)
 
+def get_bits(config):
     if config.weight_dtype == "int8":
         bits = 8
     elif "int4" in config.weight_dtype:
         bits = 4
     else:
         assert False, "Unsupport {} for quantize weight only by IPEX backend".format(config.weight_dtype)
+    return bits
+
+
+def load_quantized_model_by_ipex(raw_model, config, quan_weight_path, amp_dtype=torch.float16, device=torch.device("xpu")):
+    import intel_extension_for_pytorch as ipex
+
+    bits = get_bits(config)
+    woq_config = {}
+    woq_config['is_int4'] = (bits == 4)
+    woq_config['group_size'] = config.group_size
+    woq_config['weight_path'] = quan_weight_path
+    amp_dtype = torch.float16
+    model = ipex.optimize_transformers(raw_model.eval(), dtype=amp_dtype, **woq_config)
+    model = model.to(device)
+    model.device_map = device
+
+    return model
+
+def convert_to_quantized_model_by_ipex(model, config, device=torch.device("cpu")):
+    import intel_extension_for_pytorch as ipex
+    tmp_quan_weight_path = "./itrex_tmp_quantized_weight.pt"
 
     amp_dtype = convert_dtype_str2torch(config.compute_dtype)
     dataloader = config.calib_dataloader
     assert dataloader is not None, "Must provide config.calib_dataloader"
+
+    bits = get_bits(config)
+
+    if not hasattr(model, "seqlen"):
+        model.seqlen =2048
 
     ipex.woq(model,
         dataloader,
@@ -337,13 +372,8 @@ def convert_to_quantized_model_by_ipex(model, config, device=torch.device("cpu")
         group_size = config.group_size,
         param_dtype=amp_dtype)
 
-    woq_config = {}
-    woq_config['is_int4'] = (bits == 4)
-    woq_config['group_size'] = config.group_size
-    woq_config['weight_path'] = tmp_quan_weight_path
     amp_dtype = torch.float16
-    model = ipex.optimize_transformers(model.eval(), dtype=amp_dtype, **woq_config)
-
-    model.to(device)
+    model = load_quantized_model_by_ipex(model, config, tmp_quan_weight_path, \
+                                amp_dtype=amp_dtype, device=device)
 
     return model
