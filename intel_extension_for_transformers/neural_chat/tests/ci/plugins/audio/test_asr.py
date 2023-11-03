@@ -55,7 +55,6 @@ class TestASR(unittest.TestCase):
         if self.asr_bf16 is None:
             return
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
-        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         if os.path.exists(audio_path):
             text = self.asr_bf16.audio2text(audio_path)
         else:
