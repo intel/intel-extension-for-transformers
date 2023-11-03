@@ -1,0 +1,41 @@
+:orphan:
+
+:py:mod:`dpo_clm`
+=================
+
+.. py:module:: dpo_clm
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   dpo_clm.ModelArguments
+   dpo_clm.DataTrainingArguments
+   dpo_clm.FinetuningArguments
+
+
+
+
+.. py:class:: ModelArguments
+
+
+   Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
+
+
+.. py:class:: DataTrainingArguments
+
+
+   Arguments pertaining to what data we are going to input our model for training and eval.
+
+
+.. py:class:: FinetuningArguments
+
+
+   Arguments of finetune we are going to apply on the model.
+
+

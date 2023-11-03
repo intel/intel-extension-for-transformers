@@ -15,6 +15,7 @@ Classes
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.dpo_trainer.DPOTrainer
+   intel_extension_for_transformers.transformers.dpo_trainer.GaudiDPOTrainer
 
 
 
@@ -86,6 +87,15 @@ Classes
 
       :param logs: The values to log.
       :type logs: `Dict[str, float]`
+
+
+
+.. py:class:: GaudiDPOTrainer(model: Union[transformers.PreTrainedModel, torch.nn.Module] = None, ref_model: Optional[Union[transformers.PreTrainedModel, torch.nn.Module]] = None, beta: float = 0.1, args: transformers.TrainingArguments = None, data_collator: Optional[transformers.DataCollator] = None, label_pad_token_id: int = -100, padding_value: int = 0, train_dataset: Optional[datasets.Dataset] = None, eval_dataset: Optional[Union[datasets.Dataset, Dict[str, datasets.Dataset]]] = None, tokenizer: Optional[transformers.PreTrainedTokenizerBase] = None, max_length: Optional[int] = None, peft_config: Optional[Dict] = None, disable_dropout: bool = True)
+
+
+
+
+   Initialize habana
 
 
 

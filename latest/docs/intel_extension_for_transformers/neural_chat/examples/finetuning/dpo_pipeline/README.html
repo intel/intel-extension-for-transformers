@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direct Preference Optimization (DPO) &mdash; Intel® Extension for Transformers 0.1.dev1+g98d3ce3 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Direct Preference Optimization (DPO)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="direct-preference-optimization-dpo">
+<h1>Direct Preference Optimization (DPO)<a class="headerlink" href="#direct-preference-optimization-dpo" title="Link to this heading"></a></h1>
+<p>For Better aligning human preferences, we apply Direct Preference Optimization (DPO) algorithm, which is stable and computationally lightweight. The algorithm derives the probability of human preference data for the optimal policy to replace the reward model that reinforcement learning from human feedback (RLHF) needs and formulates a maximum likelihood objective for a parameterized policy. For more details of DPO, you can refer <a class="reference external" href="https://arxiv.org/pdf/2305.18290.pdf">Direct Preference Optimization: Your Language Model is Secretly a Reward Model</a>.</p>
+<section id="environment">
+<h2>1. Environment<a class="headerlink" href="#environment" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="prepare-reference-dataset">
+<h2>2. Prepare reference dataset<a class="headerlink" href="#prepare-reference-dataset" title="Link to this heading"></a></h2>
+<p>We select 12k examples from <a class="reference external" href="https://arxiv.org/abs/2306.02707">Orca</a> style dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/OpenOrca">Open-Orca/OpenOrca</a>, and regard its completions that are generated from GPT-4 or GPT-3.5 as chosen response. Simply and automatically, we use llama-2-13b-chat model to generate corresponding reject responses. For details of the dataset, you can refer <a class="reference external" href="https://huggingface.co/datasets/Intel/orca_dpo_pairs">Intel/orca_dpo_pairs</a></p>
+</section>
+<section id="training">
+<h2>3. Training<a class="headerlink" href="#training" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">dpo_clm</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="s">&quot;mosaicml/mpt-7b&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="s">&quot;mpt_7b-dpo&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">per_device_train_batch_size</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">--</span><span class="n">gradient_accumulation_steps</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">--</span><span class="n">learning_rate</span><span class="w"> </span><span class="mf">5e-4</span><span class="w"> </span><span class="o">--</span><span class="n">max_steps</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="o">--</span><span class="n">save_steps</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">--</span><span class="n">lora_alpha</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="o">--</span><span class="n">lora_rank</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="o">--</span><span class="n">lora_dropout</span><span class="w"> </span><span class="mf">0.05</span><span class="w"> </span><span class="o">--</span><span class="n">dataset_name</span><span class="w"> </span><span class="n">Intel</span><span class="o">/</span><span class="n">orca_dpo_pairs</span><span class="w"> </span><span class="o">--</span><span class="n">bf16</span><span class="w"> </span><span class="o">--</span><span class="n">use_auth_token</span><span class="w"> </span><span class="n">True</span>
+</pre></div>
+</div>
+<section id="training-on-habana">
+<h3>Training on Habana<a class="headerlink" href="#training-on-habana" title="Link to this heading"></a></h3>
+<p>Follow install guidance in <a class="reference external" href="https://github.com/huggingface/optimum-habana">optimum-habana</a></p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">dpo_clm</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="s">&quot;mosaicml/mpt-7b&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="s">&quot;mpt_7b-dpo&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">per_device_train_batch_size</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">--</span><span class="n">gradient_accumulation_steps</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">--</span><span class="n">learning_rate</span><span class="w"> </span><span class="mf">5e-4</span><span class="w"> </span><span class="o">--</span><span class="n">max_steps</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="o">--</span><span class="n">save_steps</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">--</span><span class="n">lora_alpha</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="o">--</span><span class="n">lora_rank</span><span class="w"> </span><span class="mi">16</span><span class="w"> </span><span class="o">--</span><span class="n">lora_dropout</span><span class="w"> </span><span class="mf">0.05</span><span class="w"> </span><span class="o">--</span><span class="n">dataset_name</span><span class="w"> </span><span class="n">Intel</span><span class="o">/</span><span class="n">orca_dpo_pairs</span><span class="w"> </span><span class="o">--</span><span class="n">bf16</span><span class="w"> </span><span class="o">--</span><span class="n">use_auth_token</span><span class="w"> </span><span class="n">True</span><span class="w"> </span><span class="o">--</span><span class="n">use_habana</span><span class="w"> </span><span class="o">--</span><span class="n">use_lazy_mode</span><span class="w"> </span><span class="o">--</span><span class="n">pad_max</span><span class="w"> </span><span class="nb">true</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="evaluation">
+<h2>4. Evaluation<a class="headerlink" href="#evaluation" title="Link to this heading"></a></h2>
+<p>We verify DPO training on our finetuned <code class="docutils literal notranslate"><span class="pre">mpt-7b</span></code> model <a class="reference external" href="https://huggingface.co/Intel/neural-chat-7b-v1-1">Intel/neural-chat-7b-v1-1</a>. The evaluation metrics is same as <a class="reference external" href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard">open_llm_leaderboard</a> which uses <a class="reference external" href="https://github.com/EleutherAI/lm-evaluation-harness/tree/master">Eleuther AI Language Model Evaluation Harness</a>, a unified framework to test generative language models on a large number of different evaluation tasks.</p>
+<section id="mpt-architecture">
+<h3>mpt architecture<a class="headerlink" href="#mpt-architecture" title="Link to this heading"></a></h3>
+<p>| Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ | Evaluation by |
+| — | — | — | — | — | — | — |
+|<a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">mosaicml/mpt-7b</a>| 47.4  | 47.61 | 77.56 | 31 | 33.43 | ours |
+| <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b-chat">mosaicml/mpt-7b-chat</a> | 49.95 | 46.5 | 75.55 | 37.60 | 40.17 | ours |
+| <a class="reference external" href="https://huggingface.co/Intel/neural-chat-7b-v1-1">Intel/neural-chat-7b-v1-1</a> | <strong>51.41</strong>   | 50.09 | 76.69 | 38.79 | 40.07 | ours |
+| <strong><a class="reference external" href="https://huggingface.co/Intel/neural-chat-7b-v1-1">Intel/neural-chat-7b-v1-1</a> with DPO</strong> | <strong>52.39</strong> | 51.54  | 76.45 | 39.47| 42.10 | ours |</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f44e0850220> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
