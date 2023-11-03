@@ -17,6 +17,9 @@
 """ Finetuning the library models for sequence classification on GLUE."""
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
+from mteb import MTEB
+from C_MTEB import *
+from sentence_transformers import SentenceTransformer
 import datasets
 import logging
 import numpy as np
@@ -28,10 +31,6 @@ from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
 from intel_extension_for_transformers.transformers import metrics, objectives, OptimizedModel, QuantizationConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-
-from mteb import MTEB
-from C_MTEB import *
-from sentence_transformers import SentenceTransformer
 
 from transformers import (
     AutoConfig,
@@ -221,6 +220,9 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
         metadata={"help":"load int8 model."})
@@ -500,17 +502,6 @@ def main():
     else:
         data_collator = None
 
-    # Initialize our Trainer
-    trainer = NLPTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-    )
-
     metric_name = (
         optim_args.metric_name
         if optim_args.metric_name is not None
@@ -523,7 +514,35 @@ def main():
             else "accuracy"
         )
     )
-    trainer.save_model(training_args.output_dir)
+    training_args.metric_for_best_model = metric_name
+
+    # Initialize our Trainer
+    dataset_id = "SetFit/amazon_counterfactual"
+    train_dataset = datasets.load_dataset(dataset_id, name="en")['train']
+
+    def preprocess_function(examples):
+        # Tokenize the texts
+        args = examples['text']
+        result= tokenizer(args, padding=padding, max_length=max_seq_length, truncation=True)
+
+        return result
+
+    with training_args.main_process_first(desc="dataset map pre-processing"):
+        train_dataset = train_dataset.map(
+            preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
+        )
+
+    trainer = NLPTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset if training_args.do_train else None,
+        eval_dataset=eval_dataset if training_args.do_eval else None,
+        compute_metrics=compute_metrics,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+    )
+
+
     if optim_args.tune:
 
         if not training_args.do_eval:
@@ -548,9 +567,33 @@ def main():
             approach=optim_args.quantization_approach,
             max_trials=600,
             metrics=[tune_metric],
-            objectives=[objective]
+            objectives=[objective],
+	    sampling_size = len(train_dataset)//20
         )
-        model = trainer.quantize(quant_config=quantization_config)
+	
+        stmodel = SentenceTransformer(model_args.model_name_or_path)
+        def eval_func(model):
+            stmodel[0].auto_model = model.bert
+            evaluation = MTEB(task_langs=['en'], tasks=['AmazonCounterfactualClassification'])
+            results = evaluation.run(stmodel, overwrite_results=True)
+            print(results)
+            return results['AmazonCounterfactualClassification']['test']['en']['accuracy']
+        model = trainer.quantize(
+            quant_config=quantization_config, 
+            eval_func=eval_func,
+        )
+
+    if optim_args.benchmark_only:
+        model_path = model_args.model_name_or_path
+        # to avoid wrong architecture from model name (only work for fp32, like bert-base-uncased).
+        if 'SequenceClassification' not in config.architectures[0]:
+            model_path = model
+        trainer.benchmark(
+            model_path,
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=optim_args.cores_per_instance,
+            num_of_instance=optim_args.num_of_instance,
+        )
 
     if optim_args.benchmark or optim_args.accuracy_only:
 
@@ -564,9 +607,9 @@ def main():
                 ret = True
                 throughput = results.get("eval_samples_per_second")
                 print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
-                print("Finally Eval {} Accuracy: {}".format(key, results[key]))
-                print("Latency: {:.3f} ms".format(1000 / throughput))
-                print("Throughput: {} samples/sec".format(throughput))
+                print("Finally Eval {} Accuracy: {:.5f}".format(key, results[key]))
+                print("Latency: {:.5f} ms".format(1000 / throughput))
+                print("Throughput: {:.5f} samples/sec".format(throughput))
                 break
         assert ret, "No metric returned, Please check inference metric!"
 
@@ -575,11 +618,6 @@ def main():
     if optim_args.to_onnx:
         trainer.enable_executor = True
         trainer.export_to_onnx()
-
-def _mp_fn(index):
-    # For xla_spawn (TPUs)
-    main()
-
 
 if __name__ == "__main__":
     main()
