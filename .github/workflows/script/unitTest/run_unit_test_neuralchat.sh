@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.neural-chat-coveragerc"
 LOG_DIR=/log_dir
@@ -27,24 +28,24 @@ function pytest() {
     export GLOG_minloglevel=2
 
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    echo -e '
-# Kill the neuralchat server processes
-ports="7000 8000 9000"
-# Loop through each port and find associated PIDs
-for port in $ports; do
-    # Use lsof to find the processes associated with the port
-    pids=$(lsof -ti :$port)
 
-    if [ -n "$pids" ]; then
-        echo "Processes running on port $port: $pids"
-        # Terminate the processes gracefully with SIGTERM
-        kill $pids
-        echo "Terminated processes on port $port."
-    else
-        echo "No processes found on port $port."
-    fi
-done
-' > run.sh
+    # Kill the neuralchat server processes
+    ports="7000 8000 9000"
+    # Loop through each port and find associated PIDs
+    for port in $ports; do
+        # Use lsof to find the processes associated with the port
+        pids=$(lsof -ti :$port)
+
+        if [ -n "$pids" ]; then
+            echo "Processes running on port $port: $pids"
+            # Terminate the processes gracefully with SIGTERM
+            kill $pids
+            echo "Terminated processes on port $port."
+        else
+            echo "No processes found on port $port."
+        fi
+    done
+
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >>run.sh
     coverage erase
 
@@ -52,7 +53,7 @@ done
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
     cat run.sh | tee ${ut_log_name}
     $BOLD_YELLOW && echo "------UT start-------" && $RESET
-    bash run.sh 2>&1 | tee -a ${ut_log_name}
+    bash -x run.sh 2>&1 | tee -a ${ut_log_name}
     $BOLD_YELLOW && echo "------UT end -------" && $RESET
 
     # run coverage report
