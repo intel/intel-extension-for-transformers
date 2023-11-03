@@ -321,7 +321,7 @@ Most of our model examples only support single prompt processing. You need to ad
 +      // special layer process, can be loaded by config file
 +      return quant_params_internal();  // return q4_0 to cover the usage of getrow
 +    }
-+    quantize &= (ne.size() == 2);
++    quantize &= (ne.size() == 2);  // quantize only linear layers
 +    if (quantize) {
 +      return mGCfg;  // use global quant config
 +    } else {
