@@ -27,6 +27,7 @@ Functions
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.laod_structured_data
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_csv
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data
 
 
@@ -89,6 +90,11 @@ Functions
 .. py:function:: laod_structured_data(input, process, max_length)
 
    Load structured context.
+
+
+.. py:function:: load_csv(input)
+
+   Load the csv file.
 
 
 .. py:function:: get_chuck_data(content, max_length, input)

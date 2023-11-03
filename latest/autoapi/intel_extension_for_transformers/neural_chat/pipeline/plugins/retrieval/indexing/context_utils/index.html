@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils &mdash; Intel® Extension for Transformers 0.1.dev1+gf67bb63 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils &mdash; Intel® Extension for Transformers 0.1.dev1+g81c3262 documentation</title>
       <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
@@ -130,7 +130,10 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.laod_structured_data" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.laod_structured_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">laod_structured_data</span></code></a>(input, process, max_length)</p></td>
 <td><p>Load structured context.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_chuck_data</span></code></a>(content, max_length, input)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_csv" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_csv</span></code></a>(input)</p></td>
+<td><p>Load the csv file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_chuck_data</span></code></a>(content, max_length, input)</p></td>
 <td><p>Process the context to make it maintain a suitable length for the generation.</p></td>
 </tr>
 </tbody>
@@ -208,6 +211,12 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_csv">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.</span></span><span class="sig-name descname"><span class="pre">load_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/indexing/context_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_csv" title="Link to this definition"></a></dt>
+<dd><p>Load the csv file.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.</span></span><span class="sig-name descname"><span class="pre">get_chuck_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">content</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/indexing/context_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data" title="Link to this definition"></a></dt>
 <dd><p>Process the context to make it maintain a suitable length for the generation.</p>
@@ -231,7 +240,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f74bfff9c00> 
+   <jinja2.runtime.BlockReference object at 0x7fe08431dcc0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
