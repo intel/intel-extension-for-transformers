@@ -867,7 +867,7 @@ public:
         int scale_prefetch_addr_i = 0;
         int scale_load_addr_i = 0;
         SW_BARRIER();
-#pragma unroll
+        // #pragma unroll
         // for (int i = 0; i < stages; i++) {
         //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
         //             matA_prefetch_payload);

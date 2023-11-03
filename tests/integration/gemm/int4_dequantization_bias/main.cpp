@@ -54,10 +54,10 @@ public:
     static constexpr size_t mat_n = 4096 * 3;
     static constexpr size_t mat_k = 4096;
     static constexpr size_t wg_m = 8;
-    static constexpr size_t wg_n = 256;
+    static constexpr size_t wg_n = 16;
     static constexpr size_t sg_m = 8;
     static constexpr size_t sg_n = 16;
-    static constexpr size_t sg_k = 64;
+    static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
     static constexpr size_t local_kslicing = 1;
