@@ -88,7 +88,7 @@ We enable a CPP model in the following four steps.
 
 # 1.	Model conversion
 
-We need to implement a convert function to convert the model from pytorch format to binary, which is mainly divided into the following three steps.
+We need to implement corresponding serialization methods from pytorch format, which is mainly divided into the following three steps.
 
 ## 1.1.	Hyperparamters
 The term **"hyperparamters"** describes a value that is used to configure the behavior of a large language model; this is in contrast to the model's parameters, which are the weight that were derived in the training process that was used to create the model. Each model defines its own hyperparameter structure that defines the hyperparameter values accepted by that model. Valid ITREX graph files must list these values in the correct order, and each value must be represented using the correct data type. Although hyperparameters are different across models, some attributes appear in the hyperparameters for most models:
