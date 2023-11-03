@@ -213,13 +213,15 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
                               model.layers[il].ffn[5], cur);
       } else {
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+
         cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
 
         cur = ne_gelu(ctx0, cur);
 
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[4], cur);
+
+        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
       }
-      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
     }
 
     cur = ne_add(ctx0, cur, inpFF);
