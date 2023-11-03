@@ -19,7 +19,7 @@ Classes
 
 
 
-.. py:class:: TextToSpeech(output_audio_path='./response.wav', voice='default', stream_mode=False, device='cpu', asset_path='/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets')
+.. py:class:: TextToSpeech(output_audio_path='./response.wav', voice='default', stream_mode=False, device='cpu')
 
 
    Convert text to speech with a driven speaker embedding
