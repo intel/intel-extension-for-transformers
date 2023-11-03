@@ -1,6 +1,6 @@
 datasets >= 1.17
 sentencepiece != 0.1.92
 protobuf
-intel-tensorflow
-transformers
+intel-tensorflow==2.13.0
+transformers==4.34.1
 scikit-learn

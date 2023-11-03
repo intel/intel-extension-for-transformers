@@ -1,5 +1,5 @@
 accelerate
 datasets
-transformers
+transformers==4.34.1
 torch==2.1.0
 neural-compressor==2.0
