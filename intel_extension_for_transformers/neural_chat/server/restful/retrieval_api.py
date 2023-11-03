@@ -80,7 +80,7 @@ async def retrieval_upload(file: UploadFile = File(...)):
                     user_id='default')
     except Exception as e:
         logger.error(f"[askdoc - upload] Fail to record request into db. {e}")
-    path_prefix = "/home/sdp/askdoc_upload/enterprise_docs/"
+    path_prefix = "./enterprise_docs/"
     print(f"[askdoc - upload] filename: {filename}")
     if '/' in filename:
         filename = filename.split('/')[-1]
