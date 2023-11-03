@@ -84,7 +84,7 @@ Once you make sure your model has the same generated tokens as PyTorch, you can 
 We enable a CPP model in the following four steps.
 
 ```mermaid
-graph TD;
+graph LR;
     Convert-->Load;
     Load-->Inference;
     Inference-->Optimize;
