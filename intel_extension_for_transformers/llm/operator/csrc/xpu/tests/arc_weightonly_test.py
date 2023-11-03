@@ -55,7 +55,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
         raw_wei, transpose, blocksize, compute_type, weight_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
     gbits_dequantize.forward(
-        compress_wei, revert_wei, transpose, "fp32", weight_type)
+        compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
@@ -81,13 +81,13 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
 
 configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}
 blocksizes = [128]
-do_trans = [False]
-add_bias = [False]
+do_trans = [False, True]
+add_bias = [False, True]
 
 for weight_type in configs:
     m = 256
     n = 1024
-    k = 512  # contain unalign calc error bug currently.
+    k = 512
     for compute_type in configs[weight_type]:
         for blocksize in blocksizes:
             for trans in do_trans:

@@ -16,10 +16,10 @@
 #include <ipex.h>
 #include <torch/extension.h>
 
-template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
+template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N>
 void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
                                      sycl::buffer<int8_t, 2> &src,
-                                     sycl::buffer<DST_T, 2> &dst,
+                                     sycl::buffer<float, 2> &dst,
                                      sycl::buffer<fp16, 1> &scale, int k, int n,
                                      int blksize, int k_pos, int n_pos, bool trans) {
   q.submit([&](sycl::handler &h) {
@@ -48,9 +48,8 @@ void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
   });
 }
 
-template <typename DST_T>
 void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
-                 DST_T *dequant_weight, bool transpose,
+                 float *dequant_weight, bool transpose,
                  const std::string &compute_type,
                  const std::string &weight_type) {
   int8_t *bit4_wei =
@@ -58,7 +57,7 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
   fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr());
   auto row = transpose ? compress_wei->_N : compress_wei->_K;
   auto col = transpose ? compress_wei->_K : compress_wei->_N;
-  sycl::buffer<DST_T, 2> dst_buf(
+  sycl::buffer<float, 2> dst_buf(
       dequant_weight, sycl::range<2>(row, col));
   sycl::buffer<fp16, 1> scale_buf(
       scale, sycl::range<1>(compress_wei->_K / compress_wei->_blksize *

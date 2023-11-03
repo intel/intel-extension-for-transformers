@@ -24,19 +24,20 @@
 using bf16 = sycl::ext::oneapi::bfloat16;
 using fp16 = sycl::half;
 
+void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
+                            uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
+                            float *bias);
+
+void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
+                            float *C, uint32_t matrix_m, uint32_t matrix_n,
+                            uint32_t matrix_k, float *bias);
+
 void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
-                       uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                       bool with_bias, float *bias);
+                       uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k);
 
 void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
                        float *C, uint32_t matrix_m, uint32_t matrix_n,
-                       uint32_t matrix_k, bool with_bias, float *bias);
-
-template <typename DST_T>
-void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
-                 DST_T *dequant_weight, bool transpose,
-                 const std::string &compute_type,
-                 const std::string &weight_type);
+                       uint32_t matrix_k);
 
 static void gbits_linear(const torch::Tensor &activation,
                          const torch::Tensor weight, const torch::Tensor &bias,
@@ -60,15 +61,21 @@ static void gbits_linear(const torch::Tensor &activation,
   if (compute_type == "fp32") {
     auto *A = reinterpret_cast<float *>(activation.data_ptr<float>());
     auto *C = reinterpret_cast<float *>(output.data_ptr<float>());
-    auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
-    xetla_linear_fp32(queue, A, &obj, C, matrix_m, matrix_n, matrix_k,
-                      with_bias, D);
+    if (with_bias) {
+      auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
+      xetla_linear_fp32_bias(queue, A, &obj, C, matrix_m, matrix_n, matrix_k, D);
+    } else {
+      xetla_linear_fp32(queue, A, &obj, C, matrix_m, matrix_n, matrix_k);
+    }
   } else {
     auto *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
     auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
-    auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
-    xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n, matrix_k,
-                      with_bias, D);
+    if (with_bias) {
+      auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
+      xetla_linear_fp16_bias(queue, A, &obj, C, matrix_m, matrix_n, matrix_k, D);
+    } else {
+      xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n, matrix_k);
+    }
   }
 }
 

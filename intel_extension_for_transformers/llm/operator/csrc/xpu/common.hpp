@@ -132,13 +132,3 @@ private:
   bool _sym;
   char *_write_buf;
 };
-
-template <typename _T>
-static inline void transpose2d(const _T *srcptr, _T *dstptr, int row, int col,
-                               int ld_src, int ld_dst) {
-  for (int i = 0; i < col; i++) {
-    for (size_t j = 0; j < row; j++) {
-      dstptr[j + i * ld_dst] = srcptr[j * ld_src + i];
-    }
-  }
-}
