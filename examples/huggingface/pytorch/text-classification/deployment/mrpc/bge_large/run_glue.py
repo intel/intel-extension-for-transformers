@@ -28,6 +28,11 @@ from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
 from intel_extension_for_transformers.transformers import metrics, objectives, OptimizedModel, QuantizationConfig
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+
+from mteb import MTEB
+from C_MTEB import *
+from sentence_transformers import SentenceTransformer
+
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
