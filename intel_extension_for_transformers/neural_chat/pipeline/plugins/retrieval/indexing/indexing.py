@@ -71,7 +71,7 @@ class DocumentIndexing:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
                 chuck = [[content.strip(),input]]
-        elif input.endswith("jsonl") or input.endswith("xlsx"):
+        elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv"):
             chuck = laod_structured_data(input, self.process, self.max_length)
         else:
             print("This file is ignored. Will support this file format soon.")
@@ -93,7 +93,7 @@ class DocumentIndexing:
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck
-                elif filename.endswith("jsonl") or filename.endswith("xlsx"):
+                elif filename.endswith("jsonl") or filename.endswith("xlsx") or input.endswith("csv"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
