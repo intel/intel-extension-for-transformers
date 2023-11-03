@@ -1,6 +1,6 @@
 Step-by-Step
 =======
-This document describes the end-to-end workflow for Huggingface model [BERT Base Uncased](https://huggingface.co/textattack/bert-base-uncased-MRPC) with Neural Engine backend.
+This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5) and [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) with Neural Engine backend.
 
 # Prerequisite
 ## Prepare Python Environment
@@ -28,7 +28,7 @@ pip install -v .
 
 Install required dependencies for this example
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/mrpc/bert_base
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/mrpc/bge_large
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
@@ -47,19 +47,19 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 
-Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+Neural Engine can parse ONNX model and Neural Engine IR.
+We provide with three `modes`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
-bash run_bert_base.sh --model=textattack/bert-base-uncased-MRPC  --dataset=mrpc --precision=fp32 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=fp32 --mode=throughput
 ```
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_bert_base.sh --model=textattack/bert-base-uncased-MRPC  --dataset=mrpc --precision=int8 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=int8 --mode=throughput
 ```
 By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
 ```shell
-bash run_bert_base.sh --model=textattack/bert-base-uncased-MRPC  --dataset=mrpc --precision=dynamic_int8 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=dynamic_int8 --mode=throughput
 ```
 
 
