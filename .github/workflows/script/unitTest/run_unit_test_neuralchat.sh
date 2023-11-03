@@ -35,7 +35,6 @@ function pytest() {
     for port in $ports; do
         # Use lsof to find the processes associated with the port
         pids=$(lsof -ti :$port)
-
         if [ -n "$pids" ]; then
             echo "Processes running on port $port: $pids"
             # Terminate the processes gracefully with SIGTERM
@@ -46,15 +45,19 @@ function pytest() {
         fi
     done
 
-    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >>run.sh
+    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
+    sort run.sh -o run.sh
+    echo "exit" >> run.sh
     coverage erase
 
     # run UT
+    sleep 1
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
     cat run.sh | tee ${ut_log_name}
     $BOLD_YELLOW && echo "------UT start-------" && $RESET
     bash -x run.sh 2>&1 | tee -a ${ut_log_name}
     $BOLD_YELLOW && echo "------UT end -------" && $RESET
+    sleep 1
 
     # run coverage report
     coverage report -m --rcfile=${COVERAGE_RCFILE} | tee ${coverage_log_dir}/coverage.log
