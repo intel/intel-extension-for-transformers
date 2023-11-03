@@ -31,7 +31,8 @@ def get_length(filename):
 def cut_video(args, outdir):
     path = shlex.quote(args.path)
     save_path = outdir
-    video_list = os.listdir(shlex.quote(path))
+    path, basename = os.path.split(path)
+    video_list = [basename]
     delta_X = int(shlex.quote(args.min))
 
     for file_name in video_list:

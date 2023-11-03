@@ -50,7 +50,7 @@
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<button
 					type="button"
-					class="w-full rounded-lg px-4 py-4 shadow-lg transition-all hover:bg-gray-100 dark:bg-gray-800 sm:w-1/2 md:mt-12 md:w-1/2 lg:mt-16 lg:w-1/4 {mode ===
+					class="w-full rounded-lg px-4 py-4 shadow-lg transition-all hover:bg-gray-100  sm:w-1/2 md:mt-12 md:w-1/2 lg:mt-16 lg:w-1/4 {mode ===
 					tab.type
 						? 'bg-white outline-none ring-2 ring-blue-500 ring-offset-2'
 						: 'bg-gray-100 '} "
@@ -65,7 +65,7 @@
 					</div>
 					<!-- svelte-ignore a11y-missing-content -->
 					<h3
-						class="py-4 text-2xl font-semibold text-gray-700 dark:text-white sm:text-xl"
+						class="py-4 text-2xl font-semibold text-gray-700  sm:text-xl"
 					>
 						{tab.title}
 					</h3>
@@ -190,7 +190,7 @@
 				</div>
 			</div>
 			<button
-				class="btn -mt-20 inline-flex w-46 items-center self-end rounded-lg bg-blue-700 text-center font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+				class="btn -mt-20 inline-flex w-46 items-center self-end rounded-lg bg-blue-700 text-center font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 "
 				on:click={() => goto("/chat")}
 				>let's talking! -> </button
 			>

@@ -37,33 +37,19 @@ LLM Runtime supports the following models:
 
 
 ## How to Use
+There are two methods for utilizing the LLM runtime:
+- [Transformer-based API](#How-to-use-Transformer-based-API)
+- [Straightforward Python script](#How-to-use-Straightforward-Python-script)
 
-### 1. Install LLM Runtime
+
+## How to use: Transformer-based API
+### 1. Install
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
 ```
 
-Build from source
-```shell
-# Linux
-git submodule update --init --recursive
-mkdir build
-cd build
-cmake .. -G Ninja
-ninja
-```
-
-```powershell
-# Windows
-# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
-mkdir build
-cd build
-cmake ..
-cmake --build . -j
-```
-Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
-### 2. Run LLM with Python API
+### 2. Run LLM with Transformer-based API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
@@ -126,9 +112,57 @@ Argument description of generate function:
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 
+### 3. Chat with LLaMA2
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    print("> ", end="")
+    prompt = input().strip()
+    if prompt == "quit":
+        break
+    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
+    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
+```
 
 
-### 3. Run LLM with Python Script
+
+## How to use: Straightforward Python script
+Build from source
+> :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
+
+```shell
+# Linux
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake .. -G Ninja
+ninja
+```
+
+```powershell
+# Windows
+# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
+# make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder
+mkdir build
+cd build
+cmake ..
+cmake --build . -j
+```
+Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
+
+
+### 1. Run LLM with Python Script
 You can run LLM with one-click python script including conversion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
@@ -169,6 +203,9 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
 # or you can download fp32 model (e.g., LLAMA2) from Hugging Face at first, then convert the pytorch model to ggml format.
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
+
+# To convert model with PEFT(Parameter-Efficient Fine-Tuning) adapter, you need to merge the PEFT adapter into the model first, use below command to merge the PEFT adapter and save the merged model, afterwards you can use 'scripts/convert.py' just like above mentioned.
+python scripts/load_peft_and_merge.py --model_name_or_path meta-llama/Llama-2-7b-hf --peft_name_or_path dfurman/llama-2-7b-instruct-peft --save_path ./Llama-2-7b-hf-instruct-peft
 
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
@@ -236,24 +273,7 @@ Argument description of inference.py:
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
-### 4. Chat with LLaMA2
-```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-streamer = TextStreamer(tokenizer)
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+### 4. Contribution
 
-while True:
-    print("> ", end="")
-    prompt = input().strip()
-    if prompt == "quit":
-        break
-    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
-    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
-```
+You can consider adding your own models via [graph developer document](./developer_document.md).

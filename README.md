@@ -114,7 +114,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb">Chatbot on Gaudi</a></td>
   </tr>
   <tr>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/examples/talkingbot_pc/build_talkingbot_on_pc.ipynb">Chatbot on Client</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/examples/deployment/talkingbot/pc/build_talkingbot_on_pc.ipynb">Chatbot on Client</a></td>
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
   </tr>
   <tr>
