@@ -87,7 +87,7 @@ class Agent_QA():
     def reload(self, new_path):
         self.db = self.doc_parser.load(new_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=1,
-                                   search_type="dense", search_kwargs={"score_threshold": 0.8, "k": 1})
+                                   search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8, "k": 1})
 
 
     def append_localdb(self, 

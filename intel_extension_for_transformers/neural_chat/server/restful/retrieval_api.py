@@ -107,7 +107,7 @@ async def retrieval_upload(file: UploadFile = File(...)):
 async def retrieval_create_kb(file: UploadFile = File(...)):
     global plugins
     filename = file.filename
-    print("[askdoc - create_kb] received file: {filename}")
+    print(f"[askdoc - create_kb] received file: {filename}")
 
     # create kb_id
     import uuid
@@ -121,7 +121,7 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
     with open(f"{upload_path}/{filename}", 'wb') as fout:
         content = await file.read()
         fout.write(content),
-    print("[askdoc - create_kb] file saved to local path.")
+    print(f"[askdoc - create_kb] file saved to local path: {upload_path}")
 
     try:
         # get retrieval instance and reload db with new knowledge base
