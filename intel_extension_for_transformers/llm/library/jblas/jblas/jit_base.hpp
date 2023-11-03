@@ -50,10 +50,10 @@ class JitBase : protected Xbyak::CodeGenerator {
 #endif
   }
 
-  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Reg64& _total,
+  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Address& _total,
                           const Xbyak::Reg64& _tmp, const Xbyak::Reg64& _tmp1, int N) {
     inLocalLabel();
-    mov(_tmp, _total);
+    lea(_tmp, _total);
     sub(_tmp, _pos);
     cmp(_tmp, N);
     jb(".maskflag");
@@ -78,6 +78,10 @@ class JitBase : protected Xbyak::CodeGenerator {
     L(".maskend");
     outLocalLabel();
   }
+  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Reg64& _total,
+                          const Xbyak::Reg64& _tmp, const Xbyak::Reg64& _tmp1, int N) {
+    generate_Nbitsmask(_msk, _pos, ptr[_total], _tmp, _tmp1, N);
+  }
 };
 
 class JitAvx : protected JitBase {
@@ -90,6 +94,11 @@ class JitAvx2 : protected JitAvx {
  protected:
   static int constexpr VBits = 256;
   typedef Xbyak::Ymm vreg_t;
+
+  void loadbf16_f32(const Xbyak::Ymm& dst, const Xbyak::Address& addr) {
+    vpmovzxwd(dst, addr);
+    vpslld(dst, dst, 16);
+  }
 };
 
 class JitAvx512f : protected JitAvx2 {
@@ -187,6 +196,16 @@ class JitAvx512_fp16 : protected JitAvx512f {};
 
 class JitAvx512vnni : protected JitAvx512f {
  protected:
+  void vpdpbusds_evex(const Xbyak::Xmm& x1, const Xbyak::Xmm& x2, const Xbyak::Operand& op) {
+    vpdpbusds(x1, x2, op, Xbyak::EvexEncoding);
+  }
+};
+
+class JitAvxvnni : protected JitAvx2 {
+ protected:
+  void vpdpbusds_vex(const Xbyak::Xmm& x1, const Xbyak::Xmm& x2, const Xbyak::Operand& op) {
+    vpdpbusds(x1, x2, op, Xbyak::VexEncoding);
+  }
 };
 
 class JitAmxtile : protected JitAvx512f {
@@ -205,19 +224,19 @@ class JitAmxtile : protected JitAvx512f {
     // Configure C tiles
     int t = 0;
     for (; t < CNum; ++t) {
-      tc.rows[t] = TILE_M;
-      tc.colb[t] = TILE_N * 4;
+      tc.rows[t] = uint8_t(TILE_M);
+      tc.colb[t] = uint16_t(TILE_N * 4);
     }
     // Configure A tiles
     for (; t < CNum + ANum; ++t) {
-      tc.rows[t] = TILE_M;
-      tc.colb[t] = TILE_K * elesize;
+      tc.rows[t] = uint8_t(TILE_M);
+      tc.colb[t] = uint16_t(TILE_K * elesize);
     }
     // Configure B tile. B effectively has 64 rows and 16 columns.
     int kpack = 4 / elesize;
     for (; t < CNum + ANum + BNum; ++t) {
-      tc.rows[t] = TILE_K / kpack;
-      tc.colb[t] = TILE_N * 4;
+      tc.rows[t] = uint8_t(TILE_K / kpack);
+      tc.colb[t] = uint16_t(TILE_N * 4);
     }
   }
 };

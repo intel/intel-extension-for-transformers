@@ -304,7 +304,7 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         preprocess = SummarizationDataPreprocess()
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
-    elif finetune_args.task == "completion":
+    elif finetune_args.task == "completion" or finetune_args.task == "code-generation":
         # default use alpaca template
         preprocess = CompletionDataPreprocess()
         for key in raw_datasets:

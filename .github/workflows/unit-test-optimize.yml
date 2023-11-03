@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - intel_extension_for_transformers/transformers/**
+      - requirements.txt
+      - setup.py
       - intel_extension_for_transformers/utils/**
       - intel_extension_for_transformers/llm/evaluation/**
       - intel_extension_for_transformers/llm/quantization/**
@@ -70,7 +72,9 @@ jobs:
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
-          -v /tf_dataset2:/tf_dataset2 \
+          -v /dataset/tf_dataset2:/tf_dataset2 \
+          -v /dataset/cache/huggingface:/root/.cache/huggingface \
+          -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
@@ -90,6 +94,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && export HF_HOME=/dataset/cache/ \
           && bash run_unit_test_optimize.sh --test_name=${{ matrix.test_name }}"
       
       - name: Collect log
@@ -112,8 +117,6 @@ jobs:
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
         
       - name: Download UT PR Log
         uses: actions/download-artifact@v3

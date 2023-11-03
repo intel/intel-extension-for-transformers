@@ -1,111 +1,128 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), [facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b), [facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b), [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b), [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat), [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1), more models are working in progress.
+We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
 
+|Validated models| Smoothquant alpha |
+|---| ---|
+|[EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B)| 1.0 |
+|[decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf)| 0.7 |
+|[decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf)| 0.8 |
+|[lmsys/vicuna-7b-v1.3](https://huggingface.co/lmsys/vicuna-7b-v1.3)| 0.7 |
+|[meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| 1.0 |
+|[meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| 1.0 |
+|[databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-)| 0.5 |
+|[bigscience/bloom-560m](https://huggingface.co/bigscience/bloom-560m)| 0.5 |
+|[bigscience/bloom-1b7](https://huggingface.co/bigscience/bloom-1b7)| 0.5 |
+|[bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1)| 0.5 |
+|[bigscience/bloomz-560m](https://huggingface.co/bigscience/bloomz-560m)| 0.5 |
+|[bigscience/bloomz-1b7](https://huggingface.co/bigscience/bloomz-1b7)| 0.5 |
+|[bigscience/bloomz-7b1](https://huggingface.co/bigscience/bloomz-7b1)| 0.5 |
+|[facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b)| 0.5 |
+|[facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b)| 0.5 |
+|[facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b)| 0.5 |
+|[mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat)| 1.0 |
+|[Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1)| 1.0 |
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
 
 # Prerequisite​
 ## 1. Create Environment​
-If you want to use Pytorch & Intel-extension-for-pytorch version 2.0.1, please 
-```
-pip install -r requirements.txt
-```
-If you want to use Pytorch & Intel-extension-for-pytorch version 2.1, the dependent packages are listed in requirements, we recommend create environment as the following steps.
+Pytorch and Intel-extension-for-pytorch version 2.1 are required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
-WORK_DIR=$PWD
-# GCC 12.3 is required, please set it firstly
-# Create environment (conda recommended)
-conda create -n llm python=3.9 -y
-# install deps, please try gcc, gxx 12.2 if 12.3 doesn't find from conda
-conda install gcc=12.3 gxx=12.3 cxx-compiler -c conda-forge -y
-conda install cmake ninja mkl mkl-include -y
-conda install gperftools -c conda-forge -y
-
-# Install PyTorch
-python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
-
-# Install IPEX with semi-compiler, require gcc 12.3 or 12.2
-rm -rf llvm-project && mkdir llvm-project && cd llvm-project
-wget https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.6/cmake-16.0.6.src.tar.xz
-wget https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.6/llvm-16.0.6.src.tar.xz
-tar -xf cmake-16.0.6.src.tar.xz && mv cmake-16.0.6.src cmake
-tar -xf llvm-16.0.6.src.tar.xz && mv llvm-16.0.6.src llvm
-mkdir build && cd build
-cmake ../llvm -DCMAKE_INSTALL_PREFIX=${PWD}/_install/llvm -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
-make install -j$(nproc)
-ln -s ${PWD}/_install/llvm/bin/llvm-config ${CONDA_PREFIX}/bin/llvm-config-13
-cd ../../
-
-git clone --branch llm_feature_branch https://github.com/intel/intel-extension-for-pytorch.git
-cd intel-extension-for-pytorch
-git submodule sync && git submodule update --init --recursive
-export DNNL_GRAPH_BUILD_COMPILER_BACKEND=1
-export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
-python setup.py install
-cd ../
-
-# disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other models don't need it.
-export _DNNL_DISABLE_COMPILER_BACKEND=1
-
-# Install neural-compressor
-git clone https://github.com/intel/neural-compressor.git
-cd  neural-compressor
 pip install -r requirements.txt
-python setup.py install
-
-# Install lm_eval
-pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
-# Install others deps
-pip install transformers optimum-intel cpuid accelerate datasets sentencepiece protobuf==3.20.3
-````
-We use the GPTJ defination script [modeling_gptj.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gptj/modeling_gptj.py) in `run_generation.py`. Here is a little change to success trace.
-```diff
-# Line 602 in modeling_gptj.py on transformers 4.28.1
-
--   position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
-+   position_ids = torch.arange(past_length, torch.tensor(input_shape[-1]) + torch.tensor(past_length), dtype=torch.long, device=device)
 ```
-The changes for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` series models in `modeling_gpt_neox.py`， `bloom` series models in `modeling_bloom.py` and `opt` series models in `modeling_opt.py` are similar to the above.
+
+> Note: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
+> ```bash
+> find $CONDA_PREFIX | grep libstdc++.so.6
+> export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
+> ```
 
 
 # Run
+We support compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device are provided, the followings are command to show how to use it.
 
-## 1. Quantization
+## 1. Performance
 ``` bash
-# --int8 is used for int8 only.
-# --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
-python run_generation.py \
-    --model EleutherAI/gpt-j-6b \
-    --quantize \
-    --sq \
-    --alpha 1.0 \
-    --int8_bf16_mixed \
-    --ipex
-```
-## 2. Performance
-```bash
-# --int8 is used for int8 only.
-# --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+# fp32
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --benchmark \
-    --int8_bf16_mixed \
-    --ipex
+    --benchmark
+# mixedprecision
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --mixed_precision \
+    --benchmark
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --sq \
+    --alpha 1.0 \
+    --int8 \
+    --benchmark
+# weightonlyquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --woq \
+    --benchmark
+# load_in_4bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --load_in_4bit True \
+    --benchmark
+# load_in_8bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --load_in_8bit True \
+    --benchmark
+
 ```
-## 3. Accuracy
+
+## 2. Accuracy
 ```bash
-# --int8 is used for int8 only.
-# --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+# fp32
 python run_generation.py \
-   --model EleutherAI/gpt-j-6b \
-   --accuracy \
-   --int8_bf16_mixed \
-   --ipex \
-   --tasks "lambada_openai"
+    --model EleutherAI/gpt-j-6b \
+    --accuracy \
+    --tasks "lambada_openai"
+# mixedprecision
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --mixed_precision \
+    --accuracy \
+    --tasks "lambada_openai"
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --sq \
+    --alpha 1.0 \
+    --int8 \
+    --accuracy \
+    --tasks "lambada_openai"
+# weightonlyquant
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --woq \
+    --accuracy \
+    --tasks "lambada_openai"
+# load_in_4bit
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --load_in_4bit True \
+    --accuracy \
+    --tasks "lambada_openai"
+# load_in_8bit
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --load_in_8bit True \
+    --accuracy \
+    --tasks "lambada_openai"
+
 ```

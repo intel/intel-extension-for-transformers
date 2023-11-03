@@ -10,5 +10,6 @@ omit =
  */intel_extension_for_transformers/llm/finetuning/**
  */intel_extension_for_transformers/llm/inference/**
  */intel_extension_for_transformers/llm/quantization/**
+ */intel_extension_for_transformers/llm/runtime/graph/**
 exclude_lines =
  pragma: no cover

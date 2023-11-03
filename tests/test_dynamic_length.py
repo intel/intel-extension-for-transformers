@@ -74,7 +74,7 @@ def check_onnx(model_path, dataloader):
     import onnxruntime as ort
     import numpy as np
     # Check onnxruntime
-    ort_session = ort.InferenceSession(model_path)
+    ort_session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
     # Preprocess input for onnxruntime
     it = iter(dataloader)
     input = next(it)

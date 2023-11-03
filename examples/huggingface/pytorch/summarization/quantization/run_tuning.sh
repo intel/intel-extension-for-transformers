@@ -50,12 +50,10 @@ function run_tuning {
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="flax-community/t5-base-cnn-dm"
         approach="PostTrainingDynamic"
-        pip install transformers==4.26.0
     elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
         approach="PostTrainingDynamic"
-        pip install transformers==4.26.0
     elif [ "${topology}" == "flan_t5_large_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"

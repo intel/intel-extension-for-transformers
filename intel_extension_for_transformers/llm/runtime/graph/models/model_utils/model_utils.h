@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <limits>
 
 #include "application/common.h"
 #include "models/model_utils/model_config.h"
@@ -49,7 +50,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data);
 
@@ -113,15 +114,17 @@ MODEL_API size_t model_set_state_data(struct model_context* ctx, uint8_t* src);
 
 // Save/load session file
 MODEL_API bool model_load_session_file(struct model_context* ctx, const char* path_session, model_token* tokens_out,
-                                       size_t n_token_capacity, size_t* n_token_count_out);
+                                       size_t n_token_capacity, size_t* n_token_total_out);
 MODEL_API bool model_save_session_file(struct model_context* ctx, const char* path_session, const model_token* tokens,
-                                       size_t n_token_count);
+                                       size_t n_token_total);
 
 // Run the model inference to obtain the logits and probabilities for the next
 // token. tokens + n_tokens is the provided batch of new tokens to process
-// n_past is the number of tokens to use from previous eval calls
+// n_past is the offset to which the kv is cached to
+// n_total is the number of tokens evaluated in previous eval calls
 // Returns 0 on success
-MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads);
+MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+                         int n_threads);
 
 // Convert the provided text into tokens.
 // The tokens pointer must be large enough to hold the resulting tokens.
@@ -151,8 +154,6 @@ MODEL_API float* model_get_embeddings(struct model_context* ctx);
 MODEL_API const char* model_token_to_str(const struct model_context* ctx, model_token token);
 
 // Special tokens
-MODEL_API model_token model_token_bos();
-MODEL_API model_token model_token_eos();
 MODEL_API model_token model_token_nl();
 
 // Sampling functions
@@ -259,6 +260,14 @@ MODEL_API const char* model_print_system_info(void);
 #endif
 
 /*  beam search utils  */
+#define NEG_INF -std::numeric_limits<float>::max()
+
+typedef struct beam_next_token {
+  model_token id;  // token id
+  float score;     // score of the token
+  int beam_idx;    // token in which beam (-1 means unknown)
+} beam_next_token;
+
 struct beam {
   const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
@@ -267,13 +276,74 @@ struct beam {
   // record inference batch indice
   int infer_bs_id;
   // end-of-text
-  const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; }  // TODO ctx->vocab.eos_id
+  const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
   void print() const {
-    printf("score: %0.6f, eos: %d, tokens: ", score, eos());
+    printf("length: %d, score: %12.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
     for (const auto& id : token_ids) {
-      printf("%s", model_token_to_str(ctx, id));
+      printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
     printf("\n");
+  }
+};
+
+struct beam_hypotheses {
+  const model_context* const ctx = nullptr;
+  const int num_beams;
+  const float length_penalty = 1.0f;
+  const bool early_stopping = false;
+  std::vector<beam> beams;
+
+  beam_hypotheses(model_context* lctx)
+      : ctx(lctx),
+        num_beams(lctx->beam_size),
+        length_penalty(lctx->generation_conf.length_penalty),
+        early_stopping(lctx->generation_conf.do_early_stopping) {
+    beams.reserve(lctx->beam_size);
+  }
+
+  int len() { return beams.size(); }
+
+  void add(beam b, const uint32_t& n_prompt_tokens) {
+    auto comp = [](const beam& a, const beam& b) { return a.score > b.score; };
+    uint32_t cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
+    float score = b.score / std::pow(cur_len + n_prompt_tokens, length_penalty);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("add beam hypos: \n");
+    b.print();
+    printf("origin_score: %12.6f, new_score: %12.6f, sentence_len: %d \n", b.score, score, cur_len + n_prompt_tokens);
+    printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+#endif
+    b.score = score;
+    if (beams.size() < num_beams) {
+      beams.push_back(std::move(b));
+      if (beams.size() == num_beams) {
+        std::make_heap(beams.begin(), beams.end(), comp);
+      }
+    } else {
+      MODEL_ASSERT(beams.size() == num_beams);
+      if (beams.front().score > b.score) {
+        return;
+      }
+      std::pop_heap(beams.begin(), beams.end(), comp);
+      beams.back() = b;
+      std::push_heap(beams.begin(), beams.end(), comp);
+    }
+  }
+
+  const bool is_done() const {
+    if (beams.size() < num_beams) {
+      return false;
+    }
+    // stop as soon as at least `num_beams` hypotheses are finished
+    if (early_stopping) {
+      return true;
+    }
+    return false;
+  }
+
+  const beam& top1() const {
+    auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
+    return *std::max_element(beams.begin(), beams.end(), by_score);
   }
 };
 
@@ -301,21 +371,24 @@ class beam_search_kv_cache_reorder {
  public:
   explicit beam_search_kv_cache_reorder(model_context* lctx)
       : ctx(lctx),
-        n_ctx(lctx->model.hparams.n_ctx),
+        n_ctx(lctx->n_ctx),
         n_embd(lctx->model.hparams.n_embd),
+        head_dim(lctx->model.hparams.n_embd / lctx->model.hparams.n_head),
+        n_head(lctx->model.hparams.n_head),
         kv_n_ctx_block(lctx->kv_n_ctx_block) {}
   ~beam_search_kv_cache_reorder() {}
 
   virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
-                      const std::unordered_map<int, int>& kv_reorder_indices = {},
+                      const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
- private:
+ protected:
   model_context* ctx = nullptr;
   const uint32_t n_ctx;
   const uint32_t n_embd;
   // const uint32_t n_head_kv;
-  // const uint32_t head_dim;
+  const uint32_t head_dim;
+  const uint32_t n_head;
   const uint32_t kv_n_ctx_block;
 };
 
@@ -324,7 +397,7 @@ class beam_search_flow {
   explicit beam_search_flow(model_context* lctx) : ctx(lctx), beam_size(lctx->beam_size), lp(logits_processor(lctx)) {
     cur_beams.reserve(beam_size);
     next_beams.reserve(beam_size);
-    cur_beams.push_back({ctx, {}, 1.0f});
+    cur_beams.push_back({ctx, {}, 0.0f});
   }
   ~beam_search_flow() {}
 
@@ -332,16 +405,24 @@ class beam_search_flow {
   std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
 
  private:
-  void fill_next_beams_by_top_probabilities();
-  std::unordered_map<int, int> update_kv_cache_reorder_indices();
-  void beam_score_length_penalize();
-  const beam& top_beam();
+  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
+                                                      const std::vector<float>& beams_score,
+                                                      const std::vector<int>& num_beams,
+                                                      const std::vector<int> beam_indices, const int& sample_scale = 2,
+                                                      const int& dim = -1);
+  void fill_next_beams_by_top_scores();
+  std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
+  const beam& finalize();
 
   model_context* ctx = nullptr;
   const int beam_size;
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
-  size_t n_past = 0;
+  std::vector<beam_hypotheses> beam_hypos;
+  std::vector<bool> requests_done;
+  uint32_t n_past = 0;
+  uint32_t n_total = 0;
+  uint32_t n_prompt_tokens = 0;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;

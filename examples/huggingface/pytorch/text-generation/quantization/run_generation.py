@@ -2,22 +2,19 @@ import argparse
 import re
 import time
 import json
-import os
-import pathlib
 import torch
-import types
-from pathlib import Path
-from datasets import load_dataset, load_from_disk
-from torch.nn.functional import pad
-from torch.utils.data import DataLoader
-from transformers import AutoConfig, AutoTokenizer, PretrainedConfig
-from transformers.utils import check_min_version
+import logging
+from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-import transformers
-import numpy as np
-from itertools import chain
-from optimum.utils import NormalizedConfigManager
+from transformers.utils import check_min_version
+from optimum.intel.generation.modeling import TSModelForCausalLM
+from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
+    SmoothQuantConfig,
+    BitsAndBytesConfig
 
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -28,237 +25,146 @@ parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
-parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
     "--max-new-tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--quantize", action="store_true")
-parser.add_argument("--ipex", action="store_true")
-parser.add_argument("--sq", action="store_true")
-parser.add_argument("--alpha", default="auto", help="Smooth quant parameter.")
-parser.add_argument(
-    "--pad_max_length", default=512, type=int, help="Pad input ids to max length."
-)
-parser.add_argument("--calib_iters", default=512, type=int, help="calibration iters.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
     action="store_true",
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
+parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
+# ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
+# ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=1, type=int,
+parser.add_argument("--batch_size", default=56, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
-                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
+parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
                     help="tasks list for accuracy validation")
+# ============MixedPrecision configs==============
+parser.add_argument("--mixed_precision", action="store_true")
+# ============SmoothQuant configs==============
+parser.add_argument("--sq", action="store_true")
+parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+# ============WeightOnlyQuant configs===============
+parser.add_argument("--woq", action="store_true")
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
+                    help="Weight-only parameter.")
+parser.add_argument("--woq_dtype", type=str, default="int8", 
+                    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
+parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument("--woq_enable_mse_search", action="store_true")
+parser.add_argument("--woq_enable_full_range", action="store_true")
+# ============BitsAndBytes configs==============
+parser.add_argument("--bitsandbytes", action="store_true")
+parser.add_argument("--load_in_4bit", type=bool, default=False)
+parser.add_argument("--load_in_8bit", type=bool, default=False)
+# =======================================
 args = parser.parse_args()
 
-calib_size = 1
-
-# model
-config = AutoConfig.from_pretrained(
-       args.model,
-       torchscript=True
-       if args.ipex
-       else False,  # torchscript will force `return_dict=False` to avoid jit errors
-       use_cache=True, # to use kv cache.
-       trust_remote_code=args.trust_remote_code,
-       revision=args.revision
-       )
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
-if config.model_type == "mpt":
-    check_min_version("4.32.0")
+check_min_version("4.32.0")
 
-user_model = AutoModelForCausalLM.from_pretrained(
-       args.model,
-       config=config
-)
-tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+# get model config
+config = AutoConfig.from_pretrained(
+      args.model,
+      torchscript=True
+      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'])
+      else False,  # torchscript will force `return_dict=False` to avoid jit errors
+      use_cache=True, # to use kv cache.
+      trust_remote_code=args.trust_remote_code,
+      revision=args.revision,
+      )
 
-# to channels last
-user_model = user_model.to(memory_format=torch.channels_last)
-user_model.eval()
 
-if args.ipex:
-    import intel_extension_for_pytorch as ipex
-    from optimum.intel.generation.modeling import TSModelForCausalLM
+# tokenizer
+if config.model_type == "llama":
+   from transformers import LlamaTokenizer
+   tokenizer = LlamaTokenizer.from_pretrained(args.model)
+else:
+   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
-# quantize
-if args.quantize:
-    def generate_dummy_past_key_values(input_bs, user_model):
-        normalized_config = NormalizedConfigManager.get_normalized_config_class(
-            user_model.config.model_type
-        )(user_model.config)
-        nb_pkv = 2
-        num_layers = normalized_config.num_layers
-        num_attention_heads = normalized_config.num_attention_heads
-        hidden_size = normalized_config.hidden_size
-        d_k = hidden_size // num_attention_heads
-
-        if user_model.config.model_type == "bloom":
-            pkv = ()
-            for nb_pkv in range(nb_pkv):
-                if nb_pkv % 2 == 0:
-                    new_shape = [input_bs * num_attention_heads, d_k, 1]
-                else:
-                    new_shape = [input_bs * num_attention_heads, 1, d_k]
-                pkv = pkv + (torch.ones(size=new_shape),)
-        else:
-            new_shape = [input_bs, num_attention_heads, 1, d_k]
-            dummy_tensor = torch.ones(size=new_shape)
-            pkv = tuple(dummy_tensor for _ in range(nb_pkv))
-        past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
-        return past_key_values
-
-    class Evaluator:
-        def __init__(
-            self,
-            dataset,
-            tokenizer,
-            batch_size=8,
-            pad_val=1,
-            pad_max=512,
-            is_calib=False,
-        ):
-            self.dataset = dataset
-            self.tokenizer = tokenizer
-            self.batch_size = batch_size
-            self.pad_val = pad_val
-            self.pad_max = pad_max
-            self.is_calib = is_calib
-
-            # tokenize the dataset
-            self.dataset = self.dataset.map(self.tokenize_function, batched=True)
-            self.dataset.set_format(type="torch", columns=["input_ids"])
-
-        @torch.no_grad()
-        def tokenize_function(self, examples):
-            example = self.tokenizer(examples["text"])
-            return example
-
-        @torch.no_grad()
-        def collate_batch(self, batch):
-            input_ids_padded = []
-            last_ind = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                pad_len = self.pad_max - input_ids.shape[0]
-                last_ind.append(input_ids.shape[0] - 1)
-                if self.is_calib:
-                    input_ids = (
-                        input_ids[: self.pad_max]
-                        if len(input_ids) > self.pad_max
-                        else input_ids
-                    )
-                else:
-                    input_ids = pad(input_ids, (0, pad_len), value=self.pad_val)
-                input_ids_padded.append(input_ids)
-            return (
-                torch.vstack(input_ids_padded),
-                torch.tensor(last_ind),
-            )
-
-    calib_dataset = load_dataset(args.dataset, split="train")
-    calib_dataset = calib_dataset.shuffle(seed=42)
-    calib_evaluator = Evaluator(
-        calib_dataset,
-        tokenizer,
-        args.batch_size,
-        pad_max=args.pad_max_length,
-        is_calib=True,
-    )
-    calib_dataloader = DataLoader(
-        calib_evaluator.dataset,
-        batch_size=calib_size,
-        shuffle=False,
-        collate_fn=calib_evaluator.collate_batch,
-    )
-    input_ids = user_model.dummy_inputs["input_ids"]
-    input_bs, input_len = input_ids.shape
-    past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-    attention_mask = torch.ones(input_bs, input_len + 1)
-    attention_mask[:,0] = 0
-    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    # do inference to check example_inputs formats
-    user_model(*example_inputs)
-
-    def calib_func(prepared_model):
-        for i, (input_ids, last_ind) in enumerate(calib_dataloader):
-            input_bs, input_len = input_ids.shape
-            past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-            attention_mask = torch.ones(input_bs, input_len + 1)
-            attention_mask[:,0] = 0
-            if i >= args.calib_iters:
-                break
-            prepared_model(
-                input_ids=input_ids,
-                past_key_values=past_key_values,
-                attention_mask=attention_mask,
-            )
-
-    from neural_compressor import PostTrainingQuantConfig, quantization
-
-    if re.search("gptj", user_model.config.model_type) or re.search(
-        "gpt_neox", user_model.config.model_type
+# quantization config setting
+quantization_config = None
+if args.mixed_precision:
+    quantization_config = MixedPrecisionConfig(dtype="bfloat16") # default is bfloat16
+elif args.sq:
+    if re.search("gptj", config.model_type) or re.search(
+        "gpt_neox", config.model_type
     ):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
-    elif re.search("mpt", user_model.config.model_type):
+    elif re.search("mpt", config.model_type):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
             "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
+    elif re.search("mistral", config.model_type) or re.search("baichuan", config.model_type):
+        op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    if args.sq:
-        args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
-        recipes = {"smooth_quant": True, "smooth_quant_args": {"alpha": args.alpha}}
-        conf = PostTrainingQuantConfig(
-            backend="ipex" if args.ipex else "default",
-            excluded_precisions=excluded_precisions,
-            op_type_dict=op_type_dict,
-            recipes=recipes,
-            example_inputs=example_inputs,
-        )
-    else:
-        conf = PostTrainingQuantConfig(
-            backend="ipex" if args.ipex else "default",
-            excluded_precisions=excluded_precisions,
-            op_type_dict=op_type_dict,
-            example_inputs=example_inputs,
-        )
-    # save config
-    user_model.config.save_pretrained(args.output_dir)
-    q_model = quantization.fit(
-        user_model,
-        conf,
-        calib_func=calib_func,
+    quantization_config = SmoothQuantConfig(
+                                tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+                                op_type_dict=op_type_dict,  # default is {}
+                                excluded_precisions=excluded_precisions,  # default is []
+                               )
+elif args.woq:
+    quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
+# bitsandbytes
+elif args.bitsandbytes:
+    # GPU device is need for `load_in_4bit` and `load_in_8bit`.
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
     )
-    q_model.save(args.output_dir)
+
+# get model
+# `BitsAndBytesConfig` and (`load_in_4bit` or `load_in_8bit`) is alternative for WeightOnlyQuant.
+if quantization_config is not None:
+    user_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                      quantization_config=quantization_config,
+                                                      trust_remote_code=args.trust_remote_code,
+                                                      use_llm_runtime=False
+                                                      )
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+elif args.load_in_4bit or args.load_in_8bit:
+    # CPU device usage is provided by intel-extension-for-transformers.
+    user_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                      load_in_4bit=args.load_in_4bit,
+                                                      load_in_8bit=args.load_in_8bit,
+                                                      use_llm_runtime=False
+                                                      )
+elif not args.int8 and not args.int8_bf16_mixed:
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
+    # peft
+    if args.peft_model_id is not None:
+        from peft import PeftModel
+        user_model = PeftModel.from_pretrained(user_model, args.peft_model_id)
 
 # Generation
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
+
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
-    if args.ipex:
-        user_model = TSModelForCausalLM.from_pretrained(
-            args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
-        )
-    else:
-        from neural_compressor.utils.pytorch import load
-
-        user_model = load(args.output_dir, user_model)
+    import intel_extension_for_pytorch as ipex
+    user_model = TSModelForCausalLM.from_pretrained(
+        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+    )
 
 
 if args.benchmark:
@@ -315,3 +221,4 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+

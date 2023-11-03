@@ -20,6 +20,7 @@
 import importlib
 import os
 from neural_compressor.utils.utility import LazyImport
+from neural_compressor.utils import logger
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -30,6 +31,7 @@ DECODER_NAME = "decoder_model.bin"
 DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
 WEIGHTS_NAME = "pytorch_model.bin"
 
+torch = LazyImport("torch")
 
 def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
                      master_addr='127.0.0.1', master_port='12345'):
@@ -72,3 +74,64 @@ def _build_inc_dataloader(dataloader):
             self.batch_size = dataloader.total_batch_size
             self.dataset = dataloader.dataset
     return INCDataLoader()
+
+def generate_dummy_past_key_values(input_bs, model):
+    """
+        Generate the dummy past_key_values.
+    """
+    from optimum.utils import NormalizedConfigManager
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(
+        model.config.model_type
+    )(model.config)
+    nb_pkv = 2
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
+
+    if model.config.model_type == "bloom":
+        pkv = ()
+        for nb_pkv in range(nb_pkv):
+            if nb_pkv % 2 == 0:
+                new_shape = [input_bs * num_key_value_heads, d_k, 1]
+            else:
+                new_shape = [input_bs * num_key_value_heads, 1, d_k]
+            pkv = pkv + (torch.ones(size=new_shape),)
+    elif model.config.model_type == "mistral":
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    elif model.config.model_type == "qwen":
+        new_shape = [input_bs, 1, num_key_value_heads, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    else:
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
+    return past_key_values
+
+def get_example_inputs_for_trace(model, return_type="dict"):
+    """
+        Generate the example_input for tracing, support models load from AutoModelForCausalLM.
+
+    """
+    input_ids = model.dummy_inputs["input_ids"]
+    input_bs, input_len = input_ids.shape
+    past_key_values = generate_dummy_past_key_values(input_bs, model)
+    attention_mask = torch.ones(input_bs, input_len + 1)
+    attention_mask[:,0] = 0
+    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
+    if return_type != "tuple":
+        example_inputs = {
+            "input_ids": input_ids,
+            "past_key_values": tuple(past_key_values),
+            "attention_mask": attention_mask
+        }
+        # do inference to check example_inputs correct.
+        out = model(**example_inputs)
+    return example_inputs

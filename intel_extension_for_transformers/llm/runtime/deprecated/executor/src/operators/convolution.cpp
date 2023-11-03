@@ -228,30 +228,32 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     for (int i = 0; i < weight_scales_.size(); i++) weight_scales_[i] = 1.0 / weight_scales_[i];
     for (int i = 0; i < dst_scales_.size(); i++) dst_scales_[i] = 1.0 / dst_scales_[i];
     attr_.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
-    auto src_scale_md = memory::desc({src_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+    auto src_scale_md = memory::desc({dnnl_dim_t(src_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
     auto src_scales_m = memory(src_scale_md, eng_, reinterpret_cast<void*>(src_scales_.data()));
     memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
 
     if (src_->dtype() == "u8") {
       attr_.set_zero_points_mask(DNNL_ARG_SRC, /* mask */ 0);
-      auto src_zps_md = memory::desc({src_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+      auto src_zps_md = memory::desc({dnnl_dim_t(src_zps_.size())}, memory::data_type::s32, memory::format_tag::x);
       auto src_zps_m_ = memory(src_zps_md, eng_, reinterpret_cast<void*>(src_zps_.data()));
       memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = src_zps_m_;
     }
 
     attr_.set_scales_mask(DNNL_ARG_WEIGHTS, /* mask */ weight_scales_.size() > 1 ? 1 : 0);
-    auto src1_scale_md = memory::desc({weight_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+    auto src1_scale_md =
+        memory::desc({dnnl_dim_t(weight_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
     auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(weight_scales_.data()));
     memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
 
     if (dst_min_ && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
       attr_.set_scales_mask(DNNL_ARG_DST, /* mask */ 0);
-      auto dst_scales_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto dst_scales_md =
+          memory::desc({dnnl_dim_t(dst_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
       auto dst_scales_m = memory(dst_scales_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
       memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_m;
       if (dst_->dtype() == "u8") {
         attr_.set_zero_points_mask(DNNL_ARG_DST, /* mask */ 0);
-        auto dst_zps_md = memory::desc({dst_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+        auto dst_zps_md = memory::desc({dnnl_dim_t(dst_zps_.size())}, memory::data_type::s32, memory::format_tag::x);
         auto dst_zps_m_ = memory(dst_zps_md, eng_, reinterpret_cast<void*>(dst_zps_.data()));
         memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_DST] = dst_zps_m_;
       }
@@ -406,13 +408,13 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       attr_.set_scales_mask(DNNL_ARG_SRC, mask);
       // need zero point when src0 is u8
       if (src_->dtype() == "u8") {
-        zp_src0_mem_ = memory({{src_min_->size()}, memory::data_type::s32, {1}}, eng_, DNNL_MEMORY_NONE);
+        zp_src0_mem_ = memory({{dnnl_dim_t(src_min_->size())}, memory::data_type::s32, {1}}, eng_, DNNL_MEMORY_NONE);
         attr_.set_zero_points_mask(DNNL_ARG_SRC, mask);
       }
-      scale_src_mem_ = memory({{src_max_->size()}, memory::data_type::f32, {1}}, eng_, DNNL_MEMORY_NONE);
+      scale_src_mem_ = memory({{dnnl_dim_t(src_max_->size())}, memory::data_type::f32, {1}}, eng_, DNNL_MEMORY_NONE);
       mask = weight_max_->size() > 1 ? 1 : 0;
       attr_.set_scales_mask(DNNL_ARG_WEIGHTS, mask);
-      memory::desc scale_md_ = memory::desc({weight_max_->size()}, memory::data_type::f32, {1});
+      memory::desc scale_md_ = memory::desc({dnnl_dim_t(weight_max_->size())}, memory::data_type::f32, {1});
       scale_weight_mem_ = memory(scale_md_, eng_, DNNL_MEMORY_NONE);
     }
   }

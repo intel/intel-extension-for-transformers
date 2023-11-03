@@ -23,6 +23,12 @@
 #include <cstdio>
 #endif
 
+#if UINTPTR_MAX == 0xFFFFFFFF
+#define NE_MEM_ALIGN 4
+#else
+#define NE_MEM_ALIGN 16
+#endif
+
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
@@ -81,9 +87,6 @@ struct model_load_tensor {
   int32_t rank = get_tp_rank(p_ctx);
   bool enable_tp = world_size > 1 ? true : false;
 
-  // int32_t world_size = 2;
-  // int32_t rank = 1;
-  // bool enable_tp =true;
 #endif
   std::string name;
   enum ne_type type = NE_TYPE_F32;
@@ -129,13 +132,24 @@ struct model_load_tensor {
 
 #ifdef NE_TP_MODEL
     if (enable_tp) {
+      // TODO it's not good to check type here, mmaybe move to specific model files
       if (name.find(".attn.q_proj.weight") != std::string::npos ||
           name.find(".attn.k_proj.weight") != std::string::npos ||
           name.find(".attn.v_proj.weight") != std::string::npos ||
-          name.find(".mlp.fc_in.weight") != std::string::npos) {
+          name.find(".mlp.fc_in.weight") != std::string::npos ||
+          // for llama model
+          name.find(".attention.wq.weight") != std::string::npos ||
+          name.find(".attention.wk.weight") != std::string::npos ||
+          name.find(".attention.wv.weight") != std::string::npos ||
+          name.find(".feed_forward.w1.weight") != std::string::npos ||
+          name.find(".feed_forward.w3.weight") != std::string::npos) {
         split_type = TP_1D_ROW;
       }
-      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos) {
+      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos ||
+          name.find(".attn.out_proj.weight") != std::string::npos ||
+          // TODO check if this part should be column
+          name.find(".attention.wo.weight") != std::string::npos ||
+          name.find(".feed_forward.w2.weight") != std::string::npos) {
         split_type = TP_1D_COLUMN;
       }
     }
@@ -254,13 +268,11 @@ struct model_file_loader {
     hparams.word_embed_proj_dim = file.read_u32();
     hparams.do_layer_norm_before = bool(file.read_u32());
 
-    // For ChatGLM-1 & 2
-    hparams.bos_token_id = file.read_u32();
-    hparams.eos_token_id = file.read_u32();
-    hparams.pad_token_id = file.read_u32();
-    hparams.sep_token_id = file.read_u32();
+    // For ChatGLM-2
     hparams.multi_query_group_num = file.read_u32();
     hparams.ffn_hidden_size = file.read_u32();
+
+    // For ChatGLM-2
     hparams.inner_hidden_size = file.read_u32();
   }
 
@@ -268,6 +280,8 @@ struct model_file_loader {
     vocab.id_to_token.resize(hparams.n_vocab);
     file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
     file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
@@ -373,10 +387,6 @@ struct model_file_saver {
     file.write_u32(hparams.word_embed_proj_dim);
     file.write_u32(static_cast<int>(hparams.do_layer_norm_before));
 
-    file.write_u32(hparams.bos_token_id);
-    file.write_u32(hparams.eos_token_id);
-    file.write_u32(hparams.pad_token_id);
-    file.write_u32(hparams.sep_token_id);
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
@@ -388,6 +398,8 @@ struct model_file_saver {
     uint32_t n_vocab = any_file_loader->hparams.n_vocab;
     file.write_raw(&(any_file_loader->vocab.bos_token_id), sizeof(model_vocab::id));
     file.write_raw(&(any_file_loader->vocab.eos_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.pad_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.sep_token_id), sizeof(model_vocab::id));
     for (uint32_t i = 0; i < n_vocab; i++) {
       const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
       file.write_u32((uint32_t)token_score.tok.size());
@@ -474,14 +486,17 @@ struct model_model_loader {
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
           if (it == tensors_map.name_to_idx.end()) {
-            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
+            it = tensors_map.name_to_idx.find("model.embed_tokens.weight");  // baichuan13B
             if (it == tensors_map.name_to_idx.end()) {
-              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
+              it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
               if (it == tensors_map.name_to_idx.end()) {
-                it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
-                if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
                 if (it == tensors_map.name_to_idx.end()) {
-                  throw std::string("missing tok_embeddings.weight");
+                  it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+                  if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                  if (it == tensors_map.name_to_idx.end()) {
+                    throw std::string("missing tok_embeddings.weight");
+                  }
                 }
               }
             }
@@ -495,9 +510,15 @@ struct model_model_loader {
 
   void calc_sizes(size_t* ctx_size_p, size_t* mmapped_size_p) const {
     *ctx_size_p = *mmapped_size_p = 0;
+    size_t size_needed = 0;
     for (const model_load_tensor& lt : tensors_map.tensors) {
       *ctx_size_p += sizeof(struct ne_tensor) + NE_OBJECT_SIZE;
-      *(use_mmap ? mmapped_size_p : ctx_size_p) += lt.size;
+      if (lt.type == NE_TYPE_JBLAS) {
+        size_needed = lt.size;
+      } else {
+        size_needed = (lt.size + NE_MEM_ALIGN - 1) / NE_MEM_ALIGN * NE_MEM_ALIGN;
+      }
+      *(use_mmap ? mmapped_size_p : ctx_size_p) += size_needed;
     }
   }
 

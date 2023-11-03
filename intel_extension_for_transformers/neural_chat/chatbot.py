@@ -16,12 +16,12 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
+import os
 from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .utils.common import get_device_type
 from .plugins import plugins
 
 def build_chatbot(config: PipelineConfig=None):
@@ -38,6 +38,7 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
@@ -45,28 +46,32 @@ def build_chatbot(config: PipelineConfig=None):
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
-    if config.device == "auto":
-        config.device = get_device_type()
-
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "neural-chat-7b-v1" in config.model_name_or_path or "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path:
         from .models.mpt_model import MptModel
         adapter = MptModel()
+    elif "neural-chat" in config.model_name_or_path:
+        from .models.neuralchat_model import NeuralChatModel
+        adapter = NeuralChatModel()
     elif "chatglm" in config.model_name_or_path:
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
+    elif "Qwen" in config.model_name_or_path:
+        from .models.qwen_model import QwenModel
+        adapter = QwenModel()
     elif "opt" in config.model_name_or_path or \
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path:
+         "bloom" in config.model_name_or_path or \
+         "starcoder" in config.model_name_or_path:
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now.")
+                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -94,6 +99,12 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
                     plugins[plugin_name]['class'] = SafetyChecker
+                elif plugin_name == "ner":
+                    from .pipeline.plugins.ner.ner import NamedEntityRecognition
+                    plugins[plugin_name]['class'] = NamedEntityRecognition
+                elif plugin_name == "ner_int":
+                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
+                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 print(f"create {plugin_name} plugin instance...")
@@ -110,10 +121,14 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["device"] = config.device
     parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
     parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["ipex_int8"] = config.loading_config.ipex_int8
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
+    parameters["hf_access_token"] = config.hf_access_token
+
     adapter.load_model(parameters)
 
     return adapter
@@ -129,12 +144,14 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config):
+def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
     Args:
-        config (OptimizationConfig): Configuration for optimizing the model.
+        model: large language model
+        config (OptimizationConfig): The configuration required for optimizing the model.
+        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model)
+    model = optimization.optimize(model, use_llm_runtime)
     return model

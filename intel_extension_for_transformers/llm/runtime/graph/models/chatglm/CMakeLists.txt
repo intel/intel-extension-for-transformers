@@ -18,8 +18,8 @@ target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
 
-# set(TARGET chatglm1)
-# add_library_w_warning(${TARGET} chatglm1.cpp chatglm1_utils.cpp ${MODEL_UTILS_SOURCE})
-# target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
-# set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-# target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
+set(TARGET chatglm)
+add_library_w_warning(${TARGET} chatglm.cpp chatglm_utils.cpp ${MODEL_UTILS_SOURCE})
+target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)

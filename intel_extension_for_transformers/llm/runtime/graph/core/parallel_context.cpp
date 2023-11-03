@@ -31,8 +31,9 @@ class parallel_class {
   bool is_master() { return rank == 0; }
 
   int get_rank() { return rank; }
-
   int get_size() { return world_size; }
+  // int get_rank() { return 1; }
+  // int get_size() { return 2; }
 
   // From some example code of oneCCL, inplace reducing is supported
   void reduce_add(float* sendBuf, float* recvBuf, size_t count) {

@@ -4,7 +4,7 @@ accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
 protobuf
-torch==2.0.0
+torch==2.1.0
 onnx>=1.12
 onnxruntime==1.13.1
 diffusers==0.12.1

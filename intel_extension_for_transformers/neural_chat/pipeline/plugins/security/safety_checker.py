@@ -155,3 +155,5 @@ class SafetyChecker:
     def post_llm_inference_actions(self, response):
         if self.sensitive_check(response):
             return self.sensitive_filter(response)
+        else:
+            return response

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -17,6 +16,7 @@
 # limitations under the License.
 
 from num2words import num2words
+import re
 
 class EnglishNormalizer:
     def __init__(self):
@@ -36,7 +36,7 @@ class EnglishNormalizer:
             "M": "em",
             "N": "en",
             "O": "o",
-            "P": "pee",
+            "P": "pea",
             "Q": "cue",
             "R": "ar",
             "S": "ess",
@@ -46,34 +46,53 @@ class EnglishNormalizer:
             "W": "doubleliu",
             "X": "ex",
             "Y": "wy",
-            "Z": "zed"
+            "Z": "zed",
+            ".": "point",
         }
         
     def correct_abbreviation(self, text):
-        # if one word is all capital letters, then correct this whole word
-        # TODO mixed abbreviation like i7 12th W3C should be supported
+        # TODO mixed abbreviation or proper noun like i7, ffmpeg, BTW should be supported
 
-        words = text.split()
+        # words = text.split()    # CVPR-15 will be upper but 1 and 5 will be splitted to two numbers
+        words = re.split(' |_|/', text)
         results = []
         for idx, word in enumerate(words):
-            if word.isupper(): # W3C is also upper
-                for c in word:
-                    if c in self.correct_dict:
-                        results.append(self.correct_dict[c])
-                    else:
-                        results.append(c)
+            if word.startswith("-"):    # bypass negative number
+                parts = [word]
             else:
-                results.append(word)
+                parts = word.split('-')
+            for w in parts:
+                if w.isupper(): # W3C is also upper
+                    for c in w:
+                        if c in self.correct_dict:
+                            results.append(self.correct_dict[c])
+                        else:
+                            results.append(c)
+                else:
+                    results.append(w)
         return " ".join(results)
 
     def correct_number(self, text):
         """Ignore the year or other exception right now"""
         words = text.split()
         results = []
+        prepositions_year = ["in", "on"]
+        prev = ""
+        ordinal_pattern = re.compile("^.*[0-9](st|nd|rd|th)$")
         for idx, word in enumerate(words):
+            suffix = ""
+            if len(word) > 0 and word[-1] in [",", ".", "?", "!"]:
+                suffix = word[-1]
+                word = word[:-1]
             if word.isdigit(): # if word is positive integer, it must can be num2words
                 try:
-                    word = num2words(word)
+                    potential_year = int(word)
+                    if prev.lower() in prepositions_year and potential_year < 2999 and potential_year > 1000 \
+                          and potential_year % 1000 != 0:
+                        word = num2words(word, to="year")
+                        word = word.replace("-", "") # nineteen eighty-seven => nineteen eightyseven
+                    else:
+                        word = num2words(word)
                 except Exception as e:
                     print(f"num2words fail with word: {word} and exception: {e}")
             else:
@@ -87,6 +106,14 @@ class EnglishNormalizer:
                     except ValueError:
                         # print("not a number, fallback to original word")
                         pass
-            results.append(word)
-        return " ".join(results)
 
+            if ordinal_pattern.search(word):
+                word = num2words(word[:-2], to='ordinal').replace("-", " ")
+            word = word + suffix
+            results.append(word)
+            prev = word
+        results = " ".join(results)
+        # if the text is not truncated correctly by early stop token, then manually add one.
+        if len(results) > 0 and results[-1] not in [",", ".", "?", "!"]:
+            results += "."
+        return results

@@ -17,7 +17,6 @@
 
 import argparse
 import sys
-import os
 from typing import List
 
 
@@ -28,15 +27,14 @@ from yacs.config import CfgNode
 from fastapi import FastAPI
 from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
-
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
 from ..cli.log import logger
 from .restful.api import setup_router
-from ..config import PipelineConfig
+from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
-
+from ..plugins import plugins
 
 __all__ = ['NeuralChatServerExecutor']
 
@@ -97,31 +95,29 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         Returns:
             bool:
         """
-        plugin_list = list(plugin for plugin in config.plugins_list)
-        params = {}
-        # Model configuration
-        if config.model_name:
-            params["model_name_or_path"] = config.model_name
-        # Audio plugin configuration
-        if "audio" in plugin_list:
-            params["audio_input"] = config.audio.audio_input
-            params["audio_output"] = config.audio.audio_output
-        # Retrieval plugin configuration
-        if "retrieval" in plugin_list:
-            params["retrieval_type"] = config.retrieval.retrieval_type
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            retrieval_document_path = os.path.join(script_dir, config.retrieval.retrieval_document_path)
-            params["retrieval_document_path"] = retrieval_document_path
-        # Caching plugin configuration
-        if "caching" in plugin_list:
-            params["cache_chat_config_file"] = config.caching.cache_chat_config_file
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            retrieval_document_path = os.path.join(script_dir, config.caching.cache_embedding_model_dir)
-            params["cache_embedding_model_dir"] = retrieval_document_path
-        # Other plugins configurations
-        for plugin in ["memory_controller", "intent_detection", "safety_checker"]:
-            if plugin in config.plugins_list:
-                params[plugin] = True
+        device = config.get("device", "auto")
+        model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
+        ipex_int8 = config.get("ipex_int8", False)
+        tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
+        peft_model_path = config.get("peft_model_path", "")
+
+        # Update plugins based on YAML configuration
+        for plugin_name, plugin_config in plugins.items():
+            yaml_config = config.get(plugin_name, {})
+            if yaml_config.get("enable"):
+                plugin_config["enable"] = True
+                plugin_config["args"] = yaml_config.get("args", {})
+ 
+        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, peft_path=peft_model_path)
+        # Create a dictionary of parameters for PipelineConfig
+        params = {
+            "model_name_or_path": model_name_or_path,
+            "device": device,
+            "plugins": plugins,
+            "loading_config": loading_config,
+            "tokenizer_name_or_path": tokenizer_name_or_path
+        }
+
         pipeline_config = PipelineConfig(**params)
         self.chatbot = build_chatbot(pipeline_config)
 
@@ -150,4 +146,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         config = get_config(config_file)
         if self.init(config):
             logging.basicConfig(filename=log_file, level=logging.INFO)
-            uvicorn.run(app, host=config.host, port=config.port)
+            try:
+                uvicorn.run(app, host=config.host, port=config.port)
+            except Exception as e:
+                print(f"Error starting uvicorn: {str(e)}")

@@ -129,7 +129,7 @@ class TestTextEncoderBF16(unittest.TestCase):
         # onnxruntime
         fp32_model_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder_fp32/'
         model_dir = fp32_model_dir + 'model.onnx'
-        session = ort.InferenceSession(model_dir)
+        session = ort.InferenceSession(model_dir, providers=["CPUExecutionProvider"])
         x = torch.load(input_0_path).numpy().astype(np.int32)
 
         ortvalue = ort.OrtValue.ortvalue_from_numpy(x)

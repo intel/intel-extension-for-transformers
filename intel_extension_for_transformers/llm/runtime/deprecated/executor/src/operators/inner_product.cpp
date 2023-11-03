@@ -1143,7 +1143,8 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
         dst_zps_ = GetZeroPoints(dst_min_->data(), dst_scales_, dst_->dtype());
 
         for (int i = 0; i < dst_scales_.size(); i++) dst_scales_[i] = 1.0 / dst_scales_[i];
-        auto dst_scale_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+        auto dst_scale_md =
+            memory::desc({dnnl_dim_t(dst_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
         auto dst_scales_m_ = memory(dst_scale_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
         memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_m_;
       }
@@ -1152,12 +1153,14 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
       for (int i = 0; i < src1_scales_.size(); i++) src1_scales_[i] = 1.0 / src1_scales_[i];
 
       attr_.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
-      auto src_scale_md = memory::desc({src0_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src_scale_md =
+          memory::desc({dnnl_dim_t(src0_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
       auto src_scales_m = memory(src_scale_md, eng_, reinterpret_cast<void*>(src0_scales_.data()));
       memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
 
       attr_.set_scales_mask(DNNL_ARG_WEIGHTS, /* mask */ src1_scales_.size() > 1 ? 1 : 0);
-      auto src1_scale_md = memory::desc({src1_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src1_scale_md =
+          memory::desc({dnnl_dim_t(src1_scales_.size())}, memory::data_type::f32, memory::format_tag::x);
       auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(src1_scales_.data()));
       memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
     } else {

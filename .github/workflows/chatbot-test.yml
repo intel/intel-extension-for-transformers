@@ -5,7 +5,6 @@ on:
     branches:
       - main
     paths:
-      - './requirements.txt'
       - '.github/workflows/chatbot-test.yml'
       - '.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml'
       - '.github/workflows/chatbot-inference-mpt-7b-chat.yml'
@@ -15,8 +14,17 @@ on:
       - '.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml'
       - '.github/workflows/script/chatbot/**'
       - '.github/workflows/sample_data/**'
-      - 'intel_extension_for_transformers/**'
+      - 'intel_extension_for_transformers/neural_chat/**'
+      - 'intel_extension_for_transformers/llm/finetuning/**'
+      - 'intel_extension_for_transformers/llm/quantization/**'
+      - 'intel_extension_for_transformers/transformers/**'
       - 'workflows/chatbot/inference/**'
+      - 'workflows/chatbot/fine_tuning/**'
+      - '!intel_extension_for_transformers/neural_chat/docs/**'
+      - '!intel_extension_for_transformers/neural_chat/tests/**'
+      - '!intel_extension_for_transformers/neural_chat/examples/**'
+      - '!intel_extension_for_transformers/neural_chat/assets/**'
+      - '!intel_extension_for_transformers/neural_chat/README.md'
 
   workflow_dispatch:
 
@@ -27,21 +35,19 @@ concurrency:
 
 jobs:
 
-  call-inference-llama-2-7b-chat-hf:
-    uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
-
-  call-inference-mpt-7b-chat:
-    uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
-
-  call-finetune-mpt-7b-chat:
-    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml
-
-  call-inference-llama-2-7b-chat-hf-hpu:
-    uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf-hpu.yml
-
-  call-inference-mpt-7b-chat-hpu:
-    uses: ./.github/workflows/chatbot-inference-mpt-7b-chat-hpu.yml
-
-  call-finetune-mpt-7b-chat-hpu:
-    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml
+  #call-inference-llama-2-7b-chat-hf:
+  #  uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
+#
+  #call-inference-mpt-7b-chat:
+  #  uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
+#
+#
+  #call-inference-llama-2-7b-chat-hf-hpu:
+  #  uses: ./.github/workflows/chatbot-inference-llama-2-7b_70b-chat-hf-hpu.yml
+#
+  #call-inference-mpt-7b-chat-hpu:
+  #  uses: ./.github/workflows/chatbot-inference-mpt-7b-chat-hpu.yml
+#
+  #call-finetune-mpt-7b-chat-hpu:
+  #  uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml
 

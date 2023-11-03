@@ -19,17 +19,20 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Load environment variables
+        run:
+          cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
+
       - name: Build Docker Image
-        run: |
-          cd workflows/chatbot/fine_tuning/docker
-          docker build ./ --target hpu -f ./Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
+        run:
+          docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         id: master_container
         run: |
           cid=$(docker ps -q --filter "name=chatbotfinetune-hpu-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
+          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
 
       - name: Run Finetuning
         run: |
@@ -51,7 +54,9 @@ jobs:
             --dataset_concatenation \
             --do_train \
             --tokenizer_name \"EleutherAI/gpt-neox-20b\" \
-            --habana \
+            --use_fast_tokenizer True \
+            --max_eval_samples 64 \
+            --device hpu \
             --use_habana \
             --use_lazy_mode "
           

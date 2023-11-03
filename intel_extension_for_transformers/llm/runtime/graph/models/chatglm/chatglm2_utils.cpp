@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "core/data_types.h"
+#include "core/layers/mha_dense.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
 #include "models/chatglm/chatglm2.h"
@@ -39,21 +40,21 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new CHATGLM2());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  std::unique_ptr<CHATGLM2> ms(new CHATGLM2());
+  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
+  lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM2::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-                    bool use_mlock_, bool vocab_only_) {
-  n_ctx = n_ctx_;
+void CHATGLM2::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+                    bool vocab_only_) {
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -65,9 +66,7 @@ void CHATGLM2::init(const char* path_model, model_context& lctx, int n_ctx_, int
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
-  hparams.n_ctx = n_ctx;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
-  fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
   fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
   fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
@@ -94,9 +93,8 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
   fprintf(stderr, "%s: ne ctx size = %7.2f MB\n", __func__, ctx_size / 1024.0 / 1024.0);
 
   const auto& hparams = model.hparams;
-  const int head_dim = n_embd / hparams.n_head;
-  const int kv_heads = hparams.n_head;  // 1 if MQA else hparams.n_head
-  const int kv_dim = kv_heads * head_dim;
+  MODEL_ASSERT(("chatglm uses multi_query_group_num rather than n_head_kv",
+                hparams.n_head_kv == 0 && hparams.multi_query_group_num != 0));
 
   // create the ne context
   lctx.model.buf.resize(ctx_size);
@@ -135,28 +133,28 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
 
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(
-        layers_i + ".self_attention.query_key_value.weight",
-        {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
-    layer.attn[1] =
-        ml->get_tensor(layers_i + ".self_attention.query_key_value.bias",
-                       {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    layer.attn[0] =
+        ml->get_tensor(layers_i + ".self_attention.query_key_value.weight",
+                       {n_embd, n_embd + 2 * (n_embd / hparams.n_head) * hparams.multi_query_group_num}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias",
+                                   {n_embd + 2 * (n_embd / hparams.n_head) * hparams.multi_query_group_num}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] =
-        ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight",
+                                  {n_embd, uint32_t(hparams.ffn_hidden_size * 2)}, backend);
     layer.ffn[1] =
-        ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
+        ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {uint32_t(hparams.ffn_hidden_size), n_embd}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 32768, 2);
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 32768, 4096 / 32, 2);
+    // kv-cache
+    layer.k_cache = nullptr;  // kv-cache will be init later in model_utils
+    layer.v_cache = nullptr;  // kv-cache will be init later in model_utils
+
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.norm[2]) +
                     ne_nbytes(layer.norm[3]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
                     ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.ffn[0]) +
-                    ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) +
-                    ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
+                    ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }
 

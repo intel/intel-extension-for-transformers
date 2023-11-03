@@ -23,26 +23,100 @@ import os
 import time
 import uuid
 
-os.system("pip install gradio==3.28.0")
+os.system("pip install gradio==3.34.0")
 
 import gradio as gr
 import requests
 
-from fastchat.conversation import (
-    Conversation,
-    compute_skip_echo_len,
-    SeparatorStyle,
+import sys
+sys.path.insert(0, './')
+from conversation import (
+    get_conv_template,
+    compute_skip_echo_len
 )
 from fastchat.constants import LOGDIR
 from fastchat.utils import (
     build_logger,
-    server_error_msg,
     violates_moderation,
-    moderation_msg,
 )
-from fastchat.serve.gradio_patch import Chatbot as grChatbot
-from fastchat.serve.gradio_css import code_highlight_css
 
+code_highlight_css = """
+#chatbot .hll { background-color: #ffffcc }
+#chatbot .c { color: #408080; font-style: italic }
+#chatbot .err { border: 1px solid #FF0000 }
+#chatbot .k { color: #008000; font-weight: bold }
+#chatbot .o { color: #666666 }
+#chatbot .ch { color: #408080; font-style: italic }
+#chatbot .cm { color: #408080; font-style: italic }
+#chatbot .cp { color: #BC7A00 }
+#chatbot .cpf { color: #408080; font-style: italic }
+#chatbot .c1 { color: #408080; font-style: italic }
+#chatbot .cs { color: #408080; font-style: italic }
+#chatbot .gd { color: #A00000 }
+#chatbot .ge { font-style: italic }
+#chatbot .gr { color: #FF0000 }
+#chatbot .gh { color: #000080; font-weight: bold }
+#chatbot .gi { color: #00A000 }
+#chatbot .go { color: #888888 }
+#chatbot .gp { color: #000080; font-weight: bold }
+#chatbot .gs { font-weight: bold }
+#chatbot .gu { color: #800080; font-weight: bold }
+#chatbot .gt { color: #0044DD }
+#chatbot .kc { color: #008000; font-weight: bold }
+#chatbot .kd { color: #008000; font-weight: bold }
+#chatbot .kn { color: #008000; font-weight: bold }
+#chatbot .kp { color: #008000 }
+#chatbot .kr { color: #008000; font-weight: bold }
+#chatbot .kt { color: #B00040 }
+#chatbot .m { color: #666666 }
+#chatbot .s { color: #BA2121 }
+#chatbot .na { color: #7D9029 }
+#chatbot .nb { color: #008000 }
+#chatbot .nc { color: #0000FF; font-weight: bold }
+#chatbot .no { color: #880000 }
+#chatbot .nd { color: #AA22FF }
+#chatbot .ni { color: #999999; font-weight: bold }
+#chatbot .ne { color: #D2413A; font-weight: bold }
+#chatbot .nf { color: #0000FF }
+#chatbot .nl { color: #A0A000 }
+#chatbot .nn { color: #0000FF; font-weight: bold }
+#chatbot .nt { color: #008000; font-weight: bold }
+#chatbot .nv { color: #19177C }
+#chatbot .ow { color: #AA22FF; font-weight: bold }
+#chatbot .w { color: #bbbbbb }
+#chatbot .mb { color: #666666 }
+#chatbot .mf { color: #666666 }
+#chatbot .mh { color: #666666 }
+#chatbot .mi { color: #666666 }
+#chatbot .mo { color: #666666 }
+#chatbot .sa { color: #BA2121 }
+#chatbot .sb { color: #BA2121 }
+#chatbot .sc { color: #BA2121 }
+#chatbot .dl { color: #BA2121 }
+#chatbot .sd { color: #BA2121; font-style: italic }
+#chatbot .s2 { color: #BA2121 }
+#chatbot .se { color: #BB6622; font-weight: bold }
+#chatbot .sh { color: #BA2121 }
+#chatbot .si { color: #BB6688; font-weight: bold }
+#chatbot .sx { color: #008000 }
+#chatbot .sr { color: #BB6688 }
+#chatbot .s1 { color: #BA2121 }
+#chatbot .ss { color: #19177C }
+#chatbot .bp { color: #008000 }
+#chatbot .fm { color: #0000FF }
+#chatbot .vc { color: #19177C }
+#chatbot .vg { color: #19177C }
+#chatbot .vi { color: #19177C }
+#chatbot .vm { color: #19177C }
+#chatbot .il { color: #666666 }
+"""
+
+server_error_msg = (
+    "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
+)
+moderation_msg = (
+    "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
+)
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
@@ -55,26 +129,26 @@ disable_btn = gr.Button.update(interactive=False)
 controller_url = None
 enable_moderation = False
 
-conv_template_bf16 = Conversation(
-    system="A chat between a curious human and an artificial intelligence assistant. "
-           "The assistant gives helpful, detailed, and polite answers to the human's questions.",
-    roles=("Human", "Assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.SINGLE,
-    sep="\n",
-    sep2="<|endoftext|>",
-)
+# conv_template_bf16 = Conversation(
+#     system="A chat between a curious human and an artificial intelligence assistant. "
+#            "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+#     roles=("Human", "Assistant"),
+#     messages=(),
+#     offset=0,
+#     sep_style=SeparatorStyle.SINGLE,
+#     sep="\n",
+#     sep2="<|endoftext|>",
+# )
 
-conv_template_bf16 = Conversation(
-    system="",
-    roles=("### Human", "### Assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.SINGLE,
-    sep="\n",
-    sep2="</s>",
-)
+# conv_template_bf16 = Conversation(
+#     system="",
+#     roles=("### Human", "### Assistant"),
+#     messages=(),
+#     offset=0,
+#     sep_style=SeparatorStyle.SINGLE,
+#     sep="\n",
+#     sep2="</s>",
+# )
 # conv_template_bf16 = Conversation(
 #     system="",
 #     roles=("", ""),
@@ -85,21 +159,21 @@ conv_template_bf16 = Conversation(
 #     sep2="<|endoftext|>",
 # )
 
-start_message = """<|im_start|>system
-- You are a helpful assistant chatbot trained by MosaicML.
-- You answer questions.
-- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
+# start_message = """<|im_start|>system
+# - You are a helpful assistant chatbot trained by Intel.
+# - You answer questions.
+# - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+# - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
 
-conv_template_bf16 = Conversation(
-    system=start_message,
-    roles=("<|im_start|>user", "<|im_start|>assistant"),
-    messages=(),
-    offset=0,
-    sep_style=SeparatorStyle.TWO,
-    sep="\n",
-    sep2="<|im_end|>",
-)
+# conv_template_bf16 = Conversation(
+#     system=start_message,
+#     roles=("<|im_start|>user", "<|im_start|>assistant"),
+#     messages=(),
+#     offset=0,
+#     sep_style=SeparatorStyle.TWO,
+#     sep="\n",
+#     sep2="<|im_end|>",
+# )
 
 def set_global_vars(controller_url_, enable_moderation_):
     global controller_url, enable_moderation
@@ -114,9 +188,7 @@ def get_conv_log_filename():
 
 
 def get_model_list(controller_url):
-    ret = requests.post(controller_url + "/refresh_all_workers")
-    assert ret.status_code == 200
-    ret = requests.post(controller_url + "/list_models")
+    ret = requests.post(controller_url + "/v1/models")
     models = ret.json()["models"]
     logger.info(f"Models: {models}")
     return models
@@ -203,7 +275,7 @@ def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
 
     if state is None:
-        state = conv_template_bf16.copy()
+        state = get_conv_template("neural-chat-7b-v2")
 
     if len(text) <= 0:
         state.skip_next = True
@@ -217,7 +289,7 @@ def add_text(state, text, request: gr.Request):
                 no_change_btn,
             ) * 5
 
-    text = text[:1536]  # Hard cut-off
+    text = text[:2560]  # Hard cut-off
     state.append_message(state.roles[0], text)
     state.append_message(state.roles[1], None)
     state.skip_next = False
@@ -250,47 +322,32 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     if len(state.messages) == state.offset + 2:
         # First round of conversation
-        new_state = conv_template_bf16.copy()
-        new_state.conv_id = uuid.uuid4().hex
-        new_state.model_name = state.model_name or model_selector
+        if "Llama-2-7b-chat-hf" in model_name:
+            model_name = "llama-2"
+        new_state = get_conv_template(model_name.split('/')[-1])
+        #new_state.conv_id = uuid.uuid4().hex
+        #new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
         state = new_state
 
-    # Query worker address
-    ret = requests.post(
-        controller_url + "/get_worker_address", json={"model": model_name}
-    )
-    worker_addr = ret.json()["address"]
-    logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
-
-    # No available worker
-    if worker_addr == "":
-        state.messages[-1][-1] = server_error_msg
-        yield (
-            state,
-            state.to_gradio_chatbot(),
-            disable_btn,
-            disable_btn,
-            disable_btn,
-            enable_btn,
-            enable_btn,
-        )
-        return
-
     # Construct prompt
     prompt = state.get_prompt()
-    skip_echo_len = compute_skip_echo_len(model_name, state, prompt)
+    # print("prompt==============", prompt)
+    skip_echo_len = compute_skip_echo_len(model_name, state, prompt) - 1
 
     # Make requests
     pload = {
-        "model": model_name,
         "prompt": prompt,
+        "device": "cpu",
         "temperature": temperature,
+        "top_p": 0.95,
+        "top_k": topk,
+        "repetition_penalty": 1.0,
         "max_new_tokens": max_new_tokens,
-        "topk": topk,
-        "stop": "<|endoftext|>"
+        "stream": True,
     }
+
     logger.info(f"==== request ====\n{pload}")
 
     start_time = time.time()
@@ -301,17 +358,19 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
     try:
         # Stream output
         response = requests.post(
-            controller_url + "/worker_generate_stream",
+            controller_url + "/v1/chat/completions",
             headers=headers,
             json=pload,
             stream=True,
             timeout=20,
         )
+        output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
                 data = json.loads(chunk.decode())
+                # print("data======", data, skip_echo_len)
                 if data["error_code"] == 0:
-                    output = data["text"][skip_echo_len:].strip()
+                    output += data["text"].strip() + " "
                     output = post_process_code(output)
                     state.messages[-1][-1] = output + "▌"
                     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
@@ -344,7 +403,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
     # elapsed_time =  "\n{}s".format(round(finish_tstamp, 4))
     # elapsed_time =  "<p class='time-style'>{}s </p>".format(round(finish_tstamp, 4))
 
-    state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
+    # state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
+    state.messages[-1][-1] = state.messages[-1][-1][:-1]
     yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
 
     logger.info(f"{output}")
@@ -435,6 +495,19 @@ gradio-app {
     background-size: contain;
 }
 
+#chatbot::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 60px;
+    width: 60px;
+    height: 60px;
+    background-image: url(https://i.postimg.cc/QCBQ45b4/Microsoft-Teams-image-44.png);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
+}
+
 #chatbot .wrap {
     margin-top: 30px !important;
 }
@@ -448,11 +521,11 @@ gradio-app {
 
 .user, .bot {
     width: 80% !important;
-    
+
 }
 
 .bot {
-    white-space: pre-wrap !important;  
+    white-space: pre-wrap !important;
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
@@ -468,7 +541,7 @@ gradio-app {
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}        
+}
 
 .title {
     font-size: 1.5rem;
@@ -509,9 +582,7 @@ footer {
 
 .img-logo-right-style {
     width: 3.5rem;
-    float: right;
-    margin-top: -1rem;
-    margin-left: 1rem;
+    display: inline-block !important;
 }
 
 .neural-studio-img-style {
@@ -529,25 +600,31 @@ footer {
 
 
 def build_single_model_ui(models):
- 
+
     notice_markdown = """
 <div class="title">
 <div style="
     color: #fff;
 ">Large Language Model <p style="
     font-size: 0.8rem;
-">4th Gen Intel® Xeon® with Intel® AMX</p></div>
- 
+">Future Gen Intel® Xeon® (codenamed Granite Rapids) with Intel® AMX</p></div>
+
 </div>
 """
+    # <div class="footer">
+    #                 <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
+    #                 <img src='https://i.postimg.cc/Pfv4vV6R/Microsoft-Teams-image-23.png' class='img-logo-right-style'/></p>
+    #         </div>
+    #         <div class="acknowledgments">
+    #         <p></p></div>
 
-    learn_more_markdown = """<div class="footer">
+    learn_more_markdown =  """<div class="footer">
                     <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
-                    <img src='https://i.postimg.cc/Pfv4vV6R/Microsoft-Teams-image-23.png' class='img-logo-right-style'/></p>
+                    </p>
             </div>
             <div class="acknowledgments">
             <p></p></div>
-            
+
         """
 
     state = gr.State()
@@ -561,7 +638,7 @@ def build_single_model_ui(models):
             show_label=False,
         ).style(container=False)
 
-    chatbot = grChatbot(elem_id="chatbot", visible=False).style(height=550)
+    chatbot = gr.Chatbot(elem_id="chatbot", visible=False).style(height=550)
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
             textbox = gr.Textbox(
@@ -696,7 +773,7 @@ def build_demo(models):
 
 if __name__ == "__main__":
 
-    controller_url = "http://54.166.144.154:80"
+    controller_url = "http://127.0.0.1:8000"
     host = "0.0.0.0"
 
     concurrency_count = 10

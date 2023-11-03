@@ -48,6 +48,12 @@
 
 #define NE_SIZE_CALC -1
 
+#if __AVX512F__
+#define NE_ALIGNMENT 64
+#else
+#define NE_ALIGNMENT 32
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -141,6 +147,8 @@ struct ne_tensor {
 
   char padding[8];
 };
+
+static const size_t NE_TENSOR_SIZE = sizeof(struct ne_tensor);
 
 // computation graph
 struct ne_cgraph {

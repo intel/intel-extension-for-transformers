@@ -17,6 +17,15 @@ option(NE_WITH_ONEDNN_GRAPH "Build oneDNNGraph" ON)
 option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" ON)
 option(NE_WITH_AVX2 "Limit the compile time use of instruciton extensions to AVX2 rather than AVX512" OFF)
 message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
+set(NE_DNNL_CACHE_DIR "" CACHE STRING
+  "The abs directory of cached OneDNN builds, including a libdnnl.so file and a directory for configured header files
+
+  To create a cahce dir, first build without cache, then move `libdnnl.so*` to `YOUR_NEW_CACHE_DIR` and move
+  `build/neural_engine_py/third_party/oneDNN/include` to `YOUR_NEW_CACHE_DIR/include`")
+
+# Disable extra OneDNN targets to speedup compilation
+set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "builds examples" FORCE)
+set(DNNL_BUILD_TESTS OFF CACHE BOOL "builds tests" FORCE)
 
 # Disable extra OneDNN targets to speedup compilation
 set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "builds examples" FORCE)
@@ -46,25 +55,40 @@ set(BUILD_SHARED_LIBS ON)
 add_subdirectory(${NE_THIRD_PARTY_DIR}/glog)
 
 if(NOT NE_WITH_SPARSELIB_ONLY)
-  if(NE_DYNAMIC_LINK)
-    set(DNNL_LIBRARY_TYPE "SHARED" CACHE STRING
-    "specifies whether oneDNN library should be SHARED, STATIC, or
-        SDL (single dynamic library).")
-    set(DNNL_GRAPH_LIBRARY_TYPE "SHARED" CACHE STRING
-    "specifies whether oneDNN Graph library should be SHARED, STATIC, or
-        SDL (single dynamic library).")
-  else()
-    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING
-    "specifies whether oneDNN library should be SHARED, STATIC, or
-        SDL (single dynamic library).")
-    set(DNNL_GRAPH_LIBRARY_TYPE "STATIC" CACHE STRING
-    "specifies whether oneDNN Graph library should be SHARED, STATIC, or
-        SDL (single dynamic library).")
-  endif()
-  message(STATUS "DNNL_LIBRARY_TYPE: ${DNNL_LIBRARY_TYPE}")
-  message(STATUS "DNNL_GRAPH_LIBRARY_TYPE: ${DNNL_GRAPH_LIBRARY_TYPE}")
+  file(GLOB NE_DNNL_CACHE_B ${NE_DNNL_CACHE_DIR}/libdnnl.so*)
+  list(LENGTH NE_DNNL_CACHE_B NE_DNNL_CACHE_B_LEN)
+  set(NE_DNNL_CACHE_H ${NE_DNNL_CACHE_DIR}/include)
+  if (NE_DNNL_CACHE_DIR AND NE_DNNL_CACHE_B_LEN AND EXISTS ${NE_DNNL_CACHE_H})
+    message(STATUS "Using cached NE_DNNL: linking ${NE_DNNL_CACHE_B}")
+    message(STATUS "Using cached NE_DNNL: include ${NE_DNNL_CACHE_H}")
+    add_library(dnnl SHARED IMPORTED)
+    set_target_properties(dnnl PROPERTIES IMPORTED_LOCATION ${NE_DNNL_CACHE_B})
+    target_include_directories(dnnl INTERFACE ${NE_DNNL_CACHE_H})
+    target_include_directories(dnnl INTERFACE ${NE_THIRD_PARTY_DIR}/oneDNN/include)
 
-  add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNN)
+    file(COPY ${NE_DNNL_CACHE_B} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    message(STATUS "dnnl library copied to: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+  else()
+    if(NE_DYNAMIC_LINK)
+      set(DNNL_LIBRARY_TYPE "SHARED" CACHE STRING
+      "specifies whether oneDNN library should be SHARED, STATIC, or
+          SDL (single dynamic library).")
+      set(DNNL_GRAPH_LIBRARY_TYPE "SHARED" CACHE STRING
+      "specifies whether oneDNN Graph library should be SHARED, STATIC, or
+          SDL (single dynamic library).")
+    else()
+      set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING
+      "specifies whether oneDNN library should be SHARED, STATIC, or
+          SDL (single dynamic library).")
+      set(DNNL_GRAPH_LIBRARY_TYPE "STATIC" CACHE STRING
+      "specifies whether oneDNN Graph library should be SHARED, STATIC, or
+          SDL (single dynamic library).")
+    endif()
+    message(STATUS "DNNL_LIBRARY_TYPE: ${DNNL_LIBRARY_TYPE}")
+    message(STATUS "DNNL_GRAPH_LIBRARY_TYPE: ${DNNL_GRAPH_LIBRARY_TYPE}")
+
+    add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNN)
+  endif()
 
   add_subdirectory(${NE_THIRD_PARTY_DIR}/pybind11)
 endif()

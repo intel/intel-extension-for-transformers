@@ -41,17 +41,12 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 static bool mpt_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                    const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
+                                    const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -67,10 +62,11 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
-  // const int n_rot = hparams.n_embd / hparams.n_head;
+  const int head_dim = hparams.n_embd / hparams.n_head;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -88,8 +84,28 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
-  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", !kv_mem_jblas));
+  const bool run_mha_reordered = kv_self.k->type == NE_TYPE_JBLAS;
+  kv_cache_info_t kv_cache_info = {};
+  if (run_mha_reordered) {
+    NE_ASSERT(("kv cache should be the same dtype", kv_self.v->type == NE_TYPE_JBLAS));
+    attn_shape_t attn_shape = {
+        /* .batch_size = */ 1,
+        /* .head_num = */ n_head,
+        /* .heads_kv = */ n_head,
+        /* .head_size = */ head_dim,
+        /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inference
+        /* .sl_kv = */ n_past + N,
+    };
+
+    NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
+               jblas_reordered_attn_fp32_support(&attn_shape)));
+    kv_shape_t kv_shape{
+        /* .heads_kv = */ static_cast<uint32_t>(n_head),
+        /* .head_size = */ static_cast<uint32_t>(head_dim),
+        /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
+    };
+    jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
+  }
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
@@ -109,20 +125,23 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
     }
 
-    {
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
+    cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
-      if (model.hparams.clip_qkv > 0.0f) {
-        cur = ne_clamp(ctx0, cur, -model.hparams.clip_qkv, model.hparams.clip_qkv);
-      }
+    if (model.hparams.clip_qkv > 0.0f) {
+      cur = ne_clamp(ctx0, cur, -model.hparams.clip_qkv, model.hparams.clip_qkv);
+    }
 
-      struct ne_tensor* Qcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0 * sizeof(float) * n_embd);
-      struct ne_tensor* Kcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);
+    struct ne_tensor* Qcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0 * sizeof(float) * n_embd);
+    struct ne_tensor* Kcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);
+    struct ne_tensor* Vcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2 * sizeof(float) * n_embd);
 
+    // self-attention
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
+
+    if (!run_mha_reordered) {
       // store key and value to memory
       {
-        struct ne_tensor* Vcur =
-            ne_transpose(ctx0, ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2 * sizeof(float) * n_embd));
+        Vcur = ne_transpose(ctx0, Vcur);
         struct ne_tensor* k =
             ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
         struct ne_tensor* v =
@@ -151,7 +170,7 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled = ne_scale(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled = ne_scale(ctx0, KQ, ne_new_f32(ctx0, attn_scale));
 
       struct ne_tensor* KQ_scaled_alibi = ne_alibi(ctx0, KQ_scaled, n_past, n_head, model.hparams.alibi_bias_max);
 
@@ -175,10 +194,52 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
       // cur = KQV_merged.contiguous().view(n_embd, N)
       cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
+    } else {
+      const auto seq_kv = n_past + N;
+      const auto k_size = kv_cache_info.k_bytes;
+      const auto v_size = kv_cache_info.v_bytes;
+      // store key and value to memory
+      {
+        const auto k_cache = ne_view_3d(ctx0, kv_self.k,          // tensor
+                                        head_dim, n_ctx, n_head,  // ne
+                                        0, 0,                     // nb (jblas managed)
+                                        il * k_size);             // offset
+        Kcur = ne_view_3d(ctx0, Kcur, head_dim, n_head, N, Kcur->nb[0] * head_dim, Kcur->nb[1], 0);
+        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
+        const auto v_cache = ne_view_3d(ctx0, kv_self.v,          // tensor
+                                        head_dim, n_ctx, n_head,  // ne
+                                        0, 0,                     // nb (jblas managed)
+                                        il * v_size);             // offset
+        Vcur = ne_view_3d(ctx0, Vcur, head_dim, n_head, N, Vcur->nb[0] * head_dim, Vcur->nb[1], 0);
+        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
+      }
 
-      // projection
-      { cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
+      struct ne_tensor* Q = ne_view_3d(ctx0, Qcur, head_dim, n_head, N, Qcur->nb[0] * head_dim, Qcur->nb[1], 0);
+      Q = ne_permute(ctx0, Q, 0, 2, 1, 3);
+      ne_set_name(Q, "Q");
+      struct ne_tensor* K =
+          ne_view_3d(ctx0, kv_self.k,                                             // tensor
+                     head_dim, seq_kv, n_head,                                    // ne
+                     kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,  // nb (jblas managed)
+                     il * k_size);                                                // offset
+      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;    // us nb0 for layout
+      ne_set_name(K, "K");
+      struct ne_tensor* V =
+          ne_view_3d(ctx0, kv_self.v,                                                    // tensor
+                     seq_kv, head_dim, n_head,                                           // ne
+                     kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num,  // nb (jblas managed)
+                     il * v_size);                                                       // offset
+      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
+      ne_set_name(V, "V");
+
+      ne_attn_flags_t attn_flags = NE_ATTN_FLAG_IS_ALIBI8;    // mpt uses alibi operation
+      if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
+      cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
     }
+
+    // projection
+    { cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
     inpL = ne_add(ctx0, inpL, cur);
 
     lctx.use_buf(ctx0, 1);
@@ -288,8 +349,9 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!mpt_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!mpt_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

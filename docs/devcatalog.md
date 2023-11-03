@@ -68,6 +68,7 @@ conda install -c intel intel_extension_for_transformers
 ```Bash
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
+pip install -r requirements.txt
 # Install intel_extension_for_transformers
 pip install -v .
 ```

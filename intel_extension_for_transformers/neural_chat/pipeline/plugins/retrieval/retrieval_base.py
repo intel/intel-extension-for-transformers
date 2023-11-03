@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The class defination for the retriever. Supporting langchain-based and haystack-based retriever."""
+"""The class definition for the retriever. Supporting langchain-based and haystack-based retriever."""
 
 from .retrieval_bm25 import SparseBM25Retriever
 from .retrieval_chroma import ChromaRetriever
@@ -36,5 +36,5 @@ class Retriever():
             self.retriever = SparseBM25Retriever(document_store=document_store, top_k=top_k)
 
     def get_context(self, query):
-        context = self.retriever.query_the_database(query)
-        return context
+        context, links = self.retriever.query_the_database(query)
+        return context, links

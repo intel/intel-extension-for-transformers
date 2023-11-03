@@ -20,8 +20,9 @@ import torch
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantizationConfig
-
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig
+from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
@@ -31,16 +32,35 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_AMP(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                optimization_config = MixedPrecisionConfig())
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        print("Inference with streaming mode.")
+        for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon Scalable Processors."):
+            print(new_text, end="", flush=True)
+        print("\n")
+        self.assertIsNotNone(response)
+
+    def test_build_chatbot_with_weight_only_quant(self):
+        loading_config = LoadingModelConfig(use_llm_runtime=False)
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+            optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
+            loading_config=loading_config
+        )
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
 
-    def test_build_chatbot_with_weight_only_quant(self):
+    def test_build_chatbot_with_llm_runtime(self):
+        loading_config = LoadingModelConfig(use_llm_runtime=True)
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-            optimization_config=WeightOnlyQuantizationConfig()
+            optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int8"),
+            loading_config=loading_config
         )
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)

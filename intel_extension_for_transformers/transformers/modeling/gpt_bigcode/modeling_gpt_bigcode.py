@@ -16,8 +16,7 @@
 # limitations under the License.
 
 # coding=utf-8
-# Copyright 2021 The EleutherAI and HuggingFace Teams. All rights reserved.
-#
+# Copyright 2023 The Bigcode team and HuggingFace Inc. team.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -158,6 +157,7 @@ class GPTBigCodeAttention(nn.Module):
         query_shape = query.shape
         batch_size = query_shape[0]
         key_length = key.size(-1)
+        value_shape = value.shape
         if self.multi_query:
             # (batch_size, query_length, num_heads, head_dim) x (batch_size, head_dim, key_length)
             # -> (batch_size, query_length, num_heads, key_length)
@@ -165,7 +165,9 @@ class GPTBigCodeAttention(nn.Module):
             attn_shape = (batch_size, query_length, self.num_heads, key_length)
             attn_view = (batch_size, query_length * self.num_heads, key_length)
             # No copy needed for MQA 2, or when layer_past is provided.
-            query = query.reshape(batch_size, query_length * self.num_heads, self.head_dim)
+            query = query.reshape(batch_size, query_length, self.num_heads, self.head_dim)
+            key = key.reshape(batch_size, 1, self.head_dim, key_length)
+            value = value.reshape(batch_size, 1, value_shape[-2], value_shape[-1])
         else:
             # (batch_size, num_heads, query_length, head_dim) x (batch_size, num_heads, head_dim, key_length)
             # -> (batch_size, num_heads, query_length, key_length)
@@ -177,7 +179,7 @@ class GPTBigCodeAttention(nn.Module):
             # No copy when layer_past is provided.
             key = key.reshape(batch_size * self.num_heads, self.head_dim, key_length)
 
-        attn_weights = torch.empty(attn_view, device=query.device, dtype=query.dtype)
+        attn_weights = torch.empty(attn_shape, device=query.device, dtype=query.dtype)
         if query.device.type == "cpu":
             # This is needed because of a bug in pytorch https://github.com/pytorch/pytorch/issues/80588.
             # The bug was fixed in https://github.com/pytorch/pytorch/pull/96086,
@@ -186,8 +188,9 @@ class GPTBigCodeAttention(nn.Module):
             beta = 1
         else:
             beta = 0
-        attn_weights = torch.baddbmm(attn_weights, query, key, beta=beta, alpha=scale_factor).view(attn_shape)
-
+        
+        attn_weights = scale_factor * torch.matmul(query, key) # + beta * attn_weights (not needed, it is 0)
+        
         if upcast:
             # Use a fused kernel to prevent a large overhead from casting and scaling.
             # Sub-optimal when the key length is not a multiple of 8.
@@ -214,7 +217,7 @@ class GPTBigCodeAttention(nn.Module):
             attn_weights = attn_weights * head_mask
 
         if self.multi_query:
-            attn_output = torch.bmm(attn_weights.view(attn_view), value).view(query_shape)
+            attn_output = torch.matmul(attn_weights, value).view(query_shape)
         else:
             attn_output = torch.matmul(attn_weights, value)
 
@@ -402,8 +405,8 @@ class GPTBigCodePreTrainedModel(PreTrainedModel):
         if isinstance(module, (GPTBigCodeMLP, GPTBigCodeAttention)):
             # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
             #   > A modified initialization which accounts for the accumulation on the residual path with model depth.
-            #   > Scale the weights of residual layers at initialization by a factor of 1/√N where N is the 
-            #   > of residual layers.
+            #   > Scale the weights of residual layers at initialization by a factor of 1/√N where N is the # of
+            #   > residual layers.
             #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
             #
             # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
@@ -425,8 +428,8 @@ class GPTBigCodePreTrainedModel(PreTrainedModel):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    # Copied from transformers.models.gpt2.modeling_gpt2.GPT2PreTrainedModel._set_gradient_checkpointing with
-    # GPT2->GPTBigCode
+    # Copied from transformers.models.gpt2.modeling_gpt2.GPT2PreTrainedModel._set_gradient_checkpointing
+    # with GPT2->GPTBigCode
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, GPTBigCodeModel):
             module.gradient_checkpointing = value
@@ -497,15 +500,15 @@ GPT_BIGCODE_INPUTS_DOCSTRING = r"""
             - 0 indicates the head is **masked**.
 
         inputs_embeds (`torch.Tensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
-            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation.
-            This is useful if you want more control over how to convert `input_ids` indices into associated vectors
-            than the model's internal embedding lookup matrix.
+            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. This
+            is useful if you want more control over how to convert `input_ids` indices into associated vectors than the
+            model's internal embedding lookup matrix.
 
             If `past_key_values` is used, optionally only the last `inputs_embeds` have to be input (see
             `past_key_values`).
         use_cache (`bool`, *optional*):
-            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
-            (see `past_key_values`).
+            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
+            `past_key_values`).
         output_attentions (`bool`, *optional*):
             Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
             tensors for more detail.
@@ -737,8 +740,8 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
 
 @add_start_docstrings(
     """
-    The GPT_BIGCODE Model transformer with a language modeling head on top
-    (linear layer with weights tied to the input embeddings).
+    The GPT_BIGCODE Model transformer with a language modeling head on top (linear layer with weights tied to the input
+    embeddings).
     """,
     GPT_BIGCODE_START_DOCSTRING,
 )
@@ -888,10 +891,10 @@ class GPTBigCodeForCausalLM(GPTBigCodePreTrainedModel):
     models (e.g. GPT-1) do.
 
     Since it does classification on the last token, it requires to know the position of the last token. If a
-    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row.
-    If no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess
-    the padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value
-    in each row of the batch).
+    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row. If
+    no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess the
+    padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value in
+    each row of the batch).
     """,
     GPT_BIGCODE_START_DOCSTRING,
 )

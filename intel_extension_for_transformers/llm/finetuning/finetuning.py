@@ -274,9 +274,9 @@ class Finetuning:
 
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM"):
-            self.finetune_clm(model_args, data_args, training_args, finetune_args)
+            self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args)
+            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
             raise NotImplementedError(
                 "Unsupported architecture {}, only support CausalLM (CLM) \
@@ -303,8 +303,8 @@ class Finetuning:
             lora_module_names.remove('lm_head')
         return list(lora_module_names)
 
-    def finetune_clm(self, model_args, data_args, training_args, finetune_args):
-        if finetune_args.device == 'habana':
+    def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
+        if finetune_args.device == 'hpu':
             if not is_optimum_habana_available():
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
@@ -315,8 +315,7 @@ class Finetuning:
         # Distributed training:
         # The .from_pretrained methods guarantee that only one local process can concurrently
         # download model & vocab.
-        config = self.load_model_config(model_args)
-        
+
         # set use_fast_tokenizer to False for Llama series models
         if "llama" in config.model_type:
             model_args.use_fast_tokenizer = False
@@ -331,35 +330,21 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
-            if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                device_map=self.device_map,
+                quantization_config=self.bitsandbytes_quant_config,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                trust_remote_code=True if model_args.trust_remote_code else None,
+                torch_dtype=model_dtype,
+                low_cpu_mem_usage=True,
+            )
+            if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    device_map=self.device_map,
-                    quantization_config=self.bitsandbytes_quant_config,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    device_map=self.device_map,
-                    quantization_config=self.bitsandbytes_quant_config,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
@@ -502,7 +487,7 @@ class Finetuning:
                 model = model.to(model_dtype)
             model.print_trainable_parameters()
 
-            if finetune_args.device != 'habana':
+            if finetune_args.device != 'hpu':
                 # Initialize our Trainer
                 trainer = Trainer(
                     model=model,
@@ -513,7 +498,7 @@ class Finetuning:
                     data_collator=data_collator,
                 )
             else:
-                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
+                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
 
                 gaudi_config = GaudiConfig()
                 gaudi_config.use_fused_adam = True
@@ -536,8 +521,47 @@ class Finetuning:
                     unwrapped_model.save_pretrained(
                         training_args.output_dir, state_dict=unwrapped_model.state_dict()
                     )
+        if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
+            unwrapped_model.eval()
+            class Eval_Args:
+                n_samples = 20
+                limit = 20
+                allow_code_execution = True
+                prefix = ""
+                generation_only = False
+                postprocess = False
+                save_references = False
+                save_generations = False
+                instruction_tokens = None
+                save_generations_path = None
+                load_generations_path = None
+                metric_output_path = "evaluation_results.json"
+                seed = 0
+                max_length_generation = 512
+                temperature = 0.8
+                top_p = 0.8
+                top_k = 0
+                do_sample = True
+                check_references = False
+                max_memory_per_gpu = None
+                modeltype = "causal"
+                limit_start = 0
+                batch_size = 20 # batch_size >= n_samples if do_sample.
+            eval_args = Eval_Args()
+            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
+            with training_args.main_process_first(desc="lm_eval"):
+                if is_main_process(training_args.local_rank):
+                    with torch.no_grad():
+                        results = evaluate(
+                            model=unwrapped_model,
+                            tokenizer=tokenizer,
+                            tasks="humaneval",
+                            batch_size=eval_args.batch_size,
+                            args=eval_args,
+                        )
+                        self.logger.info(results)
 
-        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+        elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
@@ -550,7 +574,8 @@ class Finetuning:
                                 user_model=unwrapped_model,
                                 device=unwrapped_model.device.type,
                                 batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,)
+                                tasks=finetune_args.lm_eval_tasks,
+                                limit=data_args.max_eval_samples)
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
@@ -565,7 +590,7 @@ class Finetuning:
                             training_args, gen_kwargs)
                     self.logger.info(results)
 
-    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args):
+    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args, config):
         # Detecting last checkpoint.
         last_checkpoint = None
         if os.path.isdir(training_args.output_dir) \
@@ -711,7 +736,6 @@ class Finetuning:
         
         if training_args.do_train:
             # download model & vocab.
-            config = self.load_model_config(model_args)
 
             # Load model
             if model_args.model_name_or_path:

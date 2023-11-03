@@ -29,11 +29,13 @@ class GlobalPlugins:
             "asr_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
             "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
             "cache": {"enable": False, "class": None, "args": {}, "instance": None},
-            "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None}
+            "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
+            "ner": {"enable": False, "class": None, "args": {}, "instance": None},
+            "ner_int": {"enable": False, "class": None, "args": {}, "instance": None}
         })
 
-global_plugins_instance = GlobalPlugins()
-plugins = global_plugins_instance.plugins
+global_plugins = GlobalPlugins()
+plugins = global_plugins.plugins
 
 def register_plugin(name):
     def decorator(cls):
@@ -68,4 +70,4 @@ def get_registered_plugins():
     return registered_plugins
 
 def get_all_plugins():
-    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker"]
+    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int"]

@@ -26,6 +26,8 @@
 
    6.2 [Sparse Reference](#sparse-reference-deployment-on-neural-engine)
 
+7. [Early-Exit](#early-exit)
+
 
 Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
 
@@ -494,7 +496,7 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
     <th>Task</th>
     <th>Dataset</th>
     <th>Distillation Teacher</th>
-    <th>Pruning Approch</th>
+    <th>Pruning Approach</th>
     <th>Pruning Type</th>
   </tr>
 </thead>
@@ -649,3 +651,28 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
 </tbody>
 </table>
 
+## Early-Exit
+<table>
+<thead>
+  <tr>
+    <th>Model</th>
+    <th>Task</th>
+    <th>Dataset</th>
+    <th>Early-Exit Type</th>
+  </tr>
+</thead>
+<tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/bert-base-uncased">bert-base-uncased</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mnli/train">MNLI</a></td>
+    <td><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-classification/early-exit/README.md">SWEET</a><br><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/tutorials/pytorch/text-classification/SWEET.ipynb">notebook</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/philschmid/tiny-bert-sst2-distilled">philschmid/tiny-bert-sst2-distilled</a><br><a href="https://huggingface.co/textattack/roberta-base-SST-2">textattack/roberta-base-SST-2</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
+    <td><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-classification/cascade-models/README.md">TangoBERT</a><br><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/tutorials/pytorch/text-classification/TangoBERT.ipynb">notebook</a></td>
+  </tr>
+</tbody>
+</table>

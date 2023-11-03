@@ -75,8 +75,9 @@ enum model_archs {
   MODEL_FALCON,
   MODEL_OPT,
   MODEL_BLOOM,
+  MODEL_BAICHUAN,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM1
+  MODEL_CHATGLM
 };
 
 static const size_t MB = 1024 * 1024;
@@ -110,7 +111,6 @@ enum model_file_version {
 // default hparams (LLaMA 7B)
 struct model_hparams {
   uint32_t n_vocab = 32000;
-  uint32_t n_ctx = 512;  // this is provided as user input?
   uint32_t n_embd = 4096;
   uint32_t n_mult = 256;
   uint32_t n_head = 32;
@@ -124,12 +124,6 @@ struct model_hparams {
   int32_t par_res = 1;                // for neox 1 = true, 0 = false
   uint32_t word_embed_proj_dim = 0;   // for opt
   bool do_layer_norm_before = false;  // for opt
-
-  // ChatGLM-1 & 2 tokenizer
-  int32_t bos_token_id = 0;
-  int32_t eos_token_id = 0;
-  int32_t pad_token_id = 0;
-  int32_t sep_token_id = 0;
 
   // ChatGLM-2
   int32_t multi_query_group_num = 0;
@@ -160,6 +154,7 @@ struct model_layer {
 struct model_kv_cache {
   struct ne_tensor* k;
   struct ne_tensor* v;
+  struct ne_tensor* cossin = NULL;  // cached cos/sin value for shifting RoPE
 
   struct ne_context* ctx = NULL;
 
@@ -221,8 +216,10 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
-  id bos_token_id = -1;  // The default value is -1
-  id eos_token_id = -1;  // The default value is -1
+  id bos_token_id = -1;
+  id eos_token_id = -1;
+  id pad_token_id = -1;
+  id sep_token_id = -1;
 };
 
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
@@ -234,7 +231,7 @@ struct generation_config {
   // likelihood of the sequence (i.e. negative), `length_penalty` > 0.0 promotes longer sequences, while
   // `length_penalty` < 0.0 encourages shorter sequences. (default = 1.0)
   float length_penalty = 1.0f;
-  bool do_early_stopping = false;  // TODO
+  bool do_early_stopping = false;
 };
 
 class beam_search_kv_cache_reorder;  //  forward declaration
@@ -254,10 +251,16 @@ struct model_context {
   int32_t n_eval = 0;    // number of eval calls
   int32_t n_p_eval = 0;  // number of tokens in eval calls for the prompt (with batch size > 1)
 
+  int32_t n_ctx = 512;  // number of tokens to keep as context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int32_t n_keep = 0;
+
   model_struct model;
   model_vocab vocab;
   int batch_size = 1;
   bool beam_search = false;
+  bool shift_roped_k = false;     // whether to store non-RoPEd K cache
   bool support_jblas_kv = false;  // whether the model graph supports jblas-kvcache
   int beam_size = 1;
   int kv_n_ctx_block = 1;
@@ -339,8 +342,11 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_archs arch;     // arch of models (GPT-J, LLAMA)
-  int n_ctx;            // text context
+  model_archs arch;  // arch of models (GPT-J, LLAMA)
+  int n_ctx;         // text context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int n_keep;
   int n_gpu_layers;     // number of layers to store in VRAM
   int seed;             // RNG seed, -1 for random
   KV_MEM_TYPE kv_type;  // KV cache type specification
@@ -352,6 +358,7 @@ struct model_context_params {
   int batch_size;       // batch_size of prompt
   bool beam_search;     // beam search or not
   int beam_size;        // number of beams for beam search
+  bool shift_roped_k;   // whether to store non-RoPEd K cache
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
@@ -388,12 +395,11 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN},   {"llama", MODEL_LLAMA},
-      {"gptj", MODEL_GPTJ},         {"mpt", MODEL_MPT},
-      {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
-      {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
-      {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
-      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}};
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},       {"gptj", MODEL_GPTJ},
+      {"mpt", MODEL_MPT},         {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
+      {"dolly", MODEL_GPTNEOX},   {"polyglot", MODEL_GPTNEOX},  {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},       {"chatglm2", MODEL_CHATGLM2},
+      {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}, {"mistral", MODEL_LLAMA}};
 };
 
 #ifdef __cplusplus

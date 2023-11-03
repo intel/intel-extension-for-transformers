@@ -48,9 +48,8 @@ class AccumulatorWriteBack {
       return kernel::wrapper::Memcpy2DFp16CvtFp32::template forward<ISA_T>(
           (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
     } else if constexpr (sizeof(SType) == sizeof(DType)) {
-      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(
-          (void*)cacheptr, (void*)cptr, M, N * sizeof(DType), cachestep * sizeof(SType), _param.ldc * sizeof(DType),
-          _param.elt_const_v, ops...);
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(cacheptr, cptr, M, N, cachestep,
+                                                                              _param.ldc, _param.elt_const_v, ops...);
     } else {
       assert(false);
     }
@@ -70,9 +69,8 @@ class CustomAccumulatorWriteBackWithEltop {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
     if constexpr (std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value) {
-      return kernel::jit::CustomMemCpy::template forward<_OP>(cacheptr, cptr, M, N * sizeof(_DST_T),
-                                                              cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
-                                                              _param.elt_const_v);
+      return kernel::wrapper::Memcpy2D::template forward1<ISA_T, float, float, _OP>(cacheptr, cptr, M, N, cachestep,
+                                                                                    _param.ldc, _param.elt_const_v);
     } else {
       assert(false);
     }
@@ -91,6 +89,9 @@ using AccumulatorWriteBackFp32Bf16 = AccumulatorWriteBack<ISA_T, float, utils::b
 
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackWithGeluFp32 = CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, GELU>;
+
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackWithSwishFp32 = CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
 
 template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessFp32 {
@@ -136,13 +137,19 @@ template <JBLAS_ISA ISA_T>
 class ZpDequantInt32ToFp32 {
  public:
   struct Param {
+    // necessary
     float* C;
     int ldc;
-    uint8_t* zpA;
-    float* scalesA;
     int ldsa;
-    float* reduceB;
+    float* scalesA;
     float* scalesB;
+    // optional if A asym
+    uint8_t* zpA = nullptr;
+    float* reduceB = nullptr;
+    // optional if B asym
+    int8_t* zpB = nullptr;
+    float* reduceA = nullptr;
+    int K = 1;
   };
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
@@ -154,9 +161,22 @@ class ZpDequantInt32ToFp32 {
     if (ret != JblasSuccess) {
       return ret;
     }
-    ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
-        cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.scalesA + M_offset * _param.ldsa,
-        _param.ldsa, _param.reduceB + N_offset);
+    if (_param.zpA == nullptr && _param.zpB == nullptr) {
+      return ret;
+    } else if (_param.zpA != nullptr && _param.zpB == nullptr) {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
+          cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.scalesA + M_offset * _param.ldsa,
+          _param.ldsa, _param.reduceB + N_offset);
+    } else if (_param.zpA == nullptr && _param.zpB != nullptr) {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(cptr, _param.ldc, M, N, _param.zpB + N_offset,
+                                                                          _param.scalesB + N_offset, _param.ldsa,
+                                                                          _param.reduceA + M_offset * _param.ldsa);
+    } else {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
+          cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.zpB + N_offset,
+          _param.scalesA + M_offset * _param.ldsa, _param.scalesB + N_offset, _param.ldsa, _param.K,
+          _param.reduceA + M_offset * _param.ldsa, _param.reduceB + N_offset);
+    }
     return ret;
   }
 };

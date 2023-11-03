@@ -19,4 +19,5 @@
 
 
 from .model import OptimizedModel
-from .modeling_causal import AutoModelForCausalLM
+from .modeling_auto import (AutoModel, AutoModelForCausalLM,
+                            AutoModelForSeq2SeqLM, GPTBigCodeForCausalLM)

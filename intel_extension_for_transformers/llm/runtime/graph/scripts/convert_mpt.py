@@ -20,7 +20,6 @@ import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import sentencepiece.sentencepiece_model_pb2 as model
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -99,14 +98,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
 
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-
-    fout.write(struct.pack("i", int(-1 if (hparams.get("bos_token_id", -1)) is None else (hparams.get("bos_token_id", -1)))))
-    fout.write(struct.pack("i", int(-1 if (hparams.get("eos_token_id", -1)) is None else (hparams.get("eos_token_id", -1)))))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     vocab_size = hparams["vocab_size"]
 

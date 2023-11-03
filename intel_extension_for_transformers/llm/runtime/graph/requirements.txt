@@ -1,7 +1,8 @@
 torch
-transformers
+transformers==4.33.1
 numpy
 sentencepiece
 protobuf<3.20
 einops
 accelerate
+peft

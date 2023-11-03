@@ -2978,7 +2978,7 @@ class GenerationMixin:
                 next_token_logits = outputs.logits[:, -1, :]
             # hack: adjust tokens for Marian. For Marian we have to make sure that the `pad_token_id`
             # cannot be generated both before and after the `nn.functional.log_softmax` operation.
-            next_token_logits = self.adjust_logits_during_generation(next_token_logits, cur_len=cur_len)
+            # next_token_logits = self.adjust_logits_during_generation(next_token_logits, cur_len=cur_len)
             next_token_scores = nn.functional.log_softmax(
                 next_token_logits, dim=-1
             )  # (batch_size * num_beams, vocab_size)

@@ -85,6 +85,7 @@ After adding the two op classes, you can use the `OPERATORS` to check whether th
 ```shell
 # enter into the <intel_extension_for_transformers> folder
 cd <you_work_dir>/intel_extension_for_transformers/
+pip install -r requirements.txt
 # reinstall the intel_extension_for_transformers locally
 pip install -v .
 ```

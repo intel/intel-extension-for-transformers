@@ -34,13 +34,17 @@ struct gpt_params {
   int n_layers;
   int32_t seed = -1;  // RNG seed
   int32_t n_threads = get_num_physical_cores();
-  int32_t n_predict = -1;    // new tokens to predict
-  int32_t n_ctx = 512;       // context size
+  int32_t n_predict = -1;  // new tokens to predict
+  int32_t n_ctx = 512;     // context size
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int32_t n_keep = 0;
   int32_t n_batch = 512;     // batch size for prompt processing (must be >=32 to use BLAS)
-  int32_t n_keep = 0;        // number of tokens to keep from initial prompt
+  int32_t n_discard = -1;    // number of tokens to drop when reaching n_ctx
   int32_t n_gpu_layers = 0;  // number of layers to store in VRAM
 
   // sampling parameters
+  bool do_sample = false;
   std::unordered_map<model_token, float> logit_bias;  // logit bias for specific tokens
   int32_t top_k = 40;                                 // <= 0 to use vocab size
   float top_p = 0.95f;                                // 1.0 = disabled
@@ -71,6 +75,7 @@ struct gpt_params {
   std::string lora_base = "";     // base model path for the lora adapter
 
   KV_MEM_TYPE memory_type = KV_MEM_TYPE_AUTO;  // Memory kv data type
+  bool shift_roped_k = false;                  // whether to store non-RoPEd K cache
   bool random_prompt = false;                  // do not randomize prompt if none provided
   bool use_color = false;                      // use color to distinguish generations and inputs
   bool interactive = false;                    // interactive mode
@@ -109,5 +114,5 @@ std::vector<model_token> model_tokenize(struct model_context* ctx, const std::st
 struct model_context* model_init_from_gpt_params(const gpt_params& params);
 
 // KV cache elements per layer per batch per beam
-void get_batch_kv_elements_from_gpt_params(const struct model_hparams& hparams, ne_type wtype, int32_t* k_size,
+void get_batch_kv_elements_from_gpt_params(int heads_kv, int head_size, int n_ctx, ne_type wtype, int32_t* k_size,
                                            int32_t* v_size);

@@ -22,7 +22,6 @@
 
 	const handleSubmit = async (enableRegenerate = false): Promise<void> => {
 		scrollToBottom(scrollToDiv);
-		loading = true;
 		if (enableRegenerate) {
 			let lastRole = chatMessages[chatMessages.length - 1];
 			if (lastRole.role === MESSAGE_ROLE.ASSISTANT) {
@@ -32,9 +31,8 @@
 			}
 		}
 
-		const content = chatMessages[chatMessages.length - 1].content as string;
+		const text = chatMessages[chatMessages.length - 1].text
 		
-		const blob = await fetch(content).then(r => r.blob());
 		const voice = ($currentVoice.collection === CollectionType.TemplateLibrary ? TalkingTemplateLibrary[$currentVoice.id].identify
 						: ($currentVoice.collection === CollectionType.Custom ? $TalkingVoiceCustom[$currentVoice.id].id 
 						: ($currentVoice.collection === CollectionType.Library ? TalkingVoiceLibrary[$currentVoice.id].identify : "default")
@@ -42,26 +40,33 @@
 		const knowledge = ($currentKnowledge.collection === CollectionType.Custom ?
 						$TalkingKnowledgeCustom[$currentKnowledge.id].id : 'default')	
 								
-		const res = await chatResponse.fetchAudioText(blob);
-		console.log('res ---', res);
-		const eventSource = await chatResponse.fetchAudioStream(res.asr_result, voice, knowledge)
+		// const res = await chatResponse.fetchAudioText(blob);
+		// console.log('res ---', res);
+		const eventSource = await chatResponse.fetchAudioStream(text, voice, knowledge)
 
+		// may get out of order
 		eventSource.addEventListener("message", async (e) => {
 			loading = false;
 			let currentMsg = e.data;
 			if (currentMsg.startsWith("b'")) {
 				const audioUrl = "data:audio/wav;base64," + currentMsg.slice(2, -1)
-				const blob = await fetch(audioUrl).then(r => r.blob());
 				if (chatMessages[chatMessages.length - 1].role == MESSAGE_ROLE.USER) {
-					chatMessages = [...chatMessages, { role: MESSAGE_ROLE.ASSISTANT, content: [URL.createObjectURL(blob),] }]
+					chatMessages = [...chatMessages, { role: MESSAGE_ROLE.ASSISTANT, content: [audioUrl,] }]
 				} else {
 					let content = chatMessages[chatMessages.length - 1].content
-					chatMessages[chatMessages.length - 1].content = [...content, URL.createObjectURL(blob)]
+					chatMessages[chatMessages.length - 1].content = [...content, audioUrl]
 				}
 				scrollToBottom(scrollToDiv);
 			} else if (currentMsg === '[DONE]') {
-				let content = chatMessages[chatMessages.length - 1].content
+				setTimeout(() => {}, 0);
+				let content = chatMessages[chatMessages.length - 1].content as string[]
+				let text = ''
+				for (let url of content) {
+					const blob = await fetch(url).then(r => r.blob());
+					text += (await chatResponse.fetchAudioText(blob)).asr_result + '. '
+				}
 				chatMessages[chatMessages.length - 1].content = [...content, 'done']
+				chatMessages[chatMessages.length - 1].text = text
 			}
 		});
 
@@ -80,7 +85,7 @@
 		bind:this={scrollToDiv}
 	>
 		<ChatMessage
-			type="Assistant"
+			type="assistant"
 			message={`Welcome to Neural Chat! 😊`}
 			displayTimer={false}
 		/>
@@ -88,6 +93,7 @@
 			<ChatMessage
 				type={message.role}
 				message={message.content}
+				text={message.text}
 			/>
 		{/each}
 	</div>
@@ -122,7 +128,7 @@
 
 		<!-- Input -->
 		<div class="flex flex-col items-center">
-			<VoiceButton bind:chatMessages on:done={() => {handleSubmit()}} />
+			<VoiceButton bind:chatMessages on:done={() => {handleSubmit()}} on:start={() => {loading = true}}/>
 		</div>
 	</div>
 </div>

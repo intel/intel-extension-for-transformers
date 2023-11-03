@@ -17,8 +17,9 @@
 """Check the intent of the input user query with LLM."""
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
-    import generate_intent_prompt
-from intel_extension_for_transformers.llm.inference import predict
+     import generate_intent_prompt
+from intel_extension_for_transformers.neural_chat.models.model_utils import predict
+
 
 class IntentDetector:
     def __init__(self):
@@ -32,7 +33,7 @@ class IntentDetector:
         params["prompt"] = prompt
         params["temperature"] = 0.001
         params["top_k"] = 1
-        params["max_new_tokens"] = 5
+        params["max_new_tokens"] = 10
         intent = predict(**params)
         return intent
 

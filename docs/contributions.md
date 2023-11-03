@@ -54,13 +54,13 @@ See [CI Introduction](./CI_introduction.md)
 
 1. How to check third-party dependency license compliance
 	
-    If you are using third-party component by: (1) import lib and uses its API (2) static/dynamic linked (3) copy code and modified (4) other uncertain usage, please contact [Maintainers](mailto:inc.maintainers@intel.com) to check license compliance before push code to repo.
+    If you are using third-party component by: (1) import lib and uses its API (2) static/dynamic linked (3) copy code and modified (4) other uncertain usage, please contact [Maintainers](mailto:itrex.maintainers@intel.com) to check license compliance before push code to repo.
 
 
 ## Support
 
 Submit your questions, feature requests, and bug reports to the
-[GitHub issues](https://github.com/intel/intel-extension-for-transformers/issues) page. You may also reach out to [Maintainers](mailto:inc.maintainers@intel.com).
+[GitHub issues](https://github.com/intel/intel-extension-for-transformers/issues) page. You may also reach out to [Maintainers](mailto:itrex.maintainers@intel.com).
 
 
 ## Contributor Covenant Code of Conduct

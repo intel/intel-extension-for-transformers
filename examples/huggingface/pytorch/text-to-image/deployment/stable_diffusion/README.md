@@ -31,6 +31,7 @@ pip install intel-extension-for-transformers
 
 # Or, install from source code
 cd <intel_extension_for_transformers_folder>
+pip install -r requirements.txt
 pip install -v .
 ```
 

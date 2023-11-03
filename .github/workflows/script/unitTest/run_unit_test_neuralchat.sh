@@ -28,6 +28,24 @@ function pytest() {
 
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
+    echo -e '
+# Kill the neuralchat server processes
+ports="7000 8000 9000"
+# Loop through each port and find associated PIDs
+for port in $ports; do
+    # Use lsof to find the processes associated with the port
+    pids=$(lsof -ti :$port)
+
+    if [ -n "$pids" ]; then
+        echo "Processes running on port $port: $pids"
+        # Terminate the processes gracefully with SIGTERM
+        kill $pids
+        echo "Terminated processes on port $port."
+    else
+        echo "No processes found on port $port."
+    fi
+done
+' >> run.sh
     coverage erase
 
     # run UT
@@ -52,9 +70,20 @@ function pytest() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
+    apt-get update
+    apt-get install ffmpeg -y
+    apt-get install lsof
+    apt-get install libgl1
+    apt-get install -y libgl1-mesa-glx
+    apt-get install -y libgl1-mesa-dev
+    apt-get install libsm6 libxext6 -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch
+    pip install git+https://github.com/UKPLab/sentence-transformers.git
+    pip install git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
+    pip install --upgrade git+https://github.com/UKPLab/sentence-transformers.git
+    pip install -U sentence-transformers
     cd ${WORKING_DIR} || exit 1
     if [ -f "requirements.txt" ]; then
         python -m pip install --default-timeout=100 -r requirements.txt

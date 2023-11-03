@@ -54,9 +54,9 @@ option(NE_SANITIZE_UNDEFINED     "neural_engine: enable undefined sanitizer"    
 # instruction set specific
 option(NE_AVX                    "neural_engine: enable AVX"                                     ON)
 option(NE_AVX2                   "neural_engine: enable AVX2"                                    ON)
-option(NE_AVX512                 "neural_engine: enable AVX512"                                  ON)
-option(NE_AVX512_VBMI            "neural_engine: enable AVX512-VBMI"                             ON)
-option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"                             ON)
+option(NE_AVX512                 "neural_engine: enable AVX512"                                  OFF)
+option(NE_AVX512_VBMI            "neural_engine: enable AVX512-VBMI"                             OFF)
+option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"                             OFF)
 option(NE_FMA                    "neural_engine: enable FMA"                                     ON)
 option(NE_AMX                    "neural_engine: enable AMX"                                     OFF)
 
@@ -83,10 +83,15 @@ option(NE_PROFILING              "neural_engine: use Profiling"                 
 if (NE_PROFILING)
     add_compile_definitions(NE_PERF)
 endif()
+option(NE_BEAM_SEARCH_VERBOSE    "neural_engine: print beam search processing log"               OFF)
+if (NE_BEAM_SEARCH_VERBOSE)
+    add_compile_definitions(NE_BEAM_SEARCH_VERBOSE_ON)
+endif()
 option(NE_GELU_VEC               "neural_engine: enable vec in gelu"                             ON)
 if (NE_GELU_VEC)
     add_compile_definitions(NE_GELU_USE_VEC)
 endif()
+option(NE_PYTHON_API              "neural_engine: use python api"                                  OFF)
 
 if(NE_BUILD_TESTS)
     enable_testing()

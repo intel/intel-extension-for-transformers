@@ -18,7 +18,7 @@ Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
 
 ## 2. Prepare the Model
@@ -462,7 +462,7 @@ python finetune_clm.py \
         --output_dir ./llama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
 ```
@@ -492,7 +492,7 @@ python finetune_clm.py \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
 ```
@@ -535,7 +535,7 @@ python ../../utils/gaudi_spawn.py \
         --output_dir ./llama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
         --distribution_strategy fast_ddp \
@@ -567,7 +567,7 @@ python ../../utils/gaudi_spawn.py \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
         --distribution_strategy fast_ddp \

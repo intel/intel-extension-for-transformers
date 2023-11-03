@@ -28,30 +28,28 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import logging
 from datasets import load_dataset
-from huggingface_hub import Repository, create_repo
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.nn.functional import pad
 
-import transformers
 from transformers import (
     CONFIG_MAPPING,
     MODEL_MAPPING,
     AutoConfig,
-    AutoModelForCausalLM,
-    OPTForCausalLM,
     AutoTokenizer,
     SchedulerType,
     default_data_collator,
-    get_scheduler,
 )
-from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
 from timers import CPUTimer, GPUTimer
 from intel_extension_for_transformers.transformers.pruner import (WeightPruningConfig,
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
+from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate as lm_evaluate
 
 check_min_version("4.27.0.dev0")
 logger = logging.getLogger(__name__)
@@ -84,8 +82,6 @@ class Evaluator:
         step = 0
         for input_ids, label, label_indices in tqdm(self.dataloader):
             with torch.no_grad():
-                # if step == 0:
-                #     model = torch.jit.trace(model, input_ids)
                 step += 1
                 # timing
                 if step > warmup_steps: my_timer.__enter__()
@@ -218,13 +214,13 @@ def parse_args():
     parser.add_argument(
         "--per_device_train_batch_size",
         type=int,
-        default=8,
+        default=1,
         help="Batch size (per device) for the training dataloader.",
     )
     parser.add_argument(
         "--per_device_eval_batch_size",
         type=int,
-        default=8,
+        default=16,
         help="Batch size (per device) for the evaluation dataloader.",
     )
     parser.add_argument(
@@ -269,7 +265,7 @@ def parse_args():
     parser.add_argument(
         "--block_size",
         type=int,
-        default=None,
+        default=512,
         help=(
             "Optional input sequence length after tokenization. The training dataset will be truncated in block of"
             " this size for training. Default to the model max input length for single sentence inputs (take into"
@@ -328,16 +324,21 @@ def parse_args():
             "If passed, LLM loading time and RAM consumption will be benefited."
         ),
     )
-    # pruning config
+    parser.add_argument(
+        "--trust_remote_code", default=True,
+        help="Transformers parameter: use the external repo"
+    )
+    
+     ### DDP mode config
+    parser.add_argument(
+        "--local_rank",
+        type=int, default=-1,
+        help="Automatic DDP Multi-GPU argument, do not modify")
+    
+    # Pruning config
     parser.add_argument(
         "--do_prune", action="store_true",
         help="Whether or not to prune the model"
-    )
-    parser.add_argument(
-        "--max_pruning_steps",
-        type=int,
-        default=None,
-        help="Total number of pruning steps to perform. If provided",
     )
     parser.add_argument(
         "--pruning_pattern",
@@ -346,13 +347,8 @@ def parse_args():
     )
     parser.add_argument(
         "--target_sparsity",
-        type=float, default=0.8,
+        type=float, default=0.5,
         help="Target sparsity of the model."
-    )
-    parser.add_argument(
-        "--pruning_frequency",
-        type=int, default=-1,
-        help="Sparse step frequency for iterative pruning, default to a quarter of pruning steps."
     )
     parser.add_argument(
         "--auto_slim", action="store_true",
@@ -364,17 +360,22 @@ def parse_args():
     )
     parser.add_argument(
         "--max_length",
-        type=int, default=2048,
+        type=int, default=512,
         help="Maximum data length the model can receive."
     )
+    
+    # Evaluation config
+    parser.add_argument("--tasks", default=["lambada_openai"],
+        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'"
+    )
+    parser.add_argument("--eval_fp16", action='store_true',
+        help=" fp16",
+    )
     parser.add_argument(
-        "--trust_remote_code", default=True,
-        help="Transformers parameter: use the external repo")
-    ### DDP mode config
-    parser.add_argument(
-        "--local_rank",
+        "--cuda_eval",
         type=int, default=-1,
         help="Automatic DDP Multi-GPU argument, do not modify")
+    
     
     args = parser.parse_args()
         
@@ -639,12 +640,10 @@ def main():
         torch.backends.cudnn.allow_tf32 = False
         use_cache = model.config.use_cache
         model.config.use_cache = False
-        # if torch.cuda.is_available():     # Larger models(e.g. 80G+) may not load into the video card memory.
-        #     model = model.cuda()
         device = args.device
         if device != 'cpu':
             device = "cuda:"+str(device)
-        pruning = prepare_pruning(configs, model,  dataloader=train_dataloader, device=device)
+        pruning = prepare_pruning(model, configs, dataloader=train_dataloader, device=device)
         model.config.use_cache = use_cache
         
     if args.output_dir is not None:
@@ -654,12 +653,16 @@ def main():
             output_dir += "/before_slim"
         model.save_pretrained(output_dir)
         tokenizer.save_pretrained(output_dir)
+        logger.info(f"The model has been exported to {output_dir}")
         
-    if torch.cuda.is_available():
-        model = model.cuda()
+    if device != 'cpu': 
+        model = model.to(device)
+        logger.info(f"*****  Evaluation in GPU mode.  *****")
+    else:
+        logger.info(f"*****  Evaluation in CPU mode.  *****")
     model.eval()
     if args.evaluation_dataset_name != None:
-        dataset_eval = load_dataset( 
+        dataset_eval = load_dataset(
             # for example:use the_pile's validation set for pruning, and lambada dataset for eval
             args.evaluation_dataset_name,
             args.dataset_config_name,
@@ -672,6 +675,19 @@ def main():
     def eval_func(model):
         acc, avg_latency = evaluator.evaluate(model)
         return acc, avg_latency
+    
+    model_name = args.model_name_or_path
+    if args.eval_fp16:
+        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float16'
+    else:
+        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float32'
+    eval_batch = args.per_device_eval_batch_size
+    
+    results = lm_evaluate(model="hf-causal",
+                        model_args=model_args,
+                        user_model=model, tasks=args.tasks,
+                        device=device,
+                        batch_size=eval_batch)
 
     if not args.auto_slim:
         # only eval
@@ -698,4 +714,5 @@ def main():
     
 if __name__ == "__main__":
     main()
+
 

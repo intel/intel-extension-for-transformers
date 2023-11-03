@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
 
 RUN ln -sf $(which python3) /usr/bin/python
 
-RUN python -m pip install --no-cache-dir pylint==2.12.1\
+RUN python -m pip install --no-cache-dir pylint==2.17.5\
     bandit==1.7.4\
     pyspelling\
     pydocstyle

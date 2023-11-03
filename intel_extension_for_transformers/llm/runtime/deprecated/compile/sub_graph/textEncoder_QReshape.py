@@ -82,6 +82,7 @@ class TextEncoder_QReshape(Pattern):
 
 
                     head_num_idx = False
+                    head_num = 0
                     if pack_node.input_tensors[1].data != None:
                         head_num_idx = 1
                         head_num = int(pack_node.input_tensors[1].data)

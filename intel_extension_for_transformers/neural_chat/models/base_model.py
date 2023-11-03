@@ -17,12 +17,13 @@
 
 from abc import ABC
 from typing import List
-import os
+import os, types
 from fastchat.conversation import get_conv_template, Conversation
-from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream, MODELS
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
+from .model_utils import load_model, predict, predict_stream, MODELS
+from ..prompts import PromptTemplate
 
 
 def construct_parameters(query, model_name, device, config):
@@ -41,8 +42,8 @@ def construct_parameters(query, model_name, device, config):
     params["force_words_ids"] = config.force_words_ids
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
+    params["ipex_int8"] = config.ipex_int8
     params["device"] = device
-    params["task"] = config.task
     return params
 
 class BaseModel(ABC):
@@ -65,6 +66,8 @@ class BaseModel(ABC):
         self.intent_detection = False
         self.cache = None
         self.device = None
+        self.conv_template = None
+        self.ipex_int8 = None
 
     def match(self, model_path: str):
         """
@@ -92,22 +95,31 @@ class BaseModel(ABC):
             "device": "cuda",
             "use_hpu_graphs": True,
             "cpu_jit": False,
+            "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
+            "hf_access_token": "user's huggingface access token"
         }
         """
         self.model_name = kwargs["model_name"]
         self.device = kwargs["device"]
+        self.use_hpu_graphs = kwargs["use_hpu_graphs"]
+        self.cpu_jit = kwargs["cpu_jit"]
+        self.use_cache = kwargs["use_cache"]
+        self.ipex_int8 = kwargs["ipex_int8"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
+                   ipex_int8=kwargs["ipex_int8"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
-                   optimization_config=kwargs["optimization_config"])
+                   optimization_config=kwargs["optimization_config"],
+                   hf_access_token=kwargs["hf_access_token"],
+                   use_llm_runtime=kwargs["use_llm_runtime"])
 
     def predict_stream(self, query, config=None):
         """
@@ -119,7 +131,63 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+        config.device = self.device
+        config.use_hpu_graphs = self.use_hpu_graphs
+        config.cpu_jit = self.cpu_jit
+        config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
+
+        if is_audio_file(query):
+            if not os.path.exists(query):
+                raise ValueError(f"The audio file path {query} is invalid.")
+
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+              "starcoder" in self.model_name:
+            query_include_prompt = True
+
+        # plugin pre actions
+        link = []
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "asr" and not is_audio_file(query):
+                            continue
+                        if plugin_name == "retrieval":
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template, link
+                        else:
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                        if plugin_name == "safety_checker" and response:
+                            return "Your query contains sensitive words, please try another query.", link
+                        else:
+                            if response != None and response != False:
+                                query = response
+        assert query is not None, "Query cannot be None."
+
+        if not query_include_prompt:
+            query = self.prepare_prompt(query, self.model_name, config.task)
+        response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+        def is_generator(obj):
+            return isinstance(obj, types.GeneratorType)
+
+        # plugin post actions
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        if plugin_name == "safety_checker" and is_generator(response):
+                            continue
+                        response = plugin_instance.post_llm_inference_actions(response)
+
+        return response, link
 
     def predict(self, query, config=None):
         """
@@ -132,9 +200,21 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
+        config.device = self.device
+        config.use_hpu_graphs = self.use_hpu_graphs
+        config.cpu_jit = self.cpu_jit
+        config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
+
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
+
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+               "starcoder" in self.model_name:
+            query_include_prompt = True
 
         # plugin pre actions
         for plugin_name in get_registered_plugins():
@@ -145,15 +225,20 @@ class BaseModel(ABC):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
                         else:
-                            query = response
+                            if response != None and response != False:
+                                query = response
         assert query is not None, "Query cannot be None."
 
+        if not query_include_prompt:
+            query = self.prepare_prompt(query, self.model_name, config.task)
         # LLM inference
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 
@@ -197,7 +282,39 @@ class BaseModel(ABC):
         Returns:
             Conversation: A default conversation template.
         """
-        return get_conv_template("one_shot")
+        return get_conv_template("zero_shot")
+
+    def get_conv_template(self, model_path: str, task: str = "") -> Conversation:
+        """
+        Get the conversation template for the given model path or given task.
+
+        Args:
+            model_path (str): Path to the model.
+            task (str): Task type, one of [completion, chat, summarization].
+
+        Returns:
+            Conversation: A conversation template.
+        """
+        if self.conv_template:
+            return
+        if not task:
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+        else:
+            if task == "completion":
+                name = "alpaca_without_input"
+            elif task == "chat":
+                name = "neural-chat-7b-v2"
+            elif task == "summarization":
+                name = "summarization"
+            else:
+                raise NotImplementedError(f"Unsupported task {task}.")
+            self.conv_template = PromptTemplate(name)
+
+    def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
+        self.get_conv_template(model_path, task)
+        self.conv_template.append_message(self.conv_template.roles[0], prompt)
+        self.conv_template.append_message(self.conv_template.roles[1], None)
+        return self.conv_template.get_prompt()
 
     def register_plugin_instance(self, plugin_name, instance):
         """

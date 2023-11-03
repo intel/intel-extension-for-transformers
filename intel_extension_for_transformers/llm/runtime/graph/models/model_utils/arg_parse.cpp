@@ -84,9 +84,6 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
     }
 
     if (arg == "-s" || arg == "--seed") {
-#if defined(GGML_USE_CUBLAS)
-      fprintf(stderr, "WARNING: when using cuBLAS generation results are NOT guaranteed to be reproducible.\n");
-#endif
       if (++i >= argc) {
         invalid_param = true;
         break;
@@ -244,6 +241,14 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.n_keep = std::stoi(argv[i]);
+    } else if (arg == "--n_discard") {
+      if (++i >= argc) {
+        invalid_param = true;
+        break;
+      }
+      params.n_discard = std::stoi(argv[i]);
+    } else if (arg == "--shift-roped-k") {
+      params.shift_roped_k = true;
     } else if (arg == "-m" || arg == "--model") {
       if (++i >= argc) {
         invalid_param = true;
@@ -298,7 +303,7 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
     } else if (arg == "--perplexity") {
       params.perplexity = true;
     } else if (arg == "--ignore-eos") {
-      params.logit_bias[model_token_eos()] = -INFINITY;
+      // params.logit_bias[ctx->vocab.eos_token_id] = -INFINITY;
     } else if (arg == "--no-penalize-nl") {
       params.penalize_nl = false;
     } else if (arg == "-l" || arg == "--logit-bias") {
@@ -458,6 +463,13 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
   fprintf(stderr, "  --keep                number of tokens to keep from the initial prompt (default: %d, -1 = all)\n",
           params.n_keep);
+  fprintf(stderr,
+          "  --n_discard           number of tokens will be discarded (default: %d, -1 = half of tokens will be "
+          "discarded)\n",
+          params.n_discard);
+  fprintf(stderr,
+          "  --shift-roped-k       use ring-buffer and thus do not need re-computing after reaching context size "
+          "(default: disabled)\n");
   if (model_mlock_supported()) {
     fprintf(stderr, "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
   }
