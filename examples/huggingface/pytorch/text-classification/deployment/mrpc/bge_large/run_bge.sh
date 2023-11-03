@@ -18,9 +18,9 @@
 #
 
 OUTPUT_DIR=$(pwd)
-LOG_NAME="bert_base_mrpc.log"
+LOG_NAME="bge_mrpc.log"
 DATASET="mrpc"
-MODEL_NAME_OR_PATH="textattack/bert-base-uncased-MRPC"
+MODEL_NAME_OR_PATH="BAAI/bge-base-en-v1.5"
 BATCH_SIZE=8
 WARM_UP=100
 SEQUENCE_LEN=128
