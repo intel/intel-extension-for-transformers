@@ -302,6 +302,7 @@ class DPOTrainer(Trainer):
 
 
 if is_optimum_habana_available(): # pragma: no cover
+    # pylint: disable=E0611
     from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):
         r"""Initialize habana
