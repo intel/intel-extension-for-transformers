@@ -18,6 +18,7 @@
 
 import os
 import torch
+import intel_extension_for_pytorch
 import gbits
 from functools import reduce
 from operator import mul
