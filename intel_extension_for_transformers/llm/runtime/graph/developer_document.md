@@ -101,7 +101,7 @@ fout.write(struct.pack("i", hparams["num_attention_heads"]))
 fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
 fout.write(struct.pack("i", hparams["num_hidden_layers"]))
 ```
-The above `fout` is the file we need to get, and here the `num_attention`, `n_head_kv`, and `num_hidden_layer` from hparams is written into fout.
+The above `fout` is the file we need to get, and the `num_attention`, `n_head_kv`, and `num_hidden_layer` from hparams is written into fout.
 
 ## 1.2.	Vocabulary
 As the name implies, a model's vocabulary comprises components that are used by the model to generate language (text). However, unlike the vocabulary of a human, which consists of words, the vocabulary of a large language model consists of "tokens". A token can be an entire word, but oftentimes they are word fragments. Just like humans can compose millions of words from just a dozen or two letters, large language models use tokens to express a large number of words from a relatively smaller number of components. Consider a vocabulary with the following tokens: `whi`, `ch`, `le`, `who`, and `a`; this vocabulary can be used to create the English words `"which"`, `"while"`, `"who"`, `"a"`, and `"leach"`. How would the behavior change if the model contained the following tokens: `wh`, `ich`, `ile`, `o`, and `leach`? Choices such as these allow model-creators to tune the behavior and performance of their models.
@@ -116,7 +116,7 @@ byte_decoder = {v:k for k, v in byte_encoder.items()}
 ```
 
 ## 1.3.	Model weights
-The final, and largest, component of a ITREX GRAPH file is the weights of the LLM that the file represents. Abstractly, a large language model is software that is used to generate language - just like software that is used to generate images can be improved by increasing the number of colors with which images can be rendered, large language models can be improved by increasing the number of weights in the model. The total number of weights in a model is referred to as the "size" of that model. For example, the dolly-v2-3b implementation of the gpt-neox-20b language model architecture is available in several sizes, like 3B and 20B, which stand for 3 billion and 20 billion, respectively. These numbers refer to the total number of weights in that model. 
+Finally, and largest, component of a ITREX GRAPH file is the weights of the LLM that the file represents. Abstractly, a large language model is software that is used to generate language - just like software that is used to generate images can be improved by increasing the number of colors with which images can be rendered, large language models can be improved by increasing the number of weights in the model. The total number of weights in a model is referred to as the "size" of that model. For example, the dolly-v2-3b implementation of the gpt-neox-20b language model architecture is available in several sizes, like 3B and 20B, which stand for 3 billion and 20 billion, respectively. These numbers refer to the total number of weights in that model.
 
 As described in the hyperparameters section, weights are grouped in sets called "layers", which, like hyperparameters, have structures that are uniquely defined by the model architecture; within a layer, weights are grouped in structures called "tensors". So, for instance, both dolly-v2-3B and gpt-neox-20B use layers that comprise the same tensors, but dolly-v2-3B has relatively fewer layers when compared to gpt-neox-20B.
 Here we will use [convert_gptneox.py](https://github.com/intel/intel-extension-for-transformers/blob/graph_developer_document/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptneox.py#L149) as an example to convert model weights to `fout`.
@@ -173,7 +173,7 @@ and update [model_name_to_arch()](https://github.com/intel/intel-extension-for-t
 +#include "models/model_utils/model_files.h"
 +#include "models/model_utils/model_types.h"
 
-+enum baichuan_model {
++enum new_model {
 +  NEW_MDOEL_UNKNOWN,
 +  NEW_MODEL_13B,
 +};
@@ -316,12 +316,12 @@ Most of our model examples only support single prompt processing. You need to ad
 + public:
 + virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
 +                                                 ne_type type) override {
-+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'
++    bool quantize = layername.rfind("weight") == layername.size() - 6;  // size("weight") = 6
 +    if (layername == "model.embed_tokens.weight") {
 +      // special layer process, can be loaded by config file
 +      return quant_params_internal();  // return q4_0 to cover the usage of getrow
 +    }
-+    quantize &= (ne.size() == 2);  // quantize only linear layers
++    quantize &= (ne.size() == 2);  // quantize only linear layers, which are two-dim
 +    if (quantize) {
 +      return mGCfg;  // use global quant config
 +    } else {
