@@ -2343,7 +2343,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
     cur_lens.push_back(cur_beams[i].token_ids.size());
   }
   lp.process(cur_lens, ctx->vocab.eos_token_id);
-  const int raw_k = sample_scale * beam_size;
+  const int raw_k = sample_scale * (*std::max_element(num_beams.begin(), num_beams.end()));
   // raw logits top_k
   std::vector<std::vector<beam_next_token>> raw_top_k = li.vocab_top_k(raw_k);
   MODEL_ASSERT(raw_top_k.size() == ctx->batch_size);  // request_running_bs * num_beam
@@ -2358,7 +2358,6 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
   MODEL_ASSERT(num_beams.size() == request_running_bs);
   std::vector<beam_next_token> res;
   res.reserve(sample_scale * std::accumulate(num_beams.begin(), num_beams.end(), 0));
-  std::vector<beam_next_token> min_heap;
   const uint32_t n_vocab = ctx->model.hparams.n_vocab;
   size_t row_off = 0;
   auto comp = [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; };
@@ -2366,8 +2365,9 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
     const int num_beam = num_beams[i];
     const int sample_k = sample_scale * num_beam;
     MODEL_ASSERT(raw_k >= sample_k);
-    min_heap.clear();
+    std::vector<beam_next_token> min_heap;
     min_heap.reserve(sample_k);
+    row_off += i * num_beam;
     for (int j = 0; j < num_beam; ++j) {
       int n = 0;
       if (j == 0) {  // init heap
@@ -2389,7 +2389,6 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
         }
       }
     }
-    row_off += i * num_beam;
     std::sort(min_heap.begin(), min_heap.end(),
               [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; });
     for (const auto b : min_heap) {
@@ -2456,15 +2455,12 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("top_k next_tokens: \n");
-  int kk = 0;
-  for (int bb = 0; bb < ctx->request_running_bs; ++bb) {
-    printf("------batch_%d------\n", bb);
-    for (; kk < next_tokens.size(); ++kk) {
-      printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
-             (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
-             next_tokens[kk].beam_idx);
-      if ((kk + 1) % (sample_scale * beam_size) == 0) break;
-    }
+  int bb = 0;
+  for (int kk = 0; kk < next_tokens.size(); ++kk) {
+    if (kk % beam_size == 0) printf("------batch_%d------\n", bb++);
+    printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
+           (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
+           next_tokens[kk].beam_idx);
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
@@ -2644,7 +2640,7 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
   }
   const beam& top_b = beam_hypos[request_idx].top1();
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
-  printf("final beam of request_idx %h:\n", h);
+  printf("final beam of request_idx %h:\n", request_idx);
   top_b.print();
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
   printf("========================================================================================= \n");
@@ -2701,15 +2697,12 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
       printf("========================================================================================== \n");
       printf("top_k next_tokens: \n");
-      int kk = 0;
-      for (int bb = 0; bb < ctx->request_running_bs; ++bb) {
-        printf("------batch_%d------\n", bb);
-        for (; kk < next_tokens.size(); ++kk) {
-          printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
-                 (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
-                 next_tokens[kk].beam_idx);
-          if ((kk + 1) % (beam_size) == 0) break;
-        }
+      int bb = 0;
+      for (int kk = 0; kk < next_tokens.size(); ++kk) {
+        if (kk % beam_size == 0) printf("------batch_%d------\n", bb++);
+        printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
+               (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
+               next_tokens[kk].beam_idx);
       }
       printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif

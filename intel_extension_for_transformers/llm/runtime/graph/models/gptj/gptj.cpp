@@ -58,8 +58,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
   const int n_past = inputs[0].n_past;
   const int beam_size = lctx.beam_search ? lctx.beam_size : 1;
   std::vector<int> block_ids;
+  std::vector<int> n_padding;
+  bool no_padding = true;
   for (int i = 0; i < batch_size; ++i) {
     block_ids.push_back(inputs[i].request_idx * beam_size + inputs[i].beam_idx);
+    n_padding.push_back(inputs[i].n_padding);
+    if (no_padding && inputs[i].n_padding !=0) no_padding = false;
   }
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -373,8 +377,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
       ne_set_name(KQ_scaled, "KQ_scaled");
 
       // KQ_scaled = mask_past(KQ_scaled)
-      if (n_total == 0 || !shift_roped_k) {
-        KQ_scaled = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+      if (n_total == 0 || !shift_roped_k || !no_padding) {
+        KQ_scaled = ne_diag_mask_inf_with_padding_inplace(ctx0, KQ_scaled, n_past, n_padding.data());
         ne_set_name(KQ_scaled, "KQ_masked");
       }
 

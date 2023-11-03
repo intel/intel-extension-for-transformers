@@ -381,10 +381,12 @@ struct model_input {
   int request_idx = -1;
   // beam id in beam search
   int beam_idx = 0;
-  // TODO padding related, mask
-  // bool padding = false;
-  // int padding_side = 0; (left or right)
-  // uint32_t padding length = 0;
+  // padding related, attention mask
+  // (0: left, 1: right)
+  // only support padding left in decoder only model
+  int padding_side = 0;
+  // padding length
+  uint32_t n_padding = 0;
 };
 
 struct model_context_params {
