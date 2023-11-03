@@ -1,0 +1,41 @@
+:orphan:
+
+:py:mod:`reward_modeling`
+=========================
+
+.. py:module:: reward_modeling
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   reward_modeling.ModelArguments
+   reward_modeling.DataTrainingArguments
+   reward_modeling.FinetuningArguments
+
+
+
+
+.. py:class:: ModelArguments
+
+
+   Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
+
+
+.. py:class:: DataTrainingArguments
+
+
+   Arguments pertaining to what data we are going to input our model for training and eval.
+
+
+.. py:class:: FinetuningArguments
+
+
+   Arguments of finetune we are going to apply on the model.
+
+

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reinforcement Learning from Human Feedback (RLHF) &mdash; Intel® Extension for Transformers 0.1.dev1+g8543e2f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Reinforcement Learning from Human Feedback (RLHF)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/ppo_pipeline/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="reinforcement-learning-from-human-feedback-rlhf">
+<h1>Reinforcement Learning from Human Feedback (RLHF)<a class="headerlink" href="#reinforcement-learning-from-human-feedback-rlhf" title="Link to this heading"></a></h1>
+<p>Models such as ChatGPT, GPT-4, and Claude are powerful language models that have been fine-tuned using a method called Reinforcement Learning from Human Feedback (RLHF) to be better aligned with how we expect them to behave and would like to use them. we run RLHF through three steps.</p>
+<p>** Supervised Fine-tuning (SFT)<br />** Reward / preference modeling (RM)<br />** Reinforcement Learning from Human Feedback (RLHF)</p>
+<section id="environment">
+<h2>1. Environment<a class="headerlink" href="#environment" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="prepare-reference-dataset">
+<h2>2. Prepare reference dataset<a class="headerlink" href="#prepare-reference-dataset" title="Link to this heading"></a></h2>
+<p>We select 12k examples from <a class="reference external" href="https://arxiv.org/abs/2306.02707">Orca</a> style dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/OpenOrca">Open-Orca/OpenOrca</a>, and regard its completions that are generated from GPT-4 or GPT-3.5 as chosen response. Simply and automatically, we use llama-2-13b-chat model to generate corresponding reject responses. For details of the dataset, you can refer <a class="reference external" href="https://huggingface.co/datasets/Intel/orca_dpo_pairs">Intel/orca_dpo_pairs</a></p>
+</section>
+<section id="supervised-fine-tuning-sft">
+<h2>3. Supervised Fine-tuning (SFT)<a class="headerlink" href="#supervised-fine-tuning-sft" title="Link to this heading"></a></h2>
+<p>you could refer https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction</p>
+</section>
+<section id="reward-preference-modeling-rm-fine-tuning">
+<h2>4. Reward / preference modeling (RM) Fine-tuning<a class="headerlink" href="#reward-preference-modeling-rm-fine-tuning" title="Link to this heading"></a></h2>
+<section id="training-on-cuda">
+<h3>Training on CUDA<a class="headerlink" href="#training-on-cuda" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">torchrun</span><span class="w"> </span><span class="o">--</span><span class="n">nnodes</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="o">--</span><span class="n">nproc_per_node</span><span class="w"> </span><span class="mi">8</span><span class="w">  </span><span class="n">reward_modeling</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="n">meta</span><span class="o">-</span><span class="n">llama</span><span class="o">/</span><span class="n">Llama</span><span class="mi">-2-7</span><span class="n">b</span><span class="o">-</span><span class="n">hf</span><span class="w"> </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="o">&lt;</span><span class="n">output</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">log_level</span><span class="w"> </span><span class="n">info</span><span class="w">  </span><span class="o">--</span><span class="n">num_train_epochs</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="o">--</span><span class="n">per_device_train_batch_size</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">--</span><span class="n">hf_access_token</span><span class="w"> </span><span class="n">xxxxxx</span>
+</pre></div>
+</div>
+</section>
+<section id="training-on-habana">
+<h3>Training on Habana<a class="headerlink" href="#training-on-habana" title="Link to this heading"></a></h3>
+<p>Follow install guidance in <a class="reference external" href="https://github.com/huggingface/optimum-habana">optimum-habana</a></p>
+<p>single card finetune</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span><span class="w"> </span><span class="n">reward_modeling</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="n">meta</span><span class="o">-</span><span class="n">llama</span><span class="o">/</span><span class="n">Llama</span><span class="mi">-2-7</span><span class="n">b</span><span class="o">-</span><span class="n">hf</span><span class="w"> </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="o">&lt;</span><span class="n">output</span><span class="o">&gt;</span><span class="w">  </span><span class="o">--</span><span class="n">log_level</span><span class="w"> </span><span class="n">info</span><span class="w">  </span><span class="o">--</span><span class="n">num_train_epochs</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">--</span><span class="n">use_habana</span><span class="w"> </span><span class="o">--</span><span class="n">use_lazy_mode</span><span class="w"> </span><span class="o">--</span><span class="n">hf_access_token</span><span class="w"> </span><span class="n">xxxxxx</span>
+</pre></div>
+</div>
+<p>multi card finetunes</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="p">..</span><span class="o">/</span><span class="n">instruction</span><span class="o">/</span><span class="n">gaudi_spawn</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">world_size</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">--</span><span class="n">use_mpi</span><span class="w"> </span><span class="n">reward_modeling</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">model_name_or_path</span><span class="w"> </span><span class="n">meta</span><span class="o">-</span><span class="n">llama</span><span class="o">/</span><span class="n">Llama</span><span class="mi">-2-7</span><span class="n">b</span><span class="o">-</span><span class="n">hf</span><span class="w"> </span><span class="o">--</span><span class="n">output_dir</span><span class="w"> </span><span class="o">&lt;</span><span class="n">output</span><span class="o">&gt;</span><span class="w">  </span><span class="o">--</span><span class="n">log_level</span><span class="w"> </span><span class="n">info</span><span class="w">  </span><span class="o">--</span><span class="n">num_train_epochs</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">--</span><span class="n">use_habana</span><span class="w"> </span><span class="o">--</span><span class="n">use_lazy_mode</span><span class="w"> </span><span class="o">--</span><span class="n">hf_access_token</span><span class="w"> </span><span class="n">xxxxxx</span><span class="w"> </span><span class="o">--</span><span class="n">ddp_find_unused_parameters</span><span class="w"> </span><span class="n">True</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f9ae8ab4610> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
