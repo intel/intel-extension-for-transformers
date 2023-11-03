@@ -165,7 +165,7 @@ def _replace_linear(
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme
                         )
-                    elif device == "device" or device == torch.device("xpu"):
+                    elif device == "xpu" or device == torch.device("xpu"):
                         from .nn.gpu import QuantizedLinearGPU
                         model._modules[name] = QuantizedLinearGPU(
                             in_features,
