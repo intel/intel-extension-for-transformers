@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.neural-chat-coveragerc"
 LOG_DIR=/log_dir
@@ -77,10 +77,23 @@ done
     coverage xml -o ${coverage_log_dir}/coverage.xml --rcfile=${COVERAGE_RCFILE}
 
     # check UT status
-    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ] || [ $(grep -c "core dumped" ${ut_log_name}) != 0 ] || [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ] || [ $(grep -c "OK" ${ut_log_name}) == 0 ];then
-        $BOLD_RED && echo "Find errors in UT test, please check the output..." && $RESET
+    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [FAILED]..." && $RESET
         exit 1
     fi
+    if [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [ModuleNotFoundError:]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "core dumped" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [core dumped]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
+        $BOLD_RED && echo "No pass case found, please check the output..." && $RESET
+        exit 1
+    fi
+
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 
