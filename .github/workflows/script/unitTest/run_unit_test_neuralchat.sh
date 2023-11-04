@@ -85,11 +85,7 @@ done
 }
 
 function main() {
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     apt-get update
     apt-get install ffmpeg -y
     apt-get install lsof
@@ -97,19 +93,13 @@ function main() {
     apt-get install -y libgl1-mesa-glx
     apt-get install -y libgl1-mesa-dev
     apt-get install libsm6 libxext6 -y
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     python -m pip install --upgrade --force-reinstall torch
     pip install git+https://github.com/UKPLab/sentence-transformers.git
     pip install git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
     pip install --upgrade git+https://github.com/UKPLab/sentence-transformers.git
     pip install -U sentence-transformers
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     cd ${WORKING_DIR} || exit 1
     if [ -f "requirements.txt" ]; then
         python -m pip install --default-timeout=100 -r requirements.txt
@@ -118,14 +108,10 @@ function main() {
         echo "Not found requirements.txt file."
     fi
     echo "test on ${test_name}"
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
     elif [[ $test_name == "baseline" ]]; then
         pytest "${LOG_DIR}/coverage_base"  
     fi
-    echo "llsu for debug..."
-    date +'%Y-%m-%d %H:%M:%S'
 }
 main
