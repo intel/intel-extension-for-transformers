@@ -24,12 +24,10 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
-from intel_extension_for_transformers.utils.logger import Logger, log
+from intel_extension_for_transformers.utils import logger
 from .constants import ResponseCodes, MEMORY_THRESHOLD_GB, STORAGE_THRESHOLD_GB, GPU_MEMORY_THRESHOLD_MB
 import psutil
 import torch
-
-Logger().get_logger().setLevel(log.level)
 
 
 def build_chatbot(config: PipelineConfig=None):
@@ -49,7 +47,7 @@ def build_chatbot(config: PipelineConfig=None):
     # Check for out of memory
     available_memory = psutil.virtual_memory().available / (1024 ** 3)
     if available_memory < MEMORY_THRESHOLD_GB: # The 4-bit 7B model requires a minimum of 7GB of memory
-        log.error("LLM requires a minimum of 8GB of free system memory, \
+        logger.error("LLM requires a minimum of 8GB of free system memory, \
                    but the current available memory is insufficient.")
         return ResponseCodes.ERROR_OUT_OF_MEMORY
 
@@ -57,7 +55,7 @@ def build_chatbot(config: PipelineConfig=None):
     available_storage = psutil.disk_usage('/').free
     available_storage_gb = available_storage / (1024 ** 3)
     if available_storage_gb < STORAGE_THRESHOLD_GB:
-        log.error("LLM requires a minimum of 30GB of free system storage, \
+        logger.error("LLM requires a minimum of 30GB of free system storage, \
                    but the current available storage is insufficient.")
         return ResponseCodes.ERROR_OUT_OF_STORAGE
 
@@ -67,7 +65,7 @@ def build_chatbot(config: PipelineConfig=None):
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
-        log.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
+        logger.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
         return ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
 
     if config.device == "gpu":
@@ -105,7 +103,7 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        log.error(f"Unsupported model name or path {config.model_name_or_path}, \
+        logger.error(f"Unsupported model name or path {config.model_name_or_path}, \
                    only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
         return ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
 
@@ -142,7 +140,7 @@ def build_chatbot(config: PipelineConfig=None):
                     from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
                     plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
-                    log.error(f"Unsupported plugin: {plugin_name}")
+                    logger.error(f"Unsupported plugin: {plugin_name}")
                     return ResponseCodes.ERROR_PLUGIN_NOT_SUPPORTED
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])

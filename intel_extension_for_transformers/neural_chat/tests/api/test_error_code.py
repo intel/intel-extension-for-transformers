@@ -31,16 +31,19 @@ class TestErrorCodeBuilder(unittest.TestCase):
     def tearDown(self) -> None:
         return super().tearDown()
 
-    def test_build_chatbot_success():
-        config = PipelineConfig()
+    def test_build_chatbot_success(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
-        unittest.assertIsNotInstance(chatbot, str)
+        self.assertIsNot(chatbot, str)
 
-    def test_build_chatbot_out_of_memory():
-        config = PipelineConfig()
+    def test_build_chatbot_out_of_memory(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         # Mock psutil.virtual_memory().available to return less available memory
         with patch('psutil.virtual_memory') as mock_virtual_memory:
             mock_virtual_memory.return_value.available = 7 * 1024 ** 3  # 7GB
             result = build_chatbot(config)
         breakpoint()
         assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+
+if __name__ == '__main__':
+    unittest.main()
