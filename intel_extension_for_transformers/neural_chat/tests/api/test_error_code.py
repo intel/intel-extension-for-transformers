@@ -60,7 +60,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
 
     def test_build_chatbot_out_of_gpu_memory(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        config.device = "gpu"
+        config.device = "cuda"
         # Mock torch.cuda.is_available() to return True
         with patch('torch.cuda.is_available') as mock_cuda_available:
             mock_cuda_available.return_value = True
@@ -80,7 +80,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
         }
         config = PipelineConfig(model_name_or_path="unsupported_model", plugins=plugins)
         result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_MODEL_NOT_FOUND
+        assert result == ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
 
 if __name__ == '__main__':
     unittest.main()

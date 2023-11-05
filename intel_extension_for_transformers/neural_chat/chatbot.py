@@ -56,7 +56,7 @@ def build_chatbot(config: PipelineConfig=None):
     available_storage_gb = available_storage / (1024 ** 3)
     if available_storage_gb < STORAGE_THRESHOLD_GB:
         logger.error("LLM requires a minimum of 30GB of free system storage, \
-                   but the current available storage is insufficient.")
+                     but the current available storage is insufficient.")
         return ResponseCodes.ERROR_OUT_OF_STORAGE
 
     global plugins
@@ -68,7 +68,7 @@ def build_chatbot(config: PipelineConfig=None):
         logger.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
         return ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
 
-    if config.device == "gpu":
+    if config.device == "cuda":
         if torch.cuda.is_available():
             device = torch.device("cuda")
             remaining_memory = torch.cuda.get_device_properties(device).total_memory - \
