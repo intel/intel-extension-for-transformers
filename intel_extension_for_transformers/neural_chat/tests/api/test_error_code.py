@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import unittest
-import os
+import torch
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
@@ -61,9 +61,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
     def test_build_chatbot_out_of_gpu_memory(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "cuda"
-        # Mock torch.cuda.is_available() to return True
-        with patch('torch.cuda.is_available') as mock_cuda_available:
-            mock_cuda_available.return_value = True
+        with torch.cuda.is_available():
             # Mock torch.cuda.get_device_properties to return less GPU memory
             with patch('torch.cuda.get_device_properties') as mock_get_device_properties:
                 mock_get_device_properties.return_value.total_memory = 8 * 1024 ** 3  # 8GB
