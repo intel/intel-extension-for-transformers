@@ -193,9 +193,28 @@ def laod_structured_data(input, process, max_length):
         content = load_faq_xlsx(input)
     elif "enterprise_docs" in input and input.endswith("xlsx"):
         content = load_general_xlsx(input)
+    elif input.endswith("csv"):
+        content = load_csv(input)
     else:
         content = load_xlsx(input)
     return content
+
+
+def load_csv(input):
+    """ Load the csv file."""
+    df = pd.read_csv(input)
+    all_data = []
+    documents = []
+    for index, row in df.iterrows():
+        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
+        all_data.append(sub)
+
+    for data in all_data:
+        data.replace('#', " ")
+        data = re.sub(r'\s+', ' ', data)
+        new_doc = [data, input]
+        documents.append(new_doc)
+    return documents
 
 
 def get_chuck_data(content, max_length, input):
