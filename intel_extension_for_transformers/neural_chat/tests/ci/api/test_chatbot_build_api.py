@@ -68,7 +68,7 @@ class TestChatbotBuilder(unittest.TestCase):
         if os.path.exists(audio_path):
             response = chatbot.predict(query=audio_path, config=gen_config)
         else:
-            response = chatbot.predict(query="../../assets/audio/sample.wav", config=gen_config)
+            response = chatbot.predict(query="../../../assets/audio/sample.wav", config=gen_config)
 
         self.assertIsNotNone(response)
         print("output audio path: ", response)
@@ -86,7 +86,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../../../README.md"
+        plugins.retrieval.args["input_path"] = "../../../README.md"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)

@@ -22,10 +22,23 @@ import os
 
 
 class TestNER(unittest.TestCase):
-    
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        for filename in os.getcwd():
+            if re.match(r'ne_.*_fp32.bin', filename) or re.match(r'ne_.*_q.bin', filename):
+                file_path = os.path.join(os.getcwd(), filename)
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted file: {filename}")
+                except OSError as e:
+                    print(f"Error deleting file {filename}: {str(e)}")
+        return super().tearDown()
+
     def test_fp32(self):
         os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat")
+        ner_obj = NamedEntityRecognition(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b")
         query = "Show me photos taken in Shanghai."
         result = ner_obj.inference(query=query)
         _result = {
@@ -39,7 +52,7 @@ class TestNER(unittest.TestCase):
 
     def test_bf16(self):
         os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat", bf16=True)
+        ner_obj = NamedEntityRecognition(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b", bf16=True)
         query = "Show me photos taken in Shanghai."
         result = ner_obj.inference(query=query)
         _result = {
@@ -53,7 +66,7 @@ class TestNER(unittest.TestCase):
 
     def test_int8(self):
         os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognitionINT(model_path="mosaicml/mpt-7b-chat")
+        ner_obj = NamedEntityRecognitionINT(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b")
         query = "Show me photos taken in Shanghai."
         result = ner_obj.inference(query=query, threads=8)
         _result = {
@@ -67,7 +80,7 @@ class TestNER(unittest.TestCase):
 
     def test_int4(self):
         os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognitionINT(model_path="mosaicml/mpt-7b-chat", 
+        ner_obj = NamedEntityRecognitionINT(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b", 
                                             compute_dtype="int8", 
                                             weight_dtype="int4")
         query = "Show me photos taken in Shanghai."

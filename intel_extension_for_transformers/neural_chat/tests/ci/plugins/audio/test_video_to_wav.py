@@ -24,15 +24,31 @@ import unittest
 
 class TestVideo2Wav(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree("../assets/raw", ignore_errors=True)
-        os.mkdir("../assets/raw")
+        video_path = \
+            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/"
+        if os.path.exists(video_path):
+            shutil.rmtree(video_path+"../raw", ignore_errors=True)
+            os.mkdir(video_path+"../raw")
+        else:
+            shutil.rmtree("../../../../assets/raw", ignore_errors=True)
+            os.mkdir("../../../../assets/raw")
 
     def tearDown(self) -> None:
-        shutil.rmtree("../assets/raw", ignore_errors=True)
-    
+        video_path = \
+            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/"
+        if os.path.exists(video_path):
+            shutil.rmtree(video_path+"../raw", ignore_errors=True)
+        else:
+            shutil.rmtree("./../../../assets/raw", ignore_errors=True)
+
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='../assets/video/intel.mp4')
+        video_path = \
+            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
+        if os.path.exists(video_path):
+            parser.add_argument("--path", type=str, default=video_path)
+        else:
+            parser.add_argument("--path", type=str, default='../../../../assets/video/intel.mp4')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
         parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
@@ -44,9 +60,14 @@ class TestVideo2Wav(unittest.TestCase):
         else:
             path = shlex.quote(args.path)
             is_mono = shlex.quote(args.is_mono)
-            convert_video_to_wav(path, output_sample_rate, is_mono) 
-        
-        self.assertTrue(os.path.exists('../assets/raw/intel.wav'))
+            convert_video_to_wav(path, output_sample_rate, is_mono)
+
+        if os.path.exists(video_path):
+            video_path_prefix = \
+               "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/"
+            self.assertTrue(os.path.exists(video_path_prefix+ '../raw/intel.wav'))
+        else:
+            self.assertTrue(os.path.exists('../../../../assets/raw/intel.wav'))
 
 
 if __name__ == "__main__":
