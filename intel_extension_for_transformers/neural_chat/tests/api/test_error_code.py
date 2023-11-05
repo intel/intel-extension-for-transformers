@@ -52,13 +52,13 @@ class TestErrorCodeBuilder(unittest.TestCase):
             result = build_chatbot(config)
         assert result == ResponseCodes.ERROR_OUT_OF_STORAGE
 
-    def test_build_chatbot_unsupported_device():
+    def test_build_chatbot_unsupported_device(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "unsupported_device"
         result = build_chatbot(config)
         assert result == ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
 
-    def test_build_chatbot_out_of_gpu_memory():
+    def test_build_chatbot_out_of_gpu_memory(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "gpu"
         # Mock torch.cuda.is_available() to return True
@@ -71,7 +71,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
                 result = build_chatbot(config)
         assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
 
-    def test_build_chatbot_unsupported_model():
+    def test_build_chatbot_unsupported_model(self):
         plugins["unsupported_plugin"] = {
             'enable': True,
             'class': None,
@@ -81,10 +81,6 @@ class TestErrorCodeBuilder(unittest.TestCase):
         config = PipelineConfig(model_name_or_path="unsupported_model", plugins=plugins)
         result = build_chatbot(config)
         assert result == ResponseCodes.ERROR_MODEL_NOT_FOUND
-
-
-
-
 
 if __name__ == '__main__':
     unittest.main()
