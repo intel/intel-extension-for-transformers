@@ -4,8 +4,10 @@ peft
 fschat
 num2words
 speechbrain
-paddlepaddle
+paddlepaddle==2.4.2
+paddlenlp==2.5.2
 paddlespeech==1.4.1
+paddle2onnx==1.0.6
 shortuuid
 gptcache
 evaluate
@@ -19,8 +21,8 @@ librosa
 beautifulsoup4
 InstructorEmbedding
 chromadb
-fastapi
-pydantic
+fastapi==0.103.2
+pydantic==1.10.13
 starlette
 yacs
 uvicorn
@@ -39,4 +41,4 @@ intel_extension_for_pytorch
 pymysql
 deepface
 exifread
-
+einops
