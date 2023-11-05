@@ -55,4 +55,14 @@ Classes
        by assert methods using difflib. It is looked up as an instance
        attribute so can be configured by individual tests if required.
 
+   .. py:method:: setUp()
+
+      Hook method for setting up the test fixture before exercising it.
+
+
+   .. py:method:: tearDown() -> None
+
+      Hook method for deconstructing the test fixture after testing it.
+
+
 
