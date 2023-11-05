@@ -85,8 +85,8 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-    elif [ "${topology}" = "opt_1.3b" ]; then
-        model_name_or_path="facebook/opt-1.3b"
+    elif [ "${topology}" = "chatv3" ]; then
+        model_name_or_path="Intel/neural-chat-7b-v3"
     elif [ "${topology}" = "opt_2.7b" ]; then
         model_name_or_path="facebook/opt-2.7b"
     elif [ "${topology}" = "opt_6.7b" ]; then

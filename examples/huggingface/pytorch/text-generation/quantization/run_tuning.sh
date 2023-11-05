@@ -74,9 +74,9 @@ function run_tuning {
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --mixed_precision"
-    elif [ "${topology}" = "opt_1.3b" ]; then
+    elif [ "${topology}" = "chatv3" ]; then
         alpha=0.8
-        model_name_or_path="facebook/opt-1.3b"
+        model_name_or_path="Intel/neural-chat-7b-v3"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "opt_2.7b" ]; then

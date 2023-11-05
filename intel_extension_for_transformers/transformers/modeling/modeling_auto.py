@@ -174,31 +174,37 @@ class _BaseQBitsAutoModelClass:
                         + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
                     )
                     exit(0)
+                import os
+                import datasets
                 from datasets import load_dataset
                 from torch.utils.data import DataLoader
-
-                calib_dataset = quantization_config.calib_dataset
+                
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, split="train")
-                calib_dataset = calib_dataset.shuffle(seed=42)
+                if not os.path.exists(quantization_config.calib_dataset):
+                    calib_dataset = quantization_config.calib_dataset
+                    calib_dataset = load_dataset(calib_dataset, split="train")
+                    calib_dataset = calib_dataset.shuffle(seed=42)
 
-                def tokenize_function(examples):
-                    if "prompt" in examples:
-                        example = quantization_config.tokenizer(examples["prompt"])
-                    elif "text" in examples:
-                        example = quantization_config.tokenizer(examples["text"])
-                    elif "code" in examples:
-                        example = quantization_config.tokenizer(examples["code"])
-                    else:
-                        logger.error(
-                            "Please check dataset prompt identifier,"
-                            + " NeelNanda/pile-10k is default used calibration dataset."
-                        )
-                        exit(0)
-                    return example
+                    def tokenize_function(examples):
+                        if "prompt" in examples:
+                            example = quantization_config.tokenizer(examples["prompt"])
+                        elif "text" in examples:
+                            example = quantization_config.tokenizer(examples["text"])
+                        elif "code" in examples:
+                            example = quantization_config.tokenizer(examples["code"])
+                        else:
+                            logger.error(
+                                "Please check dataset prompt identifier,"
+                                + " NeelNanda/pile-10k is default used calibration dataset."
+                            )
+                            exit(0)
+                        return example
 
-                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                    tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+                    tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                    tokenized_dataset.save_to_disk(quantization_config.calib_dataset)
+                else:
+                    tokenized_dataset = datasets.load_from_disk(quantization_config.calib_dataset)
 
                 def collate_batch(batch):
                     input_ids_padded = []
@@ -261,12 +267,37 @@ class _BaseQBitsAutoModelClass:
             else:
                 calib_func = calib_func
             model.config.torchscript = True
-            model = quantization.fit(
-                                    model, 
-                                    conf,
-                                    calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
-                                    )
+
+            import intel_extension_for_pytorch as ipex
+            from torch.ao.quantization.observer import MinMaxObserver
+            qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(
+                alpha=0.5, act_observer=MinMaxObserver()
+            )
+            # qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+            model = ipex.quantization.prepare(model, qconfig, example_kwarg_inputs=example_inputs, inplace=True)
+            calib_func(model)
+            model = ipex.quantization.convert(model, inplace=True)
+            with torch.no_grad():
+                try:
+                    if isinstance(example_inputs, dict):
+                        model = torch.jit.trace(model, example_kwarg_inputs=example_inputs)
+                    else:
+                        model = torch.jit.trace(model, example_inputs)
+                    model = torch.jit.freeze(model.eval())
+                except:
+                    if isinstance(example_inputs, dict):
+                        model = torch.jit.trace(
+                            model, example_kwarg_inputs=example_inputs, strict=False, check_trace=False
+                        )
+                    else:
+                        model = torch.jit.trace(model, example_inputs, strict=False)
+                    model = torch.jit.freeze(model.eval())
+            # model = quantization.fit(
+            #                         model, 
+            #                         conf,
+            #                         calib_func=calib_func,
+            #                         calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
+            #                         )
             logger.info("SmoothQuant done.")
         return model
 

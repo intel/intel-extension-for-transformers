@@ -119,6 +119,7 @@ elif args.sq:
                                 alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
+                                calib_iters=5,
                                )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
@@ -140,7 +141,7 @@ if quantization_config is not None:
                                                       )
     if args.sq:
         config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
+        user_model.save(args.output_dir+"/best_model.pt")
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
