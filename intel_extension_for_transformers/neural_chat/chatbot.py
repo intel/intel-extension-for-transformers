@@ -24,6 +24,14 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
+from intel_extension_for_transformers.utils.logger import Logger, log
+from .constants import ResponseCodes, MEMORY_THRESHOLD_GB, STORAGE_THRESHOLD_GB, GPU_MEMORY_THRESHOLD_MB
+import psutil
+import torch
+
+Logger().get_logger().setLevel(log.level)
+
+
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
@@ -38,13 +46,40 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    # Check for out of memory
+    available_memory = psutil.virtual_memory().available / (1024 ** 3)
+    if available_memory < MEMORY_THRESHOLD_GB: # The 4-bit 7B model requires a minimum of 7GB of memory
+        log.error("LLM requires a minimum of 8GB of free system memory, \
+                   but the current available memory is insufficient.")
+        return ResponseCodes.ERROR_OUT_OF_MEMORY
+
+    # Check for out of storage
+    available_storage = psutil.disk_usage('/').free
+    available_storage_gb = available_storage / (1024 ** 3)
+    if available_storage_gb < STORAGE_THRESHOLD_GB:
+        log.error("LLM requires a minimum of 30GB of free system storage, \
+                   but the current available storage is insufficient.")
+        return ResponseCodes.ERROR_OUT_OF_STORAGE
+
     global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
-        raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
+        log.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
+        return ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
+
+    if config.device == "gpu":
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+            remaining_memory = torch.cuda.get_device_properties(device).total_memory - \
+                               torch.cuda.memory_allocated(device)
+            remaining_memory_gb = remaining_memory / (1024 ** 3)
+            if remaining_memory_gb < GPU_MEMORY_THRESHOLD_MB:
+                log.error("LLM requires a minimum of 6GB of free GPU memory, \
+                           but the current available GPU memory is insufficient.")
+                return ResponseCodes.ERROR_OUT_OF_MEMORY
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -70,8 +105,9 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
+        log.error(f"Unsupported model name or path {config.model_name_or_path}, \
+                   only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
+        return ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -106,7 +142,8 @@ def build_chatbot(config: PipelineConfig=None):
                     from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
                     plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
-                    raise ValueError("NeuralChat Error: Unsupported plugin")
+                    log.error(f"Unsupported plugin: {plugin_name}")
+                    return ResponseCodes.ERROR_PLUGIN_NOT_SUPPORTED
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
