@@ -18,9 +18,9 @@
 import unittest
 import os
 from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
+from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from intel_extension_for_transformers.neural_chat.constants import ResponseCodes
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
@@ -42,8 +42,49 @@ class TestErrorCodeBuilder(unittest.TestCase):
         with patch('psutil.virtual_memory') as mock_virtual_memory:
             mock_virtual_memory.return_value.available = 7 * 1024 ** 3  # 7GB
             result = build_chatbot(config)
-        breakpoint()
         assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+
+    def test_build_chatbot_out_of_storage(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        # Mock psutil.disk_usage('/').free to return less available storage
+        with patch('psutil.disk_usage') as mock_disk_usage:
+            mock_disk_usage.return_value.free = 29 * 1024 ** 3  # 29GB
+            result = build_chatbot(config)
+        assert result == ResponseCodes.ERROR_OUT_OF_STORAGE
+
+    def test_build_chatbot_unsupported_device():
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        config.device = "unsupported_device"
+        result = build_chatbot(config)
+        assert result == ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
+
+    def test_build_chatbot_out_of_gpu_memory():
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        config.device = "gpu"
+        # Mock torch.cuda.is_available() to return True
+        with patch('torch.cuda.is_available') as mock_cuda_available:
+            mock_cuda_available.return_value = True
+            # Mock torch.cuda.get_device_properties to return less GPU memory
+            with patch('torch.cuda.get_device_properties') as mock_get_device_properties:
+                mock_get_device_properties.return_value.total_memory = 8 * 1024 ** 3  # 8GB
+                mock_get_device_properties.return_value.memory_allocated = 3 * 1024 ** 3  # 3GB
+                result = build_chatbot(config)
+        assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+
+    def test_build_chatbot_unsupported_model():
+        plugins["unsupported_plugin"] = {
+            'enable': True,
+            'class': None,
+            'args': {},
+            'instance': None
+        }
+        config = PipelineConfig(model_name_or_path="unsupported_model", plugins=plugins)
+        result = build_chatbot(config)
+        assert result == ResponseCodes.ERROR_MODEL_NOT_FOUND
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

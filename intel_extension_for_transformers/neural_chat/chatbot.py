@@ -75,7 +75,7 @@ def build_chatbot(config: PipelineConfig=None):
                                torch.cuda.memory_allocated(device)
             remaining_memory_gb = remaining_memory / (1024 ** 3)
             if remaining_memory_gb < GPU_MEMORY_THRESHOLD_MB:
-                log.error("LLM requires a minimum of 6GB of free GPU memory, \
+                logger.error("LLM requires a minimum of 6GB of free GPU memory, \
                            but the current available GPU memory is insufficient.")
                 return ResponseCodes.ERROR_OUT_OF_MEMORY
 
