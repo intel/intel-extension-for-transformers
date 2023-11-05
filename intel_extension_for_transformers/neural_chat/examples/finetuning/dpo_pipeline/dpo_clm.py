@@ -1,4 +1,20 @@
-# 0. imports
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sys
 import os
 from dataclasses import dataclass, field
@@ -27,11 +43,15 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
-from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer 
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 IGNORE_INDEX = -100
+
+def is_optimum_habana_available():
+    import importlib
+    from transformers.utils.import_utils import is_optimum_available
+    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 @dataclass
 class ModelArguments:
@@ -132,6 +152,9 @@ class DataTrainingArguments:
         default=1024,
         metadata={"help": "Maximum target sequence length. Sequences will be right padded (and possibly truncated)."},
     )
+    pad_max: bool = field(
+        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+    )
 
 
 @dataclass
@@ -178,7 +201,18 @@ def find_all_linear_names(model):
 
 if __name__ == "__main__":
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, FinetuningArguments))
+    if not is_optimum_habana_available():
+        parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, FinetuningArguments))
+        load_in_4bit = True
+    else:
+        from optimum.habana import GaudiTrainingArguments
+
+        parser = HfArgumentParser(
+            (ModelArguments, DataTrainingArguments, GaudiTrainingArguments, FinetuningArguments)
+        )
+
+        # not support bisandbytes currently
+        load_in_4bit = False
 
     model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
 
@@ -246,7 +280,7 @@ if __name__ == "__main__":
         config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
-        load_in_4bit=True,
+        load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
@@ -260,7 +294,7 @@ if __name__ == "__main__":
         config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
-        load_in_4bit=True,
+        load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
@@ -330,6 +364,23 @@ if __name__ == "__main__":
             reject_input_ids = prompt_ids + reject_ids
             reject_attention_mask = prompt_mask + reject_mask
             reject_labels = [IGNORE_INDEX] * len(prompt_ids) + reject_ids
+
+            # padding
+            input_len = len(chosen_input_ids)
+            if data_args.pad_max:
+                pad_len = data_args.max_length - input_len
+                chosen_input_ids = chosen_input_ids + [0] * pad_len
+                chosen_labels = chosen_labels + [-100] * pad_len
+                chosen_attention_mask = chosen_attention_mask + [0] * pad_len
+                assert len(chosen_input_ids) == data_args.max_length
+
+            input_len = len(reject_input_ids)
+            if data_args.pad_max:
+                pad_len = data_args.max_length - input_len
+                reject_input_ids = reject_input_ids + [0] * pad_len
+                reject_labels = reject_labels + [-100] * pad_len
+                reject_attention_mask = reject_attention_mask + [0] * pad_len
+                assert len(reject_input_ids) == data_args.max_length
 
             examples["prompt"].append(prompt)
             examples["chosen"].append(prompt + chosen)
@@ -415,6 +466,13 @@ if __name__ == "__main__":
         bias="none",
         task_type="CAUSAL_LM",
     )
+    if training_args.gradient_checkpointing:
+        model.enable_input_require_grads()
+
+    if not hasattr(training_args, "use_habana"):
+        from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
+    else:
+        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(
