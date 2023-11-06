@@ -24,18 +24,19 @@
 
 void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                            float *bias);
+                            int dequant_s, float *bias);
 
 void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
                             float *C, uint32_t matrix_m, uint32_t matrix_n,
-                            uint32_t matrix_k, float *bias);
+                            uint32_t matrix_k, int dequant_s, float *bias);
 
 void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
-                       uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k);
+                       uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
+                       int dequant_s);
 
 void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
                        float *C, uint32_t matrix_m, uint32_t matrix_n,
-                       uint32_t matrix_k);
+                       uint32_t matrix_k, int dequant_s);
 
 static void gbits_linear(const torch::Tensor &activation,
                          const torch::Tensor weight, const torch::Tensor &bias,
@@ -62,18 +63,22 @@ static void gbits_linear(const torch::Tensor &activation,
     auto *C = reinterpret_cast<float *>(output.data_ptr<float>());
     if (with_bias) {
       auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
-      xetla_linear_fp32_bias(queue, A, &obj, C, matrix_m, matrix_n, matrix_k, D);
+      xetla_linear_fp32_bias(queue, A, &obj, C, matrix_m, matrix_n,
+                             matrix_k, obj._blksize, D);
     } else {
-      xetla_linear_fp32(queue, A, &obj, C, matrix_m, matrix_n, matrix_k);
+      xetla_linear_fp32(queue, A, &obj, C, matrix_m, matrix_n,
+                        matrix_k, obj._blksize);
     }
   } else {
     auto *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
     auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
     if (with_bias) {
       auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
-      xetla_linear_fp16_bias(queue, A, &obj, C, matrix_m, matrix_n, matrix_k, D);
+      xetla_linear_fp16_bias(queue, A, &obj, C, matrix_m, matrix_n,
+                             matrix_k, obj._blksize, D);
     } else {
-      xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n, matrix_k);
+      xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n,
+                        matrix_k, obj._blksize);
     }
   }
   if (initer.verbose) {
@@ -107,6 +112,16 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
 
 torch::Tensor quantize(float *weight, int k, int n, int blksize,
                        std::string weight_type, std::string cmpt_type, bool trans) {
+  if (k < blksize) {
+    std::cout << "blocksize is smaller than k, take k as blocksize "
+              << std::endl;
+    blksize = k;
+  }
+  if (blksize % 16 != 0) {
+      std::cout << "blocksize must be divisible by 16 "
+                << std::endl;
+      exit(0);
+  }
   CompressWei4Bit compress_wei(k, n, blksize);
   torch::Tensor ret =
       torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
