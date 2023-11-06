@@ -142,9 +142,7 @@ class TestArcWeightOnly(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
 
-
-    def test_int4_ipex_arc(self):
-        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+    def test_int4_ipex_arc_with_auto(self):
         import intel_extension_for_pytorch as ipex
 
         device_map = "xpu"
@@ -165,7 +163,8 @@ class TestArcWeightOnly(unittest.TestCase):
             batch_size=1,
             shuffle=False,
         )
-        qmodel = convert_to_quantized_model(model, config, device=torch.device(device_map))
+        qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
+                                                      device_map=device_map, quantization_config=config)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
         fp16_logits = output['logits']
         quan_logits = output_quant['logits'].to('cpu')

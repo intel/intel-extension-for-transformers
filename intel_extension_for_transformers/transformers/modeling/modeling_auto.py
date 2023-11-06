@@ -238,6 +238,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Mixed Precision done.")
         kwargs["low_cpu_mem_usage"] = True
         try:
+            kwargs["device_map"] = "cpu"
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
