@@ -134,11 +134,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
         help="Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)",
         default=0,
     )
-    parser.add_argument(
-        "--shift-roped-k",
-        action="store_true",
-        help="Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)",
-    )
 
 
     args = parser.parse_args(args_in)
@@ -155,7 +150,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     work_path = Path(model_type + "_files")
     if not work_path.exists():
         Path.mkdir(work_path)
-
+    
 
     # 1. convert
     path = Path(parent_path, "convert.py")
@@ -196,8 +191,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     infer_cmd.extend(["--repeat_penalty", str(args.repeat_penalty)])
     infer_cmd.extend(["--keep",           str(args.keep)])
     infer_cmd.extend(["--build_dir", args.build_dir])
-    if args.shift_roped_k:
-        infer_cmd.extend(["--shift-roped-k"])
     print("inferce model ...")
     subprocess.run(infer_cmd)
 

@@ -95,11 +95,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default=0,
     )
     parser.add_argument(
-        "--shift-roped-k",
-        action="store_true",
-        help="Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)",
-    )
-    parser.add_argument(
         "--memory-f32",
         action="store_true",
         help="Use fp32 for the data type of kv memory",
@@ -134,10 +129,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
     cmd.extend(["--keep",           str(args.keep)])
-    if args.shift_roped_k:
-        cmd.extend(["--shift-roped-k"])
     if args.color:
-        cmd.append("--color")
+        cmd.append(" --color")
     if args.memory_f32:
         cmd.extend(["--memory-f32"])
     if args.memory_f16:

@@ -64,9 +64,6 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;
   const int n_keep = lctx.n_keep;
-  const bool shift_roped_k = lctx.shift_roped_k;
-  const bool is_ring_full = shift_roped_k && n_total > n_past;
-  NE_ASSERT(("Shift-RoPE-K to be implemented for AliBi!", !is_ring_full));
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int head_dim = hparams.n_embd / hparams.n_head;
@@ -208,13 +205,13 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
                                         0, 0,                     // nb (jblas managed)
                                         il * k_size);             // offset
         Kcur = ne_view_3d(ctx0, Kcur, head_dim, n_head, N, Kcur->nb[0] * head_dim, Kcur->nb[1], 0);
-        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, false));
+        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
         const auto v_cache = ne_view_3d(ctx0, kv_self.v,          // tensor
                                         head_dim, n_ctx, n_head,  // ne
                                         0, 0,                     // nb (jblas managed)
                                         il * v_size);             // offset
         Vcur = ne_view_3d(ctx0, Vcur, head_dim, n_head, N, Vcur->nb[0] * head_dim, Vcur->nb[1], 0);
-        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past, false));
+        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
       }
 
       struct ne_tensor* Q = ne_view_3d(ctx0, Qcur, head_dim, n_head, N, Qcur->nb[0] * head_dim, Qcur->nb[1], 0);

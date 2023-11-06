@@ -429,12 +429,10 @@ NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor*
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
                                        struct ne_tensor* v, float scale, ne_attn_flags_t flags);
-// set no_zeroing to true to prevent zeroing unaligned seq
 NE_API struct ne_tensor* ne_flash_attn_update_k(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
-                                                int n_past, bool no_zeroing);
-// set no_zeroing to true to prevent zeroing unaligned seq
+                                                int n_past);
 NE_API struct ne_tensor* ne_flash_attn_update_v(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
-                                                int n_past, bool no_zeroing);
+                                                int n_past);
 
 NE_API struct ne_tensor* ne_flash_ff(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b0,
                                      struct ne_tensor* b1, struct ne_tensor* c0, struct ne_tensor* c1);
