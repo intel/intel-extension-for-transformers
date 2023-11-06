@@ -46,6 +46,8 @@ function init_params {
 function run_tuning {
     if [ "${topology}" = "bert_base_mrpc_static" ]; then
         model_name_or_path="textattack/bert-base-uncased-MRPC"
+    elif [ "${topology}" = "bge" ]; then
+        model_name_or_path="BAAI/bge-small-en-v1.5"
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --task_name mrpc"
     elif [ "${topology}" = "bert_base_mrpc_dynamic" ]; then
