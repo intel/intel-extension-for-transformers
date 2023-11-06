@@ -1,0 +1,7 @@
+transformers
+peft
+accelerate
+datasets
+bitsandbytes
+evaluate
+scikit-learn
