@@ -29,15 +29,11 @@ class TestChatGlmModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = ChatGlmModel().match(model_path='/models/chatglm2-6b-int4')
+        result = ChatGlmModel().match(model_path='/tf_dataset2/models/nlp_toolkit/chatglm2-6b')
         self.assertTrue(result)
 
-    def test_get_default_conv_template_1(self):
-        result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm-6b')
-        self.assertIn('问', str(result))
-
-    def test_get_default_conv_template_2(self):
-        result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm2-6b-int4')
+    def test_get_default_conv_template(self):
+        result = ChatGlmModel().get_default_conv_template(model_path='/tf_dataset2/models/nlp_toolkit/chatglm-6b')
         self.assertIn('问', str(result))
 
 class TestLlamaModel(unittest.TestCase):
@@ -48,11 +44,11 @@ class TestLlamaModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = LlamaModel().match(model_path='/models/Llama-2-7b-chat-hf')
+        result = LlamaModel().match(model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat')
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = LlamaModel().get_default_conv_template(model_path='/models/Llama-2-7b-chat-hf')
+        result = LlamaModel().get_default_conv_template(model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat')
         self.assertIn("[INST] <<SYS>>", str(result))
 
 class TestMptModel(unittest.TestCase):
@@ -63,11 +59,11 @@ class TestMptModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = MptModel().match(model_path='/models/mpt-7b-chat')
+        result = MptModel().match(model_path='/tf_dataset2/models/nlp_toolkit/mpt-7b')
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = MptModel().get_default_conv_template(model_path='/models/mpt-7b-chat')
+        result = MptModel().get_default_conv_template(model_path='/tf_dataset2/models/nlp_toolkit/mpt-7b')
         self.assertIn("<|im_start|>system", str(result))
 
 class TestNeuralChatModel(unittest.TestCase):
@@ -78,15 +74,16 @@ class TestNeuralChatModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = NeuralChatModel().match(model_path='/models/neural-chat-7b-v1-1')
+        result = NeuralChatModel().match(model_path='Intel/neural-chat-7b-v1-1')
         self.assertTrue(result)
 
     def test_get_default_conv_template_v1(self):
-        result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v1-1')
+        result = NeuralChatModel().get_default_conv_template(
+            model_path='Intel/neural-chat-7b-v1-1')
         self.assertIn("<|im_start|>system", str(result))
 
     def test_get_default_conv_template_v2(self):
-        result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v2')
+        result = NeuralChatModel().get_default_conv_template(model_path='Intel/neural-chat-7b-v2')
         self.assertIn("### System:", str(result))
 
 if __name__ == "__main__":

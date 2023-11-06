@@ -23,18 +23,23 @@ import unittest
 
 class TestCutVideo(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('../assets/raw', ignore_errors=True)
-        os.mkdir('../assets/raw')
+        shutil.rmtree('./raw', ignore_errors=True)
+        os.mkdir('./raw')
 
     def tearDown(self) -> None:
-        shutil.rmtree('../assets/raw', ignore_errors=True)
-    
+        shutil.rmtree('./raw', ignore_errors=True)
+
     def test_cut_video(self):
             parser = argparse.ArgumentParser(__doc__)
-            parser.add_argument("--path", type=str, default="../assets/video/intel.mp4")
+            video_path = \
+              "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
+            if os.path.exists(video_path):
+                parser.add_argument("--path", type=str, default=video_path)
+            else:
+                parser.add_argument("--path", type=str, default="../../../../assets/video/intel.mp4")
             parser.add_argument("--min", type=str, default='1')
             parser.add_argument("--sr", type=str, default='16000')
-            parser.add_argument("--out_path", type=str, default="../raw")
+            parser.add_argument("--out_path", type=str, default="./raw")
             parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
             args = parser.parse_args()
 
@@ -42,11 +47,8 @@ class TestCutVideo(unittest.TestCase):
             if not os.path.exists(args.path):
                 raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
 
-            outdir = '../assets/raw'
-
-            cut_video(args, outdir)
-
-            self.assertTrue(os.path.exists('../assets/raw/intel_0.wav'))
+            cut_video(args, './raw')
+            self.assertTrue(os.path.exists('./raw/intel_0.wav'))
 
 if __name__ == "__main__":
     unittest.main()

@@ -48,7 +48,7 @@ class TestASR(unittest.TestCase):
         if os.path.exists(audio_path):
             text = self.asr.audio2text(audio_path)
         else:
-            text = self.asr.audio2text("../../assets/audio/welcome.wav")
+            text = self.asr.audio2text("../../../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
     def test_audio2text_bf16(self):
@@ -58,7 +58,7 @@ class TestASR(unittest.TestCase):
         if os.path.exists(audio_path):
             text = self.asr_bf16.audio2text(audio_path)
         else:
-            text = self.asr_bf16.audio2text("../../assets/audio/welcome.wav")
+            text = self.asr_bf16.audio2text("../../../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
 if __name__ == "__main__":
