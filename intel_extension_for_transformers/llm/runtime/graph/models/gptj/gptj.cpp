@@ -70,6 +70,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   const int n_keep = lctx.n_keep;
   const bool shift_roped_k = lctx.shift_roped_k;
   const bool is_ring_full = shift_roped_k && n_total > n_past;
+  const int n_cached = shift_roped_k ? std::min(n_total + N, n_ctx) : (n_past + N);  // #tokens cached after kv-append
   int n_head = hparams.n_head;
   const int head_size = n_embd / n_head;
   const int n_vocab = hparams.n_vocab;
@@ -115,8 +116,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
         /* .head_num = */ n_head,
         /* .heads_kv = */ n_head,  // GPT-J does not have MQA/GQA
         /* .head_size = */ head_size,
-        /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inferencing
-        /* .sl_kv = */ n_past + N,
+        /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inference
+        /* .sl_kv = */ n_cached,
     };
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
@@ -164,32 +165,19 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                                                 // if (false) {
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
-      Qcur =
-          ne_rope_inplace(ctx0,
-                          ne_reshape_4d(ctx0,
-                                        ne_view_1d(ctx0, QKVcur, N * head_size * n_head * batch_size,
-                                                   0 * N * head_size * n_head * batch_size * ne_element_size(QKVcur)),
-                                        head_size, n_head, N, batch_size),
-                          n_past, n_rot, 0, 0);
-      Kcur =
-          ne_rope_inplace(ctx0,
-                          ne_reshape_4d(ctx0,
-                                        ne_view_1d(ctx0, QKVcur, N * head_size * n_head * batch_size,
-                                                   1 * N * head_size * n_head * batch_size * ne_element_size(QKVcur)),
-                                        head_size, n_head, N, batch_size),
-                          n_past, n_rot, 0, 0);
-      Vcur = ne_view_1d(ctx0, QKVcur, N * head_size * n_head * batch_size,
-                        2 * N * head_size * n_head * batch_size * ne_element_size(QKVcur));
+      const size_t qkv_size = N * head_size * n_head * batch_size;
+      const size_t qkv_bytes = qkv_size * ne_element_size(QKVcur);
+      Qcur = ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 0 * qkv_bytes), head_size, n_head, N, batch_size);
+      Kcur = ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 1 * qkv_bytes), head_size, n_head, N, batch_size);
+      Vcur = ne_view_1d(ctx0, QKVcur, qkv_size, 2 * qkv_bytes);
     } else {
-      // printf("\n\n\n work into attention split,\n\n\n");
-      Qcur = ne_rope_inplace(
-          ctx0, ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), head_size, n_head, N, batch_size),
-          n_past, n_rot, 0, 0);
-      Kcur = ne_rope_inplace(
-          ctx0, ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size, n_head, N, batch_size),
-          n_past, n_rot, 0, 0);
+      Qcur = ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), head_size, n_head, N, batch_size);
+      Kcur = ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size, n_head, N, batch_size);
       Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
+    Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0);
+    Kcur = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
+        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
@@ -254,7 +242,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
       }
     } else {
-      const auto seq_kv = n_past + N;
       const auto k_size = kv_cache_info.k_bytes;
       const auto v_size = kv_cache_info.v_bytes;
       const auto k_cache = ne_view_4d(ctx0, kv_self.k,                       // tensor
@@ -275,44 +262,64 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     ne_set_name(Q, "Q");
     struct ne_tensor *K, *V;
     if (run_mha_reordered) {
-      const auto seq_kv = n_past + N;
       const auto k_size = kv_cache_info.k_bytes;
       K = ne_view_4d(ctx0, kv_self.k,                                                     // tensor
-                     head_size, seq_kv, n_head, batch_size,                               // ne
+                     head_size, n_cached, n_head, batch_size,                             // ne
                      kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num, k_size,  // nb (jblas managed)
                      il * kv_n_ctx_block * k_size);                                       // offset
+      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;
+      if (is_ring_full) {
+        struct ne_tensor* cossin_cache = nullptr;
+        // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N
+        // in a single eval execution
+        if (N == 1) cossin_cache = kv_self.cossin;
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+      }
       const auto v_size = kv_cache_info.v_bytes;
       V = ne_view_4d(ctx0, kv_self.v,                                                            // tensor
-                     seq_kv, head_size, n_head, batch_size,                                      // ne
+                     n_cached, head_size, n_head, batch_size,                                    // ne
                      kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num, v_size,  // nb (jblas managed)
                      il * kv_n_ctx_block * v_size);                                              // offset
-      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;
     } else if (run_mha_fp16) {
       V = ne_permute(ctx0,
-                     ne_view_4d(ctx0, kv_self.v, head_size, n_head, (n_past + N), batch_size,
+                     ne_view_4d(ctx0, kv_self.v, head_size, n_head, n_cached, batch_size,
                                 ne_element_size(kv_self.v) * head_size, ne_element_size(kv_self.v) * head_size * n_head,
                                 ne_element_size(kv_self.v) * head_size * n_head * n_ctx,
                                 il * n_ctx * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block),
                      1, 2, 0, 3);
 
       // split cached V into n_head heads
-      K = ne_permute(ctx0,
-                     ne_view_4d(ctx0, kv_self.k, (n_past + N), head_size, n_head, batch_size,
-                                n_ctx * ne_element_size(kv_self.k), n_ctx * ne_element_size(kv_self.k) * head_size,
-                                n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
-                                il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block),
-                     1, 0, 2, 3);
+      K = ne_view_4d(ctx0, kv_self.k, n_cached, head_size, n_head, batch_size, n_ctx * ne_element_size(kv_self.k),
+                     n_ctx * ne_element_size(kv_self.k) * head_size,
+                     n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
+                     il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block);
+      K = ne_permute(ctx0, K, 1, 0, 2, 3);  // head_size n_cached n_head batch_size
+      if (is_ring_full) {
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
+        struct ne_tensor* cossin_cache = nullptr;
+        // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
+        // a single eval execution
+        if (N == 1) cossin_cache = kv_self.cossin;
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
+      }
     } else {
-      K = ne_permute(ctx0,
-                     ne_view_4d(ctx0, kv_self.k, head_size, n_head, (n_past + N), batch_size,
-                                ne_element_size(kv_self.k) * head_size, ne_element_size(kv_self.k) * head_size * n_head,
-                                ne_element_size(kv_self.k) * head_size * n_head * n_ctx,
-                                il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block),
-                     0, 2, 1, 3);
+      K = ne_view_4d(ctx0, kv_self.k, head_size, n_head, n_cached, batch_size, ne_element_size(kv_self.k) * head_size,
+                     ne_element_size(kv_self.k) * head_size * n_head,
+                     ne_element_size(kv_self.k) * head_size * n_head * n_ctx,
+                     il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block);
+      if (is_ring_full) {
+        struct ne_tensor* cossin_cache = nullptr;
+        // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
+        // a single eval execution
+        if (N == 1) cossin_cache = kv_self.cossin;
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+      }
+      K = ne_permute(ctx0, K, 0, 2, 1, 3);
 
       // split cached V into n_head heads
-      V = ne_view_4d(ctx0, kv_self.v, (n_past + N), head_size, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
+      V = ne_view_4d(ctx0, kv_self.v, n_cached, head_size, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
                      n_ctx * ne_element_size(kv_self.v) * head_size,
                      n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
                      il * n_ctx * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block);
@@ -324,7 +331,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
     const float attn_scale = 1.0f / sqrtf(float(head_size));
     ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
-    if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+    if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
     if (run_mha_reordered) {  // reordered kv-cache bf16 mha must be used if run_mha_reordered
       struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       KQV_merged_contiguous = ne_view_2d(ctx0, KQV_Out, head_size * n_head, N * batch_size,
@@ -333,7 +340,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       KQV_merged_contiguous = ne_view_2d(ctx0, KQV_Out, head_size * n_head, N * batch_size,
                                          head_size * n_head * ne_element_size(KQV_Out), 0);
-    } else if (n_past == 0 && run_mha_bf16_first) {
+    } else if (n_total == 0 && run_mha_bf16_first) {
       // non-reordered kv-cache bf16 mha (first token only)
       auto vnele = ne_nelements(Vcur);
       struct ne_tensor* Vtmp = ne_new_tensor_1d(ctx0, NE_TYPE_F16, vnele, NE_SIZE_CALC);
@@ -353,16 +360,18 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       struct ne_tensor* KQ_scale = ne_new_f32(ctx0, attn_scale);
       ne_set_name(KQ_scale, "1/sqrt(n_embd/n_head)");
 
-      // KQ_scaled shape [n_past + N, N, n_head, 1]
+      // KQ_scaled shape [n_cached, N, n_head, 1]
       struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, KQ_scale);
       ne_set_name(KQ_scaled, "KQ_scaled");
 
-      // KQ_masked = mask_past(KQ_scaled)
-      struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
-      ne_set_name(KQ_masked, "KQ_masked");
+      // KQ_scaled = mask_past(KQ_scaled)
+      if (n_total == 0 || !shift_roped_k) {
+        KQ_scaled = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+        ne_set_name(KQ_scaled, "KQ_masked");
+      }
 
       // KQ = soft_max(KQ_masked)
-      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
+      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_scaled);
       ne_set_name(KQ_soft_max, "KQ_soft_max");
 
       struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
@@ -465,7 +474,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 #endif
 
   // update kv token count
-  lctx.model.kv_self.n = n_past + N;
+  lctx.model.kv_self.n = n_cached;
 
   // extract logits
   {

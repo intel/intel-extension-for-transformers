@@ -66,7 +66,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   const int n_keep = lctx.n_keep;
   const bool shift_roped_k = lctx.shift_roped_k;
   const bool is_ring_full = shift_roped_k && n_total > n_past;
-  NE_ASSERT(("Shift-RoPE-K to be implemented!", !is_ring_full));
+  NE_ASSERT(("Shift-RoPE-K to be implemented for AliBi!", !is_ring_full));
 
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;

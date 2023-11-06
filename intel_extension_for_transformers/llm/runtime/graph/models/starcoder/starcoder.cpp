@@ -66,6 +66,7 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
   const int n_keep = lctx.n_keep;
   const bool shift_roped_k = lctx.shift_roped_k;
   const bool is_ring_full = shift_roped_k && n_total > n_past;
+  NE_ASSERT(("Shift-RoPE-K is not available for position embedding!", !is_ring_full));
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = hparams.n_rot;
@@ -251,12 +252,12 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
                                           head_dim, n_ctx, n_head,  // ne
                                           0, 0,                     // nb (jblas managed)
                                           il * k_size);             // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, is_ring_full));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, false));
           const auto v_cache = ne_view_3d(ctx0, kv_self.v,          // tensor
                                           head_dim, n_ctx, n_head,  // ne
                                           0, 0,                     // nb (jblas managed)
                                           il * v_size);             // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past, is_ring_full));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past, false));
         }
 
         struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
