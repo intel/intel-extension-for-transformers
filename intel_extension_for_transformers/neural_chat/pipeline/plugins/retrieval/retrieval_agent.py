@@ -108,13 +108,10 @@ class Agent_QA():
                                    top_k=self.top_k, search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
-    def append_localdb(self, append_path, 
-                       top_k=self.top_k,
-                       search_type=self.search_type, 
-                       search_kwargs=self.search_kwargs):
+    def append_localdb(self, append_path):
         self.db = self.doc_parser.KB_append(append_path)
-        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
-                           search_type=search_type, search_kwargs=search_kwargs)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
+                           search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
     def pre_llm_inference_actions(self, model_name, query):
