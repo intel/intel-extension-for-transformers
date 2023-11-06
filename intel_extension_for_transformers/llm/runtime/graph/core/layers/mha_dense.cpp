@@ -1945,7 +1945,8 @@ void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_
   return jblas_fusion_attn_forward<float, bf16, bf16, float>(jblas_params);
 }
 
-void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+template <bool zero_padding>
+void jblas_reordered_attn_fp32_update_k_(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
   const auto p = *params;
   NE_ASSERT(p.step_head_size == 1);
   const auto pad_headsize = padto(p.head_size, 32);
@@ -1953,7 +1954,7 @@ void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_a
   const auto cache_step_head_num = pad_headsize * pad_seq_max;
   const auto cache_step_bs = p.heads_kv * cache_step_head_num;
   GetCPUDevice();
-  const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0);
+  const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0) && zero_padding;
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < p.batch_size; ++ibs) {
@@ -1972,15 +1973,26 @@ void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_a
             const auto i_blk = i_dst - ii;
             const auto jj = j % 2;
             const auto j_blk = j - jj;
-            dst[i_blk * pad_headsize + ii * 2 + j_blk * 48 + jj] =
-                j < p.head_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+            if constexpr (zero_padding) {
+              dst[i_blk * pad_headsize + ii * 2 + j_blk * 48 + jj] =
+                  j < p.head_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+            } else {
+              if (j < p.head_size)
+                dst[i_blk * pad_headsize + ii * 2 + j_blk * 48 + jj] = static_cast<bf16>(src[i * p.step_seq + j]);
+            }
           }
         }
       }
     }
   }
 }
-void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+  return params->no_zeroing ? jblas_reordered_attn_fp32_update_k_<false>(params)
+                            : jblas_reordered_attn_fp32_update_k_<true>(params);
+}
+
+template <bool zero_padding>
+void jblas_reordered_attn_fp32_update_v_(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
   const auto p = *params;
   NE_ASSERT(p.step_head_size == 1);
   const auto pad_headsize = padto(p.head_size, 48);
@@ -1988,7 +2000,7 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
   const auto step_cache_head_num = pad_headsize * pad_seq_max;
   const auto step_cache_bs = p.heads_kv * step_cache_head_num;
   GetCPUDevice();
-  const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0);
+  const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0) && zero_padding;
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < p.batch_size; ++ibs) {
@@ -2006,13 +2018,38 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
             const auto i_blk = i_dst - ii;
             const auto jj = j % 48;
             const auto j_blk = j - jj;
-            dst[i_blk * 48 + ii + j_blk * pad_seq_max + jj * 2] =
-                i < p.seq_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+            if constexpr (zero_padding) {
+              dst[i_blk * 48 + ii + j_blk * pad_seq_max + jj * 2] =
+                  i < p.seq_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+            } else {
+              if (i < p.seq_size)
+                dst[i_blk * 48 + ii + j_blk * pad_seq_max + jj * 2] = static_cast<bf16>(src[i * p.step_seq + j]);
+            }
           }
         }
       }
     }
   }
+}
+void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+  return params->no_zeroing ? jblas_reordered_attn_fp32_update_v_<false>(params)
+                            : jblas_reordered_attn_fp32_update_v_<true>(params);
+}
+
+void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin, int batch_size, int heads_kv,
+                                            int head_size, int seq_max, int seq_keep) {
+  const auto pad_headsize = padto(head_size, 32);
+  const auto pad_seq_max = padto(seq_max, 48);
+  const auto cache_step_head_num = pad_headsize * pad_seq_max;
+  const auto cache_step_bs = heads_kv * cache_step_head_num;
+
+#pragma omp parallel for collapse(2)
+  for (int ibs = 0; ibs < batch_size; ++ibs)
+    for (int ihn = 0; ihn < heads_kv; ++ihn) {
+      const auto src = reinterpret_cast<bf16*>(cache) + ibs * cache_step_bs + ihn * cache_step_head_num;
+      jblas::kernel::jit::CScaleInterleavedBF16FP16::forward<48>(src, reinterpret_cast<const fp16*>(cossin), head_size,
+                                                                 pad_seq_max, pad_headsize, seq_keep);
+    }
 }
 
 #ifdef __GNUC__
