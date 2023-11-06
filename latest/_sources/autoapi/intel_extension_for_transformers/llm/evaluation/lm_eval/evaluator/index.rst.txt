@@ -19,7 +19,7 @@ Functions
 
 
 
-.. py:function:: evaluate(model, model_args=None, tasks=[], new_fewshot=0, batch_size=None, device='cpu', no_cache=True, limit=None, bootstrap_iters=100000, description_dict=None, check_integrity=False, decontamination_ngrams_path=None, seed=1234, user_model=None, model_format='torch')
+.. py:function:: evaluate(model, model_args=None, tasks=[], new_fewshot=0, batch_size=None, max_batch_size=None, device='cpu', no_cache=True, limit=None, bootstrap_iters=100000, check_integrity=False, decontamination_ngrams_path=None, write_out=False, output_base_path=None, seed=1234, user_model=None, model_format='torch')
 
    Instantiate and evaluate a model on a list of tasks.
 
