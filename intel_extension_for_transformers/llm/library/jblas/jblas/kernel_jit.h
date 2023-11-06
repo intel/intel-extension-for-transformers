@@ -1205,7 +1205,7 @@ class PaddingTransInterleaveCvt : protected xbyak::JitAvx512f {
   }
 };
 
-// Complex number matrix(interleaved) - vector(as diagonal matrix) multiplication; Tipically used for
+// Complex number matrix(interleaved) - vector(as diagonal matrix) multiplication; Typically used for
 // shift-RoPE
 //
 // vector: fp16 values; view every adjacent 2 values on colunm as a complex num
