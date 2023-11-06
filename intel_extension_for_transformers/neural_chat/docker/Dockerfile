@@ -32,6 +32,7 @@ FROM ubuntu:${UBUNTU_VER} as cpu
 ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.9
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
@@ -48,8 +49,9 @@ RUN apt-get update \
 
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [[ "$REPO_PATH" == "" ]]; then rm -rf intel-extension-for-transformers/* && git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
-COPY . /intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -94,6 +96,7 @@ FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installe
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
+ARG REPO_PATH=""
 
 RUN apt-get update && \
     apt-get install git-lfs && \
@@ -101,8 +104,10 @@ RUN apt-get update && \
 
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [[ "$REPO_PATH" == "" ]]; then rm -rf intel-extension-for-transformers/* && git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
-COPY . /intel-extension-for-transformers
+
 # Build ITREX
 RUN cd /intel-extension-for-transformers && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
