@@ -41,6 +41,11 @@ class MysqlDb(object):
                              cursorclass=cursors.DictCursor)
         self._cursor = self._conn.cursor()
 
+    def _set_db(self, db):
+        self._close()
+        self._db = db
+        self._connect()
+
     def _close(self):
         self._cursor.close()
         self._conn.close()

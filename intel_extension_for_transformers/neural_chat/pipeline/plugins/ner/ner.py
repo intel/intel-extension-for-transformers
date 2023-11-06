@@ -26,7 +26,6 @@ from transformers import (
     TextIteratorStreamer,
     AutoConfig,
 )
-import intel_extension_for_pytorch as intel_ipex
 from .utils.utils import (
     enforce_stop_tokens,
     get_current_time
@@ -41,11 +40,17 @@ class NamedEntityRecognition():
         Set bf16=True if you want to inference with bf16 model.
     """
 
-    def __init__(self, model_path="./Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", bf16: bool=False) -> None:
+    def __init__(self, 
+                 model_path="meta-llama/Llama-2-7b-chat-hf", 
+                 spacy_model="en_core_web_lg", 
+                 bf16: bool=False, 
+                 device="cpu") -> None:
         # initialize tokenizer and models
         self.nlp = spacy.load(spacy_model)
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         config.init_device = 'cuda:0' if torch.cuda.is_available() else "cpu"
+        self.device = device
+        self.bf16 = False
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_path,
             use_fast=False if (re.search("llama", model_path, re.IGNORECASE)
@@ -59,9 +64,15 @@ class NamedEntityRecognition():
             device_map="auto",
             trust_remote_code=True
         )
-        self.bf16 = bf16
+        # make sure ipex is available on current server
+        try:
+            import intel_extension_for_pytorch as intel_ipex
+            self.is_ipex_available = True
+        except ImportError:
+            self.is_ipex_available = False
         # optimize model with ipex if bf16
-        if bf16:
+        if bf16 and self.is_ipex_available:
+            self.bf16 = bf16
             self.model = intel_ipex.optimize(
                 self.model.eval(),
                 dtype=torch.bfloat16,

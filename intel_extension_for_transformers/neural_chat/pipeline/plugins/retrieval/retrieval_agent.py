@@ -24,7 +24,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
-                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
+                 embedding_model="BAAI/bge-base-en-v1.5", max_length=2048, retrieval_type="dense",
                  document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5},
                  append=True, index_name="elastic_index_1", append_path=None,
                  response_template = "Please reformat your query to regenerate the answer.",
@@ -88,7 +88,7 @@ class Agent_QA():
                        append_path, 
                        top_k=1, 
                        search_type="similarity_score_threshold", 
-                       search_kwargs={"score_threshold": 0.9, "k": 1}):
+                       search_kwargs={"score_threshold": 0.8, "k": 1}):
         self.db = self.doc_parser.KB_append(append_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
                            search_type=search_type, search_kwargs=search_kwargs)
@@ -97,8 +97,10 @@ class Agent_QA():
     def pre_llm_inference_actions(self, model_name, query):
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
-        docs = []
-        if 'qa' not in intent.lower():
+        context = ''
+        if self.retriever and self.search_type == "similarity_score_threshold":
+            context, links = self.retriever.get_context(query)
+        if 'qa' not in intent.lower() and context == '':
             print("Chat with AI Agent.")
             prompt = generate_prompt(query)
         else:

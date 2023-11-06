@@ -38,13 +38,14 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 #define OPT_POS_EMBD_OFFS 2
 
 static bool opt_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                    const int n_past, const int n_threads) {
+                                    const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -58,7 +59,8 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int word_embed_proj_dim = hparams.word_embed_proj_dim;
@@ -364,8 +366,9 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!opt_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!opt_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

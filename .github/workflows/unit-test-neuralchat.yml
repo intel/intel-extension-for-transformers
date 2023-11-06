@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
       - 'intel_extension_for_transformers/neural_chat/**'
+      - 'requirements.txt'
+      - 'setup.py'
       - 'intel_extension_for_transformers/llm/finetuning/**'
       - 'intel_extension_for_transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/transformers/**'
@@ -30,7 +32,7 @@ env:
 
 jobs:
   unit-test:
-    runs-on: [self-hosted, Linux, X64, neuralchat-node]
+    runs-on: [self-hosted, Linux, X64, itrex-node]
     strategy:
       matrix:
         include:
@@ -39,18 +41,18 @@ jobs:
           - test_branch: "main"
             test_name: "baseline"
     steps:
-      - name: podman Clean Up
+      - name: docker Clean Up
         run: |
-          podman ps -a
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-              podman start ${{ env.CONTAINER_NAME }}
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}
               echo "remove left files through container ..."
-              podman exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
-          if [[ $(podman ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
-              podman start ${{ env.EXTRA_CONTAINER_NAME }}
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME }}
               echo "remove left files through container ..."
-              podman exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
 
       - name: Checkout out Repo
@@ -60,54 +62,57 @@ jobs:
           ref: ${{ matrix.test_branch }}
           fetch-tags: true
 
-      - name: podman Build
+      - name: docker Build
         run: |
-          podman build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
 
-      - name: podman Run
+      - name: docker Run
         run: |
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-            podman stop ${{ env.CONTAINER_NAME }}
-            podman rm -vf ${{ env.CONTAINER_NAME }} || true
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop ${{ env.CONTAINER_NAME }}
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
-          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
-          -v /models:/models \
-          -v /media:/media \
+          -v /home/itrex-docker/models:/models \
+          -v /dataset/media:/media \
+          -v /dataset/tf_dataset2:/tf_dataset2 \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
           && bash install_binary.sh \
           && pip install intel_extension_for_pytorch wget sentencepiece \
           && pip install transformers>=4.32.0 \
-          && pip install peft torch num2words speechbrain paddlepaddle \
-          && pip install paddlespeech==1.4.1 shortuuid gptcache evaluate \
+          && pip install peft torch num2words speechbrain \
+          && pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 \
+          && pip install shortuuid gptcache evaluate \
           && pip install fschat pydub python-multipart PyPDF2 langchain \
           && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
           && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
           && pip install yacs uvicorn optimum optimum[habana] \
           && pip install sentence_transformers unstructured markdown rouge_score \
+          && pip install einops \
           && pip install --upgrade accelerate"
 
       - name: Run UT
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
           && bash run_unit_test_neuralchat.sh --test_name=${{ matrix.test_name }}"
 
       - name: Collect log
         if: ${{ !cancelled() }}
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers && \
                  mv /log_dir . "
       
