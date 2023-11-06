@@ -112,7 +112,7 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
     # create kb_id
     import uuid
     # kb_id = f"doc_{str(uuid.uuid1())[:8]}"
-    upload_path = f"/home/tme/letong/askdoc_upload"
+    upload_path = f"/home/tme/letong/askdoc_upload/enterprise_docs"
     # os.system(f"mkdir {upload_path} ")
     print(f"[askdoc - create_kb] upload path: {upload_path}")
     if '/' in filename:
