@@ -37,31 +37,6 @@ using data_type_acc_in = gpu::xetla::fp16;
 using data_type_acc = float;
 using data_type_b = gpu::xetla::int4x2;
 
-void dequantize(std::vector<fp16> &dequant_b, CompressWei4Bit *B,
-                  uint32_t matrix_k, uint32_t matrix_n, size_t size_zero_pt_n,
-                  size_t size_scale_n) {
-  for (int i = 0; i < matrix_k / dequant_s; i++) {
-    for (int j = 0; j < matrix_n / 2; j++) {
-      int start_in = i * dequant_s * matrix_n / 2 + j;
-      int start_zero_pt = i * size_zero_pt_n + j;
-      int start_out = i * dequant_s * matrix_n + j * 2;
-      int start_scale = i * size_scale_n + j * 2;
-      for (int ii = 0; ii < dequant_s; ii++) {
-        uint8_t data_in = reinterpret_cast<uint8_t *>(
-            B->get_scale_ptr())[start_in + ii * matrix_n / 2];
-        int8_t data_0 = int8_t(data_in & 0x0f) - 8;
-        int8_t data_1 = int8_t(data_in >> 4) - 8;
-        dequant_b[start_out + ii * matrix_n] =
-            fp16(data_0) * reinterpret_cast<data_type_scale *>(
-                               B->get_scale_ptr())[start_scale];
-        dequant_b[start_out + ii * matrix_n + 1] =
-            fp16(data_1) * reinterpret_cast<data_type_scale *>(
-                               B->get_scale_ptr())[start_scale + 1];
-      }
-    }
-  }
-}
-
 struct linear_param {
   uint32_t matrix_m;
   uint32_t matrix_n;
@@ -141,40 +116,25 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
   p.size_cnt = gemm_op_t::get_cnt_buf_size(p.matrix_m, p.matrix_n);
 
-  // Define and initialize the data required for the calculation
-  auto *Acc_h = static_cast<data_type_acc *>(
-      malloc_host(p.size_acc * sizeof(data_type_acc), context));
-  auto *Cnt_h = static_cast<uint32_t *>(
-      malloc_host(p.size_cnt * sizeof(uint32_t), context));
-  for (unsigned i = 0; i < p.size_acc; ++i) {
-    Acc_h[i] = 0;
-  }
-  for (unsigned i = 0; i < p.size_cnt; ++i) {
-    Cnt_h[i] = 0;
-  }
   auto *A_d = static_cast<data_type_a *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_a * sizeof(data_type_a), device, context));
   auto *B_d = static_cast<data_type_b *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_b * sizeof(data_type_b), device, context));
   auto *C_d = static_cast<data_type_c *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_c * sizeof(data_type_c), device, context));
-  auto *Acc_d = static_cast<data_type_acc *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_acc * sizeof(data_type_acc), device, context));
-  auto *Cnt_d = static_cast<uint32_t *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_cnt * sizeof(uint32_t), device, context));
   auto *scale_d = static_cast<data_type_scale *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_scale * sizeof(data_type_scale), device,
       context));
+  auto *Acc_d = static_cast<data_type_acc *>(alloc_device<data_type_acc>(
+        p.size_acc * sizeof(data_type_acc), device, context));
+  auto *Cnt_d = static_cast<uint32_t *>(alloc_device<uint32_t>(
+        p.size_cnt * sizeof(uint32_t), device, context));
   queue.memcpy((void *)A_d, (void *)A, p.size_a * sizeof(data_type_a)).wait();
   queue
       .memcpy((void *)B_d, (void *)(B->get_4bit_wei_ptr()),
               p.size_b * sizeof(data_type_b))
       .wait();
   queue.memcpy((void *)C_d, (void *)C, p.size_c * sizeof(data_type_c)).wait();
-  queue.memcpy((void *)Acc_d, (void *)Acc_h, p.size_acc * sizeof(data_type_acc))
-      .wait();
-  queue.memcpy((void *)Cnt_d, (void *)Cnt_h, p.size_cnt * sizeof(uint32_t))
-      .wait();
   queue
       .memcpy((void *)scale_d, (void *)(B->get_scale_ptr()),
               p.size_scale * sizeof(data_type_scale))
@@ -203,15 +163,11 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   });
   e_esimd.wait();
 
-  std::vector<fp16> dequantize_b(p.matrix_k * p.matrix_n, 0);
-  dequantize(dequantize_b, B, p.matrix_k, p.matrix_n, p.size_zero_pt_n, p.size_scale_n);
   queue.memcpy((void *)C, (void *)C_d, p.size_c * sizeof(data_type_c)).wait();
   free(A_d, context);
   free(B_d, context);
   free(C_d, context);
   free(scale_d, context);
-  free(Acc_h, context);
-  free(Cnt_h, context);
   free(Acc_d, context);
   free(Cnt_d, context);
 }
@@ -274,19 +230,6 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
 
   p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
   p.size_cnt = gemm_op_t::get_cnt_buf_size(p.matrix_m, p.matrix_n);
-
-  // Define and initialize the data required for the calculation
-  auto *Acc_h = static_cast<data_type_acc *>(
-      malloc_host(p.size_acc * sizeof(data_type_acc), context));
-  auto *Cnt_h = static_cast<uint32_t *>(
-      malloc_host(p.size_cnt * sizeof(uint32_t), context));
-  
-  for (unsigned i = 0; i < p.size_acc; ++i) {
-    Acc_h[i] = 0;
-  }
-  for (unsigned i = 0; i < p.size_cnt; ++i) {
-    Cnt_h[i] = 0;
-  }
   
   auto *A_d = static_cast<data_type_a *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_a * sizeof(data_type_a), device, context));
@@ -294,25 +237,21 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
       DEVICE_MEM_ALIGNMENT, p.size_b * sizeof(data_type_b), device, context));
   auto *C_d = static_cast<data_type_c *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_c * sizeof(data_type_c), device, context));
-  auto *Acc_d = static_cast<data_type_acc *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_acc * sizeof(data_type_acc), device, context));
-  auto *Cnt_d = static_cast<uint32_t *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_cnt * sizeof(uint32_t), device, context));
   auto *scale_d = static_cast<data_type_scale *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_scale * sizeof(data_type_scale), device,
       context));
   auto *D_d = static_cast<data_type_acc *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_d * sizeof(data_type_acc), device, context));
+  auto *Acc_d = static_cast<data_type_acc *>(alloc_device<data_type_acc>(
+        p.size_acc * sizeof(data_type_acc), device, context));
+  auto *Cnt_d = static_cast<uint32_t *>(alloc_device<uint32_t>(
+        p.size_cnt * sizeof(uint32_t), device, context));
   queue.memcpy((void *)A_d, (void *)A, p.size_a * sizeof(data_type_a)).wait();
   queue
       .memcpy((void *)B_d, (void *)(B->get_4bit_wei_ptr()),
               p.size_b * sizeof(data_type_b))
       .wait();
   queue.memcpy((void *)C_d, (void *)C, p.size_c * sizeof(data_type_c)).wait();
-  queue.memcpy((void *)Acc_d, (void *)Acc_h, p.size_acc * sizeof(data_type_acc))
-      .wait();
-  queue.memcpy((void *)Cnt_d, (void *)Cnt_h, p.size_cnt * sizeof(uint32_t))
-      .wait();
   queue
       .memcpy((void *)scale_d, (void *)(B->get_scale_ptr()),
               p.size_scale * sizeof(data_type_scale))
@@ -346,16 +285,12 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   });
   e_esimd.wait();
 
-  std::vector<fp16> dequantize_b(p.matrix_k * p.matrix_n, 0);
-  dequantize(dequantize_b, B, p.matrix_k, p.matrix_n, p.size_zero_pt_n, p.size_scale_n);
   queue.memcpy((void *)C, (void *)C_d, p.size_c * sizeof(data_type_c)).wait();
   free(A_d, context);
   free(B_d, context);
   free(C_d, context);
   free(D_d, context);
   free(scale_d, context);
-  free(Acc_h, context);
-  free(Cnt_h, context);
   free(Acc_d, context);
   free(Cnt_d, context);
 }

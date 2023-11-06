@@ -152,3 +152,11 @@ private:
   bool _sym;
   char *_write_buf;
 };
+
+template <typename data_type>
+inline data_type *alloc_device(
+        size_t size, sycl::device &device, sycl::context &context) {
+    auto device_ptr = static_cast<data_type *>(aligned_alloc_device(
+            DEVICE_MEM_ALIGNMENT, size * sizeof(data_type), device, context));
+    return device_ptr;
+}
