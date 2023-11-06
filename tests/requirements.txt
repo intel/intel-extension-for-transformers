@@ -11,7 +11,7 @@ transformers==4.34.1
 intel-tensorflow==2.12.0
 torchprofile
 intel-extension-for-pytorch
-tokenizers<=0.12.1
+tokenizers
 sentencepiece != 0.1.92
 accelerate
 evaluate
