@@ -74,7 +74,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   const int n_ctx = lctx.n_ctx;  // max number fo tokens to keep in the kv-cache
   const int n_keep = lctx.n_keep;
   const bool shift_roped_k = lctx.shift_roped_k;
-  const bool is_full_ring = shift_roped_k && n_total > n_past;
+  // Whether kv-cache uses ring-buffer and is already full in the current run of _model_eval
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
   const int n_cached = shift_roped_k ? std::min(n_total + N, n_ctx) : (n_past + N);  // #tokens cached after kv-append
   int n_head = hparams.n_head;
   int head_size = n_embd / n_head;
@@ -182,7 +183,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0);
     ne_set_name(Qcur, "Qcur");
     Kcur = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
-        ctx0, Kcur, (is_full_ring ? n_ctx : n_past), n_rot, 0, 0);
+        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
     ne_set_name(Kcur, "Kcur");
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
@@ -208,7 +209,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ctx0,
           ne_view_1d(ctx0, kv_self.k, n_cached * n_embd_gqa, il * n_ctx * ne_element_size(kv_self.k) * n_embd_gqa),
           n_embd_gqa / n_head_kv, n_head_kv, n_cached);
-      if (is_full_ring) {
+      if (is_ring_full) {
         struct ne_tensor* cossin_cache = nullptr;
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
