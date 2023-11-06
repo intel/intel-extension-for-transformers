@@ -84,6 +84,8 @@ class QuantizedLinearCPU(torch.nn.Linear):
         device=None,
     ):
         super().__init__(input_features, output_features, bias, device)
+        assert compute_dtype in ['fp32', 'bf16', 'int8'], \
+            "compute_dtype must be 'fp32', 'bf16', 'int8' on intel CPU device."
         self.compute_dtype = compute_dtype
         self.compress_statistics = compress_statistics
         self.blocksize = blocksize

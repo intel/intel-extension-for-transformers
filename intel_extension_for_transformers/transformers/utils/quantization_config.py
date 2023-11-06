@@ -81,8 +81,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
-            raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
+        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'fp16', 'bf16', 'int8']:
+            raise ValueError("compute_dtype must be 'fp32', 'fp16', 'bf16', 'int8'.")
 
         if self.weight_dtype is None:
             self.weight_dtype = 'int4_fullrange'

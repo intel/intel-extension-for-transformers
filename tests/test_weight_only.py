@@ -58,7 +58,7 @@ class TestWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
-            convert_to_quantized_model(model, config)
+            model = convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
             print(output_quant)
@@ -81,7 +81,7 @@ class TestWeightOnly(unittest.TestCase):
                 model.linear.weight = torch.nn.Parameter(raw_wei)
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
-            convert_to_quantized_model(model, config)
+            model = convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
             print(output_quant)

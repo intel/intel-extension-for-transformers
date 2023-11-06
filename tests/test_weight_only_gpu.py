@@ -157,7 +157,7 @@ class TestArcWeightOnly(unittest.TestCase):
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
         output = model(input_ids)
 
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=16)
+        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=128, compute_dtype="fp16")
         config.calib_dataloader = DataLoader(
             DummyDataset(model_name, model.seqlen),
             batch_size=1,
@@ -171,7 +171,10 @@ class TestArcWeightOnly(unittest.TestCase):
         print("fp16 logits {}".format(fp16_logits.shape))
         print("int4 logits {}".format(quan_logits.shape))
 
-        return True
+        qmodel.save_low_bit(self.workspace)
+        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace)
+        output_reload = loaded_model(input_ids.to(torch.device("xpu")))
+        assert torch.allclose(output_reload.to("cpu"), output_quant.to("cpu"), rtol=0.01)
 
     def test_int4_ipex_arc(self):
         from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
@@ -192,7 +195,7 @@ class TestArcWeightOnly(unittest.TestCase):
             output = model(activation)
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
-            convert_to_quantized_model(model, config, device="xpu")
+            model = convert_to_quantized_model(model, config, device="xpu")
             output_quant = model(activation.to(torch.device("xpu")))
             print(output)
             print(output_quant)

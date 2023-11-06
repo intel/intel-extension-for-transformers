@@ -23,6 +23,11 @@ from datasets import load_dataset
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
+from ...utils.utils import is_ipex_available
+
+
+if is_ipex_available:
+    import intel_extension_for_pytorch as ipex
 
 
 torch = LazyImport("torch")
@@ -118,13 +123,18 @@ def _replace_linear(
 
     Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
     """
+    if device == "xpu" or (is_ipex_available and device == torch.device("xpu")):
+        model = model.to("xpu")
+        model = ipex.optimize(model.eval())
     weight_dtype = get_weight_type_from_config(quantization_config)
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
         current_key_name.append(name)
 
-        if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
+        if (isinstance(module, torch.nn.Linear)
+            or (is_ipex_available and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
+           and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
