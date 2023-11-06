@@ -37,6 +37,7 @@ class DocumentIndexing:
         self.document_store = document_store
         self.process = process
         self.persist_dir = persist_dir
+        self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
         
