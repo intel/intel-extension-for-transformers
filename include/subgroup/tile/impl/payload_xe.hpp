@@ -1132,8 +1132,12 @@ private:
             = is_col_major ? tile_size_y : tile_size_x;
     static constexpr uint32_t mem_tile_size_h
             = is_col_major ? tile_size_x : tile_size_y;
-    using load_store_attr = typename arch_attr_t<
-            arch_tag>::template load_store_attr<msg_type::block_2d>;
+
+    static constexpr msg_type type = arch_tag_ == gpu_arch::Arc
+            ? msg_type::unaligned_2d
+            : msg_type::block_2d;
+    using load_store_attr =
+            typename arch_attr_t<arch_tag>::template load_store_attr<type>;
     static constexpr uint32_t special_prefetch_width
             = load_store_attr::special_prefetch_width_in_bytes / sizeof(dtype);
     static constexpr uint32_t normal_prefetch_width

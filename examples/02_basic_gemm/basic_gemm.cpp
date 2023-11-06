@@ -31,9 +31,9 @@ void basic_gemm_run(sycl::queue queue, uint32_t iter) {
     uint32_t size_b = matrix_k * matrix_n;
     uint32_t size_c = matrix_m * matrix_n;
 
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
+    using data_type_a = fp16;
+    using data_type_b = fp16;
+    using data_type_c = fp16;
     using data_type_acc = float;
 
     auto context = queue.get_info<info::queue::context>();

@@ -39,7 +39,7 @@ template <reduce_op reduce_kind, typename tile_shape_, typename matAcc_t,
         uint32_t num_cooperative_wg, gpu_arch arch_tag_>
 class cooperative_reduce_t<reduce_kind, tile_shape_, matAcc_t,
         num_cooperative_wg, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
 public:
     static constexpr gpu_arch arch_tag = arch_tag_;
     using tile_shape = tile_shape_;
@@ -183,7 +183,7 @@ public:
 template <reduce_op reduce_kind, typename tile_shape_, typename matAcc_t,
         gpu_arch arch_tag_>
 class cooperative_reduce_t<reduce_kind, tile_shape_, matAcc_t, 1, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
 public:
     static constexpr gpu_arch arch_tag = arch_tag_;
     using tile_shape = tile_shape_;

@@ -120,7 +120,7 @@ class gemm_universal_t<dispatch_policy_int4_dequantize_kslicing<group_swizzle_,
             "num_local_kslicing should be power of 2!");
 
     using kslicing_t = group::cooperative_reduce_t<reduce_op::sum, tile_shape,
-            matAcc_t, num_local_kslicing, gpu_arch::Xe>;
+            matAcc_t, num_local_kslicing, arch_tag>;
     using mat_slice_t = typename kslicing_t::mat_slice_t;
     static constexpr uint32_t ks_coop_num_x = kslicing_t::coop_num_x;
     static constexpr uint32_t ks_coop_num_y = kslicing_t::coop_num_y;
@@ -141,7 +141,7 @@ class gemm_universal_t<dispatch_policy_int4_dequantize_kslicing<group_swizzle_,
 
     using global_group_reduce_t = group::global_reduce_t<reduce_op::sum,
             tile_shape, tile_shape_cnt, mem_desc_acc_t, mem_desc_cnt_t,
-            num_global_kslicing, counter_size, gpu_arch::Xe>;
+            num_global_kslicing, counter_size, arch_tag>;
 
 public:
     /// @brief GEMM arguments.

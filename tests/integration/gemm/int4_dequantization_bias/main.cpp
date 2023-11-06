@@ -239,10 +239,6 @@ void dequantize_gemm_run(int iter) {
             gpu::xetla::gpu_arch::Arc>;
     using tile_op_t = gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
 
-    //     using epilogue_t = xetla::group::epilogue_t<
-    //             xetla::group::epilogue_policy_unaligned<gpu_arch::Arc>, tile_shape,
-    //             mem_desc_c_t>;
-
     using epilogue_t = xetla::group::epilogue_t<
             xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Arc>,
             tile_shape, mem_desc_c_t>;
