@@ -49,8 +49,8 @@ def truncate_sequences(sequences, max_length):
 
 class CompletionDataPreprocess:
     def __init__(self, dataset_name):
-        self.dataset_name = dataset_name
-        if "alpaca" in dataset_name:
+        self.dataset_name = dataset_name.lower()
+        if "alpaca" in self.dataset_name:
             self.prompt_template = [
                 PromptTemplate("alpaca_without_input"),
                 PromptTemplate("alpaca_with_input")
@@ -59,7 +59,7 @@ class CompletionDataPreprocess:
                 [('instruction', 0), ('output', 1)],
                 [('instruction', 0), ('input', 1), ('output', 2)]
             ]
-        elif "stack-exchange-instruction" in dataset_name:
+        elif "stack-exchange-instruction" in self.dataset_name:
             self.prompt_template = PromptTemplate("question_answer")
             self.key_role_map = [('question', 0), ('response', 1)]
 
