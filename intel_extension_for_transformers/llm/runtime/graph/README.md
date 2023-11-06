@@ -69,14 +69,14 @@ You can use Python API to run Hugging Face model simply. Here is the sample code
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
+config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
@@ -86,13 +86,13 @@ from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
  
 # Paper: https://arxiv.org/pdf/2309.17453.pdf
 # Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold
