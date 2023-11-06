@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gb88bb8b documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g68ca206 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -161,7 +161,7 @@
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>To enable StreamingLLM for infinite inference, here is the sample code:</p>
+<p>To enable <a class="reference external" href="./docs/infinite_inference.html">StreamingLLM for infinite inference</a>, here is the sample code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Intel/neural-chat-7b-v1-1&quot;</span>     <span class="c1"># Hugging Face model_id or local model</span>
@@ -173,7 +173,7 @@
 <span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">)</span>
- 
+
 <span class="c1"># Paper: https://arxiv.org/pdf/2309.17453.pdf</span>
 <span class="c1"># Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">ctx_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">n_keep</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_discard</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -202,7 +202,8 @@
 | length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
 | early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
-| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |</p>
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |</p>
 </section>
 <section id="chat-with-llama2">
 <h3>3. Chat with LLaMA2<a class="headerlink" href="#chat-with-llama2" title="Link to this heading"></a></h3>
@@ -272,11 +273,13 @@ ninja
 | -p / –prompt               | Prompt to start generation with: String (default: empty)                                                      |
 | -n / –n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
 | -t / –threads              | Number of threads to use during computation: Int (default: 56)                                                |
-| -b / –batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |<br />| -c / –ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length) |
+| -b / –batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |
+| -c / –ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length) |
 | -s / –seed                 | NG seed: Int (default: -1, use random seed for &lt; 0)                                                           |
 | –repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                      |
 | –color                     | Colorise output to distinguish prompt and user input from generations                                         |
-| –keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |</p>
+| –keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |
+| –shift-roped-k             | Use <a class="reference external" href="./docs/infinite_inference.html#shift-rope-k-and-ring-buffer">ring-buffer</a> and thus do not re-computing after reaching ctx_size (default: False) |</p>
 </section>
 </section>
 <section id="advanced-usage">
@@ -351,12 +354,13 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 | –repeat_penalty                                  | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                                                                                                |
 | –color                                           | Colorise output to distinguish prompt and user input from generations                                                                                                                   |
 | –keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
+| –shift-roped-k                                   | Use <a class="reference external" href="./docs/infinite_inference.html#shift-rope-k-and-ring-buffer">ring-buffer</a> and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | –glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
 | –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 &amp; AMX) and fall back to fp16 if failed |</p>
 </section>
 <section id="tensor-parallelism-cross-nodes-sockets">
 <h3>3. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
-<p>We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to <a class="reference external" href="./tensor_parallelism.html">tensor_parallelism.html</a> to enable this feature.</p>
+<p>We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket. You can refer to <a class="reference external" href="./docs/tensor_parallelism.html">tensor_parallelism.html</a> to enable this feature.</p>
 </section>
 <section id="contribution">
 <h3>4. Contribution<a class="headerlink" href="#contribution" title="Link to this heading"></a></h3>
@@ -379,7 +383,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f71dc8b2fe0> 
+   <jinja2.runtime.BlockReference object at 0x7fa27f31d120> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

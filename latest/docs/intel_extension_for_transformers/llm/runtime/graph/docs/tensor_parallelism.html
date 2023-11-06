@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tensor Parallelism &mdash; Intel® Extension for Transformers 0.1.dev1+g68ca206 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tensor Parallelism</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/graph/docs/tensor_parallelism.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tensor-parallelism">
+<h1>Tensor Parallelism<a class="headerlink" href="#tensor-parallelism" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#prerequisites">Prerequisites</a></p></li>
+<li><p><a class="reference external" href="#enable-customized-model">Enable Customized Model</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p></li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>Tensor parallelism is a strategy employed to train and inference from very large language models by splitting the actual computations/tensors across multiple compute devices. It is a critical technique for the continued growth and application of massive deep learning models and offers a path to unlocking unprecedented model capacities.</p>
+<p>When we use tensor parallelism to partition and compute large language models, there are various ways in which we can perform the partitioning algorithm. In 1D algorithms, we can split by rows or columns. For a row-major order matrix, if you split by column, data rearrangement is required, which is a factor affecting performance. However, splitting a row-major order matrix by rows does not consume time. In our TP implementation, we adopt the method of pre-splitting the corresponding weights, so the time consumed for this part is one-time and does not affect inference performance. Meanwhile, another major factor impacting performance is ‘all reduce’. Since each node computes partial and incomplete results, it is necessary to perform ‘all reduce’ on the output data. But all reduce is relatively time-consuming, interestingly, by using a reasonable splitting and combining method, primitives can be operated independently across nodes, which is very helpful for performance optimization. Thus, a rational splitting method becomes extremely important.</p>
+<p>Taking the FFN module as an example, if the first <code class="docutils literal notranslate"><span class="pre">matmul</span></code> splits by column and computes the <code class="docutils literal notranslate"><span class="pre">matmul</span></code> with input, it will result in two unrelated sub-matrices on each node. These two sub-matrices, when performing the second <code class="docutils literal notranslate"><span class="pre">matmul</span></code> operation, can proceed directly without having to perform ‘all reduce’ if splitting by rows. Thus, the entire FFN module only requires one ‘all reduce’, meaning that with properly tailored split implementation, even with multiple <code class="docutils literal notranslate"><span class="pre">matmul</span></code> operations, only one ‘all reduce’ operation may be needed.</p>
+<img src="imgs/FFN.PNG" width=700 height=300 alt="FFN split">
+<br><p>The scenario for the attention module is more complex. As shown in the following figure, a rational split can make it so that the entire attention module only requires one ‘all reduce’ operation, thus greatly saving synchronization time.</p>
+<img src="imgs/Attention.PNG" width=700 height=300 alt="Attention split">
+<br></section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Multi-node and Multi-socket communications are needed in tensor parallelism, we use oneCCL for the distributed communications.</p>
+</section>
+<section id="enable-customized-model">
+<h2>Enable Customized Model<a class="headerlink" href="#enable-customized-model" title="Link to this heading"></a></h2>
+<p>Taking “llama” as an example, we need three modifications:</p>
+<ul class="simple">
+<li><p>First, we need to split the weight used in the <code class="docutils literal notranslate"><span class="pre">matmul</span></code> calculation.</p></li>
+<li><p>Second, determine the size of <code class="docutils literal notranslate"><span class="pre">n_head</span></code> after splitting, based on the total number of nodes in parallel(world_size).</p></li>
+<li><p>Finally, insert the <code class="docutils literal notranslate"><span class="pre">all_reduce</span></code> operator after the final matmul.</p></li>
+</ul>
+<p>For instance, when splitting the FFN (feed-forward network) module, it is visible in the FFN flowchart that both <code class="docutils literal notranslate"><span class="pre">feed_forward.w1.weigh</span></code> and <code class="docutils literal notranslate"><span class="pre">feed_forward.w3.weight</span></code> are part of the first <code class="docutils literal notranslate"><span class="pre">matmul</span></code> computation. This portion of the <code class="docutils literal notranslate"><span class="pre">matmul</span></code> should be split by column, considering the weight in ITREX is already transposed. We only need to set the <code class="docutils literal notranslate"><span class="pre">split_type</span></code> of these two weights to <code class="docutils literal notranslate"><span class="pre">TP_1D_ROW</span></code> within the <code class="docutils literal notranslate"><span class="pre">calc_split_type()</span></code> function in ‘models/modelutils/model_files.h’.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">feed_forward.w1.weight</span></code> belongs to the second part of the <code class="docutils literal notranslate"><span class="pre">matmul</span></code> calculation in the FFN flowchart, the <code class="docutils literal notranslate"><span class="pre">split_type</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">TP_1D_COLUMN</span></code>. This ensures that the partial results from the first <code class="docutils literal notranslate"><span class="pre">matmul</span></code> calculation can be independently used for the second <code class="docutils literal notranslate"><span class="pre">matmul</span></code> calculation. There are also some primitives between the two <code class="docutils literal notranslate"><span class="pre">matmul</span></code> operations, and since these primitives are element-wise, they are also calculated independently on their respective nodes.</p>
+<p>For the attention module, there are four weights: <code class="docutils literal notranslate"><span class="pre">attention.wq.weight</span></code>, <code class="docutils literal notranslate"><span class="pre">attention.wk.weight</span></code>, <code class="docutils literal notranslate"><span class="pre">attention.wv.weight</span></code>, and <code class="docutils literal notranslate"><span class="pre">attention.wo.weight</span></code>. The <code class="docutils literal notranslate"><span class="pre">split_type</span></code> for <code class="docutils literal notranslate"><span class="pre">attention.wq.weight</span></code>, <code class="docutils literal notranslate"><span class="pre">attention.wk.weight</span></code>and <code class="docutils literal notranslate"><span class="pre">attention.wv.weight</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">TP_1D_ROW</span></code>. In contrast, <code class="docutils literal notranslate"><span class="pre">attention.wo.weight</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">TP_1D_COLUMN</span></code>. The calculations for the primitives in between can be done independently.</p>
+<p>Once the weight splitting is complete, the actual <code class="docutils literal notranslate"><span class="pre">n_head</span></code> computed by each node when running the model is correspondingly reduced, so it is necessary to reset the size of <code class="docutils literal notranslate"><span class="pre">n_head</span></code>. Code is simple like:</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">n_head</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">world_size</span><span class="p">;</span>
+<span class="n">n_head_kv</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">world_size</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Finally, after the last <code class="docutils literal notranslate"><span class="pre">matmul</span></code> calculation, insert the <code class="docutils literal notranslate"><span class="pre">all_reduce</span></code> operator to sum up the partial computation results, thereby obtaining the complete computational outcome.</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="n">cur</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ne_all_reduce</span><span class="p">(</span><span class="n">ctx0</span><span class="p">,</span><span class="w"> </span><span class="n">cur</span><span class="p">);</span>
+</pre></div>
+</div>
+<section id="build-the-oneccl-and-setup-the-env">
+<h3>Build the oneCCL and setup the env<a class="headerlink" href="#build-the-oneccl-and-setup-the-env" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/oneapi-src/oneCCL.git
+<span class="nb">cd</span><span class="w"> </span>oneCCL
+sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/cpu_gpu_dpcpp/./g&#39;</span><span class="w"> </span>cmake/templates/oneCCLConfig.cmake.in
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..
+make<span class="w"> </span>-j<span class="w"> </span>install
+<span class="nb">source</span><span class="w"> </span>&lt;path_to_build_dir&gt;/_install/env/setvars.sh
+</pre></div>
+</div>
+<p>To confirm that the oneCCL installation is successful, use command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>--version
+</pre></div>
+</div>
+<p>If the command line prints log like below, means the oneCCL env is ready.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">Intel</span><span class="p">(</span><span class="n">R</span><span class="p">)</span><span class="w"> </span><span class="n">MPI</span><span class="w"> </span><span class="n">Library</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Linux</span><span class="o">*</span><span class="w"> </span><span class="n">OS</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="mf">2021.9</span><span class="w"> </span><span class="n">Build</span><span class="w"> </span><span class="mi">20230306</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="o">:</span><span class="w"> </span><span class="n">d82b3071db</span><span class="p">)</span>
+<span class="n">Copyright</span><span class="w"> </span><span class="mi">2003-2023</span><span class="p">,</span><span class="w"> </span><span class="n">Intel</span><span class="w"> </span><span class="n">Corporation</span><span class="p">.</span>
+</pre></div>
+</div>
+</section>
+<section id="enable-the-cmake-option-and-build-executable-file">
+<h3>Enable the CMake option and build executable file<a class="headerlink" href="#enable-the-cmake-option-and-build-executable-file" title="Link to this heading"></a></h3>
+<p>Compile an executable file that supports tensor parallelism by enabling the CMake option <code class="docutils literal notranslate"><span class="pre">NE_TP</span></code>. You can build the executable file like below.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>-DNE_TP<span class="o">=</span>ON<span class="w"> </span>..<span class="w"> </span>
+make<span class="w"> </span>-j
+</pre></div>
+</div>
+</section>
+<section id="download-the-model-weights-and-quantize-to-q4-0-format">
+<h3>Download the model weights and quantize to q4_0 format.<a class="headerlink" href="#download-the-model-weights-and-quantize-to-q4-0-format" title="Link to this heading"></a></h3>
+<p>First you should download and convert the model to f32 format. You can also quantize the model to q4_0 format, but it is optional.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>EleutherAI/gpt-j-6b
+</pre></div>
+</div>
+<p>Then quantize the model to q4_0 format(optional).</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>gptj<span class="w"> </span>--model_file<span class="w"> </span>/path/to/your/ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_0.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4
+</pre></div>
+</div>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>We can config the <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> to start parallel programs. Here is an example about running tensor pallelsim on 2 sockets in CPU.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">2</span><span class="w"> </span>-bind-to<span class="o">=</span>socket<span class="w"> </span>./build/bin/main_gptj<span class="w"> </span>-m<span class="w"> </span>ne-q4_0.bin<span class="w"> </span>--seed<span class="w"> </span><span class="m">1234</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>-c<span class="w"> </span><span class="m">68</span><span class="w"> </span>-n<span class="w"> </span><span class="m">32</span><span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun.&quot;</span><span class="w"> </span>--no_mmap
+</pre></div>
+</div>
+<p>We only add <code class="docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">2</span> <span class="pre">-bind-to=socket</span></code> to the original command to enable 2 processes to run parallel. If you want to bind specific core to each process. You can write the original command to a shell script and use command like below.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>taskset<span class="w"> </span>-c<span class="w"> </span><span class="m">0</span>-47<span class="w"> </span>sh<span class="w"> </span>run.sh<span class="w"> </span>:<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>taskset<span class="w"> </span>-c<span class="w"> </span><span class="m">48</span>-95<span class="w"> </span>sh<span class="w"> </span>run.sh
+</pre></div>
+</div>
+<p><strong>NOTICE</strong>: tensor parallelsim strategy will split the model to specific node/socket, each device already use part of the original weights differently. So we should not use shared-memory of weights to avoid cross numa weight movement. Use option <code class="docutils literal notranslate"><span class="pre">--no-mmap</span></code> to disable shared weights between processes.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fa29786cf10> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

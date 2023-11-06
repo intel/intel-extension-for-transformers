@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fused Attention &mdash; Intel® Extension for Transformers 0.1.dev1+g68ca206 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Fused Attention</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/graph/docs/fused_attention.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fused-attention">
+<h1>Fused Attention<a class="headerlink" href="#fused-attention" title="Link to this heading"></a></h1>
+<p>Attention (including MHA, GQA, MQA) is one of the key parts of transformers and also the performance critical in many scenarios. To implement various optimizations, a fused attention layer and corresponding utilities for the customized KV-cache it uses are introduced. As an example, fused attention can reduce the cost of MHA from 8521.276 ms (17.044 ms) to 248.586 ms (7.944 ms) of a 1975-token llama-7b first-token inference<a class="reference external" href="#1">[1]</a>.</p>
+<p>Note that this doc assumes you have the basic knowledge of this cpp graph implementation including <code class="docutils literal notranslate"><span class="pre">ne_tensor::ne</span></code>, <code class="docutils literal notranslate"><span class="pre">ne_tensor::nb</span></code> etc. Model builder can enable fused attention with operators <code class="docutils literal notranslate"><span class="pre">ne_flash_attn*</span></code> defined in <a class="reference external" href="core/ne_layers.h"><code class="docutils literal notranslate"><span class="pre">core/ne_layers.h</span></code></a> while the implementation of fused attentions is mostly located in <a class="reference external" href="core/layers/mha_dense.cpp"><code class="docutils literal notranslate"><span class="pre">core/layers/mha_dense.cpp</span></code></a>.</p>
+<section id="kv-cache-initialization">
+<h2>KV-cache initialization<a class="headerlink" href="#kv-cache-initialization" title="Link to this heading"></a></h2>
+<p>The memory for kv-cache is allocated in <code class="docutils literal notranslate"><span class="pre">/models/model_utils/model_utils.cpp</span></code>. As the fused attention implementation requires certain instruction extensions and potentially some other limitations, fused attention is enabled only if <code class="docutils literal notranslate"><span class="pre">jblas_reordered_attn_fp32_support()</span></code> aggress, denoting with <code class="docutils literal notranslate"><span class="pre">memory_type</span> <span class="pre">=</span> <span class="pre">NE_TYPE_JBLAS</span></code>. Next, <code class="docutils literal notranslate"><span class="pre">get_batch_kv_elements_from_gpt_params()</span></code> will give the sizes (in terms of bytes if fused attention enabled, or in terms elements if fused attention disabled) of k-cache and v-cache respectively for each batch and each layer. The KV-cache is finally prepared with these 2 sizes by creating <code class="docutils literal notranslate"><span class="pre">ne_new_tensor</span></code> inside <code class="docutils literal notranslate"><span class="pre">model.kv_self.k/.v</span></code> or <code class="docutils literal notranslate"><span class="pre">model.layer[il].k_cache/.v_cache</span></code>.</p>
+</section>
+<section id="kv-cache-append">
+<h2>KV-cache Append<a class="headerlink" href="#kv-cache-append" title="Link to this heading"></a></h2>
+<p>KV-cache is appended every time a new pair of K and V are generated by evaluating inner product for QKV (ne_mul_qkv). This operation append an additional K/V-tensor on the dimension of sequence length (i.e. resulting <code class="docutils literal notranslate"><span class="pre">n_past</span> <span class="pre">=</span> <span class="pre">n_past</span> <span class="pre">+</span> <span class="pre">N</span></code>, where <code class="docutils literal notranslate"><span class="pre">n_past</span></code> is number of previously cached tokens and <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of current tokens).</p>
+<p>The tensor of K and V should be both permuted (with <code class="docutils literal notranslate"><span class="pre">ne_permute</span></code>) to <code class="docutils literal notranslate"><span class="pre">batch</span> <span class="pre">x</span> <span class="pre">N</span> <span class="pre">x</span> <span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span></code>. The permuted K/V tensors can then be passed to <code class="docutils literal notranslate"><span class="pre">ne_flash_attn_update_k()/_v()</span></code>, together with <code class="docutils literal notranslate"><span class="pre">n_past</span></code> as an offset in the dimension of sequence length, to concatenate to a “view” of the cached K/V of the current layer and current batch.</p>
+<blockquote>
+<div><p>Note: Currently the K and V tensor to append must be contiguous in the dimension of head size (i.e. <code class="docutils literal notranslate"><span class="pre">head_dim</span></code> in some implementations). The strides (<code class="docutils literal notranslate"><span class="pre">ne_tensor::nb</span></code>) of the other 3 dimensions are configurable.</p>
+</div></blockquote>
+</section>
+<section id="fused-attention-computation">
+<h2>Fused Attention Computation<a class="headerlink" href="#fused-attention-computation" title="Link to this heading"></a></h2>
+<p>With the KV-cache of customized type and layout, the attention can be computed at its best performance. <code class="docutils literal notranslate"><span class="pre">ne_flash_attn</span></code> accepts a Q-tensor of <code class="docutils literal notranslate"><span class="pre">batch</span> <span class="pre">x</span> <span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">N</span> <span class="pre">x</span> <span class="pre">head_size</span></code> and outputs a result tensor of <code class="docutils literal notranslate"><span class="pre">batch</span> <span class="pre">x</span> <span class="pre">N</span> <span class="pre">x</span> <span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span></code> (totally contiguous).</p>
+<blockquote>
+<div><p>Node: similar to the append operation, Q-tensor must be contiguous in the dimension of head and its strides (<code class="docutils literal notranslate"><span class="pre">ne_tensor::nb</span></code>) of the other 3 dimensions are configurable.</p>
+</div></blockquote>
+</section>
+<section id="supported-models">
+<h2>Supported Models<a class="headerlink" href="#supported-models" title="Link to this heading"></a></h2>
+<p>Fused attention is designed to be able to easily support various models:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Models</th>
+      <th align="center">Attention Type & Support</th>
+      <th>Runtime ISA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p><a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-13b-hf">LLaMA-13B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a></p>
+</td>
+      <td align="center">MHA ✅</td>
+      <td rowspan=10>AMX_BF16</td>
+    </tr>
+    <tr>
+      <td><p><a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf">LLaMA2-70B</a></td>
+<td align="center">GQA ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-j-6b">GPT-J-6B</a></td>
+<td align="center">MHA ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-neox-20b">GPT-NeoX-20B</a>, <a class="reference external" href="https://huggingface.co/databricks/dolly-v2-3b">Dolly-v2-3B</a></td>
+<td align="center">MHA ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT-7B</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-30b">MPT-30B</a></td>
+<td align="center">MHA with <a class="reference external" href="https://arxiv.org/abs/2108.12409">ALiBi</a> ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">Falcon-7B</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">Falcon-40B</a></td>
+<td align="center">MQA, GQA ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a></td>
+<td align="center">MHA with <a class="reference external" href="https://arxiv.org/abs/2108.12409">ALiBi</a> 🚧</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a></td>
+<td align="center">MHA 🚧</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a></td>
+<td align="center">MHA with the autoregressive-blank-infilling pattern 🚧,<br>GQA ✅</td>
+</tr>
+<tr>
+<td>
+<a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-1b">StarCoder-1B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-3b">StarCoder-3B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoder">StarCoder-15.5B</a></td>
+<td align="center">MHA ✅</td>
+</tr></p>
+  </tbody>
+</table><blockquote>
+<div><p>✅: Supported; 🚧: WIP</p>
+</div></blockquote>
+<section id="limitations">
+<h3>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h3>
+<p>Currently the fused attention is only enabled when compiling the llm runtime with GCC13.</p>
+</section>
+</section>
+<section id="tips-for-parallelism">
+<h2>Tips for parallelism<a class="headerlink" href="#tips-for-parallelism" title="Link to this heading"></a></h2>
+<p>Thanks to the mathematical nature of attention, one can simply parallel the whole kv-cache operations and fused attention on commonly-parallelizable dimensions. Just pass each part to every KV-cache operations (and merge them together if needed).</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<details>
+<summary><a id="1">[1]</a> The data was tested on a single socket of Intel(R) Xeon(R) Platinum 8480L on commit 01a809d. Details below.</summary><table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th style="text-align: right;">1st-token fused attn disabled</th>
+<th style="text-align: right;">1st-token fused attn enabled</th>
+<th style="text-align: right;">4th-token fused attn disabled</th>
+<th style="text-align: right;">4th-token fused attn enabled</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">total latency</td>
+<td style="text-align: right;">9748.26ms</td>
+<td style="text-align: right;">1475.57ms</td>
+<td style="text-align: right;">50.37ms</td>
+<td style="text-align: right;">41.27ms</td>
+</tr>
+<tr>
+<td style="text-align: left;">fused-attn lat</td>
+<td style="text-align: right;">/</td>
+<td style="text-align: right;">179.883ms + 68.703ms</td>
+<td style="text-align: right;">/</td>
+<td style="text-align: right;">6.271ms + 1.673ms</td>
+</tr>
+<tr>
+<td style="text-align: left;">est non-attn lat</td>
+<td style="text-align: right;">1226.984ms</td>
+<td style="text-align: right;">1226.984ms</td>
+<td style="text-align: right;">33.326ms</td>
+<td style="text-align: right;">33.326ms</td>
+</tr>
+<tr>
+<td style="text-align: left;">MHA cost compare</td>
+<td style="text-align: right;">8521.276ms</td>
+<td style="text-align: right;">248.586ms</td>
+<td style="text-align: right;">17.044ms</td>
+<td style="text-align: right;">7.944ms</td>
+</tr>
+</tbody>
+</table><p>(4th token is taking as an example of next-token performance)</p>
+<p>Row logs:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># fused attn enabled</span>
+<span class="n">rm</span><span class="w"> </span><span class="o">-</span><span class="n">rf</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">cmake</span><span class="w"> </span><span class="p">..</span><span class="w"> </span><span class="o">-</span><span class="n">GNinja</span><span class="w"> </span><span class="o">-</span><span class="n">DNE_BUILD_TESTS</span><span class="o">=</span><span class="n">ON</span><span class="w"> </span><span class="o">-</span><span class="n">DNE_PROFILING</span><span class="o">=</span><span class="n">ON</span><span class="w"> </span><span class="o">-</span><span class="n">DCMAKE_BUILD_TYPE</span><span class="o">=</span><span class="n">Release</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ninja</span><span class="w"> </span><span class="n">run_llama</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="n">ENGINE_PROFILING</span><span class="o">=</span><span class="mi">1</span><span class="w"> </span><span class="n">numactl</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="n">C</span><span class="w"> </span><span class="mi">56-111</span><span class="w"> </span><span class="n">bin</span><span class="o">/</span><span class="n">run_llama</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="n">llama</span><span class="mi">-7</span><span class="n">b</span><span class="o">-</span><span class="n">hf</span><span class="o">-</span><span class="n">pr447</span><span class="o">-</span><span class="n">q4j</span><span class="o">-</span><span class="n">sym</span><span class="o">-</span><span class="n">int8</span><span class="o">-</span><span class="n">fp32</span><span class="o">-</span><span class="n">g128</span><span class="p">.</span><span class="n">bin</span><span class="w"> </span><span class="o">--</span><span class="n">seed</span><span class="w"> </span><span class="mi">1234</span><span class="w"> </span><span class="o">-</span><span class="n">t</span><span class="w"> </span><span class="mi">56</span><span class="w"> </span><span class="o">-</span><span class="n">b</span><span class="w"> </span><span class="mi">2048</span><span class="w"> </span><span class="o">-</span><span class="n">c</span><span class="w"> </span><span class="mi">2048</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">--</span><span class="n">memory</span><span class="o">-</span><span class="k">auto</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;$(echo &quot;</span><span class="n">$LUOYU_PROMPT</span><span class="s">&quot; | cut -d&#39; &#39; -f 1-1500)&quot;</span>
+<span class="n">Welcome</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">llama</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">ITREX</span><span class="o">!</span>
+<span class="p">...</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">51.409</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">26.328</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">42.445</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_MAT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">127.810</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.446</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.997</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.101</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.105</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">8.342</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">44.115</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">252.611</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">668.217</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">              </span><span class="n">FLASH_ATTN</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">179.883</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">    </span><span class="n">FLASH_ATTN_KV_UPDATE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">68.703</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.000</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.420</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.447</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.377</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.432</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.956</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.126</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.105</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.024</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.992</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.311</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.597</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">              </span><span class="n">FLASH_ATTN</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.425</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">    </span><span class="n">FLASH_ATTN_KV_UPDATE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.717</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.535</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.402</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.358</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.281</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.427</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.058</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.106</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.102</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.024</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.919</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">5.881</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.522</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">              </span><span class="n">FLASH_ATTN</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.389</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">    </span><span class="n">FLASH_ATTN_KV_UPDATE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.621</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.339</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.327</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.361</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.272</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.422</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.032</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.110</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.101</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.023</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.967</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.034</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.527</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">              </span><span class="n">FLASH_ATTN</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.271</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">    </span><span class="n">FLASH_ATTN_KV_UPDATE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.673</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.444</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">        </span><span class="n">load</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">2691.89</span><span class="w"> </span><span class="n">ms</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">      </span><span class="n">sample</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">     </span><span class="mf">2.36</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">     </span><span class="mi">4</span><span class="w"> </span><span class="n">runs</span><span class="w">   </span><span class="p">(</span><span class="w">    </span><span class="mf">0.59</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w"> </span><span class="n">prompt</span><span class="w"> </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">1475.57</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">  </span><span class="mi">1975</span><span class="w"> </span><span class="n">tokens</span><span class="w"> </span><span class="p">(</span><span class="w">    </span><span class="mf">0.75</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">        </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">124.68</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">     </span><span class="mi">3</span><span class="w"> </span><span class="n">runs</span><span class="w">   </span><span class="p">(</span><span class="w">   </span><span class="mf">41.56</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">       </span><span class="n">total</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">2853.38</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">==========</span><span class="w"> </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="n">log</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">prediction</span><span class="w"> </span><span class="o">==========</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">1475.57</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">42.19</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">41.22</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">41.27</span><span class="n">ms</span>
+
+<span class="cp"># fused attn disabled</span>
+<span class="n">rm</span><span class="w"> </span><span class="o">-</span><span class="n">rf</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">cmake</span><span class="w"> </span><span class="p">..</span><span class="w"> </span><span class="o">-</span><span class="n">GNinja</span><span class="w"> </span><span class="o">-</span><span class="n">DNE_BUILD_TESTS</span><span class="o">=</span><span class="n">ON</span><span class="w"> </span><span class="o">-</span><span class="n">DNE_PROFILING</span><span class="o">=</span><span class="n">ON</span><span class="w"> </span><span class="o">-</span><span class="n">DCMAKE_BUILD_TYPE</span><span class="o">=</span><span class="n">Release</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ninja</span><span class="w"> </span><span class="n">run_llama</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="n">ENGINE_PROFILING</span><span class="o">=</span><span class="mi">1</span><span class="w"> </span><span class="n">numactl</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="n">C</span><span class="w"> </span><span class="mi">56-111</span><span class="w"> </span><span class="n">bin</span><span class="o">/</span><span class="n">run_llama</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="n">llama</span><span class="mi">-7</span><span class="n">b</span><span class="o">-</span><span class="n">hf</span><span class="o">-</span><span class="n">pr447</span><span class="o">-</span><span class="n">q4j</span><span class="o">-</span><span class="n">sym</span><span class="o">-</span><span class="n">int8</span><span class="o">-</span><span class="n">fp32</span><span class="o">-</span><span class="n">g128</span><span class="p">.</span><span class="n">bin</span><span class="w"> </span><span class="o">--</span><span class="n">seed</span><span class="w"> </span><span class="mi">1234</span><span class="w"> </span><span class="o">-</span><span class="n">t</span><span class="w"> </span><span class="mi">56</span><span class="w"> </span><span class="o">-</span><span class="n">b</span><span class="w"> </span><span class="mi">2048</span><span class="w"> </span><span class="o">-</span><span class="n">c</span><span class="w"> </span><span class="mi">2048</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">--</span><span class="n">memory</span><span class="o">-</span><span class="n">f16</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;$(echo &quot;</span><span class="n">$LUOYU_PROMPT</span><span class="s">&quot; | cut -d&#39; &#39; -f 1-1500)&quot;</span>
+<span class="n">Welcome</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">llama</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">ITREX</span><span class="o">!</span>
+<span class="p">...</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">55.300</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">40.209</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">63.544</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_MAT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">6698.093</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                   </span><span class="n">SCALE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1325.542</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">CPY</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">273.083</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.460</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.734</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.323</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.105</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">8.467</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">DIAG_MASK_INF</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">69.310</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">SOFT_MAX</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">226.629</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">44.610</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">264.430</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">672.668</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.000</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.445</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.405</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.232</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_MAT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">10.702</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                   </span><span class="n">SCALE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.952</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">CPY</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.040</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.416</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.792</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.323</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.103</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.023</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">DIAG_MASK_INF</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.118</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">SOFT_MAX</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.359</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.888</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.133</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.607</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.504</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.324</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.402</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.321</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_MAT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">10.624</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                   </span><span class="n">SCALE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.954</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">CPY</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.104</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.425</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.748</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.316</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.102</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.021</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">DIAG_MASK_INF</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.111</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">SOFT_MAX</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.362</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.874</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">6.001</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.542</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.314</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+<span class="o">===</span><span class="w"> </span><span class="n">GRAPH</span><span class="w"> </span><span class="n">Profiling</span><span class="w"> </span><span class="o">===</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">ADD</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.354</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">MUL</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.391</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">RMS_NORM</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.379</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_MAT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">10.610</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                   </span><span class="n">SCALE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.964</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                     </span><span class="n">CPY</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.115</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">RESHAPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.430</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">VIEW</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.866</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">PERMUTE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.336</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">               </span><span class="n">TRANSPOSE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.109</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">GET_ROWS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.022</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">DIAG_MASK_INF</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">0.108</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">SOFT_MAX</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.410</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                    </span><span class="n">ROPE</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">1.959</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                 </span><span class="n">MUL_QKV</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">5.826</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">                </span><span class="n">FFN_SILU</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">14.737</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">perf_total_per_op_us</span><span class="p">[</span><span class="w">           </span><span class="n">INNER</span><span class="w"> </span><span class="n">PRODUCT</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">3.378</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">========================================</span>
+
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">        </span><span class="n">load</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10987.95</span><span class="w"> </span><span class="n">ms</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">      </span><span class="n">sample</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">     </span><span class="mf">2.38</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">     </span><span class="mi">4</span><span class="w"> </span><span class="n">runs</span><span class="w">   </span><span class="p">(</span><span class="w">    </span><span class="mf">0.60</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w"> </span><span class="n">prompt</span><span class="w"> </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mf">9748.26</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">  </span><span class="mi">1975</span><span class="w"> </span><span class="n">tokens</span><span class="w"> </span><span class="p">(</span><span class="w">    </span><span class="mf">4.94</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">        </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="mf">150.93</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="o">/</span><span class="w">     </span><span class="mi">3</span><span class="w"> </span><span class="n">runs</span><span class="w">   </span><span class="p">(</span><span class="w">   </span><span class="mf">50.31</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">token</span><span class="p">)</span>
+<span class="nl">model_print_timings</span><span class="p">:</span><span class="w">       </span><span class="n">total</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">11175.74</span><span class="w"> </span><span class="n">ms</span>
+<span class="o">==========</span><span class="w"> </span><span class="n">eval</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="n">log</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">prediction</span><span class="w"> </span><span class="o">==========</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">9748.26</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">50.56</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">50.00</span><span class="n">ms</span>
+<span class="n">prediction</span><span class="w">   </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">:</span><span class="w"> </span><span class="mf">50.37</span><span class="n">ms</span>
+</pre></div>
+</div>
+</details></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fa27f30d690> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

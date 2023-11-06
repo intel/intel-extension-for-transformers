@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infinite Inference &mdash; Intel® Extension for Transformers 0.1.dev1+g68ca206 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Infinite Inference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/graph/docs/infinite_inference.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="infinite-inference">
+<h1>Infinite Inference<a class="headerlink" href="#infinite-inference" title="Link to this heading"></a></h1>
+<p>As a key feature to many LLM applications like ChatBot, the <a class="reference external" href="https://arxiv.org/abs/2309.17453">StreamingLLM paper</a> discussed infinite inference and proposed their solution which preserves first <code class="docutils literal notranslate"><span class="pre">n_keep</span></code> tokens as “attention sink”. Based on their work, LLM Runtime supports infinite inference with two optimized implementations: re-evaluate and shift-RoPE-K. The discard and re-evaluate is available to all models, while the more efficient shift-RoPE-K method required certain models design and needs graph-level support to enable (but it only adds less than 10% overhead comparing to our optimized fix-length generation).</p>
+<section id="discard-and-re-evaluate">
+<h2>Discard and Re-evaluate<a class="headerlink" href="#discard-and-re-evaluate" title="Link to this heading"></a></h2>
+<p>By default, the LLM Runtime discards half of the recent tokens and re-evaluates the left sequence to rebuild the KV-cache if no space left in the KV-cache. Obviously, no extra cost is introduced before the KV-cache context is full. The overhead of re-evaluation can be amortized until the context is full again which results in competitive average latency. This method avoids the copying (e.g. <code class="docutils literal notranslate"><span class="pre">torch.cat</span></code>) of the entire KV-cache in the original implement of StreamingLLM. However, the re-evaluation is triggered constantly if only one token is dropped at a time according to the StreamingLLM paper.</p>
+</section>
+<section id="shift-rope-k-and-ring-buffer">
+<h2>Shift-RoPE-K and Ring-Buffer<a class="headerlink" href="#shift-rope-k-and-ring-buffer" title="Link to this heading"></a></h2>
+<p>If the model implements its positional embedding with <a class="reference external" href="https://arxiv.org/abs/2104.09864">the Rotary Positional Encoding (RoPE)</a>, a “shift operation” can be applied to existing K-Cache, avoiding re-computation for all previous tokens that are not discarded. This method makes use of the full context size in the generation of long text and it introduces no overhead before the KV-cache context is fully filled.</p>
+<p>The “shift operation” relies on the commutativity and associativity of rotation, or complex number multiplication. For example, if the K-tensor for a token is initially placed in a position $m$ and thus rotated $m\times\theta_i \text{ for } i \in \left[0, d/2\right)$, it can rotate back $(-1)\times\theta_i \text{ for } i \in \left[0, d/2\right)$ if it needs to be moved to the position $m-1$. This is just what happens every time the cache of <code class="docutils literal notranslate"><span class="pre">n_discard</span></code> tokens are dropped, when every token left needs to be “moved” <code class="docutils literal notranslate"><span class="pre">n_discard</span></code> closer. This process is illustrated in the following graph with <code class="docutils literal notranslate"><span class="pre">n_keep</span> <span class="pre">=</span> <span class="pre">4,</span> <span class="pre">n_ctx</span> <span class="pre">=</span> <span class="pre">16,</span> <span class="pre">n_discard</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
+<p><img alt="Shift-RoPE graph" src="../../../../../../_images/shift-rope.svg" /></p>
+<p>Notice that the <a class="reference external" href="./fused_attention.html">fused-attention</a> layer does not need to be informed of the process above. As long as the K-cache and V-cache are shuffled identically, the attention will output the same results (with minor differences due to the floating point errors). The invariance of attention is shown in the following diagram.</p>
+<p><img alt="Attention's shuffle invariance" src="../../../../../../_images/shuffle-attn.svg" /></p>
+<section id="acceleration-with-avx512-fp16">
+<h3>Acceleration with AVX512-FP16<a class="headerlink" href="#acceleration-with-avx512-fp16" title="Link to this heading"></a></h3>
+<p>The shifting-RoPE operation can be viewed as a vector-matrix element-wise complex multiplication, where the complex vector is consist of the cosine/sine value of $-N \times \theta_i \text{ for } i \in \left[0, d/2\right)$ (where $N$ is the length of current tokens / number of discarded cached tokens), and the complex matrix is of shape <code class="docutils literal notranslate"><span class="pre">d/2</span> <span class="pre">x</span> <span class="pre">n_ctx</span></code>. The complex vector is precomputed and is been broadcasted in the dimension of <code class="docutils literal notranslate"><span class="pre">n_ctx</span></code> to multiply to the matrix. Therefore, it is straightforward to accelerate this operation with the <code class="docutils literal notranslate"><span class="pre">VFMULCPH</span></code> instruction which performs 16 complex multiplications to 16 pairs of fp16 values (and <code class="docutils literal notranslate"><span class="pre">VPBROADCASTD</span></code> for broadcasting).</p>
+</section>
+<section id="supported-models">
+<h3>Supported Models<a class="headerlink" href="#supported-models" title="Link to this heading"></a></h3>
+<p>The following models supports shift-RoPE-K method by the LLM Runtime:
+| Model name                                                                                                                                                                                                           |                    Status (Challenges)                    |
+| ——————————————————————————————————————————————————————————————————————– | :——————————————————-: |
+| <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf">LLaMA2-70B</a>          |                             ✅                             |
+| <a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-13b-hf">LLaMA-13B</a>                                                                                 |                             ✅                             |
+| <a class="reference external" href="https://huggingface.co/EleutherAI/gpt-j-6b">GPT-J-6B</a>                                                                                                                                                               |                             ✅                             |
+| <a class="reference external" href="https://huggingface.co/EleutherAI/gpt-neox-20b">GPT-NeoX-20B</a>                                                                                                                                                       | 🚧 (the “neox-style” RoPE needs to be shifted differently) |
+| <a class="reference external" href="https://huggingface.co/databricks/dolly-v2-3b">Dolly-v2-3B</a>                                                                                                                                                         | 🚧 (the “neox-style” RoPE needs to be shifted differently) |
+| <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT-7B</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-30b">MPT-30B</a>                                                                                                                 |        🚧 (ALiBi in ring-buffer to be implemented)         |
+| <a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">Falcon-7B</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">Falcon-40B</a>                                                                                                         | 🚧 (the “neox-style” RoPE needs to be shifted differently) |
+| <a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a>                                                                                                                                                             |        🚧 (ALiBi in ring-buffer to be implemented)         |
+| <a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a> |    ❌ (learned-positional-embedding cannot be shifted)     |
+| <a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>                                                                                                       |                           🚧, ✅                            |
+| <a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan-13B-Chat">Baichuan-13B-Chat</a>, <a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat">Baichuan2-13B-Chat</a>                                                             |        🚧 (ALiBi in ring-buffer to be implemented)         |
+| <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">Mistral-7B</a>                                                                                                                                                       |                             ✅                             |</p>
+<blockquote>
+<div><p>✅: Supported; 🚧: WIP</p>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fa2812c2b90> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
