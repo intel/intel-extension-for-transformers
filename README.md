@@ -192,6 +192,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 * [Contribution Guidelines](./docs/contributions.md)
 * [Legal Information](./docs/legal.md)
 * [Security Policy](SECURITY.md)
+* [Apache License](./LICENSE)
 
 
 ## Acknowledgements
