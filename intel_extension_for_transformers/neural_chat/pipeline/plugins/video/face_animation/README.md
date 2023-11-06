@@ -25,4 +25,4 @@ self.sadtalker.convert(source_image=source_image, driven_audio=driven_audio, out
 
 ## Acknowledgements
 
-This example is adapted from [SadTalker](https://github.com/OpenTalker/SadTalker). We thank the related authors for their great work!
+This plugin is mostly adapted from [SadTalker](https://github.com/OpenTalker/SadTalker). We thank the related authors for their great work!
