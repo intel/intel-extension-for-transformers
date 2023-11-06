@@ -2074,6 +2074,7 @@ KeyboardAug
 OcrAug
 SpellingAug
 TextGenerationAug
+TextStreamer
 assertTrue
 cvs
 ebcad

@@ -17,7 +17,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             self.clm_model, self.clm_model.dummy_inputs["input_ids"]
         )
         self.jit_model = torch.jit.freeze(tmp_model.eval())
-        cmd = 'pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3'
+        cmd = 'pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
