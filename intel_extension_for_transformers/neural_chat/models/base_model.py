@@ -273,7 +273,7 @@ class BaseModel(ABC):
         """
         return self.predict(query=query, config=config)
 
-    def face_animate(self, image_path, audio_path=None, text=None) -> str:
+    def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:
         # 1) if there is a driven audio, then image + audio
         # 2) if there is no driven audio but there is a input text, then first TTS and then image + audio
         if audio_path:
@@ -292,7 +292,7 @@ class BaseModel(ABC):
             else:
                 raise Exception("Please specify the TTS plugin!")
             plugin_instance = get_plugin_instance(plugin_name)
-            audio_path = plugin_instance.text2speech(text, "tmp_audio.wav")
+            audio_path = plugin_instance.text2speech(text, "tmp_audio.wav", voice=voice)
             plugin_instance = get_plugin_instance("face_animation")
             video_path = plugin_instance.convert(source_image=image_path, driven_audio=audio_path)
             os.remove(audio_path)

@@ -42,7 +42,7 @@ class FaceAnimationAPIRouter(APIRouter):
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
 
-    async def handle_face_animation(self, image_path, audio_path, text, mode):
+    async def handle_face_animation(self, image_path, audio_path, text, mode, voice):
         chatbot = self.get_chatbot()
         if mode == "fast":
             chatbot.face_animation.enhancer = ""
@@ -51,7 +51,7 @@ class FaceAnimationAPIRouter(APIRouter):
         else:
             raise Exception(f"Unsupported mode: {mode}")
         try:
-            video_path = chatbot.face_animate(image_path, audio_path, text)
+            video_path = chatbot.face_animate(image_path, audio_path, text, voice)
         except:
             raise Exception("Exception occurred when generating image from text.")
         else:
@@ -65,7 +65,8 @@ router = FaceAnimationAPIRouter()
 async def handle_talkingbot_face_animation(image: UploadFile = File(...),
                                            audio: Optional[UploadFile] = None,
                                            text: Optional[str] = Form(None),
-                                           mode: Optional[str] = Form("fast")):
+                                           mode: Optional[str] = Form("fast"),
+                                           voice: Optional[str] = Form(None)):
     audio_file_name = audio.filename if audio else ""
     image_file_name = image.filename
     logger.info(f'Received audio: {audio_file_name}')
@@ -89,10 +90,12 @@ async def handle_talkingbot_face_animation(image: UploadFile = File(...),
         response = await router.handle_face_animation(image_path=f"tmp_image.jpg",
                                                 audio_path=f"tmp_audio.wav",
                                                 text=None,
-                                                mode=mode)
+                                                mode=mode,
+                                                voice=None)
     else:
         response = await router.handle_face_animation(image_path=f"tmp_image.jpg",
                                                 audio_path=None,
                                                 text=text,
-                                                mode=mode)
+                                                mode=mode,
+                                                voice=voice)
     return response
