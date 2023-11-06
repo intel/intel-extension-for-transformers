@@ -21,7 +21,7 @@ on:
       - 'workflows/chatbot/inference/**'
       - 'workflows/chatbot/fine_tuning/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
-      - '!intel_extension_for_transformers/neural_chat/tests/**'
+      - '!intel_extension_for_transformers/neural_chat/tests/ci/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'
       - '!intel_extension_for_transformers/neural_chat/README.md'

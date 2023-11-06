@@ -4,8 +4,10 @@ fschat
 intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
-paddlepaddle
+paddlepaddle==2.4.2
+paddlenlp==2.5.2
 paddlespeech==1.4.1
+paddle2onnx==1.0.6
 shortuuid
 gptcache
 evaluate
@@ -20,8 +22,8 @@ librosa
 beautifulsoup4
 InstructorEmbedding
 chromadb
-fastapi
-pydantic
+fastapi==0.103.2
+pydantic==1.10.13
 starlette
 yacs
 uvicorn
@@ -34,7 +36,7 @@ rouge_score
 openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
-lm_eval
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 transformers_stream_generator==0.0.4
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0
@@ -44,4 +46,4 @@ neural-compressor==2.3.1
 pymysql
 deepface
 exifread
-
+einops

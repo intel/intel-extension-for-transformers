@@ -204,6 +204,9 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 
+# To convert model with PEFT(Parameter-Efficient Fine-Tuning) adapter, you need to merge the PEFT adapter into the model first, use below command to merge the PEFT adapter and save the merged model, afterwards you can use 'scripts/convert.py' just like above mentioned.
+python scripts/load_peft_and_merge.py --model_name_or_path meta-llama/Llama-2-7b-hf --peft_name_or_path dfurman/llama-2-7b-instruct-peft --save_path ./Llama-2-7b-hf-instruct-peft
+
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
 # optimized INT4 model with group size 128 (recommended)
@@ -271,3 +274,6 @@ Argument description of inference.py:
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
 
+### 4. Contribution
+
+You can consider adding your own models via [graph developer document](./developer_document.md).
