@@ -47,7 +47,7 @@ function pytest() {
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
     sort run.sh -o run.sh
     echo -e '
-ports="6000 7000 8000 9000"
+ports="5000 6000 6060 7000 7070 8000 8080 9000 9090"
 for port in $ports; do
     pids=$(lsof -ti :$port)
     if [ -n "$pids" ]; then

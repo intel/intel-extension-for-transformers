@@ -21,7 +21,7 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 127.0.0.1
-port: 7000
+port: 5000
 
 model_name_or_path: "facebook/opt-125m"
 device: "cpu"
@@ -29,11 +29,7 @@ device: "cpu"
 # itrex int4 optimization
 optimization:
     optimization_type: "mix_precision"
-    mix_precision_dtype: "bf16"
-
-# ipex int8 optimization
-optimization:
-    ipex_int8: True
+    mix_precision_dtype: "bfloat16"
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat']
