@@ -89,6 +89,8 @@ Fused attention is designed to be able to easily support various models:
   </tbody>
 </table>
 
+> ✅: Supported; 🚧: WIP
+
 ### Limitations
 Currently the fused attention is only enabled when compiling the llm runtime with GCC13.
 

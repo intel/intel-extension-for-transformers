@@ -1,13 +1,13 @@
 Infinite Inference
 ==================
 
-As a key feature to many LLM applications like ChatBot, LLM Runtime supports infinite inference in two ways: re-evaluate and shift-RoPE-K. The discard and re-evaluate is available to all models, while the more efficient shift-RoPE-K method required certain models design and needs graph-level support to enable. Both methods are implemented according to the [StreamingLLM paper](https://arxiv.org/abs/2309.17453) and are able to preserve the fist `n_keep` tokens.
+As a key feature to many LLM applications like ChatBot, the [StreamingLLM paper](https://arxiv.org/abs/2309.17453) discussed infinite inference and proposed their solution which preserves first `n_keep` tokens as "attention sink". Based on their work, LLM Runtime supports infinite inference with two optimized implementations: re-evaluate and shift-RoPE-K. The discard and re-evaluate is available to all models, while the more efficient shift-RoPE-K method required certain models design and needs graph-level support to enable (but it only adds less than 10% overhead comparing to our optimized fix-length generation).
 
 ## Discard and Re-evaluate
-By default, the LLM Runtime discards half of the recent tokens and re-evaluates the left sequence to rebuild the KV-cache. The overhead of re-evaluation can be amortized until the context is full again which results in competitive average latency. However, the re-evaluation is triggered constantly if only one token is dropped at a time according to the StreamingLLM paper.
+By default, the LLM Runtime discards half of the recent tokens and re-evaluates the left sequence to rebuild the KV-cache if no space left in the KV-cache. Obviously, no extra cost is introduced before the KV-cache context is full. The overhead of re-evaluation can be amortized until the context is full again which results in competitive average latency. This method avoids the copying (e.g. `torch.cat`) of the entire KV-cache in the original implement of StreamingLLM. However, the re-evaluation is triggered constantly if only one token is dropped at a time according to the StreamingLLM paper.
 
 ## Shift-RoPE-K and Ring-Buffer
-If the model implements its positional embedding with [the Rotary Positional Encoding (RoPE)](https://arxiv.org/abs/2104.09864), a "shift operation" can be applied to existing K-Cache, avoiding re-computation for all previous tokens that are not discarded.
+If the model implements its positional embedding with [the Rotary Positional Encoding (RoPE)](https://arxiv.org/abs/2104.09864), a "shift operation" can be applied to existing K-Cache, avoiding re-computation for all previous tokens that are not discarded. This method makes use of the full context size in the generation of long text and it introduces no overhead before the KV-cache context is fully filled.
 
 The "shift operation" relies on the commutativity and associativity of rotation, or complex number multiplication. For example, if the K-tensor for a token is initially placed in a position $m$ and thus rotated $m\times\theta_i \text{ for } i \in \left[0, d/2\right)$, it can rotate back $(-1)\times\theta_i \text{ for } i \in \left[0, d/2\right)$ if it needs to be moved to the position $m-1$. This is just what happens every time the cache of `n_discard` tokens are dropped, when every token left needs to be "moved" `n_discard` closer. This process is illustrated in the following graph with `n_keep = 4, n_ctx = 16, n_discard = 1`.
 
@@ -36,3 +36,5 @@ The following models supports shift-RoPE-K method by the LLM Runtime:
 | [ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)                                                                                                       |                           🚧, ✅                            |
 | [Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)                                                             |        🚧 (ALiBi in ring-buffer to be implemented)         |
 | [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)                                                                                                                                                       |                             ✅                             |
+
+> ✅: Supported; 🚧: WIP
