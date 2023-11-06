@@ -186,19 +186,6 @@ async def retrieval_chat(request: AskDocRequest):
                     formatted_str = ret['text'].replace('\n', '<br/><br/>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
-            if link != []:
-                yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
-                for single_link in link:
-                    if single_link == None:
-                        continue
-                    raw_link = single_link["source"]
-                    formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
-                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
-                            border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
-                            background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
-                            href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
-                    logger.info(f"[askdoc - chat] link below: {formatted_link}")
-                    yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
