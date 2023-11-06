@@ -30,6 +30,12 @@ class Agent_QA():
                  response_template = "Please reformat your query to regenerate the answer.",
                  asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",):
         self.model = None
+        self.top_k = top_k
+        self.index_name = index_name
+        self.embedding_model = embedding_model
+        self.max_length = max_length
+        self.search_type = search_type
+        self.search_kwargs = search_kwargs
         self.tokenizer = None
         self.retrieval_type = retrieval_type
         self.retriever = None
@@ -84,17 +90,28 @@ class Agent_QA():
                                    search_type=search_type, search_kwargs=search_kwargs)
 
 
-    def reload(self, new_path):
-        self.db = self.doc_parser.load(new_path)
+    # 
+    def reload_localdb(self, local_persist_dir):
+        assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), "Please check the local knowledge base was built!"
+        self.db = self.doc_parser.reload(local_persist_dir)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=1,
                                    search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8, "k": 1})
+    
+    # create a new knowledge base
+    def create(self, input_path, persist_dir):
+        self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=self.document_store,
+            persist_dir=persist_dir, process=self.process,
+            embedding_model=self.embedding_model, max_length=self.max_length,
+            index_name=self.index_name)
+        self.db = self.doc_parser.KB_construct(input_path)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, 
+                                   top_k=self.top_k, search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
-    def append_localdb(self, 
-                       append_path, 
-                       top_k=1, 
-                       search_type="similarity_score_threshold", 
-                       search_kwargs={"score_threshold": 0.8, "k": 1}):
+    def append_localdb(self, append_path, 
+                       top_k=self.top_k,
+                       search_type=self.search_type, 
+                       search_kwargs=self.search_kwargs):
         self.db = self.doc_parser.KB_append(append_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
                            search_type=search_type, search_kwargs=search_kwargs)

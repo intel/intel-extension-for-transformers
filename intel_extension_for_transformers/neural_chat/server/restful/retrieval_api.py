@@ -111,28 +111,29 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
 
     # create kb_id
     import uuid
-    kb_id = f"doc_{str(uuid.uuid1())[:8]}"
-    upload_path = f"/home/tme/letong/askdoc_upload/{kb_id}"
-    os.system(f"mkdir {upload_path} ")
+    # kb_id = f"doc_{str(uuid.uuid1())[:8]}"
+    upload_path = f"/home/tme/letong/askdoc_upload"
+    # os.system(f"mkdir {upload_path} ")
+    print(f"[askdoc - create_kb] upload path: {upload_path}")
     if '/' in filename:
         filename = filename.split('/')[-1]
 
     # save file to local path
     with open(f"{upload_path}/{filename}", 'wb') as fout:
         content = await file.read()
-        fout.write(content),
-    print(f"[askdoc - create_kb] file saved to local path: {upload_path}")
+        fout.write(content)
+    print(f"[askdoc - create_kb] file saved to local path: {upload_path}/{filename}")
 
     try:
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - create_kb] starting to create local db...")
         instance = plugins['retrieval']["instance"]
-        instance.reload(new_path=upload_path)
+        instance.append_localdb(append_path=upload_path)
         print(f"[askdoc - create_kb] kb created successfully")
     except Exception as e:
         logger.info(f"[askdoc - create_kb] create knowledge base failes! {e}")
         return "Error occurred while uploading files."
-    return {"knowledge_base_id": kb_id}
+    return {"knowledge_base_id": "local_kb_id"}
 
 
 @router.post("/v1/askdoc/chat")
