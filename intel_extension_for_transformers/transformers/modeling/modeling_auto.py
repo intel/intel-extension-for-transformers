@@ -125,10 +125,12 @@ class _BaseQBitsAutoModelClass:
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
             logger.info("Mixed Precision done.")
-        model = cls.ORIG_MODEL.from_pretrained(
-            pretrained_model_name_or_path, *model_args, **kwargs
-        )
-        model.eval()
+            
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
+            
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
@@ -148,6 +150,12 @@ class _BaseQBitsAutoModelClass:
                 )
                 return model
             else:
+            
+                model = cls.ORIG_MODEL.from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                model.eval()
+                
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
@@ -156,6 +164,12 @@ class _BaseQBitsAutoModelClass:
                 model = convert_to_quantized_model(model, quantization_config)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
+            
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
+
             logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
