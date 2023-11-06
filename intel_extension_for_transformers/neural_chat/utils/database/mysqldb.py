@@ -17,6 +17,7 @@
 
 from .config import get_settings
 from pymysql import connect, cursors
+from pymysql.converters import escape_string
 from contextlib import contextmanager
 
 global_settings = get_settings()
@@ -55,11 +56,15 @@ class MysqlDb(object):
             raise e
 
     def fetch_one(self, sql, params=None):
-        self._cursor.execute(sql, params)
+        escape_sql = escape_string(sql)
+        print(f"escape sql: {escape_sql}")
+        self._cursor.execute(escape_sql, params)
         return self._cursor.fetchone()
 
     def fetch_all(self, sql, params=None):
-        self._cursor.execute(sql, params)
+        escape_sql = escape_string(sql)
+        print(f"escape sql: {escape_sql}")
+        self._cursor.execute(escape_sql, params)
         return self._cursor.fetchall()
 
     def insert(self, sql, params):
