@@ -115,11 +115,6 @@ def main(args):
     print(end_time - start_time)
     start_time = end_time
 
-    # 3dface render
-    if args.face3dvis:
-        from src.face3d.visualize import gen_composed_video
-        gen_composed_video(args, device, first_coeff_path, coeff_path, audio_path, os.path.join(save_dir, '3dface.mp4'))
-
     #coeff2video
     if args.rank == 0:
         data = get_facerender_data(coeff_path, crop_pic_path, first_coeff_path, audio_path,

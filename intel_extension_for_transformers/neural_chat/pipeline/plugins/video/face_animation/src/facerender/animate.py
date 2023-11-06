@@ -26,11 +26,8 @@ import safetensors
 import safetensors.torch 
 warnings.filterwarnings('ignore')
 
-
 import imageio
 import torch
-import torchvision
-
 
 from src.facerender.modules.keypoint_detector import HEEstimator, KPDetector
 from src.facerender.modules.mapping import MappingNet
@@ -38,7 +35,6 @@ from src.facerender.modules.generator import OcclusionAwareGenerator, OcclusionA
 from src.facerender.modules.make_animation import make_animation 
 
 from pydub import AudioSegment 
-# from src.utils.face_enhancer import enhancer_generator_with_len as face_enhancer
 from src.utils.face_enhancer import enhancer_with_len as face_enhancer
 from src.utils.paste_pic import paste_pic
 from src.utils.videoio import save_video_with_watermark
@@ -242,7 +238,7 @@ class AnimateFromCoeff():
             word = word1[start_time:end_time]
             word.export(new_audio_path, format="wav")
 
-            save_video_with_watermark(path, new_audio_path, av_path, watermark= False)
+            save_video_with_watermark(path, new_audio_path, av_path, watermark=False)
             print(f'The generated video is named {video_save_dir}/{video_name}')
 
             if 'full' in preprocess.lower():
@@ -267,8 +263,7 @@ class AnimateFromCoeff():
                                             rank=rank, p_num=p_num, bf16=bf16)
 
             imageio.mimsave(enhanced_path, enhanced_images, fps=float(25))
-            
-            save_video_with_watermark(enhanced_path, new_audio_path, av_path_enhancer, watermark= False)
+            save_video_with_watermark(enhanced_path, new_audio_path, av_path_enhancer, watermark=False)
             print(f'The generated video is named {video_save_dir}/{video_name_enhancer}')
             os.remove(enhanced_path)
 
