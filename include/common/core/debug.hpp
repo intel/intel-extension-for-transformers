@@ -22,6 +22,9 @@
 
 namespace gpu::xetla {
 
+// debug context
+// =========================================================
+#if defined DEBUG && defined LOG_PRINT
 namespace debug_ctx {
 
 static constexpr size_t reg_start = 128 * 64; // start from GRF128 and down
@@ -69,7 +72,10 @@ static inline int16_t get_local_id(size_t dim) {
 }
 }; // namespace nd_item
 }; // namespace debug_ctx
+#endif
 
+// EOT message
+// =========================================================
 #if 0 // has bug in current driver, will open this in next driver
 static constexpr size_t exit_offset = reg_start - 8 * sizeof(int);
 ESIMD_PRIVATE ESIMD_REGISTER(exit_offset) __ESIMD_NS::simd<int, 8> reg_exit;
@@ -86,10 +92,14 @@ ESIMD_INLINE void xetla_thread_exit() {
 }
 #endif
 
+// 1. define XETLA_PRINTF
+// =========================================================
+#ifdef LOG_PRINT
+// log on
 #define STR_APPEND(a, b, c) a b c
-
 #ifdef __SYCL_DEVICE_ONLY__
 // kernel printf
+#ifdef DEBUG
 #define XETLA_PRINTF(s, ...) \
     do { \
         const __attribute__((opencl_constant)) char f[] = STR_APPEND( \
@@ -104,11 +114,14 @@ ESIMD_INLINE void xetla_thread_exit() {
                 debug_ctx::nd_item::get_local_id(1), \
                 debug_ctx::nd_item::get_local_id(2), ##__VA_ARGS__); \
     } while (0)
-
-// kernel assert
-#define XETLA_ASSERT(c, s, ...) \
+#else
+#define XETLA_PRINTF(s, ...) \
     do { \
+        const __attribute__((opencl_constant)) char f[] \
+                = STR_APPEND("[XeTLA] [KERNEL] : ", s, "\n"); \
+        sycl::ext::oneapi::experimental::printf(f, ##__VA_ARGS__); \
     } while (0)
+#endif
 #else
 // host printf
 #define XETLA_PRINTF(s, ...) \
@@ -116,7 +129,24 @@ ESIMD_INLINE void xetla_thread_exit() {
         const char *f = STR_APPEND("[XeTLA] [HOST] : ", s, "\n"); \
         printf(f, ##__VA_ARGS__); \
     } while (0)
+#endif
 
+#else
+// log off
+#define XETLA_PRINTF(s, ...) \
+    do { \
+    } while (0)
+#endif
+
+// 2. define XETLA_ASSERT
+// =========================================================
+#ifdef __SYCL_DEVICE_ONLY__
+// kernel assert
+#define XETLA_ASSERT(c, s, ...) \
+    do { \
+    } while (0)
+#else
+// host asset
 #ifdef DEBUG
 // host assert in debug version
 #define XETLA_ASSERT(c, s, ...) \
@@ -131,14 +161,15 @@ ESIMD_INLINE void xetla_thread_exit() {
 #endif
 #endif
 
+// 3. define DEBUG_INVOKE
+// =========================================================
+#ifdef DEBUG
 enum class dbg_level : uint8_t {
     kernel = 0,
     workgroup = 1,
     subgroup = 2,
     core = 3
 };
-
-#ifdef DEBUG
 #define DEBUG_INVOKE(level, ...) \
     do { \
         if constexpr (DEBUG >= static_cast<uint8_t>(level)) { \
