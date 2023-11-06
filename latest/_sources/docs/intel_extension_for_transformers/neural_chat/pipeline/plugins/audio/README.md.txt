@@ -51,7 +51,10 @@ print("ASR Result:", result)
 To use the Chinese ASR module, you need to install the necessary dependencies. You can do this by running the following command:
 
 ```bash
-pip install paddlespeech paddlepaddle
+pip install paddlepaddle==2.4.2
+pip install paddlenlp==2.5.2
+pip install paddlespeech==1.4.1
+pip install paddle2onnx==1.0.6
 ```
 
 ## Usage
