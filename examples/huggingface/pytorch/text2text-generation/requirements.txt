@@ -8,4 +8,4 @@ rouge-score
 nltk
 neural-compressor
 optimum-intel
-git+https://github.com/intel/intel-extension-for-pytorch.git
+intel_extension_for_pytorch
