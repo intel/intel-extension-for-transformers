@@ -38,6 +38,7 @@ docker exec -it <container_id> /bin/bash
 ## Run Simple Test
 ```bash
 docker exec <container_id> /bin/bash
+export no_proxy=localhost,127.0.0.1,intel.com
 cd intel_extension_for_transformers/neural_chat/tests
 python server/test_textchat_server.py
 ```
