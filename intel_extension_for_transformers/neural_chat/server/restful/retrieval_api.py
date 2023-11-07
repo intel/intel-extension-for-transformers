@@ -161,7 +161,7 @@ async def retrieval_chat(request: AskDocRequest):
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig()
+    config = GenerationConfig(max_new_tokens=128)
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
         if attr == "stream":
