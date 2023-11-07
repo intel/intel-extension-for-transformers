@@ -21,9 +21,9 @@ OUTPUT_DIR=$(pwd)
 LOG_NAME="bge_mrpc.log"
 DATASET="mrpc"
 MODEL_NAME_OR_PATH="BAAI/bge-base-en-v1.5"
-BATCH_SIZE=8
+BATCH_SIZE=1
 WARM_UP=100
-SEQUENCE_LEN=128
+SEQUENCE_LEN=512
 ITERATION=1000
 PRECISION="int8"
 CACHE_DIR="./tmp"
@@ -167,7 +167,7 @@ if [[ ${MODE} == "accuracy" ]]; then
     fi
 elif [[ ${MODE} == "latency" ]]; then
     echo "------------LATENCY BENCHMARK---------"
-    python run_executor.py \
+    numactl -m 0 -C 0-55 python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \
       --batch_size=${BATCH_SIZE} \
