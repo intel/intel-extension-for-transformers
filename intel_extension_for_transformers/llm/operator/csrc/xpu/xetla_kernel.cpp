@@ -20,8 +20,6 @@ static constexpr size_t wg_tile_m = 8;
 static constexpr size_t wg_tile_n = 16;
 static constexpr size_t sg_tile_m = 8;
 static constexpr size_t sg_tile_n = 16;
-static constexpr size_t sg_tile_k = 64;
-static constexpr size_t dequant_s = 128;
 static constexpr size_t num_buffer = 64;
 static constexpr size_t local_kslicing = 1;
 static constexpr size_t global_kslicing = 1;
@@ -38,6 +36,7 @@ using data_type_acc = float;
 using data_type_b = gpu::xetla::int4x2;
 
 struct linear_param {
+  int dequant_s;
   uint32_t matrix_m;
   uint32_t matrix_n;
   uint32_t matrix_k;
@@ -53,7 +52,8 @@ struct linear_param {
   size_t size_d;
   size_t size_acc;
   size_t size_cnt;
-  linear_param(uint32_t m, uint32_t n, uint32_t k) : matrix_m(m), matrix_n(n), matrix_k(k) {
+  linear_param(uint32_t m, uint32_t n, uint32_t k, int blk) :
+    matrix_m(m), matrix_n(n), matrix_k(k), dequant_s(blk) {
     size_a = matrix_m * matrix_k;
     size_b = matrix_k * matrix_n / 2;
     size_d = 1 * matrix_n;
@@ -67,12 +67,12 @@ struct linear_param {
   }
 };
 
-template <typename T, int dequant_s>
+template <typename T, int dequant_s, int sg_tile_k>
 void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
                   uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k) {
   using data_type_a = T;
   using data_type_c = T;
-  linear_param p(matrix_m, matrix_n, matrix_k);
+  linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
   auto context = queue.get_info<sycl::info::queue::context>();
   auto device = queue.get_info<sycl::info::queue::device>();
 
@@ -172,13 +172,13 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   free(Cnt_d, context);
 }
 
-template <typename T, int dequant_s>
+template <typename T, int dequant_s, int sg_tile_k>
 void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
                   uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                   float *D) {
   using data_type_a = T;
   using data_type_c = T;
-  linear_param p(matrix_m, matrix_n, matrix_k);
+  linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
   auto context = queue.get_info<sycl::info::queue::context>();
   auto device = queue.get_info<sycl::info::queue::device>();
 
@@ -300,20 +300,22 @@ void xetla_linear_base(sycl::queue queue, T *A, CompressWei4Bit *B,
                        T *C, uint32_t matrix_m, uint32_t matrix_n,
                        uint32_t matrix_k, int dequant_s) {
   switch (dequant_s) {
+    case 16:
+      return xetla_linear<T, 16, 16>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 32:
-      return xetla_linear<T, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 32, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 64:
-      return xetla_linear<T, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 64, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 128:
-      return xetla_linear<T, 128>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 128, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 256:
-      return xetla_linear<T, 256>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 256, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 512:
-      return xetla_linear<T, 512>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 512, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 1024:
-      return xetla_linear<T, 1024>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 1024, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 2048:
-      return xetla_linear<T, 2048>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 2048, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     default:
       std::cout << "blocksize must be divisible by 16 and in [16, 2048]"
                 << std::endl;
@@ -326,20 +328,22 @@ void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
                             T *C, uint32_t matrix_m, uint32_t matrix_n,
                             uint32_t matrix_k, int dequant_s, float *D) {
   switch (dequant_s) {
+    case 16:
+      return xetla_linear_bias<T, 16, 16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 32:
-      return xetla_linear_bias<T, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 32, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 64:
-      return xetla_linear_bias<T, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 64, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 128:
-      return xetla_linear_bias<T, 128>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 128, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 256:
-      return xetla_linear_bias<T, 256>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 256, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 512:
-      return xetla_linear_bias<T, 512>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 512, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 1024:
-      return xetla_linear_bias<T, 1024>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 1024, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 2048:
-      return xetla_linear_bias<T, 2048>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 2048, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     default:
       std::cout << "blocksize must be divisible by 16 and in [16, 2048]"
                 << std::endl;
@@ -370,5 +374,10 @@ void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
 void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
                        float *C, uint32_t matrix_m, uint32_t matrix_n,
                        uint32_t matrix_k, int dequant_s) {
+  if (dequant_s == 16) {
+    std::cout << "blocksize must be divisible by 16 and in [32, 2048] for fp32 compute_type" 
+              << std::endl;
+    exit(0);
+  }
   return xetla_linear_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);
 }
