@@ -581,7 +581,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset, # for calibration
-        eval_dataset=None,
+        eval_dataset=train_dataset,
         tokenizer=tokenizer,
     )
 

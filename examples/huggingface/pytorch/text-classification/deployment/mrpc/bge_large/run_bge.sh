@@ -167,7 +167,7 @@ if [[ ${MODE} == "accuracy" ]]; then
     fi
 elif [[ ${MODE} == "latency" ]]; then
     echo "------------LATENCY BENCHMARK---------"
-    numactl -m 0 -C 0-55 python run_executor.py \
+    numactl -m 0 -C 0-39 python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \
       --batch_size=${BATCH_SIZE} \
