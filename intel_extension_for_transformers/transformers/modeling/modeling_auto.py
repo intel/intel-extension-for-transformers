@@ -242,14 +242,12 @@ class _BaseQBitsAutoModelClass:
                     past_key_values = generate_dummy_past_key_values(input_bs, model)
                     attention_mask = torch.ones(input_bs, input_len + 1)
                     attention_mask[:, 0] = 0
-                    position_ids = torch.arange(input_len).repeat(input_bs, 1)
                     if i >= calib_iters:
                         break
                     model(
                         input_ids=input_ids,
                         past_key_values=past_key_values,
                         attention_mask=attention_mask,
-                        position_ids=position_ids
                     )
 
             recipes = {
