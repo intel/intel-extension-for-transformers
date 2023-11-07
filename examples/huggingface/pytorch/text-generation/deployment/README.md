@@ -1,7 +1,7 @@
 Step-by-Step
 =========
 
-In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) and [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) etc.
+In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) and [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) etc. You can also refer to link to do LLM inference with cpp graph to get better performance, but it may have constrain on batched inference.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4
 
