@@ -47,12 +47,12 @@ struct check_load_type {
     static constexpr bool is_local_scatter_xe
             = ((payload_t::memory_space == mem_space::local)
                     && (payload_t::message_type == msg_type::scatter)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_local_block_1d_xe
             = ((payload_t::memory_space == mem_space::local)
                     && (payload_t::message_type == msg_type::block_1d)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 };
 
 } // namespace detail

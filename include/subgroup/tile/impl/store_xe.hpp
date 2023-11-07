@@ -37,12 +37,12 @@ struct check_store_type {
             = ((payload_t::memory_space == mem_space::global)
                     && (tile_t::tile_size_y == 1) && (tile_t::block_size_y == 1)
                     && (payload_t::message_type == msg_type::block_1d)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_global_unaligned_2d_xe
             = (payload_t::memory_space == mem_space::global
                     && (payload_t::message_type == msg_type::unaligned_2d)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_global_atomic_xe
             = ((payload_t::memory_space == mem_space::global)
@@ -52,7 +52,7 @@ struct check_store_type {
     static constexpr bool is_local_scatter_xe = ((payload_t::memory_space
                                                          == mem_space::local)
             && (payload_t::message_type == msg_type::scatter)
-            && (payload_t::arch_tag == gpu_arch::Xe)
+            && (payload_t::arch_tag <= gpu_arch::Xe)
             && (payload_t::tile_desc::register_layout == reg_layout::tiled
                     || payload_t::tile_desc::register_layout
                             == reg_layout::vnni_tiled));
@@ -67,7 +67,7 @@ struct check_store_type {
     static constexpr bool is_local_block_1d_xe = ((payload_t::memory_space
                                                           == mem_space::local)
             && (payload_t::message_type == msg_type::block_1d)
-            && (payload_t::arch_tag == gpu_arch::Xe)
+            && (payload_t::arch_tag <= gpu_arch::Xe)
             && (payload_t::tile_desc::register_layout == reg_layout::tiled));
 };
 
