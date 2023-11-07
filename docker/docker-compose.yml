@@ -10,7 +10,7 @@ services:
         IMAGE_TAG: 22.04
         PYTHON: python3.10
       context: ../
-      dockerfile: ./docker/Dockerfile_chatbot
+      dockerfile: ./docker/Dockerfile
       target: devel
     command: python tests/test_config.py
     environment:

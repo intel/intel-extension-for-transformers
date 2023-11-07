@@ -1,6 +1,6 @@
 datasets
 torch
-transformers==4.34.1
+transformers>=4.32.0
 sentencepiece
 peft
 evaluate

@@ -1,6 +1,4 @@
-scikit-learn
-farm-haystack
-transformers>=4.32.1
+transformers>=4.32.0
 fschat
 num2words
 paddlepaddle
@@ -15,6 +13,8 @@ python-multipart
 PyPDF2
 langchain
 python-docx
+scikit-learn
+farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
