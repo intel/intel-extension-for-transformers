@@ -91,6 +91,8 @@ def generate_dummy_past_key_values(input_bs, model):
     num_key_value_heads = num_attention_heads
     if hasattr(normalized_config, "num_key_value_heads"):
         num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
 
     if model.config.model_type == "bloom":
         pkv = ()
@@ -100,12 +102,12 @@ def generate_dummy_past_key_values(input_bs, model):
             else:
                 new_shape = [input_bs * num_key_value_heads, 1, d_k]
             pkv = pkv + (torch.ones(size=new_shape),)
-    elif model.config.model_type == "mistral":
-        new_shape = [input_bs, num_key_value_heads, 1, d_k]
-        dummy_tensor = torch.ones(size=new_shape)
-        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     elif model.config.model_type == "qwen":
         new_shape = [input_bs, 1, num_key_value_heads, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    elif model.config.model_type == "chatglm":
+        new_shape = [1, input_bs, num_key_value_heads, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
@@ -130,8 +132,8 @@ def get_example_inputs_for_trace(model, return_type="dict"):
         example_inputs = {
             "input_ids": input_ids,
             "past_key_values": tuple(past_key_values),
-            "attention_mask": attention_mask
+            "attention_mask": attention_mask,
         }
-        # do inference to check example_inputs correct.
-        out = model(**example_inputs)
+    # do inference to check example_inputs correct.
+    out = model(**example_inputs)
     return example_inputs

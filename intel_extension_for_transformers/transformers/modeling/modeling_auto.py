@@ -148,6 +148,11 @@ class _BaseQBitsAutoModelClass:
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path, *model_args, **kwargs
                 )
+                if (not torch.cuda.is_available() or
+                        device_map == "cpu" or
+                        device_map == torch.device("cpu")
+                        ) and model.config.model_type == "chatglm":
+                    model = model.float()
                 model.eval()        
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
@@ -159,6 +164,11 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
+            if (not torch.cuda.is_available() or 
+                    device_map == "cpu" or 
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
             model.eval()
             logger.info("Applying SmoothQuant.")
             try:
@@ -232,12 +242,14 @@ class _BaseQBitsAutoModelClass:
                     past_key_values = generate_dummy_past_key_values(input_bs, model)
                     attention_mask = torch.ones(input_bs, input_len + 1)
                     attention_mask[:, 0] = 0
+                    position_ids = torch.arange(input_len).repeat(input_bs, 1)
                     if i >= calib_iters:
                         break
                     model(
                         input_ids=input_ids,
                         past_key_values=past_key_values,
                         attention_mask=attention_mask,
+                        position_ids=position_ids
                     )
 
             recipes = {
@@ -276,7 +288,13 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
-            model.eval()   
+            if (not torch.cuda.is_available() or
+                    device_map == "cpu" or
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
+
+            model.eval() 
         return model
 
 

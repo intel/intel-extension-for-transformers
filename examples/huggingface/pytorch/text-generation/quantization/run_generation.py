@@ -5,7 +5,10 @@ import json
 import torch
 import logging
 from transformers import AutoConfig, AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import (
+        AutoModelForCausalLM,
+        AutoModel
+)
 from transformers.utils import check_min_version
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
@@ -85,6 +88,9 @@ config = AutoConfig.from_pretrained(
       revision=args.revision,
       )
 
+# chatglm
+if config.model_type == "chatglm":
+    AutoModelForCausalLM = AutoModel
 
 # tokenizer
 if config.model_type == "llama":
@@ -119,6 +125,7 @@ elif args.sq:
                                 alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
+                                calib_iters=4
                                )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
