@@ -103,7 +103,7 @@ class DocumentIndexing:
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            vectordb = Chroma(persist_directory=input, embedding_function=self.embeddings)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         else:
             if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)
