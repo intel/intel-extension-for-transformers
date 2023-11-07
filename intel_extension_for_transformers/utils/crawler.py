@@ -394,9 +394,7 @@ class LinkedinCrawler(Crawler):
         res = self.fetch(info_url, headers=new_headers, max_times=1)
         breakpoint()
 
-    def login(self):
-        username = 'heng.guo@intel.com'
-        password = 'gh19930329'
+    def login(self, username, password):
         url = 'https://www.linkedin.com'
         querystring = {'trk': 'brandpage_baidu_pc-mainlink'}
         headers = {
