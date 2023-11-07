@@ -79,9 +79,9 @@ check_min_version("4.32.0")
 
 # get model config
 config = AutoConfig.from_pretrained(
-      args.model,
+      args.output_dir if (args.int8 or args.int8_bf16_mixed) else args.model,
       torchscript=True
-      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'])
+      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'] or (args.int8 or args.int8_bf16_mixed))
       else False,  # torchscript will force `return_dict=False` to avoid jit errors
       use_cache=True, # to use kv cache.
       trust_remote_code=args.trust_remote_code,
@@ -138,7 +138,6 @@ elif args.sq:
         alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
-        calib_dataset="/home/penghuic/.cache/huggingface/datasets/NeelNanda___parquet/",
         example_inputs=inputs,
     )
 elif args.woq:
@@ -184,7 +183,7 @@ if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
     user_model = TSModelForCausalLM.from_pretrained(
-        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+        args.output_dir, config=config, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
     )
 
 
@@ -228,7 +227,8 @@ if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        model_args='pretrained=' + args.model + ',tokenizer=' + args.model + \
+            ',dtype=float32' + ",trust_remote_code=" + args.trust_remote_code,
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
@@ -242,4 +242,3 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
-

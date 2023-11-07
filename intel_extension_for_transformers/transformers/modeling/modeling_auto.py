@@ -254,8 +254,7 @@ class _BaseQBitsAutoModelClass:
                 "smooth_quant": True,
                 "smooth_quant_args": {"alpha": quantization_config.alpha},
             }
-            example_inputs = get_example_inputs_for_trace(model) \
-                if quantization_config.example_inputs is None else quantization_config.example_inputs
+            example_inputs = get_example_inputs_for_trace(model, quantization_config=quantization_config)
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(

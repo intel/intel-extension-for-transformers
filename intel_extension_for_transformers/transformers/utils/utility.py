@@ -117,23 +117,36 @@ def generate_dummy_past_key_values(input_bs, model):
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
     return past_key_values
 
-def get_example_inputs_for_trace(model, return_type="dict"):
+def get_example_inputs_for_trace(model, quantization_config=None, return_type="dict"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
     """
-    input_ids = model.dummy_inputs["input_ids"]
-    input_bs, input_len = input_ids.shape
-    past_key_values = generate_dummy_past_key_values(input_bs, model)
-    attention_mask = torch.ones(input_bs, input_len + 1)
-    attention_mask[:,0] = 0
-    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    if return_type != "tuple":
+    if quantization_config and hasattr(quantization_config, "example_inputs"):
+        example_inputs = quantization_config.example_inputs
+        input_ids = example_inputs["input_ids"]
+        input_bs, input_len = input_ids.shape
+        attention_mask = torch.ones(input_bs, input_len + 1)
+        attention_mask[:, 0] = 0
+        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        if "past_key_values" not in example_inputs:
+            example_inputs["past_key_values"] = tuple(past_key_values)
+        example_inputs["attention_mask"] = attention_mask
+    else:
+        input_ids = model.dummy_inputs["input_ids"]
+        input_bs, input_len = input_ids.shape
+        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        attention_mask = torch.ones(input_bs, input_len + 1)
+        attention_mask[:, 0] = 0
         example_inputs = {
             "input_ids": input_ids,
             "past_key_values": tuple(past_key_values),
             "attention_mask": attention_mask,
         }
+    if return_type == "tuple":
+        example_inputs = (example_inputs["input_ids"], example_inputs["past_key_values"],
+                          example_inputs["attention_mask"])
+
     # do inference to check example_inputs correct.
-    out = model(**example_inputs)
+    out = model(**example_inputs) if return_type == "dict" else model(*example_inputs)
     return example_inputs

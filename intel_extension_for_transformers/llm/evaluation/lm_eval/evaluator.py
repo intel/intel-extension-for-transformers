@@ -149,12 +149,11 @@ def evaluate(model,
             + ".db",
         )
 
-    
     task_dict = get_task_dict(tasks)
 
     if check_integrity:
         run_task_tests(task_list=tasks)
-    
+
     if user_model:
         lm.model = user_model
 
@@ -169,5 +168,5 @@ def evaluate(model,
         output_base_path=output_base_path
     )
 
-    print(make_table(results)) 
+    print(make_table(results))
     return results
