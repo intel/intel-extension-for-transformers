@@ -1,4 +1,4 @@
-transformers
+transformers==4.34.1
 torch==2.0
 accelerate
 sentencepiece
