@@ -45,7 +45,7 @@ class UnitTest(unittest.TestCase):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        response, link = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
@@ -66,7 +66,7 @@ class UnitTest(unittest.TestCase):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        response, link = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.args["append"] = True
