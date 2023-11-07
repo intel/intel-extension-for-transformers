@@ -161,7 +161,7 @@ async def retrieval_chat(request: AskDocRequest):
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig(max_new_tokens=128)
+    config = GenerationConfig(max_new_tokens=64)
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
         if attr == "stream":
@@ -195,7 +195,7 @@ async def retrieval_chat(request: AskDocRequest):
                     logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    formatted_str = ret['text'].replace('\n', '<br/>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
             yield f"data: [DONE]\n\n"
