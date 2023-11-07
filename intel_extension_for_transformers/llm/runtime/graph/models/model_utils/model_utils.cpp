@@ -2097,6 +2097,7 @@ ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_c
   // V = [N_past+N, head_dim, n_head, batch_size]
   const uint32_t n_embd_kv = concat_k ? ne0 * ne2 : ne1 * ne2;
   struct ne_tensor* dst;
+  bool dst_alloced = false;
   if (concat_k) {
     MODEL_ASSERT(ne1 <= moctx->n_ctx);
   } else {
@@ -2116,7 +2117,10 @@ ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_c
       id++;
       continue;
     } else {
-      dst = ne_new_tensor_4d(nectx, cache->type, ne0, ne1, ne2, ne3, NE_SIZE_CALC);
+      if (!dst_alloced) {
+        dst = ne_new_tensor_4d(nectx, cache->type, ne0, ne1, ne2, ne3, NE_SIZE_CALC);
+        dst_alloced = true;
+      }
       struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
                                            elem_size * ne0 * ne1 * ne2, dst_off);
       dst_off += elem_size * ne0 * ne1 * ne2 * cont_bs;
@@ -2141,8 +2145,8 @@ ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_c
                                          elem_size * ne0 * ne1 * ne2, dst_off);
     ne_build_forward_expand(cgraph,
                             ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb1, nb2, nb3, off), dst_i));
+    return dst;
   }
-  return dst;
 }
 
 ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
@@ -2367,7 +2371,6 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
     MODEL_ASSERT(raw_k >= sample_k);
     std::vector<beam_next_token> min_heap;
     min_heap.reserve(sample_k);
-    row_off += i * num_beam;
     for (int j = 0; j < num_beam; ++j) {
       int n = 0;
       if (j == 0) {  // init heap
@@ -2389,6 +2392,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
         }
       }
     }
+    row_off += num_beam;
     std::sort(min_heap.begin(), min_heap.end(),
               [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; });
     for (const auto b : min_heap) {

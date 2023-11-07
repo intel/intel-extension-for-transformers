@@ -290,9 +290,9 @@ MODEL_API ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct 
 #define NEG_INF -std::numeric_limits<float>::max()
 
 typedef struct beam_next_token {
-  model_token id;  // token id
-  float score;     // score of the token
-  int beam_idx;    // token in which beam (-1 means unknown)
+  model_token id = -1;  // token id
+  float score = 0.0f;   // score of the token
+  int beam_idx = -1;    // token in which beam (-1 means unknown)
 } beam_next_token;
 
 struct beam {

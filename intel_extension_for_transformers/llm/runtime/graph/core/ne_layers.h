@@ -44,7 +44,7 @@
 #define NE_QNT_VERSION_FACTOR 1000  // do not change this
 
 #define NE_MAX_DIMS 4
-#define NE_MAX_NODES 4096
+#define NE_MAX_NODES 8192
 #define NE_MAX_PARAMS 256
 #define NE_MAX_CONTEXTS 64
 #define NE_MAX_OPT 4

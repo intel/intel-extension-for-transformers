@@ -228,18 +228,17 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
                                 n_past * ne_element_size(kv_self.k)));
         } else {
           // batch K
-          Kcur_bs[i] =
-              ne_permute(ctx0,
-                         ne_view_4d(ctx0, Kcur, n_embd / n_head, n_head, N, 1, ne_element_size(Kcur) * n_embd / n_head,
-                                    ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
-                                    i * ne_element_size(Kcur) * n_embd * N),
-                         0, 2, 1, 3);
-          k_bs[i] = ne_view_4d(
-              ctx0, kv_self.k, n_embd / n_head, N, n_head, 1, ne_element_size(kv_self.k) * n_embd / n_head,
-              ne_element_size(kv_self.k) * n_embd / n_head * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
-              ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
-               block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
-               n_embd / n_head * n_past * ne_element_size(kv_self.k)));
+          Kcur_bs[i] = ne_permute(ctx0,
+                                  ne_view_4d(ctx0, Kcur, head_size, n_head, N, 1, ne_element_size(Kcur) * head_size,
+                                             ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
+                                             i * ne_element_size(Kcur) * n_embd * N),
+                                  0, 2, 1, 3);
+          k_bs[i] =
+              ne_view_4d(ctx0, kv_self.k, head_size, N, n_head, 1, ne_element_size(kv_self.k) * head_size,
+                         ne_element_size(kv_self.k) * head_size * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
+                         ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
+                          block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
+                          head_size * n_past * ne_element_size(kv_self.k)));
 
           // batch V
           Vcur_bs[i] = ne_permute(
@@ -324,15 +323,15 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
       }
     } else {
       K = model_kv_cache_seq_concat(&gf, &lctx, ctx0, head_size, n_cached, n_head, batch_size, block_ids, il);
-      K = ne_permute(ctx0, K, 0, 2, 1, 3);
       if (is_ring_full) {
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
         struct ne_tensor* cossin_cache = nullptr;
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
         K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
       }
-      K = ne_permute(ctx0, K, 0, 2, 1, 3);
 
       // split cached V into n_head heads
       V = model_kv_cache_seq_concat(&gf, &lctx, ctx0, n_cached, head_size, n_head, batch_size, block_ids, il, false);

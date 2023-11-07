@@ -75,7 +75,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.temp = temp;
   params.repeat_penalty = repeat_penalty;
   params.perplexity = perplexity;
-  params.batch_size = 2;  // batch_size;
+  params.batch_size = 4;  // batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
   params.memory_type = KV_MEM_TYPE_F16;  // TODO MEMORY_AUTO for MHA
@@ -174,10 +174,25 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   std::vector<model_token> embd;
 
   bool do_beam_search = lctx->beam_search;
-  std::vector<model_token> embd_inp1 = {50256, 7091, 4721, 262, 3420, 290, 766};
-  // std::vector<model_token> embd_inp1 = {7091, 4721, 262, 3420, 290, 766};
-  // std::vector<model_token> embd_inp1 = {7091, 4721, 262, 3420, 290, 766, 502};
-  std::vector<model_token> embd_inp2 = {33331, 502, 838, 1243, 546, 21274, 2647};
+  std::vector<model_token> embd_inp1 = {50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 7091,  4721,  262,   3420,  290,   766};
+  std::vector<model_token> embd_inp2 = {50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 33331, 502,   838,   1243,  546,   21274, 2647};
+  std::vector<model_token> embd_inp3 = {50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256,
+                                        50256, 50256, 50256, 2061,  318,   262,   3616,  286,   1204,  30};
+  std::vector<model_token> embd_inp4 = {
+      2514, 307, 11,   393, 407,   284, 307,  11,  326,   318,   262, 1808,  25,    10127, 705,  48010, 31801, 1754,
+      287,  262, 2000, 284, 8659,  383, 1017, 654, 290,   20507, 286, 23077, 15807, 11,    1471, 284,   1011,  5101,
+      1028, 257, 5417, 286, 14979, 13,  1870, 416, 12330, 886,   606, 13,    1675,  4656,  960,  1462,  3993,  11};
   if (do_beam_search) {
     std::vector<model_input> inputs = {model_input{
                                            /*.tokens             =*/embd_inp1.data(),
@@ -188,7 +203,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
                                            /*.request_idx        =*/0,
                                            /*.beam_idx           =*/0,
                                            /*.padding_side       =*/0,
-                                           /*n_padding           =*/1,  // 1,
+                                           /*n_padding           =*/48,
                                        },
                                        model_input{
                                            /*.tokens             =*/embd_inp2.data(),
@@ -197,6 +212,28 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
                                            /*.n_past             =*/0,
                                            /*.n_total            =*/0,
                                            /*.request_idx        =*/1,
+                                           /*.beam_idx           =*/0,
+                                           /*.padding_side       =*/0,
+                                           /*n_padding           =*/47,
+                                       },
+                                       model_input{
+                                           /*.tokens             =*/embd_inp3.data(),
+                                           /*.n_tokens           =*/static_cast<uint32_t>(embd_inp3.size()),
+                                           /*.n_prompt_tokens    =*/0,
+                                           /*.n_past             =*/0,
+                                           /*.n_total            =*/0,
+                                           /*.request_idx        =*/2,
+                                           /*.beam_idx           =*/0,
+                                           /*.padding_side       =*/0,
+                                           /*n_padding           =*/47,
+                                       },
+                                       model_input{
+                                           /*.tokens             =*/embd_inp4.data(),
+                                           /*.n_tokens           =*/static_cast<uint32_t>(embd_inp4.size()),
+                                           /*.n_prompt_tokens    =*/0,
+                                           /*.n_past             =*/0,
+                                           /*.n_total            =*/0,
+                                           /*.request_idx        =*/3,
                                            /*.beam_idx           =*/0,
                                            /*.padding_side       =*/0,
                                            /*n_padding           =*/0,
