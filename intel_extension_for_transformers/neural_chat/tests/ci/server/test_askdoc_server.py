@@ -37,7 +37,7 @@ class UnitTest(unittest.TestCase):
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(30)
+            time.sleep(120)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
 
@@ -45,10 +45,9 @@ class UnitTest(unittest.TestCase):
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
-        os.system("ps -ef |grep 'askdoc.yaml' |awk '{print $2}' |xargs kill -9")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:9000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
         request = {
             "query": "What is Intel oneAPI Compiler?",
             "domain": "test",
