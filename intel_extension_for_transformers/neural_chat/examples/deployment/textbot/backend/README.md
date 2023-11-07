@@ -29,8 +29,9 @@ conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typi
 conda install jemalloc gperftools -c conda-forge -y
 ```
 
-Install other dependencies using pip:
-**>Note**: Please make sure transformers version is 4.34.1
+Install other dependencies using pip
+
+>**Note**: Please make sure transformers version is 4.34.1
 ```bash
 pip install -r ../../../requirements.txt
 pip install transformers==4.34.1
