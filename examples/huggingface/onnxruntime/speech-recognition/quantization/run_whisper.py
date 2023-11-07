@@ -81,10 +81,13 @@ class Dataloader:
         self.model_path = model_path
         self.librispeech_test_clean = load_dataset("librispeech_asr", "clean", split="test", cache_dir=args.cache_dir)
         if not model_path.endswith('encoder_model.onnx'):
-            self.encoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'encoder_model.onnx'))
-            self.decoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_model.onnx'))
+            self.encoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'encoder_model.onnx'),
+                                                     providers=ort.get_available_providers())
+            self.decoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_model.onnx'),
+                                                     providers=ort.get_available_providers())
             if model_path.endswith('decoder_with_past_model.onnx'):
-                self.decoder_kv_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_with_past_model.onnx'))
+                self.decoder_kv_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_with_past_model.onnx'),
+                                                            providers=ort.get_available_providers())
 
     def __iter__(self):
         config = AutoConfig.from_pretrained(args.model_name_or_path)
