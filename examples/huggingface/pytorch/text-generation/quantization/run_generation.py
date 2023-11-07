@@ -113,19 +113,34 @@ elif args.sq:
     elif re.search("mpt", config.model_type):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-            "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            "<built-in function linear>": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
     elif re.search("mistral", config.model_type) or re.search("baichuan", config.model_type):
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    if config.model_type == "chatglm":
+        query = "我该怎么办?"
+        if hasattr(tokenizer, "build_chat_inputs"):
+            inputs = tokenizer.build_chat_inputs(query)
+            eos_token_id = [tokenizer.eos_token_id, tokenizer.get_command("<|user|>"),
+                            tokenizer.get_command("<|observation|>")]
+            inputs["eos_token_id"] = eos_token_id
+        elif hasattr(tokenizer, "build_prompt"):
+            prompt = tokenizer.build_prompt(query)
+            inputs = tokenizer([prompt], return_tensors="pt")
+        else:
+            inputs = tokenizer([query], return_tensors="pt")
+
     quantization_config = SmoothQuantConfig(
-                                tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
-                                op_type_dict=op_type_dict,  # default is {}
-                                excluded_precisions=excluded_precisions,  # default is []
-                               )
+        tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        op_type_dict=op_type_dict,  # default is {}
+        excluded_precisions=excluded_precisions,  # default is []
+        calib_dataset="/home/penghuic/.cache/huggingface/datasets/NeelNanda___parquet/",
+        example_inputs=inputs,
+    )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
