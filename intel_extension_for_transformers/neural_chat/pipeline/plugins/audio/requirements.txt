@@ -1,8 +1,8 @@
-paddlepaddle==2.4.2
-paddlenlp==2.5.2
-paddlespeech==1.4.1
-paddle2onnx==1.0.6
-transformers==4.34.1
+paddlepaddle
+paddlenlp
+paddlespeech
+paddle2onnx
+transformers
 soundfile
 datasets
 pydub
