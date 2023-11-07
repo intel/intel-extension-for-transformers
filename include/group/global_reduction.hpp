@@ -45,7 +45,7 @@ template <typename tile_shape_acc_, typename tile_shape_cnt_,
         uint32_t num_group_reduction, uint32_t counter_size, gpu_arch arch_tag_>
 class global_reduce_t<reduce_op::sum, tile_shape_acc_, tile_shape_cnt_,
         mem_desc_acc_t_, mem_desc_cnt_t_, num_group_reduction, counter_size,
-        arch_tag_, std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        arch_tag_, std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
 public:
     static constexpr gpu_arch arch_tag = arch_tag_;
     using tile_shape_acc = tile_shape_acc_;
