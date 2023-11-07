@@ -56,6 +56,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
   // TODO static batching for now
   const int N = inputs[0].n_tokens;
   const int n_past = inputs[0].n_past;
+  const int n_total = inputs[0].n_total;
   const int beam_size = lctx.beam_search ? lctx.beam_size : 1;
   std::vector<int> block_ids;
   std::vector<int> n_padding;
@@ -63,7 +64,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const std::vector<mode
   for (int i = 0; i < batch_size; ++i) {
     block_ids.push_back(inputs[i].request_idx * beam_size + inputs[i].beam_idx);
     n_padding.push_back(inputs[i].n_padding);
-    if (no_padding && inputs[i].n_padding !=0) no_padding = false;
+    if (no_padding && inputs[i].n_padding != 0) no_padding = false;
   }
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;

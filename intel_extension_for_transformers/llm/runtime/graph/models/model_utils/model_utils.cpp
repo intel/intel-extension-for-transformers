@@ -2425,6 +2425,8 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
         /*.n_total            =*/n_total[request_running_indices.back()],
         /*.request_idx        =*/request_running_indices.back(),
         /*.beam_idx           =*/cur_beams[i].beam_idx,
+        /*.padding_side       =*/cur_beams[i].padding_side,
+        /*n_padding           =*/cur_beams[i].n_padding,
     });
     batch_size++;
     beam_indices.push_back(cur_beams[i].beam_idx);
@@ -2451,20 +2453,20 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   std::vector<int> num_beams(ctx->request_running_bs, beam_size);
   std::vector<beam_next_token> next_tokens =
       beam_top_k_next_tokens(ctx, beams_score, num_beams, beam_indices, sample_scale);
-
+  MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);  // request_running_bs * beam_size * sample_scale
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("top_k next_tokens: \n");
   int bb = 0;
   for (int kk = 0; kk < next_tokens.size(); ++kk) {
-    if (kk % beam_size == 0) printf("------batch_%d------\n", bb++);
+    if (kk % (beam_size * sample_scale) == 0) printf("------batch_%d------\n", bb++);
     printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
            (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
            next_tokens[kk].beam_idx);
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);  // request_running_bs * beam_size * sample_scale
+
   const int rb_off = beam_size * sample_scale;
 #pragma omp parallel for
   for (int rb = 0; rb < request_running_indices.size(); ++rb) {
@@ -2640,7 +2642,7 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
   }
   const beam& top_b = beam_hypos[request_idx].top1();
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
-  printf("final beam of request_idx %h:\n", request_idx);
+  printf("final beam of request_idx %d:\n", request_idx);
   top_b.print();
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
   printf("========================================================================================= \n");
@@ -2715,6 +2717,8 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
           b.score = next_tokens[i + rb * beam_size].score;
           b.beam_idx = i;
           b.request_idx = request_running_indices[rb];
+          b.padding_side = inputs[request_running_indices[rb]].padding_side;
+          b.n_padding = inputs[request_running_indices[rb]].n_padding;
           cur_beams[request_running_indices[rb] * beam_size + i] = std::move(b);
         }
       }

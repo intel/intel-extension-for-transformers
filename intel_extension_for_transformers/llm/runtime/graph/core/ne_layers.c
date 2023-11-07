@@ -7356,12 +7356,13 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
   assert(src0->nb[0] == sizeof(float));
 
   // mask padding token (padding left)
-  for (int b = 0; b < bs; ++b) {
+  for (int b = 0; b < bs; b++) {
     const int n_padding = ((int32_t*)src1->data)[2 + b];
     if (n_padding == 0) continue;
     for (int k = 0; k < (nz / bs); k++) {
       for (int j = ith; j < nr; j += nth) {
-        for (int i = 0; i < n_padding; ++i) {
+        for (int i = 0; i < n_padding; i++) {
+          // if (j + n_past > n_padding - 1)  // it will not affect next token if don't mask the pad_token row
           *(float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1] + i * dst->nb[0]) = value;
         }
       }
@@ -7444,7 +7445,7 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
     float max = -INFINITY;
     ne_vec_max_f32(nc, &max, sp);
 
-    ne_float sum = 0.0;
+    ne_float sum = (max == -INFINITY) ? (1.0 * nc) : 0.0;
 
     uint16_t scvt;
     for (int i = 0; i < nc; i++) {

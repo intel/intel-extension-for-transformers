@@ -174,8 +174,9 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   std::vector<model_token> embd;
 
   bool do_beam_search = lctx->beam_search;
-  // std::vector<model_token> embd_inp1 = {50256, 7091, 4721, 262, 3420, 290, 766};
-  std::vector<model_token> embd_inp1 = {7091, 4721, 262, 3420, 290, 766, 502};
+  std::vector<model_token> embd_inp1 = {50256, 7091, 4721, 262, 3420, 290, 766};
+  // std::vector<model_token> embd_inp1 = {7091, 4721, 262, 3420, 290, 766};
+  // std::vector<model_token> embd_inp1 = {7091, 4721, 262, 3420, 290, 766, 502};
   std::vector<model_token> embd_inp2 = {33331, 502, 838, 1243, 546, 21274, 2647};
   if (do_beam_search) {
     std::vector<model_input> inputs = {model_input{
@@ -187,7 +188,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
                                            /*.request_idx        =*/0,
                                            /*.beam_idx           =*/0,
                                            /*.padding_side       =*/0,
-                                           /*n_padding           =*/0,  // 1,
+                                           /*n_padding           =*/1,  // 1,
                                        },
                                        model_input{
                                            /*.tokens             =*/embd_inp2.data(),
@@ -201,7 +202,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
                                            /*n_padding           =*/0,
                                        }};
     auto ret = beam_search(lctx, n_predict, inputs, N_threads);
-    embd = ret[1];
+    embd = ret[0];
     for (int i = 0; i < ret.size(); ++i) {
       std::cout << "===== batch " << i << " outputs ======" << std::endl;
       std::string r;
