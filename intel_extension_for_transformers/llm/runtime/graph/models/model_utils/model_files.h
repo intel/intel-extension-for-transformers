@@ -29,6 +29,7 @@
 #define NE_MEM_ALIGN 16
 #endif
 
+#include "core/layers/jblas_common.hpp"
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
@@ -614,6 +615,124 @@ struct model_model_loader {
     }
   }
 
+  void jblas_split_weight(void* src, void** dst, size_t column, size_t row, size_t column_rank, size_t row_rank) {
+    auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(src);
+    // TODO adapt NTILE and KTILE from CoreType
+    int NTILE = 48;
+    int KTILE = 4;
+    int world_size_n = static_cast<int>(src_tmp->mNPad / row);
+    int world_size_k = static_cast<int>(src_tmp->mKPad / column);
+    auto dNpad = src_tmp->mNPad / world_size_n;
+    auto dKpad = src_tmp->mKPad / world_size_k;
+    // dst NPad and KPad should be div by NTILE and KTILE
+    assert(dNpad / NTILE == 0);
+    assert(dKpad / KTILE == 0);
+    if (src_tmp != nullptr) {
+      if (src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS4ClipScaleFp32) ||
+          src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp); 
+        ne_jblas::SS4Fp32 dst_w(src_w->mCoreType);
+        dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        dst_w.assign((int8_t*)(*dst));
+        // take the weight out and split
+        size_t n_block = src_w->mNPad / NTILE / world_size_n;
+        size_t d_row_id = 0; 
+        for (size_t i = row_rank * n_block; i < n_block * (row_rank + 1); ++i) {
+          size_t s_n_offset = i * src_w->mKPad * NTILE * KTILE / 2;
+          size_t s_k_offset = column_rank * src_w->mKPad * NTILE / world_size_k / 2;
+          auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
+          auto d_off_ptr = dst_w.WPtr() + d_row_id * dst_w.mNPad * NTILE / 2;
+          auto off_size = dst_w.mKPad * NTILE / 2;
+          memcpy(s_off_ptr, d_off_ptr, off_size);
+          d_row_id += 1;
+        }
+        // take the scale out and split
+        d_row_id = 0;
+        for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+          size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+          auto s_off_ptr = (float*)src_w->mSPtr + i * src_w->mCStep + kblock_offset;
+          auto d_off_ptr = (float*)dst_w.mSPtr + d_row_id * dst_w.mCStep; 
+          memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+          d_row_id += 1;
+        }
+        // take the zp out and split
+        if (src_w->mIsAsym) {
+          d_row_id = 0;
+          for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+            size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+            auto s_off_ptr = (int8_t*)src_w->mZPtr + i * src_w->mCStep + kblock_offset;
+            auto d_off_ptr = (int8_t*)dst_w.mZPtr + d_row_id * dst_w.mCStep; 
+            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            d_row_id += 1;
+          }
+
+        }
+        // take the reduce out and split
+        if (src_w->mHasReduce) {
+          d_row_id = 0;
+          for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+            size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+            auto s_off_ptr = (float*)src_w->mRPtr + i * src_w->mCStep + kblock_offset;
+            auto d_off_ptr = (float*)dst_w.mRPtr + d_row_id * dst_w.mCStep; 
+            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            d_row_id += 1;
+          }
+
+        }
+      } else if (src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32) ||
+                 src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+        auto src_w = dynamic_cast<ne_jblas::SS8Fp32*>(src_tmp); 
+        ne_jblas::SS8Fp32 dst_w(src_w->mCoreType);
+        dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        dst_w.assign((int8_t*)(*dst));
+        // take the weight out and split
+        size_t n_block = src_w->mNPad / NTILE / world_size_n;
+        size_t d_row_id = 0; 
+        for (size_t i = row_rank * n_block; i < n_block * (row_rank + 1); ++i) {
+          size_t s_n_offset = i * src_w->mKPad * NTILE * KTILE;
+          size_t s_k_offset = column_rank * src_w->mKPad * NTILE / world_size_k;
+          auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
+          auto d_off_ptr = dst_w.WPtr() + d_row_id * dst_w.mNPad * NTILE;
+          auto off_size = dst_w.mKPad * NTILE;
+          memcpy(s_off_ptr, d_off_ptr, off_size);
+          d_row_id += 1;
+        }
+        // take the scale out and split
+        d_row_id = 0;
+        for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+          size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+          auto s_off_ptr = (float*)src_w->mSPtr + i * src_w->mCStep + kblock_offset;
+          auto d_off_ptr = (float*)dst_w.mSPtr + d_row_id * dst_w.mCStep; 
+          memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+          d_row_id += 1;
+        }
+        // take the zp out and split
+        if (src_w->mIsAsym) {
+          d_row_id = 0;
+          for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+            size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+            auto s_off_ptr = (int8_t*)src_w->mZPtr + i * src_w->mCStep + kblock_offset;
+            auto d_off_ptr = (int8_t*)dst_w.mZPtr + d_row_id * dst_w.mCStep; 
+            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            d_row_id += 1;
+          }
+
+        }
+        // take the reduce out and split
+        if (src_w->mHasReduce) {
+          d_row_id = 0;
+          for (size_t i = row_rank * src_w->mNPad; i < (row_rank + 1) * src_w->mNPad; ++i) {
+            size_t kblock_offset = column_rank * src_w->mCSize / src_w->mCStep;
+            auto s_off_ptr = (float*)src_w->mRPtr + i * src_w->mCStep + kblock_offset;
+            auto d_off_ptr = (float*)dst_w.mRPtr + d_row_id * dst_w.mCStep; 
+            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            d_row_id += 1;
+          }
+
+        }
+      }
+    }
+  }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
       MODEL_ASSERT(lt.shards.size() == 1);
@@ -661,8 +780,14 @@ struct model_model_loader {
       file.seek(shard.file_off, SEEK_SET);
       tmp_buf.resize(lt.size * lt.world_size);
       file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
-      // only copy part of weight form the tmp_buf of origin file
-      memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+      size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
+      if (lt.type == NE_TYPE_JBLAS) {
+        void* dst_data = (void*)lt.data;
+        jblas_split_weight(tmp_buf.addr, &dst_data, lt.ne.at(0), num_rows, lt.rank, 0);
+      } else {
+        // only copy part of weight form the tmp_buf of origin file
+        memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+      }
     } else if (lt.split_type == TP_1D_COLUMN) {
       if (lt.size == 0) {
         return;
@@ -673,16 +798,21 @@ struct model_model_loader {
       file.seek(shard.file_off, SEEK_SET);
       tmp_buf.resize(lt.size * lt.world_size);
       file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
-      size_t offset = 0;
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
-      // different data type may have differnet per_row_size
-      size_t per_row_size = lt.size / num_rows;
-      for (size_t i = 0; i < num_rows; ++i) {
-        memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
-               per_row_size);
-        offset += per_row_size;
+      if (lt.type == NE_TYPE_JBLAS) {
+        void* dst_data = (void*)lt.data;
+        jblas_split_weight(tmp_buf.addr, &dst_data, lt.ne.at(0), num_rows, lt.rank, 0);
+      } else {
+        size_t offset = 0;
+        // different data type may have differnet per_row_size
+        size_t per_row_size = lt.size / num_rows;
+        for (size_t i = 0; i < num_rows; ++i) {
+          memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
+                 per_row_size);
+          offset += per_row_size;
+        }
+        MODEL_ASSERT(offset == lt.size);
       }
-      MODEL_ASSERT(offset == lt.size);
     }
 #endif
     if (0) {
