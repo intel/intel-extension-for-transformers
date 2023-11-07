@@ -1,6 +1,6 @@
 diffusers <= 0.16.1
 accelerate <= 0.16.0
-transformers
+transformers==4.34.1
 datasets
 torch
 torchvision
