@@ -2,7 +2,7 @@
 Follow these instructions to set up and run our provided Docker image.
 
 ## Set Up Docker Image
-Build From Source
+Build or Pull the provided docker images.
 
 ### Prepare Intel Extension for Transformers
 ```bash
@@ -22,6 +22,11 @@ cd itrex
 docker build -f docker/Dockerfile_chatbot --target hpu -t chatbot:latest .
 ```
 
+### Pull from docker hub
+```bash
+docker pull intel/ai-tools:itrex-chatbot
+```
+
 ## Use Docker Image
 Utilize the docker container based on docker image.
 
@@ -32,5 +37,7 @@ docker exec -it <container_id> /bin/bash
 
 ## Run Simple Test
 ```bash
-docker exec <container_id> bash -c "cd /intel-extension-for-transformers/tests; source activate neuralchat; python test_neural_engine.py"
+docker exec <container_id> /bin/bash
+cd intel_extension_for_transformers/neural_chat/tests
+python server/test_textchat_server.py
 ```
