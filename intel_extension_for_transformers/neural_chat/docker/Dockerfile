@@ -76,7 +76,7 @@ RUN if [ -f /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION
 
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt==2.0.0+cpu -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
+    cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
@@ -134,7 +134,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e .
 
 # Install dependency
-RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
     sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
     pip install -r requirements.txt && \
@@ -185,7 +185,7 @@ RUN conda init bash && \
     source ~/.bashrc
 
 RUN source activate && conda activate neuralchat && cd /intel-extension-for-transformers && \
-    pip install -r ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning/requirements.txt && \
+    pip install -r ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt && \
     pip install -r ./intel_extension_for_transformers/neural_chat/requirements.txt
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/

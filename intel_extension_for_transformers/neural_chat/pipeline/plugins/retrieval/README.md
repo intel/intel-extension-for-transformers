@@ -28,7 +28,7 @@ In addition, our plugin seamlessly integrates the online embedding model, Google
 The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The `Agent_QA` initializes itself using the provided `input_path` to construct a local database. During a conversation, the user's query is first passed to the `IntentDetector` to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the `IntentDetector` determines that the user's query requires an answer, the retriever is activated to search the database using the user's query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs). 
 
 # Usage
-The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for a simple test. 
+The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
 
 We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl and xlsx. For structured file formats, they must adhere to predefined structures.
 

@@ -59,7 +59,7 @@ We support three kinds of kernel fusion for transformer models: QKV, MHA (multi-
             <td>MHA</td>
             <td colspan=2>
 
-Referring [the fused-attention doc for details](../fused_attention.md#supported-models)
+Referring [the fused-attention doc for details](../docs/fused_attention.md#supported-models)
 </td>
         </tr>
     </tbody>

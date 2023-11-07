@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
       - 'intel_extension_for_transformers/neural_chat/**'
+      - 'requirements.txt'
+      - 'setup.py'
       - 'intel_extension_for_transformers/llm/finetuning/**'
       - 'intel_extension_for_transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/transformers/**'
@@ -75,6 +77,7 @@ jobs:
           -v ~/.cache/oneAPI:/cache \
           -v /home/itrex-docker/models:/models \
           -v /dataset/media:/media \
+          -v /dataset/tf_dataset2:/tf_dataset2 \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
@@ -89,13 +92,15 @@ jobs:
           && bash install_binary.sh \
           && pip install intel_extension_for_pytorch wget sentencepiece \
           && pip install transformers>=4.32.0 \
-          && pip install peft torch num2words speechbrain paddlepaddle \
-          && pip install paddlespeech==1.4.1 shortuuid gptcache evaluate \
+          && pip install peft torch num2words speechbrain \
+          && pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 \
+          && pip install shortuuid gptcache evaluate \
           && pip install fschat pydub python-multipart PyPDF2 langchain \
           && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
           && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
           && pip install yacs uvicorn optimum optimum[habana] \
           && pip install sentence_transformers unstructured markdown rouge_score \
+          && pip install einops \
           && pip install --upgrade accelerate"
 
       - name: Run UT

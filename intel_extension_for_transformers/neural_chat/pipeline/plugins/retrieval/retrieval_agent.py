@@ -88,7 +88,7 @@ class Agent_QA():
                        append_path, 
                        top_k=1, 
                        search_type="similarity_score_threshold", 
-                       search_kwargs={"score_threshold": 0.9, "k": 1}):
+                       search_kwargs={"score_threshold": 0.8, "k": 1}):
         self.db = self.doc_parser.KB_append(append_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
                            search_type=search_type, search_kwargs=search_kwargs)

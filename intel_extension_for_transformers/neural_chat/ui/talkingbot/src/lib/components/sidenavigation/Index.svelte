@@ -37,7 +37,7 @@
 <style>
 	.scrollbar::-webkit-scrollbar {
 		width: 0;
-		background: transparent; 
+		background: transparent; /* hide sidenav scrollbar on Chrome, Opera and other webkit Browsers*/
 	}
 	.scrollbar {
 		-ms-overflow-style: none;

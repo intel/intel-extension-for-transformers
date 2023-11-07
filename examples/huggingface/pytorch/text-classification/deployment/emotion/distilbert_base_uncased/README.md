@@ -78,7 +78,7 @@ By setting `--dynamic_quanzite` for FP32 model, you could benchmark dynamic quan
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx --mode=performance --batch_size=1 --seq_len=128 --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion --dataset_name=emotion
 ```
 
-or compile framwork model to IR using python API
+or compile framework model to IR using python API
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile importcompile
 graph = compile('./model_and_tokenizer/int8-model.onnx')

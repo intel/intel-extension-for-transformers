@@ -41,12 +41,13 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 
 static bool bloom_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                      const int n_past, const int n_threads) {
+                                      const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -62,7 +63,8 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = hparams.n_rot;
@@ -211,13 +213,15 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
                               model.layers[il].ffn[5], cur);
       } else {
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+
         cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
 
         cur = ne_gelu(ctx0, cur);
 
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[4], cur);
+
+        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
       }
-      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
     }
 
     cur = ne_add(ctx0, cur, inpFF);
@@ -303,8 +307,9 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!bloom_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!bloom_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
