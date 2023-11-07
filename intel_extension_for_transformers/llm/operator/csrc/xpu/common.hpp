@@ -86,11 +86,17 @@ public:
       free(_write_buf);
   }
 
-  CompressWei4Bit(void *buf) {
+  CompressWei4Bit(void *buf, sycl::queue &queue) {
     if (buf != nullptr) {
+      auto context = queue.get_info<sycl::info::queue::context>();
+      auto device = queue.get_info<sycl::info::queue::device>();
       size_t offset = deserialize_field(buf);
-      _write_buf = (char *)malloc(get_buf_size());
-      memcpy(_write_buf, (char *)buf + offset, get_buf_size());
+      _wei = (void *)aligned_alloc_device(
+        DEVICE_MEM_ALIGNMENT, get_4bit_wei_size() * sizeof(int8_t), device, context);
+      _scale = (void *)aligned_alloc_device(
+        DEVICE_MEM_ALIGNMENT, get_scale_size() * sizeof(fp16), device, context);
+      queue.memcpy(_wei, (void *)((char *)buf + offset), get_4bit_wei_size() * sizeof(int8_t)).wait();
+      queue.memcpy(_scale, (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t)), get_scale_size() * sizeof(fp16)).wait();
     }
   }
 
@@ -107,7 +113,7 @@ public:
     memcpy((char *)buf + offset, _write_buf, get_buf_size());
   }
 
-  void deserialize(void *buf) {
+  void deserialize(void *buf, sycl::queue &queue) {
     size_t offset = 0;
     memcpy(&_N, (char *)buf + offset, sizeof(_N));
     offset += sizeof(_N);
@@ -122,9 +128,22 @@ public:
 
   size_t get_serialize_size() { return get_meta_data_size() + get_buf_size(); }
 
-  void *get_4bit_wei_ptr() { return _write_buf; }
+  void *get_4bit_wei_ptr() {
+    return _write_buf;
+  }
 
-  void *get_scale_ptr() { return _write_buf + get_4bit_wei_size(); }
+  void *get_scale_ptr() {
+    return _write_buf + get_4bit_wei_size();
+  }
+
+  void *get_4bit_wei_ptr_device() {
+    return _wei;
+  }
+
+  void *get_scale_ptr_device() {
+    return _scale;
+  }
+
   int _N, _K, _blksize;
 
 private:
@@ -150,5 +169,7 @@ private:
     return sizeof(_N) + sizeof(_K) + sizeof(_blksize) + sizeof(_sym);
   }
   bool _sym;
-  char *_write_buf;
+  char *_write_buf = nullptr;
+  void *_wei;
+  void *_scale;
 };

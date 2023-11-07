@@ -56,11 +56,11 @@ static void gbits_linear(const torch::Tensor &activation,
   uint32_t matrix_k = activation.sizes()[1];
 
   torch::Tensor revert_weight;
-  CompressWei4Bit obj(weight.data_ptr<int8_t>());
+  CompressWei4Bit obj(weight.data_ptr<int8_t>(), queue);
   if (initer.verbose) timer.start();
   if (compute_type == "fp32") {
-    auto *A = reinterpret_cast<float *>(activation.data_ptr<float>());
-    auto *C = reinterpret_cast<float *>(output.data_ptr<float>());
+    auto *A = activation.data_ptr<float>();
+    auto *C = output.data_ptr<float>();
     if (with_bias) {
       auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
       xetla_linear_fp32_bias(queue, A, &obj, C, matrix_m, matrix_n,
@@ -97,8 +97,7 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   c10::impl::VirtualGuardImpl impl(device_type);
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
   auto q = xpu::get_queue_from_stream(c10_stream);
-
-  CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>());
+  CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>(), q);
   if (initer.verbose) timer.start();
   gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
                      compute_type, weight_type);
@@ -113,14 +112,28 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
 torch::Tensor quantize(float *weight, int k, int n, int blksize,
                        std::string weight_type, std::string cmpt_type, bool trans) {
   if (k < blksize) {
-    std::cout << "blocksize is smaller than k, take k as blocksize "
-              << std::endl;
+    if (initer.verbose)
+      std::cout << "blocksize is smaller than k, take k as blocksize "
+                << std::endl;
     blksize = k;
   }
   if (blksize % 16 != 0) {
       std::cout << "blocksize must be divisible by 16 "
                 << std::endl;
       exit(0);
+  }
+  auto device_type = c10::DeviceType::XPU;
+  c10::impl::VirtualGuardImpl impl(device_type);
+  c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
+  auto q = xpu::get_queue_from_stream(c10_stream);
+  auto context = q.get_info<sycl::info::queue::context>();
+  bool isHostPointer = sycl::get_pointer_type(weight, context) == sycl::usm::alloc::host;
+  float *host_weight;
+  if (!isHostPointer) {
+    host_weight = (float *)malloc(k * n * sizeof(float));
+    q.memcpy((void *)host_weight, (void *)weight, k * n * sizeof(float)).wait();
+  } else {
+    host_weight = weight;
   }
   CompressWei4Bit compress_wei(k, n, blksize);
   torch::Tensor ret =
@@ -129,9 +142,9 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize,
     std::vector<int8_t> s8quant_tmp(k * n);
     fp16 *scale = reinterpret_cast<fp16 *>(compress_wei.get_scale_ptr());
     if (trans)
-      s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, k, n, scale, blksize, trans);
+      s8_quant_row_blk(host_weight, s8quant_tmp.data(), k, n, k, n, scale, blksize, trans);
     else
-      s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, n, n, scale, blksize, trans);
+      s8_quant_row_blk(host_weight, s8quant_tmp.data(), k, n, n, n, scale, blksize, trans);
     gblas::int4x2 *wei =
         reinterpret_cast<gblas::int4x2 *>(compress_wei.get_4bit_wei_ptr());
     compress_s8_s4(s8quant_tmp.data(), wei, k, n, n, n);

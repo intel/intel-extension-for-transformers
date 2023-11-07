@@ -116,35 +116,18 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
   p.size_cnt = gemm_op_t::get_cnt_buf_size(p.matrix_m, p.matrix_n);
 
-  auto *A_d = static_cast<data_type_a *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_a * sizeof(data_type_a), device, context));
-  auto *B_d = static_cast<data_type_b *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_b * sizeof(data_type_b), device, context));
-  auto *C_d = static_cast<data_type_c *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_c * sizeof(data_type_c), device, context));
-  auto *scale_d = static_cast<data_type_scale *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_scale * sizeof(data_type_scale), device,
-      context));
   auto *Acc_d = static_cast<data_type_acc *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_acc * sizeof(data_type_acc), device, context));
   auto *Cnt_d = static_cast<uint32_t *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_cnt * sizeof(uint32_t), device, context));
-  queue.memcpy((void *)A_d, (void *)A, p.size_a * sizeof(data_type_a)).wait();
-  queue
-      .memcpy((void *)B_d, (void *)(B->get_4bit_wei_ptr()),
-              p.size_b * sizeof(data_type_b))
-      .wait();
-  queue.memcpy((void *)C_d, (void *)C, p.size_c * sizeof(data_type_c)).wait();
-  queue
-      .memcpy((void *)scale_d, (void *)(B->get_scale_ptr()),
-              p.size_scale * sizeof(data_type_scale))
-      .wait();
 
   // set up gemm arguments
   typename gemm_op_t::arguments_t gemm_arg(
-      p.matrix_m, p.matrix_k, p.matrix_n, A_d,
-      p.matrix_k, B_d, p.matrix_n, C_d,
-      p.matrix_n, scale_d, p.matrix_n, Acc_d, Cnt_d);
+      p.matrix_m, p.matrix_k, p.matrix_n, static_cast<data_type_a *>(A),
+      p.matrix_k, static_cast<data_type_b *>(B->get_4bit_wei_ptr_device()),
+      p.matrix_n, static_cast<data_type_c *>(C),
+      p.matrix_n, static_cast<data_type_scale *>(B->get_scale_ptr_device()),
+      p.matrix_n, Acc_d, Cnt_d);
   cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
   if (!gemm_op_t::can_implement(gemm_arg)) {
     std::cout << "The arguments cannot be supported, aborting ... "
@@ -163,11 +146,6 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   });
   e_esimd.wait();
 
-  queue.memcpy((void *)C, (void *)C_d, p.size_c * sizeof(data_type_c)).wait();
-  free(A_d, context);
-  free(B_d, context);
-  free(C_d, context);
-  free(scale_d, context);
   free(Acc_d, context);
   free(Cnt_d, context);
 }
@@ -231,42 +209,22 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
   p.size_cnt = gemm_op_t::get_cnt_buf_size(p.matrix_m, p.matrix_n);
   
-  auto *A_d = static_cast<data_type_a *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_a * sizeof(data_type_a), device, context));
-  auto *B_d = static_cast<data_type_b *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_b * sizeof(data_type_b), device, context));
-  auto *C_d = static_cast<data_type_c *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_c * sizeof(data_type_c), device, context));
-  auto *scale_d = static_cast<data_type_scale *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_scale * sizeof(data_type_scale), device,
-      context));
-  auto *D_d = static_cast<data_type_acc *>(aligned_alloc_device(
-      DEVICE_MEM_ALIGNMENT, p.size_d * sizeof(data_type_acc), device, context));
   auto *Acc_d = static_cast<data_type_acc *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_acc * sizeof(data_type_acc), device, context));
   auto *Cnt_d = static_cast<uint32_t *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_cnt * sizeof(uint32_t), device, context));
-  queue.memcpy((void *)A_d, (void *)A, p.size_a * sizeof(data_type_a)).wait();
-  queue
-      .memcpy((void *)B_d, (void *)(B->get_4bit_wei_ptr()),
-              p.size_b * sizeof(data_type_b))
-      .wait();
-  queue.memcpy((void *)C_d, (void *)C, p.size_c * sizeof(data_type_c)).wait();
-  queue
-      .memcpy((void *)scale_d, (void *)(B->get_scale_ptr()),
-              p.size_scale * sizeof(data_type_scale))
-      .wait();
-  queue.memcpy((void *)D_d, (void *)D, p.size_d * sizeof(data_type_acc)).wait();
 
   bias_op_t::shape_t bias_add_shape(p.matrix_n, 1, p.matrix_n);
   using epilogue_args_t = epilogue_t::arguments_t;  
-  epilogue_args_t ecpilogue_args({{D_d, bias_add_shape}});
+  epilogue_args_t ecpilogue_args({{static_cast<data_type_acc *>(D), bias_add_shape}});
 
   // set up gemm arguments
   typename gemm_op_t::arguments_t gemm_arg(
-      p.matrix_m, p.matrix_k, p.matrix_n, A_d,
-      p.matrix_k, B_d, p.matrix_n, C_d,
-      p.matrix_n, scale_d, p.matrix_n, Acc_d, Cnt_d, ecpilogue_args);
+      p.matrix_m, p.matrix_k, p.matrix_n, static_cast<data_type_a *>(A),
+      p.matrix_k, static_cast<data_type_b *>(B->get_4bit_wei_ptr_device()),
+      p.matrix_n, static_cast<data_type_c *>(C),
+      p.matrix_n, static_cast<data_type_scale *>(B->get_scale_ptr_device()),
+      p.matrix_n, Acc_d, Cnt_d, ecpilogue_args);
   cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
   if (!gemm_op_t::can_implement(gemm_arg)) {
     std::cout << "The arguments cannot be supported, aborting ... "
@@ -285,12 +243,6 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   });
   e_esimd.wait();
 
-  queue.memcpy((void *)C, (void *)C_d, p.size_c * sizeof(data_type_c)).wait();
-  free(A_d, context);
-  free(B_d, context);
-  free(C_d, context);
-  free(D_d, context);
-  free(scale_d, context);
   free(Acc_d, context);
   free(Cnt_d, context);
 }

@@ -55,8 +55,8 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
                  const std::string &compute_type,
                  const std::string &weight_type) {
   int8_t *bit4_wei =
-      reinterpret_cast<int8_t *>(compress_wei->get_4bit_wei_ptr());
-  fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr());
+      reinterpret_cast<int8_t *>(compress_wei->get_4bit_wei_ptr_device());
+  fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr_device());
   auto row = transpose ? compress_wei->_N : compress_wei->_K;
   auto col = transpose ? compress_wei->_K : compress_wei->_N;
   sycl::buffer<float, 2> dst_buf(
@@ -124,4 +124,3 @@ void compress_s8_s4(const int8_t *srcptr, gblas::int4x2 *dstptr, int row,
     }
   }
 }
-
