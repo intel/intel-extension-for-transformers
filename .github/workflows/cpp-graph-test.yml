@@ -43,7 +43,7 @@ jobs:
     runs-on: ${{inputs.runner || 'spr'}}
     strategy:
       matrix:
-        modelName: ${{fromJson(inputs.models || '["llama-7b-hf", "gptj-6b"]')}}
+        modelName: ${{fromJson(inputs.models || '["llama-2-7b-chat", "gptj-6b"]')}}
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
