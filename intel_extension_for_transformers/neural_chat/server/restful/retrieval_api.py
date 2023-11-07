@@ -56,7 +56,10 @@ class RetrievalAPIRouter(APIRouter):
     def handle_retrieval_request(self, request: RetrievalRequest) -> RetrievalResponse:
         bot = self.get_chatbot()
         # TODO: NeuralChatBot.retrieve_model()
-        result = bot.predict(request)
+        try:
+            result = bot.predict(request)
+        except:
+            result, link = bot.predict(request)
         return RetrievalResponse(content=result)
     
 
