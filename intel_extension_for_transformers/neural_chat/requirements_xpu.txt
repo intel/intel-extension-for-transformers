@@ -1,10 +1,10 @@
 transformers>=4.32.0
 fschat
 num2words
-paddlepaddle==2.4.2
-paddlenlp==2.5.2
-paddlespeech==1.4.1
-paddle2onnx==1.0.6
+paddlepaddle
+paddlenlp
+paddlespeech
+paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -18,7 +18,7 @@ farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
-chromadb
+chromadb==0.4.15
 fastapi==0.103.2
 pydantic==1.10.13
 starlette

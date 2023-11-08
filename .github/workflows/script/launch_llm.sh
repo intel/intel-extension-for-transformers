@@ -18,8 +18,8 @@ function main() {
     # init params
     if [[ "${model}" == "gpt-j-6b" ]] || [[ "${model}" == "gpt-j-6b-pruned" ]]; then
         model_name="EleutherAI/gpt-j-6B"
-    elif [[ "${model}" == "llama-7b-hf" ]]; then
-        model_name="decapoda-research/llama-7b-hf"
+    elif [[ "${model}" == "llama-2-7b-chat" ]]; then
+        model_name="meta-llama/Llama-2-7b-chat-hf"
     fi
 
     # init conda
