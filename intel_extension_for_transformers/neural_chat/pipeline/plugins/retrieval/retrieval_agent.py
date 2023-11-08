@@ -24,9 +24,8 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
-                 embedding_model="BAAI/bge-base-en-v1.5", max_length=2048, retrieval_type="dense",
-                 document_store=None, top_k=1, search_type="similarity_score_threshold", 
-                 search_kwargs={"score_threshold": 0.8, "k": 1},
+                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
+                 document_store=None, top_k=1, search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8, "k": 1},
                  append=True, index_name="elastic_index_1", append_path=None,
                  response_template = "Please reformat your query to regenerate the answer.",
                  asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",):
@@ -101,6 +100,7 @@ class Agent_QA():
         context = ''
         if self.retriever and self.search_type == "similarity_score_threshold":
             context, links = self.retriever.get_context(query)
+
         if 'qa' not in intent.lower() and context == '':
             print("Chat with AI Agent.")
             prompt = generate_prompt(query)
@@ -117,3 +117,4 @@ class Agent_QA():
             else:
                 prompt = generate_prompt(query)
         return prompt, links
+
