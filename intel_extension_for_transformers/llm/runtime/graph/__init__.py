@@ -97,7 +97,7 @@ class Model:
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
+            self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0], **kwargs)
             self.generate_round = 0
         elif not interactive:
             self.model.reinit()
@@ -130,7 +130,10 @@ class Model:
                 ret[0].extend(out)
             streamer.end()
         else:
-            ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
+            response = self.model.generate_tokens(input_ids = input_ids.tolist())
+            assert (len(ret) == len(response))
+            for i in range(len(response)):
+                ret[i].extend(response[i])
         
         self.generate_round += 1
         return ret

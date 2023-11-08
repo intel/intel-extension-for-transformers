@@ -48,13 +48,17 @@
 
 static int flag = 0;
 static int first_tokens_size = 0;
-static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                        const int n_past, const int n_total, const int n_threads) {
+static bool chatglm_model_eval_internal(model_context& lctx, const std::vector<model_input>& inputs,
+                                        const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
-  const int N = n_tokens;
+  // TODO static batching for now
+  const int N = inputs[0].n_tokens;
+  const int n_past = inputs[0].n_past;
+  const int n_total = inputs[0].n_total;
 
   const int batch_size = lctx.batch_size;
+  MODEL_ASSERT(batch_size == inputs.size());
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -68,7 +72,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_keep = lctx.n_keep;
 
   if (flag == 0) {
-    first_tokens_size = n_tokens;
+    first_tokens_size = N;
     flag++;
   }
 
@@ -95,7 +99,9 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, inputs[i].tokens, N * ne_element_size(embd));
+  }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
@@ -304,9 +310,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!chatglm_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads) {
+  if (!chatglm_model_eval_internal(*ctx, inputs, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

@@ -2429,8 +2429,8 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
         /*.n_total            =*/n_total[request_running_indices.back()],
         /*.request_idx        =*/request_running_indices.back(),
         /*.beam_idx           =*/cur_beams[i].beam_idx,
-        /*.padding_side       =*/cur_beams[i].padding_side,
-        /*n_padding           =*/cur_beams[i].n_padding,
+        /*.padding_side       =*/padding_side[request_running_indices.back()],
+        /*n_padding           =*/n_padding[request_running_indices.back()],
     });
     batch_size++;
     beam_indices.push_back(cur_beams[i].beam_idx);
@@ -2654,19 +2654,22 @@ const beam& beam_search_flow::finalize(const int& request_idx) {
   return top_b;
 }
 
-std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<model_input>& inputs,
-                                                             const int& n_threads) {
+const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::vector<model_input>& inputs,
+                                                                    const int& n_threads) {
   // n_past, n_tokens, n_prompt_tokens should be same among batches in static batching inference
   n_tokens.assign(request_bs, inputs[0].n_tokens);
   if (n_tokens[0] > model_n_ctx(ctx)) {
     fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens[0], model_n_ctx(ctx) - 4);
-    return std::vector<std::vector<model_token>>();
+    return response;
   }
   num_threads = n_threads;
   n_past.assign(request_bs, 0);
   n_prompt_tokens.assign(request_bs, n_tokens[0]);
   n_total.assign(request_bs, 0);
-  std::vector<std::vector<model_token>> beam_search_response(request_bs);
+  for (const auto& input : inputs) {
+    padding_side.push_back(input.padding_side);
+    n_padding.push_back(input.n_padding);
+  }
 
   ctx->batch_size = request_bs;
   ctx->request_running_bs = request_bs;
@@ -2721,8 +2724,6 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
           b.score = next_tokens[i + rb * beam_size].score;
           b.beam_idx = i;
           b.request_idx = request_running_indices[rb];
-          b.padding_side = inputs[request_running_indices[rb]].padding_side;
-          b.n_padding = inputs[request_running_indices[rb]].n_padding;
           cur_beams[request_running_indices[rb] * beam_size + i] = std::move(b);
         }
       }
@@ -2750,7 +2751,7 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
     // collect request final generation result if done
     for (const auto& didx : next_done_request_ids) {
       const beam& top_b = finalize(didx);
-      beam_search_response[didx] = top_b.token_ids;
+      response[didx] = top_b.token_ids;
     }
     // return if all requests done in static batching
     auto const done_or_not = [](const bool& flag) { return flag; };
@@ -2759,7 +2760,7 @@ std::vector<std::vector<model_token>> beam_search_flow::loop(const std::vector<m
     }
   }
 
-  return beam_search_response;
+  return response;
 }
 
 std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,

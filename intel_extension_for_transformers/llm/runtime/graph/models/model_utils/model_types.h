@@ -367,7 +367,7 @@ typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_input {
   // embd or next token
-  model_token* tokens = nullptr;
+  const model_token* tokens = nullptr;
   // tokens length
   uint32_t n_tokens = 0;
   // prompt length

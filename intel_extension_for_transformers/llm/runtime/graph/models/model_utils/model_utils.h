@@ -307,19 +307,13 @@ struct beam {
   int beam_idx = -1;
   // if stop generation (append new token_id)
   bool done = false;
-  // (0: left, 1: right)
-  int padding_side = 0;
-  // padding length
-  uint32_t n_padding = 0;
 
   // end-of-text
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
 
   void print() const {
-    printf(
-        "length: %d, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, padding_side: %d, n_padding: %d, done: %d, "
-        "tokens:\n",
-        token_ids.size(), score, eos(), request_idx, beam_idx, padding_side, n_padding, done);
+    printf("length: %d, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
+           score, eos(), request_idx, beam_idx, done);
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
@@ -331,7 +325,6 @@ struct beam {
     score = 0.0f;
     request_idx = -1;
     beam_idx = -1;
-    n_padding = 0;
     done = false;
   }
 };
@@ -445,6 +438,7 @@ class beam_search_flow {
     for (int i = 0; i < batch_size; ++i) {
       beam_hypos.push_back(std::move(beam_hypotheses(lctx)));
     }
+    response.resize(batch_size);
     requests_done.assign(batch_size, false);
     request_running_indices.reserve(batch_size);
     next_done_request_ids.reserve(batch_size);
@@ -452,12 +446,14 @@ class beam_search_flow {
     n_past.reserve(batch_size);
     n_prompt_tokens.reserve(batch_size);
     n_total.reserve(batch_size);
+    padding_side.reserve(batch_size);
+    n_padding.reserve(batch_size);
   }
   ~beam_search_flow() {}
 
   // public interface
   // static batching (padding inputs or batch = 1)
-  std::vector<std::vector<model_token>> loop(const std::vector<model_input>& inputs, const int& n_threads);
+  const std::vector<std::vector<model_token>>& loop(const std::vector<model_input>& inputs, const int& n_threads);
   // continuous batching (scheduling from the outside)
   void step(model_token* dst);  // TODO one step
 
@@ -484,9 +480,12 @@ class beam_search_flow {
   std::vector<uint32_t> n_past;
   std::vector<uint32_t> n_prompt_tokens;
   std::vector<uint32_t> n_total;
+  std::vector<int> padding_side;
+  std::vector<uint32_t> n_padding;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
+  std::vector<std::vector<model_token>> response;
 };
 
 // static batching generation

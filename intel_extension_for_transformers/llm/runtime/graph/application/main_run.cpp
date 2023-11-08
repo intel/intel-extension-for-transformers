@@ -149,14 +149,36 @@ int main(int argc, char** argv) {
   if (params.mem_test) {
     {
       const std::vector<model_token> tmp(params.n_batch, ctx->vocab.bos_token_id);
-      model_eval(ctx, tmp.data(), tmp.size(), 0, 0, params.n_threads);
+      std::vector<model_input> inputs = {model_input{
+          /*.tokens              =*/tmp.data(),
+          /*.n_tokens           =*/(uint32_t)tmp.size(),
+          /*.n_prompt_tokens    =*/0,
+          /*.n_past             =*/0,
+          /*.n_total            =*/0,
+          /*.request_idx        =*/0,
+          /*.beam_idx           =*/0,
+          /*.padding_side       =*/0,
+          /*n_padding           =*/0,
+      }};
+      model_eval(ctx, inputs, params.n_threads);
     }
 
     {
       const std::vector<model_token> tmp = {
           0,
       };
-      model_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_predict - 1, params.n_threads);
+      std::vector<model_input> inputs = {model_input{
+          /*.tokens              =*/tmp.data(),
+          /*.n_tokens           =*/(uint32_t)tmp.size(),
+          /*.n_prompt_tokens    =*/0,
+          /*.n_past             =*/(uint32_t)(params.n_predict - 1),
+          /*.n_total            =*/(uint32_t)(params.n_predict - 1),
+          /*.request_idx        =*/0,
+          /*.beam_idx           =*/0,
+          /*.padding_side       =*/0,
+          /*n_padding           =*/0,
+      }};
+      model_eval(ctx, inputs, params.n_threads);
     }
 
     model_print_timings(ctx);
@@ -436,7 +458,18 @@ int main(int argc, char** argv) {
         if (n_eval > params.n_batch) {
           n_eval = params.n_batch;
         }
-        if (model_eval(ctx, &embd[i], n_eval, n_past, n_total, params.n_threads)) {
+        std::vector<model_input> inputs = {model_input{
+            /*.tokens              =*/&embd[i],
+            /*.n_tokens           =*/(uint32_t)n_eval,
+            /*.n_prompt_tokens    =*/0,
+            /*.n_past             =*/(uint32_t)n_past,
+            /*.n_total            =*/(uint32_t)n_total,
+            /*.request_idx        =*/0,
+            /*.beam_idx           =*/0,
+            /*.padding_side       =*/0,
+            /*n_padding           =*/0,
+        }};
+        if (model_eval(ctx, inputs, params.n_threads)) {
           fprintf(stderr, "%s : failed to eval\n", __func__);
           return 1;
         }

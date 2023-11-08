@@ -72,14 +72,27 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 //   - n_threads: number of threads to use
 //
 
-static bool gptneox_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                        const int n_past, const int n_total, const int n_threads) {
+static bool gptneox_model_eval_internal(model_context& lctx, const std::vector<model_input>& inputs,
+                                        const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
-  const int N = n_tokens;
+  // TODO static batching for now
+  const int N = inputs[0].n_tokens;
+  const int n_past = inputs[0].n_past;
+  const int n_total = inputs[0].n_total;
 
   const int batch_size = lctx.batch_size;
   const int kv_n_ctx_block = lctx.kv_n_ctx_block;
+
+  const int beam_size = lctx.beam_search ? lctx.beam_size : 1;
+  std::vector<int> block_ids;
+  std::vector<int> n_padding;
+  bool no_padding = true;
+  for (int i = 0; i < batch_size; ++i) {
+    block_ids.push_back(inputs[i].request_idx * beam_size + inputs[i].beam_idx);
+    n_padding.push_back(inputs[i].n_padding);
+    if (no_padding && inputs[i].n_padding != 0) no_padding = false;
+  }
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -141,7 +154,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
   for (int i = 0; i < batch_size; ++i) {
-    memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
+    memcpy(static_cast<model_token*>(embd->data) + i * N, inputs[i].tokens, N * ne_element_size(embd));
   }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
@@ -185,17 +198,19 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
           std::vector<ne_tensor*> k_bs(batch_size);
           std::vector<ne_tensor*> v_bs(batch_size);
           for (int i = 0; i < batch_size; ++i) {
+            const int block_idx = block_ids[i];
             // batch K
             Kcur_bs[i] = ne_permute(ctx0,
                                     ne_view_4d(ctx0, Kcur, head_dim, n_head, N, 1, ne_element_size(Kcur) * head_dim,
                                                ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
                                                i * ne_element_size(Kcur) * n_embd * N),
                                     0, 2, 1, 3);
-            k_bs[i] = ne_view_4d(
-                ctx0, kv_self.k, head_dim, N, n_head, 1, ne_element_size(kv_self.k) * head_dim,
-                ne_element_size(kv_self.k) * head_dim * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
-                ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
-                 i * n_ctx * n_embd * ne_element_size(kv_self.k) + head_dim * n_past * ne_element_size(kv_self.k)));
+            k_bs[i] =
+                ne_view_4d(ctx0, kv_self.k, head_dim, N, n_head, 1, ne_element_size(kv_self.k) * head_dim,
+                           ne_element_size(kv_self.k) * head_dim * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
+                           ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
+                            block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
+                            head_dim * n_past * ne_element_size(kv_self.k)));
 
             // batch V
             Vcur_bs[i] = ne_permute(ctx0,
@@ -204,11 +219,11 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
                                                              i * ne_element_size(Vcur) * n_embd * N),
                                                   head_dim, n_head, N, 1),
                                     1, 2, 0, 3);
-            v_bs[i] =
-                ne_view_4d(ctx0, kv_self.v, N, head_dim, n_head, 1, n_ctx * ne_element_size(kv_self.v),
-                           n_ctx * ne_element_size(kv_self.v) * head_dim, n_ctx * ne_element_size(kv_self.v) * n_embd,
-                           ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
-                            i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
+            v_bs[i] = ne_view_4d(
+                ctx0, kv_self.v, N, head_dim, n_head, 1, n_ctx * ne_element_size(kv_self.v),
+                n_ctx * ne_element_size(kv_self.v) * head_dim, n_ctx * ne_element_size(kv_self.v) * n_embd,
+                ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
+                 block_idx * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
             ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
             ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
           }
@@ -218,9 +233,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
 
         // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
         struct ne_tensor* K =
-            ne_view_4d(ctx0, kv_self.k, head_dim, n_past + N, n_head, batch_size, ne_element_size(kv_self.k) * head_dim,
-                       ne_element_size(kv_self.k) * head_dim * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
-                       il * n_ctx * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block);
+            model_kv_cache_seq_concat(&gf, &lctx, ctx0, head_dim, n_past + N, n_head, batch_size, block_ids, il);
 
         // K * Q
         struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
@@ -229,16 +242,14 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
         struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
 
         // KQ_masked = mask_past(KQ_scaled)
-        struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+        struct ne_tensor* KQ_masked = ne_diag_mask_inf_with_padding_inplace(ctx0, KQ_scaled, n_past, n_padding.data());
 
         // KQ = soft_max(KQ_masked)
         struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
 
         // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
         struct ne_tensor* V =
-            ne_view_4d(ctx0, kv_self.v, n_past + N, head_dim, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
-                       n_ctx * ne_element_size(kv_self.v) * head_dim, n_ctx * ne_element_size(kv_self.v) * n_embd,
-                       il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
+            model_kv_cache_seq_concat(&gf, &lctx, ctx0, n_past + N, head_dim, n_head, batch_size, block_ids, il, false);
 
         // KQV = transpose(V) * KQ_soft_max
         struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
@@ -405,9 +416,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!gptneox_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads) {
+  if (!gptneox_model_eval_internal(*ctx, inputs, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
