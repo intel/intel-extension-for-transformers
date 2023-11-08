@@ -6,10 +6,10 @@ torchaudio==2.1.0
 intel_extension_for_pytorch
 num2words
 speechbrain
-paddlepaddle==2.4.2
-paddlenlp==2.5.2
-paddlespeech==1.4.1
-paddle2onnx==1.0.6
+paddlepaddle
+paddlenlp
+paddlespeech
+paddle2onnx
 shortuuid
 gptcache
 evaluate

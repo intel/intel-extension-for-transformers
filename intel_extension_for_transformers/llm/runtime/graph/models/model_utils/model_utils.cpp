@@ -137,7 +137,10 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
     ne_set_name(cache.cossin, "cossin(-1)");
     float theta = -1;
-    float theta_scale = std::pow(10000.f, -2.0f / head_size);
+    float theta_scale = (model != nullptr && model->arch == MODEL_CHATGLM2)
+                            ? std::pow(10000.f, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
+                        : hparams.n_rot > 0 ? std::pow(10000.f, -2.0f / hparams.n_rot)
+                                            : std::pow(10000.f, -2.0f / head_size);
     if (cossin_dtype == NE_TYPE_F16) {
       const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
       for (int i = 0; i < head_size; i += 2) {
@@ -1184,7 +1187,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     const auto& hparams = ctx->model.hparams;
 
     if (params.shift_roped_k) {
-      NE_ASSERT(("Current model does not support shifting RoPE-ed K cache", arch == MODEL_LLAMA));
+      const std::array supported{MODEL_LLAMA, MODEL_GPTJ, MODEL_CHATGLM2};
+      NE_ASSERT(("Current model does not support shifting RoPE-ed K cache",
+                 std::any_of(supported.cbegin(), supported.cend(), [arch](auto m) { return arch == m; })));
     }
     const attn_shape_t attn_shape = {
         /* .batch_size = */ ctx->batch_size * ctx->beam_size,
