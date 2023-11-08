@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import io
+import os
 import re
 import csv
 import datetime
@@ -37,6 +38,16 @@ def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
         return f'Param Error: request.params {request.params} is not in the type of Dict'
 
     return None
+
+
+def get_current_beijing_time():
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    return beijing_time
 
 
 class RetrievalAPIRouter(APIRouter):
@@ -102,20 +113,55 @@ async def retrieval_upload(file: UploadFile = File(...)):
     return {"knowledge_base_id": fake_kb_id}
 
 
+@router.post("/v1/askdoc/create_kb")
+async def retrieval_create_kb(file: UploadFile = File(...)):
+    global plugins
+    filename = file.filename
+    print(f"[askdoc - create_kb] received file: {filename}")
+
+    # create kb_id
+    # import uuid
+    # kb_id = f"doc_{str(uuid.uuid1())[:8]}"
+    upload_path = f"/home/tme/letong/askdoc_upload/enterprise_docs"
+    cur_time = get_current_beijing_time()
+    cur_time = cur_time.replace(' ', '-')
+    print(f"[askdoc - create_kb] upload path: {upload_path}")
+    if '/' in filename:
+        filename = filename.split('/')[-1]
+
+    # save file to local path
+    save_file_name = upload_path + '/' + cur_time + '-' + filename
+    with open(save_file_name, 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    print(f"[askdoc - create_kb] file saved to local path: {save_file_name}")
+
+    try:
+        # get retrieval instance and reload db with new knowledge base
+        print("[askdoc - create_kb] starting to create local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.append_localdb(append_path=save_file_name)
+        print(f"[askdoc - create_kb] kb created successfully")
+    except Exception as e:
+        logger.info(f"[askdoc - create_kb] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    return {"knowledge_base_id": "local_kb_id"}
+
+
 @router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
-    try:
-        record_request(request_url="/v1/askdoc/chat",
-                    request_body=request,
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
+    # try:
+    #     record_request(request_url="/v1/askdoc/chat",
+    #                 request_body=request,
+    #                 user_id='default')
+    # except Exception as e:
+    #     logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
 
     chatbot = router.get_chatbot()
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig()
+    config = GenerationConfig(max_new_tokens=512)
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
         if attr == "stream":
@@ -149,22 +195,9 @@ async def retrieval_chat(request: AskDocRequest):
                     logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    formatted_str = ret['text'].replace('\n', '<br/>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
-            if link != []:
-                yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
-                for single_link in link:
-                    if single_link == None:
-                        continue
-                    raw_link = single_link["source"]
-                    formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
-                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
-                            border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
-                            background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
-                            href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
-                    logger.info(f"[askdoc - chat] link below: {formatted_link}")
-                    yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
@@ -185,12 +218,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
                 answer: [{answer}], feedback: [{feedback_str}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
-    SHA_TZ = timezone(
-        timedelta(hours=8),
-        name='Asia/Shanghai'
-    )
-    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
-    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    beijing_time = get_current_beijing_time()
     sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
             answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
     logger.info(f"""[askdoc - feedback] sql: {sql}""")

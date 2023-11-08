@@ -37,6 +37,7 @@ class DocumentIndexing:
         self.document_store = document_store
         self.process = process
         self.persist_dir = persist_dir
+        self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
         
@@ -102,13 +103,17 @@ class DocumentIndexing:
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
+            vectordb = Chroma(persist_directory=input, embedding_function=self.embeddings)
         else:
             if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)
             else:
                 vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                       port=9200, search_fields=["content", "title"])
+        return vectordb
+    
+    def reload(self, local_path):
+        vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
         return vectordb
             
     def KB_construct(self, input):
