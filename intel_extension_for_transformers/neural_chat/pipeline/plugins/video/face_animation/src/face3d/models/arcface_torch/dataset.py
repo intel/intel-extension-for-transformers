@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -57,7 +56,6 @@ class BackgroundGenerator(threading.Thread):
 
 
 class DataLoaderX(DataLoader):
-
     def __init__(self, local_rank, **kwargs):
         super(DataLoaderX, self).__init__(**kwargs)
         self.stream = torch.cuda.Stream(local_rank)
@@ -90,16 +88,18 @@ class MXFaceDataset(Dataset):
     def __init__(self, root_dir, local_rank):
         super(MXFaceDataset, self).__init__()
         self.transform = transforms.Compose(
-            [transforms.ToPILImage(),
-             transforms.RandomHorizontalFlip(),
-             transforms.ToTensor(),
-             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-             ])
+            [
+                transforms.ToPILImage(),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            ]
+        )
         self.root_dir = root_dir
         self.local_rank = local_rank
-        path_imgrec = os.path.join(root_dir, 'train.rec')
-        path_imgidx = os.path.join(root_dir, 'train.idx')
-        self.imgrec = mx.recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, 'r')
+        path_imgrec = os.path.join(root_dir, "train.rec")
+        path_imgidx = os.path.join(root_dir, "train.idx")
+        self.imgrec = mx.recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, "r")
         s = self.imgrec.read_idx(0)
         header, _ = mx.recordio.unpack(s)
         if header.flag > 0:

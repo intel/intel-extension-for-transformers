@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -35,8 +34,19 @@ class PartialFC(Module):
     """
 
     @torch.no_grad()
-    def __init__(self, rank, local_rank, world_size, batch_size, resume,
-                 margin_softmax, num_classes, sample_rate=1.0, embedding_size=512, prefix="./"):
+    def __init__(
+        self,
+        rank,
+        local_rank,
+        world_size,
+        batch_size,
+        resume,
+        margin_softmax,
+        num_classes,
+        sample_rate=1.0,
+        embedding_size=512,
+        prefix="./",
+    ):
         """
         rank: int
             Unique process(GPU) ID from 0 to world_size - 1.
@@ -109,8 +119,7 @@ class PartialFC(Module):
             self.sub_weight = Parameter(torch.empty((0, 0)).cuda(local_rank))
 
     def save_params(self):
-        """ Save softmax weight for each rank on prefix
-        """
+        """Save softmax weight for each rank on prefix"""
         torch.save(self.weight.data, self.weight_name)
         torch.save(self.weight_mom, self.weight_mom_name)
 
@@ -141,16 +150,14 @@ class PartialFC(Module):
             self.sub_weight_mom = self.weight_mom[index]
 
     def forward(self, total_features, norm_weight):
-        """ Partial fc forward, `logits = X * sample(W)`
-        """
+        """Partial fc forward, `logits = X * sample(W)`"""
         torch.cuda.current_stream().wait_stream(self.stream)
         logits = linear(total_features, norm_weight)
         return logits
 
     @torch.no_grad()
     def update(self):
-        """ Set updated weight and weight_mom to memory bank.
-        """
+        """Set updated weight and weight_mom to memory bank."""
         self.weight_mom[self.index] = self.sub_weight_mom
         self.weight[self.index] = self.sub_weight
 
@@ -164,13 +171,12 @@ class PartialFC(Module):
             Optimizer for partial fc, which need to get weight mom.
         """
         with torch.cuda.stream(self.stream):
-            total_label = torch.zeros(
-                size=[self.batch_size * self.world_size], device=self.device, dtype=torch.long)
+            total_label = torch.zeros(size=[self.batch_size * self.world_size], device=self.device, dtype=torch.long)
             dist.all_gather(list(total_label.chunk(self.world_size, dim=0)), label)
             self.sample(total_label)
-            optimizer.state.pop(optimizer.param_groups[-1]['params'][0], None)
-            optimizer.param_groups[-1]['params'][0] = self.sub_weight
-            optimizer.state[self.sub_weight]['momentum_buffer'] = self.sub_weight_mom
+            optimizer.state.pop(optimizer.param_groups[-1]["params"][0], None)
+            optimizer.param_groups[-1]["params"][0] = self.sub_weight
+            optimizer.state[self.sub_weight]["momentum_buffer"] = self.sub_weight_mom
             norm_weight = normalize(self.sub_weight)
             return total_label, norm_weight
 
@@ -193,8 +199,7 @@ class PartialFC(Module):
             Loss value for cross entropy.
         """
         total_label, norm_weight = self.prepare(label, optimizer)
-        total_features = torch.zeros(
-            size=[self.batch_size * self.world_size, self.embedding_size], device=self.device)
+        total_features = torch.zeros(size=[self.batch_size * self.world_size, self.embedding_size], device=self.device)
         dist.all_gather(list(total_features.chunk(self.world_size, dim=0)), features.data)
         total_features.requires_grad = True
 

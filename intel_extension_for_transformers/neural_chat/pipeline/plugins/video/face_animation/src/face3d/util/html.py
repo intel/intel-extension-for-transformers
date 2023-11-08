@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -24,9 +23,9 @@ import os
 class HTML:
     """This HTML class allows us to save images and write texts into a single HTML file.
 
-     It consists of functions such as <add_header> (add a text header to the HTML file),
-     <add_images> (add a row of images to the HTML file), and <save> (save the HTML to the disk).
-     It is based on Python library 'dominate', a Python library for creating and manipulating HTML documents using a DOM API.
+    It consists of functions such as <add_header> (add a text header to the HTML file),
+    <add_images> (add a row of images to the HTML file), and <save> (save the HTML to the disk).
+    It is based on Python library 'dominate', a Python library for creating and manipulating HTML documents using a DOM API.
     """
 
     def __init__(self, web_dir, title, refresh=0):
@@ -39,7 +38,7 @@ class HTML:
         """
         self.title = title
         self.web_dir = web_dir
-        self.img_dir = os.path.join(self.web_dir, 'images')
+        self.img_dir = os.path.join(self.web_dir, "images")
         if not os.path.exists(self.web_dir):
             os.makedirs(self.web_dir)
         if not os.path.exists(self.img_dir):
@@ -78,27 +77,27 @@ class HTML:
                 for im, txt, link in zip(ims, txts, links):
                     with td(style="word-wrap: break-word;", halign="center", valign="top"):
                         with p():
-                            with a(href=os.path.join('images', link)):
-                                img(style="width:%dpx" % width, src=os.path.join('images', im))
+                            with a(href=os.path.join("images", link)):
+                                img(style="width:%dpx" % width, src=os.path.join("images", im))
                             br()
                             p(txt)
 
     def save(self):
         """save the current content to the HMTL file"""
-        html_file = '%s/index.html' % self.web_dir
-        f = open(html_file, 'wt')
+        html_file = "%s/index.html" % self.web_dir
+        f = open(html_file, "wt")
         f.write(self.doc.render())
         f.close()
 
 
-if __name__ == '__main__':  # we show an example usage here.
-    html = HTML('web/', 'test_html')
-    html.add_header('hello world')
+if __name__ == "__main__":  # we show an example usage here.
+    html = HTML("web/", "test_html")
+    html.add_header("hello world")
 
     ims, txts, links = [], [], []
     for n in range(4):
-        ims.append('image_%d.png' % n)
-        txts.append('text_%d' % n)
-        links.append('image_%d.png' % n)
+        ims.append("image_%d.png" % n)
+        txts.append("text_%d" % n)
+        links.append("image_%d.png" % n)
     html.add_images(ims, txts, links)
     html.save()

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -27,9 +26,7 @@ class ResidualConv(nn.Module):
         self.conv_block = nn.Sequential(
             nn.BatchNorm2d(input_dim),
             nn.ReLU(),
-            nn.Conv2d(
-                input_dim, output_dim, kernel_size=3, stride=stride, padding=padding
-            ),
+            nn.Conv2d(input_dim, output_dim, kernel_size=3, stride=stride, padding=padding),
             nn.BatchNorm2d(output_dim),
             nn.ReLU(),
             nn.Conv2d(output_dim, output_dim, kernel_size=3, padding=1),
@@ -40,7 +37,6 @@ class ResidualConv(nn.Module):
         )
 
     def forward(self, x):
-
         return self.conv_block(x) + self.conv_skip(x)
 
 
@@ -48,9 +44,7 @@ class Upsample(nn.Module):
     def __init__(self, input_dim, output_dim, kernel, stride):
         super(Upsample, self).__init__()
 
-        self.upsample = nn.ConvTranspose2d(
-            input_dim, output_dim, kernel_size=kernel, stride=stride
-        )
+        self.upsample = nn.ConvTranspose2d(input_dim, output_dim, kernel_size=kernel, stride=stride)
 
     def forward(self, x):
         return self.upsample(x)
@@ -79,23 +73,17 @@ class ASPP(nn.Module):
         super(ASPP, self).__init__()
 
         self.aspp_block1 = nn.Sequential(
-            nn.Conv2d(
-                in_dims, out_dims, 3, stride=1, padding=rate[0], dilation=rate[0]
-            ),
+            nn.Conv2d(in_dims, out_dims, 3, stride=1, padding=rate[0], dilation=rate[0]),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(out_dims),
         )
         self.aspp_block2 = nn.Sequential(
-            nn.Conv2d(
-                in_dims, out_dims, 3, stride=1, padding=rate[1], dilation=rate[1]
-            ),
+            nn.Conv2d(in_dims, out_dims, 3, stride=1, padding=rate[1], dilation=rate[1]),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(out_dims),
         )
         self.aspp_block3 = nn.Sequential(
-            nn.Conv2d(
-                in_dims, out_dims, 3, stride=1, padding=rate[2], dilation=rate[2]
-            ),
+            nn.Conv2d(in_dims, out_dims, 3, stride=1, padding=rate[2], dilation=rate[2]),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(out_dims),
         )

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -16,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 Adapted from https://github.com/cavalleria/cavaface.pytorch/blob/master/backbone/mobilefacenet.py
 Original author cavalleria
-'''
+"""
 
 import torch.nn as nn
 from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d, PReLU, Sequential, Module
@@ -37,7 +36,7 @@ class ConvBlock(Module):
         self.layers = nn.Sequential(
             Conv2d(in_c, out_c, kernel, groups=groups, stride=stride, padding=padding, bias=False),
             BatchNorm2d(num_features=out_c),
-            PReLU(num_parameters=out_c)
+            PReLU(num_parameters=out_c),
         )
 
     def forward(self, x):
@@ -48,8 +47,7 @@ class LinearBlock(Module):
     def __init__(self, in_c, out_c, kernel=(1, 1), stride=(1, 1), padding=(0, 0), groups=1):
         super(LinearBlock, self).__init__()
         self.layers = nn.Sequential(
-            Conv2d(in_c, out_c, kernel, stride, padding, groups=groups, bias=False),
-            BatchNorm2d(num_features=out_c)
+            Conv2d(in_c, out_c, kernel, stride, padding, groups=groups, bias=False), BatchNorm2d(num_features=out_c)
         )
 
     def forward(self, x):
@@ -63,7 +61,7 @@ class DepthWise(Module):
         self.layers = nn.Sequential(
             ConvBlock(in_c, out_c=groups, kernel=(1, 1), padding=(0, 0), stride=(1, 1)),
             ConvBlock(groups, groups, groups=groups, kernel=kernel, padding=padding, stride=stride),
-            LinearBlock(groups, out_c, kernel=(1, 1), padding=(0, 0), stride=(1, 1))
+            LinearBlock(groups, out_c, kernel=(1, 1), padding=(0, 0), stride=(1, 1)),
         )
 
     def forward(self, x):
@@ -97,7 +95,8 @@ class GDC(Module):
             LinearBlock(512, 512, groups=512, kernel=(7, 7), stride=(1, 1), padding=(0, 0)),
             Flatten(),
             Linear(512, embedding_size, bias=False),
-            BatchNorm1d(embedding_size))
+            BatchNorm1d(embedding_size),
+        )
 
     def forward(self, x):
         return self.layers(x)
@@ -125,14 +124,14 @@ class MobileFaceNet(Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     m.bias.data.zero_()
 

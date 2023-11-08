@@ -20,10 +20,19 @@ import os
 import psutil
 import signal
 
-class SadTalker():
+
+class SadTalker:
     """Faster Talking Face Animation."""
-    def __init__(self, device="cpu", bf16=False, p_num=1, enhancer="gfpgan", output_video_path="./response.mp4",
-                 result_dir="./results"):
+
+    def __init__(
+        self,
+        device="cpu",
+        bf16=False,
+        p_num=1,
+        enhancer="gfpgan",
+        output_video_path="./response.mp4",
+        result_dir="./results",
+    ):
         # prepare the models
         cur_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(cur_dir)
@@ -52,15 +61,18 @@ class SadTalker():
         unit = core_num / self.p_num
         for i in range(self.p_num):
             start_core = (int)(i * unit)
-            end_core = (int)((i+1) * unit - 1)
+            end_core = (int)((i + 1) * unit - 1)
             bf16 = "" if not self.bf16 else "--bf16"
             enhancer_str = "" if not self.enhancer else f"--enhancer={self.enhancer}"
             # compose the command for instance parallelism
-            multi_instance_cmd += \
-            f"numactl -l -C {start_core}-{end_core} python inference.py --driven_audio {driven_audio} --source_image {source_image} --result_dir {self.result_dir} --output_video_path {self.output_video_path} --cpu --rank={i} --p_num={self.p_num} {bf16} {enhancer_str} &\n "
+            multi_instance_cmd += (
+                f"numactl -l -C {start_core}-{end_core} python inference.py --driven_audio"
+                f" {driven_audio} --source_image {source_image} --result_dir {self.result_dir} --output_video_path"
+                f" {self.output_video_path} --cpu --rank={i} --p_num={self.p_num} {bf16} {enhancer_str} &\n "
+            )
         multi_instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         print(multi_instance_cmd)
-        p = subprocess.Popen(multi_instance_cmd, preexec_fn=os.setsid, shell=True, executable='/bin/bash')  # nosec
+        p = subprocess.Popen(multi_instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
         try:
             p.communicate()
         except KeyboardInterrupt:
@@ -73,10 +85,13 @@ class SadTalker():
 
     def convert_gpu(self, source_image, driven_audio):
         enhancer_str = "" if not self.enhancer else f"--enhancer={self.enhancer}"
-        instance_cmd = f"python inference.py --driven_audio {driven_audio} --source_image {source_image} --result_dir {self.result_dir} --output_video_path {self.output_video_path} {enhancer_str} &\n "
+        instance_cmd = (
+            f"python inference.py --driven_audio {driven_audio} --source_image {source_image} --result_dir"
+            f" {self.result_dir} --output_video_path {self.output_video_path} {enhancer_str} &\n "
+        )
         instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         print(instance_cmd)
-        p = subprocess.Popen(instance_cmd, preexec_fn=os.setsid, shell=True, executable='/bin/bash')  # nosec
+        p = subprocess.Popen(instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
         try:
             p.communicate()
         except KeyboardInterrupt:

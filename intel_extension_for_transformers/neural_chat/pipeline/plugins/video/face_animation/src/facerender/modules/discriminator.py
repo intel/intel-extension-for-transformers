@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -56,16 +55,21 @@ class Discriminator(nn.Module):
     Discriminator similar to Pix2Pix
     """
 
-    def __init__(self, num_channels=3, block_expansion=64, num_blocks=4, max_features=512,
-                 sn=False, **kwargs):
+    def __init__(self, num_channels=3, block_expansion=64, num_blocks=4, max_features=512, sn=False, **kwargs):
         super(Discriminator, self).__init__()
 
         down_blocks = []
         for i in range(num_blocks):
             down_blocks.append(
-                DownBlock2d(num_channels if i == 0 else min(max_features, block_expansion * (2 ** i)),
-                            min(max_features, block_expansion * (2 ** (i + 1))),
-                            norm=(i != 0), kernel_size=4, pool=(i != num_blocks - 1), sn=sn))
+                DownBlock2d(
+                    num_channels if i == 0 else min(max_features, block_expansion * (2**i)),
+                    min(max_features, block_expansion * (2 ** (i + 1))),
+                    norm=(i != 0),
+                    kernel_size=4,
+                    pool=(i != num_blocks - 1),
+                    sn=sn,
+                )
+            )
 
         self.down_blocks = nn.ModuleList(down_blocks)
         self.conv = nn.Conv2d(self.down_blocks[-1].conv.out_channels, out_channels=1, kernel_size=1)
@@ -94,15 +98,15 @@ class MultiScaleDiscriminator(nn.Module):
         self.scales = scales
         discs = {}
         for scale in scales:
-            discs[str(scale).replace('.', '-')] = Discriminator(**kwargs)
+            discs[str(scale).replace(".", "-")] = Discriminator(**kwargs)
         self.discs = nn.ModuleDict(discs)
 
     def forward(self, x):
         out_dict = {}
         for scale, disc in self.discs.items():
-            scale = str(scale).replace('-', '.')
-            key = 'prediction_' + scale
+            scale = str(scale).replace("-", ".")
+            key = "prediction_" + scale
             feature_maps, prediction_map = disc(x[key])
-            out_dict['feature_maps_' + scale] = feature_maps
-            out_dict['prediction_map_' + scale] = prediction_map
+            out_dict["feature_maps_" + scale] = feature_maps
+            out_dict["prediction_map_" + scale] = prediction_map
         return out_dict

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -39,13 +38,13 @@ from utils.utils_logging import AverageMeter, init_logging
 def main(args):
     cfg = get_config(args.config)
     try:
-        world_size = int(os.environ['WORLD_SIZE'])
-        rank = int(os.environ['RANK'])
-        dist.init_process_group('nccl')
+        world_size = int(os.environ["WORLD_SIZE"])
+        rank = int(os.environ["RANK"])
+        dist.init_process_group("nccl")
     except KeyError:
         world_size = 1
         rank = 0
-        dist.init_process_group(backend='nccl', init_method="tcp://127.0.0.1:12584", rank=rank, world_size=world_size)
+        dist.init_process_group(backend="nccl", init_method="tcp://127.0.0.1:12584", rank=rank, world_size=world_size)
 
     local_rank = args.local_rank
     torch.cuda.set_device(local_rank)
@@ -59,8 +58,14 @@ def main(args):
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_set, shuffle=True)
     train_loader = DataLoaderX(
-        local_rank=local_rank, dataset=train_set, batch_size=cfg.batch_size,
-        sampler=train_sampler, num_workers=2, pin_memory=True, drop_last=True)
+        local_rank=local_rank,
+        dataset=train_set,
+        batch_size=cfg.batch_size,
+        sampler=train_sampler,
+        num_workers=2,
+        pin_memory=True,
+        drop_last=True,
+    )
     backbone = get_model(cfg.network, dropout=0.0, fp16=cfg.fp16, num_features=cfg.embedding_size).to(local_rank)
 
     if cfg.resume:
@@ -74,22 +79,35 @@ def main(args):
                 logging.info("resume fail, backbone init successfully!")
 
     backbone = torch.nn.parallel.DistributedDataParallel(
-        module=backbone, broadcast_buffers=False, device_ids=[local_rank])
+        module=backbone, broadcast_buffers=False, device_ids=[local_rank]
+    )
     backbone.train()
     margin_softmax = losses.get_loss(cfg.loss)
     module_partial_fc = PartialFC(
-        rank=rank, local_rank=local_rank, world_size=world_size, resume=cfg.resume,
-        batch_size=cfg.batch_size, margin_softmax=margin_softmax, num_classes=cfg.num_classes,
-        sample_rate=cfg.sample_rate, embedding_size=cfg.embedding_size, prefix=cfg.output)
+        rank=rank,
+        local_rank=local_rank,
+        world_size=world_size,
+        resume=cfg.resume,
+        batch_size=cfg.batch_size,
+        margin_softmax=margin_softmax,
+        num_classes=cfg.num_classes,
+        sample_rate=cfg.sample_rate,
+        embedding_size=cfg.embedding_size,
+        prefix=cfg.output,
+    )
 
     opt_backbone = torch.optim.SGD(
-        params=[{'params': backbone.parameters()}],
+        params=[{"params": backbone.parameters()}],
         lr=cfg.lr / 512 * cfg.batch_size * world_size,
-        momentum=0.9, weight_decay=cfg.weight_decay)
+        momentum=0.9,
+        weight_decay=cfg.weight_decay,
+    )
     opt_pfc = torch.optim.SGD(
-        params=[{'params': module_partial_fc.parameters()}],
+        params=[{"params": module_partial_fc.parameters()}],
         lr=cfg.lr / 512 * cfg.batch_size * world_size,
-        momentum=0.9, weight_decay=cfg.weight_decay)
+        momentum=0.9,
+        weight_decay=cfg.weight_decay,
+    )
 
     num_image = len(train_set)
     total_batch_size = cfg.batch_size * world_size
@@ -103,10 +121,8 @@ def main(args):
         else:
             return 0.1 ** len([m for m in cfg.decay_step if m <= current_step])
 
-    scheduler_backbone = torch.optim.lr_scheduler.LambdaLR(
-        optimizer=opt_backbone, lr_lambda=lr_step_func)
-    scheduler_pfc = torch.optim.lr_scheduler.LambdaLR(
-        optimizer=opt_pfc, lr_lambda=lr_step_func)
+    scheduler_backbone = torch.optim.lr_scheduler.LambdaLR(optimizer=opt_backbone, lr_lambda=lr_step_func)
+    scheduler_pfc = torch.optim.lr_scheduler.LambdaLR(optimizer=opt_pfc, lr_lambda=lr_step_func)
 
     for key, value in cfg.items():
         num_space = 25 - len(key)
@@ -153,7 +169,7 @@ def main(args):
 
 if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
-    parser = argparse.ArgumentParser(description='PyTorch ArcFace Training')
-    parser.add_argument('config', type=str, help='py config file')
-    parser.add_argument('--local_rank', type=int, default=0, help='local_rank')
+    parser = argparse.ArgumentParser(description="PyTorch ArcFace Training")
+    parser.add_argument("config", type=str, help="py config file")
+    parser.add_argument("--local_rank", type=int, default=0, help="local_rank")
     main(parser.parse_args())

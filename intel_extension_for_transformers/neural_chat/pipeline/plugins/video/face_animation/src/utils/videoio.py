@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -22,17 +21,19 @@ import os
 import cv2
 import ffmpeg
 
+
 def load_video_to_cv2(input_path):
     video_stream = cv2.VideoCapture(input_path)
     fps = video_stream.get(cv2.CAP_PROP_FPS)
-    full_frames = [] 
+    full_frames = []
     while 1:
         still_reading, frame = video_stream.read()
         if not still_reading:
             video_stream.release()
-            break 
+            break
         full_frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     return full_frames
+
 
 def save_video_with_watermark(video, audio, save_path, watermark=False):
     # temp_file = str(uuid.uuid4())+'.mp4'
@@ -40,7 +41,9 @@ def save_video_with_watermark(video, audio, save_path, watermark=False):
     # os.system(cmd)
     input_video = ffmpeg.input(video)
     input_audio = ffmpeg.input(audio)
-    ffmpeg.concat(input_video, input_audio, v=1, a=1).output(save_path).run() # v, a: the number of output videos/audios
+    ffmpeg.concat(input_video, input_audio, v=1, a=1).output(
+        save_path
+    ).run()  # v, a: the number of output videos/audios
 
     # if watermark is False:
     #     shutil.move(temp_file, save_path)

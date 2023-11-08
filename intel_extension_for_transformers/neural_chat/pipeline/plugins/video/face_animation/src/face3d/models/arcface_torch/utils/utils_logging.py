@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -22,8 +21,7 @@ import sys
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value
-    """
+    """Computes and stores the average and current value"""
 
     def __init__(self):
         self.val = None
@@ -56,4 +54,4 @@ def init_logging(rank, models_root):
         handler_stream.setFormatter(formatter)
         log_root.addHandler(handler_file)
         log_root.addHandler(handler_stream)
-        log_root.info('rank_id: %d' % rank)
+        log_root.info("rank_id: %d" % rank)

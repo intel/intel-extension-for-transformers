@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -32,12 +31,12 @@ import torchvision
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def copyconf(default_opt, **kwargs):
@@ -46,33 +45,40 @@ def copyconf(default_opt, **kwargs):
         setattr(conf, key, kwargs[key])
     return conf
 
+
 def genvalconf(train_opt, **kwargs):
     conf = Namespace(**vars(train_opt))
     attr_dict = train_opt.__dict__
     for key, value in attr_dict.items():
-        if 'val' in key and key.split('_')[0] in attr_dict:
-            setattr(conf, key.split('_')[0], value)
+        if "val" in key and key.split("_")[0] in attr_dict:
+            setattr(conf, key.split("_")[0], value)
 
     for key in kwargs:
         setattr(conf, key, kwargs[key])
 
     return conf
-        
+
+
 def find_class_in_module(target_cls_name, module):
-    target_cls_name = target_cls_name.replace('_', '').lower()
+    target_cls_name = target_cls_name.replace("_", "").lower()
     clslib = importlib.import_module(module)
     cls = None
     for name, clsobj in clslib.__dict__.items():
         if name.lower() == target_cls_name:
             cls = clsobj
 
-    assert cls is not None, "In %s, there should be a class whose name matches %s in lowercase without underscore(_)" % (module, target_cls_name)
+    assert (
+        cls is not None
+    ), "In %s, there should be a class whose name matches %s in lowercase without underscore(_)" % (
+        module,
+        target_cls_name,
+    )
 
     return cls
 
 
 def tensor2im(input_image, imtype=np.uint8):
-    """"Converts a Tensor array into a numpy image array.
+    """ "Converts a Tensor array into a numpy image array.
 
     Parameters:
         input_image (tensor) --  the input image tensor array, range(0, 1)
@@ -92,7 +98,7 @@ def tensor2im(input_image, imtype=np.uint8):
     return image_numpy.astype(imtype)
 
 
-def diagnose_network(net, name='network'):
+def diagnose_network(net, name="network"):
     """Calculate and print the mean of average absolute(gradients)
 
     Parameters:
@@ -140,11 +146,13 @@ def print_numpy(x, val=True, shp=False):
     """
     x = x.astype(np.float64)
     if shp:
-        print('shape,', x.shape)
+        print("shape,", x.shape)
     if val:
         x = x.flatten()
-        print('mean = %3.3f, min = %3.3f, max = %3.3f, median = %3.3f, std=%3.3f' % (
-            np.mean(x), np.min(x), np.max(x), np.median(x), np.std(x)))
+        print(
+            "mean = %3.3f, min = %3.3f, max = %3.3f, median = %3.3f, std=%3.3f"
+            % (np.mean(x), np.min(x), np.max(x), np.median(x), np.std(x))
+        )
 
 
 def mkdirs(paths):
@@ -189,27 +197,28 @@ def correct_resize(t, size, mode=Image.BICUBIC):
     t = t.detach().cpu()
     resized = []
     for i in range(t.size(0)):
-        one_t = t[i:i + 1]
+        one_t = t[i : i + 1]
         one_image = Image.fromarray(tensor2im(one_t)).resize(size, Image.BICUBIC)
         resized_t = torchvision.transforms.functional.to_tensor(one_image) * 2 - 1.0
         resized.append(resized_t)
     return torch.stack(resized, dim=0).to(device)
 
-def draw_landmarks(img, landmark, color='r', step=2):
+
+def draw_landmarks(img, landmark, color="r", step=2):
     """
     Return:
         img              -- numpy.array, (B, H, W, 3) img with landmark, RGB order, range (0, 255)
-        
+
 
     Parameters:
         img              -- numpy.array, (B, H, W, 3), RGB order, range (0, 255)
         landmark         -- numpy.array, (B, 68, 2), y direction is opposite to v direction
         color            -- str, 'r' or 'b' (red or blue)
     """
-    if color =='r':
-        c = np.array([255., 0, 0])
+    if color == "r":
+        c = np.array([255.0, 0, 0])
     else:
-        c = np.array([0, 0, 255.])
+        c = np.array([0, 0, 255.0])
 
     _, H, W, _ = img.shape
     img, landmark = img.copy(), landmark.copy()

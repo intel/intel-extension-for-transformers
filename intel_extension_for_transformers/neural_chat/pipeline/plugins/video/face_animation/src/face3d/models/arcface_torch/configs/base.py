@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -43,8 +42,13 @@ if config.dataset == "emore":
     config.num_image = 5822653
     config.num_epoch = 16
     config.warmup_epoch = -1
-    config.decay_epoch = [8, 14, ]
-    config.val_targets = ["lfw", ]
+    config.decay_epoch = [
+        8,
+        14,
+    ]
+    config.val_targets = [
+        "lfw",
+    ]
 
 elif config.dataset == "ms1m-retinaface-t1":
     config.rec = "/train_tmp/ms1m-retinaface-t1"

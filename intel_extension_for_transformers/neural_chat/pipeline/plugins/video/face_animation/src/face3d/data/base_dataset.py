@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -86,35 +85,40 @@ def get_transform(grayscale=False):
     transform_list += [transforms.ToTensor()]
     return transforms.Compose(transform_list)
 
+
 def get_affine_mat(opt, size):
-    shift_x, shift_y, scale, rot_angle, flip = 0., 0., 1., 0., False
+    shift_x, shift_y, scale, rot_angle, flip = 0.0, 0.0, 1.0, 0.0, False
     w, h = size
 
-    if 'shift' in opt.preprocess:
+    if "shift" in opt.preprocess:
         shift_pixs = int(opt.shift_pixs)
         shift_x = random.randint(-shift_pixs, shift_pixs)
         shift_y = random.randint(-shift_pixs, shift_pixs)
-    if 'scale' in opt.preprocess:
+    if "scale" in opt.preprocess:
         scale = 1 + opt.scale_delta * (2 * random.random() - 1)
-    if 'rot' in opt.preprocess:
+    if "rot" in opt.preprocess:
         rot_angle = opt.rot_angle * (2 * random.random() - 1)
-        rot_rad = -rot_angle * np.pi/180
-    if 'flip' in opt.preprocess:
+        rot_rad = -rot_angle * np.pi / 180
+    if "flip" in opt.preprocess:
         flip = random.random() > 0.5
 
-    shift_to_origin = np.array([1, 0, -w//2, 0, 1, -h//2, 0, 0, 1]).reshape([3, 3])
+    shift_to_origin = np.array([1, 0, -w // 2, 0, 1, -h // 2, 0, 0, 1]).reshape([3, 3])
     flip_mat = np.array([-1 if flip else 1, 0, 0, 0, 1, 0, 0, 0, 1]).reshape([3, 3])
     shift_mat = np.array([1, 0, shift_x, 0, 1, shift_y, 0, 0, 1]).reshape([3, 3])
-    rot_mat = np.array([np.cos(rot_rad), np.sin(rot_rad), 0, -np.sin(rot_rad), np.cos(rot_rad), 0, 0, 0, 1]).reshape([3, 3])
+    rot_mat = np.array([np.cos(rot_rad), np.sin(rot_rad), 0, -np.sin(rot_rad), np.cos(rot_rad), 0, 0, 0, 1]).reshape(
+        [3, 3]
+    )
     scale_mat = np.array([scale, 0, 0, 0, scale, 0, 0, 0, 1]).reshape([3, 3])
-    shift_to_center = np.array([1, 0, w//2, 0, 1, h//2, 0, 0, 1]).reshape([3, 3])
-    
-    affine = shift_to_center @ scale_mat @ rot_mat @ shift_mat @ flip_mat @ shift_to_origin    
+    shift_to_center = np.array([1, 0, w // 2, 0, 1, h // 2, 0, 0, 1]).reshape([3, 3])
+
+    affine = shift_to_center @ scale_mat @ rot_mat @ shift_mat @ flip_mat @ shift_to_origin
     affine_inv = np.linalg.inv(affine)
     return affine, affine_inv, flip
 
+
 def apply_img_affine(img, affine_inv, method=Image.BICUBIC):
     return img.transform(img.size, Image.AFFINE, data=affine_inv.flatten()[:6], resample=Image.BICUBIC)
+
 
 def apply_lm_affine(landmark, affine, flip, size):
     _, h = size
