@@ -321,9 +321,13 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         return
 
     if len(state.messages) == state.offset + 2:
-        # First round of conversation
+        # model conversation name: "mpt-7b-chat", "chatglm", "chatglm2", "llama-2",
+        #                        "neural-chat-7b-v2", "neural-chat-7b-v1-1"
+        # First round of Conversation
         if "Llama-2-7b-chat-hf" in model_name:
             model_name = "llama-2"
+        elif "chatglm"  in model_name:
+            model_name = model_name.split('-')[0]
         new_state = get_conv_template(model_name.split('/')[-1])
         #new_state.conv_id = uuid.uuid4().hex
         #new_state.model_name = state.model_name or model_selector
