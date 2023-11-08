@@ -50,7 +50,7 @@ RUN apt-get update \
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
 COPY ${REPO_PATH} /intel-extension-for-transformers
-RUN if [[ "$REPO_PATH" == "" ]]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* && git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* && git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
 # Install miniconda
