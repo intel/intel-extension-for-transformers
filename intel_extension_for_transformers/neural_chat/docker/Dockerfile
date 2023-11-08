@@ -98,6 +98,7 @@ ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
+ARG ITREX_VER=main
 
 RUN apt-get update && \
     apt-get install git-lfs && \
