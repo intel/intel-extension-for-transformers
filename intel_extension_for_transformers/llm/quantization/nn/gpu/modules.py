@@ -113,13 +113,12 @@ class QuantizedLinearGPU(torch.nn.Linear):
         shape = weight_data.shape
         weight = gbits.quantize(
             weight_data.to("cpu"), True, self.blocksize, self.compute_dtype, self.weight_dtype
-        ).to(weight_data.device)
+        )
         weight.resize_(shape)
         self.weight = ParamsGBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
         )
-        self.weight.to(self.device)
         if bias is not None:
             self.bias = torch.nn.Parameter(bias.to(self.device), requires_grad=False)
 

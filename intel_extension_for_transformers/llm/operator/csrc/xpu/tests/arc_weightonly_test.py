@@ -78,7 +78,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
         print("fail")
 
 configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}
-blocksizes = [32, 64, 128, 256, 1024]
+blocksizes = [16, 32, 64, 128, 256, 1024]
 do_trans = [False, True]
 add_bias = [False, True]
 

@@ -147,7 +147,7 @@ class TestArcWeightOnly(unittest.TestCase):
 
         device_map = "xpu"
 
-        model_name ="fxmarty/tiny-llama-fast-tokenizer"
+        model_name ="hf-internal-testing/tiny-random-gptj"
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float)
@@ -184,13 +184,13 @@ class TestArcWeightOnly(unittest.TestCase):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = gbits.quantize(
             raw_wei, True, 32, "fp32", "s4fullrange_scalef32")
-        revert_wei = torch.zeros(2, 32, dtype=torch.float)
+        revert_wei = torch.zeros(2, 32, dtype=torch.float).to("xpu")
         gbits.dequantize(
             compress_wei, revert_wei, True, "fp32", "s4fullrange_scalef32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
-                model.linear.weight = torch.nn.Parameter(revert_wei)
+                model.linear.weight = torch.nn.Parameter(revert_wei.to("cpu"))
             activation = torch.rand(1,32, dtype=torch.float)
             output = model(activation)
 

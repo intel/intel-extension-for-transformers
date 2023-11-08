@@ -283,13 +283,13 @@ void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
     case 16:
       return xetla_linear_bias<T, 16, 16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 32:
-      return xetla_linear_bias<T, 32, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 32, 16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 64:
       return xetla_linear_bias<T, 64, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 128:
-      return xetla_linear_bias<T, 128, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 128, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 256:
-      return xetla_linear_bias<T, 256, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
+      return xetla_linear_bias<T, 256, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 512:
       return xetla_linear_bias<T, 512, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     case 1024:
@@ -326,10 +326,5 @@ void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
 void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
                        float *C, uint32_t matrix_m, uint32_t matrix_n,
                        uint32_t matrix_k, int dequant_s) {
-  if (dequant_s == 16) {
-    std::cout << "blocksize must be divisible by 16 and in [32, 2048] for fp32 compute_type" 
-              << std::endl;
-    exit(0);
-  }
   return xetla_linear_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);
 }

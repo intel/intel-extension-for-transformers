@@ -58,7 +58,7 @@ static void gbits_linear(const torch::Tensor &activation,
   torch::Tensor revert_weight;
   CompressWei4Bit obj(weight.data_ptr<int8_t>(), queue);
   if (initer.verbose) timer.start();
-  if (compute_type == "fp32") {
+  if (activation.dtype() == torch::kFloat32) {
     auto *A = activation.data_ptr<float>();
     auto *C = output.data_ptr<float>();
     if (with_bias) {
@@ -97,6 +97,13 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   c10::impl::VirtualGuardImpl impl(device_type);
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
   auto q = xpu::get_queue_from_stream(c10_stream);
+  auto context = q.get_info<sycl::info::queue::context>();
+  bool isDevicePointer = sycl::get_pointer_type(
+    dequantize_weight.data_ptr<float>(), context) == sycl::usm::alloc::device;
+  if (!isDevicePointer) {
+    std::cout << "gbits_dequantize requires the dequantized weight on xpu" << std::endl;
+    exit(0);
+  }
   CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>(), q);
   if (initer.verbose) timer.start();
   gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
@@ -127,9 +134,9 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize,
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
   auto q = xpu::get_queue_from_stream(c10_stream);
   auto context = q.get_info<sycl::info::queue::context>();
-  bool isHostPointer = sycl::get_pointer_type(weight, context) == sycl::usm::alloc::host;
+  bool isDevicePointer = sycl::get_pointer_type(weight, context) == sycl::usm::alloc::device;
   float *host_weight;
-  if (!isHostPointer) {
+  if (isDevicePointer) {
     host_weight = (float *)malloc(k * n * sizeof(float));
     q.memcpy((void *)host_weight, (void *)weight, k * n * sizeof(float)).wait();
   } else {
@@ -149,6 +156,7 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize,
         reinterpret_cast<gblas::int4x2 *>(compress_wei.get_4bit_wei_ptr());
     compress_s8_s4(s8quant_tmp.data(), wei, k, n, n, n);
     compress_wei.serialize(ret.data_ptr<int8_t>());
+    if (isDevicePointer) free(host_weight);
   } else {
     assert(0);
   }

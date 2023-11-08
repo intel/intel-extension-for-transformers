@@ -200,8 +200,6 @@ def _replace_linear(
                     model._modules[name].set_weights_bias(
                         module.weight.data, None if module.bias is None else module.bias.data
                     )
-        elif device != "cpu" and device != torch.device("cpu") and len(list(module.children())) == 0:
-            module.to(device)
 
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
