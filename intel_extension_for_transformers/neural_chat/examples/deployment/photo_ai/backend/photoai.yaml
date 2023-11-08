@@ -21,10 +21,10 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 9000
+port: 7000
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
-device: "auto"
+model_name_or_path: "/home/tme/Llama-2-7b-chat-hf"
+device: "cpu"
 
 asr:
     enable: true
@@ -45,9 +45,16 @@ ner:
     enable: true
     args:
         device: "cpu"
-        model_path: "./Llama-2-7b-chat-hf"
+        model_path: "/home/tme/Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         bf16: true
 
+retrieval:
+    enable: true
+    args:
+        input_path: "/home/tme/letong/askdoc_docs"
+        persist_dir: "/home/tme/letong/askdoc_persist"
+        response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
+        append: False
 
-tasks_list: ['voicechat', 'photoai']
+tasks_list: ['textchat', 'voicechat', 'retrieval', 'photoai']
