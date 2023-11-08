@@ -96,6 +96,7 @@ FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installe
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
 
 RUN apt-get update && \
@@ -106,7 +107,7 @@ RUN apt-get update && \
 SHELL ["/bin/bash", "--login", "-c"]
 RUN mkdir -p /intel-extension-for-transformers
 COPY ${REPO_PATH} /intel-extension-for-transformers
-RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf /intel-extension-for-transformers/* && rm -rf /intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} /intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
 # Build ITREX
