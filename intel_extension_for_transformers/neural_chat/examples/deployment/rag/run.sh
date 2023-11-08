@@ -35,4 +35,4 @@ export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="fastrag"
 
-numactl -l -C 0-51 python -m askdoc 2>&1 | tee run.log
+nohup numactl -l -C 0-51 python -m askdoc 2>&1 &
