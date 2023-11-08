@@ -36,74 +36,6 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#if defined(GGML_BIG_ENDIAN)
-#include <bit>
-
-template <typename T>
-static T byteswap(T value) {
-  return std::byteswap(value);
-}
-
-template <>
-float byteswap(float value) {
-  return std::bit_cast<float>(byteswap(std::bit_cast<std::uint32_t>(value)));
-}
-
-template <typename T>
-static void byteswap_tensor_data(ne_tensor* tensor) {
-  T* datum = reinterpret_cast<T*>(tensor->data);
-  for (int i = 0; i < ne_nelements(tensor); i++) {
-    datum[i] = byteswap(datum[i]);
-  }
-}
-
-static void byteswap_tensor(ne_tensor* tensor) {
-  switch (tensor->type) {
-    case NE_TYPE_I16: {
-      byteswap_tensor_data<int16_t>(tensor);
-      break;
-    }
-    case NE_TYPE_F16: {
-      byteswap_tensor_data<ggml_fp16_t>(tensor);
-      break;
-    }
-    case NE_TYPE_I32: {
-      byteswap_tensor_data<int32_t>(tensor);
-      break;
-    }
-    case NE_TYPE_F32: {
-      byteswap_tensor_data<float>(tensor);
-      break;
-    }
-    default: {  // GML_TYPE_I8
-      break;
-    }
-  }
-}
-
-#define BYTESWAP_VALUE(d) d = byteswap(d)
-#define BYTESWAP_FILTERS(f)      \
-  do {                           \
-    for (auto& datum : f.data) { \
-      datum = byteswap(datum);   \
-    }                            \
-  } while (0)
-#define BYTESWAP_TENSOR(t)   \
-  do {                       \
-    byteswap_tensor(tensor); \
-  } while (0)
-#else
-#define BYTESWAP_VALUE(d) \
-  do {                    \
-  } while (0)
-#define BYTESWAP_FILTERS(f) \
-  do {                      \
-  } while (0)
-#define BYTESWAP_TENSOR(t) \
-  do {                     \
-  } while (0)
-#endif
-
 // #define WHISPER_USE_FLASH_ATTN
 // #define WHISPER_USE_FLASH_FF
 #define WHISPER_MAX_DECODERS 16
@@ -639,7 +571,6 @@ struct whisper_context {
 template <typename T>
 static void read_safe(whisper_model_loader* loader, T& dest) {
   loader->read(loader->context, &dest, sizeof(T));
-  BYTESWAP_VALUE(dest);
 }
 
 static bool kv_cache_init(const struct whisper_hparams& hparams, const size_t mem_bytes, struct whisper_kv_cache& cache,
@@ -840,7 +771,6 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 
     filters.data.resize(filters.n_mel * filters.n_fft);
     loader->read(loader->context, filters.data.data(), filters.data.size() * sizeof(float));
-    BYTESWAP_FILTERS(filters);
   }
 
   // load vocab
@@ -1305,7 +1235,6 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
       }
 
       loader->read(loader->context, tensor->data, ne_nbytes(tensor));
-      BYTESWAP_TENSOR(tensor);
 
       // printf("%48s - [%5d, %5d, %5d], type = %6s, %6.2f MB\n", name.data(), ne[0], ne[1], ne[2],
       // NE_TYPE_name((ne_type) ttype), ne_nbytes(tensor)/1024.0/1024.0);
