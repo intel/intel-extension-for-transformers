@@ -563,6 +563,17 @@ def is_llm_runtime_model(model):
     else:
         return False
 
+def remove_prompt_history(model_name, prompt):
+    result = prompt
+    if re.search("llama", model_name, re.IGNORECASE):
+        matches = re.findall(r'\[INST\](.*?)\[/INST\]', prompt)
+        if matches:
+            result = "[INST]" + matches[-1] + "[/INST]"
+    elif re.search("chatglm", model_name, re.IGNORECASE):
+        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        if matches:
+            result = matches[-1]
+    return result
 
 output_token_len = 0
 def predict_stream(**params):
@@ -631,6 +642,10 @@ def predict_stream(**params):
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
 
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
     )
@@ -692,6 +707,9 @@ def predict_stream(**params):
                                     top_k=top_k,
                                     repetition_penalty=repetition_penalty,
                                     max_new_tokens=max_new_tokens,
+                                    ctx_size=max_new_tokens,
+                                    ignore_prompt=True,
+                                    interactive=True,
                                     do_sample=do_sample,
                                     num_beams=num_beams,
                                     seed=1
@@ -864,6 +882,10 @@ def predict(**params):
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+
     if num_beams == 0:
         num_beams = 1
         do_sample = True
@@ -914,6 +936,9 @@ def predict(**params):
                             top_k=top_k,
                             repetition_penalty=repetition_penalty,
                             max_new_tokens=max_new_tokens,
+                            ctx_size=max_new_tokens,
+                            ignore_prompt=True,
+                            interactive=True,
                             do_sample=do_sample,
                             num_beams=num_beams,
                             seed=1

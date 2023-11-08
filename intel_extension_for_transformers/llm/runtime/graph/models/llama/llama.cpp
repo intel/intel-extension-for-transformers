@@ -74,6 +74,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   const int n_ctx = lctx.n_ctx;  // max number fo tokens to keep in the kv-cache
   const int n_keep = lctx.n_keep;
   const bool shift_roped_k = lctx.shift_roped_k;
+  // Whether kv-cache uses ring-buffer and is already full in the current run of _model_eval
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
   const int n_cached = shift_roped_k ? std::min(n_total + N, n_ctx) : (n_past + N);  // #tokens cached after kv-append
   int n_head = hparams.n_head;
   int head_size = n_embd / n_head;
@@ -181,7 +183,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0);
     ne_set_name(Qcur, "Qcur");
     Kcur = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
-        ctx0, Kcur, (n_past == n_total ? n_past : n_ctx), n_rot, 0, 0);
+        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
     ne_set_name(Kcur, "Kcur");
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
@@ -207,7 +209,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ctx0,
           ne_view_1d(ctx0, kv_self.k, n_cached * n_embd_gqa, il * n_ctx * ne_element_size(kv_self.k) * n_embd_gqa),
           n_embd_gqa / n_head_kv, n_head_kv, n_cached);
-      if (shift_roped_k && n_total > n_past) {
+      if (is_ring_full) {
         struct ne_tensor* cossin_cache = nullptr;
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
@@ -229,7 +231,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(KQ_scaled, "KQ_scaled");
 
       // KQ_masked = mask_past(KQ_scaled)
-      if (n_total == 0) {
+      if (n_total == 0 || !shift_roped_k) {  // TODO(Yi): shift roped-k with N > 1 next-token
         KQ_scaled = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
         ne_set_name(KQ_scaled, "KQ_masked");
       }
@@ -259,7 +261,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       // projection (no bias)
       cur = ne_mul_mat(ctx0, model.layers[il].attn[3], cur);
     } else {
-      NE_ASSERT(("Fused-attention does not support ring-ed K-cache!", n_past == n_total));
       const auto k_size = kv_cache_info.k_bytes;
       const auto v_size = kv_cache_info.v_bytes;
       // store key and value to memory
@@ -268,7 +269,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
                                         head_size, n_ctx, n_head_kv,  // ne
                                         0, 0,                         // nb (jblas managed)
                                         il * k_size);                 // offset
-        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
+        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, is_ring_full));
         const auto v_cache = ne_view_3d(ctx0, kv_self.v,              // tensor
                                         head_size, n_ctx, n_head_kv,  // ne
                                         0, 0,                         // nb (jblas managed)
@@ -276,7 +277,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
         // jblas alway view V as (D, n_head, seq)
         const auto Vcur_plain =
             ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd_gqa * N, 0), n_embd_gqa / n_head_kv, n_head_kv, N);
-        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
+        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past, is_ring_full));
       }
 
       struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
@@ -288,7 +289,15 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
                      kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,  // nb (jblas managed)
                      il * k_size);                                                // offset
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;    // us nb0 for layout
+      if (is_ring_full) {
+        struct ne_tensor* cossin_cache = nullptr;
+        // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
+        // a single eval execution
+        if (N == 1) cossin_cache = kv_self.cossin;
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+      }
       ne_set_name(K, "K");
+
       struct ne_tensor* V =
           ne_view_3d(ctx0, kv_self.v,                                                    // tensor
                      n_cached, head_size, n_head_kv,                                     // ne
@@ -298,7 +307,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(V, "V");
 
       ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
-      if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+      if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
       struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       struct ne_tensor* KQV_merged_contiguous =
           ne_view_2d(ctx0, KQV_Out, head_size * n_head, N, head_size * n_head * ne_element_size(KQV_Out), 0);
