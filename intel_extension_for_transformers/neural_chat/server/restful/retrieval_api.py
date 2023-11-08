@@ -136,17 +136,26 @@ async def retrieval_chat(request: AskDocRequest):
                 }
                 if '<' in output and '>' in output:
                     output = output.replace('<', '').replace('>', '').replace(' ', '')
+                    if output.endswith('\n'):
+                        print(f"[!!!] found link endswith \\n")
+                        flag = True
                     if output.endswith('.') or output.endswith('\n'):
                         output = output[:-1]
+                        
                 if '](' in output:
                     output = output.split('](')[-1].replace(')', '')
+                    if output.endswith('\n'):
+                        flag = True
                     if output.endswith('.') or output.endswith('\n'):
                         output = output[:-1]
+
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
                     formatted_link = f'''<a style="color: blue; text-decoration: \
                         underline;"   href="{res.group()}"> {res.group()} </a>'''
                     logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
+                    if flag:
+                        formatted_link += '<br/><br/>'
                     yield f"data: {formatted_link}\n\n"
                 else:
                     formatted_str = ret['text'].replace('\n', '<br/><br/>')
@@ -155,9 +164,13 @@ async def retrieval_chat(request: AskDocRequest):
             if link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
                 for single_link in link:
+                    # skip empty link
                     if single_link == None:
                         continue
                     raw_link = single_link["source"]
+                    # skip local file link
+                    if not raw_link.startswith("http"):
+                        continue
                     formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
                         margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
                             border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
@@ -179,10 +192,10 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     except Exception as e:
         logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
     mysql_db = MysqlDb()
-    question, answer, feedback = request.question, request.answer, request.feedback
+    question, answer, feedback, comments = request.question, request.answer, request.feedback, request.comments
     feedback_str = 'dislike' if int(feedback) else 'like'
     logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
-                answer: [{answer}], feedback: [{feedback_str}]''')
+                answer: [{answer}], feedback: [{feedback_str}], comments: [{comments}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
     SHA_TZ = timezone(
@@ -191,14 +204,14 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     )
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
-            answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + \
+        '", "' + answer + '", ' + str(feedback) + ', "' + beijing_time + '", "' + comments + '")'
     logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
             mysql_db.insert(sql, None)
     except:
-        raise Exception("""Exception occurred when inserting data into MySQL, 
+        raise Exception("""Exception occurred when inserting data into MySQL, \
                         please check the db session and your syntax.""")
     else:
         logger.info('[askdoc - feedback] feedback inserted.')
@@ -214,7 +227,6 @@ def get_feedback_from_db():
                     user_id='default')
     except Exception as e:
         logger.error(f"[askdoc - download] Fail to record request into db. {e}")
-    
     mysql_db = MysqlDb()
     sql = f"SELECT * FROM feedback ;"
     try:
@@ -225,20 +237,34 @@ def get_feedback_from_db():
                         please check the db session and your syntax.""")
     else:
         mysql_db._close()
+        csv_fields = ['feedback_id', 'question', 'answer', 'feedback_result', \
+                            'feedback_time', 'comments']
+        check_boxes = ['This is harmful / unsafe', "This isn't true", \
+                       "This isn't helpful", "The link is invalid"]
+        csv_fields.extend(check_boxes)
         def data_generator():
             output = io.StringIO()
             writer = csv.DictWriter(
                 output, 
-                fieldnames=[
-                    'feedback_id', 
-                    'question', 
-                    'answer', 
-                    'feedback_result', 
-                    'feedback_time']
+                csv_fields
             )
             writer.writeheader()
             for row in feedback_list:
+                if '^' in row['question']:
+                    row['question'] = row['question'].replace('^', "'")
+                if '^' in row['answer']:
+                    row['answer'] = row['answer'].replace('^', "'")
                 row['feedback_result'] = 'like' if ( row['feedback_result'] == 0 ) else 'dislike'
+                comments = row['comments']
+                # clip real comments
+                row['comments'] = comments.split('#%#')[0]
+                # save check box items
+                for item in check_boxes:
+                    if item in comments:
+                        row[item] = 'True'
+                    else:
+                        row[item] = 'False'
+                # write into csv file
                 writer.writerow(row)
                 yield output.getvalue()
                 output.seek(0)
@@ -250,4 +276,3 @@ def get_feedback_from_db():
             data_generator(), 
             media_type='text/csv', 
             headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
-    

@@ -78,6 +78,23 @@ def read_md(md_path):
     return text
 
 
+def load_csv(input):
+    """ Load the csv file."""
+    df = pd.read_csv(input)
+    all_data = []
+    documents = []
+    for index, row in df.iterrows():
+        sub = "User Query: " + row['question'] + "Answer: " + str(row["correct_answer"])
+        all_data.append(sub)
+
+    for data in all_data:
+        data.replace('#', " ")
+        data = re.sub(r'\s+', ' ', data)
+        new_doc = [data, input]
+        documents.append(new_doc)
+    return documents
+
+
 def load_json(input, process, max_length):
     """Load and process json file."""
     data = []
@@ -198,23 +215,6 @@ def laod_structured_data(input, process, max_length):
     else:
         content = load_xlsx(input)
     return content
-
-
-def load_csv(input):
-    """ Load the csv file."""
-    df = pd.read_csv(input)
-    all_data = []
-    documents = []
-    for index, row in df.iterrows():
-        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
-        all_data.append(sub)
-
-    for data in all_data:
-        data.replace('#', " ")
-        data = re.sub(r'\s+', ' ', data)
-        new_doc = [data, input]
-        documents.append(new_doc)
-    return documents
 
 
 def get_chuck_data(content, max_length, input):

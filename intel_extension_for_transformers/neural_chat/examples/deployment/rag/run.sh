@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # Kill the exist and re-run
-ps -ef |grep 'askgm' |awk '{print $2}' |xargs kill -9
+ps -ef |grep 'askdoc' |awk '{print $2}' |xargs kill -9
 
 # KMP
 export KMP_BLOCKTIME=1
@@ -35,4 +35,4 @@ export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="fastrag"
 
-numactl -l -C 0-55 askdoc -m askgm 2>&1 | tee run.log
+nohup numactl -l -C 0-55 python -m askdoc 2>&1 &

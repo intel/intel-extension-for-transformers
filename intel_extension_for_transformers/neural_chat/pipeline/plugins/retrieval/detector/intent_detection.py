@@ -16,9 +16,16 @@
 # limitations under the License.
 """Check the intent of the input user query with LLM."""
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
-     import generate_intent_prompt
+# from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
+#     import generate_intent_prompt
 from intel_extension_for_transformers.neural_chat.models.model_utils import predict
+
+
+def generate_intent_prompt(query):
+    prompt= """Please identify the intent of the provided context.
+        You may only respond with "chitchat" or "QA" without explanations or 
+        engaging in conversation.\n### Context:\n{}\n### Response:\n""".format(query)
+    return prompt
 
 
 class IntentDetector:
@@ -31,7 +38,7 @@ class IntentDetector:
         params = {}
         params["model_name"] = model_name
         params["prompt"] = prompt
-        params["temperature"] = 0.001
+        params["temperature"] = 0.1
         params["top_k"] = 1
         params["max_new_tokens"] = 10
         intent = predict(**params)
