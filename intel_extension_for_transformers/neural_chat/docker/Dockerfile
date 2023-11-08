@@ -69,7 +69,7 @@ RUN conda init bash && \
     echo "conda activate neuralchat" >> ~/.bashrc && \
     source ~/.bashrc
 
-RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt==2.0.0+cpu -f https://developer.intel.com/ipex-whl-stable-cpu && \
+RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \

@@ -65,6 +65,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;
   const int n_keep = lctx.n_keep;
+  const bool shift_roped_k = lctx.shift_roped_k;
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
+  NE_ASSERT(("Shift-RoPE-K to be implemented for the neox-mode RoPE!", !is_ring_full));
   const int n_head = hparams.n_head;
   const int n_head_kv = hparams.n_head_kv;
   const int n_vocab = hparams.n_vocab;
@@ -226,12 +229,12 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
                                           head_dim, n_ctx, n_head_kv,  // ne
                                           0, 0,                        // nb (jblas managed)
                                           il * k_size);                // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past, false));
           const auto v_cache = ne_view_3d(ctx0, kv_self.v,             // tensor
                                           head_dim, n_ctx, n_head_kv,  // ne
                                           0, 0,                        // nb (jblas managed)
                                           il * v_size);                // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past, false));
         }
 
         struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);

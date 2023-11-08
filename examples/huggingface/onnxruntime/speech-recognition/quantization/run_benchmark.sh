@@ -52,7 +52,7 @@ function init_params {
 # run_benchmark
 function run_benchmark {
 
-    if [[ ${int8} == "false" && ${int4} == "false"]]; then
+    if [[ ${int8} == "false" ]] && [[ ${int4} == "false" ]]; then
         input_model=${config}
     fi
 
