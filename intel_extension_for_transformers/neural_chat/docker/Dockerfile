@@ -53,28 +53,12 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-# Install miniconda
-ENV CONDA_DIR /opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
-
-# Put conda in path so we can use conda activate
-SHELL ["/bin/bash", "--login", "-c"]
-ENV PATH=$CONDA_DIR/bin:$PATH
-RUN conda init bash && \
-    unset -f conda && \
-    export PATH=$CONDA_DIR/bin/:${PATH} && \
-    conda config --add channels intel && \
-    conda create -yn neuralchat python=${PYTHON_VERSION} && \
-    echo "conda activate neuralchat" >> ~/.bashrc && \
-    source ~/.bashrc
-
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses -y && \
-    conda install jemalloc gperftools -c conda-forge -y && \
+    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
+    pip install jemalloc gperftools && \
     pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
