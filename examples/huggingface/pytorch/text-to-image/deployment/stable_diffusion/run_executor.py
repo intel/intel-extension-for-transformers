@@ -97,7 +97,6 @@ def parse_args():
     parser.add_argument("--name", default="output_image", type=str, help="output image name.")
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
     parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
-    #parser.add_argument("--task", default=None, type=str, help="the cartoonizer img2img pipeline.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
     parser.add_argument("--steps", type=int, default=20, help="denoising steps")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
@@ -139,15 +138,17 @@ def main():
         images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
         images[0].save("fantasy_landscape.png")
 
-    if args.pipeline == "cartoonizer":
+    if args.pipeline == "instruction-tuning-sd":
         """
             # officical Example: https://huggingface.co/instruction-tuning-sd/cartoonizer
+            import torch
             from diffusers import StableDiffusionInstructPix2PixPipeline
             from diffusers.utils import load_image
-            model_id = "./cartoonizer"
+
+            model_id = "instruction-tuning-sd/cartoonizer"
             pipeline = StableDiffusionInstructPix2PixPipeline.from_pretrained(
-                model_id, torch_dtype=torch.float32, use_auth_token=True
-            )
+                model_id, torch_dtype=torch.float16, use_auth_token=True
+            ).to("cuda")
 
             image_path = "https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png"
             image = load_image(image_path)
@@ -157,9 +158,8 @@ def main():
         """
         from ITREX_StableDiffusionInstructPix2PixPipeline import StableDiffusionInstructPix2PixPipeline
         from diffusers.utils import load_image
-        model_id = "./cartoonizer"
         pipeline = StableDiffusionInstructPix2PixPipeline.from_pretrained(
-            model_id, torch_dtype=torch.float32, use_auth_token=True
+            args.input_model, torch_dtype=torch.float32, use_auth_token=True
         )
 
         image_path = "https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png"

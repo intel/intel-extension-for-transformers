@@ -6,6 +6,11 @@ Supported Text-to-image Generative AI models:
 1. [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4)
 2. [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion)
 3. [stabilityai/stable-diffusion-2-1](https://huggingface.co/stabilityai/stable-diffusion-2-1)
+4. [instruction-tuning-sd](https://huggingface.co/instruction-tuning-sd)
+    * [scratch-low-level-img-proc](https://huggingface.co/instruction-tuning-sd/scratch-low-level-img-proc)
+    * [scratch-cartoonizer](https://huggingface.co/instruction-tuning-sd/scratch-cartoonizer)
+    * [cartoonizer](https://huggingface.co/instruction-tuning-sd/cartoonizer)
+    * [low-level-img-proc](https://huggingface.co/instruction-tuning-sd/low-level-img-proc)
 
 The inference and accuracy of the above pretrained models are verified in the default configs.
 
@@ -41,6 +46,7 @@ cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-t
 
 pip install -r requirements.txt
 pip install transformers==4.28.1
+pip install diffusers==0.12.1
 ```
 
 ## Environment Variables (Optional)
@@ -148,6 +154,8 @@ python run_executor.py --ir_path=./qat_int8_ir --mode=accuracy --input_model=run
 
 ## 4. Try Text to Image
 
+### 4.1 Text2Img
+
 Try using one sentence to create a picture!
 
 ```python
@@ -167,6 +175,30 @@ python run_executor.py --ir_path=./bf16_ir --input_model=CompVis/stable-diffusio
 > 1. The default pretrained model is "CompVis/stable-diffusion-v1-4".
 > 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
 > 3. The ir directory should include three IR for text_encoder, unet and vae_decoder.
+
+
+### 4.2 Img2Img: instruction-tuning-sd
+
+Try using one image and prompts to create a new picture!
+
+```python
+# Running FP32 models or BF16 models, just import differnt IR.
+# FP32 models
+python run_executor.py --ir_path=./fp32_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd
+```
+![picture1](./images/astronaut_rides_horse.png)
+
+```python
+# BF16 models
+python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd
+```
+![picture2](./images/astronaut_rides_horse_from_engine_1.png)
+
+> Note: 
+> 1. The default pretrained model is "CompVis/stable-diffusion-v1-4".
+> 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
+> 3. The ir directory should include three IR for text_encoder, unet and vae_decoder.
+
 
 ## 5. Validated Result
 
