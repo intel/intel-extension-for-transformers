@@ -572,9 +572,6 @@ struct whisper_state {
   int lang_id = 0;  // english by default
 
   std::string path_model;  // populated by whisper_init_from_file()
-#ifdef WHISPER_USE_COREML
-  whisper_coreml_context* ctx_coreml = nullptr;
-#endif
 
   // [EXPERIMENTAL] token-level timestamps data
   int64_t t_beg = 0;
@@ -1386,13 +1383,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
   struct ne_tensor* cur;
 
-#ifndef WHISPER_USE_COREML
-  const bool use_coreml = false;
-#else
-  const bool use_coreml = wstate.ctx_coreml != nullptr;
-#endif
-
-  if (!use_coreml) {
+  {
     // convolution + gelu
     {
       wstate.use_buf(ctx0, 1);
@@ -1617,15 +1608,6 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
       // ggml_graph_print(&gf);
     }
   }
-#ifdef WHISPER_USE_COREML
-  else if (use_coreml) {
-    wstate.use_buf(ctx0, -1);
-
-    cur = ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, n_ctx, NE_SIZE_CALC);
-
-    whisper_coreml_encode(wstate.ctx_coreml, (float*)mel->data, (float*)cur->data);
-  }
-#endif
 
   // cur
   //{
@@ -2337,29 +2319,6 @@ static std::vector<whisper_vocab::id> tokenize(const whisper_vocab& vocab, const
 // interface implementation
 //
 
-#ifdef WHISPER_USE_COREML
-// replace .bin with -encoder.mlmodelc
-static std::string whisper_get_coreml_path_encoder(std::string path_bin) {
-  auto pos = path_bin.rfind('.');
-  if (pos != std::string::npos) {
-    path_bin = path_bin.substr(0, pos);
-  }
-
-  // match "-qx_x"
-  pos = path_bin.rfind('-');
-  if (pos != std::string::npos) {
-    auto sub = path_bin.substr(pos);
-    if (sub.size() == 5 && sub[1] == 'q' && sub[3] == '_') {
-      path_bin = path_bin.substr(0, pos);
-    }
-  }
-
-  path_bin += "-encoder.mlmodelc";
-
-  return path_bin;
-}
-#endif
-
 struct whisper_state* whisper_init_state(whisper_context* ctx) {
   whisper_state* state = new whisper_state;
 
@@ -2388,23 +2347,6 @@ struct whisper_state* whisper_init_state(whisper_context* ctx) {
     const size_t memory_size = ne_nbytes(state->kv_cross.k) + ne_nbytes(state->kv_cross.v);
     fprintf(stderr, "%s: kv cross size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
   }
-
-#ifdef WHISPER_USE_COREML
-  const auto path_coreml = whisper_get_coreml_path_encoder(ctx->path_model);
-
-  fprintf(stderr, "%s: loading Core ML model from '%s'\n", __func__, path_coreml.c_str());
-  fprintf(stderr, "%s: first run on a device may take a while ...\n", __func__);
-
-  state->ctx_coreml = whisper_coreml_init(path_coreml.c_str());
-  if (!state->ctx_coreml) {
-    fprintf(stderr, "%s: failed to load Core ML model from '%s'\n", __func__, path_coreml.c_str());
-#ifndef WHISPER_COREML_ALLOW_FALLBACK
-    return nullptr;
-#endif
-  } else {
-    fprintf(stderr, "%s: Core ML model loaded\n", __func__);
-  }
-#endif
 
   state->logits.reserve(ctx->vocab.n_vocab * ctx->model.hparams.n_text_ctx);
 
@@ -2572,13 +2514,6 @@ void whisper_free_state(struct whisper_state* state) {
     for (int i = 0; i < WHISPER_MAX_DECODERS; ++i) {
       kv_cache_free(state->decoders[i].kv_self);
     }
-
-#ifdef WHISPER_USE_COREML
-    if (state->ctx_coreml != nullptr) {
-      whisper_coreml_free(state->ctx_coreml);
-      state->ctx_coreml = nullptr;
-    }
-#endif
 
     delete state;
   }
@@ -2942,14 +2877,6 @@ void whisper_reset_timings(struct whisper_context* ctx) {
     ctx->state->t_encode_us = 0;
     ctx->state->t_decode_us = 0;
   }
-}
-
-static int whisper_has_coreml(void) {
-#ifdef WHISPER_USE_COREML
-  return 1;
-#else
-  return 0;
-#endif
 }
 
 const char* whisper_print_system_info(void) {
