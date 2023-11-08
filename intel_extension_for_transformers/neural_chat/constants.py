@@ -67,10 +67,6 @@ class ResponseCodes:
 
     SUCCESS = 0  # The operation is executed successfully
 
-    @property
-    def string(self):
-        return self.error_strings.get(self, "Unknown Error")
-
     error_strings = {
         ERROR_OUT_OF_MEMORY: "Out of Memory",
         ERROR_DEVICE_BUSY: "Device Busy",

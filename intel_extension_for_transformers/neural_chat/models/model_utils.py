@@ -45,6 +45,9 @@ from intel_extension_for_transformers.transformers import (
     BitsAndBytesConfig
 )
 
+from intel_extension_for_transformers.utils import logger
+from intel_extension_for_transformers.neural_chat.constants import ResponseCodes
+
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
 
@@ -277,10 +280,10 @@ def load_model(
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
 
     Returns:
-        None
-
-    Raises:
-        ValueError: If the model is not supported, ValueError is raised.
+        ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
+        ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
+        ResponseCodes.SUCCESS
+        
     """
     print("Loading model {}".format(model_name))
     if device == "hpu":
@@ -386,9 +389,9 @@ def load_model(
                         file_name="best_model.pt",
                  )
     else:
-        raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
-        )
+        logger.error(
+            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
+        return ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -429,7 +432,7 @@ def load_model(
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
-        return
+        return ResponseCodes.SUCCESS
 
     if device == "hpu":
         if peft_path:
@@ -487,9 +490,8 @@ def load_model(
             if hasattr(model, "device") and model.device.type != device:
                 model = model.eval().to(device)
         else:
-            raise ValueError(
-                f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
-            )
+            logger.error(f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now.")
+            return ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -507,6 +509,7 @@ def load_model(
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
     print("Model loaded.")
+    return ResponseCodes.SUCCESS
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}

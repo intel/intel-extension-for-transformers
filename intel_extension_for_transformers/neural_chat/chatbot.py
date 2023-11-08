@@ -164,9 +164,12 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
-    adapter.load_model(parameters)
+    result = adapter.load_model(parameters)
 
-    return adapter
+    if result == ResponseCodes.SUCCESS:
+        return adapter
+    else:
+        return result
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.

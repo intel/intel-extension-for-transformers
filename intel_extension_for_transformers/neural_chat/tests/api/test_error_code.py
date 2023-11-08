@@ -61,13 +61,14 @@ class TestErrorCodeBuilder(unittest.TestCase):
     def test_build_chatbot_out_of_gpu_memory(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "cuda"
-        with torch.cuda.is_available():
+        result = 0
+        if torch.cuda.is_available():
             # Mock torch.cuda.get_device_properties to return less GPU memory
             with patch('torch.cuda.get_device_properties') as mock_get_device_properties:
                 mock_get_device_properties.return_value.total_memory = 8 * 1024 ** 3  # 8GB
                 mock_get_device_properties.return_value.memory_allocated = 3 * 1024 ** 3  # 3GB
                 result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+            assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
 
     def test_build_chatbot_unsupported_model(self):
         plugins["unsupported_plugin"] = {
