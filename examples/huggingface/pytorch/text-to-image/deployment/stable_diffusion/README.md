@@ -184,13 +184,13 @@ Try using one image and prompts to create a new picture!
 ```python
 # Running FP32 models or BF16 models, just import differnt IR.
 # FP32 models
-python run_executor.py --ir_path=./fp32_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd
+python run_executor.py --ir_path=./fp32_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image"
 ```
 ![picture1](./images/astronaut_rides_horse.png)
 
 ```python
 # BF16 models
-python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd
+python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image"
 ```
 ![picture2](./images/astronaut_rides_horse_from_engine_1.png)
 

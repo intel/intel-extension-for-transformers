@@ -100,6 +100,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=666, help="random seed")
     parser.add_argument("--steps", type=int, default=20, help="denoising steps")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
+    parser.add_argument("--prompts", type=str, default="Cartoonize the following image", help="prompts for img2img")
     return parser.parse_args()
 
 
@@ -166,7 +167,7 @@ def main():
         image = load_image(image_path)
         image = image.resize((512, 512))
 
-        image = pipeline("Cartoonize the following image", image=image, engine_graph=neural_engine_graph).images[0]
+        image = pipeline(args.prompts, image=image, engine_graph=neural_engine_graph).images[0]
         image.save("image.png")
 
     return
