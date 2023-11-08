@@ -23,23 +23,22 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "starcoder_int8"
-tokenizer_name_or_path: "bigcode/starcoder"
+model_name_or_path: "./Llama-2-7b-chat-hf"
 device: "cpu"
 
 # users can choose one of the ipex int8, itrex int4, mix precision and
 # bitsandbytes to run the optimized model for inference speedup
 
-# ipex int8 optimization
-optimization:
-    ipex_int8: True
-
 # itrex int4 llm runtime optimization
+optimization:
+    use_llm_runtime: true
+    optimization_type: "weight_only"
+    compute_dtype: "int8"
+    weight_dtype: "int4"
+
+# ipex int8 optimization
 # optimization:
-#     use_llm_runtime: true
-#     optimization_type: "weight_only"
-#     compute_dtype: "int8"
-#     weight_dtype: "int4"
+#     ipex_int8: True
 
 # itrex int4 optimization
 # optimization:
