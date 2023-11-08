@@ -436,7 +436,7 @@ async def handle_image_to_image(request: Request):
                 "token": "intel_sd_bf16_112233"}
         start_time = time.time()
         img_str = stable_defusion_func(data)
-        logger.info("<image2Image> elapsed time: ", str(time.time() - start_time))
+        logger.info(f"<image2Image> elapsed time: {time.time() - start_time} seconds")
         generated_images.append({"imgId": img_id, "imgSrc": "data:image/jpeg;base64,"+img_str})
 
     return generated_images
