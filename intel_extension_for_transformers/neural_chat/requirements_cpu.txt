@@ -47,3 +47,4 @@ pymysql
 deepface
 exifread
 einops
+cchardet
