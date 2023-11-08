@@ -97,7 +97,8 @@ class Model:
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0], **kwargs)
+            self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
+                               **kwargs)
             self.generate_round = 0
         elif not interactive:
             self.model.reinit()
@@ -107,12 +108,13 @@ class Model:
         if self.generate_round == 0 and not ignore_prompt:
             ret = input_ids.tolist()
 
-        # TODO support multi batch
-        assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
         beam_search = False
         if ("num_beams" in kwargs and kwargs["num_beams"] > 1) and not \
             kwargs.get("do_sample", False):
             beam_search = True
+        if not beam_search:
+            # TODO support multi batch
+            assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
         if streamer:
             if beam_search:
                 print("ERROR, can not use streamer when use beam search for generation!")

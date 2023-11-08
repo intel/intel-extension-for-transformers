@@ -58,7 +58,7 @@ class Model {
   void init_model(const std::string& model_path, int n_predict, int n_batch, int ctx_size, int seed, int threads,
                   float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p, float temperature,
                   int min_new_tokens, float length_penalty, bool early_stopping, int n_keep, int n_discard,
-                  bool shift_roped_k, int batch_size, vocab::id pad_token);
+                  bool shift_roped_k, int batch_size, model_vocab::id pad_token);
   void reinit();
   std::vector<model_token> generate(const std::vector<model_token>& input_ids);
   std::vector<std::vector<model_token>> generate_tokens(const std::vector<std::vector<model_token>>& input_ids);
@@ -94,7 +94,7 @@ class Model {
 void Model::init_model(const std::string& model_path, int max_new_tokens, int n_batch, int ctx_size, int seed,
                        int threads, float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p,
                        float temperature, int min_new_tokens, float length_penalty, bool early_stopping, int n_keep,
-                       int n_discard, bool shift_roped_k, int batch_size, vocab::id pad_token) {
+                       int n_discard, bool shift_roped_k, int batch_size, model_vocab::id pad_token) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -134,7 +134,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   ctx->generation_conf.min_new_tokens = min_new_tokens;
   ctx->generation_conf.length_penalty = length_penalty;
   ctx->generation_conf.do_early_stopping = early_stopping;
-  if (pad_token != -1) ctx > vocab.pad_token_id = pad_token;
+  if (pad_token != -1) ctx->vocab.pad_token_id = pad_token;
 }
 
 void Model::reinit() {
@@ -183,14 +183,14 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
       /*.tokens              =*/curr_input_ids.data(),
       /*.n_tokens           =*/(uint32_t)curr_input_ids.size(),
       /*.n_prompt_tokens    =*/0,
-      /*.n_past             =*/n_past,
-      /*.n_total            =*/n_total,
+      /*.n_past             =*/(uint32_t)n_past,
+      /*.n_total            =*/(uint32_t)n_total,
       /*.request_idx        =*/0,
       /*.beam_idx           =*/0,
       /*.padding_side       =*/0,
       /*n_padding           =*/0,
   }};
-  model_eval(ctx, input_ids, params.n_threads);
+  model_eval(ctx, inputs, params.n_threads);
   n_past += curr_input_ids.size();
   n_total += curr_input_ids.size();
 
@@ -246,7 +246,7 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
   }
   if (input_ids.size() > 1) {
     fprintf(stderr, "\nERROR: Only beam search supports multi-batch generation!\n");
-    return rets
+    return rets;
   }
 
   if (curr_input_ids.empty()) {
@@ -284,8 +284,8 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
         /*.tokens              =*/curr_input_ids.data(),
         /*.n_tokens           =*/(uint32_t)curr_input_ids.size(),
         /*.n_prompt_tokens    =*/0,
-        /*.n_past             =*/n_past,
-        /*.n_total            =*/n_total,
+        /*.n_past             =*/(uint32_t)n_past,
+        /*.n_total            =*/(uint32_t)n_total,
         /*.request_idx        =*/0,
         /*.beam_idx           =*/0,
         /*.padding_side       =*/0,
@@ -327,7 +327,7 @@ std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lct
     return beam_search(lctx, n_predict, inputs, n_threads);
   } else {
     fprintf(stderr, "\nERROR: this model does not support beam search generation!\n");
-    return std::vector<model_token>();
+    return std::vector<std::vector<model_token>>();
   }
 }
 
