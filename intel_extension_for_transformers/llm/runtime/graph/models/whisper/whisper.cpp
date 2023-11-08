@@ -112,78 +112,49 @@ static const std::map<e_model, size_t> MEM_REQ_SCRATCH3 = {
     {MODEL_MEDIUM, 7ull * MB}, {MODEL_LARGE, 9ull * MB},
 };
 
-static const std::map<ne_type, std::map<e_model, size_t>> MEM_REQ_MODEL = {
-    {
-        NE_TYPE_F32,
-        {
-            {MODEL_TINY, 74ull * MB},
-            {MODEL_BASE, 142ull * MB},
-            {MODEL_SMALL, 466ull * MB},
-            {MODEL_MEDIUM, 1464ull * MB},
-            {MODEL_LARGE, 2952ull * MB},
-        },
-    },
-    {
-        NE_TYPE_F16,
-        {
-            {MODEL_TINY, 74ull * MB},
-            {MODEL_BASE, 142ull * MB},
-            {MODEL_SMALL, 466ull * MB},
-            {MODEL_MEDIUM, 1464ull * MB},
-            {MODEL_LARGE, 2952ull * MB},
-        },
-    },
-    {
-        NE_TYPE_Q4_0,
-        {
-            {MODEL_TINY, 26ull * MB},
-            {MODEL_BASE, 50ull * MB},
-            {MODEL_SMALL, 154ull * MB},
-            {MODEL_MEDIUM, 470ull * MB},
-            {MODEL_LARGE, 940ull * MB},
-        },
-    },
-    {
-        NE_TYPE_Q4_1,
-        {
-            {MODEL_TINY, 32ull * MB},
-            {MODEL_BASE, 58ull * MB},
-            {MODEL_SMALL, 182ull * MB},
-            {MODEL_MEDIUM, 562ull * MB},
-            {MODEL_LARGE, 1124ull * MB},
-        },
-    },
-    {
-        NE_TYPE_Q5_0,
-        {
-            {MODEL_TINY, 30ull * MB},
-            {MODEL_BASE, 54ull * MB},
-            {MODEL_SMALL, 170ull * MB},
-            {MODEL_MEDIUM, 516ull * MB},
-            {MODEL_LARGE, 1034ull * MB},
-        },
-    },
-    {
-        NE_TYPE_Q5_1,
-        {
-            {MODEL_TINY, 32ull * MB},
-            {MODEL_BASE, 58ull * MB},
-            {MODEL_SMALL, 182ull * MB},
-            {MODEL_MEDIUM, 562ull * MB},
-            {MODEL_LARGE, 1124ull * MB},
-        },
-    },
-    {
-        NE_TYPE_Q8_0,
-        {
-            {MODEL_TINY, 45ull * MB},
-            {MODEL_BASE, 84ull * MB},
-            {MODEL_SMALL, 268ull * MB},
-            {MODEL_MEDIUM, 834ull * MB},
-            {MODEL_LARGE, 1674ull * MB},
-        },
-    },
-};
+static const std::map<ne_type, std::map<e_model, size_t>> MEM_REQ_MODEL =  //
+    {{NE_TYPE_F32,
+      {{MODEL_TINY, 74ull * MB},
+       {MODEL_BASE, 142ull * MB},
+       {MODEL_SMALL, 466ull * MB},
+       {MODEL_MEDIUM, 1464ull * MB},
+       {MODEL_LARGE, 2952ull * MB}}},
+     {NE_TYPE_F16,
+      {{MODEL_TINY, 74ull * MB},
+       {MODEL_BASE, 142ull * MB},
+       {MODEL_SMALL, 466ull * MB},
+       {MODEL_MEDIUM, 1464ull * MB},
+       {MODEL_LARGE, 2952ull * MB}}},
+     {NE_TYPE_Q4_0,
+      {{MODEL_TINY, 26ull * MB},
+       {MODEL_BASE, 50ull * MB},
+       {MODEL_SMALL, 154ull * MB},
+       {MODEL_MEDIUM, 470ull * MB},
+       {MODEL_LARGE, 940ull * MB}}},
+     {NE_TYPE_Q4_1,
+      {{MODEL_TINY, 32ull * MB},
+       {MODEL_BASE, 58ull * MB},
+       {MODEL_SMALL, 182ull * MB},
+       {MODEL_MEDIUM, 562ull * MB},
+       {MODEL_LARGE, 1124ull * MB}}},
+     {NE_TYPE_Q5_0,
+      {{MODEL_TINY, 30ull * MB},
+       {MODEL_BASE, 54ull * MB},
+       {MODEL_SMALL, 170ull * MB},
+       {MODEL_MEDIUM, 516ull * MB},
+       {MODEL_LARGE, 1034ull * MB}}},
+     {NE_TYPE_Q5_1,
+      {{MODEL_TINY, 32ull * MB},
+       {MODEL_BASE, 58ull * MB},
+       {MODEL_SMALL, 182ull * MB},
+       {MODEL_MEDIUM, 562ull * MB},
+       {MODEL_LARGE, 1124ull * MB}}},
+     {NE_TYPE_Q8_0,
+      {{MODEL_TINY, 45ull * MB},
+       {MODEL_BASE, 84ull * MB},
+       {MODEL_SMALL, 268ull * MB},
+       {MODEL_MEDIUM, 834ull * MB},
+       {MODEL_LARGE, 1674ull * MB}}}};
 
 static const std::map<e_model, size_t> MEM_REQ_KV_SELF = {
     {MODEL_TINY, 3ull * MB},    {MODEL_BASE, 6ull * MB},   {MODEL_SMALL, 16ull * MB},
@@ -519,18 +490,10 @@ struct whisper_state {
     size_t last_size = 0;
 
     if (i == -1) {
-      last_size = ne_set_scratch(ctx, {
-                                          0,
-                                          0,
-                                          nullptr,
-                                      });
+      last_size = ne_set_scratch(ctx, {0, 0, nullptr});
     } else {
       auto& buf = buf_scratch[i];
-      last_size = ne_set_scratch(ctx, {
-                                          0,
-                                          buf.size(),
-                                          buf.data(),
-                                      });
+      last_size = ne_set_scratch(ctx, {0, buf.size(), buf.data()});
     }
 
     if (buf_last >= 0) {
@@ -690,21 +653,13 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 
     if (hparams.n_audio_layer == 4) {
       model.type = e_model::MODEL_TINY;
-    }
-
-    if (hparams.n_audio_layer == 6) {
+    } else if (hparams.n_audio_layer == 6) {
       model.type = e_model::MODEL_BASE;
-    }
-
-    if (hparams.n_audio_layer == 12) {
+    } else if (hparams.n_audio_layer == 12) {
       model.type = e_model::MODEL_SMALL;
-    }
-
-    if (hparams.n_audio_layer == 24) {
+    } else if (hparams.n_audio_layer == 24) {
       model.type = e_model::MODEL_MEDIUM;
-    }
-
-    if (hparams.n_audio_layer == 32) {
+    } else if (hparams.n_audio_layer == 32) {
       model.type = e_model::MODEL_LARGE;
     }
 

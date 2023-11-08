@@ -117,7 +117,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
 
       if (i >= embd_inp.size()) {
         const int n_vocab = hparams.n_vocab;
-        gpt_vocab::id id = 0;
+        model_token id = 0;
         id = model_sample_top_k_top_p(lctx, n_vocab, logits, top_k, top_p, temp);
         // add it to the context
         embd.push_back(id);
