@@ -84,11 +84,14 @@ public:
   virtual ~CompressWei4Bit() {
     if (_write_buf != nullptr)
       free(_write_buf);
+    if (_wei != nullptr)
+      free(_wei, context);
+    if (_scale != nullptr)
+      free(_scale, context);
   }
 
   CompressWei4Bit(void *buf, sycl::queue &queue) {
     if (buf != nullptr) {
-      auto context = queue.get_info<sycl::info::queue::context>();
       auto device = queue.get_info<sycl::info::queue::device>();
       size_t offset = deserialize_field(buf);
       _wei = (void *)aligned_alloc_device(
@@ -113,7 +116,7 @@ public:
     memcpy((char *)buf + offset, _write_buf, get_buf_size());
   }
 
-  void deserialize(void *buf, sycl::queue &queue) {
+  void deserialize(void *buf) {
     size_t offset = 0;
     memcpy(&_N, (char *)buf + offset, sizeof(_N));
     offset += sizeof(_N);
@@ -170,6 +173,7 @@ private:
   }
   bool _sym;
   char *_write_buf = nullptr;
-  void *_wei;
-  void *_scale;
+  void *_wei = nullptr;
+  void *_scale = nullptr;
+  const sycl::context context;
 };
