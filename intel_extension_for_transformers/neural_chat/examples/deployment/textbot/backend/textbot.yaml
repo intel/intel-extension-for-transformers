@@ -45,7 +45,7 @@ optimization:
 #     use_llm_runtime: false
 #     optimization_type: "weight_only"
 #     compute_dtype: "int8"
-#     weight_dtype: "int4"
+#     weight_dtype: "int4_fullrange"
 
 # mix precision bf16
 # optimization:
