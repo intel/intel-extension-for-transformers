@@ -25,7 +25,7 @@ from intel_extension_for_transformers.neural_chat.server import TextChatClientEx
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/server/textchat_itrex_llm_runtime_int4.yaml"
+            "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_itrex_llm_runtime_int4.yaml"
         if os.path.exists(yaml_file_path):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
