@@ -34,7 +34,6 @@ int timestamp_to_sample(int64_t t, int n_samples) {
   return std::max(0, std::min((int)n_samples - 1, (int)((t * WHISPER_SAMPLE_RATE) / 100)));
 }
 
-
 bool whisper_params_parse(int argc, char** argv, whisper_params& params) {
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
@@ -124,8 +123,6 @@ bool whisper_params_parse(int argc, char** argv, whisper_params& params) {
       params.model = argv[++i];
     } else if (arg == "-f" || arg == "--file") {
       params.fname_inp.emplace_back(argv[++i]);
-    } else if (arg == "-oved" || arg == "--ov-e-device") {
-      params.openvino_encode_device = argv[++i];
     } else {
       fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
       whisper_print_usage(argc, argv, params);
@@ -203,7 +200,5 @@ void whisper_print_usage(int /*argc*/, char** argv, const whisper_params& params
   fprintf(stderr, "             --prompt PROMPT     [%-7s] initial prompt\n", params.prompt.c_str());
   fprintf(stderr, "  -m FNAME,  --model FNAME       [%-7s] model path\n", params.model.c_str());
   fprintf(stderr, "  -f FNAME,  --file FNAME        [%-7s] input WAV file path\n", "");
-  fprintf(stderr, "  -oved D,   --ov-e-device DNAME [%-7s] the OpenVINO device used for encode inference\n",
-          params.openvino_encode_device.c_str());
   fprintf(stderr, "\n");
 }

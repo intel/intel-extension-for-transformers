@@ -105,7 +105,7 @@ static void byteswap_tensor(ne_tensor* tensor) {
 #endif
 
 // define this to enable verbose trace logging - useful for debugging purposes
-//#define WHISPER_DEBUG
+// #define WHISPER_DEBUG
 
 #if defined(WHISPER_DEBUG)
 #define WHISPER_PRINT_DEBUG(...)  \
@@ -116,8 +116,8 @@ static void byteswap_tensor(ne_tensor* tensor) {
 #define WHISPER_PRINT_DEBUG(...)
 #endif
 
-//#define WHISPER_USE_FLASH_ATTN
-//#define WHISPER_USE_FLASH_FF
+// #define WHISPER_USE_FLASH_ATTN
+// #define WHISPER_USE_FLASH_FF
 #define WHISPER_MAX_DECODERS 16
 
 #define WHISPER_USE_SCRATCH
@@ -137,504 +137,40 @@ enum e_model {
 };
 
 static const std::map<std::string, std::pair<int, std::string>> g_lang = {
-    {"en",
-     {
-         0,
-         "english",
-     }},
-    {"zh",
-     {
-         1,
-         "chinese",
-     }},
-    {"de",
-     {
-         2,
-         "german",
-     }},
-    {"es",
-     {
-         3,
-         "spanish",
-     }},
-    {"ru",
-     {
-         4,
-         "russian",
-     }},
-    {"ko",
-     {
-         5,
-         "korean",
-     }},
-    {"fr",
-     {
-         6,
-         "french",
-     }},
-    {"ja",
-     {
-         7,
-         "japanese",
-     }},
-    {"pt",
-     {
-         8,
-         "portuguese",
-     }},
-    {"tr",
-     {
-         9,
-         "turkish",
-     }},
-    {"pl",
-     {
-         10,
-         "polish",
-     }},
-    {"ca",
-     {
-         11,
-         "catalan",
-     }},
-    {"nl",
-     {
-         12,
-         "dutch",
-     }},
-    {"ar",
-     {
-         13,
-         "arabic",
-     }},
-    {"sv",
-     {
-         14,
-         "swedish",
-     }},
-    {"it",
-     {
-         15,
-         "italian",
-     }},
-    {"id",
-     {
-         16,
-         "indonesian",
-     }},
-    {"hi",
-     {
-         17,
-         "hindi",
-     }},
-    {"fi",
-     {
-         18,
-         "finnish",
-     }},
-    {"vi",
-     {
-         19,
-         "vietnamese",
-     }},
-    {"he",
-     {
-         20,
-         "hebrew",
-     }},
-    {"uk",
-     {
-         21,
-         "ukrainian",
-     }},
-    {"el",
-     {
-         22,
-         "greek",
-     }},
-    {"ms",
-     {
-         23,
-         "malay",
-     }},
-    {"cs",
-     {
-         24,
-         "czech",
-     }},
-    {"ro",
-     {
-         25,
-         "romanian",
-     }},
-    {"da",
-     {
-         26,
-         "danish",
-     }},
-    {"hu",
-     {
-         27,
-         "hungarian",
-     }},
-    {"ta",
-     {
-         28,
-         "tamil",
-     }},
-    {"no",
-     {
-         29,
-         "norwegian",
-     }},
-    {"th",
-     {
-         30,
-         "thai",
-     }},
-    {"ur",
-     {
-         31,
-         "urdu",
-     }},
-    {"hr",
-     {
-         32,
-         "croatian",
-     }},
-    {"bg",
-     {
-         33,
-         "bulgarian",
-     }},
-    {"lt",
-     {
-         34,
-         "lithuanian",
-     }},
-    {"la",
-     {
-         35,
-         "latin",
-     }},
-    {"mi",
-     {
-         36,
-         "maori",
-     }},
-    {"ml",
-     {
-         37,
-         "malayalam",
-     }},
-    {"cy",
-     {
-         38,
-         "welsh",
-     }},
-    {"sk",
-     {
-         39,
-         "slovak",
-     }},
-    {"te",
-     {
-         40,
-         "telugu",
-     }},
-    {"fa",
-     {
-         41,
-         "persian",
-     }},
-    {"lv",
-     {
-         42,
-         "latvian",
-     }},
-    {"bn",
-     {
-         43,
-         "bengali",
-     }},
-    {"sr",
-     {
-         44,
-         "serbian",
-     }},
-    {"az",
-     {
-         45,
-         "azerbaijani",
-     }},
-    {"sl",
-     {
-         46,
-         "slovenian",
-     }},
-    {"kn",
-     {
-         47,
-         "kannada",
-     }},
-    {"et",
-     {
-         48,
-         "estonian",
-     }},
-    {"mk",
-     {
-         49,
-         "macedonian",
-     }},
-    {"br",
-     {
-         50,
-         "breton",
-     }},
-    {"eu",
-     {
-         51,
-         "basque",
-     }},
-    {"is",
-     {
-         52,
-         "icelandic",
-     }},
-    {"hy",
-     {
-         53,
-         "armenian",
-     }},
-    {"ne",
-     {
-         54,
-         "nepali",
-     }},
-    {"mn",
-     {
-         55,
-         "mongolian",
-     }},
-    {"bs",
-     {
-         56,
-         "bosnian",
-     }},
-    {"kk",
-     {
-         57,
-         "kazakh",
-     }},
-    {"sq",
-     {
-         58,
-         "albanian",
-     }},
-    {"sw",
-     {
-         59,
-         "swahili",
-     }},
-    {"gl",
-     {
-         60,
-         "galician",
-     }},
-    {"mr",
-     {
-         61,
-         "marathi",
-     }},
-    {"pa",
-     {
-         62,
-         "punjabi",
-     }},
-    {"si",
-     {
-         63,
-         "sinhala",
-     }},
-    {"km",
-     {
-         64,
-         "khmer",
-     }},
-    {"sn",
-     {
-         65,
-         "shona",
-     }},
-    {"yo",
-     {
-         66,
-         "yoruba",
-     }},
-    {"so",
-     {
-         67,
-         "somali",
-     }},
-    {"af",
-     {
-         68,
-         "afrikaans",
-     }},
-    {"oc",
-     {
-         69,
-         "occitan",
-     }},
-    {"ka",
-     {
-         70,
-         "georgian",
-     }},
-    {"be",
-     {
-         71,
-         "belarusian",
-     }},
-    {"tg",
-     {
-         72,
-         "tajik",
-     }},
-    {"sd",
-     {
-         73,
-         "sindhi",
-     }},
-    {"gu",
-     {
-         74,
-         "gujarati",
-     }},
-    {"am",
-     {
-         75,
-         "amharic",
-     }},
-    {"yi",
-     {
-         76,
-         "yiddish",
-     }},
-    {"lo",
-     {
-         77,
-         "lao",
-     }},
-    {"uz",
-     {
-         78,
-         "uzbek",
-     }},
-    {"fo",
-     {
-         79,
-         "faroese",
-     }},
-    {"ht",
-     {
-         80,
-         "haitian creole",
-     }},
-    {"ps",
-     {
-         81,
-         "pashto",
-     }},
-    {"tk",
-     {
-         82,
-         "turkmen",
-     }},
-    {"nn",
-     {
-         83,
-         "nynorsk",
-     }},
-    {"mt",
-     {
-         84,
-         "maltese",
-     }},
-    {"sa",
-     {
-         85,
-         "sanskrit",
-     }},
-    {"lb",
-     {
-         86,
-         "luxembourgish",
-     }},
-    {"my",
-     {
-         87,
-         "myanmar",
-     }},
-    {"bo",
-     {
-         88,
-         "tibetan",
-     }},
-    {"tl",
-     {
-         89,
-         "tagalog",
-     }},
-    {"mg",
-     {
-         90,
-         "malagasy",
-     }},
-    {"as",
-     {
-         91,
-         "assamese",
-     }},
-    {"tt",
-     {
-         92,
-         "tatar",
-     }},
-    {"haw",
-     {
-         93,
-         "hawaiian",
-     }},
-    {"ln",
-     {
-         94,
-         "lingala",
-     }},
-    {"ha",
-     {
-         95,
-         "hausa",
-     }},
-    {"ba",
-     {
-         96,
-         "bashkir",
-     }},
-    {"jw",
-     {
-         97,
-         "javanese",
-     }},
-    {"su",
-     {
-         98,
-         "sundanese",
-     }},
+    {"en", {0, "english"}},      {"zh", {1, "chinese"}},     {"de", {2, "german"}},
+    {"es", {3, "spanish"}},      {"ru", {4, "russian"}},     {"ko", {5, "korean"}},
+    {"fr", {6, "french"}},       {"ja", {7, "japanese"}},    {"pt", {8, "portuguese"}},
+    {"tr", {9, "turkish"}},      {"pl", {10, "polish"}},     {"ca", {11, "catalan"}},
+    {"nl", {12, "dutch"}},       {"ar", {13, "arabic"}},     {"sv", {14, "swedish"}},
+    {"it", {15, "italian"}},     {"id", {16, "indonesian"}}, {"hi", {17, "hindi"}},
+    {"fi", {18, "finnish"}},     {"vi", {19, "vietnamese"}}, {"he", {20, "hebrew"}},
+    {"uk", {21, "ukrainian"}},   {"el", {22, "greek"}},      {"ms", {23, "malay"}},
+    {"cs", {24, "czech"}},       {"ro", {25, "romanian"}},   {"da", {26, "danish"}},
+    {"hu", {27, "hungarian"}},   {"ta", {28, "tamil"}},      {"no", {29, "norwegian"}},
+    {"th", {30, "thai"}},        {"ur", {31, "urdu"}},       {"hr", {32, "croatian"}},
+    {"bg", {33, "bulgarian"}},   {"lt", {34, "lithuanian"}}, {"la", {35, "latin"}},
+    {"mi", {36, "maori"}},       {"ml", {37, "malayalam"}},  {"cy", {38, "welsh"}},
+    {"sk", {39, "slovak"}},      {"te", {40, "telugu"}},     {"fa", {41, "persian"}},
+    {"lv", {42, "latvian"}},     {"bn", {43, "bengali"}},    {"sr", {44, "serbian"}},
+    {"az", {45, "azerbaijani"}}, {"sl", {46, "slovenian"}},  {"kn", {47, "kannada"}},
+    {"et", {48, "estonian"}},    {"mk", {49, "macedonian"}}, {"br", {50, "breton"}},
+    {"eu", {51, "basque"}},      {"is", {52, "icelandic"}},  {"hy", {53, "armenian"}},
+    {"ne", {54, "nepali"}},      {"mn", {55, "mongolian"}},  {"bs", {56, "bosnian"}},
+    {"kk", {57, "kazakh"}},      {"sq", {58, "albanian"}},   {"sw", {59, "swahili"}},
+    {"gl", {60, "galician"}},    {"mr", {61, "marathi"}},    {"pa", {62, "punjabi"}},
+    {"si", {63, "sinhala"}},     {"km", {64, "khmer"}},      {"sn", {65, "shona"}},
+    {"yo", {66, "yoruba"}},      {"so", {67, "somali"}},     {"af", {68, "afrikaans"}},
+    {"oc", {69, "occitan"}},     {"ka", {70, "georgian"}},   {"be", {71, "belarusian"}},
+    {"tg", {72, "tajik"}},       {"sd", {73, "sindhi"}},     {"gu", {74, "gujarati"}},
+    {"am", {75, "amharic"}},     {"yi", {76, "yiddish"}},    {"lo", {77, "lao"}},
+    {"uz", {78, "uzbek"}},       {"fo", {79, "faroese"}},    {"ht", {80, "haitian creole"}},
+    {"ps", {81, "pashto"}},      {"tk", {82, "turkmen"}},    {"nn", {83, "nynorsk"}},
+    {"mt", {84, "maltese"}},     {"sa", {85, "sanskrit"}},   {"lb", {86, "luxembourgish"}},
+    {"my", {87, "myanmar"}},     {"bo", {88, "tibetan"}},    {"tl", {89, "tagalog"}},
+    {"mg", {90, "malagasy"}},    {"as", {91, "assamese"}},   {"tt", {92, "tatar"}},
+    {"haw", {93, "hawaiian"}},   {"ln", {94, "lingala"}},    {"ha", {95, "hausa"}},
+    {"ba", {96, "bashkir"}},     {"jw", {97, "javanese"}},   {"su", {98, "sundanese"}},
 };
-
-// static const size_t MB = 1ull*1024*1024;
 
 static const std::map<e_model, size_t> MEM_REQ_SCRATCH0 = {
     {MODEL_TINY, 62ull * MB},    {MODEL_BASE, 80ull * MB},   {MODEL_SMALL, 120ull * MB},
@@ -1050,10 +586,6 @@ struct whisper_state {
   std::string path_model;  // populated by whisper_init_from_file()
 #ifdef WHISPER_USE_COREML
   whisper_coreml_context* ctx_coreml = nullptr;
-#endif
-
-#ifdef WHISPER_USE_OPENVINO
-  whisper_openvino_context* ctx_openvino = nullptr;
 #endif
 
   // [EXPERIMENTAL] token-level timestamps data
@@ -1872,13 +1404,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
   const bool use_coreml = wstate.ctx_coreml != nullptr;
 #endif
 
-#ifndef WHISPER_USE_OPENVINO
-  const bool use_openvino = false;
-#else
-  const bool use_openvino = wstate.ctx_openvino != nullptr;
-#endif
-
-  if (!use_coreml && !use_openvino) {
+  if (!use_coreml) {
     // convolution + gelu
     {
       wstate.use_buf(ctx0, 1);
@@ -2110,17 +1636,6 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
     cur = ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, n_ctx, NE_SIZE_CALC);
 
     whisper_coreml_encode(wstate.ctx_coreml, (float*)mel->data, (float*)cur->data);
-  }
-#endif
-#ifdef WHISPER_USE_OPENVINO
-  else if (use_openvino) {
-    wstate.use_buf(ctx0, -1);
-
-    cur = ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, n_ctx, NE_SIZE_CALC);
-
-    if (!whisper_openvino_encode(wstate.ctx_openvino, mel, cur)) {
-      return false;
-    }
   }
 #endif
 
@@ -2857,31 +2372,6 @@ static std::string whisper_get_coreml_path_encoder(std::string path_bin) {
 }
 #endif
 
-#ifdef WHISPER_USE_OPENVINO
-// replace .bin with-encoder-openvino.xml
-static std::string whisper_openvino_get_path_encoder(std::string path_bin) {
-  auto pos = path_bin.rfind('.');
-  if (pos != std::string::npos) {
-    path_bin = path_bin.substr(0, pos);
-  }
-
-  path_bin += "-encoder-openvino.xml";
-
-  return path_bin;
-}
-
-static std::string whisper_openvino_get_path_cache(std::string path_bin) {
-  auto pos = path_bin.rfind('.');
-  if (pos != std::string::npos) {
-    path_bin = path_bin.substr(0, pos);
-  }
-
-  path_bin += "-encoder-openvino-cache";
-
-  return path_bin;
-}
-#endif
-
 struct whisper_state* whisper_init_state(whisper_context* ctx) {
   whisper_state* state = new whisper_state;
 
@@ -2948,52 +2438,6 @@ struct whisper_state* whisper_init_state(whisper_context* ctx) {
   state->rng = std::mt19937(0);
 
   return state;
-}
-
-int whisper_ctx_init_openvino_encoder(struct whisper_context* ctx, const char* model_path, const char* device,
-                                      const char* cache_dir) {
-#ifndef WHISPER_USE_OPENVINO
-  (void)(ctx);
-  (void)(model_path);
-  (void)(device);
-  (void)(cache_dir);
-
-  return 1;
-#else
-  if (!model_path && ctx->path_model.empty()) {
-    fprintf(stderr, "%s: model_path is nullptr, and ctx has no model_path set.\n", __func__);
-    return 1;
-  }
-
-  std::string path_encoder;
-  if (!model_path) {
-    // if model_path is not set, attempt to find it in the same directory as ggml-<model>.bin model
-    path_encoder = whisper_openvino_get_path_encoder(ctx->path_model);
-  } else {
-    path_encoder = model_path;
-  }
-
-  std::string path_cache;
-  if (!cache_dir) {
-    // if cache_dir is not set, set it as a dir residing next to ggml-<model>.bin
-    path_cache = whisper_openvino_get_path_cache(ctx->path_model);
-  } else {
-    path_cache = cache_dir;
-  }
-
-  fprintf(stderr, "%s: loading OpenVINO model from '%s'\n", __func__, path_encoder.c_str());
-  fprintf(stderr, "%s: first run on a device may take a while ...\n", __func__);
-
-  ctx->state->ctx_openvino = whisper_openvino_init(path_encoder.c_str(), device, path_cache.c_str());
-  if (!ctx->state->ctx_openvino) {
-    fprintf(stderr, "%s: failed to init OpenVINO encoder from '%s'\n", __func__, path_encoder.c_str());
-    return 1;
-  } else {
-    fprintf(stderr, "%s: OpenVINO model loaded\n", __func__);
-  }
-
-  return 0;
-#endif
 }
 
 struct whisper_context* whisper_init_from_file_no_state(const char* path_model) {
@@ -3145,13 +2589,6 @@ void whisper_free_state(struct whisper_state* state) {
     if (state->ctx_coreml != nullptr) {
       whisper_coreml_free(state->ctx_coreml);
       state->ctx_coreml = nullptr;
-    }
-#endif
-
-#ifdef WHISPER_USE_OPENVINO
-    if (state->ctx_openvino != nullptr) {
-      whisper_openvino_free(state->ctx_openvino);
-      state->ctx_openvino = nullptr;
     }
 #endif
 
@@ -3521,14 +2958,6 @@ void whisper_reset_timings(struct whisper_context* ctx) {
 
 static int whisper_has_coreml(void) {
 #ifdef WHISPER_USE_COREML
-  return 1;
-#else
-  return 0;
-#endif
-}
-
-static int whisper_has_openvino(void) {
-#ifdef WHISPER_USE_OPENVINO
   return 1;
 #else
   return 0;

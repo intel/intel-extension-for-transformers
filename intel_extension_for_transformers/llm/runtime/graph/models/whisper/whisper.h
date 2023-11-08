@@ -75,8 +75,6 @@ struct whisper_params {
   // [TDRZ] speaker turn string
   std::string tdrz_speaker_turn = " [SPEAKER_TURN]";  // TODO: set from command line
 
-  std::string openvino_encode_device = "CPU";
-
   std::vector<std::string> fname_inp = {};
   std::vector<std::string> fname_out = {};
 };
@@ -181,20 +179,6 @@ MODEL_API struct whisper_context* whisper_init_from_buffer_no_state(void* buffer
 MODEL_API struct whisper_context* whisper_init_no_state(struct whisper_model_loader* loader);
 
 MODEL_API struct whisper_state* whisper_init_state(struct whisper_context* ctx);
-
-// Given a context, enable use of OpenVINO for encode inference.
-// model_path: Optional path to OpenVINO encoder IR model. If set to nullptr,
-//                      the path will be generated from the ggml model path that was passed
-//                      in to whisper_init_from_file. For example, if 'path_model' was
-//                      "/path/to/ggml-base.en.bin", then OpenVINO IR model path will be
-//                      assumed to be "/path/to/ggml-base.en-encoder-openvino.xml".
-// device: OpenVINO device to run inference on ("CPU", "GPU", etc.)
-// cache_dir: Optional cache directory that can speed up init time, especially for
-//                     GPU, by caching compiled 'blobs' there.
-//                     Set to nullptr if not used.
-// Returns 0 on success. If OpenVINO is not enabled in build, this simply returns 1.
-MODEL_API int whisper_ctx_init_openvino_encoder(struct whisper_context* ctx, const char* model_path, const char* device,
-                                                const char* cache_dir);
 
 // Frees all allocated memory
 MODEL_API void whisper_free(struct whisper_context* ctx);
