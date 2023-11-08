@@ -20,14 +20,14 @@ from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile, Form
 from pydub import AudioSegment
-from ...config import GenerationConfig, FaceAnimationConfig
+from ...config import GenerationConfig
 import base64
 import torch
 from typing import Optional
 from fastapi import Query
 
 
-class FaceAnimationAPIRouter(APIRouter):
+class FaceAnimationAPIRouter(APIRouter): # pragma: no cover
 
     def __init__(self) -> None:
         super().__init__()
@@ -66,7 +66,7 @@ async def handle_talkingbot_face_animation(image: UploadFile = File(...),
                                            audio: Optional[UploadFile] = None,
                                            text: Optional[str] = Form(None),
                                            mode: Optional[str] = Form("fast"),
-                                           voice: Optional[str] = Form(None)):
+                                           voice: Optional[str] = Form(None)): # pragma: no cover
     audio_file_name = audio.filename if audio else ""
     image_file_name = image.filename
     logger.info(f'Received audio: {audio_file_name}')

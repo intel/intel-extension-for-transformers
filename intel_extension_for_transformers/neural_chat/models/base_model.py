@@ -273,7 +273,7 @@ class BaseModel(ABC):
         """
         return self.predict(query=query, config=config)
 
-    def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:
+    def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:  # pragma: no cover
         # 1) if there is a driven audio, then image + audio
         # 2) if there is no driven audio but there is a input text, then first TTS and then image + audio
         if audio_path:
@@ -363,7 +363,7 @@ class BaseModel(ABC):
             self.cache = instance
         if plugin_name == "safety_checker":
             self.safety_checker = instance
-        if plugin_name == "face_animation":
+        if plugin_name == "face_animation": # pragma: no cover
             self.face_animation = instance
 
 

@@ -408,13 +408,6 @@ class LoadingModelConfig:
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
-@dataclass
-class FaceAnimationConfig:
-    bf16: bool = False
-    enhancer: str = None 
-    p_num: int = 1
-
-
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="meta-llama/Llama-2-7b-chat-hf",
