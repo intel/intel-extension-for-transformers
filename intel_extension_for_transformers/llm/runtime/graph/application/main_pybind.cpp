@@ -150,10 +150,13 @@ void Model::reinit() {
 std::vector<model_token> Model::generate(const std::vector<model_token>& input_ids) {
   if (curr_input_ids.empty()) {
     if (input_ids.size() > n_ctx - 4) {
-      fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, input_ids.size(), n_ctx - 4);
-      return {};
+      fprintf(stderr, "\n%s: Warning: prompt is too long (%d tokens, max %d), will be truncated\n",
+                      __func__, input_ids.size(), n_ctx - 4);
+      curr_input_ids.resize(n_ctx - 4);
+      std::copy(input_ids.end() - n_ctx - 4, input_ids.end(), curr_input_ids.begin());
+    } else {
+      curr_input_ids = input_ids;
     }
-    curr_input_ids = input_ids;
   }
   for (auto item : curr_input_ids) {
     last_n_tokens.erase(last_n_tokens.begin());
