@@ -104,18 +104,6 @@ static void byteswap_tensor(ne_tensor* tensor) {
   } while (0)
 #endif
 
-// define this to enable verbose trace logging - useful for debugging purposes
-// #define WHISPER_DEBUG
-
-#if defined(WHISPER_DEBUG)
-#define WHISPER_PRINT_DEBUG(...)  \
-  do {                            \
-    fprintf(stderr, __VA_ARGS__); \
-  } while (0)
-#else
-#define WHISPER_PRINT_DEBUG(...)
-#endif
-
 // #define WHISPER_USE_FLASH_ATTN
 // #define WHISPER_USE_FLASH_FF
 #define WHISPER_MAX_DECODERS 16
@@ -1746,7 +1734,7 @@ static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate
   const int N = n_tokens;
   const int M = wstate.exp_n_audio_ctx > 0 ? wstate.exp_n_audio_ctx : hparams.n_audio_ctx;
 
-  // WHISPER_PRINT_DEBUG("%s: n_past = %d, N = %d, M = %d, n_ctx = %d\n", __func__, n_past, N, M, n_ctx);
+  // NE_PRINT_DEBUG("%s: n_past = %d, N = %d, M = %d, n_ctx = %d\n", __func__, n_past, N, M, n_ctx);
 
   struct ne_init_params params = {
       /*.mem_size   =*/wstate.buf_compute.size(),
@@ -3555,7 +3543,7 @@ static void whisper_sequence_score(const struct whisper_full_params& params, whi
       const auto p = kv.second / (double)cnt;
       entropy -= p * log(p);
 
-      // WHISPER_PRINT_DEBUG("entropy: %d %f %f, count %d\n", kv.first, p, log(p), kv.second);
+      // NE_PRINT_DEBUG("entropy: %d %f %f, count %d\n", kv.first, p, log(p), kv.second);
     }
 
     sequence.entropy = entropy;
@@ -3655,7 +3643,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         return -4;
       }
 
-      WHISPER_PRINT_DEBUG("%s: initialized self-attention kv cache, decoder %d\n", __func__, j);
+      NE_PRINT_DEBUG("%s: initialized self-attention kv cache, decoder %d\n", __func__, j);
 
       decoder.sequence.tokens.reserve(state->decoders[0].sequence.tokens.capacity());
 
@@ -3802,7 +3790,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
       n_decoders_cur = std::max(1, n_decoders_cur);
 
-      WHISPER_PRINT_DEBUG("\n%s: decoding with %d decoders, temperature = %.2f\n", __func__, n_decoders_cur, t_cur);
+      NE_PRINT_DEBUG("\n%s: decoding with %d decoders, temperature = %.2f\n", __func__, n_decoders_cur, t_cur);
 
       // TAGS: WHISPER_DECODER_INIT
       for (int j = 0; j < n_decoders_cur; ++j) {
@@ -3842,11 +3830,11 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         prompt.insert(prompt.end(), prompt_init.begin(), prompt_init.end());
 
         // print the prompt
-        WHISPER_PRINT_DEBUG("\n\n");
+        NE_PRINT_DEBUG("\n\n");
         for (int i = 0; i < (int)prompt.size(); i++) {
-          WHISPER_PRINT_DEBUG("%s: prompt[%d] = %s\n", __func__, i, ctx->vocab.id_to_token.at(prompt[i]).c_str());
+          NE_PRINT_DEBUG("%s: prompt[%d] = %s\n", __func__, i, ctx->vocab.id_to_token.at(prompt[i]).c_str());
         }
-        WHISPER_PRINT_DEBUG("\n\n");
+        NE_PRINT_DEBUG("\n\n");
 
         if (!whisper_decode_internal(*ctx, *state, state->decoders[0], prompt.data(), prompt.size(), 0,
                                      params.n_threads)) {
@@ -3930,7 +3918,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
                 beam_candidates.back().sequence.tokens.push_back(token);
                 beam_candidates.back().sequence.sum_logprobs_all += token.plog;
 
-                // WHISPER_PRINT_DEBUG("%s: beam candidate: %s (%f, %f)\n", __func__,
+                // NE_PRINT_DEBUG("%s: beam candidate: %s (%f, %f)\n", __func__,
                 // ctx->vocab.id_to_token.at(token.id).c_str(), token.plog,
                 // beam_candidates.back().sequence.sum_logprobs_all);
               }
@@ -3968,7 +3956,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
             memcpy(decoder.kv_self.k->data, kv_bufs[cur.decoder_idx].k.data(), kv_bufs[cur.decoder_idx].k.size());
             memcpy(decoder.kv_self.v->data, kv_bufs[cur.decoder_idx].v.data(), kv_bufs[cur.decoder_idx].v.size());
 
-            WHISPER_PRINT_DEBUG(
+            NE_PRINT_DEBUG(
                 "%s: beam search: decoder %d: from decoder %d: token = %10s, plog = %8.5f, sum_logprobs = %8.5f\n",
                 __func__, j, cur.decoder_idx, ctx->vocab.id_to_token.at(decoder.sequence.tokens.back().id).c_str(),
                 decoder.sequence.tokens.back().plog, decoder.sequence.sum_logprobs_all);
@@ -4010,10 +3998,10 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
               has_ts = true;
             }
 
-#ifdef WHISPER_DEBUG
+#ifdef NE_DEBUG
             {
               const auto tt = token.pt > 0.10 ? ctx->vocab.id_to_token.at(token.tid) : "[?]";
-              WHISPER_PRINT_DEBUG(
+              NE_PRINT_DEBUG(
                   "%s: id = %3d, decoder = %d, token = %6d, p = %6.3f, ts = %10s, %6.3f, result_len = %4d '%s'\n",
                   __func__, i, j, token.id, token.p, tt.c_str(), token.pt, result_len,
                   ctx->vocab.id_to_token.at(token.id).c_str());
@@ -4091,7 +4079,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           decoder.tokens_tmp.resize(1);
           decoder.tokens_tmp[0] = decoder.sequence.tokens.back().id;
 
-          // WHISPER_PRINT_DEBUG("%s: decoder %d: token %d, kv_self.n %d, seek_delta %d\n", __func__, j,
+          // NE_PRINT_DEBUG("%s: decoder %d: token %d, kv_self.n %d, seek_delta %d\n", __func__, j,
           // decoder.tokens_tmp[0], decoder.kv_self.n, decoder.seek_delta);
 
           if (!whisper_decode_internal(*ctx, *state, decoder, decoder.tokens_tmp.data(), decoder.tokens_tmp.size(),
@@ -4126,14 +4114,13 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           decoder.sequence.tokens.resize(decoder.sequence.result_len);
           whisper_sequence_score(params, decoder.sequence);
 
-          WHISPER_PRINT_DEBUG(
-              "%s: decoder %2d: score = %8.5f, result_len = %3d, avg_logprobs = %8.5f, entropy = %8.5f\n", __func__, j,
-              decoder.sequence.score, decoder.sequence.result_len, decoder.sequence.avg_logprobs,
-              decoder.sequence.entropy);
+          NE_PRINT_DEBUG("%s: decoder %2d: score = %8.5f, result_len = %3d, avg_logprobs = %8.5f, entropy = %8.5f\n",
+                         __func__, j, decoder.sequence.score, decoder.sequence.result_len,
+                         decoder.sequence.avg_logprobs, decoder.sequence.entropy);
 
           if (decoder.sequence.result_len > 32 && decoder.sequence.entropy < params.entropy_thold) {
-            WHISPER_PRINT_DEBUG("%s: decoder %2d: failed due to entropy %8.5f < %8.5f\n", __func__, j,
-                                decoder.sequence.entropy, params.entropy_thold);
+            NE_PRINT_DEBUG("%s: decoder %2d: failed due to entropy %8.5f < %8.5f\n", __func__, j,
+                           decoder.sequence.entropy, params.entropy_thold);
 
             decoder.failed = true;
             state->n_fail_h++;
@@ -4147,7 +4134,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           }
         }
 
-        WHISPER_PRINT_DEBUG("%s: best decoder = %d\n", __func__, best_decoder_id);
+        NE_PRINT_DEBUG("%s: best decoder = %d\n", __func__, best_decoder_id);
       }
 
       // was the decoding successful for the current temperature?
@@ -4166,7 +4153,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
         if (success) {
           // for (auto & token : ctx->decoders[best_decoder_id].sequence.tokens) {
-          //     WHISPER_PRINT_DEBUG("%s: token = %d, p = %6.3f, pt = %6.3f, ts = %s, str = %s\n", __func__, token.id,
+          //     NE_PRINT_DEBUG("%s: token = %d, p = %6.3f, pt = %6.3f, ts = %s, str = %s\n", __func__, token.id,
           //     token.p, token.pt, ctx->vocab.id_to_token.at(token.tid).c_str(),
           //     ctx->vocab.id_to_token.at(token.id).c_str());
           // }
@@ -4175,7 +4162,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         }
       }
 
-      WHISPER_PRINT_DEBUG("\n%s: failed to decode with temperature = %.2f\n", __func__, t_cur);
+      NE_PRINT_DEBUG("\n%s: failed to decode with temperature = %.2f\n", __func__, t_cur);
     }
 
     // output results through a user-provided callback
@@ -4187,7 +4174,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
       const auto& tokens_cur = best_decoder.sequence.tokens;
 
-      // WHISPER_PRINT_DEBUG("prompt_init.size() = %d, prompt.size() = %d, result_len = %d, seek_delta = %d\n",
+      // NE_PRINT_DEBUG("prompt_init.size() = %d, prompt.size() = %d, result_len = %d, seek_delta = %d\n",
       // prompt_init.size(), prompt.size(), result_len, seek_delta);
 
       // update prompt_past
@@ -4309,7 +4296,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
       // update audio window
       seek += seek_delta;
 
-      WHISPER_PRINT_DEBUG("seek = %d, seek_delta = %d\n", seek, seek_delta);
+      NE_PRINT_DEBUG("seek = %d, seek_delta = %d\n", seek, seek_delta);
     }
   }
 

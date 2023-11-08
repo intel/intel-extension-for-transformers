@@ -122,7 +122,6 @@ static_assert(sizeof(block_q8_1) == 2 * sizeof(float) + QK8_1, "wrong q8_1 block
 #endif
 
 /*#define NE_PERF*/
-#define NE_DEBUG 0
 #define NE_GELU_FP16
 #define NE_SILU_FP16
 
@@ -329,30 +328,6 @@ quantize_fns_t ne_internal_get_quantize_fn(size_t i) {
   NE_ASSERT(i < NE_TYPE_COUNT);
   return quantize_fns[i];
 }
-
-//
-// logging
-//
-
-#if (NE_DEBUG >= 1)
-#define NE_PRINT_DEBUG(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG(...)
-#endif
-
-#if (NE_DEBUG >= 5)
-#define NE_PRINT_DEBUG_5(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG_5(...)
-#endif
-
-#if (NE_DEBUG >= 10)
-#define NE_PRINT_DEBUG_10(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG_10(...)
-#endif
-
-#define NE_PRINT(...) printf(__VA_ARGS__)
 
 //
 // data types
