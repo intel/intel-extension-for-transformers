@@ -613,10 +613,10 @@ class AutoCausalLM(HuggingFaceAutoLM):
                                                  decoder_with_past_session,
                                                  use_cache=True)
             else:
-                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                decoder_session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                     os.path.join(pretrained, "decoder_model.onnx"),
                     session_options=sess_options)
-                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                self.model = ORTModelForCausalLM(decoder_session,  # pylint: disable=E1121
                                                  model_config,
                                                  pretrained,
                                                  use_cache=False,
