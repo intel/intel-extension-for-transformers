@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # Kill the exist and re-run
-ps -ef |grep 'askgm' |awk '{print $2}' |xargs kill -9
+ps -ef |grep 'askdoc' |awk '{print $2}' |xargs kill -9
 
 # KMP
 export KMP_BLOCKTIME=1
@@ -24,7 +24,7 @@ export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 
 # OMP
-export OMP_NUM_THREADS=56
+export OMP_NUM_THREADS=52
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
 # tc malloc
@@ -35,4 +35,4 @@ export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="fastrag"
 
-numactl -l -C 0-55 askdoc -m askgm 2>&1 | tee run.log
+numactl -l -C 0-51 python -m askdoc 2>&1 | tee run.log
