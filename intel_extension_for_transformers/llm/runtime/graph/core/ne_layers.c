@@ -164,6 +164,14 @@ inline static void* ne_aligned_malloc(size_t size) {
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define NE_TENSOR_BINARY_OP_LOCALS          \
+  NE_TENSOR_LOCALS(int64_t, ne0, src0, ne); \
+  NE_TENSOR_LOCALS(size_t, nb0, src0, nb);  \
+  NE_TENSOR_LOCALS(int64_t, ne1, src1, ne); \
+  NE_TENSOR_LOCALS(size_t, nb1, src1, nb);  \
+  NE_TENSOR_LOCALS(int64_t, ne, dst, ne);   \
+  NE_TENSOR_LOCALS(size_t, nb, dst, nb);
+
 // note: do not use these inside ne.c
 // these are meant to be used via the ne.h API
 float ne_fp16_to_fp32(ne_fp16_t x) { return (float)NE_FP16_TO_FP32(x); }
@@ -445,10 +453,11 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "ALL_REDUCE",
     "TP_CONCAT",
     "DUMP_TENSOR",
+    "CONV_1D",
     "DEBUG",
 };
 
-static_assert(NE_OP_COUNT == 62, "NE_OP_COUNT != 62");
+static_assert(NE_OP_COUNT == 63, "NE_OP_COUNT != 63");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -512,6 +521,7 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
 
     "f(x)",
     "f(x,y)",
+    "conv_1d(x)",
     "debug(x)",
 };
 
@@ -975,25 +985,26 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
   struct ne_tensor* const result = (struct ne_tensor*)(mem_buffer + obj_new->offs);
 
   *result = (struct ne_tensor){
-      /*.type         =*/type,
-      /*.backend      =*/NE_BACKEND_CPU,
-      /*.n_dims       =*/n_dims,
-      /*.ne           =*/{1, 1, 1, 1},
-      /*.nb           =*/{0, 0, 0, 0},
-      /*.op           =*/NE_OP_NONE,
-      /*.is_param     =*/false,
-      /*.grad         =*/NULL,
-      /*.src0         =*/NULL,
-      /*.src1         =*/NULL,
-      /*.opt          =*/{NULL},
-      /*.n_tasks      =*/0,
-      /*.perf_runs    =*/0,
-      /*.perf_cycles  =*/0,
-      /*.perf_time_us =*/0,
-      /*.data         =*/(data == NULL && !ctx->no_alloc) ? (void*)(result + 1) : data,
-      /*.size         =*/size_needed,
-      /*.name         =*/{0},
-      /*.pad          =*/{0},
+      .type = type,
+      .backend = NE_BACKEND_CPU,
+      .n_dims = n_dims,
+      .ne = {1, 1, 1, 1},
+      .nb = {0, 0, 0, 0},
+      .op = NE_OP_NONE,
+      .is_param = false,
+      .op_params = {},
+      .grad = NULL,
+      .src0 = NULL,
+      .src1 = NULL,
+      .opt = {NULL},
+      .n_tasks = 0,
+      .perf_runs = 0,
+      .perf_cycles = 0,
+      .perf_time_us = 0,
+      .data = (data == NULL && !ctx->no_alloc) ? (void*)(result + 1) : data,
+      .size = size_needed,
+      .name = {0},
+      .padding = {0},
   };
 
   for (int i = 0; i < n_dims; i++) {
@@ -3131,6 +3142,453 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
   result->src1 = b;
 
   return result;
+}
+
+static void ne_set_op_params(struct ne_tensor* tensor, const void* params, size_t params_size) {
+  NE_ASSERT(tensor != NULL);  // silence -Warray-bounds warnings
+  // assert(params_size <= NE_MAX_OP_PARAMS);
+  memcpy(tensor->op_params, params, params_size);
+}
+
+// for ne_conv_1d
+static int64_t ne_calc_conv_output_size(int64_t ins, int64_t ks, int s, int p, int d) {
+  return (ins + 2 * p - d * (ks - 1) - 1) / s + 1;
+}
+
+NE_API struct ne_tensor* ne_conv_1d(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, int s0, int p0,
+                                    int d0) {
+  NE_ASSERT(ne_is_matrix(b));
+  NE_ASSERT(a->ne[1] == b->ne[1]);
+  bool is_node = false;
+
+  if (a->grad || b->grad) {
+    NE_ASSERT(false);  // TODO: implement backward
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {
+      ne_calc_conv_output_size(b->ne[0], a->ne[0], s0, p0, d0),
+      a->ne[2],
+      1,
+      1,
+  };
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 2, ne, NE_SIZE_CALC);
+
+  int32_t params[] = {s0, p0, d0};
+  ne_set_op_params(result, params, sizeof(params));
+
+  result->op = NE_OP_CONV_1D;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = a;
+  result->src1 = b;
+
+  return result;
+}
+
+// ne_conv_1d_ph
+
+struct ne_tensor* ne_conv_1d_ph(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, int s, int d) {
+  return ne_conv_1d(ctx, a, b, s, a->ne[0] / 2, d);
+}
+
+// ne_compute_forward_conv_1d
+
+static void ne_compute_forward_conv_1d_s1_ph_f16_f32(const struct ne_compute_params* params,
+                                                     const struct ne_tensor* src0, const struct ne_tensor* src1,
+                                                     struct ne_tensor* dst) {
+  NE_ASSERT(src0->type == NE_TYPE_F16);
+  NE_ASSERT(src1->type == NE_TYPE_F32);
+  NE_ASSERT(dst->type == NE_TYPE_F32);
+
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  NE_TENSOR_BINARY_OP_LOCALS;
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  const int nk = ne00;
+  const int nh = nk / 2;
+
+  const int ew0 = ne_up32(ne01);
+
+  NE_ASSERT(ne00 % 2 == 1);  // TODO: support even kernel sizes
+  NE_ASSERT(nb00 == sizeof(ne_fp16_t));
+  NE_ASSERT(nb10 == sizeof(float));
+
+  if (params->type == NE_TASK_INIT) {
+    // TODO: fix this memset (wsize is overestimated)
+    memset(params->wdata, 0, params->wsize);
+
+    // prepare kernel data (src0)
+    {
+      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + 0;
+
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        for (int64_t i01 = 0; i01 < ne01; i01++) {
+          const ne_fp16_t* const src = (ne_fp16_t*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          ne_fp16_t* dst_data = wdata + i02 * ew0 * ne00;
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            dst_data[i00 * ew0 + i01] = src[i00];
+          }
+        }
+      }
+    }
+
+    // prepare source data (src1)
+    {
+      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00;
+
+      for (int64_t i11 = 0; i11 < ne11; i11++) {
+        const float* const src = (float*)((char*)src1->data + i11 * nb11);
+        ne_fp16_t* dst_data = wdata;
+        for (int64_t i10 = 0; i10 < ne10; i10++) {
+          dst_data[(i10 + nh) * ew0 + i11] = NE_FP32_TO_FP16(src[i10]);
+        }
+      }
+    }
+
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+
+  // total rows in dst
+  const int nr = ne02;
+
+  // rows per thread
+  const int dr = (nr + nth - 1) / nth;
+
+  // row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
+
+  for (int i1 = ir0; i1 < ir1; i1++) {
+    float* dst_data = (float*)((char*)dst->data + i1 * nb1);
+    for (int64_t i0 = 0; i0 < ne10; ++i0) {
+      dst_data[i0] = 0;
+      for (int k = -nh; k <= nh; k++) {
+        float v = 0.0f;
+        ne_vec_dot_f16(ew0, &v, (ne_fp16_t*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+
+        dst_data[i0] += v;
+      }
+    }
+  }
+}
+
+static void ne_compute_forward_conv_1d_s1_ph_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                                 const struct ne_tensor* src1, struct ne_tensor* dst) {
+  NE_ASSERT(src0->type == NE_TYPE_F32);
+  NE_ASSERT(src1->type == NE_TYPE_F32);
+  NE_ASSERT(dst->type == NE_TYPE_F32);
+
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  NE_TENSOR_BINARY_OP_LOCALS;
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  const int nk = ne00;
+  const int nh = nk / 2;
+
+  const int ew0 = ne_up32(ne01);
+
+  NE_ASSERT(ne00 % 2 == 1);  // TODO: support even kernel sizes
+  NE_ASSERT(nb00 == sizeof(float));
+  NE_ASSERT(nb10 == sizeof(float));
+
+  if (params->type == NE_TASK_INIT) {
+    // TODO: fix this memset (wsize is overestimated)
+    memset(params->wdata, 0, params->wsize);
+
+    // prepare kernel data (src0)
+    {
+      float* const wdata = (float*)params->wdata + 0;
+
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        for (int64_t i01 = 0; i01 < ne01; i01++) {
+          const float* const src = (float*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          float* dst_data = wdata + i02 * ew0 * ne00;
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            dst_data[i00 * ew0 + i01] = src[i00];
+          }
+        }
+      }
+    }
+
+    // prepare source data (src1)
+    {
+      float* const wdata = (float*)params->wdata + ne02 * ew0 * ne00;
+
+      for (int64_t i11 = 0; i11 < ne11; i11++) {
+        const float* const src = (float*)((char*)src1->data + i11 * nb11);
+        float* dst_data = wdata;
+        for (int64_t i10 = 0; i10 < ne10; i10++) {
+          dst_data[(i10 + nh) * ew0 + i11] = src[i10];
+        }
+      }
+    }
+
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+
+  // total rows in dst
+  const int nr = ne02;
+
+  // rows per thread
+  const int dr = (nr + nth - 1) / nth;
+
+  // row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
+
+  for (int i1 = ir0; i1 < ir1; i1++) {
+    float* dst_data = (float*)((char*)dst->data + i1 * nb1);
+    for (int64_t i0 = 0; i0 < ne10; ++i0) {
+      dst_data[i0] = 0;
+      for (int k = -nh; k <= nh; k++) {
+        float v = 0.0f;
+        ne_vec_dot_f32(ew0, &v, (float*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       (float*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+
+        dst_data[i0] += v;
+      }
+    }
+  }
+}
+
+static void ne_compute_forward_conv_1d_s1_ph(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                             const struct ne_tensor* src1, struct ne_tensor* dst) {
+  switch (src0->type) {
+    case NE_TYPE_F16: {
+      ne_compute_forward_conv_1d_s1_ph_f16_f32(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_F32: {
+      ne_compute_forward_conv_1d_s1_ph_f32(params, src0, src1, dst);
+    } break;
+    default: {
+      NE_ASSERT(false);
+    } break;
+  }
+}
+
+static void ne_compute_forward_conv_1d_s2_ph_f16_f32(const struct ne_compute_params* params,
+                                                     const struct ne_tensor* src0, const struct ne_tensor* src1,
+                                                     struct ne_tensor* dst) {
+  NE_ASSERT(src0->type == NE_TYPE_F16);
+  NE_ASSERT(src1->type == NE_TYPE_F32);
+  NE_ASSERT(dst->type == NE_TYPE_F32);
+
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  NE_TENSOR_BINARY_OP_LOCALS;
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  const int nk = ne00;
+  const int nh = nk / 2;
+
+  const int ew0 = ne_up32(ne01);
+
+  NE_ASSERT(ne00 % 2 == 1);  // TODO: support even kernel sizes
+  NE_ASSERT(nb00 == sizeof(ne_fp16_t));
+  NE_ASSERT(nb10 == sizeof(float));
+
+  if (params->type == NE_TASK_INIT) {
+    // TODO: fix this memset (wsize is overestimated)
+    memset(params->wdata, 0, params->wsize);
+
+    // prepare kernel data (src0)
+    {
+      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + 0;
+
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        for (int64_t i01 = 0; i01 < ne01; i01++) {
+          const ne_fp16_t* const src = (ne_fp16_t*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          ne_fp16_t* dst_data = wdata + i02 * ew0 * ne00;
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            dst_data[i00 * ew0 + i01] = src[i00];
+          }
+        }
+      }
+    }
+
+    // prepare source data (src1)
+    {
+      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00;
+
+      for (int64_t i11 = 0; i11 < ne11; i11++) {
+        const float* const src = (float*)((char*)src1->data + i11 * nb11);
+        ne_fp16_t* dst_data = wdata;
+        for (int64_t i10 = 0; i10 < ne10; i10++) {
+          dst_data[(i10 + nh) * ew0 + i11] = NE_FP32_TO_FP16(src[i10]);
+        }
+      }
+    }
+
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+
+  // total rows in dst
+  const int nr = ne02;
+
+  // rows per thread
+  const int dr = (nr + nth - 1) / nth;
+
+  // row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
+
+  for (int i1 = ir0; i1 < ir1; i1++) {
+    float* dst_data = (float*)((char*)dst->data + i1 * nb1);
+    for (int64_t i0 = 0; i0 < ne10; i0 += 2) {
+      dst_data[i0 / 2] = 0;
+      for (int k = -nh; k <= nh; k++) {
+        float v = 0.0f;
+        ne_vec_dot_f16(ew0, &v, (ne_fp16_t*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+
+        dst_data[i0 / 2] += v;
+      }
+    }
+  }
+}
+
+static void ne_compute_forward_conv_1d_s2_ph_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                                 const struct ne_tensor* src1, struct ne_tensor* dst) {
+  NE_ASSERT(src0->type == NE_TYPE_F32);
+  NE_ASSERT(src1->type == NE_TYPE_F32);
+  NE_ASSERT(dst->type == NE_TYPE_F32);
+
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  NE_TENSOR_BINARY_OP_LOCALS;
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  const int nk = ne00;
+  const int nh = nk / 2;
+
+  const int ew0 = ne_up32(ne01);
+
+  NE_ASSERT(ne00 % 2 == 1);  // TODO: support even kernel sizes
+  NE_ASSERT(nb00 == sizeof(float));
+  NE_ASSERT(nb10 == sizeof(float));
+
+  if (params->type == NE_TASK_INIT) {
+    // TODO: fix this memset (wsize is overestimated)
+    memset(params->wdata, 0, params->wsize);
+
+    // prepare kernel data (src0)
+    {
+      float* const wdata = (float*)params->wdata + 0;
+
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        for (int64_t i01 = 0; i01 < ne01; i01++) {
+          const float* const src = (float*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          float* dst_data = wdata + i02 * ew0 * ne00;
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            dst_data[i00 * ew0 + i01] = src[i00];
+          }
+        }
+      }
+    }
+
+    // prepare source data (src1)
+    {
+      float* const wdata = (float*)params->wdata + ne02 * ew0 * ne00;
+
+      for (int64_t i11 = 0; i11 < ne11; i11++) {
+        const float* const src = (float*)((char*)src1->data + i11 * nb11);
+        float* dst_data = wdata;
+        for (int64_t i10 = 0; i10 < ne10; i10++) {
+          dst_data[(i10 + nh) * ew0 + i11] = src[i10];
+        }
+      }
+    }
+
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+
+  // total rows in dst
+  const int nr = ne02;
+
+  // rows per thread
+  const int dr = (nr + nth - 1) / nth;
+
+  // row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
+
+  for (int i1 = ir0; i1 < ir1; i1++) {
+    float* dst_data = (float*)((char*)dst->data + i1 * nb1);
+    for (int64_t i0 = 0; i0 < ne10; i0 += 2) {
+      dst_data[i0 / 2] = 0;
+      for (int k = -nh; k <= nh; k++) {
+        float v = 0.0f;
+        ne_vec_dot_f32(ew0, &v, (float*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       (float*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+
+        dst_data[i0 / 2] += v;
+      }
+    }
+  }
+}
+
+static void ne_compute_forward_conv_1d_s2_ph(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                             const struct ne_tensor* src1, struct ne_tensor* dst) {
+  switch (src0->type) {
+    case NE_TYPE_F16: {
+      ne_compute_forward_conv_1d_s2_ph_f16_f32(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_F32: {
+      ne_compute_forward_conv_1d_s2_ph_f32(params, src0, src1, dst);
+    } break;
+    default: {
+      NE_ASSERT(false);
+    } break;
+  }
+}
+
+// ne_compute_forward_conv_1d
+
+static void ne_compute_forward_conv_1d(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                       const struct ne_tensor* src1, struct ne_tensor* dst) {
+  const int32_t s0 = ((const int32_t*)(dst->op_params))[0];
+  const int32_t p0 = ((const int32_t*)(dst->op_params))[1];
+  const int32_t d0 = ((const int32_t*)(dst->op_params))[2];
+  NE_ASSERT(d0 == 1);                // dilation not supported
+  NE_ASSERT(p0 == src0->ne[0] / 2);  // only half padding supported
+  if (s0 == 1) {
+    ne_compute_forward_conv_1d_s1_ph(params, src0, src1, dst);
+  } else if (s0 == 2) {
+    ne_compute_forward_conv_1d_s2_ph(params, src0, src1, dst);
+  } else {
+    NE_ASSERT(false);  // only stride 1 and 2 supported
+  };
 }
 
 // ne_flash_attn
@@ -9810,6 +10268,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     } break;
     case NE_OP_CONV_1D_2S: {
       ne_compute_forward_conv_1d_2s(params, tensor->src0, tensor->src1, tensor);
+    } break;
+    case NE_OP_CONV_1D: {
+      ne_compute_forward_conv_1d(params, tensor->src0, tensor->src1, tensor);
     } break;
     case NE_OP_FLASH_ATTN: {
       ne_compute_forward_flash_attn(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor);

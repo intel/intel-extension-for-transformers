@@ -45,6 +45,7 @@
 #define NE_MAX_CONTEXTS 64
 #define NE_MAX_OPT 4
 #define NE_DEFAULT_N_THREADS 4
+#define NE_MAX_OP_PARAMS 32
 
 #define NE_SIZE_CALC -1
 
@@ -126,6 +127,9 @@ struct ne_tensor {
   enum ne_op op;
 
   bool is_param;
+
+  // op params - allocated as int32_t for alignment
+  int32_t op_params[NE_MAX_OP_PARAMS / sizeof(int32_t)];
 
   struct ne_tensor* grad;
   struct ne_tensor* src0;

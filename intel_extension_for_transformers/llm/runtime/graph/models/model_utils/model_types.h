@@ -77,7 +77,7 @@ enum model_archs {
   MODEL_BLOOM,
   MODEL_BAICHUAN,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM
+  MODEL_CHATGLM,
 };
 
 static const size_t MB = 1024 * 1024;
