@@ -18,7 +18,7 @@
 import time
 import base64
 import asyncio
-from typing import Optional
+from typing import Optional, Dict
 from fastapi.routing import APIRouter
 from fastapi import APIRouter
 from ...cli.log import logger
@@ -473,7 +473,12 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
 async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
     result = talkingbot_embd(file=file)
     res = await asyncio.gather(result)
-    final_result = res['spk_id']
+    if isinstance(res, List):
+        final_result = res[0]['spk_id']
+    elif isinstance(res, Dict):
+        final_result = res['spk_id']
+    else:
+        return "Error occurred."
     return {"voice_id": final_result}
 
 

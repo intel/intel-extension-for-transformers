@@ -113,7 +113,7 @@ router = RetrievalAPIRouter()
 #     return {"knowledge_base_id": fake_kb_id}
 
 
-@router.post("/v1/aiphotos/create_kb")
+@router.post("/v1/aiphotos/askdoc/create_kb")
 async def retrieval_create_kb(file: UploadFile = File(...)):
     global plugins
     filename = file.filename
@@ -148,7 +148,7 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
     return {"knowledge_base_id": "local_kb_id"}
 
 
-@router.post("/v1/aiphotos/chat")
+@router.post("/v1/aiphotos/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
     # try:
     #     record_request(request_url="/v1/askdoc/chat",
