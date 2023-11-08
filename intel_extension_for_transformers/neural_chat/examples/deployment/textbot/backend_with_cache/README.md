@@ -1,4 +1,4 @@
-This README is intended to guide you through setting up the backend for a text chatbot using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
+This README is intended to guide you through setting up the backend for a text chatbot with cache plugin using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
 
 
 # Setup Conda
@@ -8,7 +8,7 @@ First, you need to install and configure the Conda environment:
 ```shell
 # Download and install Miniconda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda*.sh
+bash `Miniconda*.sh`
 source ~/.bashrc
 ```
 
@@ -29,12 +29,10 @@ conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typi
 conda install jemalloc gperftools -c conda-forge -y
 ```
 
-Install other dependencies using pip
+Install other dependencies using pip:
 
->**Note**: Please make sure transformers version is 4.34.1
 ```bash
 pip install -r ../../../requirements.txt
-pip install transformers==4.34.1
 ```
 
 # Configure the textbot.yaml
@@ -47,6 +45,7 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | port                | 8000                                   |
 | model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
 | device              | "cpu"                                  |
+| cache.enable        | true                                  |
 | tasks_list          | ['textchat']                           |
 
 
