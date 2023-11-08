@@ -164,6 +164,7 @@ def main():
 
         image_path = "https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png"
         image = load_image(image_path)
+        image = image.resize((512, 512))
 
         image = pipeline("Cartoonize the following image", image=image, engine_graph=neural_engine_graph).images[0]
         image.save("image.png")
