@@ -13,9 +13,8 @@
 #  limitations under the License.
 
 set(TARGET whisper)
-# add_library_w_warning(${TARGET} whisper.cpp whisper_utils.cpp ${MODEL_UTILS_SOURCE})
-add_executable(${TARGET} whisper_utils.cpp whisper.cpp)
+add_library_w_warning(${TARGET} whisper.cpp whisper_utils.cpp ${MODEL_UTILS_SOURCE})
+# add_executable(${TARGET} whisper_utils.cpp whisper.cpp)
 target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
+file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp" "whisper/whisper_utils.cpp")
 add_subdirectory(llama)
 add_subdirectory(gptj)
 add_subdirectory(mpt)

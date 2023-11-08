@@ -36,6 +36,12 @@
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
+#ifdef MODEL_NAME_ID
+#if MODEL_NAME_ID == 12
+#include "models/whisper/whisper_utils.cpp"
+#endif
+#endif
+
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
@@ -73,9 +79,6 @@ int main(int argc, char** argv) {
   params.model_name = MODEL_NAME;
   std::cout << "Welcome to use the " << params.model_name << " on the ITREX! " << std::endl;
 #endif
-  if (gpt_params_parse(argc, argv, params) == false) {
-    return 1;
-  }
 
   model_archs mt = model_name_to_arch::init().find(params.model_name);
   if (mt == MODEL_UNKNOWN) {
@@ -83,6 +86,208 @@ int main(int argc, char** argv) {
     exit(0);
   }
   params.model_arch = mt;
+
+  if (mt == MODEL_WHISPER) {
+    whisper_params params;
+
+    if (whisper_params_parse(argc, argv, params) == false) {
+        whisper_print_usage(argc, argv, params);
+        return 1;
+    }
+
+    if (params.fname_inp.empty()) {
+        fprintf(stderr, "error: no input files specified\n");
+        whisper_print_usage(argc, argv, params);
+        return 2;
+    }
+
+    if (params.language != "auto" && whisper_lang_id(params.language.c_str()) == -1) {
+        fprintf(stderr, "error: unknown language '%s'\n", params.language.c_str());
+        whisper_print_usage(argc, argv, params);
+        exit(0);
+    }
+
+    if (params.diarize && params.tinydiarize) {
+        fprintf(stderr, "error: cannot use both --diarize and --tinydiarize\n");
+        whisper_print_usage(argc, argv, params);
+        exit(0);
+    }
+
+    // whisper init
+
+    struct whisper_context * ctx = whisper_init_from_file(params.model.c_str());
+
+    if (ctx == nullptr) {
+        fprintf(stderr, "error: failed to initialize whisper context\n");
+        return 3;
+    }
+
+    // initialize openvino encoder. this has no effect on whisper.cpp builds that don't have OpenVINO configured
+    whisper_ctx_init_openvino_encoder(ctx, nullptr, params.openvino_encode_device.c_str(), nullptr);
+
+    for (int f = 0; f < (int) params.fname_inp.size(); ++f) {
+        const auto fname_inp = params.fname_inp[f];
+		const auto fname_out = f < (int) params.fname_out.size() && !params.fname_out[f].empty() ? params.fname_out[f] : params.fname_inp[f];
+
+        std::vector<float> pcmf32;               // mono-channel F32 PCM
+        std::vector<std::vector<float>> pcmf32s; // stereo-channel F32 PCM
+
+        if (!::read_wav(fname_inp, pcmf32, pcmf32s, params.diarize)) {
+            fprintf(stderr, "error: failed to read WAV file '%s'\n", fname_inp.c_str());
+            continue;
+        }
+
+        // print system information
+        {
+            fprintf(stderr, "\n");
+            fprintf(stderr, "system_info: n_threads = %d / %d | %s\n",
+                    params.n_threads*params.n_processors, std::thread::hardware_concurrency(), whisper_print_system_info());
+        }
+
+        // print some info about the processing
+        {
+            fprintf(stderr, "\n");
+            if (!whisper_is_multilingual(ctx)) {
+                if (params.language != "en" || params.translate) {
+                    params.language = "en";
+                    params.translate = false;
+                    fprintf(stderr, "%s: WARNING: model is not multilingual, ignoring language and translation options\n", __func__);
+                }
+            }
+            if (params.detect_language) {
+                params.language = "auto";
+            }
+            fprintf(stderr, "%s: processing '%s' (%d samples, %.1f sec), %d threads, %d processors, lang = %s, task = %s, %stimestamps = %d ...\n",
+                    __func__, fname_inp.c_str(), int(pcmf32.size()), float(pcmf32.size())/WHISPER_SAMPLE_RATE,
+                    params.n_threads, params.n_processors,
+                    params.language.c_str(),
+                    params.translate ? "translate" : "transcribe",
+                    params.tinydiarize ? "tdrz = 1, " : "",
+                    params.no_timestamps ? 0 : 1);
+
+            fprintf(stderr, "\n");
+        }
+
+        // run the inference
+        {
+            whisper_full_params wparams = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+
+            wparams.strategy = params.beam_size > 1 ? WHISPER_SAMPLING_BEAM_SEARCH : WHISPER_SAMPLING_GREEDY;
+
+            wparams.print_realtime   = false;
+            wparams.print_progress   = params.print_progress;
+            wparams.print_timestamps = !params.no_timestamps;
+            wparams.print_special    = params.print_special;
+            wparams.translate        = params.translate;
+            wparams.language         = params.language.c_str();
+            wparams.detect_language  = params.detect_language;
+            wparams.n_threads        = params.n_threads;
+            wparams.n_max_text_ctx   = params.max_context >= 0 ? params.max_context : wparams.n_max_text_ctx;
+            wparams.offset_ms        = params.offset_t_ms;
+            wparams.duration_ms      = params.duration_ms;
+
+            wparams.token_timestamps = params.output_wts || params.max_len > 0;
+            wparams.thold_pt         = params.word_thold;
+            wparams.max_len          = params.output_wts && params.max_len == 0 ? 60 : params.max_len;
+            wparams.split_on_word    = params.split_on_word;
+
+            wparams.speed_up         = params.speed_up;
+
+            wparams.tdrz_enable      = params.tinydiarize; // [TDRZ]
+
+            wparams.initial_prompt   = params.prompt.c_str();
+
+            wparams.greedy.best_of        = params.best_of;
+            wparams.beam_search.beam_size = params.beam_size;
+
+            wparams.temperature_inc  = params.no_fallback ? 0.0f : wparams.temperature_inc;
+            wparams.entropy_thold    = params.entropy_thold;
+            wparams.logprob_thold    = params.logprob_thold;
+
+            whisper_print_user_data user_data = { &params, &pcmf32s };
+
+            // this callback is called on each new segment
+            if (!wparams.print_realtime) {
+                wparams.new_segment_callback           = whisper_print_segment_callback;
+                wparams.new_segment_callback_user_data = &user_data;
+            }
+
+            // example for abort mechanism
+            // in this example, we do not abort the processing, but we could if the flag is set to true
+            // the callback is called before every encoder run - if it returns false, the processing is aborted
+            {
+                static bool is_aborted = false; // NOTE: this should be atomic to avoid data race
+
+                wparams.encoder_begin_callback = [](struct whisper_context * /*ctx*/, struct whisper_state * /*state*/, void * user_data) {
+                    bool is_aborted = *(bool*)user_data;
+                    return !is_aborted;
+                };
+                wparams.encoder_begin_callback_user_data = &is_aborted;
+            }
+
+            if (whisper_full_parallel(ctx, wparams, pcmf32.data(), pcmf32.size(), params.n_processors) != 0) {
+                fprintf(stderr, "%s: failed to process audio\n", argv[0]);
+                return 10;
+            }
+        }
+
+        // output stuff
+        {
+            printf("\n");
+
+            // output to text file
+            if (params.output_txt) {
+                const auto fname_txt = fname_out + ".txt";
+                output_txt(ctx, fname_txt.c_str(), params, pcmf32s);
+            }
+
+            // output to VTT file
+            if (params.output_vtt) {
+                const auto fname_vtt = fname_out + ".vtt";
+                output_vtt(ctx, fname_vtt.c_str(), params, pcmf32s);
+            }
+
+            // output to SRT file
+            if (params.output_srt) {
+                const auto fname_srt = fname_out + ".srt";
+                output_srt(ctx, fname_srt.c_str(), params, pcmf32s);
+            }
+
+            // output to WTS file
+            if (params.output_wts) {
+                const auto fname_wts = fname_out + ".wts";
+                output_wts(ctx, fname_wts.c_str(), fname_inp.c_str(), params, float(pcmf32.size() + 1000)/WHISPER_SAMPLE_RATE, pcmf32s);
+            }
+
+            // output to CSV file
+            if (params.output_csv) {
+                const auto fname_csv = fname_out + ".csv";
+                output_csv(ctx, fname_csv.c_str(), params, pcmf32s);
+            }
+
+            // output to JSON file
+            if (params.output_jsn) {
+                const auto fname_jsn = fname_out + ".json";
+                output_json(ctx, fname_jsn.c_str(), params, pcmf32s);
+            }
+
+            // output to LRC file
+            if (params.output_lrc) {
+                const auto fname_lrc = fname_out + ".lrc";
+                output_lrc(ctx, fname_lrc.c_str(), params, pcmf32s);
+            }
+        }
+    }
+
+    whisper_print_timings(ctx);
+    whisper_free(ctx);
+
+    return 0;
+  }
+
+  if (gpt_params_parse(argc, argv, params) == false) {
+    return 1;
+  }
 
   // save choice to use color for later
   // (note for later: this is a slightly awkward choice)

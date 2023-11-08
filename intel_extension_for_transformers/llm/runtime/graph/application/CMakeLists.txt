@@ -82,11 +82,13 @@ set(mymap_opt 8)
 set(mymap_bloom 9)
 set(mymap_chatglm2 10)
 set(mymap_chatglm 11)
+set(mymap_whisper 12)
+
 
 function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
  add_executable_w_warning(${TARGET} ${SRC})
   warning_check(${TARGET})
-  target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="${MODEL_NAME}")
+  target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="${MODEL_NAME}" -DMODEL_NAME_ID=${mymap_${MODEL_NAME}})
   target_link_libraries(${TARGET} PUBLIC ne_layers ${MODEL_LIB} common ${CMAKE_THREAD_LIBS_INIT})
   target_compile_features(${TARGET} PRIVATE cxx_std_11)
   if(TARGET BUILD_INFO)
@@ -111,5 +113,6 @@ compile_run(run_opt       main_run.cpp opt       opt)
 compile_run(run_bloom     main_run.cpp bloom     bloom)
 compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)
 compile_run(run_chatglm   main_run.cpp chatglm  chatglm)
+compile_run(run_whisper   main_run.cpp whisper  whisper)
 
 
