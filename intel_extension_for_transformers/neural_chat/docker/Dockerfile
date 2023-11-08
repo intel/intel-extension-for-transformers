@@ -103,6 +103,7 @@ RUN apt-get update && \
     git-lfs install
 
 # Download ITREX code
+SHELL ["/bin/bash", "--login", "-c"]
 RUN mkdir -p /intel-extension-for-transformers
 COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
