@@ -593,22 +593,24 @@ class AutoCausalLM(HuggingFaceAutoLM):
             sess_options = ort.SessionOptions()
             sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
             if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
-                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                decoder_session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                     os.path.join(pretrained, "decoder_model_merged.onnx"),
                     session_options=sess_options)
-                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                self.model = ORTModelForCausalLM(decoder_session,  # pylint: disable=E1121
                                                  model_config,
                                                  pretrained,
                                                  use_cache=True)
             elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
-                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                decoder_session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                     os.path.join(pretrained, "decoder_model.onnx"),
+                    session_options=sess_options)
+                decoder_with_past_session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                     os.path.join(pretrained, "decoder_with_past_model.onnx"),
                     session_options=sess_options)
-                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                self.model = ORTModelForCausalLM(decoder_session,  # pylint: disable=E1121
                                                  model_config,
                                                  pretrained,
-                                                 sessions[1],
+                                                 decoder_with_past_session,
                                                  use_cache=True)
             else:
                 sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
