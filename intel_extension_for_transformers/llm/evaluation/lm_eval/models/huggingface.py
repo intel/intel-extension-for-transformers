@@ -418,7 +418,7 @@ class HuggingFaceAutoLM(BaseLM):
         try:
             tokenizer.pad_token = tokenizer.eos_token
         except:
-            print("token.pad_token doesn't set to equal with tokenizer.eos_token.")
+            print("token.pad_token setting failed.")
         return tokenizer
 
     @property
@@ -641,10 +641,14 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
-        if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "chatglm":
+        if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm-6b":
             input_bs, input_len = inputs.shape
-            bos = torch.tensor([130001, 130004]).repeat(input_bs,1)
-            inputs = torch.cat((inputs, bos),1)
+            bos = torch.tensor([130001, 130004]).repeat(input_bs, 1)
+            inputs = torch.cat((eos,inputs), 1)
+        if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm2-6b":
+            input_bs, input_len = inputs.shape
+            eos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
+            inputs = torch.cat((eos,inputs), 1)
         output = self.model(inputs) if self.model_format != "onnx" else \
                 self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):
