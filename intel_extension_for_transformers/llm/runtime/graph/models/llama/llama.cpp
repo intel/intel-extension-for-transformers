@@ -231,7 +231,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(KQ_scaled, "KQ_scaled");
 
       // KQ_masked = mask_past(KQ_scaled)
-      if (n_total == 0 || !shift_roped_k) {  // TODO(Yi): shift roped-k with N > 1 next-token
+      if (N > 1 || !shift_roped_k) {  // TODO(Yi): shift roped-k with N > 1 next-token
         KQ_scaled = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
         ne_set_name(KQ_scaled, "KQ_masked");
       }

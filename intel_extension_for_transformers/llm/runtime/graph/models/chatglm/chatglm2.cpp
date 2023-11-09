@@ -200,7 +200,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         ne_set_name(attn_scores, "attn_scores");
         attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, attn_scale));
 
-        if (n_total == 0 || !shift_roped_k) {
+        if (N > 1 || !shift_roped_k) {
           // build attention mask for context input
           attn_scores = ne_reshape_3d(ctx0, attn_scores, n_cached, N,
                                       num_attention_heads);  // [heads, N, klen]

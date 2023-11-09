@@ -32,6 +32,7 @@ FROM ubuntu:${UBUNTU_VER} as cpu
 ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.9
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
@@ -48,8 +49,9 @@ RUN apt-get update \
 
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
-COPY . /intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -66,13 +68,6 @@ RUN conda init bash && \
     conda create -yn neuralchat python=${PYTHON_VERSION} && \
     echo "conda activate neuralchat" >> ~/.bashrc && \
     source ~/.bashrc
-
-## If local torch whl are feasible, use localfile to install, avoiding donwloading time
-COPY ./torch*.whl /
-RUN if [ -f /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-
 
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
@@ -101,15 +96,21 @@ FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installe
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
+ARG ITREX_VER=main
 
 RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
 # Download ITREX code
+SHELL ["/bin/bash", "--login", "-c"]
 RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf /intel-extension-for-transformers/* && rm -rf /intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} /intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
-COPY . /intel-extension-for-transformers
+
 # Build ITREX
 RUN cd /intel-extension-for-transformers && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
@@ -141,7 +142,8 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements_hpu.txt && \
     pip install transformers==4.34.1 && \
-    pip install accelerate==0.23.0
+    pip install accelerate==0.23.0 && \
+    pip install pymysql
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
