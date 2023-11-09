@@ -43,7 +43,7 @@ jobs:
                  python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
-        if: success() || failure()
+        if: always()
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-gha")
           if [[ ! -z "$cid" ]]; then docker exec "chatbotinfer-gha" bash -c "rm -rf /root/chatbot" && docker stop $cid && docker rm $cid; fi
