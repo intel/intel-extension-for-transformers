@@ -31,6 +31,37 @@ torch.ops.load_library(
 )
 
 
+class DropoutQBits_(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, probability):
+        mask = torch.ops.weight_only_jblasop.qbits_dropout_fwd(input, probability)
+        if any(ctx.needs_input_grad[:1]):
+            ctx.tensors = (mask, )
+        else:
+            ctx.tensors = (None, )
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        req_grad_input, _ = ctx.needs_input_grad
+        mask = ctx.tensors[0]
+        grad_input = None
+
+        if req_grad_input: grad_input = torch.ops.weight_only_jblasop.qbits_dropout_bwd(grad_output, mask)
+
+        return grad_input, None
+
+class DropoutQBits(torch.nn.Module):
+    def __init__(self, p=0.0):
+        super().__init__()
+        self.p = p
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        if self.training:
+            return DropoutQBits_.apply(input, self.p)
+        else:
+            return input
+
 class ParamsQBits(torch.nn.Parameter):
     def __new__(
             cls,
@@ -135,6 +166,8 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
 
         init_lora_weights = kwargs.pop("init_lora_weights", True)
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
+        if lora_dropout > 0:
+            self.lora_dropout = torch.nn.ModuleDict({adapter_name: DropoutQBits(p=lora_dropout)})
         self.active_adapter = adapter_name
 
     def merge(self):
