@@ -161,12 +161,18 @@ async def retrieval_chat(request: AskDocRequest):
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig(max_new_tokens=512)
+    config = GenerationConfig(max_new_tokens=request.max_new_tokens)
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
         if attr == "stream":
             continue
         setattr(config, attr, value)
+    # non-stream mode
+    if not request.stream:
+        response = chatbot.predict(query=request.query, config=config)
+        formatted_response = response.replace('\n', '<br/>')
+        return formatted_response
+    # stream mode
     generator, link = chatbot.predict_stream(query=request.query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
