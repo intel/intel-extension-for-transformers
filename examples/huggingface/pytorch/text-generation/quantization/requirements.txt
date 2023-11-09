@@ -8,6 +8,6 @@ torch==2.1.0+cpu
 transformers==4.34.1
 intel_extension_for_pytorch
 git+https://github.com/intel/neural-compressor.git
-git+https://github.com/huggingface/optimum.git@deda7e3be202e2a21a7d53dd5c284e47f9c646b7
 git+https://github.com/huggingface/optimum-intel.git@34e85a267dcf92dc25348ef53d8b79ae928fc9b8
+git+https://github.com/huggingface/optimum.git@deda7e3be202e2a21a7d53dd5c284e47f9c646b7
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
