@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise &mdash; Intel® Extension for Transformers 0.1.dev1+g315ccdf documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise">
+<span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-audio-utils-reduce-noise"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TorchGate</span></code></a></p></td>
+<td><p>A PyTorch module that applies a spectral gate to an input signal.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.amp_to_db" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.amp_to_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">amp_to_db</span></code></a>(.eps[, top_db])</p></td>
+<td><p>Convert the input tensor from amplitude to decibel scale.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.temperature_sigmoid" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.temperature_sigmoid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temperature_sigmoid</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>Apply a sigmoid function with temperature scaling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.linspace" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.linspace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linspace</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>Generate a linearly spaced 1-D tensor.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.amp_to_db">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.</span></span><span class="sig-name descname"><span class="pre">amp_to_db</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">torch.finfo(torch.float64).eps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.amp_to_db" title="Link to this definition"></a></dt>
+<dd><p>Convert the input tensor from amplitude to decibel scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../llm/runtime/deprecated/compile/ops/empty_ops/index.html#intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Input"><em>Input</em></a>) – </p>
+</dd>
+<dt class="field-even">Keyword Arguments<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>instability.</strong><strong>]</strong> (<em>eps {</em><em>[</em><em>float</em><em>]</em><em>} --</em><em> [</em><em>Small value to avoid numerical</em>) – (default: {torch.finfo(torch.float64).eps})</p></li>
+<li><p><strong>peak</strong><strong>]</strong> (<em>top_db {</em><em>[</em><em>float</em><em>]</em><em>} --</em><em> [</em><em>threshold the output at top_db below the</em>) – `             (default: {40})</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>[torch.Tensor] – [Output tensor in decibel scale.]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.temperature_sigmoid">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.</span></span><span class="sig-name descname"><span class="pre">temperature_sigmoid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.temperature_sigmoid" title="Link to this definition"></a></dt>
+<dd><p>Apply a sigmoid function with temperature scaling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tensor.</strong><strong>]</strong> (<em>x {</em><em>[</em><em>torch.Tensor</em><em>]</em><em>} --</em><em> [</em><a class="reference internal" href="../../../../../../llm/runtime/deprecated/compile/ops/empty_ops/index.html#intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Input"><em>Input</em></a>) – </p></li>
+<li><p><strong>sigmoid.</strong><strong>]</strong> (<em>temp_coeff {</em><em>[</em><em>float</em><em>]</em><em>} --</em><em> [</em><em>Parameter that controls the slope</em><em> of </em><em>the</em>) – </p></li>
+<li><p><strong>sigmoid.</strong><strong>]</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>[torch.Tensor] – [Output tensor after applying the sigmoid with temperature scaling.]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.linspace">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.</span></span><span class="sig-name descname"><span class="pre">linspace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.types.Number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.types.Number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.linspace" title="Link to this definition"></a></dt>
+<dd><p>Generate a linearly spaced 1-D tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sequence.</strong><strong>]</strong> (<em>start {</em><em>[</em><em>Number</em><em>]</em><em>} --</em><em> [</em><em>The starting value</em><em> of </em><em>the</em>) – </p></li>
+<li><p><strong>sequence</strong> (<em>stop {</em><em>[</em><em>Number</em><em>]</em><em>} --</em><em> [</em><em>The end value</em><em> of </em><em>the</em>) – In that case, the sequence consists of all but the last of <code class="docutils literal notranslate"><span class="pre">num</span> <span class="pre">+</span> <span class="pre">1</span></code>
+evenly spaced samples, so that <cite>stop</cite> is excluded. Note that the step
+size changes when <cite>endpoint</cite> is False.]</p></li>
+<li><p><strong>False.</strong> (<em>unless endpoint is set to</em>) – In that case, the sequence consists of all but the last of <code class="docutils literal notranslate"><span class="pre">num</span> <span class="pre">+</span> <span class="pre">1</span></code>
+evenly spaced samples, so that <cite>stop</cite> is excluded. Note that the step
+size changes when <cite>endpoint</cite> is False.]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>non-negative.</strong><strong>]</strong> (<em>num {</em><em>[</em><em>int</em><em>]</em><em>} --</em><em> [</em><em>Number</em><em> of </em><em>samples to generate. Default is 50. Must be</em>) – </p></li>
+<li><p><strong>included.</strong> (<em>endpoint {</em><em>[</em><em>bool</em><em>]</em><em>} --</em><em> [</em><em>If True</em><em>, </em><em>stop is the last sample. Otherwise</em><em>, </em><em>it is not</em>) – Default is True.]</p></li>
+<li><p><strong>function.</strong><strong>]</strong> (<em>**kwargs --</em><em> [</em><em>Additional arguments to be passed to the underlying PyTorch linspace</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>[torch.Tensor] – [1-D tensor of <cite>num</cite> equally spaced samples from <cite>start</cite> to <cite>stop</cite>.]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.</span></span><span class="sig-name descname"><span class="pre">TorchGate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonstationary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_std_thresh_stationary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_thresh_nonstationary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_coeff_nonstationary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_movemean_nonstationary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prop_decrease</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_fft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">win_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hop_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_mask_smooth_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_mask_smooth_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate" title="Link to this definition"></a></dt>
+<dd><p>A PyTorch module that applies a spectral gate to an input signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal.</strong> (<em>sr {int} -- Sample rate</em><em> of </em><em>the input</em>) – </p></li>
+<li><p><strong>(</strong><strong>default</strong> (<em>defaults to win_length // 4</em>) – {False}).</p></li>
+<li><p><strong>for</strong> (<em>n_thresh_nonstationary {float} -- Number</em><em> of </em><em>multiplies above smoothed magnitude spectrogram.</em>) – stationary masking (default: {1.5}).</p></li>
+<li><p><strong>for</strong> – non-stationary masking (default: {1.3}).</p></li>
+<li><p><strong>(</strong><strong>default</strong> – {0.1}).</p></li>
+<li><p><strong>masking</strong> (<em>n_movemean_nonstationary {int} -- Number</em><em> of </em><em>samples for moving average smoothing in non-stationary</em>) – (default: {20}).</p></li>
+<li><p><strong>(</strong><strong>default</strong> – {1.0}).</p></li>
+<li><p><strong>(</strong><strong>default</strong> – {1024}).</p></li>
+<li><p><strong>None</strong> (<em>hop_length {</em><em>[</em><em>int</em><em>]</em><em>} -- Hop length for STFT. If</em>) – {None}).</p></li>
+<li><p><strong>(</strong><strong>default</strong> – {None}).</p></li>
+<li><p><strong>None</strong> – {None}).</p></li>
+<li><p><strong>(</strong><strong>default</strong> – {None}).</p></li>
+<li><p><strong>mask</strong> (<em>time_mask_smooth_ms {float} -- Time smoothing width for</em>) – (default: {500}).</p></li>
+<li><p><strong>mask</strong> – (default: {50}).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/utils/reduce_noise.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate.forward" title="Link to this definition"></a></dt>
+<dd><p>Apply the proposed algorithm to the input signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>torch.Tensor</em>) – The input audio signal, with shape (batch_size, signal_length).</p></li>
+<li><p><strong>xn</strong> (<em>Optional</em><em>[</em><em>torch.Tensor</em><em>]</em>) – The noise signal used for stationary noise reduction. If <cite>None</cite>, the input
+signal is used as the noise signal. Default: <cite>None</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The denoised audio signal, with the same shape as the input signal.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fb6c7ee1de0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

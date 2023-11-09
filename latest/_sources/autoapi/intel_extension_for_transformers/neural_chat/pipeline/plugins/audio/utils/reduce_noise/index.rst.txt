@@ -1,0 +1,112 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.TorchGate
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.amp_to_db
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.temperature_sigmoid
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.reduce_noise.linspace
+
+
+
+.. py:function:: amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) -> torch.Tensor
+
+   Convert the input tensor from amplitude to decibel scale.
+
+   :param x {[torch.Tensor]} -- [Input tensor.]:
+
+   :keyword eps {[float]} -- [Small value to avoid numerical instability.]: (default: {torch.finfo(torch.float64).eps})
+   :keyword top_db {[float]} -- [threshold the output at ``top_db`` below the peak]: `             (default: {40})
+
+   :returns: [torch.Tensor] -- [Output tensor in decibel scale.]
+
+
+.. py:function:: temperature_sigmoid(x: torch.Tensor, x0: float, temp_coeff: float) -> torch.Tensor
+
+   Apply a sigmoid function with temperature scaling.
+
+   :param x {[torch.Tensor]} -- [Input tensor.]:
+   :param x0 {[float]} -- [Parameter that controls the threshold of the sigmoid.]:
+   :param temp_coeff {[float]} -- [Parameter that controls the slope of the sigmoid.]:
+
+   :returns: [torch.Tensor] -- [Output tensor after applying the sigmoid with temperature scaling.]
+
+
+.. py:function:: linspace(start: torch.types.Number, stop: torch.types.Number, num: int = 50, endpoint: bool = True, **kwargs) -> torch.Tensor
+
+   Generate a linearly spaced 1-D tensor.
+
+   :param start {[Number]} -- [The starting value of the sequence.]:
+   :param stop {[Number]} -- [The end value of the sequence: In that case, the sequence consists of all but the last of ``num + 1``
+                                                             evenly spaced samples, so that `stop` is excluded. Note that the step
+                                                             size changes when `endpoint` is False.]
+   :param unless `endpoint` is set to False.: In that case, the sequence consists of all but the last of ``num + 1``
+                                              evenly spaced samples, so that `stop` is excluded. Note that the step
+                                              size changes when `endpoint` is False.]
+
+   :keyword num {[int]} -- [Number of samples to generate. Default is 50. Must be non-negative.]:
+   :keyword endpoint {[bool]} -- [If True, `stop` is the last sample. Otherwise, it is not included.: Default is True.]
+   :keyword \*\*kwargs -- [Additional arguments to be passed to the underlying PyTorch `linspace` function.]:
+
+   :returns: [torch.Tensor] -- [1-D tensor of `num` equally spaced samples from `start` to `stop`.]
+
+
+.. py:class:: TorchGate(sr: int, nonstationary: bool = False, n_std_thresh_stationary: float = 1.5, n_thresh_nonstationary: float = 1.3, temp_coeff_nonstationary: float = 0.1, n_movemean_nonstationary: int = 20, prop_decrease: float = 1.0, n_fft: int = 1024, win_length: bool = None, hop_length: int = None, freq_mask_smooth_hz: float = 500, time_mask_smooth_ms: float = 50)
+
+
+
+
+   A PyTorch module that applies a spectral gate to an input signal.
+
+   :param sr {int} -- Sample rate of the input signal.:
+   :param nonstationary {bool} -- Whether to use non-stationary or stationary masking (default: {False}).
+   :param n_std_thresh_stationary {float} -- Number of standard deviations above mean to threshold noise for: stationary masking (default: {1.5}).
+   :param n_thresh_nonstationary {float} -- Number of multiplies above smoothed magnitude spectrogram. for: non-stationary masking (default: {1.3}).
+   :param temp_coeff_nonstationary {float} -- Temperature coefficient for non-stationary masking (default: {0.1}).
+   :param n_movemean_nonstationary {int} -- Number of samples for moving average smoothing in non-stationary masking: (default: {20}).
+   :param prop_decrease {float} -- Proportion to decrease signal by where the mask is zero (default: {1.0}).
+   :param n_fft {int} -- Size of FFT for STFT (default: {1024}).
+   :param win_length {[int]} -- Window length for STFT. If None: {None}).
+   :param defaults to `n_fft` (default: {None}).
+   :param hop_length {[int]} -- Hop length for STFT. If None: {None}).
+   :param defaults to `win_length` // 4 (default: {None}).
+   :param freq_mask_smooth_hz {float} -- Frequency smoothing width for mask: (default: {500}).
+   :type freq_mask_smooth_hz {float} -- Frequency smoothing width for mask: in Hz
+   :param time_mask_smooth_ms {float} -- Time smoothing width for mask: (default: {50}).
+   :type time_mask_smooth_ms {float} -- Time smoothing width for mask: in ms
+
+   .. py:method:: forward(x: torch.Tensor, xn: Optional[torch.Tensor] = None) -> torch.Tensor
+
+      Apply the proposed algorithm to the input signal.
+
+      :param x: The input audio signal, with shape (batch_size, signal_length).
+      :type x: torch.Tensor
+      :param xn: The noise signal used for stationary noise reduction. If `None`, the input
+                 signal is used as the noise signal. Default: `None`.
+      :type xn: Optional[torch.Tensor]
+
+      :returns: The denoised audio signal, with the same shape as the input signal.
+      :rtype: torch.Tensor
+
+
+
