@@ -116,6 +116,9 @@ public:
 
         /// @brief Constructs arguments with default method.
         inline arguments_t() = default;
+        // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
+        // Please check if you need to add self-define destructor
+        // ~arguments_t(){}
 
         /// @brief Set for device copyable
         static constexpr bool host_callable = true;
@@ -141,7 +144,7 @@ public:
                 matC_base_t matC_base_, uint32_t matC_ld_,
                 matD_base_t matD_base_, uint32_t matD_ld_,
                 matatomic_sync_base_t matatomic_sync_base_,
-                uint32_t matatomic_sync_ld_, dispatch_stream_k stream_k_args_,
+                uint32_t matatomic_sync_ld_, dispatch_stream_k &stream_k_args_,
                 epilogue_args_t epilogue_args_ = {})
             : matrix_m(matrix_m_)
             , matrix_k(matrix_k_)

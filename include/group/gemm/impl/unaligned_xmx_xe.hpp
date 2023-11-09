@@ -176,6 +176,9 @@ public:
 
         /// @brief Default construct.
         inline arguments_t() = default;
+        // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
+        // Please check if you need to add self-define destructor
+        // ~arguments_t(){}
 
         /// @brief Constructs a new arguments t object.
         /// @param matA_desc Is the memory description of matA, including base, shape and coordinate.

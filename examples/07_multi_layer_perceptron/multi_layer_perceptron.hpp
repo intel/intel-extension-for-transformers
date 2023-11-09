@@ -157,6 +157,9 @@ public:
 
         /// @brief Constructs arguments with default method.
         inline arguments_t() = default;
+        // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
+        // Please check if you need to add self-define destructor
+        // ~arguments_t(){}
 
         /// @brief Set for device copyable
         static constexpr bool host_callable = true;
