@@ -96,11 +96,14 @@ def parse_args():
     parser.add_argument("--ir_path", default="./ir", type=str, help="Neural engine IR path.")
     parser.add_argument("--name", default="output_image", type=str, help="output image name.")
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
-    parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
     parser.add_argument("--steps", type=int, default=20, help="denoising steps")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
+
+    # for img2img
+    parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
     parser.add_argument("--prompts", type=str, default="Cartoonize the following image", help="prompts for img2img")
+    parser.add_argument("--image", type=str, default="https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png", help="the original image for the img2img pipeline")
     return parser.parse_args()
 
 
@@ -163,12 +166,13 @@ def main():
             args.input_model, torch_dtype=torch.float32, use_auth_token=True
         )
 
-        image_path = "https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png"
+        image_path = args.image
         image = load_image(image_path)
         image = image.resize((512, 512))
 
-        image = pipeline(args.prompts, image=image, engine_graph=neural_engine_graph).images[0]
-        image.save("image.png")
+        image = pipeline(args.prompts, image=image, engine_graph=neural_engine_graph, num_inference_steps=args.steps).images[0]
+        save_time = time.strftime("_%H_%M_%S")
+        image.save("image" + save_time + '.png')
 
     return
 
