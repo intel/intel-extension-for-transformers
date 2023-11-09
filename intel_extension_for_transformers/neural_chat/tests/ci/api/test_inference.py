@@ -98,7 +98,7 @@ class UnitTest(unittest.TestCase):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""
-        results, link = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.")
+        results = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.")
         for text in results:
             stream_text += text
             print(text)

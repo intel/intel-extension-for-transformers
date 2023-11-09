@@ -87,7 +87,10 @@ class TextChatAPIRouter(APIRouter):
                 setattr(config, attr, value)
             buffered_texts = ""
             if request.stream:
-                generator, link = chatbot.predict_stream(query=request.prompt, config=config)
+                if is_plugin_enabled("retrieval"):
+                    generator, link = chatbot.predict_stream(query=request.prompt, config=config)
+                else:
+                    generator= chatbot.predict_stream(query=request.prompt, config=config)
                 if not self.is_generator(generator):
                     generator = (generator,)
                 def stream_generator():
@@ -115,7 +118,10 @@ class TextChatAPIRouter(APIRouter):
                         plugins["cache"]["instance"].post_llm_inference_actions(request.prompt, buffered_texts)
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             else:
-                response = chatbot.predict(query=request.prompt, config=config)
+                if is_plugin_enabled("retrieval"):
+                    generator, link = chatbot.predict_stream(query=request.prompt, config=config)
+                else:
+                    generator = chatbot.predict_stream(query=request.prompt, config=config)
         except Exception as e:
             logger.error(f"An error occurred: {e}")
         else:
