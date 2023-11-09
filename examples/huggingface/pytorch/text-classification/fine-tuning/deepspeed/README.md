@@ -43,7 +43,7 @@ GLUE is made up of a total of 9 different tasks. Here is how to run the script o
 export TASK_NAME=mrpc
 
 deepspeed --num_gpus=12 run_glue_deepspeed.py \
-  --model_name_or_path Llama-2-7b-hf \
+  --model_name_or_path meta-llama/Llama-2-7b-hf \
   --task_name $TASK_NAME \
   --max_length 128 \
   --per_device_train_batch_size 32 \
