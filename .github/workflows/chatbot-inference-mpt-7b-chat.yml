@@ -10,7 +10,7 @@ concurrency:
 jobs:
   inference:
     name: inference test
-    runs-on: neural-chat
+    runs-on: neural-chat-inference
     steps:
       - name: Checkout
         uses: actions/checkout@v2
