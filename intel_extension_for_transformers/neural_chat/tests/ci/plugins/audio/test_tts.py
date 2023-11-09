@@ -42,6 +42,7 @@ class TestTTS(unittest.TestCase):
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts = TextToSpeech(device=self.device)
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        self.tts_noise_reducer = TextToSpeech(device=self.device, reduce_noise=True)
         shutil.rmtree('./tmp_audio', ignore_errors=True)
         os.mkdir('./tmp_audio')
 
@@ -100,6 +101,13 @@ class TestTTS(unittest.TestCase):
             spk_embed = self.tts.create_speaker_embedding("../../../../assets/audio/sample.wav")
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
+
+    def test_tts_remove_noise(self):
+        text = "hello there."
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/5.wav")
+        output_audio_path = self.tts_noise_reducer.text2speech(text, output_audio_path, voice="default")
+        self.assertTrue(os.path.exists(output_audio_path))
+
 
 if __name__ == "__main__":
     unittest.main()
