@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
 * [2023/11] Released [**Fast, accurate, and infinite LLM inference**](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/docs/infinite_inference.md) with improved [StreamingLLM](https://arxiv.org/abs/2309.17453) on Intel CPUs!
 * [2023/11] Our paper [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) has been accepted by **NeurIPS'23** on Efficient Natural Language and Speech Processing. Thanks to all the collaborators!
 * [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatible runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
