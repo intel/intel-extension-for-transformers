@@ -122,7 +122,7 @@ def get_example_inputs_for_trace(model, quantization_config=None, return_type="d
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
     """
-    if quantization_config and hasattr(quantization_config, "example_inputs"):
+    if quantization_config and quantization_config.example_inputs is not None:
         example_inputs = quantization_config.example_inputs
         input_ids = example_inputs["input_ids"]
         input_bs, input_len = input_ids.shape
