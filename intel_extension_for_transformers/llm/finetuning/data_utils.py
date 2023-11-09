@@ -62,6 +62,11 @@ class CompletionDataPreprocess:
         elif "stack-exchange-instruction" in self.dataset_name:
             self.prompt_template = PromptTemplate("question_answer")
             self.key_role_map = [('question', 0), ('response', 1)]
+        else:
+            raise NotImplementedError(
+                f"Unsupported dataset {dataset_name}, "
+                "only supports stack-exchange-instruction and Alpaca liked dataset now."
+            )
 
 
     def create_data(self, examples):
