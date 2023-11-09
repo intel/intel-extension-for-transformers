@@ -633,6 +633,7 @@ struct model_model_loader {
         auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp); 
         ne_jblas::SS4Fp32 dst_w(src_w->mCoreType);
         dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        dst_w.mPrologueID = src_tmp->mPrologueID;
         dst_w.assign((int8_t*)(*dst));
         // take the weight out and split
         size_t n_block = src_w->mNPad / NTILE / world_size_n;
@@ -684,6 +685,7 @@ struct model_model_loader {
         auto src_w = dynamic_cast<ne_jblas::SS8Fp32*>(src_tmp); 
         ne_jblas::SS8Fp32 dst_w(src_w->mCoreType);
         dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        dst_w.mPrologueID = src_tmp->mPrologueID;
         dst_w.assign((int8_t*)(*dst));
         // take the weight out and split
         size_t n_block = src_w->mNPad / NTILE / world_size_n;
@@ -732,6 +734,9 @@ struct model_model_loader {
         }
       }
     }
+    // auto dst_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*dst);
+    // assert(dst_tmp != nullptr);
+    // assert(src_tmp->mPrologueID == dst_tmp->mPrologueID);
   }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
