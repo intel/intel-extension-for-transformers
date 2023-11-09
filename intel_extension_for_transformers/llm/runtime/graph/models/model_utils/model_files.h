@@ -615,8 +615,8 @@ struct model_model_loader {
     }
   }
 
-  void jblas_split_weight(void* src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
-    auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(src);
+  void jblas_split_weight(void** src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
+    auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*src);
     // TODO adapt NTILE and KTILE from CoreType
     int NTILE = 48;
     int KTILE = 4;
@@ -644,7 +644,7 @@ struct model_model_loader {
           auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
           auto d_off_ptr = dst_w.WPtr() + d_n_id * dst_w.mKPad * NTILE / 2;
           auto off_size = dst_w.mKPad * NTILE / 2;
-          memcpy(s_off_ptr, d_off_ptr, off_size);
+          memcpy(d_off_ptr, s_off_ptr, off_size);
           d_n_id += 1;
         }
         // take the scale out and split
@@ -655,7 +655,7 @@ struct model_model_loader {
           size_t s_k_offset = k_rank * s_kblks / world_size_k;
           auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
           auto d_off_ptr = (float*)dst_w.mSPtr + d_n_id * d_kblks; 
-          memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+          memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
           d_n_id += 1;
         }
         // take the zp out and split
@@ -665,7 +665,7 @@ struct model_model_loader {
             size_t s_k_offset = k_rank * s_kblks / world_size_k;
             auto s_off_ptr = (float*)src_w->mZPtr + s_n_offset + s_k_offset;
             auto d_off_ptr = (float*)dst_w.mZPtr + d_n_id * d_kblks; 
-            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
         }
@@ -676,7 +676,7 @@ struct model_model_loader {
             size_t s_k_offset = k_rank * s_kblks / world_size_k;
             auto s_off_ptr = (float*)src_w->mRPtr + s_n_offset + s_k_offset;
             auto d_off_ptr = (float*)dst_w.mRPtr + d_n_id * d_kblks; 
-            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
         }
@@ -696,7 +696,7 @@ struct model_model_loader {
           auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
           auto d_off_ptr = dst_w.WPtr() + d_n_id * dst_w.mKPad * NTILE;
           auto off_size = dst_w.mKPad * NTILE;
-          memcpy(s_off_ptr, d_off_ptr, off_size);
+          memcpy(d_off_ptr, s_off_ptr, off_size);
           d_n_id += 1;
         }
         // take the scale out and split
@@ -707,7 +707,7 @@ struct model_model_loader {
           size_t s_k_offset = k_rank * s_kblks / world_size_k;
           auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
           auto d_off_ptr = (float*)dst_w.mSPtr + d_n_id * d_kblks; 
-          memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+          memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
           d_n_id += 1;
         }
         // take the zp out and split
@@ -717,7 +717,7 @@ struct model_model_loader {
             size_t s_k_offset = k_rank * s_kblks / world_size_k;
             auto s_off_ptr = (float*)src_w->mZPtr + s_n_offset + s_k_offset;
             auto d_off_ptr = (float*)dst_w.mZPtr + d_n_id * d_kblks; 
-            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
         }
@@ -728,7 +728,7 @@ struct model_model_loader {
             size_t s_k_offset = k_rank * s_kblks / world_size_k;
             auto s_off_ptr = (float*)src_w->mRPtr + s_n_offset + s_k_offset;
             auto d_off_ptr = (float*)dst_w.mRPtr + d_n_id * d_kblks; 
-            memcpy(s_off_ptr, d_off_ptr, dst_w.mCStep);
+            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
         }
@@ -786,9 +786,13 @@ struct model_model_loader {
       tmp_buf.resize(lt.size * lt.world_size);
       file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
+      // auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(tmp_buf.addr);
+      // auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp); 
+      // auto s_ptr = src_w->WPtr();
       if (lt.type == NE_TYPE_JBLAS) {
         void* dst_data = (void*)lt.data;
-        jblas_split_weight(tmp_buf.addr, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
+        void* src_data = (void*)(tmp_buf.addr);
+        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
       } else {
         // only copy part of weight form the tmp_buf of origin file
         memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
@@ -806,7 +810,8 @@ struct model_model_loader {
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
       if (lt.type == NE_TYPE_JBLAS) {
         void* dst_data = (void*)lt.data;
-        jblas_split_weight(tmp_buf.addr, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
+        void* src_data = (void*)(tmp_buf.addr);
+        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
       } else {
         size_t offset = 0;
         // different data type may have differnet per_row_size
