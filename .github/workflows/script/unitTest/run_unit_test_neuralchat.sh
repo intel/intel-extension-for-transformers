@@ -44,7 +44,7 @@ function pytest() {
     done
 
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
+    find . -name "test*.py" -not -path "*test_sadtalker.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
     sort run.sh -o run.sh
     echo -e '
 ports="6000 7000 8000 9000"

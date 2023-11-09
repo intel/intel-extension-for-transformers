@@ -142,7 +142,8 @@ def main(args):
         )
         shutil.rmtree("workspace", ignore_errors=True)
         os.mkdir("workspace")
-        # dict_keys(['source_image', 'source_semantics', 'frame_num', 'target_semantics_list', 'video_name', 'audio_path'])
+        # dict_keys(['source_image', 'source_semantics', 'frame_num',
+        #           'target_semantics_list', 'video_name', 'audio_path'])
         torch.save(data["source_image"], "workspace/source_image.pt")
         torch.save(data["source_semantics"], "workspace/source_semantics.pt")
         torch.save(data["target_semantics_list"], "workspace/target_semantics_list.pt")
