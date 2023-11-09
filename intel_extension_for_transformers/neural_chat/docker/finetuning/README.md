@@ -34,30 +34,76 @@ git clone https://github.com/intel/intel-extension-for-transformers.git
 
 ### On Xeon SPR Environment
 
+```bash
+cd /path/to/workspace/intel-extension-for-transformers
+docker build  --no-cache ./ --target cpu \ 
+        --build-arg REPO="${you_repo_path}" \  # Optional, set repository(default: https://github.com/intel/intel-extension-for-transformers.git)
+        --build-arg ITREX_VER="${branch}" \  # Optional, set branch(default: main)
+        --build-arg http_proxy="${http_proxy}" \  # Optional, use proxy
+        --build-arg https_proxy="${https_proxy}" \  # Optional, use proxy
+        --build-arg REPO_PATH="." \  # Optional, use local files
+        -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile \ 
+        -t chatbot_finetune:latest
+```
+
 If you need to set proxy settings:
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
+docker build --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune:latest . --target cpu
 ```
 
 If you don't need to set proxy settings:
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune:latest . --target cpu
+```
+
+If you need to use local files:
+```bash
+cd /path/to/workspace/intel-extension-for-transformers
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --build-arg REPO_PATH="." -t chatbot_finetune:latest . --target cpu
+```
+
+If you need to use forked repository or other branch:
+```bash
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile --build-arg REPO=<forked_repository> --build-arg ITREX_VER=<your_branch_name> -t chatbot_finetune:latest . --target cpu
 ```
 
 ### On Habana Gaudi Environment
 
+```bash
+cd /path/to/workspace/intel-extension-for-transformers
+docker build  --no-cache ./ --target hpu \ 
+        --build-arg REPO="${you_repo_path}" \  # Optional, set repository(default: https://github.com/intel/intel-extension-for-transformers.git)
+        --build-arg ITREX_VER="${branch}" \  # Optional, set branch(default: main)
+        --build-arg http_proxy="${http_proxy}" \  # Optional, use proxy
+        --build-arg https_proxy="${https_proxy}" \  # Optional, use proxy
+        --build-arg REPO_PATH="." \  # Optional, use local files
+        -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile \ 
+        -t chatbothabana:latest
+```
+
 If you need to set proxy settings:
 
 ```bash
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile  --target hpu
+DOCKER_BUILDKIT=1 docker build --network=host --tag chatbothabana:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --target hpu
 ```
 
 If you don't need to set proxy settings:
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target hpu
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbothabana:latest . --target hpu
+```
+
+If you need to use local files:
+```bash
+cd /path/to/workspace/intel-extension-for-transformers
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --build-arg REPO_PATH="." -t chatbothabana:latest . --target hpu
+```
+
+If you need to use forked repository or other branch:
+```bash
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile --build-arg REPO=<forked_repository> --build-arg ITREX_VER=<your_branch_name> -t chatbothabana:latest . --target hpu
 ```
 
 ### On Nvidia GPU Environment
@@ -80,15 +126,15 @@ Before creating your docker container, make sure the model has been downloaded t
 Then mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
+docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune" /bin/bash
 ```
 ### On Habana Gaudi Environment
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest 
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host chatbothabana:latest /bin/bash
 ```
 ### On Nvidia GPU Environment
 ```bash
-docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
+docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune" /bin/bash
 ```
 
 # Finetune
