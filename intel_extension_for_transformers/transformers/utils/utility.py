@@ -132,6 +132,8 @@ def get_example_inputs_for_trace(model, quantization_config=None, return_type="d
         if "past_key_values" not in example_inputs:
             example_inputs["past_key_values"] = tuple(past_key_values)
         example_inputs["attention_mask"] = attention_mask
+        if "position_ids" in example_inputs.keys():
+            example_inputs.pop("position_ids")
     else:
         input_ids = model.dummy_inputs["input_ids"]
         input_bs, input_len = input_ids.shape
