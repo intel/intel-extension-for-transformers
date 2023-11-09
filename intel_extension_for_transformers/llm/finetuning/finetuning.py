@@ -344,7 +344,8 @@ class Finetuning:
                 low_cpu_mem_usage=True,
             )
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
+                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE) or
+                re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
