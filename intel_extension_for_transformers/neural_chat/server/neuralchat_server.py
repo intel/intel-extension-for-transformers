@@ -35,6 +35,8 @@ from .restful.api import setup_router
 from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
+from transformers import BitsAndBytesConfig
+
 
 __all__ = ['NeuralChatServerExecutor']
 
@@ -97,7 +99,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         """
         device = config.get("device", "auto")
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
-        ipex_int8 = config.get("ipex_int8", False)
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
 
@@ -107,15 +108,41 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             if yaml_config.get("enable"):
                 plugin_config["enable"] = True
                 plugin_config["args"] = yaml_config.get("args", {})
- 
-        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, peft_path=peft_model_path)
+
+        loading_config = None
+        optimization_config = None
+        yaml_config = config.get("optimization", {})
+        ipex_int8 = yaml_config.get("ipex_int8", False)
+        use_llm_runtime = yaml_config.get("use_llm_runtime", {})
+        optimization_type = yaml_config.get("optimization_type", {})
+        compute_dtype = yaml_config.get("compute_dtype", {})
+        weight_dtype = yaml_config.get("weight_dtype", {})
+        mix_precision_dtype = yaml_config.get("mix_precision_dtype", {})
+        load_in_4bit = yaml_config.get("load_in_4bit", {})
+        bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
+        bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
+        bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
+        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+                                            peft_path=peft_model_path)
+        from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+        if optimization_type == "weight_only":
+            optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
+        elif optimization_type == "mix_precision":
+            optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
+        elif optimization_type == "bits_and_bytes":
+            optimization_config = BitsAndBytesConfig(load_in_4bit=load_in_4bit,
+                                                     bnb_4bit_quant_type=bnb_4bit_quant_type,
+                                                     bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
+                                                     bnb_4bit_compute_dtype=bnb_4bit_compute_dtype)
+
         # Create a dictionary of parameters for PipelineConfig
         params = {
             "model_name_or_path": model_name_or_path,
+            "tokenizer_name_or_path": tokenizer_name_or_path,
             "device": device,
             "plugins": plugins,
             "loading_config": loading_config,
-            "tokenizer_name_or_path": tokenizer_name_or_path
+            "optimization_config": optimization_config
         }
 
         pipeline_config = PipelineConfig(**params)

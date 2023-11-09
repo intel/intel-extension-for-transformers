@@ -17,23 +17,22 @@
 
 import subprocess
 import unittest
-import os
 import time
+import os
 import json
-import requests
+from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.skipTest("disable until fix random error")
         yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/ci/server/askdoc.yaml"
+            "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_ipex_int8.yaml"
         if os.path.exists(yaml_file_path):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
         else:
             command = 'neuralchat_server start \
-                        --config_file "./askdoc.yaml" \
+                        --config_file "./textchat_ipex_int8.yaml" \
                         --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,
@@ -41,23 +40,24 @@ class UnitTest(unittest.TestCase):
             time.sleep(30)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
+        self.client_executor = TextChatClientExecutor()
 
-    def tearDown(self) -> None:
-        import shutil
-        if os.path.exists("./out_persist"):
-            shutil.rmtree("./out_persist")
-        os.system("ps -ef |grep 'askdoc.yaml' |awk '{print $2}' |xargs kill -9")
+    def test_text_chat(self):
+        result = self.client_executor(
+            prompt="Tell me about Intel Xeon processors.",
+            server_ip="127.0.0.1",
+            port=7070)
+        self.assertEqual(result.status_code, 200)
+        print(json.loads(result.text))
 
-    def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
-        request = {
-            "query": "What is Intel oneAPI Compiler?",
-            "domain": "test",
-            "blob": "",
-            "filename": ""
-        }
-        res = requests.post(url, json.dumps(request))
-        self.assertEqual(res.status_code, 200)
+        result = self.client_executor(
+            prompt="Tell me about Intel Xeon processors.",
+            server_ip="127.0.0.1",
+            port=7070,
+            stream=True)
+        self.assertEqual(result.status_code, 200)
+        for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):
+            print(chunk)
 
 
 if __name__ == "__main__":
