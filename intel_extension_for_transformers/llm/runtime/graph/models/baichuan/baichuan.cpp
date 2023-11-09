@@ -41,9 +41,8 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
 static bool baichuan_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
