@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g315ccdf documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gdb35a30 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -205,8 +205,9 @@
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 | shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |</p>
 </section>
-<section id="chat-with-llama2">
-<h3>3. Chat with LLaMA2<a class="headerlink" href="#chat-with-llama2" title="Link to this heading"></a></h3>
+<section id="multi-round-chat">
+<h3>3. Multi-Round Chat<a class="headerlink" href="#multi-round-chat" title="Link to this heading"></a></h3>
+<p>Chat with LLaMA2:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
 
@@ -217,14 +218,33 @@
 <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="nb">input</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">prompt</span> <span class="o">==</span> <span class="s2">&quot;quit&quot;</span><span class="p">:</span>
         <span class="k">break</span>
     <span class="n">b_prompt</span> <span class="o">=</span> <span class="s2">&quot;[INST]</span><span class="si">{}</span><span class="s2">[/INST]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>  <span class="c1"># prompt template for llama2</span>
     <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">b_prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
     <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">num_beams</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">ctx_size</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+                <span class="n">num_beams</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ctx_size</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Chat with ChatGLM2:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;THUDM/chatglm2-6b&quot;</span>  <span class="c1"># or local path to model</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">prompt</span> <span class="o">==</span> <span class="s2">&quot;quit&quot;</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">build_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>  <span class="c1"># prompt template for chatglm2</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">([</span><span class="n">prompt</span><span class="p">],</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">num_beams</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ctx_size</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="mi">28</span><span class="p">,</span> <span class="n">repetition_penalty</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span> <span class="n">n_keep</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -383,7 +403,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fb6b3b28ee0> 
+   <jinja2.runtime.BlockReference object at 0x7fe625efd7b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
