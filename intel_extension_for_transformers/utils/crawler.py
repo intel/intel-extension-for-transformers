@@ -46,7 +46,8 @@ class Crawler:
             sublinks.append(str(links.get('href')))
         return sublinks
 
-    def get_hyperlink(self, soup, base_url):
+    @staticmethod
+    def get_hyperlink(soup, base_url):
         sublinks = []
         for links in soup.find_all('a'):
             link = str(links.get('href'))
@@ -96,9 +97,9 @@ class Crawler:
         if response is None:
             return []
         self.fetched_pool.add(sub_url)
-        soup = self.parse(response.text)
+        soup = Crawler.parse(response.text)
         base_url = self.get_base_url(sub_url)
-        sublinks = self.get_hyperlink(soup, base_url)
+        sublinks = Crawler.get_hyperlink(soup, base_url)
         if work:
             work(sub_url, soup)
         return sublinks
@@ -108,8 +109,8 @@ class Crawler:
         for url in pool:
             base_url = self.get_base_url(url)
             response = self.fetch(url)
-            soup = self.parse(response.text)
-            sublinks = self.get_hyperlink(soup, base_url)
+            soup = Crawler.parse(response.text)
+            sublinks = Crawler.get_hyperlink(soup, base_url)
             self.fetched_pool.add(url)
             url_pool.update(sublinks)
             depth = 0
@@ -128,7 +129,8 @@ class Crawler:
                     url_pool.update(sublinks)
                 depth += 1
 
-    def parse(self, html_doc):
+    @staticmethod
+    def parse(html_doc):
         soup = BeautifulSoup(html_doc, 'lxml')
         return soup
 
@@ -147,7 +149,8 @@ class Crawler:
         result = urlparse(url)
         return urlunparse((result.scheme, result.netloc, '', '', '', ''))
 
-    def clean_text(self, text):
+    @staticmethod
+    def clean_text(text):
         text = text.strip().replace('\r', '\n')
         text = re.sub(' +', ' ', text)
         text = re.sub('\n+', '\n', text)
@@ -181,19 +184,19 @@ class GithubCrawler(Crawler):
     def _get_new_pool(self, url):
         base_url = self.get_base_url(url)
         response = self.fetch(url)
-        soup = self.parse(response.text)
+        soup = Crawler.parse(response.text)
         return set([base_url + i for i in self._get_md_url(soup)]), set([base_url + i for i in self._get_row_url(soup)])
 
     def _update_pool(self, url, md_url_pool, url_pool):
         base_url = self.get_base_url(url)
         response = self.fetch(url)
-        soup = self.parse(response.text)
+        soup = Crawler.parse(response.text)
         md_url_pool.update(set([base_url + i for i in self._get_md_url(soup)]))
         url_pool.update(set([base_url + i for i in self._get_row_url(soup)]))
 
     def get_md_content(self, url):
         response = self.fetch(url)
-        soup = self.parse(response.text)
+        soup = Crawler.parse(response.text)
         element = soup.select_one('article')
         output = []
         if element is None:
@@ -287,7 +290,7 @@ class CircuitCrawler(Crawler):
         if not element:
             element = soup.find('body')
         text = element.text
-        text = self.clean_text(text)
+        text = Crawler.clean_text(text)
 
         file_name = soup.select_one('head > title')
         if file_name:
@@ -392,7 +395,6 @@ class LinkedinCrawler(Crawler):
             'TE': 'trailers'
         }
         res = self.fetch(info_url, headers=new_headers, max_times=1)
-        breakpoint()
 
     def login(self, username, password):
         url = 'https://www.linkedin.com'
@@ -443,11 +445,78 @@ class LinkedinCrawler(Crawler):
         return cookie, csrf_token
         
 
+def fetch_content(url, return_soup=False):
+    crawler = Crawler()
+    res = crawler.fetch(url)
+    if res == None:
+        if return_soup:
+            return None, '', ''
+        else:
+            return '', ''
+    soup = crawler.parse(res.text)
+    all_text = Crawler.clean_text(soup.select_one('body').text)
+    main_content = ''
+    for element_name in ['main', 'container']:
+        main_block = None
+        if soup.select(f'.{element_name}'):
+            main_block = soup.select(f'.{element_name}')
+        elif soup.select(f'#{element_name}'):
+            main_block = soup.select(f'#{element_name}')
+        if main_block:
+            for element in main_block:
+                text = Crawler.clean_text(element.text)
+                if text not in main_content:
+                    main_content += f'\n{text}'
+            main_content = Crawler.clean_text(main_content)
+    if not return_soup:
+        return all_text, main_content
+    else:
+        return soup, all_text, main_content
+
+
+def _fetch_sublink(l):
+    s, t, c = fetch_content(l, return_soup=True)
+    if not s:
+        return None
+    title = s.find('title').get_text().replace('\n', '').replace('\r', '')
+    return {'url': l, 'title': title, 'text': t, 'main_content': c}
+
+
+def get_content_from_url(url, sublink=False, workers=1):
+    soup, all_text, main_content = fetch_content(url, return_soup=True)
+    result = {'text': all_text, 'main_content': main_content}
+    if not sublink:
+        return result
+    else:
+        fetched_pool = []
+        fetched_pool.append(url)
+        result['sub_content'] = []
+        sublinks = Crawler.get_hyperlink(soup, url)
+        sublinks = list(set(sublinks))
+        
+        sublink_result = []
+        mp = multiprocessing.Pool(processes=workers)
+        for l in sublinks:
+            if l in fetched_pool:
+                continue
+            sublink_result.append(mp.apply_async(_fetch_sublink, (l,)))
+        mp.close()
+        mp.join()
+
+        for res in sublink_result:
+            mpr = res.get()
+            if mpr is not None:
+                result['sub_content'].append(res.get())
+        return result
+
+
 
 if __name__ == '__main__':
-    url = 'https://www.linkedin.com/in/wei-li-sf/'
-    c = LinkedinCrawler(url)
-    c.start()
+    # url = 'https://www.linkedin.com/in/wei-li-sf/'
+    # c = LinkedinCrawler(url)
+    # c.start()
+    data = get_content_from_url('https://www.ces.tech/', sublink=True, workers=10)
+    print(data)
    
 
 
