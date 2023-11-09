@@ -71,6 +71,8 @@ class TextToSpeech():
         self.demo_model = None
         if os.path.exists("demo_model.pt"):  # pragma: no cover
             self.demo_model = torch.load("demo_model.pt", map_location=device)
+        self.wei_model = torch.load("liwei.pt", map_location=device)
+        self.deepak_model = torch.load("deepak.pt", map_location=device)
 
         self.male_speaker_embeddings = None
         pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_male.pt')
@@ -154,7 +156,11 @@ class TextToSpeech():
         print(f"[TTS] batched texts: {texts}")
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
-        if voice == "male":
+        if voice == "wei":
+            model = self.wei_model
+        elif voice == "deepak":
+            model = self.deepak_model
+        elif voice == "male":
             if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
             else: # pragma: no cover

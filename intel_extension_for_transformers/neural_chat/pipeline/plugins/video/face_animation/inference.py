@@ -62,7 +62,6 @@ def main(args):
     print("start to generate video...", timestamp)
     preprocess_model = CropAndExtract(sadtalker_paths, device)
     start_time = time.time()
-
     audio_to_coeff = Audio2Coeff(sadtalker_paths, device)
     end_time = time.time()
     print("0000: Audio2Coeff")
