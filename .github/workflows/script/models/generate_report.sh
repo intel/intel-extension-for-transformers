@@ -133,7 +133,7 @@ eof
                     for model in ${models[@]}; do
                         current_values=$(generate_inference ${summaryLog} "optimize")
                         last_values=$(generate_inference ${summaryLogLast} "optimize")
-                        if [[ ${model} == "gpt-j-6b" ]] || [[ ${model} == "llama-7b-hf" ]] || [[ ${model} == "stable_diffusion" ]] || [[ ${model} == "gpt-j-6b-pruned" ]]; then
+                        if [[ ${model} == "gpt-j-6b" ]] || [[ ${model} == "llama-7b-hf" ]] || [[ ${model} == "llama-2-7b-chat" ]] || [[ ${model} == "stable_diffusion" ]] || [[ ${model} == "gpt-j-6b-pruned" ]]; then
                             local_mode="latency"
                         else
                             local_mode="performance"
@@ -222,7 +222,7 @@ eof
                         current_values=$(generate_inference ${summaryLog} "deploy")
                         last_values=$(generate_inference ${summaryLogLast} "deploy")
                         echo $last_values
-                        if [[ ${model} == "gpt-j-6b" ]] || [[ ${model} == "llama-7b-hf" ]] || [[ ${model} == "stable_diffusion" ]] || [[ ${model} == "gpt-j-6b-pruned" ]]; then
+                        if [[ ${model} == "gpt-j-6b" ]] || [[ ${model} == "llama-7b-hf" ]] || [[ ${model} == "llama-2-7b-chat" ]] || [[ ${model} == "stable_diffusion" ]] || [[ ${model} == "gpt-j-6b-pruned" ]]; then
                             local_mode="latency"
                         else
                             local_mode="performance"
