@@ -28,34 +28,38 @@ def prod(iterable):
 class MatMulKBit(torch.autograd.Function):
     @staticmethod
     def forward(ctx, A, B, out=None, bias=None, compute_dtype=None, weight_dtype=None):
-        # 1. Dequantize
-        B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
-            B, B_dequant, True, compute_dtype, weight_dtype)
-        B_dequant = B_dequant.to(dtype=A.dtype)
+        # # 1. Dequantize
+        # B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
+        # torch.ops.weight_only_jblasop.qbits_dequantize(
+        #     B, B_dequant, True, compute_dtype, weight_dtype)
+        # B_dequant = B_dequant.to(dtype=A.dtype)
 
         # default of pytorch behavior if inputs are empty
         ctx.is_empty = False
         if prod(A.shape) == 0:
             ctx.is_empty = True
             ctx.A = A
-            ctx.B = B_dequant
+            ctx.B = B # B_dequant
             ctx.bias = bias
-            B_shape = B_dequant.shape
+            B_shape = (out.shape[-1], A.shape[-1]) # B_dequant.shape
             if A.shape[-1] == B_shape[0]:
                 return torch.empty(A.shape[:-1] + B_shape[1:], dtype=A.dtype, device=A.device)
             else:
                 return torch.empty(A.shape[:-1] + B_shape[:1], dtype=A.dtype, device=A.device)
 
         # 2. Matmul
-        output = torch.nn.functional.linear(A, B_dequant, bias)
+        # output = torch.nn.functional.linear(A, B_dequant, bias)
+        torch.ops.weight_only_jblasop.qbits_linear(
+            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype
+        )
+        output = out
 
         # 3. Save state
         ctx.compute_dtype, ctx.weight_dtype = compute_dtype, weight_dtype
-        ctx.dtype_A, ctx.dtype_B, ctx.dtype_bias = A.dtype, B_dequant.dtype, None if bias is None else bias.dtype
+        ctx.dtype_A, ctx.dtype_B, ctx.dtype_bias = A.dtype, B.dtype, None if bias is None else bias.dtype # B_dequant.dtype
 
         if any(ctx.needs_input_grad[:2]):
-            ctx.tensors = (A, B_dequant)
+            ctx.tensors = (A, B) # B_dequant
         else:
             ctx.tensors = (None, None)
 
@@ -70,6 +74,11 @@ class MatMulKBit(torch.autograd.Function):
         req_gradA, _, _, req_gradBias, _, _ = ctx.needs_input_grad
         A, B = ctx.tensors
         grad_A, grad_B, grad_bias = None, None, None
+
+        B_dequant = torch.zeros(grad_output.shape[-1], A.shape[-1], dtype=torch.float)
+        torch.ops.weight_only_jblasop.qbits_dequantize(
+            B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype)
+        B = B_dequant
 
         if req_gradBias:
             # compute grad_bias first before changing grad_output dtype
