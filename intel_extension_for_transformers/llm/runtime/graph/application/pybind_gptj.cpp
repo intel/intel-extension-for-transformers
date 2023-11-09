@@ -49,7 +49,7 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
       /*.request_idx        =*/0,
       /*.beam_idx           =*/0,
   }};
-  if (model_eval(ctx, inputs, n_threads)) {
+  if (model_eval(ctx, inputs.data(), inputs.size(), n_threads)) {
     fprintf(stderr, "%s : failed to eval\n", __func__);
     return 1;
   }

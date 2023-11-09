@@ -47,19 +47,19 @@
 //   - n_threads: number of threads to use
 //
 
-static bool chatglm_model_eval_internal(model_context& lctx, const std::vector<model_input>& inputs,
+static bool chatglm_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
                                         const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   // TODO static batching for now
-  const int N = inputs[0].n_tokens;
-  const int n_past = inputs[0].n_past;
-  const int n_total = inputs[0].n_total;
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
   const int batch_size = lctx.batch_size;
-  MODEL_ASSERT(batch_size == inputs.size());
+  MODEL_ASSERT(batch_size == n_input);
 
   const auto& kv_self = model.kv_self;
 
@@ -124,7 +124,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const std::vector<m
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
   for (int i = 0; i < batch_size; ++i) {
-    memcpy(static_cast<model_token*>(embd->data) + i * N, inputs[i].tokens, N * ne_element_size(embd));
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
   }
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
@@ -366,8 +366,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const std::vector<m
   return true;
 }
 
-int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads) {
-  if (!chatglm_model_eval_internal(*ctx, inputs, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!chatglm_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

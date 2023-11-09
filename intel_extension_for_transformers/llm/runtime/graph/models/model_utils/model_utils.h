@@ -124,7 +124,7 @@ MODEL_API bool model_save_session_file(struct model_context* ctx, const char* pa
 // n_past is the offset to which the kv is cached to
 // n_total is the number of tokens evaluated in previous eval calls
 // Returns 0 on success
-MODEL_API int model_eval(struct model_context* ctx, const std::vector<model_input>& inputs, int n_threads);
+MODEL_API int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads);
 
 // Convert the provided text into tokens.
 // The tokens pointer must be large enough to hold the resulting tokens.
@@ -255,6 +255,10 @@ MODEL_API void model_reset_timings(struct model_context* ctx);
 // Print system information
 MODEL_API const char* model_print_system_info(void);
 
+#ifdef __cplusplus
+}
+#endif
+
 /* kv cache utils */
 // kv cache both stores permuted tensor
 // k shape is [head_dim, N, n_head]
@@ -262,29 +266,15 @@ MODEL_API const char* model_print_system_info(void);
 /* kv cache utils */
 
 // copy consecutive tokens from one seq to another
-MODEL_API void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
-                                         const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
-// MODEL_API void jblas_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
-//                                             const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos&
-//                                             p1);
 MODEL_API void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
                                       const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
 
 // concat several seqs into a continuous batch from kv cache
-MODEL_API ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
-                                                  struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
-                                                  const int64_t& ne2, const int64_t& ne3,
-                                                  const std::vector<int>& block_ids, const int& layer_idx,
-                                                  const bool& concat_k);
 MODEL_API ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
                                                struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
                                                const int64_t& ne2, const int64_t& ne3,
                                                const std::vector<int>& block_ids, const int& layer_idx,
                                                const bool& concat_k = true);
-
-#ifdef __cplusplus
-}
-#endif
 
 /*  beam search utils  */
 #define NEG_INF -std::numeric_limits<float>::max()

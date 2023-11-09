@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
           /*.padding_side       =*/0,
           /*n_padding           =*/0,
       }};
-      model_eval(ctx, inputs, params.n_threads);
+      model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
     }
 
     {
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
           /*.padding_side       =*/0,
           /*n_padding           =*/0,
       }};
-      model_eval(ctx, inputs, params.n_threads);
+      model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
     }
 
     model_print_timings(ctx);
@@ -469,7 +469,7 @@ int main(int argc, char** argv) {
             /*.padding_side       =*/0,
             /*n_padding           =*/0,
         }};
-        if (model_eval(ctx, inputs, params.n_threads)) {
+        if (model_eval(ctx, inputs.data(), inputs.size(), params.n_threads)) {
           fprintf(stderr, "%s : failed to eval\n", __func__);
           return 1;
         }

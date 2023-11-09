@@ -190,7 +190,7 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
       /*.padding_side       =*/0,
       /*n_padding           =*/0,
   }};
-  model_eval(ctx, inputs, params.n_threads);
+  model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
   n_past += curr_input_ids.size();
   n_total += curr_input_ids.size();
 
@@ -223,24 +223,22 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
     std::vector<model_input> inputs;
     for (int bs = 0; bs < input_ids.size(); ++bs) {
       uint32_t count = 0;
-      for (const auto& token : input_ids[bs]) {
-        if (token == ctx->vocab.pad_token_id) {
-          count++;
-        } else {
-          inputs.push_back(model_input{
-              /*.tokens              =*/input_ids[bs].data(),
-              /*.n_tokens           =*/(uint32_t)input_ids[bs].size(),
-              /*.n_prompt_tokens    =*/0,
-              /*.n_past             =*/0,
-              /*.n_total            =*/0,
-              /*.request_idx        =*/bs,
-              /*.beam_idx           =*/0,
-              /*.padding_side       =*/0,
-              /*n_padding           =*/count,
-          });
-          break;
-        }
-      }
+      model_vocab::id pad_token_id = ctx->vocab.pad_token_id;
+      auto iter = std::find_if(input_ids[bs].begin(), input_ids[bs].end(),
+                               [&pad_token_id](model_token t) { return (t != pad_token_id); });
+      if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
+      count = std::distance(input_ids[bs].begin(), iter);
+      inputs.push_back(model_input{
+          /*.tokens              =*/input_ids[bs].data(),
+          /*.n_tokens           =*/(uint32_t)input_ids[bs].size(),
+          /*.n_prompt_tokens    =*/0,
+          /*.n_past             =*/0,
+          /*.n_total            =*/0,
+          /*.request_idx        =*/bs,
+          /*.beam_idx           =*/0,
+          /*.padding_side       =*/0,
+          /*n_padding           =*/count,
+      });
     }
     return post_beam_search(ctx, n_remain, inputs, params.n_threads);
   }
@@ -291,7 +289,7 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
         /*.padding_side       =*/0,
         /*n_padding           =*/0,
     }};
-    model_eval(ctx, inputs, params.n_threads);
+    model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
     n_past += curr_input_ids.size();
     n_total += curr_input_ids.size();
 

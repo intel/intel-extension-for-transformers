@@ -2043,8 +2043,8 @@ std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tenso
   return ctx->model.tensors_by_name;
 }
 
-void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
-                               const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
+static void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                      const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
   const uint32_t kv_n_ctx_block = ctx->kv_n_ctx_block;
   const uint32_t n_head = ctx->model.hparams.n_head_kv > 0 ? ctx->model.hparams.n_head_kv : ctx->model.hparams.n_head;
   const uint32_t head_dim = ctx->model.hparams.n_embd / ctx->model.hparams.n_head;
@@ -2088,16 +2088,17 @@ void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_i
   }
 }
 
-ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
-                                        const int64_t& ne0, const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
-                                        const std::vector<int>& block_ids, const int& layer_idx, const bool& concat_k) {
+static ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
+                                               struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
+                                               const int64_t& ne2, const int64_t& ne3,
+                                               const std::vector<int>& block_ids, const int& layer_idx,
+                                               const bool& concat_k) {
   MODEL_ASSERT(ne3 == block_ids.size());  // moctx->batch_size
   struct ne_tensor* cache = concat_k ? moctx->model.kv_self.k : moctx->model.kv_self.v;
   // K = [head_dim, n_past+N, n_head, batch_size]
   // V = [N_past+N, head_dim, n_head, batch_size]
   const uint32_t n_embd_kv = concat_k ? ne0 * ne2 : ne1 * ne2;
-  struct ne_tensor* dst;
-  bool dst_alloced = false;
+  struct ne_tensor* dst = nullptr;
   if (concat_k) {
     MODEL_ASSERT(ne1 <= moctx->n_ctx);
   } else {
@@ -2117,9 +2118,8 @@ ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_c
       id++;
       continue;
     } else {
-      if (!dst_alloced) {
+      if (dst == nullptr) {
         dst = ne_new_tensor_4d(nectx, cache->type, ne0, ne1, ne2, ne3, NE_SIZE_CALC);
-        dst_alloced = true;
       }
       struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
                                            elem_size * ne0 * ne1 * ne2, dst_off);
@@ -2451,7 +2451,7 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
 
-  model_eval(ctx, next_inputs, num_threads);
+  model_eval(ctx, next_inputs.data(), next_inputs.size(), num_threads);
 
   const int sample_scale = 2;
   std::vector<int> num_beams(ctx->request_running_bs, beam_size);
@@ -2472,7 +2472,6 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
 #endif
 
   const int rb_off = beam_size * sample_scale;
-#pragma omp parallel for
   for (int rb = 0; rb < request_running_indices.size(); ++rb) {
     int record_push = 0;
     for (int nt = 0; nt < rb_off; ++nt) {
@@ -2540,7 +2539,6 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
   std::vector<std::tuple<int, int>> kv_reorder_indices;
   kv_reorder_indices.resize(ctx->request_running_bs * beam_size);
   std::vector<int> nb_shuffle_ids;
-#pragma omp parallel for
   for (int rb = 0; rb < request_running_indices.size(); ++rb) {
     std::vector<int> cpy_final_bs_ids;
     const int rb_off = request_running_indices[rb] * beam_size;
@@ -2692,7 +2690,7 @@ const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::v
   for (int n = 0; n < max_new_tokens; ++n) {
     // first step
     if (n_past[0] == 0) {
-      model_eval(ctx, inputs, num_threads);
+      model_eval(ctx, inputs.data(), inputs.size(), num_threads);
       std::for_each(n_past.begin(), n_past.end(), [&](auto& n) { n += n_tokens[0]; });
       std::for_each(n_total.begin(), n_total.end(), [&](auto& n) { n += n_tokens[0]; });
       kv_reorder->update(n_past, n_prompt_tokens, request_running_indices);
@@ -2715,7 +2713,6 @@ const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::v
       }
       printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-#pragma omp parallel for
       for (int rb = 0; rb < request_running_indices.size(); ++rb) {
         for (int i = 0; i < beam_size; ++i) {
           beam b;
@@ -2754,10 +2751,7 @@ const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::v
       response[didx] = top_b.token_ids;
     }
     // return if all requests done in static batching
-    auto const done_or_not = [](const bool& flag) { return flag; };
-    if (std::all_of(requests_done.begin(), requests_done.end(), done_or_not)) {
-      break;
-    }
+    if (std::find(requests_done.begin(), requests_done.end(), false) == requests_done.end()) break;
   }
 
   return response;
