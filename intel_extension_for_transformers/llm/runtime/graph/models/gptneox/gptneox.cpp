@@ -380,6 +380,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
+#pragma omp parallel for
       for (int i = 0; i < batch_size; ++i) {
         memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);

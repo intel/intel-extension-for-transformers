@@ -7361,11 +7361,8 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
     if (n_padding == 0) continue;
     for (int k = 0; k < (nz / bs); k++) {
       for (int j = ith; j < nr; j += nth) {
-#pragma omp simd
-        for (int i = 0; i < n_padding; i++) {
-          // if (j + n_past > n_padding - 1)  // it will not affect next token if don't mask the pad_token row
-          *(float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1] + i * dst->nb[0]) = value;
-        }
+        // it will not affect next token if don't mask the pad_token row
+        ne_vec_set_f32(n_padding, (float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]), value);
       }
     }
   }
