@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gdb35a30 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g477018d documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -164,8 +164,9 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/m
 </pre></div>
 </div>
 </section>
+</section>
 <section id="mpt">
-<h4>MPT<a class="headerlink" href="#mpt" title="Link to this heading"></a></h4>
+<h3>MPT<a class="headerlink" href="#mpt" title="Link to this heading"></a></h3>
 <p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">mosaicml/mpt-7b</a>.
 Users could follow below commands to get the checkpoints from github repository.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
@@ -177,6 +178,41 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/m
 <li><p>The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">GPTNeoXTokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">GPTNeoXTokenizerFast</span></code>;</p></li>
 </ol>
 </section>
+<section id="falcon">
+<h3>Falcon<a class="headerlink" href="#falcon" title="Link to this heading"></a></h3>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">tiiuae/falcon-7b</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/tiiuae/falcon-7b
+</pre></div>
+</div>
+</section>
+<section id="mistral">
+<h3>Mistral<a class="headerlink" href="#mistral" title="Link to this heading"></a></h3>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/mistralai/Mistral-7B-v0.1
+</pre></div>
+</div>
+</section>
+<section id="codellama">
+<h3>CodeLlama<a class="headerlink" href="#codellama" title="Link to this heading"></a></h3>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/codellama/CodeLlama-7b-hf">codellama/CodeLlama-7b-hf</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/codellama/CodeLlama-7b-hf
+</pre></div>
+</div>
+</section>
+<section id="starcoder">
+<h3>StarCoder<a class="headerlink" href="#starcoder" title="Link to this heading"></a></h3>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/bigcode/starcoder">bigcode/starcoder</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/bigcode/starcoder
+</pre></div>
+</div>
 </section>
 <section id="flan-t5">
 <h3>FLAN-T5<a class="headerlink" href="#flan-t5" title="Link to this heading"></a></h3>
@@ -328,6 +364,28 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/m
 <span class="c1"># the script also support other models, like mpt.</span>
 </pre></div>
 </div>
+<p><strong>For <a class="reference external" href="https://huggingface.co/codellama/CodeLlama-7b-hf">CodeLlama</a></strong>, use the below command line for finetuning on the <a class="reference external" href="https://huggingface.co/datasets/sahil2801/CodeAlpaca-20k">sahil2801/CodeAlpaca-20k</a> code instruction dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;codellama/CodeLlama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_name<span class="w"> </span><span class="s2">&quot;sahil2801/CodeAlpaca-20k&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./codellama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--no_cuda
+</pre></div>
+</div>
 <p><strong>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a></strong>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;mosaicml/mpt-7b&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -350,6 +408,74 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/m
 <span class="w">        </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+</pre></div>
+</div>
+<p><strong>For Falcon</strong>, use the below command line for finetuning on the Alpaca dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;tiiuae/falcon-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./falcon_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+</pre></div>
+</div>
+<p><strong>For Mistral</strong>, use the below command line for finetuning on the Alpaca dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;mistralai/Mistral-7B-v0.1&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./mistral_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+</pre></div>
+</div>
+<p><strong>For StarCoder</strong>, use the below command line for finetuning on the <a class="reference external" href="https://huggingface.co/datasets/sahil2801/CodeAlpaca-20k">sahil2801/CodeAlpaca-20k</a> code instruction dataset.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;bigcode/starcoder&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_name<span class="w"> </span><span class="s2">&quot;sahil2801/CodeAlpaca-20k&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./starcoder_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
 </pre></div>
 </div>
@@ -622,7 +748,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fe627978130> 
+   <jinja2.runtime.BlockReference object at 0x7f6a96f431f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
