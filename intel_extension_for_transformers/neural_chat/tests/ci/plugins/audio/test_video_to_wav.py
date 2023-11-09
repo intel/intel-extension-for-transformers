@@ -39,7 +39,7 @@ class TestVideo2Wav(unittest.TestCase):
         if os.path.exists(video_path):
             shutil.rmtree(video_path+"../raw", ignore_errors=True)
         else:
-            shutil.rmtree("./../../../assets/raw", ignore_errors=True)
+            shutil.rmtree("../../../../assets/raw", ignore_errors=True)
 
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
