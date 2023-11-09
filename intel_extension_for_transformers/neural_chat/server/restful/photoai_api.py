@@ -314,10 +314,10 @@ async def handle_ai_photos_update_label(request: Request):
                 continue
             if label == 'address':
                 update_sql = f"""UPDATE image_info SET address='{label_to}' 
-                WHERE user_id='{user_id}' and address='{label_from}';"""
+                WHERE user_id='{user_id}' and address LIKE '%{label_from}%';"""
             elif label == 'time':
                 update_sql = f"""UPDATE image_info SET captured_time='{label_to}' 
-                WHERE user_id='{user_id}' and captured_time='{label_from}';"""
+                WHERE user_id='{user_id}' and DATEDIFF(captured_time, '{label_from}') = 0;"""
             else:
                 return JSONResponse(
                     content=f"Illegal label name: {label}", 
