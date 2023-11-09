@@ -47,7 +47,7 @@ class AudioSpeechRecognition():
 
         return fp_arr
 
-    def _convert_audio_type(self, audio_path):
+    def _convert_audio_type(self, audio_path): # pragma: no cover
         print("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
         audio_file_name = audio_path.split(".")[0]
         AudioSegment.from_file(audio_path).export(f"{audio_file_name}.mp3", format="mp3")

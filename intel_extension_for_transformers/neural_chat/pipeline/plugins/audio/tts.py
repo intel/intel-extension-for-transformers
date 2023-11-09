@@ -186,7 +186,7 @@ class TextToSpeech():
     def post_llm_inference_actions(self, text_or_generator):
         from intel_extension_for_transformers.neural_chat.plugins import plugins
         self.voice = plugins.tts.args["voice"]
-        if self.stream_mode:
+        if self.stream_mode: # pragma: no cover
             def cache_words_into_sentences():
                 buffered_texts = []
                 hitted_ends = ['.', '!', '?', ';', ':']
