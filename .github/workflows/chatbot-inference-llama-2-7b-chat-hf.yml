@@ -21,7 +21,7 @@ jobs:
       - name: Build Docker Image
         run: 
           if [ $(docker images | grep chatbotinfer-gha | wc -l) == 0 ]; then
-            docker build ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-gha:latest && yes | docker container prune && yes | docker image prune;
+            docker build  --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-gha:latest && yes | docker container prune && yes | docker image prune;
           fi
 
       - name: Start Docker Container
