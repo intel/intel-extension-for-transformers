@@ -30,7 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
 
@@ -39,11 +39,12 @@ ENV LANG C.UTF-8
 
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
-RUN apt-get update \
-    && apt-get install -y build-essential \
-    && apt-get install -y wget numactl git \
-    && apt-get install -y openssh-server \
-    && apt-get install -y libgl1-mesa-glx \
+RUN apt update \
+    && apt install -y build-essential \
+    && apt install -y wget numactl git \
+    && apt install -y openssh-server \
+    && apt install -y libgl1-mesa-glx \
+    && apt install -y python${PYTHON_VERSION} \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -109,9 +110,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
-    pip install peft && \
-    pip install einops && \
-    pip install datasets && pip list && \
+    pip install peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.12 origin/1.12.0 && \
