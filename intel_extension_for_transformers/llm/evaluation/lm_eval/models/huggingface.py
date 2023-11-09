@@ -643,12 +643,12 @@ class AutoCausalLM(HuggingFaceAutoLM):
     ) -> TokenSequence:
         if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm-6b":
             input_bs, input_len = inputs.shape
-            bos = torch.tensor([130001, 130004]).repeat(input_bs, 1)
-            inputs = torch.cat((eos,inputs), 1)
+            eos = torch.tensor([130001, 130004]).repeat(input_bs, 1)
+            inputs = torch.cat((inputs, eos), 1)
         if hasattr(self._config, "_name_or_path") and self._config._name_or_path == "THUDM/chatglm2-6b":
             input_bs, input_len = inputs.shape
-            eos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
-            inputs = torch.cat((eos,inputs), 1)
+            bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
+            inputs = torch.cat((bos, inputs), 1)
         output = self.model(inputs) if self.model_format != "onnx" else \
                 self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):
