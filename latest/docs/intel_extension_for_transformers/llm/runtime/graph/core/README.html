@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Highly Optimized Low Precision Kernels &mdash; Intel® Extension for Transformers 0.1.dev1+g232e0c1 documentation</title>
+  <title>Highly Optimized Low Precision Kernels &mdash; Intel® Extension for Transformers 0.1.dev1+gc9e2ef3 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -179,12 +179,12 @@ nf4 | | multiplier of 8</p>
         <tr>
             <td>QKV</td>
             <td >GPT-J<br>LLaMA</td>
-            <td>AMX_INT8, AVX512_VNNI</td>
+            <td>AMX_INT8, AVX512_VNNI, AVX_VNNI</td>
         </tr>
         <tr>
             <td>FFN</td>
             <td>GPT-J<br>LLaMA<br>BLOOM<br>ChatGLM<br>Falcon<br>MPT</td>
-            <td>AMX_INT8, AVX512_VNNI, AVX512F and AMX_BF16</td>
+            <td>AMX_INT8, AVX512_VNNI, AVX512F, AMX_BF16, AVX_VNNI, AVX2</td>
         </tr>
         <tr>
             <td>MHA</td>
@@ -199,7 +199,9 @@ nf4 | | multiplier of 8</p>
 —|—|—
 Sapphire Rapids | any int4<br>group size=-1<br>compute type=int8 | AMX_INT8
 Ice Lake<br>Cascade Lake<br>Cooper Lake<br>Tiger Lake<br>Rocket Lake | any int4<br>group size=-1<br>compute type=int8 | AVX512_VNNI
-Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F</p>
+Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F
+Alder Lake (12th Gen)<br>Raptor Lake (13th and 14th Gen)|any 4bits<br>group size=-1<br>compute type=int8 | AVX_VNNI
+Older architecture (before 12th Gen)|  any 4bits<br>group size=-1<br>compute type=fp32 | AVX2</p>
 </section>
 </section>
 
@@ -217,7 +219,7 @@ Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7feb39c5bd90> 
+   <jinja2.runtime.BlockReference object at 0x7fd6d4a31de0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
