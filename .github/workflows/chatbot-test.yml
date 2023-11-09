@@ -35,11 +35,11 @@ concurrency:
 
 jobs:
 
-  #call-inference-llama-2-7b-chat-hf:
-  #  uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
-#
-  #call-inference-mpt-7b-chat:
-  #  uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
+  call-inference-llama-2-7b-chat-hf:
+   uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
+
+  call-inference-mpt-7b-chat:
+   uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
 #
 #
   #call-inference-llama-2-7b-chat-hf-hpu:
