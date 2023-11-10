@@ -44,7 +44,7 @@
 #define NE_QNT_VERSION_FACTOR 1000  // do not change this
 
 #define NE_MAX_DIMS 4
-#define NE_MAX_NODES 4096
+#define NE_MAX_NODES 8192
 #define NE_MAX_PARAMS 256
 #define NE_MAX_CONTEXTS 64
 #define NE_MAX_OPT 4
@@ -378,6 +378,14 @@ NE_API struct ne_tensor* ne_diag_mask_inf(struct ne_context* ctx, struct ne_tens
 
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_diag_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past);
+
+// set elements above the diagonal and padding tokens to -INF
+NE_API struct ne_tensor* ne_diag_mask_inf_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                       int* n_padding);
+
+// in-place, returns view(a)
+NE_API struct ne_tensor* ne_diag_mask_inf_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                               int* n_padding);
 
 // set elements above the diagonal to 0
 NE_API struct ne_tensor* ne_diag_mask_zero(struct ne_context* ctx, struct ne_tensor* a, int n_past);
