@@ -115,28 +115,25 @@ class Model:
         if not beam_search:
             # TODO support multi batch
             assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        
         if streamer:
-            if beam_search:
-                print("ERROR, can not use streamer when use beam search for generation!")
-                import sys
-                sys.exit(1)
+            assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
-            if interactive:
-                self.model.reset_token_end()
-            while not self.is_token_end():
-                out = self.model.generate(input_ids = input_ids.tolist()[0])
-                if len(out) == 0:
-                    break
-                streamer.put(torch.tensor([out]))
-                ret[0].extend(out)
-            streamer.end()
-        else:
-            response = self.model.generate_tokens(input_ids = input_ids.tolist())
-            assert (len(ret) == len(response))
+        
+        if interactive:
+            self.model.reset_token_end()
+        while not self.is_token_end():
+            response = self.model.generate(input_ids = input_ids.tolist())
+            if len(response) == 0:
+                break
+            if streamer:
+                streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
-        
+        if streamer:
+            streamer.end()
+            
         self.generate_round += 1
         return ret
 
