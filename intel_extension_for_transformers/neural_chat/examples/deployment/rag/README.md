@@ -49,6 +49,29 @@ git-lfs install
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 ```
 
+# Setup Database
+## Install MySQL
+```shell
+# install mysql
+sudo apt-get install mysql-server
+# start mysql server
+systemctl status mysql
+```
+
+## Create Tables
+```shell
+cd ../../../utils/database/
+# login mysql
+mysql -u root -p
+source ./init_db_askdoc.sql
+```
+
+## Create Image Database
+```shell
+export MYSQL_PASSWORD="root"
+export MYSQL_HOST="127.0.0.1"
+export MYSQL_DB="fastrag"
+```
 
 # Configure YAML
 
