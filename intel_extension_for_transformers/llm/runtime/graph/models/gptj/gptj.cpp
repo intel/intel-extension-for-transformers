@@ -169,7 +169,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
     struct ne_tensor* inpSA = cur;
 
     ne_tensor *Qcur, *Kcur, *Vcur;
-    int kv_n_ctx_block = lctx.kv_n_ctx_block;
+    const int kv_n_ctx_block = lctx.kv_n_ctx_block;
     if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[1]->data,
                                         model.layers[il].attn[2]->data, N * batch_size, head_size * n_head,
                                         head_size * n_head)) {  // fused execution of QKV
