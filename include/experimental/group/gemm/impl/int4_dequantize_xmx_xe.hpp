@@ -129,13 +129,13 @@ private:
     using matA_tile_desc_t = subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a,
             block_size_x_a, block_size_y_a, reg_layout_a>;
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
-    using matA_payload_t = subgroup::mem_payload_t<dtype_a, matA_tile_desc_t,
-            subgroup::msg_type_v<matA_tile_desc_t, mem_space_a>, mem_layout_a,
-            mem_space_a, arch_tag>;
+    using matA_payload_t = subgroup::mem_payload_t<mem_desc_a_t,
+            matA_tile_desc_t,
+            subgroup::msg_type_v<matA_tile_desc_t, mem_space_a>, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
-    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_a,
+    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
-            mem_layout_a, mem_space_a, wg_size_x, arch_tag>;
+            wg_size_x, arch_tag>;
 
     //note: plane format, row-major
     //note: 4bit x 2, row-major
@@ -143,11 +143,11 @@ private:
             tile_size_y_b, block_size_x_b / pack_ratio, block_size_y_b,
             reg_layout::tiled>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
-    using matB_payload_t = subgroup::mem_payload_t<dtype_b, matB_tile_desc_t,
-            subgroup::msg_type_v<matB_tile_desc_t, mem_space_b>, mem_layout_b,
-            mem_space_b, arch_tag>;
-    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
-            matB_tile_desc_t, mem_layout_b, mem_space_b, wg_size_y, arch_tag>;
+    using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
+            matB_tile_desc_t,
+            subgroup::msg_type_v<matB_tile_desc_t, mem_space_b>, arch_tag>;
+    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
+            matB_tile_desc_t, wg_size_y, arch_tag>;
 
     using matB_acc_tile_desc_t
             = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b,
@@ -174,6 +174,11 @@ public:
     static constexpr uint32_t scale_addr_update_freq
             = (k_stride < dequant_s) ? dequant_s / k_stride : 1;
 
+    using mem_desc_scale_t
+            = mem_desc_t<dtype_scale, mem_layout::row_major, mem_space::global>;
+    using mem_desc_zero_pt_t = mem_desc_t<dtype_zero_pt, mem_layout::row_major,
+            mem_space::global>;
+
     using matAcc_tile_desc_t = subgroup::tile_desc_t<tile_size_x_c,
             tile_size_y_c, block_size_x_b, block_size_y_a, reg_layout::tiled>;
     using matAcc_t = subgroup::tile_t<dtype_mma_acc, matAcc_tile_desc_t>;
@@ -184,24 +189,24 @@ private:
                     block_size_x_b, block_size_y_scale, reg_layout::tiled>;
     using scale_t = subgroup::tile_t<dtype_scale, scale_tile_desc_t>;
     using scale_payload_t
-            = subgroup::mem_payload_t<dtype_scale, scale_tile_desc_t,
+            = subgroup::mem_payload_t<mem_desc_scale_t, scale_tile_desc_t,
                     subgroup::msg_type_v<scale_tile_desc_t, mem_space::global>,
-                    mem_layout::row_major, mem_space::global, arch_tag>;
+                    arch_tag>;
     using zero_pt_tile_desc_t
             = subgroup::tile_desc_t<tile_size_x_b / pack_ratio,
                     tile_size_y_zero_pt, block_size_x_b / pack_ratio,
                     block_size_y_zero_pt, reg_layout::tiled>;
     using zero_pt_t = subgroup::tile_t<dtype_zero_pt, zero_pt_tile_desc_t>;
-    using zero_pt_payload_t = subgroup::mem_payload_t<dtype_zero_pt,
+    using zero_pt_payload_t = subgroup::mem_payload_t<mem_desc_zero_pt_t,
             zero_pt_tile_desc_t,
             subgroup::msg_type_v<zero_pt_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, arch_tag>;
+            arch_tag>;
     using scale_prefetch_payload_t
-            = subgroup::prefetch_payload_t<dtype_scale, scale_tile_desc_t,
-                    mem_layout::row_major, mem_space::global, 1, arch_tag>;
+            = subgroup::prefetch_payload_t<mem_desc_scale_t, scale_tile_desc_t,
+                    1, arch_tag>;
     using zero_pt_prefetch_payload_t
-            = subgroup::prefetch_payload_t<dtype_zero_pt, zero_pt_tile_desc_t,
-                    mem_layout::row_major, mem_space::global, 1, arch_tag>;
+            = subgroup::prefetch_payload_t<mem_desc_zero_pt_t,
+                    zero_pt_tile_desc_t, 1, arch_tag>;
 
     using tile_mma = subgroup::tile_mma_t<matAcc_t, matAcc_t, matB_acc_t,
             matA_acc_t, mma_engine::xmx, arch_tag>;
@@ -216,11 +221,6 @@ public:
     static constexpr uint32_t slm_size = is_local_a
             ? sg_tile_m * wg_size_y * k_stride * sizeof(dtype_a)
             : 0;
-
-    using mem_desc_scale_t
-            = mem_desc_t<dtype_scale, mem_layout::row_major, mem_space::global>;
-    using mem_desc_zero_pt_t = mem_desc_t<dtype_zero_pt, mem_layout::row_major,
-            mem_space::global>;
 
     static constexpr msg_type msg_type_a = matA_payload_t::message_type;
     static constexpr msg_type msg_type_b = matB_payload_t::message_type;
@@ -311,7 +311,7 @@ public:
         xetla_fence<memory_kind::untyped_global>();
         static constexpr uint32_t wg_size = wg_size_x * wg_size_y;
         if constexpr (wg_size > 1) {
-            xetla_nbarrier_t<wg_size, wg_size> nbarrier;
+            xetla_nbarrier_t<wg_size, wg_size, arch_tag> nbarrier;
             nbarrier.init_nbarrier(
                     nbarrier_id, nbarrier_role::producer_consumer);
             nbarrier.arrive_wait();
@@ -350,10 +350,10 @@ public:
         zero_pt_prefetch_payload_t zero_pt_prefetch_payload(
                 args.zero_pt_base_desc, 0);
 
-        xetla_nbarrier_t<wg_size_x, wg_size_x> nbarrier_a;
+        xetla_nbarrier_t<wg_size_x, wg_size_x, arch_tag> nbarrier_a;
         nbarrier_a.init_nbarrier(
                 sg_idy + nbarrier_base, nbarrier_role::producer_consumer);
-        xetla_nbarrier_t<wg_size_y, wg_size_y> nbarrier_b;
+        xetla_nbarrier_t<wg_size_y, wg_size_y, arch_tag> nbarrier_b;
         nbarrier_b.init_nbarrier(sg_idx + barrier_count_y + nbarrier_base,
                 nbarrier_role::producer_consumer);
 

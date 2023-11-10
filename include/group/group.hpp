@@ -23,3 +23,5 @@
 #include "group/epilogue/epilogue.hpp"
 #include "group/gemm/gemm.hpp"
 #include "group/global_reduction.hpp"
+#include "group/reduction/reduction.hpp"
+#include "group/softmax/softmax.hpp"

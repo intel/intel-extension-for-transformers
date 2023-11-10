@@ -48,15 +48,17 @@ struct tile_mma_func {
         using matA_t = tile_t<dtypeA, matA_tile_desc_t>;
         using matB_t = tile_t<dtypeB, matB_tile_desc_t>;
         using matC_t = tile_t<dtypeC, matC_tile_desc_t>;
-        using matA_payload_t = mem_payload_t<dtypeA, matA_tile_desc_t,
-                msg_type_v<matA_tile_desc_t, mem_space::global>,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-        using matB_payload_t = mem_payload_t<dtypeB, matB_tile_desc_t,
-                msg_type_v<matB_tile_desc_t, mem_space::global>,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-        using matC_payload_t
-                = mem_payload_t<dtypeC, matC_tile_desc_t, msg_type::block_2d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+        using matA_payload_t = mem_payload_t<
+                mem_desc_t<dtypeA, mem_layout::row_major, mem_space::global>,
+                matA_tile_desc_t,
+                msg_type_v<matA_tile_desc_t, mem_space::global>, gpu_arch::Xe>;
+        using matB_payload_t = mem_payload_t<
+                mem_desc_t<dtypeB, mem_layout::row_major, mem_space::global>,
+                matB_tile_desc_t,
+                msg_type_v<matB_tile_desc_t, mem_space::global>, gpu_arch::Xe>;
+        using matC_payload_t = mem_payload_t<
+                mem_desc_t<dtypeC, mem_layout::row_major, mem_space::global>,
+                matC_tile_desc_t, msg_type::block_2d, gpu_arch::Xe>;
         using matAcc_t
                 = tile_t<dtypeAcc, tile_desc_t<n, m, 16, 8, reg_layout::tiled>>;
 

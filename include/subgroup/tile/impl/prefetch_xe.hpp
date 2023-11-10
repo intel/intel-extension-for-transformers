@@ -64,7 +64,8 @@ tile_prefetch(payload_t &payload) {
 
 #pragma unroll
     for (int i = 0; i < num_tdesc; i++) {
-        xetla_tprefetch_global<dtype, L1, L2>(tdesc_2d.row(i));
+        xetla_tprefetch_global<dtype, L1, L2, payload_t::arch_tag>(
+                tdesc_2d.row(i));
     }
 }
 

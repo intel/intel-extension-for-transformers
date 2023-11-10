@@ -33,9 +33,9 @@ struct conversion_func {
         using linear_tile_t = subgroup::tile_t<dtype, linear_desc>;
         using tiled_tile_t = subgroup::tile_t<dtype, tiled_desc>;
 
-        using payload_t
-                = subgroup::mem_payload_t<dtype, tiled_desc, msg_type::block_2d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+        using payload_t = subgroup::mem_payload_t<
+                mem_desc_t<dtype, mem_layout::row_major, mem_space::global>,
+                tiled_desc, msg_type::block_2d, gpu_arch::Xe>;
 
         tiled_tile_t data_tile;
         linear_tile_t linear_data_tile;

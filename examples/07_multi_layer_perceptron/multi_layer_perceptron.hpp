@@ -487,7 +487,8 @@ public:
 
         // fence & barrier between two gemm
         xetla_fence();
-        xetla_nbarrier_t<work_group_layer2_t::size, work_group_layer2_t::size>
+        xetla_nbarrier_t<work_group_layer2_t::size, work_group_layer2_t::size,
+                gpu_arch::Xe>
                 nbarrier_global;
         nbarrier_global.init_nbarrier(
                 global_nbarr_base, nbarrier_role::producer_consumer);

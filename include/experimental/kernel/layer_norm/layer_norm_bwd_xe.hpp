@@ -86,19 +86,24 @@ struct layer_norm_bwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
     using gamma_in_t = subgroup::tile_t<dtype_weight, ln_bwd_tile_desc_t>;
     using dx_out_t = subgroup::tile_t<dtype_x, ln_bwd_tile_desc_t>;
 
-    using dy_in_payload_t = subgroup::mem_payload_t<dtype_y, ln_bwd_tile_desc_t,
+    using dy_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_y, mem_layout::row_major, mem_space::global>,
+            ln_bwd_tile_desc_t,
             subgroup::msg_type_v<ln_bwd_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using x_in_payload_t = subgroup::mem_payload_t<dtype_x, ln_bwd_tile_desc_t,
+            gpu_arch::Xe>;
+    using x_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_x, mem_layout::row_major, mem_space::global>,
+            ln_bwd_tile_desc_t,
             subgroup::msg_type_v<ln_bwd_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using gamma_in_payload_t
-            = subgroup::mem_payload_t<dtype_weight, ln_bwd_tile_desc_t,
-                    subgroup::msg_type_v<ln_bwd_tile_desc_t, mem_space::global>,
-                    mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using dx_out_payload_t = subgroup::mem_payload_t<dtype_x,
-            ln_bwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+            gpu_arch::Xe>;
+    using gamma_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_weight, mem_layout::row_major, mem_space::global>,
+            ln_bwd_tile_desc_t,
+            subgroup::msg_type_v<ln_bwd_tile_desc_t, mem_space::global>,
+            gpu_arch::Xe>;
+    using dx_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_x, mem_layout::row_major, mem_space::global>,
+            ln_bwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
 
     using ln_group_row_reduce_store_t
             = group::group_row_reduce_store_t<dtype_acc, dtype_acc, sg_tile_n,

@@ -136,22 +136,22 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
     using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
             1, reg_layout::tiled>;
     using bias_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
-    using bias_in_payload_t = subgroup::mem_payload_t<dtype_in,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using bias_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using res_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
-    using res_in_payload_t = subgroup::mem_payload_t<dtype_in,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using res_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using mask_in_t = subgroup::tile_t<dtype_mask, ln_fwd_tile_desc_t>;
-    using mask_in_payload_t = subgroup::mem_payload_t<dtype_mask,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using mask_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using bias_dropout_res_out_t
             = subgroup::tile_t<dtype_out, ln_fwd_tile_desc_t>;
-    using bias_dropout_res_out_payload_t = subgroup::mem_payload_t<dtype_out,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using bias_dropout_res_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     bias_in_t bias_in;
     bias_in_payload_t bias_in_payload;
     bias_dropout_res_out_t bias_dropout_res_out;
@@ -295,9 +295,9 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
             1, reg_layout::tiled>;
     using mask_in_t = subgroup::tile_t<dtype_mask, ln_fwd_tile_desc_t>;
-    using mask_in_payload_t = subgroup::mem_payload_t<dtype_mask,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using mask_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     mask_in_t mask_in;
     mask_in_payload_t mask_in_payload;
     uint32_t mask_ld;
@@ -389,22 +389,22 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
     using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
             1, reg_layout::tiled>;
     using bias_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
-    using bias_in_payload_t = subgroup::mem_payload_t<dtype_in,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using bias_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using res_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
-    using res_in_payload_t = subgroup::mem_payload_t<dtype_in,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using res_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using mask_out_t = subgroup::tile_t<dtype_mask, ln_fwd_tile_desc_t>;
-    using mask_out_payload_t = subgroup::mem_payload_t<dtype_mask,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using mask_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     using bias_dropout_res_out_t
             = subgroup::tile_t<dtype_out, ln_fwd_tile_desc_t>;
-    using bias_dropout_res_out_payload_t = subgroup::mem_payload_t<dtype_out,
-            ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using bias_dropout_res_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
 
     bias_in_t bias_in;
     bias_in_payload_t bias_in_payload;
@@ -556,9 +556,9 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_rng_dropout, dtype_in_,
     using mask_out_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1,
             chunk_size, 1, reg_layout::tiled>;
     using mask_out_t = subgroup::tile_t<dtype_mask, mask_out_tile_desc_t>;
-    using mask_out_payload_t = subgroup::mem_payload_t<dtype_mask,
-            mask_out_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using mask_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>,
+            mask_out_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
     mask_out_t mask_out;
     mask_out_payload_t mask_out_payload;
     dropout_fwd_t<chunk_size> dropout_fwd;

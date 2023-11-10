@@ -70,6 +70,9 @@ __XETLA_API int32_t xetla_get_subdevice_id() {
 
 namespace gpu::xetla {
 
+enum class gpu_arch : uint8_t { Xe = 0 };
+enum class grf_mode : uint8_t { normal = 0, double_grf = 1 };
+
 enum class mem_layout : uint8_t { row_major = 0, col_major = 1 };
 enum class mem_space : uint8_t { global = 0, local = 1 };
 enum class msg_type : uint8_t {
@@ -225,54 +228,6 @@ enum class reduce_op : uint8_t {
 
 __XETLA_API void xetla_wait(uint16_t val) {
     __ESIMD_ENS::wait(__ESIMD_NS::simd<uint16_t, 1>(val));
-}
-
-enum class lsc_action { prefetch, load, store, atomic };
-
-template <lsc_action Action, cache_hint L1H, cache_hint L2H>
-constexpr void check_lsc_cache_hint() {
-    if constexpr (Action == lsc_action::prefetch) {
-        // https://gfxspecs.intel.com/Predator/Home/Index/53560
-        static_assert(
-                ((L2H == cache_hint::uncached || L2H == cache_hint::cached)
-                        && (L1H == cache_hint::uncached
-                                || L1H == cache_hint::cached
-                                || L1H == cache_hint::streaming)),
-                "cache hint type not supported!");
-    } else if constexpr (Action == lsc_action::load) {
-        // https://gfxspecs.intel.com/Predator/Home/Index/53560
-        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
-                        || ((L2H == cache_hint::uncached)
-                                && (L1H == cache_hint::uncached
-                                        || L1H == cache_hint::cached
-                                        || L1H == cache_hint::streaming))
-                        || ((L2H == cache_hint::cached)
-                                && (L1H == cache_hint::uncached
-                                        || L1H == cache_hint::cached
-                                        || L1H == cache_hint::streaming
-                                        || L1H == cache_hint::read_invalidate)),
-                "unsupported cache hint!");
-    } else if constexpr (Action == lsc_action::store) {
-        // https://gfxspecs.intel.com/Predator/Home/Index/53561
-        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
-                        || ((L2H == cache_hint::uncached)
-                                && (L1H == cache_hint::uncached
-                                        || L1H == cache_hint::write_through
-                                        || L1H == cache_hint::streaming))
-                        || ((L2H == cache_hint::write_back)
-                                && (L1H == cache_hint::uncached
-                                        || L1H == cache_hint::write_through
-                                        || L1H == cache_hint::streaming
-                                        || L1H == cache_hint::write_back)),
-                "unsupported cache hint!");
-    } else if constexpr (Action == lsc_action::atomic) {
-        // https://gfxspecs.intel.com/Predator/Home/Index/53561
-        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
-                        || (L1H == cache_hint::uncached
-                                && (L2H == cache_hint::uncached
-                                        || L2H == cache_hint::write_back)),
-                "unsupported cache hint!");
-    }
 }
 
 } // namespace gpu::xetla

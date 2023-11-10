@@ -155,7 +155,7 @@ void sdp_fwd_run(uint32_t iter) {
     constexpr uint32_t wg_tile_n_qk = 512;
     constexpr uint32_t sg_tile_m_qk = 32;
     constexpr uint32_t sg_tile_n_qk = 32;
-    constexpr uint32_t sg_tile_k_qk = 32;
+    constexpr uint32_t wg_tile_k_qk = 32;
 
     // arguments for second gemm
     constexpr uint32_t matrix_m_sv = sequence_len;
@@ -166,7 +166,7 @@ void sdp_fwd_run(uint32_t iter) {
     constexpr uint32_t wg_tile_n_sv = 64;
     constexpr uint32_t sg_tile_m_sv = 8;
     constexpr uint32_t sg_tile_n_sv = 16;
-    constexpr uint32_t sg_tile_k_sv = 32;
+    constexpr uint32_t wg_tile_k_sv = 32;
 
     // buffer size of softmax row data
     constexpr uint32_t softmax_sz = sequence_len;
@@ -252,29 +252,60 @@ void sdp_fwd_run(uint32_t iter) {
                     static constexpr uint32_t periodic_sync_interval = 0;
                     static constexpr uint32_t prefetch_distance = 3;
 
-                    using tile_shape0 = tile_shape_t<wg_tile_n_qk, wg_tile_m_qk,
-                            sg_tile_n_qk, sg_tile_m_qk>;
+                    using wg_shape0 = shape<wg_tile_n_qk, wg_tile_m_qk>;
+                    using sg_shape0 = shape<sg_tile_n_qk, sg_tile_m_qk>;
+
                     using post_op0_t = scalar_mul_op_t<float, gpu_arch::Xe>;
                     using post_op1_t = elemwise_reduce_op_t<reduce_op::sum,
                             dtype_in, gpu_arch::Xe>;
-
                     using post_op_t = chained_tile_op_t<post_op0_t, post_op1_t>;
-
-                    using gemm0_t = typename gemm_selector_t<dtype_in, dtype_in,
-                            mem_layout::row_major, mem_layout::col_major,
-                            mem_space::global, mem_space::global, 8, 8, float,
-                            tile_shape0, sg_tile_k_qk, mma_engine::xmx,
-                            gpu_arch::Xe, prefetch_distance,
-                            periodic_sync_interval>::gemm;
-                    using epilogue0_t = epilogue_t<
-                            epilogue_policy_tile_op<post_op_t, gpu_arch::Xe>,
-                            tile_shape0,
-                            mem_desc_t<dtype_sfx, mem_layout::row_major,
-                                    mem_space::local>>;
+                    using epilogue_policy0
+                            = xetla::group::epilogue_policy_tile_op<post_op_t,
+                                    gpu_arch::Xe>;
                     using group_swizzle = group_swizzle_default<gpu_arch::Xe>;
+
+                    using tune_option0 = dict_t<
+                            elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                                    tune_key_value::
+                                            PARAM_OPTIMZER_DECISION_TREE>,
+                            elem_t_t<tune_key::EPILOGUE_POLICY,
+                                    epilogue_policy0>,
+                            elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape0>,
+                            elem_v_t<tune_key::PREFETCH_DISTANCE,
+                                    prefetch_distance>,
+                            elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL,
+                                    periodic_sync_interval>>;
+                    using gemm0_t = xetla::group::default_gemm_selector_t<
+                            dtype_in, // input datatype for A
+                            mem_layout::row_major, // memory layout for A
+                            8, // leading dimension for A, in unit of element
+                            mem_space::
+                                    global, // memory reading from global mem for A
+                            dtype_in, // input datatype for B
+                            mem_layout::row_major, // memory layout for B
+                            8, // leading dimension for B, in unit of element
+                            mem_space::
+                                    global, // memory reading from global mem for B
+                            float, // accumulator data type for intermediate resutls
+                            wg_shape0, // computation tile shape
+                            wg_tile_k_qk, // elements in each iteration
+                            gpu_arch::Xe, // GPU arch
+                            tune_option0>;
+                    using epilogue0_t = xetla::group::default_epilogue_selector_t<
+                            dtype_sfx, // onput datatype for C
+                            mem_layout::row_major, // memory layout for C
+                            8, // leading dimension for C, in unit of element
+                            mem_space::
+                                    local, // memory writing to local mem for C
+                            wg_shape0, // computation tile shape
+                            wg_tile_k_qk, // elements in each iteration
+                            gpu_arch::Xe, // GPU arch
+                            tune_option0>;
                     using gemm_op0_t = gemm_universal_t<
                             dispatch_policy_default<group_swizzle>, gemm0_t,
                             epilogue0_t>;
+
+                    using tile_shape0 = typename gemm0_t::tile_shape;
 
                     // initialize SLM size
                     constexpr uint32_t slm_size
@@ -285,7 +316,8 @@ void sdp_fwd_run(uint32_t iter) {
                     // we only need to do thread sync while store gemm results to SLM
                     // one barrier is enough for that
                     xetla_nbarrier_init<1>();
-                    xetla_nbarrier_t<thread_num, thread_num> nbarrier;
+                    xetla_nbarrier_t<thread_num, thread_num, gpu_arch::Xe>
+                            nbarrier;
                     nbarrier.init_nbarrier(0, nbarrier_role::producer_consumer);
 
                     // initialize gemm op: gemm result store to shared local memory
@@ -328,15 +360,38 @@ void sdp_fwd_run(uint32_t iter) {
                     nbarrier.arrive_wait();
 
                     // second gemm: use gemm to get matAcc for permute storage
-                    using tile_shape1 = tile_shape_t<wg_tile_n_sv, wg_tile_m_sv,
-                            sg_tile_n_sv, sg_tile_m_sv>;
+                    using wg_shape1 = shape<wg_tile_n_sv, wg_tile_m_sv>;
+                    using sg_shape1 = shape<sg_tile_n_sv, sg_tile_m_sv>;
+
+                    using tune_option1 = dict_t<
+                            elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                                    tune_key_value::
+                                            PARAM_OPTIMZER_DECISION_TREE>,
+                            elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape1>,
+                            elem_v_t<tune_key::PREFETCH_DISTANCE,
+                                    prefetch_distance>,
+                            elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL,
+                                    periodic_sync_interval>>;
                     // Using gemm_selector to get a specific gemm class
-                    using gemm1_t = typename gemm_selector_t<dtype_in, dtype_in,
-                            mem_layout::row_major, mem_layout::row_major,
-                            mem_space::local, mem_space::global, 8, 8, float,
-                            tile_shape1, sg_tile_k_sv, mma_engine::xmx,
-                            gpu_arch::Xe, prefetch_distance,
-                            periodic_sync_interval>::gemm;
+                    using gemm1_t = xetla::group::default_gemm_selector_t<
+                            dtype_in, // input datatype for A
+                            mem_layout::row_major, // memory layout for A
+                            8, // leading dimension for A, in unit of element
+                            mem_space::
+                                    local, // memory reading from local mem for A
+                            dtype_in, // input datatype for B
+                            mem_layout::row_major, // memory layout for B
+                            8, // leading dimension for B, in unit of element
+                            mem_space::
+                                    global, // memory reading from global mem for B
+                            float, // accumulator data type for intermediate resutls
+                            wg_shape1, // computation tile shape
+                            wg_tile_k_sv, // elements in each iteration
+                            gpu_arch::Xe, // GPU arch
+                            tune_option1>;
+
+                    using tile_shape1 = typename gemm1_t::tile_shape;
+
                     // gemm arguments include matA & matB load information and
                     // cycle number on k-dimension
                     using gemm_args_t = typename gemm1_t::arguments_t;
@@ -385,7 +440,7 @@ void sdp_fwd_run(uint32_t iter) {
                             {start_n, start_k});
 
                     uint32_t inner_loop_count
-                            = (wg_tile_k + sg_tile_k_sv - 1) / sg_tile_k_sv;
+                            = (wg_tile_k + wg_tile_k_sv - 1) / wg_tile_k_sv;
                     gemm_args_t gemm_args(
                             mem_desc_a, mem_desc_b, inner_loop_count);
                     matAcc_t matAcc;
@@ -417,8 +472,8 @@ void sdp_fwd_run(uint32_t iter) {
                                 out + dst_offset, head_size, 1, head_size, h,
                                 0);
                         xetla_tstore_global<dtype_out, sg_tile_n_sv,
-                                cache_hint::write_back, cache_hint::write_back>(
-                                transpose_tdecs, out_reg);
+                                cache_hint::write_back, cache_hint::write_back,
+                                gpu_arch::Xe>(transpose_tdecs, out_reg);
                     }
                 });
             });

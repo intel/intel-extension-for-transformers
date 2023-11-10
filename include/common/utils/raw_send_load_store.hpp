@@ -178,10 +178,11 @@ __XETLA_API void xetla_update_tdesc_offsety(
 ///
 template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
         cache_hint L2H = cache_hint::none, bool transpose = false,
-        bool transform = false>
-__XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
+        bool transform = false, gpu_arch arch_tag = gpu_arch::Xe>
+__XETLA_API std::enable_if_t<arch_tag == gpu_arch::Xe, xetla_vector<Ty, N>>
+xetla_tload_global(xetla_tdescriptor tdesc) {
     DEBUG_INVOKE(dbg_level::core,
-            core::block_2d<gpu_arch::Xe, Ty>::template check_load<transpose,
+            core::block_2d<arch_tag, Ty>::template check_load<transpose,
                     transform>(tdesc));
 
     constexpr uint32_t numDst = 31 < ((N * sizeof(Ty) + 63) / 64)
@@ -191,7 +192,7 @@ __XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
     msg_desc |= (transform ? 1 : 0) << 7;
     msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
     msg_desc |= (transpose ? 1 : 0) << 15;
-    msg_desc |= detail::get_load_cache_hint_code<L1H, L2H>() << 17;
+    msg_desc |= detail::get_load_cache_hint_code<L1H, L2H, arch_tag>() << 17;
     msg_desc |= 1 << 25;
     msg_desc |= numDst << 20;
 
@@ -221,15 +222,15 @@ __XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
 /// @return none.
 ///
 template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
-        cache_hint L2H = cache_hint::none>
-__XETLA_API void xetla_tstore_global(
-        xetla_tdescriptor tdesc, xetla_vector<Ty, N> data) {
-    DEBUG_INVOKE(dbg_level::core,
-            core::block_2d<gpu_arch::Xe, Ty>::check_store(tdesc));
+        cache_hint L2H = cache_hint::none, gpu_arch arch_tag = gpu_arch::Xe>
+__XETLA_API std::enable_if_t<arch_tag == gpu_arch::Xe, void>
+xetla_tstore_global(xetla_tdescriptor tdesc, xetla_vector<Ty, N> data) {
+    DEBUG_INVOKE(
+            dbg_level::core, core::block_2d<arch_tag, Ty>::check_store(tdesc));
 
     uint32_t msg_desc = 7; // store operation
     msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
-    msg_desc |= detail::get_store_cache_hint_code<L1H, L2H>() << 17;
+    msg_desc |= detail::get_store_cache_hint_code<L1H, L2H, arch_tag>() << 17;
     msg_desc |= 1 << 25;
 
     constexpr uint32_t numSrc1 = (N * sizeof(Ty) + 63) / 64;
@@ -252,14 +253,16 @@ __XETLA_API void xetla_tstore_global(
 /// @return none.
 ///
 template <typename Ty, cache_hint L1H = cache_hint::cached,
-        cache_hint L2H = cache_hint::cached>
-__XETLA_API void xetla_tprefetch_global(xetla_tdescriptor tdesc) {
+        cache_hint L2H = cache_hint::cached, gpu_arch arch_tag = gpu_arch::Xe>
+__XETLA_API std::enable_if_t<arch_tag == gpu_arch::Xe, void>
+xetla_tprefetch_global(xetla_tdescriptor tdesc) {
 
     uint32_t msg_desc = 3;
     msg_desc |= 0 << 7;
     msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
     msg_desc |= 0 << 15;
-    msg_desc |= detail::get_prefetch_cache_hint_code<L1H, L2H>() << 17;
+    msg_desc |= detail::get_prefetch_cache_hint_code<L1H, L2H, arch_tag>()
+            << 17;
     msg_desc |= 1 << 25;
 
     constexpr uint32_t numSrc0 = 1;
@@ -278,29 +281,47 @@ __XETLA_API void xetla_tprefetch_global(xetla_tdescriptor tdesc) {
 /// @tparam N is the number of elements to store.
 /// @tparam L1H is L1 cache hint.
 /// @tparam L2H is L2 cache hint.
-/// @param address [in] is is the 64bit address for each channel.
+/// @tparam Toffset is the offset data type.
+/// @param base_address [in] is the 64bit base address of the surface.
+/// @param offset [in] is the address offset for each channel, default is 32bits.
 /// @param data [in] is tensor data to store.
 /// @return none.
 ///
 template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
-        cache_hint L2H = cache_hint::none, atomic_op Op>
-__XETLA_API void xetla_tatomic_store_global(xetla_vector<uint64_t, N> address,
-        xetla_vector<Ty, N> data, xetla_mask<N> pred = 1) {
+        cache_hint L2H = cache_hint::none, atomic_op Op,
+        gpu_arch arch_tag = gpu_arch::Xe, typename Toffset = uint32_t>
+__XETLA_API std::enable_if_t<arch_tag == gpu_arch::Xe, void>
+xetla_tatomic_store_global(uint64_t base_address,
+        xetla_vector<Toffset, N> offset, xetla_vector<Ty, N> data,
+        xetla_mask<N> pred = 1) {
 
     constexpr uint32_t numSrc0 = (N * sizeof(uint64_t) + 63) / 64;
     constexpr uint32_t numSrc1 = (N * sizeof(Ty) + 63) / 64;
     constexpr uint32_t num_dest = (N * sizeof(Ty) + 63) / 64;
 
+    static_assert(sizeof(Ty) == 2 || sizeof(Ty) == 4 || sizeof(Ty) == 8,
+            "element_size not supported!");
+    uint32_t element_size_code;
+    if constexpr (sizeof(Ty) == 2) {
+        element_size_code = 5;
+    } else if constexpr (sizeof(Ty) == 4) {
+        element_size_code = 2;
+    } else if constexpr (sizeof(Ty) == 8) {
+        element_size_code = 3;
+    }
+
     uint32_t msg_desc = detail::get_atomic_opcode<Op>();
     ///only support 64bit address
     msg_desc |= 3 << 7;
-    msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
-    msg_desc |= detail::get_atomic_cache_hint_code<L1H, L2H>() << 17;
+    msg_desc |= element_size_code << 9;
+    msg_desc |= detail::get_atomic_cache_hint_code<L1H, L2H, arch_tag>() << 17;
     msg_desc |= numSrc0 << 25;
 
     constexpr uint32_t execSize = gpu::xetla::detail::get_execSize_code<N>();
     constexpr uint32_t sfid = 0xF;
     constexpr uint32_t exDesc = 0;
+
+    xetla_vector<uint64_t, N> address = base_address + offset;
 
     xetla_raw_send<uint64_t, N, Ty, N, execSize, sfid, numSrc0, numSrc1>(
             address, data, exDesc, msg_desc, pred);

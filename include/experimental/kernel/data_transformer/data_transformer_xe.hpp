@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "experimental/group/reduction/reduction_xe.hpp"
 #include "experimental/kernel/data_transformer/api.hpp"
 #include "experimental/kernel/data_transformer/common.hpp"
 #include "experimental/kernel/data_transformer/config.hpp"
+#include "group/reduction/reduction_xe.hpp"
 
 namespace gpu::xetla::kernel {
 
@@ -107,17 +107,18 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
     using global_ld_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
             tile_size_y, block_size_x, block_size_y, in_reg_layout>;
     using global_ld_t = subgroup::tile_t<dtype_in, global_ld_tile_desc_t>;
-    using global_ld_payload_t = subgroup::mem_payload_t<dtype_in,
+    using global_ld_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout_in, mem_space::global>,
             global_ld_tile_desc_t,
             subgroup::msg_type_v<global_ld_tile_desc_t, mem_space::global>,
-            mem_layout_in, mem_space::global, gpu_arch::Xe>;
+            gpu_arch::Xe>;
 
     using global_st_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
             tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
     using global_st_t = subgroup::tile_t<dtype_out, global_st_tile_desc_t>;
-    using global_st_payload_t = subgroup::mem_payload_t<dtype_out,
-            global_st_tile_desc_t, msg_type::block_2d, mem_layout::row_major,
-            mem_space::global, gpu_arch::Xe>;
+    using global_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
+            global_st_tile_desc_t, msg_type::block_2d, gpu_arch::Xe>;
     using global_compute_tile_desc = subgroup::tile_desc_t<tile_size_x,
             tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
     using global_compute_t
@@ -243,9 +244,8 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
 
             xetla_tatomic_store_global<dtype_compute, simd,
                     cache_hint::uncached, cache_hint::write_back,
-                    atomic_op::fmax>(
-                    offsets * sizeof(dtype_compute) + (uint64_t)args->amax_ptr,
-                    local_max, pred);
+                    atomic_op::fmax>((uint64_t)args->amax_ptr,
+                    offsets * sizeof(dtype_compute), local_max, pred);
         } else {
             subgroup::elemwise_cvt(mat_global_st, mat_global_ld);
         }

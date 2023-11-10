@@ -45,28 +45,31 @@ struct group_row_reduce_store_t<dtype_acc, dtype_out, row_size, wg_size_x,
     using local_st_tile_desc_t = subgroup::tile_desc_t<row_size, 1,
             block_size_x, 1, reg_layout::tiled>;
     using local_st_t = subgroup::tile_t<dtype_acc, local_st_tile_desc_t>;
-    using local_st_payload_t = subgroup::mem_payload_t<dtype_acc,
+    using local_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_acc, mem_layout::row_major, mem_space::local>,
             local_st_tile_desc_t,
             subgroup::msg_type_v<local_st_tile_desc_t, mem_space::local>,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            gpu_arch::Xe>;
     using local_ld_tile_desc_t = subgroup::tile_desc_t<local_tile_size_x,
             wg_size_y, block_size_x, wg_size_y, reg_layout::tiled>;
     using local_ld_t = subgroup::tile_t<dtype_acc, local_ld_tile_desc_t>;
-    using local_ld_payload_t = subgroup::mem_payload_t<dtype_acc,
+    using local_ld_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_acc, mem_layout::row_major, mem_space::local>,
             local_ld_tile_desc_t,
             subgroup::msg_type_v<local_ld_tile_desc_t, mem_space::local>,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            gpu_arch::Xe>;
 
     //If the local tile size is small, we still can use 2D block store
     using global_st_tile_desc_t = subgroup::tile_desc_t<local_tile_size_x, 1,
             block_size_x, 1, reg_layout::tiled>;
     using global_st_t = subgroup::tile_t<dtype_out, global_st_tile_desc_t>;
-    using global_st_payload_t = subgroup::mem_payload_t<dtype_out,
+    using global_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
             global_st_tile_desc_t,
             (local_tile_size_x * sizeof(dtype_out) > 64) ? msg_type::block_1d
                                                          : msg_type::block_2d,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    xetla_nbarrier_t<wg_size_y, wg_size_y> nbarrier;
+            gpu_arch::Xe>;
+    xetla_nbarrier_t<wg_size_y, wg_size_y, gpu_arch::Xe> nbarrier;
     local_st_t local_st;
     local_st_payload_t local_st_payload;
     local_ld_t local_ld;
@@ -120,11 +123,12 @@ struct group_row_reduce_store_t<dtype_acc, dtype_out, row_size, wg_size_x, 1,
     using global_st_tile_desc_t = subgroup::tile_desc_t<row_size, 1,
             block_size_x, 1, reg_layout::tiled>;
     using global_st_t = subgroup::tile_t<dtype_out, global_st_tile_desc_t>;
-    using global_st_payload_t
-            = subgroup::mem_payload_t<dtype_out, global_st_tile_desc_t,
-                    (row_size * sizeof(dtype_out) > 64) ? msg_type::block_1d
-                                                        : msg_type::block_2d,
-                    mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+    using global_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
+            global_st_tile_desc_t,
+            (row_size * sizeof(dtype_out) > 64) ? msg_type::block_1d
+                                                : msg_type::block_2d,
+            gpu_arch::Xe>;
     inline void init(uint32_t sg_idx_ = 0, uint32_t sg_idy_ = 0,
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {}
 

@@ -168,127 +168,138 @@ void gemm_softmax_run(uint32_t iter) {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
             auto gpu_event = queue.submit([&](handler &cgh) {
-                cgh.parallel_for<class Test>(
-                        nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                            using namespace gpu::xetla;
-                            using namespace gpu::xetla::group;
-                            using namespace gpu::xetla::kernel;
-                            using namespace gpu::xetla::subgroup;
+                cgh.parallel_for<class
+                        Test>(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    using namespace gpu::xetla;
+                    using namespace gpu::xetla::group;
+                    using namespace gpu::xetla::kernel;
+                    using namespace gpu::xetla::subgroup;
 
-                            uint32_t batch_id = item.get_group(0);
+                    uint32_t batch_id = item.get_group(0);
 
-                            using compute_attr = compute_attr_t<data_type_a,
-                                    data_type_b, data_type_sfx>;
+                    // Performance tuning setting based on different shapes
+                    static constexpr uint32_t periodic_sync_interval = 8;
+                    static constexpr uint32_t prefetch_distance = 3;
+                    // should larger than 8
+                    static constexpr uint32_t k_iter_num = 16;
 
-                            // Performance tuning setting based on different shapes
-                            static constexpr uint32_t periodic_sync_interval
-                                    = 8;
-                            static constexpr uint32_t prefetch_distance = 3;
-                            // should larger than 8
-                            static constexpr uint32_t k_iter_num = 16;
-                            using perf_tuning_knob
-                                    = perf_tuning_knob_t<k_iter_num,
-                                            prefetch_distance,
-                                            periodic_sync_interval>;
+                    // Step 1: define mirco-kernel's configuration
+                    using wg_shape = shape<wg_tile_n, wg_tile_m>;
+                    using sg_shape = shape<sg_tile_n, sg_tile_m>;
 
-                            // specific the computation, performance tuning and computation core
-                            using compute_policy
-                                    = compute_policy_default_xmx<compute_attr,
-                                            perf_tuning_knob, gpu_arch::Xe>;
+                    // Mirco-kernel configuration
+                    using tune_option = dict_t<
+                            elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                                    tune_key_value::
+                                            PARAM_OPTIMZER_DECISION_TREE>,
+                            elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape>,
+                            elem_v_t<tune_key::PREFETCH_DISTANCE,
+                                    prefetch_distance>,
+                            elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL,
+                                    periodic_sync_interval>>;
+                    using gemm_op_t = xetla::group::default_gemm_selector_t<
+                            data_type_a, // input datatype for A
+                            mem_layout::row_major, // memory layout for A
+                            8, // leading dimension for A, in unit of element
+                            mem_space::
+                                    global, // memory reading from global mem for A
+                            data_type_b, // input datatype for B
+                            mem_layout::col_major, // memory layout for B
+                            8, // leading dimension for B, in unit of element
+                            mem_space::
+                                    global, // memory reading from global mem for B
+                            data_type_sfx, // accumulator data type for intermediate resutls
+                            wg_shape, // computation tile shape
+                            k_iter_num, // elements in each iteration
+                            gpu_arch::Xe, // GPU arch
+                            tune_option>;
 
-                            // define the memory layout & location of input/output
-                            using mem_desc_a_t = mem_desc_t<data_type_a,
-                                    mem_layout::row_major, mem_space::global>;
-                            using mem_desc_b_t = mem_desc_t<data_type_b,
-                                    mem_layout::col_major, mem_space::global>;
-                            using mem_desc_c_t = mem_desc_t<data_type_c,
-                                    mem_layout::row_major, mem_space::global>;
+                    using gemm_args_t = gemm_op_t::arguments_t;
 
-                            // define mirco-kernel's configuration
-                            using tile_shape = tile_shape_t<wg_tile_n,
-                                    wg_tile_m, sg_tile_n, sg_tile_m>;
-                            using gemm_op_t = gemm_t<compute_policy, tile_shape,
-                                    mem_desc_a_t, mem_desc_b_t>;
-                            using gemm_args_t = gemm_op_t::arguments_t;
+                    using epilogue_t = xetla::group::default_epilogue_selector_t<
+                            data_type_c, // onput datatype for C
+                            mem_layout::row_major, // memory layout for C
+                            8, // leading dimension for C, in unit of element
+                            mem_space::
+                                    global, // memory writing to global mem for C
+                            wg_shape, // computation tile shape
+                            k_iter_num, // elements in each iteration
+                            gpu_arch::Xe, // GPU arch
+                            tune_option>;
 
-                            // epilogue function to overwrite the result
-                            using epilogue_t = epilogue_t<
-                                    epilogue_policy_default<gpu_arch::Xe>,
-                                    tile_shape, mem_desc_c_t>;
+                    // using experimental::group::softmax
+                    // define softmax forward op
+                    using tile_shape = typename gemm_op_t::tile_shape;
+                    using softmax_fwd_t = softmax_t<
+                            softmax_policy_fwd<data_type_sfx, gpu_arch::Xe>,
+                            tile_shape>;
+                    using softmax_fwd_args_t =
+                            typename softmax_fwd_t::arguments_t;
 
-                            // using experimental::group::softmax
-                            // define softmax forward op
-                            using softmax_fwd_t = softmax_t<
-                                    softmax_policy_fwd<data_type_sfx,
-                                            gpu_arch::Xe>,
-                                    tile_shape>;
-                            using softmax_fwd_args_t =
-                                    typename softmax_fwd_t::arguments_t;
+                    // initialize shared local memory and named barrier
+                    static constexpr uint32_t barrier_count
+                            = gemm_op_t::barrier_count
+                            + softmax_fwd_t::get_barrier_count::count;
+                    static constexpr uint32_t slm_size = gemm_op_t::slm_size
+                            + softmax_fwd_t::get_slm_size::size;
+                    xetla_nbarrier_init<barrier_count>();
+                    xetla_local_init<slm_size>();
 
-                            // initialize shared local memory and named barrier
-                            static constexpr uint32_t barrier_count
-                                    = gemm_op_t::barrier_count
-                                    + softmax_fwd_t::get_barrier_count::count;
-                            static constexpr uint32_t slm_size
-                                    = gemm_op_t::slm_size
-                                    + softmax_fwd_t::get_slm_size::size;
-                            xetla_nbarrier_init<barrier_count>();
-                            xetla_local_init<slm_size>();
+                    // matA & matB & matC base address and load width
+                    data_type_a *matA_ptr = A + batch_id * size_a;
+                    uint32_t matA_ld = matrix_k;
+                    data_type_b *matB_ptr = B + batch_id * size_b;
+                    uint32_t matB_ld = matrix_k;
+                    data_type_c *matC_ptr = C + batch_id * size_c;
+                    uint32_t matC_ld = matrix_n;
 
-                            // matA & matB & matC base address and load width
-                            data_type_a *matA_ptr = A + batch_id * size_a;
-                            uint32_t matA_ld = matrix_k;
-                            data_type_b *matB_ptr = B + batch_id * size_b;
-                            uint32_t matB_ld = matrix_k;
-                            data_type_c *matC_ptr = C + batch_id * size_c;
-                            uint32_t matC_ld = matrix_n;
+                    // ecah workgroup gets it individual index to start computation
+                    int start_n = item.get_group(2) * wg_tile_n;
+                    int start_m = item.get_group(1) * wg_tile_m;
+                    int start_k = 0;
+                    uint32_t wg_tile_k = matrix_k;
+                    uint32_t boundary_n = (start_n + wg_tile_n) > matrix_n
+                            ? matrix_n
+                            : (start_n + wg_tile_n);
+                    uint32_t boundary_m = (start_m + wg_tile_m) > matrix_m
+                            ? matrix_m
+                            : (start_m + wg_tile_m);
+                    uint32_t boundary_k = wg_tile_k;
+                    uint32_t inner_loop_count
+                            = (wg_tile_k + k_iter_num - 1) / k_iter_num;
 
-                            // ecah workgroup gets it individual index to start computation
-                            int start_n = item.get_group(2) * wg_tile_n;
-                            int start_m = item.get_group(1) * wg_tile_m;
-                            int start_k = 0;
-                            uint32_t wg_tile_k = matrix_k;
-                            uint32_t boundary_n
-                                    = (start_n + wg_tile_n) > matrix_n
-                                    ? matrix_n
-                                    : (start_n + wg_tile_n);
-                            uint32_t boundary_m
-                                    = (start_m + wg_tile_m) > matrix_m
-                                    ? matrix_m
-                                    : (start_m + wg_tile_m);
-                            uint32_t boundary_k = wg_tile_k;
-                            uint32_t inner_loop_count
-                                    = (wg_tile_k + k_iter_num - 1) / k_iter_num;
+                    // initialize the memory description of matA & matB & matC
+                    using mem_desc_a_t = typename gemm_op_t::mem_desc_a_t;
+                    using mem_desc_b_t = typename gemm_op_t::mem_desc_b_t;
+                    using mem_desc_c_t = typename epilogue_t::mem_desc_c_t;
+                    mem_desc_a_t mem_desc_a(matA_ptr,
+                            {boundary_k, boundary_m, matA_ld},
+                            {start_k, start_m});
+                    mem_desc_b_t mem_desc_b(matB_ptr,
+                            {boundary_n, boundary_k, matB_ld},
+                            {start_n, start_k});
+                    mem_desc_c_t mem_desc_c(matC_ptr,
+                            {boundary_n, boundary_m, matC_ld},
+                            {start_n, start_m});
 
-                            // initialize the memory description of matA & matB & matC
-                            mem_desc_a_t mem_desc_a(matA_ptr,
-                                    {boundary_k, boundary_m, matA_ld},
-                                    {start_k, start_m});
-                            mem_desc_b_t mem_desc_b(matB_ptr,
-                                    {boundary_n, boundary_k, matB_ld},
-                                    {start_n, start_k});
-                            mem_desc_c_t mem_desc_c(matC_ptr,
-                                    {boundary_n, boundary_m, matC_ld},
-                                    {start_n, start_m});
+                    // call gemm function and result will be written in matAcc
+                    using gemm_args_t = typename gemm_op_t::arguments_t;
+                    gemm_args_t gemm_args(
+                            mem_desc_a, mem_desc_b, inner_loop_count);
+                    gemm_op_t::work_group_t g(item.get_local_linear_id());
+                    gemm_op_t::matAcc_t matAcc(0);
+                    gemm_op_t gemm;
+                    gemm(g, matAcc, gemm_args);
 
-                            // call gemm function and result will be written in matAcc
-                            gemm_args_t gemm_args(
-                                    mem_desc_a, mem_desc_b, inner_loop_count);
-                            gemm_op_t::work_group_t g(
-                                    item.get_local_linear_id());
-                            gemm_op_t::matAcc_t matAcc(0);
-                            gemm_op_t gemm;
-                            gemm(g, matAcc, gemm_args);
+                    // for each matAcc, call softmax op
+                    softmax_fwd_t softmax_fwd;
+                    softmax_fwd_args_t softmax_fwd_args(1);
+                    softmax_fwd(g, matAcc, {}, softmax_fwd_args);
 
-                            // for each matAcc, call softmax op
-                            softmax_fwd_t softmax_fwd;
-                            softmax_fwd_args_t softmax_fwd_args(1);
-                            softmax_fwd(g, matAcc, {}, softmax_fwd_args);
-
-                            // write matAcc value into pointer C
-                            epilogue_t epilogue;
-                            epilogue(g, matAcc, mem_desc_c);
-                        });
+                    // write matAcc value into pointer C
+                    epilogue_t epilogue;
+                    epilogue(g, matAcc, mem_desc_c);
+                });
             });
             gpu_event.wait();
 

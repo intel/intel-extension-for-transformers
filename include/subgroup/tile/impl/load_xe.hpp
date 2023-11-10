@@ -133,7 +133,7 @@ tile_load(tile_t &tile, payload_t &payload) {
 
     // array len is used to make sure memory load is cache line aligned
     // disabled while register or memory transpose
-    static constexpr uint8_t arr_len
+    static constexpr uint8_t arr_len_candidate
             = (reg_transpose
                       || mem_transpose
                       // block elements should be integer
@@ -145,10 +145,18 @@ tile_load(tile_t &tile, payload_t &payload) {
                               != 0))
                     || (block_size_y > ld_blk_size_y_limit)
             ? 1
-            : ((((tile_size_x % elems_per_CL) == 0)
-                       && ((elems_per_CL % block_size_x) == 0))
-                            ? elems_per_CL / block_size_x
-                            : 1);
+            : (((tile_size_x % elems_per_CL) == 0)
+                            ? (((elems_per_CL % block_size_x) == 0)
+                                            ? elems_per_CL / block_size_x
+                                            : 1)
+                            : ((tile_size_x < elems_per_CL)
+                                            ? (tile_size_x / block_size_x)
+                                            : 1));
+    static constexpr bool is_valid_arr_len_candidate = (arr_len_candidate == 1)
+            || (arr_len_candidate == 2) || (arr_len_candidate == 4);
+
+    static constexpr uint8_t arr_len
+            = is_valid_arr_len_candidate ? arr_len_candidate : 1;
 
     static_assert(reg_transpose || mem_transpose
                     || (!mem_transpose
@@ -209,7 +217,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         = xetla_tload_global<load_dtype,
                                 ld_blk_height * block_size_x * arr_len
                                         / scale_factor,
-                                L1, L2, trans, mem_transform>(tdesc);
+                                L1, L2, trans, mem_transform, arch_tag>(tdesc);
 
                 if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
@@ -257,7 +265,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         .xetla_format<native_type_t<load_dtype>>()
                         = xetla_tload_global<load_dtype,
                                 (load_elems / scale_factor), L1, L2, trans,
-                                mem_transform>(tdesc);
+                                mem_transform, arch_tag>(tdesc);
             }
         }
     }
@@ -298,7 +306,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         = xetla_tload_global<load_dtype,
                                 (ld_blk_height * block_size_x * arr_len
                                         / scale_factor),
-                                L1, L2, trans, mem_transform>(tdesc);
+                                L1, L2, trans, mem_transform, arch_tag>(tdesc);
 
                 if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
@@ -342,7 +350,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         .xetla_format<native_type_t<load_dtype>>()
                         = xetla_tload_global<load_dtype,
                                 final_load_elems / scale_factor, L1, L2, trans,
-                                mem_transform>(tdesc);
+                                mem_transform, arch_tag>(tdesc);
             }
         }
     }
@@ -422,11 +430,9 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
             load_dtype>::template unaligned_2d<payload_t::mem_transform,
             tile_desc::block_size_x>;
-    static constexpr uint32_t block_size_x = tile_desc::block_size_x;
-    static constexpr uint32_t block_size_y = tile_desc::block_size_y;
-
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
-    constexpr uint32_t load_elems = num_channel_y * tile_desc::block_size_x;
+    constexpr uint32_t load_elems = num_channel_y * payload_t::num_channel_x;
+    constexpr uint32_t scale_factor = payload_t::scale_factor;
 
 #pragma unroll
     for (int i = 0; i < tile_desc::tile_size_y / tile_desc::block_size_y; i++) {
@@ -450,8 +456,12 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                 < payload.height_in_elems
                         : 1;
 
-                uint32_t address_offset = offset_x * sizeof(dtype)
-                        + (offset_y + sub_block_y) * payload.pitch_in_bytes;
+                uint32_t address_offset = payload_t::trans
+                        ? offset_x * payload.pitch_in_bytes
+                                + (offset_y + sub_block_y) * sizeof(dtype)
+                        : offset_x * sizeof(dtype)
+                                + (offset_y + sub_block_y)
+                                        * payload.pitch_in_bytes;
 
                 reg_tmp = xetla_load_global<load_dtype, 1,
                         data_size::default_size, L1, L3, load_elems>(
@@ -461,8 +471,9 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         pred_x && pred_y);
                 reg_tmp.xetla_merge(reg_tmp, 0, pred_x && pred_y);
 
-                reg_sub.xetla_select<load_elems, 1>(
-                        sub_block_y * tile_desc::block_size_x)
+                reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                               sub_block_y * tile_desc::block_size_x)
+                        .xetla_format<load_dtype>()
                         = reg_tmp;
             }
         }
@@ -492,19 +503,26 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                         + sub_block_y
                                 < payload.height_in_elems
                         : 1;
-                uint32_t address_offset = offset_x * sizeof(dtype)
-                        + (offset_y + sub_block_y) * payload.pitch_in_bytes;
+
+                uint32_t address_offset = payload_t::trans
+                        ? offset_x * payload.pitch_in_bytes
+                                + (offset_y + sub_block_y) * sizeof(dtype)
+                        : offset_x * sizeof(dtype)
+                                + (offset_y + sub_block_y)
+                                        * payload.pitch_in_bytes;
+
                 reg_tmp = xetla_load_global<load_dtype, 1,
                         data_size::default_size, L1, L3, load_elems>(
                         payload.base_ptr,
                         payload.channel_offset + payload.base_offset
                                 + address_offset,
-                        pred_x & pred_y);
+                        pred_x && pred_y);
 
                 reg_tmp.xetla_merge(reg_tmp, 0, pred_x && pred_y);
 
-                reg_sub.xetla_select<load_elems, 1>(
-                        sub_block_y * tile_desc::block_size_x)
+                reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                               sub_block_y * tile_desc::block_size_x)
+                        .xetla_format<load_dtype>()
                         = reg_tmp;
             }
         }

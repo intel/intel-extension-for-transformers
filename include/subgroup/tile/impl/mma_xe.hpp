@@ -232,7 +232,7 @@ struct tile_mma_t<matAcc_dst_t_, matAcc_src_t_, matB_t_, matA_t_,
         if constexpr (num_block_k > 1) {
             constexpr uint32_t last_uint16_idx
                     = tile_elems * sizeof(dtype_dst) / sizeof(uint16_t) - 1;
-            xetla_wait(dst.reg.xetla_format<uint16_t>()[last_uint16_idx]);
+            xetla_wait(dst.reg.xetla_format<uint16_t>()[0]);
         }
     }
 };

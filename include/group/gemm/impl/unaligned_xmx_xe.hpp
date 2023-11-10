@@ -118,26 +118,26 @@ private:
     using matA_tile_desc_t = subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a,
             block_size_x_a, block_size_y_a, reg_layout_a>;
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
-    using matA_payload_t = subgroup::mem_payload_t<dtype_a, matA_tile_desc_t,
-            is_local_a ? msg_type::scatter : msg_type::unaligned_2d,
-            mem_layout_a, mem_space_a, arch_tag>;
+    using matA_payload_t = subgroup::mem_payload_t<mem_desc_a_t,
+            matA_tile_desc_t,
+            is_local_a ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
-    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_a,
+    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
-            mem_layout_a, mem_space_a, wg_size_x, arch_tag>;
+            wg_size_x, arch_tag>;
     static constexpr reg_layout reg_layout_b
             = sizeof(dtype_b) < sizeof(uint32_t) ? reg_layout::vnni_tiled
                                                  : reg_layout::tiled;
     using matB_tile_desc_t = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b,
             block_size_x_b, block_size_y_b, reg_layout_b>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
-    using matB_payload_t = subgroup::mem_payload_t<dtype_b, matB_tile_desc_t,
-            is_local_b ? msg_type::scatter : msg_type::unaligned_2d,
-            mem_layout_b, mem_space_b, arch_tag>;
+    using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
+            matB_tile_desc_t,
+            is_local_b ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
     using matB_acc_t = subgroup::tile_t<dtype_mma_b, matB_tile_desc_t>;
-    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
+    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
             subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b, 1, 1>,
-            mem_layout_b, mem_space_b, wg_size_y, arch_tag>;
+            wg_size_y, arch_tag>;
 
 public:
     using matAcc_tile_desc_t = subgroup::tile_desc_t<tile_size_x_c,

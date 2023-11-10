@@ -47,9 +47,8 @@ struct dropout_func_t {
             block_size_x, block_size_y, reg_layout::tiled>;
     using matAcc_t = subgroup::tile_t<dtype_acc, tile_desc_t>;
     using mat_in_t = subgroup::tile_t<dtype_in, tile_desc_t>;
-    using mat_in_payload_t = subgroup::mem_payload_t<dtype_in, tile_desc_t,
-            subgroup::msg_type_v<tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+    using mat_in_payload_t = subgroup::mem_payload_t<mem_desc_in_t, tile_desc_t,
+            subgroup::msg_type_v<tile_desc_t, mem_space::global>, gpu_arch::Xe>;
 
     using tile_op_t =
             typename std::conditional<dropout_kind == dropout_op::normal,

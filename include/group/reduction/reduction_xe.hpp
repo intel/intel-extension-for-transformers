@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "experimental/group/reduction/reduction_api.hpp"
+#include "group/reduction/reduction_api.hpp"
 
 namespace gpu::xetla::group {
 
@@ -27,7 +27,7 @@ template <typename T, uint32_t SZ, uint32_t N, reduce_op Op, uint32_t N_SG,
         bool is_all_reduce>
 struct group_reduce_t<T, SZ, N, Op, N_SG, is_all_reduce, gpu_arch::Xe> {
     group_reduce_t<T, SZ, N, Op, 1, is_all_reduce, gpu_arch::Xe> sg_reduce {};
-    xetla_nbarrier_t<N_SG, N_SG> nbarrier;
+    xetla_nbarrier_t<N_SG, N_SG, gpu_arch::Xe> nbarrier;
     uint32_t slm_base;
     uint32_t sg_id;
     using local_st_tile_desc
@@ -36,12 +36,14 @@ struct group_reduce_t<T, SZ, N, Op, N_SG, is_all_reduce, gpu_arch::Xe> {
             reg_layout::tiled>;
     using local_ld_t = subgroup::tile_t<T, local_ld_tile_desc>;
     using local_st_t = subgroup::tile_t<T, local_st_tile_desc>;
-    using local_ld_payload_t = subgroup::mem_payload_t<T, local_ld_tile_desc,
+    using local_ld_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<T, mem_layout::row_major, mem_space::local>,
+            local_ld_tile_desc,
             subgroup::msg_type_v<local_ld_tile_desc, mem_space::local>,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
-    using local_st_payload_t
-            = subgroup::mem_payload_t<T, local_st_tile_desc, msg_type::block_1d,
-                    mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            gpu_arch::Xe>;
+    using local_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<T, mem_layout::row_major, mem_space::local>,
+            local_st_tile_desc, msg_type::block_1d, gpu_arch::Xe>;
     inline group_reduce_t() = default;
     inline group_reduce_t(
             uint32_t sg_id_, uint32_t nbarrier_id, uint32_t slm_base_) {

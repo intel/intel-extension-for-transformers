@@ -180,7 +180,6 @@ recur_col_reduce(xetla_vector<dtype, N_x * N_y> in) {
 __XETLA_API uint32_t get_2d_group_linear_id(sycl::nd_item<3> &item) {
     return item.get_group(2) + item.get_group(1) * item.get_group_range(2);
 }
-
 /// @} xetla_util_misc
 
 } // namespace gpu::xetla

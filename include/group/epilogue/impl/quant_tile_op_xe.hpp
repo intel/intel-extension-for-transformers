@@ -162,8 +162,8 @@ public:
         matC_t matC;
         quant_op(matC, mat_dequant, mem_desc_c.coord, args.quant_op_args);
 
-        using matC_payload_t = subgroup::mem_payload_t<dtype_c, mat_tile_desc,
-                msg_type_c, mem_layout_c, mem_space_c, arch_tag>;
+        using matC_payload_t = subgroup::mem_payload_t<mem_desc_c_t,
+                mat_tile_desc, msg_type_c, arch_tag>;
         matC_payload_t matC_payload(mem_desc_c);
         subgroup::tile_store<cache_hint::streaming, cache_hint::write_back>(
                 matC, matC_payload);

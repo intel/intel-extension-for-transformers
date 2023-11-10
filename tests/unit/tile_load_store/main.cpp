@@ -268,3 +268,23 @@ TEST(tile_load_store_unaligned_2d, esimd) {
             tile_load_store_unaligned_2d_func<int, 127, 63, 127, 32, 32, 16,
                     16>>(nd_range, result_validate);
 }
+
+TEST(tile_load_store_oob_1, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate
+            = std::bind(tile_load_store_result_validate<int, false, true>, _1,
+                    _2, _3, 64, 64, 32 - 1, 32 - 1, 0);
+    kernel_run<int,
+            tile_load_store_oob_func<int, 64, 64, 64, 32, 32, 16, 16, -1, -1>>(
+            nd_range, result_validate);
+}
+
+TEST(tile_load_store_oob_2, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate
+            = std::bind(tile_load_store_result_validate<bf16, false, true>, _1,
+                    _2, _3, 64, 64, 32 - 2, 32 - 2, 0);
+    kernel_run<bf16,
+            tile_load_store_oob_func<bf16, 64, 64, 64, 32, 32, 16, 16, -2, -2>>(
+            nd_range, result_validate);
+}

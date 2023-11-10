@@ -109,14 +109,15 @@ struct row_reduction_fused_op_t<reduction_fused_kind::bias_gelu_w_bwd,
         using dgelu_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
                 tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
         using dgelu_w_in_t = subgroup::tile_t<dtype_in, dgelu_tile_desc_t>;
-        using dgelu_w_in_payload_t = subgroup::mem_payload_t<dtype_in,
+        using dgelu_w_in_payload_t = subgroup::mem_payload_t<
+                mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
                 dgelu_tile_desc_t,
                 subgroup::msg_type_v<dgelu_tile_desc_t, mem_space::global>,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                gpu_arch::Xe>;
         using dgelu_x_out_t = subgroup::tile_t<dtype_out, dgelu_tile_desc_t>;
-        using dgelu_x_out_payload_t = subgroup::mem_payload_t<dtype_out,
-                dgelu_tile_desc_t, msg_type::block_2d, mem_layout::row_major,
-                mem_space::global, gpu_arch::Xe>;
+        using dgelu_x_out_payload_t = subgroup::mem_payload_t<
+                mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
+                dgelu_tile_desc_t, msg_type::block_2d, gpu_arch::Xe>;
         dgelu_w_in_t dgelu_w_in;
         dgelu_w_in_payload_t dgelu_w_in_payload(w_load_base_desc);
         subgroup::tile_load(dgelu_w_in, dgelu_w_in_payload);
@@ -186,16 +187,19 @@ struct row_reduction_fused_op_t<reduction_fused_kind::bias_dropout_bwd,
         using reduction_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
                 tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
         using mask_in_t = subgroup::tile_t<dtype_mask, reduction_tile_desc_t>;
-        using mask_in_payload_t = subgroup::mem_payload_t<dtype_mask,
+        using mask_in_payload_t = subgroup::mem_payload_t<
+                mem_desc_t<dtype_mask, mem_layout::row_major,
+                        mem_space::global>,
                 reduction_tile_desc_t,
                 subgroup::msg_type_v<reduction_tile_desc_t, mem_space::global>,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                gpu_arch::Xe>;
         using dropout_bwd_out_t
                 = subgroup::tile_t<dtype_out, reduction_tile_desc_t>;
-        using dropout_bwd_out_payload_t = subgroup::mem_payload_t<dtype_out,
+        using dropout_bwd_out_payload_t = subgroup::mem_payload_t<
+                mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>,
                 reduction_tile_desc_t,
                 subgroup::msg_type_v<reduction_tile_desc_t, mem_space::global>,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                gpu_arch::Xe>;
         if (dropout_prob != 0) {
             mask_in_t mask_in;
             mask_in_payload_t mask_in_payload(mask_load_base_desc);

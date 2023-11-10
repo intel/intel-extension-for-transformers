@@ -19,9 +19,10 @@
 
 #pragma once
 
-#include "experimental/group/softmax/api.hpp"
-#include "experimental/group/softmax/common.hpp"
-#include "experimental/group/softmax/softmax_policy.hpp"
+#include "group/reduction/reduction.hpp"
+#include "group/softmax/api.hpp"
+#include "group/softmax/common.hpp"
+#include "group/softmax/softmax_policy.hpp"
 
 namespace gpu::xetla::group {
 
@@ -74,7 +75,7 @@ public:
         uint32_t nbarrier_id = nbarrier_base + sg_idy;
         uint32_t slm_base_addr
                 = slm_base + sg_idy * wg_size_x * sg_tile_m * sizeof(dtype_acc);
-        xetla_nbarrier_t<wg_size_x, wg_size_x> nbarrier;
+        xetla_nbarrier_t<wg_size_x, wg_size_x, arch_tag> nbarrier;
         nbarrier.init_nbarrier(nbarrier_id, nbarrier_role::producer_consumer);
         xetla_vector<dtype_acc, sg_tile_m> local_max
                 = subgroup::tile_reduce<reduce_op::max, dtype_acc, dtype_acc,

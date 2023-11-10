@@ -90,20 +90,24 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
     using beta_in_t = subgroup::tile_t<dtype_weight, ln_fwd_tile_desc_t>;
     using y_out_t = subgroup::tile_t<dtype_y, ln_fwd_tile_desc_t>;
 
-    using x_in_payload_t = subgroup::mem_payload_t<dtype_x, ln_fwd_tile_desc_t,
+    using x_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_x, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t,
             subgroup::msg_type_v<ln_fwd_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using gamma_in_payload_t
-            = subgroup::mem_payload_t<dtype_weight, ln_fwd_tile_desc_t,
-                    subgroup::msg_type_v<ln_fwd_tile_desc_t, mem_space::global>,
-                    mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using beta_in_payload_t
-            = subgroup::mem_payload_t<dtype_weight, ln_fwd_tile_desc_t,
-                    subgroup::msg_type_v<ln_fwd_tile_desc_t, mem_space::global>,
-                    mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-    using y_out_payload_t = subgroup::mem_payload_t<dtype_y, ln_fwd_tile_desc_t,
-            msg_type::block_1d, mem_layout::row_major, mem_space::global,
             gpu_arch::Xe>;
+    using gamma_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_weight, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t,
+            subgroup::msg_type_v<ln_fwd_tile_desc_t, mem_space::global>,
+            gpu_arch::Xe>;
+    using beta_in_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_weight, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t,
+            subgroup::msg_type_v<ln_fwd_tile_desc_t, mem_space::global>,
+            gpu_arch::Xe>;
+    using y_out_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_y, mem_layout::row_major, mem_space::global>,
+            ln_fwd_tile_desc_t, msg_type::block_1d, gpu_arch::Xe>;
 
     /// @brief
     ///
@@ -183,7 +187,7 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
         int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
 
-        xetla_nbarrier_t<wg_size_x, wg_size_x> nbarrier;
+        xetla_nbarrier_t<wg_size_x, wg_size_x, gpu_arch::Xe> nbarrier;
         nbarrier.init_nbarrier(
                 sg_idy + nbarrier_base, nbarrier_role::producer_consumer);
 

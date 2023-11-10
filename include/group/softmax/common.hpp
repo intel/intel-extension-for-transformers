@@ -19,11 +19,5 @@
 
 #pragma once
 
-#include "experimental/group/softmax/common.hpp"
-
-namespace gpu::xetla::group {
-
-template <typename softmax_policy, typename tile_shape>
-class softmax_t {};
-
-} // namespace gpu::xetla::group
+#include "group/tile_shape.hpp"
+#include "subgroup/subgroup.hpp"

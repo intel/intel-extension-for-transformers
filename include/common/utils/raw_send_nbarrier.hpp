@@ -38,7 +38,8 @@ enum class nbarrier_role : uint8_t {
 /// @tparam num_producers is the number of subgroups participating the barrier as producer.
 /// @tparam num_consumers is the number of subgroups participating the barrier as consumer.
 ///
-template <uint8_t num_producers = 1, uint8_t num_consumers = 1>
+template <uint8_t num_producers = 1, uint8_t num_consumers = 1,
+        gpu_arch arch_tag = gpu_arch::Xe>
 struct xetla_nbarrier_t {
     ///
     /// @brief Description of named barrier objection.

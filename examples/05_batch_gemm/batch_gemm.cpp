@@ -81,40 +81,46 @@ void batch_gemm_run(uint32_t iter) {
     constexpr uint32_t sg_tile_m = 32;
     constexpr uint32_t sg_tile_n = 64;
 
-    //There are implicit requirement for sg_tile_k range
-    constexpr uint32_t sg_tile_k = 32;
-    static constexpr uint32_t sync_freq = 8;
-    static constexpr uint32_t stages = 3;
+    //There are implicit requirement for wg_tile_k range
+    constexpr uint32_t wg_tile_k = 32;
+    constexpr uint32_t sync_freq = 8;
+    constexpr uint32_t stages = 3;
 
     // Org the compute shape for sub-matrix
-    using tile_shape
-            = xetla::group::tile_shape_t<wg_tile_n, // workgroup size in dim0
-                    wg_tile_m, //	workgroup size in dim1
-                    sg_tile_n, //	subgroup size in dim0
-                    sg_tile_m>; //	subgroup size in dim1
+    using wg_shape = shape<wg_tile_n, wg_tile_m>;
+    using sg_shape = shape<sg_tile_n, sg_tile_m>;
 
     // Mirco-kernel configuration
-    using gemm_t = xetla::group::gemm_selector_t<
+    using tune_option
+            = dict_t<elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                             tune_key_value::PARAM_OPTIMZER_DECISION_TREE>,
+                    elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape>,
+                    elem_v_t<tune_key::PREFETCH_DISTANCE, stages>,
+                    elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL, sync_freq>>;
+    using gemm_t = xetla::group::default_gemm_selector_t<
             data_type_a, // input datatype for A
-            data_type_b, // input datatype for B
             mem_layout::row_major, // memory layout for A
-            mem_layout::row_major, // memory layout for B
+            8, // leading dimension for A, in unit of element
             mem_space::global, // memory reading from global mem for A
+            data_type_b, // input datatype for B
+            mem_layout::row_major, // memory layout for B
+            8, // leading dimension for B, in unit of element
             mem_space::global, // memory reading from global mem for B
-            8, // buffer alignment for A, in unit of element
-            8, // buffer alignment for B, in unit of element
             data_type_acc, // accumulator data type for intermediate resutls
-            tile_shape, // computation tile shape
-            sg_tile_k, // elements in each iteration
-            mma_engine::xmx, // compute engine
+            wg_shape, // computation tile shape
+            wg_tile_k, // elements in each iteration
             gpu_arch::Xe, // GPU arch
-            stages, // number of prefetch pipe stage
-            sync_freq> // frequency of periodic sync, in unit of inner loop
-            ::gemm;
+            tune_option>;
 
-    using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
-            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
+    using epilogue_t = xetla::group::default_epilogue_selector_t<
+            data_type_c, // onput datatype for C
+            mem_layout::row_major, // memory layout for C
+            8, // leading dimension for C, in unit of element
+            mem_space::global, // memory writing to global mem for C
+            wg_shape, // computation tile shape
+            wg_tile_k, // elements in each iteration
+            gpu_arch::Xe, // GPU arch
+            tune_option>;
 
     using batch_gemm_op_t
             = xetla::kernel::batch_gemm_t<gemm_t, epilogue_t, gpu_arch::Xe>;

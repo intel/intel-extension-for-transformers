@@ -20,7 +20,8 @@
 
 using namespace gpu::xetla;
 
-template <typename dtype, int SIMD, int BLOCK_SIZE>
+template <typename dtype, int SIMD, int BLOCK_SIZE,
+        gpu_arch arch_tag = gpu_arch::Xe>
 KERNEL_FUNC inline void vector_add_func(
         sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
@@ -31,12 +32,16 @@ KERNEL_FUNC inline void vector_add_func(
     xetla_fill_tdesc<dtype, SIMD, SIMD, 1>(b_src_tdesc.xetla_format<uint32_t>(),
             b, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, 0, 0);
 
-    xetla_tprefetch_global<dtype>(a_src_tdesc);
-    xetla_tprefetch_global<dtype>(b_src_tdesc);
+    xetla_tprefetch_global<dtype, cache_hint::cached, cache_hint::cached,
+            arch_tag>(a_src_tdesc);
+    xetla_tprefetch_global<dtype, cache_hint::cached, cache_hint::cached,
+            arch_tag>(b_src_tdesc);
     xetla_vector<dtype, SIMD *SIMD> A_load_vec
-            = xetla_tload_global<dtype, SIMD * SIMD>(a_src_tdesc);
+            = xetla_tload_global<dtype, SIMD * SIMD, cache_hint::cached,
+                    cache_hint::cached, false, false, arch_tag>(a_src_tdesc);
     xetla_vector<dtype, SIMD *SIMD> B_load_vec
-            = xetla_tload_global<dtype, SIMD * SIMD>(b_src_tdesc);
+            = xetla_tload_global<dtype, SIMD * SIMD, cache_hint::cached,
+                    cache_hint::cached, false, false, arch_tag>(b_src_tdesc);
 
     xetla_vector<float, SIMD *SIMD> add_a
             = xetla_cvt<float, dtype, SIMD * SIMD>(A_load_vec);
@@ -57,7 +62,7 @@ KERNEL_FUNC inline void vector_add_func(
 #pragma unroll
     for (int unroll_i = 0; unroll_i < SIMD; unroll_i += store_height) {
         xetla_tstore_global<dtype, SIMD * store_height, cache_hint::write_back,
-                cache_hint::write_back>(dst_tdesc,
+                cache_hint::write_back, arch_tag>(dst_tdesc,
                 out.xetla_select<SIMD * store_height, 1>(SIMD * unroll_i));
         xetla_update_tdesc_offsety(
                 dst_tdesc.xetla_format<uint32_t>(), store_height);

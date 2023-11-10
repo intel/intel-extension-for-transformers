@@ -160,7 +160,8 @@ tile_store(tile_t &tile, payload_t &payload) {
                         = st_blk_size_y * block_size_x * arr_len;
                 auto st_blk = combine_blk.xetla_select<store_elems, 1>(
                         ii * store_elems);
-                xetla_tstore_global<dtype, store_elems, L1, L2>(tdesc, st_blk);
+                xetla_tstore_global<dtype, store_elems, L1, L2,
+                        payload_t::arch_tag>(tdesc, st_blk);
                 xetla_update_tdesc_offsety(
                         tdesc.xetla_format<uint32_t>(), st_blk_size_y);
             }
@@ -180,8 +181,8 @@ tile_store(tile_t &tile, payload_t &payload) {
                 gpu::xetla::detail::xetla_set_block_widthx_widthy_arrlen(
                         tdesc.xetla_format<uint32_t>(),
                         block_widthx_widthy_arrlen);
-                xetla_tstore_global<dtype, blk_remained_elems, L1, L2>(
-                        tdesc, st_blk);
+                xetla_tstore_global<dtype, blk_remained_elems, L1, L2,
+                        payload_t::arch_tag>(tdesc, st_blk);
             }
         }
     }
@@ -223,7 +224,8 @@ tile_store(tile_t &tile, payload_t &payload) {
                         = remained_st_blk_size_y * block_size_x * arr_len;
                 auto st_blk = combine_blk.xetla_select<store_elems, 1>(
                         ii * store_elems);
-                xetla_tstore_global<dtype, store_elems, L1, L2>(tdesc, st_blk);
+                xetla_tstore_global<dtype, store_elems, L1, L2,
+                        payload_t::arch_tag>(tdesc, st_blk);
                 xetla_update_tdesc_offsety(
                         tdesc.xetla_format<uint32_t>(), remained_st_blk_size_y);
             }
@@ -243,8 +245,8 @@ tile_store(tile_t &tile, payload_t &payload) {
                 gpu::xetla::detail::xetla_set_block_widthx_widthy_arrlen(
                         tdesc.xetla_format<uint32_t>(),
                         block_widthx_widthy_arrlen);
-                xetla_tstore_global<dtype, final_store_elems, L1, L2>(
-                        tdesc, st_blk);
+                xetla_tstore_global<dtype, final_store_elems, L1, L2,
+                        payload_t::arch_tag>(tdesc, st_blk);
             }
         }
     }
@@ -324,7 +326,8 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
     // using num_block_x = tile_desc::num_block_x;
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
-    constexpr uint32_t load_elems = num_channel_y * tile_desc::block_size_x;
+    constexpr uint32_t load_elems = num_channel_y * payload_t::num_channel_x;
+    constexpr uint32_t scale_factor = payload_t::scale_factor;
 
 #pragma unroll
     for (int i = 0; i < tile_desc::tile_size_y / tile_desc::block_size_y; i++) {
@@ -353,8 +356,9 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         L3, load_elems>(payload.base_ptr,
                         (payload.base_offset + address_offset
                                 + payload.channel_offset),
-                        reg_sub.xetla_select<load_elems, 1>(
-                                sub_block_y * tile_desc::block_size_x),
+                        reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                       sub_block_y * tile_desc::block_size_x)
+                                .xetla_format<store_dtype>(),
                         (pred_x && pred_y));
             }
         }
@@ -390,8 +394,9 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         L3, load_elems>(payload.base_ptr,
                         (payload.base_offset + address_offset
                                 + payload.channel_offset),
-                        reg_sub.xetla_select<load_elems, 1>(
-                                sub_block_y * tile_desc::block_size_x),
+                        reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                       sub_block_y * tile_desc::block_size_x)
+                                .xetla_format<store_dtype>(),
                         (pred_x && pred_y));
             }
         }
@@ -462,8 +467,9 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L2, op_kind>(payload.base_pointer + address_offset
-                                + payload.channel_offset,
+                        L2, op_kind, payload_t::arch_tag>(
+                        payload.base_pointer + address_offset,
+                        payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
                         pred_x & pred_y);
@@ -497,8 +503,9 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L2, op_kind>((uint64_t)payload.base_pointer
-                                + address_offset + payload.channel_offset,
+                        L2, op_kind, payload_t::arch_tag>(
+                        (uint64_t)payload.base_pointer + address_offset,
+                        payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
                         pred_x & pred_y);

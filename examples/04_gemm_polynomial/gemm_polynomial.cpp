@@ -128,42 +128,6 @@ void gemm_polynomial_run(int iter) {
     uint32_t thread_range_m = wg_tile_m / sg_tile_m;
     uint32_t thread_range_n = wg_tile_n / sg_tile_n;
 
-    // leading dimension
-    uint32_t lda = matrix_k;
-    uint32_t ldb = matrix_n;
-    uint32_t ldc = matrix_n;
-
-    //There are implicit requirement for sg_tile_k range
-    constexpr uint32_t sg_tile_k = 32;
-    static constexpr uint32_t sync_freq = 8;
-    static constexpr uint32_t stages = 3;
-
-    // Org the compute shape for sub-matrix
-    using tile_shape
-            = xetla::group::tile_shape_t<wg_tile_n, // workgroup size in dim0
-                    wg_tile_m, //	workgroup size in dim1
-                    sg_tile_n, //	subgroup size in dim0
-                    sg_tile_m>; //	subgroup size in dim1
-
-    // Mirco-kernel configuration
-    using gemm_t = typename xetla::group::gemm_selector_t<
-            data_type_a, // input datatype for A
-            data_type_b, // input datatype for B
-            mem_layout::row_major, // memory layout for A
-            mem_layout::row_major, // memory layout for B
-            mem_space::global, // memory reading from global mem for A
-            mem_space::global, // memory reading from global mem for B
-            8, // buffer alignment for A, in unit of element
-            8, // buffer alignment for B, in unit of element
-            data_type_acc, // accumulator data type for intermediate resutls
-            tile_shape, // computation tile shape
-            sg_tile_k, // elements in each iteration
-            mma_engine::xmx, // compute engine
-            gpu_arch::Xe, // GPU arch
-            stages, // number of prefetch pipe stage
-            sync_freq> // frequency of periodic sync, in unit of inner loop
-            ::gemm;
-
     // epilogue function to define how to write result back or post
     // fusion
     // [Polynomial] Define tile_op used in epilogue_t: polynomial_op_t
@@ -176,10 +140,32 @@ void gemm_polynomial_run(int iter) {
     // is already calculated.
     // Mathematically epilogue_t is a map that applies to each element:
     //   epilogue_t: [m, n] -> [m, n], C_acc |-> tile_op_t(C_acc)
-    using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
-            tile_shape,
-            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
+    using epilogue_policy
+            = xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>;
+
+    // Mirco-kernel configuration
+    using tune_option = dict_t<
+            elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                    tune_key_value::PARAM_OPTIMZER_DECISION_TREE>,
+            elem_t_t<tune_key::EPILOGUE_POLICY, epilogue_policy>,
+            elem_t_t<tune_key::WG_TILE_SHAPE, shape<wg_tile_n, wg_tile_m>>,
+            elem_t_t<tune_key::SG_TILE_SHAPE, shape<sg_tile_n, sg_tile_m>>>;
+    using default_config_t = gpu::xetla::kernel::default_gemm_config_t<
+            data_type_a, // input datatype for A
+            mem_layout::row_major, // memory layout for A
+            8, // leading dimension alignment for A, in unit of element
+            data_type_b, // input datatype for B
+            mem_layout::row_major, // memory layout for B
+            8, // leading dimension alignment for B, in unit of element
+            data_type_c, // output datatype for C
+            mem_layout::row_major, // memory layout for C
+            8, // leading dimension alignment for C, in unit of element
+            data_type_acc, // accumulator data type for intermediate resutls
+            gpu_arch::Xe, // GPU arch
+            tune_option>;
+
+    using gemm_op_t = typename default_config_t::type;
+    using epilogue_t = typename default_config_t::epilogue_t;
 
     // [Polynomial] define arguments for each epilogue_tile_op in chained_tile_op_t<>
     using epilogue_tile_op_args_t = epilogue_t::tile_op_t::arguments_t;
@@ -194,11 +180,6 @@ void gemm_polynomial_run(int iter) {
     // [Polynomial] pass arguments of chained_tile_op_t<> to epilogue_args
     using epilogue_args_t = epilogue_t::arguments_t;
     epilogue_args_t epilogue_args(tile_op_args);
-
-    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
-    using gemm_op_t = xetla::kernel::gemm_universal_t<
-            xetla::kernel::dispatch_policy_default<group_swizzle>, gemm_t,
-            epilogue_t>;
 
     // set up gemm_universal arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,

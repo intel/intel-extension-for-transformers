@@ -53,7 +53,6 @@ int mlp_result_validate(data_type_a *A_device, data_type_b *B_device,
             m, n, k, mem_layout_a_, mem_layout_w_, A, W, gold_B.data());
     std::transform(gold_B.cbegin(), gold_B.cend(), gold_B.begin(),
             [](data_type_acc b) { return b > 0.0f ? b : 0.0f; });
-
     buff_cmp::buff_vals<data_type_b, data_type_acc> other_layer1(
             gold_B.data(), m, n, n);
 
@@ -156,74 +155,85 @@ void mlp_run(uint32_t iter) {
     constexpr uint32_t sg_tile_m_layer2 = 32;
     constexpr uint32_t sg_tile_n_layer2 = 32;
 
-    // There are implicit requirement for sg_tile_k range
-    constexpr uint32_t sg_tile_k = 32;
+    //There are implicit requirement for sg_tile_k range
+    constexpr uint32_t wg_tile_k = 32;
     static constexpr uint32_t sync_freq = 1;
     static constexpr uint32_t stages = 3;
 
     // Org the compute shape for sub-matrix
-    using tile_shape_layer1 = xetla::group::tile_shape_t<
-            wg_tile_n_layer1, // workgroup size in dim0
-            wg_tile_m_layer1, //   workgroup size in dim1
-            sg_tile_n_layer1, //   subgroup size in dim0
-            sg_tile_m_layer1>; //  subgroup size in dim1
+    using wg_shape_layer1 = shape<wg_tile_n_layer1, wg_tile_m_layer1>;
+    using sg_shape_layer1 = shape<sg_tile_n_layer1, sg_tile_m_layer1>;
 
     // Mirco-kernel configuration
-    using gemm_layer1_t = xetla::group::gemm_selector_t<
+    using epilogue_policy_layer1 = xetla::group::epilogue_policy_tile_op<
+            xetla::subgroup::chained_tile_op_t<gpu::xetla::subgroup::relu_op_t>,
+            gpu_arch::Xe>;
+    using layer1_tune_option
+            = dict_t<elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                             tune_key_value::PARAM_OPTIMZER_DECISION_TREE>,
+                    elem_t_t<tune_key::EPILOGUE_POLICY, epilogue_policy_layer1>,
+                    elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape_layer1>,
+                    elem_v_t<tune_key::PREFETCH_DISTANCE, stages>,
+                    elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL, sync_freq>>;
+    using gemm_layer1_t = xetla::group::default_gemm_selector_t<
             data_type_a, // input datatype for A
-            data_type_w, // input datatype for W
             mem_layout::row_major, // memory layout for A
-            mem_layout::row_major, // memory layout for W
+            8, // leading dimension for A, in unit of element
             mem_space::global, // memory reading from global mem for A
+            data_type_w, // input datatype for W
+            mem_layout::row_major, // memory layout for W
+            8, // leading dimension for W, in unit of element
             mem_space::global, // memory reading from global mem for W
-            8, // buffer alignment for A, in unit of element
-            8, // buffer alignment for W, in unit of element
             data_type_acc, // accumulator data type for intermediate resutls
-            tile_shape_layer1, // computation tile shape
-            sg_tile_k, // elements in each iteration
-            mma_engine::xmx, // compute engine
+            wg_shape_layer1, // computation tile shape
+            wg_tile_k, // elements in each iteration
             gpu_arch::Xe, // GPU arch
-            stages, // number of prefetch pipe stage
-            sync_freq> // frequency of periodic sync, in unit of inner loop
-            ::gemm;
+            layer1_tune_option>;
 
-    using epilogue_layer1_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_tile_op<
-                    xetla::subgroup::chained_tile_op_t<
-                            gpu::xetla::subgroup::relu_op_t>,
-                    gpu_arch::Xe>,
-            tile_shape_layer1,
-            mem_desc_t<data_type_b, mem_layout::row_major, mem_space::global>>;
+    using epilogue_layer1_t = xetla::group::default_epilogue_selector_t<
+            data_type_b, // onput datatype for B
+            mem_layout::row_major, // memory layout for B
+            8, // leading dimension for B, in unit of element
+            mem_space::global, // memory writing to global mem for B
+            wg_shape_layer1, // computation tile shape
+            wg_tile_k, // elements in each iteration
+            gpu_arch::Xe, // GPU arch
+            layer1_tune_option>;
 
-    using tile_shape_layer2 = xetla::group::tile_shape_t<
-            wg_tile_n_layer2, // workgroup size in dim0
-            wg_tile_m_layer2, // workgroup size in dim1
-            sg_tile_n_layer2, // subgroup size in dim0
-            sg_tile_m_layer2>; // subgroup size in dim1
+    using wg_shape_layer2 = shape<wg_tile_n_layer2, wg_tile_m_layer2>;
+    using sg_shape_layer2 = shape<sg_tile_n_layer2, sg_tile_m_layer2>;
 
     // Mirco-kernel configuration
-    using gemm_layer2_t = xetla::group::gemm_selector_t<
+    using layer2_tune_option
+            = dict_t<elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                             tune_key_value::PARAM_OPTIMZER_DECISION_TREE>,
+                    elem_t_t<tune_key::SG_TILE_SHAPE, sg_shape_layer2>,
+                    elem_v_t<tune_key::PREFETCH_DISTANCE, stages>,
+                    elem_v_t<tune_key::PERIODIC_SYNC_INTERVAL, sync_freq>>;
+    using gemm_layer2_t = xetla::group::default_gemm_selector_t<
             data_type_b, // input datatype for B
-            data_type_v, // input datatype for V
             mem_layout::row_major, // memory layout for B
-            mem_layout::row_major, // memory layout for V
+            8, // leading dimension for B, in unit of element
             mem_space::global, // memory reading from global mem for B
+            data_type_v, // input datatype for V
+            mem_layout::row_major, // memory layout for V
+            8, // leading dimension for V, in unit of element
             mem_space::global, // memory reading from global mem for V
-            8, // buffer alignment for B, in unit of element
-            8, // buffer alignment for V, in unit of element
             data_type_acc, // accumulator data type for intermediate resutls
-            tile_shape_layer2, // computation tile shape
-            sg_tile_k, // elements in each iteration
-            mma_engine::xmx, // compute engine
+            wg_shape_layer2, // computation tile shape
+            wg_tile_k, // elements in each iteration
             gpu_arch::Xe, // GPU arch
-            stages, // number of prefetch pipe stage
-            sync_freq> // frequency of periodic sync, in unit of inner loop
-            ::gemm;
+            layer2_tune_option>;
 
-    using epilogue_layer2_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<gpu_arch::Xe>,
-            tile_shape_layer2,
-            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
+    using epilogue_layer2_t = xetla::group::default_epilogue_selector_t<
+            data_type_c, // onput datatype for C
+            mem_layout::row_major, // memory layout for C
+            8, // leading dimension for C, in unit of element
+            mem_space::global, // memory writing to global mem for C
+            wg_shape_layer2, // computation tile shape
+            wg_tile_k, // elements in each iteration
+            gpu_arch::Xe, // GPU arch
+            layer2_tune_option>;
 
     using mlp_op_t = xetla::kernel::multi_layer_perceptron_t<gemm_layer1_t,
             epilogue_layer1_t, gemm_layer2_t, epilogue_layer2_t, gpu_arch::Xe>;

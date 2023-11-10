@@ -88,17 +88,19 @@ private:
     using local_st_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, sg_tile_m,
             src_block_size_x, src_block_size_y, reg_layout::tiled>;
     using local_st_tile_t = subgroup::tile_t<dtype, local_st_tile_desc_t>;
-    using local_st_payload_t = subgroup::mem_payload_t<dtype,
+    using local_st_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype, mem_layout::row_major, mem_space::local>,
             local_st_tile_desc_t,
             subgroup::msg_type_v<local_st_tile_desc_t, mem_space::local>,
-            mem_layout::row_major, mem_space::local, arch_tag>;
+            arch_tag>;
     using local_ld_tile_desc_t = subgroup::tile_desc_t<tile_size_x, tile_size_y,
             block_size_x, block_size_y, reg_layout::tiled>;
     using local_ld_tile_t = subgroup::tile_t<dtype, local_ld_tile_desc_t>;
-    using local_ld_payload_t = subgroup::mem_payload_t<dtype,
+    using local_ld_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype, mem_layout::row_major, mem_space::local>,
             local_ld_tile_desc_t,
             subgroup::msg_type_v<local_ld_tile_desc_t, mem_space::local>,
-            mem_layout::row_major, mem_space::local, arch_tag>;
+            arch_tag>;
 
 public:
     using mat_slice_t = subgroup::tile_t<dtype, local_ld_tile_desc_t>;
@@ -141,7 +143,8 @@ public:
         local_st.reg = matAcc.reg;
         tile_store(local_st, local_st_payload);
 
-        xetla_nbarrier_t<num_cooperative_wg, num_cooperative_wg> nbarrier;
+        xetla_nbarrier_t<num_cooperative_wg, num_cooperative_wg, arch_tag>
+                nbarrier;
         uint32_t nbar_id = nbarrier_base + g.get_id();
         nbarrier.init_nbarrier(nbar_id, nbarrier_role::producer_consumer);
         xetla_fence<memory_kind::shared_local>();

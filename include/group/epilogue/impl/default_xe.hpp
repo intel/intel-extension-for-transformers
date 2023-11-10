@@ -84,8 +84,8 @@ public:
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
         using mat_tile_desc = typename matAcc_t::tile_desc;
         using matC_t = subgroup::tile_t<dtype_c, mat_tile_desc>;
-        using matC_payload_t = subgroup::mem_payload_t<dtype_c, mat_tile_desc,
-                msg_type_c, mem_layout_c, mem_space_c, arch_tag>;
+        using matC_payload_t = subgroup::mem_payload_t<mem_desc_c_t,
+                mat_tile_desc, msg_type_c, arch_tag>;
         update_sg_tile_tdesc(g, mem_desc_c);
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);

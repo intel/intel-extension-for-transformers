@@ -403,17 +403,20 @@ __XETLA_API xetla_vector<T, SZ> xetla_tanh(xetla_vector<T, SZ> src) {
             "Only support fp32! ");
     constexpr uint32_t flag_elems = 8 * 16;
     xetla_vector<T, SZ> ret;
+    if constexpr (SZ / flag_elems > 0) {
 #pragma unroll
-    for (int i = 0; i < SZ / flag_elems; i++) {
-        auto src_sub = src.xetla_select<flag_elems, 1>(i * flag_elems);
-        auto ret_sub = ret.xetla_select<flag_elems, 1>(i * flag_elems);
-        xetla_mask<flag_elems> mask = src_sub >= 10;
-        xetla_vector<T, flag_elems> exp2x
-                = xetla_exp<T, flag_elems>(src_sub * 2.f);
-        ret_sub = (exp2x - 1.f) / (exp2x + 1.f);
-        xetla_vector<T, flag_elems> ones(1);
-        ret_sub.xetla_merge(ones, mask);
+        for (int i = 0; i < SZ / flag_elems; i++) {
+            auto src_sub = src.xetla_select<flag_elems, 1>(i * flag_elems);
+            auto ret_sub = ret.xetla_select<flag_elems, 1>(i * flag_elems);
+            xetla_mask<flag_elems> mask = src_sub >= 10;
+            xetla_vector<T, flag_elems> exp2x
+                    = xetla_exp<T, flag_elems>(src_sub * 2.f);
+            ret_sub = (exp2x - 1.f) / (exp2x + 1.f);
+            xetla_vector<T, flag_elems> ones(1);
+            ret_sub.xetla_merge(ones, mask);
+        }
     }
+
     if constexpr (SZ % flag_elems != 0) {
         constexpr uint32_t start_pos = SZ / flag_elems * flag_elems;
         constexpr uint32_t remain_elems = SZ % flag_elems;

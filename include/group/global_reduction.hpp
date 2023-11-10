@@ -143,9 +143,8 @@ public:
                 "matAcc_t::dtype should match with dtype_acc");
         update_sg_tile_tdesc(g, mem_desc_acc, mem_desc_cnt);
         using matAcc_tile_desc_t = typename matAcc_t::tile_desc;
-        using matAcc_store_payload_t = subgroup::mem_payload_t<dtype_acc,
-                matAcc_tile_desc_t, msg_type::atomic_add,
-                mem_desc_acc_t::layout, mem_desc_acc_t::space, arch_tag>;
+        using matAcc_store_payload_t = subgroup::mem_payload_t<mem_desc_acc_t,
+                matAcc_tile_desc_t, msg_type::atomic_add, arch_tag>;
         matAcc_store_payload_t matAcc_store_payload(mem_desc_acc);
         subgroup::tile_store<cache_hint::uncached, cache_hint::write_back>(
                 matAcc, matAcc_store_payload);
@@ -153,9 +152,8 @@ public:
                 fence_scope::tile>();
         reduce_id = update_reduce_counter(mem_desc_cnt);
         if (reduce_id == (num_group_reduction - 1)) {
-            using matAcc_payload_t = subgroup::mem_payload_t<dtype_acc,
-                    matAcc_tile_desc_t, msg_type::block_2d,
-                    mem_desc_acc_t::layout, mem_desc_acc_t::space, arch_tag>;
+            using matAcc_payload_t = subgroup::mem_payload_t<mem_desc_acc_t,
+                    matAcc_tile_desc_t, msg_type::block_2d, arch_tag>;
             matAcc_payload_t matAcc_payload(mem_desc_acc);
             subgroup::tile_load(matAcc, matAcc_payload);
             clean_reduce_counter(mem_desc_cnt);

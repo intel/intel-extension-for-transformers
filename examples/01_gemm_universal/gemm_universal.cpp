@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
 * Copyright (c) 2022-2023 Intel Corporation
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,69 +67,44 @@ void gemm_universal_run(uint32_t iter) {
             },
             queue, device, context);
 
-    //Define the shape of workgroup and subgroup
+    //Define the shape of workgroup
     //It's tunable parameters based on different input shape and hardware for better performance
     constexpr uint32_t wg_tile_m
             = (kslicing_type != kslicing_impl_t::local) ? 256 : 64;
     constexpr uint32_t wg_tile_n
             = (kslicing_type != kslicing_impl_t::local) ? 256 : 128;
-    constexpr uint32_t sg_tile_m
-            = (kslicing_type != kslicing_impl_t::local) ? 32 : 16;
-    constexpr uint32_t sg_tile_n
-            = (kslicing_type != kslicing_impl_t::local) ? 64 : 32;
-
-    //There are implicit requirement for sg_tile_k range
-    constexpr uint32_t sg_tile_k = 32;
-    static constexpr uint32_t sync_freq = 8;
-    static constexpr uint32_t stages = 3;
-
-    // Org the compute shape for sub-matrix
-    using tile_shape
-            = xetla::group::tile_shape_t<wg_tile_n, // workgroup size in dim0
-                    wg_tile_m, //	workgroup size in dim1
-                    sg_tile_n, //	subgroup size in dim0
-                    sg_tile_m>; //	subgroup size in dim1
-
-    // Mirco-kernel configuration
-    using gemm_t = typename xetla::group::gemm_selector_t<
-            data_type_a, // input datatype for A
-            data_type_b, // input datatype for B
-            mem_layout::row_major, // memory layout for A
-            mem_layout::row_major, // memory layout for B
-            mem_space::global, // memory reading from global mem for A
-            mem_space::global, // memory reading from global mem for B
-            8, // buffer alignment for A, in unit of element
-            8, // buffer alignment for B, in unit of element
-            data_type_acc, // accumulator data type for intermediate resutls
-            tile_shape, // computation tile shape
-            sg_tile_k, // elements in each iteration
-            mma_engine::xmx, // compute engine
-            gpu_arch::Xe, // GPU arch
-            stages, // number of prefetch pipe stage
-            sync_freq> // frequency of periodic sync, in unit of inner loop
-            ::gemm;
-
-    using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
-            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
     // specify the range k_w/k_s by setting the corresponding ratio
     // splitk using global memory
-    constexpr int num_global_splitk
+    constexpr uint32_t num_global_splitk
             = (kslicing_type == kslicing_impl_t::global) ? 2 : 1;
     // splitk using local memory
-    constexpr int num_local_splitk
+    constexpr uint32_t num_local_splitk
             = (kslicing_type == kslicing_impl_t::local) ? 2 : 1;
 
-    using group_swizzle
-            = gpu::xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
-
-    using dispatch_policy
-            = gpu::xetla::kernel::dispatch_policy_kslicing<group_swizzle,
-                    num_global_splitk, num_local_splitk>;
-
-    using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_policy, gemm_t,
-            epilogue_t>;
+    // Mirco-kernel configuration
+    using tune_option = dict_t<
+            elem_v_t<tune_key::PARAM_OPTIMZER_TYPE,
+                    tune_key_value::PARAM_OPTIMZER_DECISION_TREE>,
+            elem_t_t<tune_key::DATA_TYPE_ACC, data_type_acc>,
+            elem_v_t<tune_key::DISPATCH_POLICY,
+                    tune_key_value::DISPATCH_POLICY_KSLICING>,
+            elem_v_t<tune_key::GLOBAL_KSLICING_RATIO, num_global_splitk>,
+            elem_v_t<tune_key::LOCAL_KSLICING_RATIO, num_local_splitk>,
+            elem_t_t<tune_key::WG_TILE_SHAPE, shape<wg_tile_n, wg_tile_m>>>;
+    using gemm_op_t = gpu::xetla::kernel::default_gemm_t<
+            data_type_a, // input datatype for A
+            mem_layout::row_major, // memory layout for A
+            8, // leading dimension alignment for A, in unit of element
+            data_type_b, // input datatype for B
+            mem_layout::row_major, // memory layout for B
+            8, // leading dimension alignment for B, in unit of element
+            data_type_c, // output datatype for C
+            mem_layout::row_major, // memory layout for C
+            8, // leading dimension alignment for C, in unit of element
+            data_type_acc, // accumulator data type for intermediate resutls
+            gpu_arch::Xe, // GPU arch
+            tune_option>;
 
     // allocate temp buffers for global split
     size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);

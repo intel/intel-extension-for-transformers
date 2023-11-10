@@ -19,9 +19,5 @@
 
 #pragma once
 
-#include "experimental/group/softmax/api.hpp"
-#include "experimental/group/softmax/common.hpp"
-#include "experimental/group/softmax/impl/softmax_bwd_xe.hpp"
-#include "experimental/group/softmax/impl/softmax_fwd_xe.hpp"
-#include "experimental/group/softmax/softmax_policy.hpp"
-#include "group/tile_shape.hpp"
+#include "group/reduction/reduction_api.hpp"
+#include "group/reduction/reduction_xe.hpp"

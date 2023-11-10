@@ -53,17 +53,19 @@ struct xetla_softmax_fwd_t {
     using softmax_tile_desc_t = subgroup::tile_desc_t<SIMD, block_height, SIMD,
             block_height, reg_layout::tiled>;
     using softmax_load_t = subgroup::tile_t<dtype_in, softmax_tile_desc_t>;
-    using softmax_load_payload_t
-            = subgroup::mem_payload_t<dtype_in, softmax_tile_desc_t,
-                    subgroup::msg_type_v<softmax_tile_desc_t, mem_space_in>,
-                    mem_layout::row_major, mem_space_in, gpu_arch::Xe>;
+    using softmax_load_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space_in>,
+            softmax_tile_desc_t,
+            subgroup::msg_type_v<softmax_tile_desc_t, mem_space_in>,
+            gpu_arch::Xe>;
 
     // this tile will store the softmax result to global memory
     using softmax_store_t = subgroup::tile_t<dtype_out, softmax_tile_desc_t>;
-    using softmax_store_payload_t
-            = subgroup::mem_payload_t<dtype_out, softmax_tile_desc_t,
-                    subgroup::msg_type_v<softmax_tile_desc_t, mem_space_out>,
-                    mem_layout::row_major, mem_space_out, gpu_arch::Xe>;
+    using softmax_store_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_out, mem_layout::row_major, mem_space_out>,
+            softmax_tile_desc_t,
+            subgroup::msg_type_v<softmax_tile_desc_t, mem_space_out>,
+            gpu_arch::Xe>;
 
     struct arguments_t {
         // available while original data is from SLM

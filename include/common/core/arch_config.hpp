@@ -25,8 +25,6 @@ namespace gpu::xetla {
 
 /// @addtogroup xetla_core_arch_config
 /// @{
-enum class gpu_arch : uint8_t { Xe = 0, Xe2 = 1 };
-enum class grf_mode : uint8_t { normal = 0, double_grf = 1 };
 
 template <msg_type message_type, gpu_arch arch_tag>
 struct load_store_attr_t {};

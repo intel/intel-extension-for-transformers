@@ -55,8 +55,10 @@ class gemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b, mem_space_a,
         mma_engine::xmx, arch_tag, stages, sync_freq,
         std::enable_if_t<detail::check_2d_block_pitch_alignment<dtype_a,
                 dtype_b, alignment_a, alignment_b, arch_tag>::value>> {
-    using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
-    using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
+    using mem_desc_a
+            = mem_desc_t<dtype_a, mem_layout_a, mem_space_a, alignment_a>;
+    using mem_desc_b
+            = mem_desc_t<dtype_b, mem_layout_b, mem_space_b, alignment_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
     using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
     using compute_policy = compute_policy_default_xmx<compute_attr,
@@ -79,8 +81,10 @@ class gemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b, mem_space_a,
         mma_engine::xmx, arch_tag, stages, sync_freq,
         std::enable_if_t<!detail::check_2d_block_pitch_alignment<dtype_a,
                 dtype_b, alignment_a, alignment_b, arch_tag>::value>> {
-    using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
-    using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
+    using mem_desc_a
+            = mem_desc_t<dtype_a, mem_layout_a, mem_space_a, alignment_a>;
+    using mem_desc_b
+            = mem_desc_t<dtype_b, mem_layout_b, mem_space_b, alignment_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
     using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
     using compute_policy = compute_policy_unaligned_xmx<compute_attr,
@@ -107,8 +111,10 @@ class gemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b, mem_space_a,
                     && std::is_same<dtype_b, dtype_acc>::value,
             "When use gemm_selector, dtype_a and dtype_b in fpu based gemm"
             "should be the same as dtype_acc");
-    using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
-    using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
+    using mem_desc_a
+            = mem_desc_t<dtype_a, mem_layout_a, mem_space_a, alignment_a>;
+    using mem_desc_b
+            = mem_desc_t<dtype_b, mem_layout_b, mem_space_b, alignment_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
     using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
     using compute_policy = compute_policy_default_fpu<compute_attr,

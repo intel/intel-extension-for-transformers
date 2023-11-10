@@ -95,10 +95,11 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
     using global_ld_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
             tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
     using global_ld_t = subgroup::tile_t<dtype_in, global_ld_tile_desc_t>;
-    using global_ld_payload_t = subgroup::mem_payload_t<dtype_in,
+    using global_ld_payload_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>,
             global_ld_tile_desc_t,
             subgroup::msg_type_v<global_ld_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+            gpu_arch::Xe>;
     using mat_buffer_t = subgroup::tile_t<dtype_acc,
             subgroup::tile_desc_t<tile_size_x, 1, block_size_x, 1,
                     reg_layout::tiled>>;
@@ -154,7 +155,7 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
         int global_start_x_in
                 = item.get_group(2) * wg_tile_n + sg_idx * sg_tile_n;
         int global_start_y_in = sg_idy * sg_tile_m;
-        xetla_nbarrier_t<wg_size_y, wg_size_y> nbarrier;
+        xetla_nbarrier_t<wg_size_y, wg_size_y, gpu_arch::Xe> nbarrier;
         nbarrier.init_nbarrier(
                 nbarrier_base + sg_idx, nbarrier_role::producer_consumer);
         if constexpr (use_dynamic_job) {

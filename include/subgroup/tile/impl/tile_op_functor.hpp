@@ -194,9 +194,8 @@ struct gelu_fwd_w_op_t<dtype_out_, arch_tag,
         using bwd_w_tile_desc_t = tile_desc_t<block_size_x, block_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using bwd_w_tile_t = tile_t<dtype_out, bwd_w_tile_desc_t>;
-        using bwd_w_payload_t = mem_payload_t<dtype_out, bwd_w_tile_desc_t,
-                msg_type::block_2d, mem_desc_w_t::layout, mem_desc_w_t::space,
-                arch_tag>;
+        using bwd_w_payload_t = mem_payload_t<mem_desc_w_t, bwd_w_tile_desc_t,
+                msg_type::block_2d, arch_tag>;
         bwd_w_tile_t bwd_w;
         bwd_w_payload_t bwd_w_payload(mem_desc_w);
         // start compute
@@ -242,9 +241,8 @@ struct gelu_fwd_w_op_t<dtype_out_, arch_tag,
                             remain_size_y, reg_layout::tiled>;
             using remain_bwd_w_tile_t
                     = tile_t<dtype_out, remain_bwd_w_tile_desc_t>;
-            using remain_bwd_w_payload_t = mem_payload_t<dtype_out,
-                    remain_bwd_w_tile_desc_t, msg_type::block_2d,
-                    mem_desc_w_t::layout, mem_desc_w_t::space, arch_tag>;
+            using remain_bwd_w_payload_t = mem_payload_t<mem_desc_w_t,
+                    remain_bwd_w_tile_desc_t, msg_type::block_2d, arch_tag>;
 
             mem_desc_w.update_coord_y(remain_y_start);
             remain_bwd_w_payload_t remain_bwd_w_payload(mem_desc_w);
@@ -311,9 +309,8 @@ struct gelu_bwd_op_t<dtype_in_, arch_tag,
         using bwd_x_tile_desc_t = tile_desc_t<tile_size_x, tile_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using bwd_x_tile_t = tile_t<dtype_in, bwd_x_tile_desc_t>;
-        using bwd_x_payload_t
-                = mem_payload_t<dtype_in, bwd_x_tile_desc_t, msg_type::block_2d,
-                        mem_desc_x_t::layout, mem_desc_x_t::space, arch_tag>;
+        using bwd_x_payload_t = mem_payload_t<mem_desc_x_t, bwd_x_tile_desc_t,
+                msg_type::block_2d, arch_tag>;
         bwd_x_tile_t bwd_x;
         // init tdesc
         mem_desc_x_t mem_desc_x(args.base, args.shape, coord);
@@ -414,9 +411,8 @@ struct bias_add_op_t<dtype_bias_, arch_tag,
         using bias_tile_desc_t = tile_desc_t<tile_size_x, 1, block_size_x, 1,
                 reg_layout::tiled>;
         using bias_t = tile_t<dtype_bias, bias_tile_desc_t>;
-        using bias_payload_t = mem_payload_t<dtype_bias, bias_tile_desc_t,
-                msg_type_v<bias_tile_desc_t, mem_desc_bias_t::space>,
-                mem_desc_bias_t::layout, mem_desc_bias_t::space, arch_tag>;
+        using bias_payload_t = mem_payload_t<mem_desc_bias_t, bias_tile_desc_t,
+                msg_type_v<bias_tile_desc_t, mem_desc_bias_t::space>, arch_tag>;
         coord_t bias_coord(coord.x, 0);
         mem_desc_bias_t mem_desc_bias(args.base, args.shape, bias_coord);
         bias_t bias;
@@ -530,9 +526,10 @@ struct scale_v_offset_v_op_t<scale_dtype_, offset_dtype_, arch_tag,
         using scale_tile_desc_t = tile_desc_t<tile_size_x, 1, block_size_x, 1,
                 reg_layout::tiled>;
         using scale_tile_t = tile_t<scale_dtype, scale_tile_desc_t>;
-        using scale_payload_t = mem_payload_t<scale_dtype, scale_tile_desc_t,
-                msg_type_v<scale_tile_desc_t, scale_mem_desc_t::space>,
-                scale_mem_desc_t::layout, scale_mem_desc_t::space, arch_tag>;
+        using scale_payload_t
+                = mem_payload_t<scale_mem_desc_t, scale_tile_desc_t,
+                        msg_type_v<scale_tile_desc_t, scale_mem_desc_t::space>,
+                        arch_tag>;
         coord_t scale_coord(coord.x, 0);
         scale_mem_desc_t scale_mem_desc(
                 args.scale_base, args.scale_shape, scale_coord);
@@ -544,9 +541,10 @@ struct scale_v_offset_v_op_t<scale_dtype_, offset_dtype_, arch_tag,
         using offset_tile_desc_t = tile_desc_t<tile_size_x, 1, block_size_x, 1,
                 reg_layout::tiled>;
         using offset_tile_t = tile_t<offset_dtype, offset_tile_desc_t>;
-        using offset_payload_t = mem_payload_t<offset_dtype, offset_tile_desc_t,
+        using offset_payload_t = mem_payload_t<offset_mem_desc_t,
+                offset_tile_desc_t,
                 msg_type_v<offset_tile_desc_t, offset_mem_desc_t::space>,
-                offset_mem_desc_t::layout, offset_mem_desc_t::space, arch_tag>;
+                arch_tag>;
         coord_t offset_coord(coord.x, 0);
         offset_mem_desc_t offset_mem_desc(
                 args.offset_base, args.offset_shape, offset_coord);
@@ -647,9 +645,10 @@ struct scale_v_op_t<scale_dtype_, arch_tag,
         using scale_tile_desc_t = tile_desc_t<tile_size_x, 1, block_size_x, 1,
                 reg_layout::tiled>;
         using scale_tile_t = tile_t<scale_dtype, scale_tile_desc_t>;
-        using scale_payload_t = mem_payload_t<scale_dtype, scale_tile_desc_t,
-                msg_type_v<scale_tile_desc_t, scale_mem_desc_t::space>,
-                scale_mem_desc_t::layout, scale_mem_desc_t::space, arch_tag>;
+        using scale_payload_t
+                = mem_payload_t<scale_mem_desc_t, scale_tile_desc_t,
+                        msg_type_v<scale_tile_desc_t, scale_mem_desc_t::space>,
+                        arch_tag>;
         coord_t scale_coord(coord.x, 0);
         scale_mem_desc_t scale_mem_desc(
                 args.scale_base, args.scale_shape, scale_coord);
@@ -745,9 +744,9 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
         using mat_in_tile_desc_t = tile_desc_t<tile_size_x, block_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
-        using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
-                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
-                mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+        using mat_in_payload_t = mem_payload_t<mem_desc_in_t,
+                mat_in_tile_desc_t,
+                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>, arch_tag>;
         using mat_in_tile_acc_t = tile_t<dtype_acc, mat_in_tile_desc_t>;
         mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
         mat_in_tile_t mat_in;
@@ -782,10 +781,10 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
                     tail_size_y, block_size_x, tail_size_y, reg_layout::tiled>;
             using mat_tail_in_tile_t
                     = tile_t<dtype_in, mat_tail_in_tile_desc_t>;
-            using mat_tail_in_payload_t = mem_payload_t<dtype_in,
+            using mat_tail_in_payload_t = mem_payload_t<mem_desc_in_t,
                     mat_tail_in_tile_desc_t,
                     msg_type_v<mat_tail_in_tile_desc_t, mem_desc_in_t::space>,
-                    mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+                    arch_tag>;
             using mat_tail_in_tile_acc_t
                     = tile_t<dtype_acc, mat_tail_in_tile_desc_t>;
             mat_tail_in_tile_t mat_tail_in;
@@ -856,9 +855,10 @@ struct elemwise_reduce_op_stream_k_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
         using mat_in_tile_desc_t = tile_desc_t<block_size_x, block_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
-        using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
-                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
-                mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+        using mat_in_payload_t
+                = mem_payload_t<mem_desc_in_t, mat_in_tile_desc_t,
+                        msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
+                        gpu_arch::Xe>;
         mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
         mat_in_tile_t mat_in;
         mat_in_tile_t mat_zero(0);
@@ -964,9 +964,10 @@ struct dropout_op_t<dtype_mask_, arch_tag,
         using mask_in_tile_desc_t = tile_desc_t<tile_size_x, tile_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mask_in_tile_t = tile_t<dtype_mask, mask_in_tile_desc_t>;
-        using mask_in_payload_t = mem_payload_t<dtype_mask, mask_in_tile_desc_t,
-                msg_type_v<mask_in_tile_desc_t, mem_desc_mask_t::space>,
-                mem_desc_mask_t::layout, mem_desc_mask_t::space, arch_tag>;
+        using mask_in_payload_t
+                = mem_payload_t<mem_desc_mask_t, mask_in_tile_desc_t,
+                        msg_type_v<mask_in_tile_desc_t, mem_desc_mask_t::space>,
+                        arch_tag>;
         mem_desc_mask_t mem_desc_mask(args.base, args.shape, coord);
         mask_in_tile_t mask_in;
         mask_in_payload_t mask_in_payload(mem_desc_mask);
@@ -1052,10 +1053,10 @@ struct rng_dropout_op_t<dtype_mask_, arch_tag,
         using mask_out_tile_desc_t = tile_desc_t<tile_size_x, tile_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mask_out_tile_t = tile_t<dtype_mask, mask_out_tile_desc_t>;
-        using mask_out_payload_t = mem_payload_t<dtype_mask,
+        using mask_out_payload_t = mem_payload_t<mem_desc_mask_t,
                 mask_out_tile_desc_t,
                 msg_type_v<mask_out_tile_desc_t, mem_desc_mask_t::space>,
-                mem_desc_mask_t::layout, mem_desc_mask_t::space, arch_tag>;
+                arch_tag>;
         if (args.prob == 0) { return; }
         //calculate the scale internally
         float scale = 1.f / (1.f - args.prob);
@@ -1169,7 +1170,7 @@ struct linear_op_t<dtype_in_, arch_tag,
     __XETLA_API KERNEL_FUNC void operator()(matAcc_t &matAcc,
             const coord_t &coord, const arguments_t &args,
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
-        using dtype_acc = matAcc_t::dtype;
+        using dtype_acc = typename matAcc_t::dtype;
         static constexpr uint32_t tile_size_x = matAcc_t::tile_size_x;
         static constexpr uint32_t tile_size_y = matAcc_t::tile_size_y;
         static constexpr uint32_t block_size_x = matAcc_t::block_size_x;
@@ -1183,9 +1184,9 @@ struct linear_op_t<dtype_in_, arch_tag,
         using mat_in_tile_desc_t = tile_desc_t<tile_size_x, block_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
-        using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
-                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
-                mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+        using mat_in_payload_t = mem_payload_t<mem_desc_in_t,
+                mat_in_tile_desc_t,
+                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>, arch_tag>;
         using mat_in_tile_acc_t = tile_t<dtype_acc, mat_in_tile_desc_t>;
         mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
         mat_in_tile_t mat_in;
@@ -1225,10 +1226,10 @@ struct linear_op_t<dtype_in_, arch_tag,
                             remained_size_y, reg_layout::tiled>;
             using mat_tail_in_tile_t
                     = tile_t<dtype_in, mat_tail_in_tile_desc_t>;
-            using mat_tail_in_payload_t = mem_payload_t<dtype_in,
+            using mat_tail_in_payload_t = mem_payload_t<mem_desc_in_t,
                     mat_tail_in_tile_desc_t,
                     msg_type_v<mat_tail_in_tile_desc_t, mem_desc_in_t::space>,
-                    mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
+                    arch_tag>;
             using mat_tail_in_tile_acc_t
                     = tile_t<dtype_acc, mat_tail_in_tile_desc_t>;
 

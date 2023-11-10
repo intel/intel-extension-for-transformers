@@ -28,7 +28,7 @@ namespace gpu::xetla::kernel {
 /// @brief Default GROUP_SWIZZLE implementation.
 /// A general GROUP_SWIZZLE implementation to get an workgroup id .
 /// @tparam arch_tag_ Is the HW architecture.
-template <gpu_arch arch_tag_ = gpu_arch::Xe>
+template <gpu_arch arch_tag_>
 struct group_swizzle_default {
 public:
     static constexpr gpu_arch arch_tag = arch_tag_;
@@ -59,7 +59,7 @@ public:
 /// A GROUP_SWIZZLE implementation to remap linear workgroup id to a 2d coordination in snake order.
 /// @tparam wg_num_n_ Is the number of workgroup in horizontal direction, given by users.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int wg_num_n_, gpu_arch arch_tag_ = gpu_arch::Xe>
+template <int wg_num_n_, gpu_arch arch_tag_>
 struct group_swizzle_snake {
 public:
     static constexpr gpu_arch arch_tag = arch_tag_;
@@ -332,8 +332,10 @@ struct dispatch_policy_stream_k {
         // Default : a single region of iteration space across all SK tiles
         sk_regions = 1;
 
-        sk_groups_per_region = 1;
+        sk_groups_per_region = 0;
         sk_waves = 0;
+        sk_iters_per_region = 0;
+        sk_big_groups_per_region = 0;
 
         int num_tiles_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
         int num_tiles_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;

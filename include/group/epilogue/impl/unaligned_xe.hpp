@@ -86,9 +86,8 @@ public:
                 matAcc_t::tile_size_y, matAcc_t::block_size_x,
                 matAcc_t::block_size_y, reg_layout::tiled>;
         using matC_t = subgroup::tile_t<dtype_c, matC_tile_desc_t>;
-        using matC_payload_t
-                = subgroup::mem_payload_t<dtype_c, matC_tile_desc_t, msg_type_c,
-                        mem_layout_c, mem_space_c, arch_tag>;
+        using matC_payload_t = subgroup::mem_payload_t<mem_desc_c_t,
+                matC_tile_desc_t, msg_type_c, arch_tag>;
         update_sg_tile_tdesc(g, mem_desc_c);
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);

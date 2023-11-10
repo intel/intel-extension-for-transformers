@@ -25,15 +25,15 @@ using namespace gpu::xetla::group;
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, typename tile_op_t>
 struct tile_elemwise_op_func {
+    using mem_desc_c_t
+            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
     using matA_tile_desc_t
             = tile_desc_t<twidth, theight, bwidth, bheight, reg_layout::tiled>;
     using matA_t = tile_t<dtype, matA_tile_desc_t>;
-    using matA_payload_t = mem_payload_t<dtype, matA_tile_desc_t,
-            msg_type_v<matA_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+    using matA_payload_t = mem_payload_t<mem_desc_c_t, matA_tile_desc_t,
+            msg_type_v<matA_tile_desc_t, mem_space::global>, gpu_arch::Xe>;
     using tile_shape = tile_shape_t<twidth, theight, twidth, theight>;
-    using mem_desc_c_t
-            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
+
     using epilogue_policy = epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>;
     using epilogue_t = epilogue_t<epilogue_policy, tile_shape, mem_desc_c_t>;
     using work_group_t = typename tile_shape::work_group_t;
@@ -58,15 +58,14 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight>
 struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
         bwidth, bheight, gelu_fwd_w_op_t<dtype, gpu_arch::Xe>> {
+    using mem_desc_b_t
+            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
     using matA_tile_desc_t
             = tile_desc_t<twidth, theight, bwidth, bheight, reg_layout::tiled>;
     using matA_t = tile_t<dtype, matA_tile_desc_t>;
-    using matA_payload_t = mem_payload_t<dtype, matA_tile_desc_t,
-            msg_type_v<matA_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+    using matA_payload_t = mem_payload_t<mem_desc_b_t, matA_tile_desc_t,
+            msg_type_v<matA_tile_desc_t, mem_space::global>, gpu_arch::Xe>;
     using tile_shape = tile_shape_t<twidth, theight, twidth, theight>;
-    using mem_desc_b_t
-            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
     using epilogue_policy
             = epilogue_policy_tile_op<gelu_fwd_w_op_t<dtype, gpu_arch::Xe>,
                     gpu_arch::Xe>;
@@ -93,15 +92,14 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight>
 struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
         bwidth, bheight, gelu_bwd_op_t<dtype, gpu_arch::Xe>> {
+    using mem_desc_c_t
+            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
     using matA_tile_desc_t
             = tile_desc_t<twidth, theight, bwidth, bheight, reg_layout::tiled>;
     using matA_t = tile_t<dtype, matA_tile_desc_t>;
-    using matA_payload_t = mem_payload_t<dtype, matA_tile_desc_t,
-            msg_type_v<matA_tile_desc_t, mem_space::global>,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+    using matA_payload_t = mem_payload_t<mem_desc_c_t, matA_tile_desc_t,
+            msg_type_v<matA_tile_desc_t, mem_space::global>, gpu_arch::Xe>;
     using tile_shape = tile_shape_t<twidth, theight, twidth, theight>;
-    using mem_desc_c_t
-            = mem_desc_t<dtype, mem_layout::row_major, mem_space::global>;
     using epilogue_policy
             = epilogue_policy_tile_op<gelu_bwd_op_t<dtype, gpu_arch::Xe>,
                     gpu_arch::Xe>;

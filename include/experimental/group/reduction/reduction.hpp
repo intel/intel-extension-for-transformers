@@ -20,5 +20,4 @@
 #pragma once
 
 #include "experimental/group/reduction/reduction_api.hpp"
-#include "experimental/group/reduction/reduction_xe.hpp"
 #include "experimental/group/reduction/row_reduce_store_xe.hpp"

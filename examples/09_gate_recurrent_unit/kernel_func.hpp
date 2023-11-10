@@ -137,11 +137,10 @@ struct gru_layer {
             matAcc_t::block_size_y, reg_layout::tiled>;
     using mat_hidden_t = tile_t<T, matC_tile_desc_t>;
     using matC_t = tile_t<T, matC_tile_desc_t>;
-    using mat_hidden_payload_t = mem_payload_t<T, matC_tile_desc_t,
-            msg_type_v<matC_tile_desc_t, mem_loc_input>, layout_input,
-            mem_loc_input, gpu_arch::Xe>;
-    using matC_payload_t = mem_payload_t<T, matC_tile_desc_t,
-            msg_type::block_2d, layout_out, mem_loc_out, gpu_arch::Xe>;
+    using mat_hidden_payload_t = mem_payload_t<mem_desc_a_t, matC_tile_desc_t,
+            msg_type_v<matC_tile_desc_t, mem_loc_input>, gpu_arch::Xe>;
+    using matC_payload_t = mem_payload_t<mem_desc_c_t, matC_tile_desc_t,
+            msg_type::block_2d, gpu_arch::Xe>;
     using sigmoid_t = typename subgroup::sigmoid_op_t;
     using tanh_t = typename subgroup::tanh_op_t;
     static void inline call(sycl::nd_item<3> &item, fused_config_t<T> *args) {

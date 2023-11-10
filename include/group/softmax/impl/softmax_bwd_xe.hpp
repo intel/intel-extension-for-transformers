@@ -19,9 +19,10 @@
 
 #pragma once
 
-#include "experimental/group/softmax/api.hpp"
-#include "experimental/group/softmax/common.hpp"
-#include "experimental/group/softmax/softmax_policy.hpp"
+#include "group/reduction/reduction.hpp"
+#include "group/softmax/api.hpp"
+#include "group/softmax/common.hpp"
+#include "group/softmax/softmax_policy.hpp"
 
 namespace gpu::xetla::group {
 
@@ -89,10 +90,10 @@ public:
         using mat_in_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
                 tile_size_y, block_size_x, block_size_y, reg_layout::tiled>;
         using mat_in_t = subgroup::tile_t<dtype_in, mat_in_tile_desc_t>;
-        using mat_in_payload_t = subgroup::mem_payload_t<dtype_in,
+        using mat_in_payload_t = subgroup::mem_payload_t<mem_desc_in_t,
                 mat_in_tile_desc_t,
                 subgroup::msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
-                mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+                gpu_arch::Xe>;
 
         int32_t sg_idx = g.get_id() % wg_size_x;
         int32_t sg_idy = g.get_id() / wg_size_x;
