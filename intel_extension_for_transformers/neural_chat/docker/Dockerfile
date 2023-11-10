@@ -30,7 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION=3.9
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
 
