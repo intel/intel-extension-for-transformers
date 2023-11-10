@@ -42,7 +42,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN apt update \
     && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx \
     && apt install -y python${PYTHON_VERSION} python3-pip \
-    && pip install --upgrade pip setuptools wheel \
+    && pip install --upgrade pip setuptools wheel cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
