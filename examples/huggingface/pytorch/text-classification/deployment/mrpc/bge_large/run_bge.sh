@@ -148,26 +148,27 @@ if [[ ${PRECISION} = 'dynamic_int8' ]]; then
     inference_model="./model_and_tokenizer/fp32-model.onnx"
 fi
 if [[ ${MODE} == "accuracy" ]]; then
-    echo "------------ACCURACY BENCHMARK---------"
-    python run_executor.py \
-      --input_model=${inference_model} \
-      --mode=$MODE \
-      --batch_size=${BATCH_SIZE} \
-      --seq_len=${SEQUENCE_LEN} \
-      --warm_up=${WARM_UP} \
-      --iteration=${ITERATION} \
-      --dataset_name=glue \
-      --task_name=${DATASET} \
-      --tokenizer_dir=./model_and_tokenizer \
-      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
-    status=$?
-    if [ ${status} != 0 ]; then
-        echo "Benchmark process returned non-zero exit code."
-        exit 1
-    fi
+    echo "No accuracy mode cuurently."
+    # echo "------------ACCURACY BENCHMARK---------"
+    # python run_executor.py \
+    #   --input_model=${inference_model} \
+    #   --mode=$MODE \
+    #   --batch_size=${BATCH_SIZE} \
+    #   --seq_len=${SEQUENCE_LEN} \
+    #   --warm_up=${WARM_UP} \
+    #   --iteration=${ITERATION} \
+    #   --dataset_name=glue \
+    #   --task_name=${DATASET} \
+    #   --tokenizer_dir=./model_and_tokenizer \
+    #   ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
+    # status=$?
+    # if [ ${status} != 0 ]; then
+    #     echo "Benchmark process returned non-zero exit code."
+    #     exit 1
+    # fi
 elif [[ ${MODE} == "latency" ]]; then
     echo "------------LATENCY BENCHMARK---------"
-    numactl -m 0 -C 0-39 python run_executor.py \
+    python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \
       --batch_size=${BATCH_SIZE} \
