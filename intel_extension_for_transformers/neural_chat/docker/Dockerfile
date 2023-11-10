@@ -40,7 +40,7 @@ ENV LANG C.UTF-8
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
 RUN apt update \
-    && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx libjemalloc2\
+    && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx libjemalloc2 google-perftools \
     && apt install -y python${PYTHON_VERSION} python3-pip \
     && pip install --upgrade pip setuptools wheel \
     && apt-get clean \
@@ -57,7 +57,7 @@ RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cp
     # pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
-    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses gperftools && \
+    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
     pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
