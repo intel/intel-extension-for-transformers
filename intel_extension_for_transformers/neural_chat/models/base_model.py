@@ -249,7 +249,7 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt:
+        if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
         # LLM inference
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
