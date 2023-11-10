@@ -161,6 +161,11 @@ Try using one sentence to create a picture!
 ```python
 # Running FP32 models or BF16 models, just import differnt IR.
 # FP32 models
+# Note: 
+# 1. Using --image to set the path of your image, here we use the default download link.
+# 2. The default image is "https://hf.co/datasets/diffusers/diffusers-images-docs/resolve/main/mountain.png".
+# 3. The default prompt is "Cartoonize the following image".
+
 python run_executor.py --ir_path=./fp32_ir --input_model=CompVis/stable-diffusion-v1-4
 ```
 ![picture1](./images/astronaut_rides_horse.png)
@@ -171,11 +176,6 @@ python run_executor.py --ir_path=./bf16_ir --input_model=CompVis/stable-diffusio
 ```
 ![picture2](./images/astronaut_rides_horse_from_engine_1.png)
 
-> Note: 
-> 1. The default pretrained model is "CompVis/stable-diffusion-v1-4".
-> 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
-> 3. The ir directory should include three IR for text_encoder, unet and vae_decoder.
-
 
 ### 4.2 Img2Img: instruction-tuning-sd
 
@@ -183,21 +183,17 @@ Try using one image and prompts to create a new picture!
 
 ```python
 # Running FP32 models or BF16 models, just import differnt IR.
-# FP32 models
-python run_executor.py --ir_path=./fp32_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image"
-```
-![picture1](./images/astronaut_rides_horse.png)
-
-```python
 # BF16 models
-python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image"
+python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image" --steps=100
 ```
-![picture2](./images/astronaut_rides_horse_from_engine_1.png)
 
-> Note: 
-> 1. The default pretrained model is "CompVis/stable-diffusion-v1-4".
-> 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
-> 3. The ir directory should include three IR for text_encoder, unet and vae_decoder.
+Original image:
+
+![picture3](./images/mountain.png)
+
+Cartoonized image:
+
+![picture4](./images/mountain_cartoonized.png)
 
 
 ## 5. Validated Result
