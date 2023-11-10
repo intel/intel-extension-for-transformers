@@ -176,7 +176,6 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 
 ## 👜dSupport Matrix
 Fine-tuning: Xeon, Habana.
-Optimization: Xeon. 
 Inference: AMX, VNNI, AVX512F and AVX2 instruction set.
 
 
