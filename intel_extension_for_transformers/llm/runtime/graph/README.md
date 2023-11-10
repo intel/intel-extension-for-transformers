@@ -10,6 +10,16 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 > LLM Runtime is under active development so APIs are subject to change.
 
+## Supported Hardware
+| Hardware | Optimization |
+| ------------- | ------------- |
+| Xeon Scalable Processors | ✔ |
+| Xeon CPU Max Series | ✔ |
+| Core Processors | ✔ |
+| Arc GPU Series | WIP |
+| Data Center GPU Max Series | WIP |
+| Gaudi2 | TBD |
+
 ## Supported Models
 
 LLM Runtime supports the following models:

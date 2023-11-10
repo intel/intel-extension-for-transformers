@@ -98,8 +98,6 @@
     <td><a href="https://github.com/Sandesh-Pyakurel">Sandesh Pyakurel</a></td>
     <td> <img src="https://avatars.githubusercontent.com/u/97780892"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/sudhanshu-77">Sudhanshu Tripathi</a></td>
-    <td> <img src="https://avatars.githubusercontent.com/u/117426013"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/RS-labhub">Rohan Sharma</a></td>
   </tr>
 
 
