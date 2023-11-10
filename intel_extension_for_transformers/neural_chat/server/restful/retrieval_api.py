@@ -22,7 +22,7 @@ import csv
 import datetime
 from datetime import timedelta, timezone
 from typing import Optional, Dict
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Request
 from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
@@ -80,6 +80,30 @@ async def retrieval_endpoint(request: RetrievalRequest) -> RetrievalResponse:
     if ret is not None:
         raise RuntimeError("Invalid parametery.")
     return await router.handle_retrieval_request(request)
+
+
+@router.post("/v1/askdoc/upload_link")
+async def retrieval_upload_link(request: Request):
+    global plugins
+    params = await request.json()
+    link_list = params['link_list']
+    try:
+        record_request(request_url="/v1/askdoc/upload_link",
+                    request_body={'link_list': link_list},
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - upload_link] Fail to record request into db. {e}")
+
+    try:
+        print("[askdoc - upload_link] starting to append local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.append_localdb(append_path=link_list)
+        print(f"[askdoc - upload_link] kb appended successfully")
+    except Exception as e:
+        logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    fake_kb_id = "fake_knowledge_base_id"
+    return {"knowledge_base_id": fake_kb_id}
 
 
 @router.post("/v1/askdoc/upload")
