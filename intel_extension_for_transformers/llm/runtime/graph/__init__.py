@@ -61,7 +61,7 @@ class Model:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
 
-    def init(self, model_name, **kwargs):
+    def init(self, model_name, **quant_kwargs):
         config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         model_type = model_maps.get(config.model_type, config.model_type)
         if model_type == "chatglm" and "chatglm2" in config._name_or_path:
@@ -75,7 +75,7 @@ class Model:
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
         
         self.model_type = model_type
@@ -84,21 +84,21 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-    def init_from_bin(self, model_name, model_path, **kwargs):
+    def init_from_bin(self, model_name, model_path, **generate_kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
-        self.model.init_model(model_path, **kwargs)
+        self.model.init_model(model_path, **generate_kwargs)
 
-    def quant_model(self, model_name, model_path, out_path, **kwargs):
+    def quant_model(self, model_name, model_path, out_path, **quant_kwargs):
         self.__import_package(model_name)
         self.module.Model.quant_model(model_path = model_path,
-                                    out_path = out_path, **kwargs)
+                                    out_path = out_path, **quant_kwargs)
 
 
-    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **generate_kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
-                               **kwargs)
+                               **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
             self.model.reinit()
@@ -109,8 +109,8 @@ class Model:
             ret = input_ids.tolist()
 
         beam_search = False
-        if ("num_beams" in kwargs and kwargs["num_beams"] > 1) and not \
-            kwargs.get("do_sample", False):
+        if ("num_beams" in generate_kwargs and generate_kwargs["num_beams"] > 1) and not \
+            generate_kwargs.get("do_sample", False):
             beam_search = True
         if not beam_search:
             # TODO support multi batch
