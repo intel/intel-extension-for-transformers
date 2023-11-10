@@ -92,7 +92,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ## 🙊 Validated   Hardware
 [LLM Inference](intel_extension_for_transformers/llm/runtime/graph) 
 | Hardware | Optimization |
-| ------------- | ------------- |
+| ------------- |: -------------: |
 | Xeon Scalable Processors | ✔ |
 | Xeon CPU Max Series | ✔ |
 | Core Processors | ✔ |
