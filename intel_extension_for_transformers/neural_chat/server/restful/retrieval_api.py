@@ -87,8 +87,7 @@ async def retrieval_upload_link(request: Request):
     except Exception as e:
         logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
         return Response(content="Error occurred while uploading links.", status_code=500)
-    fake_kb_id = "fake_knowledge_base_id"
-    return {"knowledge_base_id": fake_kb_id}
+    return {"knowledge_base_id": "local_kb_id"}
 
 
 @router.post("/v1/askdoc/create_kb")
