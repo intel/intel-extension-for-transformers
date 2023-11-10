@@ -12,7 +12,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 ## Supported Hardware
 | Hardware | Optimization |
-| ------------- |: ------------- :|
+|-------------|:-------------:|
 | Xeon Scalable Processors | ✔ |
 | Xeon CPU Max Series | ✔ |
 | Core Processors | ✔ |
