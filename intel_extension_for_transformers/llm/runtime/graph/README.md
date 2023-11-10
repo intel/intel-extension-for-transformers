@@ -4,7 +4,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
-- Utilize AMX, VNNI and AVX512F instruction set
+- Utilize AMX, VNNI, AVX512F and AVX2 instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization
 
@@ -170,6 +170,10 @@ mkdir build
 cd build
 cmake .. -G Ninja
 ninja
+```
+Install from binary
+```shell
+pip install intel-extension-for-transformers
 ```
 
 ```powershell
