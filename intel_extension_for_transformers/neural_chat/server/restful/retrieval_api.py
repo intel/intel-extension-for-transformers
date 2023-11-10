@@ -172,7 +172,7 @@ async def retrieval_chat(request: AskDocRequest):
                     if not raw_link.startswith("http"):
                         continue
                     formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
-                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
+                        margin: 8px 0; font-size: 0.55rem;">  <a style="color: blue; \
                             border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
                             background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
                             href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
