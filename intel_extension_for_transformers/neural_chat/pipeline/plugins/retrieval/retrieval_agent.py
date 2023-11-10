@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import os
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
@@ -38,17 +39,23 @@ class Agent_QA():
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.response_template = response_template
         self.search_type = search_type
-        
-        if os.path.exists(input_path):
-            self.input_path = input_path
-        elif os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                            + '/assets/docs/'):
-            self.input_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                            + '/assets/docs/'
-        elif os.path.exists(os.path.join(asset_path, 'docs/')):
-            self.input_path = os.path.join(asset_path, 'docs/')
-        else:
+        self.input_path = None
+
+        if isinstance(input_path, str):
+            if os.path.exists(input_path):
+                self.input_path = input_path
+            elif os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                                + '/assets/docs/'):
+                self.input_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                                + '/assets/docs/'
+            elif os.path.exists(os.path.join(asset_path, 'docs/')):
+                self.input_path = os.path.join(asset_path, 'docs/')
             print("The given file path is unavailable, please check and try again!")
+        elif isinstance(input_path, List):
+            self.input_path = input_path
+
+        assert self.input_path != None, "Should gave an input path!"
+        
         if append:
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
                                                persist_dir=persist_dir, process=process,
