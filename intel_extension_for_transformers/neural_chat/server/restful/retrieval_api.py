@@ -150,13 +150,6 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
 
 @router.post("/v1/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
-    # try:
-    #     record_request(request_url="/v1/askdoc/chat",
-    #                 request_body=request,
-    #                 user_id='default')
-    # except Exception as e:
-    #     logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
-
     chatbot = router.get_chatbot()
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
@@ -170,7 +163,7 @@ async def retrieval_chat(request: AskDocRequest):
     # non-stream mode
     if not request.stream:
         response = chatbot.predict(query=request.query, config=config)
-        formatted_response = response.replace('\n', '<br/>')
+        formatted_response = response.replace('\n', '<br/>').replace('[/INST]  ', '')
         return formatted_response
     # stream mode
     generator, link = chatbot.predict_stream(query=request.query, config=config)
