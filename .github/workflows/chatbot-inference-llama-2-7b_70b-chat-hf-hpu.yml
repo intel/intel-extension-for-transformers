@@ -23,7 +23,7 @@ jobs:
         run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
-        run: docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |

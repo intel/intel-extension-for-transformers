@@ -157,6 +157,16 @@ register_conv_template(
     )
 )
 
+# QA template
+register_conv_template(
+    Conversation(
+        name="question_answer",
+        roles=("Question: ", "Answer: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n\n",
+    )
+)
+
 class PromptTemplate:
     def __init__(self, name="one_shot"):
         self.conv = get_conv_template(name)
@@ -170,4 +180,6 @@ class PromptTemplate:
 
     def get_prompt(self) -> str:
         return self.conv.get_prompt()
-    
+
+    def clear_messages(self) -> str:
+        self.conv.messages = []

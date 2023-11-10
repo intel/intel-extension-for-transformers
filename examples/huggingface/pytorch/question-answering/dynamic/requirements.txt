@@ -1,4 +1,4 @@
-transformers
+transformers==4.34.1
 datasets
 torchprofile
 torch==2.1.0
