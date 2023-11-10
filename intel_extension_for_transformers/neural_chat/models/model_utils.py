@@ -355,17 +355,16 @@ def load_model(
                 low_cpu_mem_usage=True,
                 use_auth_token=hf_access_token,
                 trust_remote_code=True)
-    elif (
+    elif ((
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("opt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
-    ) and not ipex_int8:
+    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -722,7 +721,8 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len=output_token.sequences[0].shape[-1]
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                                      output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
