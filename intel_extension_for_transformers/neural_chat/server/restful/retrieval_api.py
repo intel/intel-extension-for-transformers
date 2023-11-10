@@ -22,7 +22,7 @@ import csv
 import datetime
 from datetime import timedelta, timezone
 from typing import Optional, Dict
-from fastapi import APIRouter, UploadFile, File, Request
+from fastapi import APIRouter, UploadFile, File, Request, Response
 from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
@@ -74,26 +74,11 @@ class RetrievalAPIRouter(APIRouter):
 router = RetrievalAPIRouter()
 
 
-@router.post("/v1/retrieval")
-async def retrieval_endpoint(request: RetrievalRequest) -> RetrievalResponse:
-    ret = check_retrieval_params(request)
-    if ret is not None:
-        raise RuntimeError("Invalid parametery.")
-    return await router.handle_retrieval_request(request)
-
-
 @router.post("/v1/askdoc/upload_link")
 async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
     link_list = params['link_list']
-    try:
-        record_request(request_url="/v1/askdoc/upload_link",
-                    request_body={'link_list': link_list},
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - upload_link] Fail to record request into db. {e}")
-
     try:
         print("[askdoc - upload_link] starting to append local db...")
         instance = plugins['retrieval']["instance"]
@@ -101,38 +86,7 @@ async def retrieval_upload_link(request: Request):
         print(f"[askdoc - upload_link] kb appended successfully")
     except Exception as e:
         logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
-        return "Error occurred while uploading files."
-    fake_kb_id = "fake_knowledge_base_id"
-    return {"knowledge_base_id": fake_kb_id}
-
-
-@router.post("/v1/askdoc/upload")
-async def retrieval_upload(file: UploadFile = File(...)):
-    global plugins
-    filename = file.filename
-    try:
-        record_request(request_url="/v1/askdoc/upload",
-                    request_body={'filename': filename},
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - upload] Fail to record request into db. {e}")
-    path_prefix = "./enterprise_docs/"
-    print(f"[askdoc - upload] filename: {filename}")
-    if '/' in filename:
-        filename = filename.split('/')[-1]
-    with open(f"{path_prefix+filename}", 'wb') as fout:
-        content = await file.read()
-        fout.write(content),
-    print("[askdoc - upload] file saved to local path.")
-
-    try:
-        print("[askdoc - upload] starting to append local db...")
-        instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=path_prefix)
-        print(f"[askdoc - upload] kb appended successfully")
-    except Exception as e:
-        logger.info(f"[askdoc - upload] create knowledge base failes! {e}")
-        return "Error occurred while uploading files."
+        return Response(content="Error occurred while uploading links.", status_code=500)
     fake_kb_id = "fake_knowledge_base_id"
     return {"knowledge_base_id": fake_kb_id}
 
@@ -168,7 +122,7 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
         print(f"[askdoc - create_kb] kb created successfully")
     except Exception as e:
         logger.info(f"[askdoc - create_kb] create knowledge base failes! {e}")
-        return "Error occurred while uploading files."
+        return Response(content=f"create knowledge base failes. {e}", status_code=500)
     return {"knowledge_base_id": "local_kb_id"}
 
 
