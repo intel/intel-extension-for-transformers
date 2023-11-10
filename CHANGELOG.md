@@ -1,6 +1,21 @@
 [README](/README.md) > **Changelog**
 # Changelog
 
+## [v0.3.6](https://github.com/intel/xetla/releases/tag/v0.3.6) (2023-11-10)
+- New Features
+  * Added GEMM new feature for any shapes support (odd shapes).
+  * Provided default configurations for GEMM API (users could get good performance by default configurations, only advanced users need to tune optimization options).
+  * Supported converting register layout between tiled and linear.
+  * Provided flexible large shape's APIs for other policy (e.g. splitk, improved mat_A & mat_B cache hit ratio).
+  * Refined **mem_desc_t** and **payload_t** to expose alignment parameter.
+  * Enabled epilogue to support **D = alpha * A * B + beta * C**.
+  * Replaced **xetla_exec_item** with **sycl::nd_item**.
+  * Refined some examples to invoke kernel level APIs, added fence and barrier to MLP example.
+  * Fixed some known issues, enhanced tests, and updated documents.
+
+- Known Issues
+    - Refer to [Limitations](/media/docs/limitations.md).
+
 ## [v0.3.5](https://github.com/intel/xetla/releases/tag/v0.3.5) (2023-09-28)
 - New Features
   * Enhanced limitation checking.
