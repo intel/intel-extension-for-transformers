@@ -16,7 +16,7 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-import os
+import os, re
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
@@ -89,7 +89,7 @@ class DocumentIndexing:
         chucks = []
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
-                chuck = load_html_data(input)
+                content = load_html_data(input)
                 if self.process:
                     chuck = get_chuck_data(content, self.max_length, link)
                 else:
@@ -211,12 +211,11 @@ class DocumentIndexing:
                 new_doc = Document(page_content=data, metadata=metadata)
                 documents.append(new_doc)
             assert documents != [], "The given file/files cannot be loaded."
-            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
-            vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
+            vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
                                              persist_directory=self.persist_dir)
             vectordb.persist()
             print("The local knowledge base has been successfully built!")
-            return Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+            return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         elif self.retrieval_type == "sparse":
             if self.document_store == "Elasticsearch":
                 document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
