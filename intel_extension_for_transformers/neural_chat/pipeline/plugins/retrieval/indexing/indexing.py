@@ -62,7 +62,6 @@ class DocumentIndexing:
             print("Please selet a proper embedding model")
             
         
-        
     def parse_document(self, input):
         """
         Parse the uploaded file.
@@ -90,7 +89,7 @@ class DocumentIndexing:
         chucks = []
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
-                content = load_html_data(input)
+                content = load_html_data(link)
                 if self.process:
                     chuck = get_chuck_data(content, self.max_length, link)
                 else:
