@@ -54,7 +54,7 @@ WORKDIR /intel-extension-for-transformers
 
 RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     pip install pyproject-toml && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt --use-pep517 && pip install -v . && \
+    cd /intel-extension-for-transformers && pip install --use-pep517 -r requirements.txt && pip install --use-pep517 -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses jemalloc gperftools && \
