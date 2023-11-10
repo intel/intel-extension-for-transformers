@@ -772,10 +772,10 @@ public:
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
             base_offset += int64_t(offset) * sizeof(dtype);
-            base_x += offset;
+            trans ? base_y += offset : base_x += offset;
         } else {
             base_offset += int64_t(offset) * pitch_in_bytes;
-            base_y += offset;
+            trans ? base_x += offset : base_y += offset;
         }
     }
 };

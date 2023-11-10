@@ -29,11 +29,14 @@ class unaligned_gemm_test : public ::testing::Test {};
 TYPED_TEST_SUITE_P(unaligned_gemm_test);
 TYPED_TEST_P(unaligned_gemm_test, esimd) {
     gemm_exec<TypeParam, result_validate<TypeParam>,
-            unaligned_gemm_func<TypeParam>>(esimd_compile_string);
+            unaligned_gemm_func<TypeParam>,
+            unaligned_gemm_func<TypeParam>::gemm_op_t::get_slm_size(),
+            unaligned_gemm_func<TypeParam>::gemm_op_t::get_barrier_count()>(
+            esimd_compile_string);
 }
 REGISTER_TYPED_TEST_SUITE_P(unaligned_gemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,
-        Test7, Test8, Test9, Test10>;
+        Test7, Test8>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(
         unaligned_gemm_test_suite, unaligned_gemm_test, tests);

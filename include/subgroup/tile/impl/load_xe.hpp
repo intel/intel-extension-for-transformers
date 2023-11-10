@@ -478,7 +478,7 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
             }
         }
     }
-    // process the tail
+    //process the tail
     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
         constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
         constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;

@@ -45,6 +45,9 @@ public:
     using pre_processing_t = pre_processing_t_;
     using compute_policy = compute_policy_unaligned_xmx<compute_attr_,
             perf_tuning_knob_, arch_tag_>;
+
+    static constexpr uint32_t num_cyclic = 3;
+
     static constexpr uint32_t k_stride = compute_policy::k_stride;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
@@ -117,10 +120,25 @@ private:
     static constexpr reg_layout reg_layout_a = reg_layout::tiled;
     using matA_tile_desc_t = subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a,
             block_size_x_a, block_size_y_a, reg_layout_a>;
+
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
+
+    using cooperative_helper_A_t = subgroup::cooperative_load_helper_t<matA_t,
+            mem_layout_a, tile_shape::wg_size_x, gpu_arch::Xe>;
+    using cooperative_tile_desc_A_t =
+            typename cooperative_helper_A_t::co_tile_desc_t;
+    using partial_matA_t = subgroup::tile_t<dtype_a, cooperative_tile_desc_A_t>;
     using matA_payload_t = subgroup::mem_payload_t<mem_desc_a_t,
-            matA_tile_desc_t,
+            cooperative_tile_desc_A_t,
             is_local_a ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
+
+    using matA_payload_local_st_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_a, mem_layout::row_major, mem_space::local>,
+            cooperative_tile_desc_A_t, msg_type::scatter, arch_tag>;
+    using matA_payload_local_ld_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_a, mem_layout::row_major, mem_space::local>,
+            matA_tile_desc_t, msg_type::scatter, arch_tag>;
+
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
     using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
@@ -131,9 +149,25 @@ private:
     using matB_tile_desc_t = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b,
             block_size_x_b, block_size_y_b, reg_layout_b>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
+
+    using cooperative_helper_B_t = subgroup::cooperative_load_helper_t<matB_t,
+            mem_layout_b, tile_shape::wg_size_y, gpu_arch::Xe>;
+    using cooperative_tile_desc_B_t =
+            typename cooperative_helper_B_t::co_tile_desc_t;
+
+    using partial_matB_t = subgroup::tile_t<dtype_b, cooperative_tile_desc_B_t>;
+
     using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
-            matB_tile_desc_t,
+            cooperative_tile_desc_B_t,
             is_local_b ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
+
+    using matB_payload_local_st_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_b, mem_layout::row_major, mem_space::local>,
+            cooperative_tile_desc_B_t, msg_type::scatter, arch_tag>;
+    using matB_payload_local_ld_t = subgroup::mem_payload_t<
+            mem_desc_t<dtype_b, mem_layout::row_major, mem_space::local>,
+            matB_tile_desc_t, msg_type::scatter, arch_tag>;
+
     using matB_acc_t = subgroup::tile_t<dtype_mma_b, matB_tile_desc_t>;
     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
             subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b, 1, 1>,
@@ -147,15 +181,22 @@ public:
 private:
     using tile_mma = subgroup::tile_mma_t<matAcc_t, matAcc_t, matB_acc_t,
             matA_acc_t, mma_engine::xmx, arch_tag>;
-    static constexpr bool enable_periodic_sync = (sync_freq != 0);
+    // static constexpr bool enable_periodic_sync = (sync_freq != 0);
     static constexpr uint32_t barrier_count_x = wg_size_y > 1 ? wg_size_x : 0;
     static constexpr uint32_t barrier_count_y = wg_size_x > 1 ? wg_size_y : 0;
+    static constexpr uint32_t tile_size_a
+            = tile_size_x_a * tile_size_y_a * sizeof(dtype_a);
+    static constexpr uint32_t tile_size_b
+            = tile_size_x_b * tile_size_y_b * sizeof(dtype_b);
+    static constexpr uint32_t slm_size_a = wg_size_y * tile_size_a;
+    static constexpr uint32_t slm_size_b = wg_size_x * tile_size_b;
 
 public:
-    static constexpr uint32_t barrier_count
-            = enable_periodic_sync ? barrier_count_x + barrier_count_y : 0;
+    static constexpr uint32_t barrier_count = barrier_count_x + barrier_count_y;
 
-    static constexpr uint32_t slm_size = 0;
+    static constexpr uint32_t slm_size = (slm_size_a + slm_size_b) * num_cyclic;
+    static constexpr uint32_t slm_base_a = 0;
+    static constexpr uint32_t slm_base_b = 0 + slm_size_a * num_cyclic;
 
     static constexpr msg_type msg_type_a = matA_payload_t::message_type;
     static constexpr msg_type msg_type_b = matB_payload_t::message_type;
@@ -282,14 +323,37 @@ public:
         pre_processing_t pre_processing;
         matA_t matA;
         matB_t matB;
+        partial_matA_t partial_matA;
+        partial_matB_t partial_matB;
         //  >>>>>>>>>>>>>>>>>> pre_processing init
         pre_processing.init(g, args.pre_processing_args);
+        uint64_t base_A = slm_base_a + sg_idy * tile_size_a;
+        uint64_t base_B = slm_base_b + sg_idx * tile_size_b;
+
+        uint64_t store_idx = 0;
+        uint64_t load_idx = 0;
+
         matA_payload_t matA_payload(args.matA_base_desc);
+        matA_payload_local_st_t matA_local_st_payload(base_A, tile_size_x_a,
+                tile_size_y_a, tile_size_x_a,
+                cooperative_helper_A_t::get_offset_x(sg_idx),
+                cooperative_helper_A_t::get_offset_y(sg_idx));
+        matA_payload_local_ld_t matA_local_ld_payload(
+                base_A, tile_size_x_a, tile_size_y_a, tile_size_x_a, 0, 0);
+
         matB_payload_t matB_payload(args.matB_base_desc);
+        matB_payload_local_st_t matB_local_st_payload(base_B, tile_size_x_b,
+                tile_size_y_b, tile_size_x_b,
+                cooperative_helper_B_t::get_offset_x(sg_idy),
+                cooperative_helper_B_t::get_offset_y(sg_idy));
+        matB_payload_local_ld_t matB_local_ld_payload(
+                base_B, tile_size_x_b, tile_size_y_b, tile_size_x_b, 0, 0);
+
         matA_prefetch_payload_t matA_prefetch_payload(
                 args.matA_base_desc, sg_idx);
         matB_prefetch_payload_t matB_prefetch_payload(
                 args.matB_base_desc, sg_idy);
+
         xetla_nbarrier_t<wg_size_x, wg_size_x> nbarrier_a;
         nbarrier_a.init_nbarrier(
                 sg_idy + nbarrier_base, nbarrier_role::producer_consumer);
@@ -297,6 +361,44 @@ public:
         nbarrier_b.init_nbarrier(sg_idx + barrier_count_y + nbarrier_base,
                 nbarrier_role::producer_consumer);
 
+        tile_load(partial_matA, matA_payload);
+        tile_load(partial_matB, matB_payload);
+
+        tile_store(partial_matA, matA_local_st_payload);
+        tile_store(partial_matB, matB_local_st_payload);
+        store_idx++;
+
+        matA_payload.template update_tdesc<update_dir_a>(matA_t::tile_size_x);
+        matB_payload.template update_tdesc<update_dir_b>(matB_t::tile_size_y);
+        xetla_fence<memory_kind::shared_local>();
+        nbarrier_a.arrive();
+        nbarrier_b.arrive();
+#pragma unroll
+        for (int i = 1; i < num_cyclic - 1; i++) {
+            tile_load(partial_matA, matA_payload);
+            tile_load(partial_matB, matB_payload);
+
+            matA_payload.template update_tdesc<update_dir_a>(
+                    matA_t::tile_size_x);
+            matB_payload.template update_tdesc<update_dir_b>(
+                    matB_t::tile_size_y);
+
+            matA_local_st_payload
+                    .template update_tdesc<tdesc_update_dir::y_dir>(
+                            wg_size_y * matA_t::tile_size_y);
+            matB_local_st_payload
+                    .template update_tdesc<tdesc_update_dir::y_dir>(
+                            wg_size_x * matB_t::tile_size_y);
+
+            tile_store(partial_matA, matA_local_st_payload);
+            tile_store(partial_matB, matB_local_st_payload);
+            store_idx++;
+        }
+
+        matA_prefetch_payload.template update_tdesc<update_dir_a>(
+                matA_t::tile_size_x * (num_cyclic - 1));
+        matB_prefetch_payload.template update_tdesc<update_dir_b>(
+                matB_t::tile_size_y * (num_cyclic - 1));
 #pragma unroll
         for (int i = 0; i < stages; i++) {
             subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
@@ -310,33 +412,57 @@ public:
         }
 
         for (int i = 0; i < args.inner_loop_count; i++) {
-            if constexpr (enable_periodic_sync) {
-                if ((i % sync_freq) == 0) {
-                    if constexpr (wg_size_x > 1) { nbarrier_a.arrive(); }
-                    if constexpr (wg_size_y > 1) { nbarrier_b.arrive(); }
-                }
-            }
-            subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
-                    matB, matB_payload);
-            subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
-                    matA, matA_payload);
+            tile_load(partial_matA, matA_payload);
+            tile_load(partial_matB, matB_payload);
+
+            matA_payload.template update_tdesc<update_dir_a>(
+                    matA_t::tile_size_x);
+            matB_payload.template update_tdesc<update_dir_b>(
+                    matB_t::tile_size_y);
+
             if constexpr (stages != 0) {
                 subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
                         matA_prefetch_payload);
                 subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
                         matB_prefetch_payload);
             }
-            SW_BARRIER();
-            matA_payload.template update_tdesc<update_dir_a>(
-                    matA_t::tile_size_x);
-            matB_payload.template update_tdesc<update_dir_b>(
-                    matB_t::tile_size_y);
+
+            nbarrier_a.wait();
+            nbarrier_b.wait();
+
+            tile_load(matA, matA_local_ld_payload);
+            tile_load(matB, matB_local_ld_payload);
+
+            load_idx = (load_idx < num_cyclic - 1) ? (load_idx + 1) : 0;
+
+            if (load_idx != 0) {
+                matA_local_ld_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                wg_size_y * matA_t::tile_size_y);
+                matB_local_ld_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                wg_size_x * matB_t::tile_size_y);
+            } else {
+                matA_local_ld_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                (1 - num_cyclic) * wg_size_y
+                                * matA_t::tile_size_y);
+                matB_local_ld_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                (1 - num_cyclic) * wg_size_x
+                                * matB_t::tile_size_y);
+            }
+            xetla_fence<memory_kind::shared_local>();
+
             if constexpr (stages != 0) {
                 matA_prefetch_payload.template update_tdesc<update_dir_a>(
                         matA_t::tile_size_x);
                 matB_prefetch_payload.template update_tdesc<update_dir_b>(
                         matB_t::tile_size_y);
             }
+
+            nbarrier_a.arrive();
+            nbarrier_b.arrive();
             SW_BARRIER();
             matA_acc_t matA_acc;
             matB_acc_t matB_acc;
@@ -346,14 +472,32 @@ public:
             SW_BARRIER();
             tile_mma::mma(matAcc, matAcc, matB_acc, matA_acc);
             SW_BARRIER();
-            if constexpr (enable_periodic_sync) {
-                if ((i % sync_freq) == 0) {
-                    if constexpr (wg_size_x > 1) { nbarrier_a.wait(); }
-                    if constexpr (wg_size_y > 1) { nbarrier_b.wait(); }
-                }
+
+            if (store_idx != 0) {
+                matA_local_st_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                wg_size_y * matA_t::tile_size_y);
+                matB_local_st_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                wg_size_x * matB_t::tile_size_y);
+            } else {
+                matA_local_st_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                (1 - num_cyclic) * wg_size_y
+                                * matA_t::tile_size_y);
+                matB_local_st_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                (1 - num_cyclic) * wg_size_x
+                                * matB_t::tile_size_y);
             }
+
+            tile_store(partial_matA, matA_local_st_payload);
+            tile_store(partial_matB, matB_local_st_payload);
+            store_idx = (store_idx < num_cyclic - 1) ? (store_idx + 1) : 0;
         }
         SW_BARRIER();
+        nbarrier_a.wait();
+        nbarrier_b.wait();
     }
 
 private:
@@ -363,8 +507,14 @@ private:
         int32_t tile_offset_n = sg_idx * sg_tile_n;
         int32_t tile_offset_m = sg_idy * sg_tile_m;
 
-        args.matA_base_desc.update_coord_y(tile_offset_m);
-        args.matB_base_desc.update_coord_x(tile_offset_n);
+        args.matA_base_desc.update_coord_y(
+                tile_offset_m + cooperative_helper_A_t::get_offset_y(sg_idx));
+        args.matA_base_desc.update_coord_x(
+                cooperative_helper_A_t::get_offset_x(sg_idx));
+        args.matB_base_desc.update_coord_x(
+                tile_offset_n + cooperative_helper_B_t::get_offset_x(sg_idy));
+        args.matB_base_desc.update_coord_y(
+                cooperative_helper_B_t::get_offset_y(sg_idy));
     }
 };
 
