@@ -16,11 +16,10 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
-chromadb
+chromadb==0.4.15
 fastapi==0.103.2
 pydantic==1.10.13
 starlette

@@ -23,10 +23,43 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "starcoder_int8"
-tokenizer_name_or_path: "bigcode/starcoder"
+model_name_or_path: "./Llama-2-7b-chat-hf"
 device: "cpu"
-ipex_int8: True
+
+# users can choose one of the ipex int8, itrex int4, mix precision and
+# bitsandbytes to run the optimized model for inference speedup
+
+# itrex int4 llm runtime optimization
+optimization:
+    use_llm_runtime: true
+    optimization_type: "weight_only"
+    compute_dtype: "int8"
+    weight_dtype: "int4"
+
+# ipex int8 optimization
+# optimization:
+#     ipex_int8: True
+
+# itrex int4 optimization
+# optimization:
+#     use_llm_runtime: false
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4_fullrange"
+
+# mix precision bf16
+# optimization:
+#     optimization_type: "mix_precision"
+#     mix_precision_dtype: "bfloat16"
+
+# bits and bytes
+# optimization:
+#     optimization_type: "bits_and_bytes"
+#     load_in_4bit: True
+#     bnb_4bit_quant_type: 'nf4'
+#     bnb_4bit_use_double_quant: True
+#     bnb_4bit_compute_dtype: "bfloat16"
+
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat']
