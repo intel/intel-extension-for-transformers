@@ -178,7 +178,6 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 Fine-tuning: Xeon, Habana.
 Inference: AMX, VNNI, AVX512F and AVX2 instruction set.
 
-
 ## 📃Selected Publications/Events
 * Blogs published on VMware: [AI without GPUs: A Technical Brief for VMware Private AI with Inte](https://core.vmware.com/resource/ai-without-gpus-technical-brief-vmware-private-ai-intel#section6) (Nov 2023)
 * News releases on VMware: [VMware Collaborates with Intel to Unlock Private AI Everywhere](https://news.vmware.com/releases/vmware-explore-2023-barcelona-intel-private-ai) (Nov 2023)
