@@ -159,6 +159,11 @@ while True:
 
 
 ## How to use: Straightforward Python script
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
+
 Build from source
 > :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 
@@ -170,10 +175,6 @@ mkdir build
 cd build
 cmake .. -G Ninja
 ninja
-```
-Install from binary
-```shell
-pip install intel-extension-for-transformers
 ```
 
 ```powershell
