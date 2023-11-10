@@ -61,25 +61,34 @@ class Model:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
 
-    def init(self, model_name, **quant_kwargs):
+    def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
         config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         model_type = model_maps.get(config.model_type, config.model_type)
         if model_type == "chatglm" and "chatglm2" in config._name_or_path:
             model_type = "chatglm2"
         self.__import_package(model_type)
 
-        # 1. convert model
+        # check cache and quantization
         fp32_bin = "ne_{}_f32.bin".format(model_type)
+        quant_bin = "ne_{}_q.bin".format(model_type)
+
+        if not_quant:
+            self.bin_file = fp32_bin
+        else:
+            self.bin_file = quant_bin
+        
+        if use_cache and os.path.exists(self.bin_file):
+            return
+
         convert_model(model_name, fp32_bin, "f32")
         assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
-        # 2. quant model
+        if not_quant:
+            return
         quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
+        if not use_cache:
+            self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
-        
-        self.model_type = model_type
-        self.bin_file = quant_bin
         
         # clean
         os.remove(fp32_bin)
