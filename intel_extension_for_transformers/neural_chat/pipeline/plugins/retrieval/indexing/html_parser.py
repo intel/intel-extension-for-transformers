@@ -165,6 +165,8 @@ class Crawler:
 def load_html_data(url):
     crawler = Crawler()
     res = crawler.fetch(url)
+    if res == None:
+        return None
     soup = crawler.parse(res.text)
     all_text = crawler.clean_text(soup.select_one('body').text)
     main_content = ''
