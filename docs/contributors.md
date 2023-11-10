@@ -71,6 +71,12 @@
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/46982523"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/NeoZhangJianyu">Neo Zhang Jianyu</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/63159924"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/akarX23">akarX23</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/112881240"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/aahouzi">Anas Ahouzi</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/5948851"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/dc3671">Dino Chen</a></td>
   </tr>
 
 </table>
