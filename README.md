@@ -175,6 +175,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 ## 📃Selected Publications/Events
+* Blogs published on marktechpost: [Intel Researchers Propose a New Artificial Intelligence Approach to Deploy LLMs on CPUs More Efficiently](https://www.marktechpost.com/2023/11/09/intel-researchers-propose-a-new-artificial-intelligence-approach-to-deploy-llms-on-cpus-more-efficiently) (Nov 2023)
 * Blogs published on VMware: [AI without GPUs: A Technical Brief for VMware Private AI with Inte](https://core.vmware.com/resource/ai-without-gpus-technical-brief-vmware-private-ai-intel#section6) (Nov 2023)
 * News releases on VMware: [VMware Collaborates with Intel to Unlock Private AI Everywhere](https://news.vmware.com/releases/vmware-explore-2023-barcelona-intel-private-ai) (Nov 2023)
 * Video on YouTube: [Build Your Own ChatBot with Neural Chat | Intel Software](https://www.youtube.com/watch?v=KWT6yKfu4n0) (Oct 2023)
