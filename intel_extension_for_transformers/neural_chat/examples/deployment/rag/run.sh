@@ -35,4 +35,7 @@ export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="fastrag"
 
+rm -rf /home/tme/letong/askdoc_persist/*
+rm /home/tme/letong/askdoc_upload/enterprise_docs/*
+
 nohup numactl -l -C 52-103 python -m askdoc 2>&1 &
