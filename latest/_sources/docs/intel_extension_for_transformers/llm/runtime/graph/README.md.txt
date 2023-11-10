@@ -290,7 +290,7 @@ Argument description of inference.py:
 | --keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
 | --shift-roped-k                                   | Use [ring-buffer](./docs/infinite_inference.html#shift-rope-k-and-ring-buffer) and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | --glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 & AMX) and fall back to fp16 if failed |
+| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ & AMX) and fall back to fp16 if failed |
 
 
 ### 3. Tensor Parallelism cross nodes/sockets

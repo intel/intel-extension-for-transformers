@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g53e9133 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gd9e95da documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -376,7 +376,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 | –keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
 | –shift-roped-k                                   | Use <a class="reference external" href="./docs/infinite_inference.html#shift-rope-k-and-ring-buffer">ring-buffer</a> and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | –glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 &amp; AMX) and fall back to fp16 if failed |</p>
+| –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ &amp; AMX) and fall back to fp16 if failed |</p>
 </section>
 <section id="tensor-parallelism-cross-nodes-sockets">
 <h3>3. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
@@ -403,7 +403,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f7b60b219f0> 
+   <jinja2.runtime.BlockReference object at 0x7fae50a6d870> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
