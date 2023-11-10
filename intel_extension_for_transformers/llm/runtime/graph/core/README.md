@@ -48,12 +48,12 @@ We support three kinds of kernel fusion for transformer models: QKV, MHA (multi-
         <tr>
             <td>QKV</td>
             <td >GPT-J<br>LLaMA</td>
-            <td>AMX_INT8, AVX512_VNNI</td>
+            <td>AMX_INT8, AVX512_VNNI, AVX_VNNI</td>
         </tr>
         <tr>
             <td>FFN</td>
             <td>GPT-J<br>LLaMA<br>BLOOM<br>ChatGLM<br>Falcon<br>MPT</td>
-            <td>AMX_INT8, AVX512_VNNI, AVX512F and AMX_BF16</td>
+            <td>AMX_INT8, AVX512_VNNI, AVX512F, AMX_BF16, AVX_VNNI, AVX2</td>
         </tr>
         <tr>
             <td>MHA</td>
@@ -71,4 +71,6 @@ codename | weight config | runtime ISA
 Sapphire Rapids | any int4<br>group size=-1<br>compute type=int8 | AMX_INT8
 Ice Lake<br>Cascade Lake<br>Cooper Lake<br>Tiger Lake<br>Rocket Lake | any int4<br>group size=-1<br>compute type=int8 | AVX512_VNNI
 Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F
+Alder Lake (12th Gen)<br>Raptor Lake (13th and 14th Gen)|any 4bits<br>group size=-1<br>compute type=int8 | AVX_VNNI
+Older architecture (before 12th Gen)|  any 4bits<br>group size=-1<br>compute type=fp32 | AVX2
 

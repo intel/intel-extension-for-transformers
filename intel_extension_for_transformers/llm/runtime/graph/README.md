@@ -113,7 +113,9 @@ Argument description of generate function:
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 | shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
 
-### 3. Chat with LLaMA2
+### 3. Multi-Round Chat
+
+Chat with LLaMA2:
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
@@ -125,16 +127,35 @@ streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
 while True:
-    print("> ", end="")
-    prompt = input().strip()
+    prompt = input("> ").strip()
     if prompt == "quit":
         break
     b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
     outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
+                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1)
 ```
 
+Chat with ChatGLM2:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "THUDM/chatglm2-6b"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    prompt = input("> ").strip()
+    if prompt == "quit":
+        break
+    prompt = tokenizer.build_prompt(prompt)  # prompt template for chatglm2
+    inputs = tokenizer([prompt], return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1, n_keep=2)
+```
 
 
 ## How to use: Straightforward Python script
