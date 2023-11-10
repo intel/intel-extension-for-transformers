@@ -89,7 +89,7 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=con
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-## 🙊Sc Validated Hardware
+## 🙊 Validated   Hardware
 [LLM Inference](intel_extension_for_transformers/llm/runtime/graph) 
 | Hardware | Optimization |
 | ------------- | ------------- |
