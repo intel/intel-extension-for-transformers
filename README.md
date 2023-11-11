@@ -89,19 +89,6 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=con
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-## 🙊 Validated   Hardware
-[LLM Inference](intel_extension_for_transformers/llm/runtime/graph) Support Matrix
-| Hardware | Optimization |
-|-------------|:-------------:|
-| Xeon Scalable Processors | ✔ |
-| Xeon CPU Max Series | ✔ |
-| Core Processors | ✔ |
-| Arc GPU Series | WIP |
-| Data Center GPU Max Series | WIP |
-| Gaudi2 | TBD |
-
-
-
 ## 🎯Validated  Models
 You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 

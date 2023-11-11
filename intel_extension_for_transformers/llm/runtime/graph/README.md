@@ -13,12 +13,12 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 ## Supported Hardware
 | Hardware | Optimization |
 |-------------|:-------------:|
-| Xeon Scalable Processors | ✔ |
-| Xeon CPU Max Series | ✔ |
-| Core Processors | ✔ |
-| Arc GPU Series | WIP |
-| Data Center GPU Max Series | WIP |
-| Gaudi2 | TBD |
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |
 
 ## Supported Models
 
@@ -168,7 +168,7 @@ while True:
 ```
 
 
-## How to use: Straightforward Python script
+## How to use: Python script
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
