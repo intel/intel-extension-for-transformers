@@ -77,7 +77,7 @@ struct model_load_tensor_shard {
   void calc_size() { size = model_calc_tensor_size(ne, type); }
 };
 
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN };
+enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN , TP_1D_ONLY_MASTER};
 
 struct model_load_tensor {
   std::vector<model_load_tensor_shard> shards;
@@ -153,6 +153,9 @@ struct model_load_tensor {
           name.find(".feed_forward.w2.weight") != std::string::npos) {
         split_type = TP_1D_COLUMN;
       }
+      if (name.find(".mlp.fc_out.bias") != std::string::npos) {
+        split_type = TP_1D_ONLY_MASTER;
+      }
     }
 #endif
   }
@@ -191,6 +194,9 @@ struct model_load_tensor {
         } else {
           ne = {first_shard.ne[0] / world_size, first_shard.ne[1]};
         }
+        break;
+      case TP_1D_ONLY_MASTER:
+        ne = first_shard.ne;
         break;
 #endif
     }
@@ -615,6 +621,28 @@ struct model_model_loader {
     }
   }
 
+  void dump_data(void* input, size_t size, std::string name, size_t n, size_t k, bool fp32) {
+    int random_num = rand();
+    char file_name[255];
+    sprintf(file_name, "%s_%d.txt", name, random_num);
+    FILE* file = fopen(file_name, "w");
+    if (file == NULL) {
+      NE_ASSERT(false);
+    }
+    fprintf(file, "file name is %s ,", name.c_str());
+    fprintf(file, "n is %d , k is %d  \n", n, k);
+    for (size_t i =0; i < n; ++i) {
+      for (size_t j = 0; j < k / 2; ++j) {
+        if (fp32) {
+          fprintf(file, "%f ", *(((float*)input) + i * k + j));
+        } else {
+          fprintf(file, "%f ", *(((int8_t*)input) + i * k / 2 + j));
+        }
+      }
+      fprintf(file, "\n");
+    }
+    fclose(file);
+  }
   void jblas_split_weight(void** src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
     auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*src);
     // TODO adapt NTILE and KTILE from CoreType
@@ -647,10 +675,13 @@ struct model_model_loader {
           memcpy(d_off_ptr, s_off_ptr, off_size);
           d_n_id += 1;
         }
+        // dump_data((void*)src_w->WPtr(), src_w->mNPad * src_w->mKPad, "src_w", src_w->mNPad / NTILE, src_w->mKPad * NTILE, false);
+        // dump_data((void*)dst_w.WPtr(), dst_w.mNPad * dst_w.mKPad, "dst_w", dst_w.mNPad / NTILE, dst_w.mKPad * NTILE, false);
         // take the scale out and split
         d_n_id = 0;
         size_t s_kblks = src_w->mCSize / src_w->mCStep;
         size_t d_kblks = dst_w.mCSize / dst_w.mCStep;
+        assert(s_kblks % world_size_k == 0);
         for (size_t s_n_offset = n_rank * s_kblks; s_n_offset < (n_rank + 1) * s_kblks; ++s_n_offset) {
           size_t s_k_offset = k_rank * s_kblks / world_size_k;
           auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
@@ -658,6 +689,8 @@ struct model_model_loader {
           memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
           d_n_id += 1;
         }
+        // dump_data((void*)src_w->mSPtr, src_w->mCSize, "src_scale", src_w->mNPad, s_kblks, true);
+        // dump_data((void*)dst_w.mSPtr, dst_w.mCSize, "dst_scale", dst_w.mNPad, d_kblks, true);
         // take the zp out and split
         if (src_w->mIsAsym) {
           d_n_id = 0;
@@ -668,6 +701,8 @@ struct model_model_loader {
             memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
+          // dump_data((void*)src_w->mZPtr, src_w->mCSize, "src_zp", src_w->mNPad, s_kblks, true);
+          // dump_data((void*)dst_w.mZPtr, dst_w.mCSize, "dst_zp", dst_w.mNPad, d_kblks, true);
         }
         // take the reduce out and split
         if (src_w->mHasReduce) {
@@ -679,6 +714,8 @@ struct model_model_loader {
             memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep);
             d_n_id += 1;
           }
+          // dump_data((void*)src_w->mRPtr, src_w->mCSize, "src_reduce", src_w->mNPad, s_kblks, true);
+          // dump_data((void*)dst_w.mRPtr, dst_w.mCSize, "dst_reduce", dst_w.mNPad, d_kblks, true);
         }
       } else if (src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32) ||
                  src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32PerChannelN)) {
@@ -703,6 +740,7 @@ struct model_model_loader {
         d_n_id = 0;
         size_t s_kblks = src_w->mCSize / src_w->mCStep;
         size_t d_kblks = dst_w.mCSize / dst_w.mCStep;
+        assert(s_kblks % world_size_k == 0);
         for (size_t s_n_offset = n_rank * s_kblks; s_n_offset < (n_rank + 1) * s_kblks; ++s_n_offset) {
           size_t s_k_offset = k_rank * s_kblks / world_size_k;
           auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
@@ -811,7 +849,7 @@ struct model_model_loader {
       if (lt.type == NE_TYPE_JBLAS) {
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
+        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
       } else {
         size_t offset = 0;
         // different data type may have differnet per_row_size
@@ -822,6 +860,15 @@ struct model_model_loader {
           offset += per_row_size;
         }
         MODEL_ASSERT(offset == lt.size);
+      }
+    } else if (lt.split_type == TP_1D_ONLY_MASTER) {
+      // only master node load the tensor, other node set to zero
+      model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
+      file.seek(lt.shards.at(0).file_off, SEEK_SET);
+      if (lt.rank == 0) {
+        file.read_raw(lt.data, lt.size);
+      } else {
+        memset(lt.data, 0, lt.size);
       }
     }
 #endif

@@ -432,15 +432,15 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 
       struct ne_tensor* FFN_out = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
       ne_set_name(FFN_out, "FFN_out");
-
-#ifdef NE_TP_MODEL
-      // if tp model then all reduce as the weight has been split
-      if (enable_tp) {
-        FFN_out = ne_all_reduce(ctx0, FFN_out);
-      }
-#endif
+      // NOTICE: when TP, only master node add this bias
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), FFN_out);
     }
+#ifdef NE_TP_MODEL
+    // if tp model then all reduce as the weight has been split
+    if (enable_tp) {
+      cur = ne_all_reduce(ctx0, cur);
+    }
+#endif
     cur = ne_add(ctx0, cur, inpFF);
     // if (il == 20) {
     //   cur = ne_dump_tensor(ctx0, cur);
