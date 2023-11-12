@@ -150,6 +150,112 @@ static inline JBLAS_CODE dequant_kblock_s8_f32(int8_t* srcptr, float* dstptr, in
                                            kblock, NPad);
 }
 
+static inline JBLAS_CODE dequant_s32_fp32(const int32_t* srcptr, const int srcstep, float* dstptr, const int dststep,
+                                          const int row, const int col, const float* scaleA, const int ldsa,
+                                          const float* scaleB) {
+  int col8 = utils::padto_le(col, 8);
+  for (int irow = 0; irow < row; irow++) {
+    auto scale = scaleA[irow * ldsa];
+    auto valpha = _mm256_set1_ps(scale);
+    int icol = 0;
+    for (; icol < col8; icol += 8) {
+      auto vwscale = _mm256_loadu_ps(scaleB + icol);
+      auto vscale = _mm256_mul_ps(valpha, vwscale);
+      auto vsrcd = _mm256_loadu_si256((__m256i*)(srcptr + irow * srcstep + icol));
+      auto vsrc = _mm256_cvtepi32_ps(vsrcd);
+      vsrc = _mm256_mul_ps(vsrc, vscale);
+      _mm256_storeu_ps(dstptr + irow * dststep + icol, vsrc);
+    }
+    for (; icol < col; icol += 1) {
+      dstptr[irow * dststep + icol] = scale * scaleB[icol] * srcptr[irow * srcstep + icol];
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE remove_act_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zps,
+                                                   float* scales, int lds, const float* reduce) {
+  int constexpr VLen = 8;
+  auto col8 = utils::padto_le(col, VLen);
+  for (int i = 0; i < row; i++) {
+    auto zpf = float(zps[i * lds]) * scales[i * lds];
+    int j = 0;
+    auto vzp = _mm256_set1_ps(-zpf);
+    for (; j < col8; j += VLen) {
+      auto vreduce = _mm256_loadu_ps(reduce + j);
+      auto vacc = _mm256_loadu_ps(&accptr[i * ldacc + j]);
+      vacc = _mm256_fmadd_ps(vzp, vreduce, vacc);
+      _mm256_storeu_ps(&accptr[i * ldacc + j], vacc);
+    }
+    if (j < col) {
+      for (; j < col; j++) {
+        accptr[i * ldacc + j] -= zpf * reduce[j];
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE remove_wei_zeropoint_bias(float* accptr, int ldacc, int row, int col, int8_t* zps,
+                                                   float* scales, int lds, const float* reduce) {
+  int constexpr VLen = 8;
+  auto col8 = utils::padto_le(col, VLen);
+  const int32_t mask[] = {-1, -1, 0, 0};
+  for (int i = 0; i < row; i++) {
+    auto vreduce = _mm256_set1_ps(-reduce[i * lds]);
+    int j = 0;
+    for (; j < col8; j += VLen) {
+      auto vzp_s32 = _mm256_cvtepi8_epi32(_mm_maskload_epi32((const int*)(zps + j), _mm_loadu_si128((__m128i*)mask)));
+      auto vzp_f32 = _mm256_cvtepi32_ps(vzp_s32);
+      auto vzp = _mm256_mul_ps(vzp_f32, _mm256_loadu_ps(scales + j));
+      auto vacc = _mm256_loadu_ps(&accptr[i * ldacc + j]);
+      vacc = _mm256_fmadd_ps(vzp, vreduce, vacc);
+      _mm256_storeu_ps(&accptr[i * ldacc + j], vacc);
+    }
+    if (j < col) {
+      for (; j < col8; j++) {
+        accptr[i * ldacc + j] -= float(zps[j]) * scales[j] * reduce[i * lds];
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zpa, int8_t* zpb,
+                                               float* scalea, float* scaleb, int lds, int k, const float* reducea,
+                                               const float* reduceb) {
+  int constexpr VLen = 8;
+  auto col8 = utils::padto_le(col, VLen);
+  auto vk = _mm256_set1_ps((float)(k));
+  const int32_t mask[] = {-1, -1, 0, 0};
+  for (int i = 0; i < row; i++) {
+    auto vreducea = _mm256_set1_ps(-reducea[i * lds]);
+    auto zpaf = float(zpa[i * lds]) * scalea[i * lds];
+    auto vzpa = _mm256_set1_ps(-zpaf);
+    int j = 0;
+    for (; j < col8; j += VLen) {
+      auto vzp_s32 = _mm256_cvtepi8_epi32(_mm_maskload_epi32((const int*)(zpb + j), _mm_loadu_si128((__m128i*)mask)));
+      auto vzp_f32 = _mm256_cvtepi32_ps(vzp_s32);
+      auto vzpb = _mm256_mul_ps(vzp_f32, _mm256_loadu_ps(scaleb + j));
+      auto vreduceb = _mm256_loadu_ps(reduceb + j);
+      auto vacc = _mm256_loadu_ps(&accptr[i * ldacc + j]);
+      vacc = _mm256_fmadd_ps(vzpa, vreduceb, vacc);
+      vacc = _mm256_fmadd_ps(vzpb, vreducea, vacc);
+      vzpb = _mm256_mul_ps(vzpb, vk);
+      vacc = _mm256_fmadd_ps(vzpa, vzpb, vacc);
+      _mm256_storeu_ps(&accptr[i * ldacc + j], vacc);
+    }
+    if (j < col) {
+      for (; j < col8; j++) {
+        accptr[i * ldacc + j] -= float(zpb[j]) * scaleb[j] * reducea[i * lds];
+        accptr[i * ldacc + j] -= zpaf * reduceb[j];
+        accptr[i * ldacc + j] -= zpaf * float(zpb[j]) * scaleb[j] * k;
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
                                           int ld_dst) {

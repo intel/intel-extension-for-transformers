@@ -4,11 +4,21 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
-- Utilize AMX, VNNI and AVX512F instruction set
+- Utilize AMX, VNNI, AVX512F and AVX2 instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
+
+## Supported Hardware
+| Hardware | Optimization |
+|-------------|:-------------:|
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |
 
 ## Supported Models
 
@@ -158,7 +168,12 @@ while True:
 ```
 
 
-## How to use: Straightforward Python script
+## How to use: Python script
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
+
 Build from source
 > :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 
@@ -290,7 +305,7 @@ Argument description of inference.py:
 | --keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
 | --shift-roped-k                                   | Use [ring-buffer](./docs/infinite_inference.md#shift-rope-k-and-ring-buffer) and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | --glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 & AMX) and fall back to fp16 if failed |
+| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ & AMX) and fall back to fp16 if failed |
 
 
 ### 3. Tensor Parallelism cross nodes/sockets

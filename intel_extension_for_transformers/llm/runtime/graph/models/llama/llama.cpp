@@ -45,22 +45,26 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool llama_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                      const int n_past, const int n_total, const int n_threads) {
+static bool llama_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+                                      const int n_threads) {
+  // TODO static batching for now
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
   // enforce that the first token is BOS
-  if (n_total == 0 && tokens[0] != lctx.vocab.bos_token_id) {
+  if (n_total == 0 && inputs->tokens[0] != lctx.vocab.bos_token_id) {
     fprintf(stderr, "%s: first token must be BOS\n", __func__);
     return false;
   }
 
-  const int64_t t_start_us = ne_time_us();
+  const int batch_size = lctx.batch_size;
+  MODEL_ASSERT(batch_size == n_input);
 
-  const int N = n_tokens;
+  const int64_t t_start_us = ne_time_us();
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -139,7 +143,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
   struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
+  }
 
 #ifdef NE_TP_MODEL
   if (enable_tp) {
@@ -439,9 +445,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!llama_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!llama_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
