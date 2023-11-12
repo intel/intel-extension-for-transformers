@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g8fc72f3 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g1af8a76 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -92,13 +92,24 @@
 <ul class="simple">
 <li><p>Modular design to support new models</p></li>
 <li><p><a class="reference external" href="core/README.html">Highly optimized low precision kernels</a></p></li>
-<li><p>Utilize AMX, VNNI and AVX512F instruction set</p></li>
+<li><p>Utilize AMX, VNNI, AVX512F and AVX2 instruction set</p></li>
 <li><p>Support CPU (x86 platforms only) and initial (Intel) GPU</p></li>
 <li><p>Support 4bits and 8bits quantization</p></li>
 </ul>
 <blockquote>
 <div><p>LLM Runtime is under active development so APIs are subject to change.</p>
 </div></blockquote>
+<section id="supported-hardware">
+<h2>Supported Hardware<a class="headerlink" href="#supported-hardware" title="Link to this heading"></a></h2>
+<p>| Hardware | Optimization |
+|————-|:————-:|
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |</p>
+</section>
 <section id="supported-models">
 <h2>Supported Models<a class="headerlink" href="#supported-models" title="Link to this heading"></a></h2>
 <p>LLM Runtime supports the following models:</p>
@@ -249,8 +260,12 @@
 </div>
 </section>
 </section>
-<section id="how-to-use-straightforward-python-script">
-<h2>How to use: Straightforward Python script<a class="headerlink" href="#how-to-use-straightforward-python-script" title="Link to this heading"></a></h2>
+<section id="how-to-use-python-script">
+<h2>How to use: Python script<a class="headerlink" href="#how-to-use-python-script" title="Link to this heading"></a></h2>
+<p>Install from binary</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+</pre></div>
+</div>
 <p>Build from source</p>
 <blockquote>
 <div><p>:warning: <strong>If you want to use <code class="docutils literal notranslate"><span class="pre">from_pretrain</span></code> API</strong>: please follow <a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p>
@@ -403,7 +418,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fa6ea454280> 
+   <jinja2.runtime.BlockReference object at 0x7f0d4d250760> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
