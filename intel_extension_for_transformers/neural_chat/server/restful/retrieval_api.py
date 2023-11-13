@@ -74,7 +74,7 @@ class RetrievalAPIRouter(APIRouter):
 router = RetrievalAPIRouter()
 
 
-@router.post("/v1/askdoc/upload_link")
+@router.post("/v1/aiphotos/askdoc/upload_link")
 async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
