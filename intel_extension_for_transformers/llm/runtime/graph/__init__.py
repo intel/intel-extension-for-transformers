@@ -97,6 +97,12 @@ class Model:
     def init_from_bin(self, model_name, model_path, **generate_kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
+        if "threads" not in generate_kwargs:
+            threads = os.getenv("OMP_NUM_THREADS")
+            if threads is None:
+                generate_kwargs["threads"] = os.cpu_count() // 2
+            else:
+                generate_kwargs["threads"] = int(threads)
         self.model.init_model(model_path, **generate_kwargs)
 
     def quant_model(self, model_name, model_path, out_path, **quant_kwargs):
