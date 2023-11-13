@@ -1,4 +1,4 @@
-:hammer: Thanks to all the external contributors including
+:hammer: Thanks to the new contributors including
 <table>
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td> 
