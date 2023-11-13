@@ -41,7 +41,11 @@ class UnitTest(unittest.TestCase):
 
     def test_retrieval(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        input_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/"
+        if os.path.exists(input_path):
+            plugins.retrieval.args["input_path"] = input_path
+        else:
+            plugins.retrieval.args["input_path"] = "../assets/docs/"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -53,7 +57,7 @@ class UnitTest(unittest.TestCase):
     def test_retrieval_append(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        plugins.retrieval.args["input_path"] = "../assets/docs/"
         plugins.retrieval.args["persist_dir"] = "./check_append"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
