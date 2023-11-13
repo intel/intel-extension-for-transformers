@@ -363,6 +363,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        torchscript=True,
     )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
@@ -547,7 +548,11 @@ def main():
         train_dataset = train_dataset.map(
             preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
         )
-    # import pdb; pdb.set_trace()
+
+    from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant
+    from neural_compressor.data.dataloaders.pytorch_dataloader import PyTorchDataLoader
+    
+    
     trainer = NLPTrainer(
         model=model,
         args=training_args,
@@ -555,6 +560,19 @@ def main():
         eval_dataset=train_dataset, # for calibration
         tokenizer=tokenizer,
     )
+
+    sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
+    sq.transform(alpha="auto", calib_iter=3, folding=True)
+    del trainer
+
+    trainer = NLPTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset, # for calibration
+        eval_dataset=train_dataset, # for calibration
+        tokenizer=tokenizer,
+    )
+    
 
     if optim_args.tune:
 
@@ -587,10 +605,19 @@ def main():
         stmodel = SentenceTransformer(model_args.model_name_or_path) # for quick evaluate
         def eval_func(model):
             stmodel[0].auto_model = model
-            evaluation = MTEB(task_langs=['en'], tasks=['ArguAna'])
+            evaluation = MTEB(task_langs=['en'], task_types=['STS'])
             results = evaluation.run(stmodel, overwrite_results=True, eval_splits=["test"])
-            print(results['ArguAna']['test'])
-            return results['ArguAna']['test']['ndcg_at_10']
+            avg_res = 0
+            for task_name, task_res in results.items():
+                if task_name in ['STS17']:
+                    avg_res += round(task_res['test']['en-en']['cos_sim']['spearman'] * 100, 2)
+                elif task_name in ['STS22']:
+                    avg_res += round(task_res['test']['en']['cos_sim']['spearman'] * 100, 2)
+                else:
+                    avg_res += round(task_res['test']['cos_sim']['spearman'] * 100, 2)
+            
+            avg_res /= len(results)
+            return avg_res
         model = trainer.quantize(
             quant_config=quantization_config, 
             eval_func=eval_func,
