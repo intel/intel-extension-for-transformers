@@ -125,7 +125,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-python-api">Streaming LLM</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/docs/tensor_parallelism.md">Tensor Parallelism</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">LLM COMPRESSION</th>
