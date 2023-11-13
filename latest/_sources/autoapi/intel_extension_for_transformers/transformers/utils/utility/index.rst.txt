@@ -34,7 +34,7 @@ Functions
    Generate the dummy past_key_values.
 
 
-.. py:function:: get_example_inputs_for_trace(model, return_type='dict')
+.. py:function:: get_example_inputs_for_trace(model, quantization_config=None, return_type='dict')
 
    Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
