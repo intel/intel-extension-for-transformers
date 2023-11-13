@@ -24,6 +24,8 @@ from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
+import json, types
+from ...plugins import plugins, is_plugin_enabled
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
@@ -65,12 +67,14 @@ class TextChatAPIRouter(APIRouter):
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
 
+    def is_generator(self, obj):
+        return isinstance(obj, types.GeneratorType)
 
-    async def handle_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
-        return await self.handle_chat_completion_request(request)
+    def handle_completion_request(self, request: ChatCompletionRequest):
+        return self.handle_chat_completion_request(request)
 
 
-    async def handle_chat_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
+    def handle_chat_completion_request(self, request: ChatCompletionRequest):
         chatbot = self.get_chatbot()
 
         try:
@@ -81,37 +85,64 @@ class TextChatAPIRouter(APIRouter):
                 if attr == "stream":
                     continue
                 setattr(config, attr, value)
+            buffered_texts = ""
             if request.stream:
-                generator = chatbot.predict_stream(query=request.prompt, config=config)
-                return StreamingResponse(generator, media_type="text/event-stream")
+                generator, link = chatbot.predict_stream(query=request.prompt, config=config)
+                if not self.is_generator(generator):
+                    generator = (generator,)
+                def stream_generator():
+                    nonlocal buffered_texts
+                    for output in generator:
+                        if isinstance(output, str):
+                            chunks = output.split()
+                            for chunk in chunks:
+                                ret = {
+                                    "text": chunk,
+                                    "error_code": 0,
+                                }
+                                buffered_texts += chunk + ' '
+                                yield json.dumps(ret).encode() + b"\0"
+                        else:
+                            ret = {
+                                "text": output,
+                                "error_code": 0,
+                            }
+                            buffered_texts += output + ' '
+                            yield json.dumps(ret).encode() + b"\0"
+                    yield f"data: [DONE]\n\n"
+                    if is_plugin_enabled("cache") and \
+                       not plugins["cache"]["instance"].pre_llm_inference_actions(request.prompt):
+                        plugins["cache"]["instance"].post_llm_inference_actions(request.prompt, buffered_texts)
+                return StreamingResponse(stream_generator(), media_type="text/event-stream")
             else:
                 response = chatbot.predict(query=request.prompt, config=config)
         except Exception as e:
-            raise Exception(e)
+            logger.error(f"An error occurred: {e}")
         else:
             logger.info(f"Chat completion finished.")
-            return ChatCompletionResponse(response=response) 
+            return ChatCompletionResponse(response=response)
 
 
 router = TextChatAPIRouter()
 
 
 @router.post("/v1/completions")
-async def completion_endpoint(request: ChatCompletionRequest) -> ChatCompletionResponse:
+async def completion_endpoint(request: ChatCompletionRequest):
     ret = check_completion_request(request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
-    return await router.handle_completion_request(request)
+    return router.handle_completion_request(request)
 
 
 @router.post("/v1/chat/completions")
-async def chat_completion_endpoint(chat_request: ChatCompletionRequest) -> ChatCompletionResponse:
+async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
     ret = check_completion_request(chat_request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
-    return await router.handle_chat_completion_request(chat_request)
+    return router.handle_chat_completion_request(chat_request)
 
 @router.post("/v1/models")
 async def show_available_models():
-    models = router.get_chatbot().model_name
+    models = []
+    models.append(router.get_chatbot().model_name)
     return {"models": models}

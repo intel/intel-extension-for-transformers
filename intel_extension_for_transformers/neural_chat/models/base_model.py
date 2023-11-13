@@ -17,7 +17,7 @@
 
 from abc import ABC
 from typing import List
-import os
+import os, types
 from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
@@ -42,6 +42,7 @@ def construct_parameters(query, model_name, device, config):
     params["force_words_ids"] = config.force_words_ids
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
+    params["ipex_int8"] = config.ipex_int8
     params["device"] = device
     return params
 
@@ -66,6 +67,7 @@ class BaseModel(ABC):
         self.cache = None
         self.device = None
         self.conv_template = None
+        self.ipex_int8 = None
 
     def match(self, model_path: str):
         """
@@ -93,6 +95,7 @@ class BaseModel(ABC):
             "device": "cuda",
             "use_hpu_graphs": True,
             "cpu_jit": False,
+            "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
@@ -104,16 +107,19 @@ class BaseModel(ABC):
         self.use_hpu_graphs = kwargs["use_hpu_graphs"]
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
+        self.ipex_int8 = kwargs["ipex_int8"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
+                   ipex_int8=kwargs["ipex_int8"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
-                   hf_access_token=kwargs["hf_access_token"])
+                   hf_access_token=kwargs["hf_access_token"],
+                   use_llm_runtime=kwargs["use_llm_runtime"])
 
     def predict_stream(self, query, config=None):
         """
@@ -130,31 +136,51 @@ class BaseModel(ABC):
         config.use_hpu_graphs = self.use_hpu_graphs
         config.cpu_jit = self.cpu_jit
         config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
 
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+              "starcoder" in self.model_name:
+            query_include_prompt = True
+
         # plugin pre actions
+        link = []
         for plugin_name in get_registered_plugins():
             if is_plugin_enabled(plugin_name):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "cache":
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                            if response:
+                                print(f"Get response: {response} from cache")
+                                return response['choices'][0]['text'], link
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template, link
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query."
+                            return "Your query contains sensitive words, please try another query.", link
                         else:
-                            query = response
+                            if response != None and response != False:
+                                query = response
         assert query is not None, "Query cannot be None."
 
-        query = self.prepare_prompt(query, self.model_name, config.task)
+        if not query_include_prompt:
+            query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+        def is_generator(obj):
+            return isinstance(obj, types.GeneratorType)
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
@@ -162,18 +188,12 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        if (plugin_name == "safety_checker" and is_generator(response)) or \
+                           plugin_name == "cache":
+                            continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
-
-        return response
+        return response, link
 
     def predict(self, query, config=None):
         """
@@ -186,14 +206,22 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
+        original_query = query
         config.device = self.device
         config.use_hpu_graphs = self.use_hpu_graphs
         config.cpu_jit = self.cpu_jit
         config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
 
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
+
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+               "starcoder" in self.model_name:
+            query_include_prompt = True
 
         # plugin pre actions
         for plugin_name in get_registered_plugins():
@@ -201,10 +229,17 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "cache":
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                            if response:
+                                print(f"Get response: {response} from cache")
+                                return response['choices'][0]['text']
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
@@ -214,8 +249,9 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
+        if not query_include_prompt and not is_plugin_enabled("retrieval"):
+            query = self.prepare_prompt(query, self.model_name, config.task)
         # LLM inference
-        query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 
         # plugin post actions
@@ -224,16 +260,10 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
-                        response = plugin_instance.post_llm_inference_actions(response)
-
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
+                        if plugin_name == "cache":
+                            plugin_instance.post_llm_inference_actions(original_query, response)
+                        else:
+                            response = plugin_instance.post_llm_inference_actions(response)
 
         return response
 

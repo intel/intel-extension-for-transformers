@@ -1,7 +1,7 @@
 Step-by-Step
 =========
 
-In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) and [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) etc.
+In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) and [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) etc. You can also refer to [link](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/README.md) to do LLM inference with cpp graph to get better performance, but it may have constrain on batched inference.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4
 
@@ -52,7 +52,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 ```
 
 ### Advanced Inference
-Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when runing bf16 graph**. If you want to try, please add arg `--weight_type`, like:
+Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when running bf16 graph**. If you want to try, please add arg `--weight_type`, like:
 ```bash
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model_path <path to bf16 engine model> --model <model name> --weight_type=fp8_5e2m
 ```

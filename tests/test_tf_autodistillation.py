@@ -29,12 +29,12 @@ class TestAutoDistillation(unittest.TestCase):
         self.strategy = tf.distribute.MultiWorkerMirroredStrategy()
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased')
+            'hf-internal-testing/tiny-random-distilbert')
         self.teacher_model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased-finetuned-sst-2-english')
+            'hf-internal-testing/tiny-random-DistilBertForSequenceClassification')
 
         raw_datasets = load_dataset("glue", "sst2")["validation"]
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-DistilBertForSequenceClassification")
         non_label_column_names = [
             name for name in raw_datasets.column_names if name != "label"
         ]
@@ -133,7 +133,7 @@ class TestAutoDistillation(unittest.TestCase):
                 autodistillation_config,
                 self.teacher_model,
                 model_cls=TFAutoModelForSequenceClassification,
-                train_func=self.optimizer.build_train_func,
+                train_func=None,
                 eval_func=self.optimizer.builtin_eval_func
             )
             # check best model architectures

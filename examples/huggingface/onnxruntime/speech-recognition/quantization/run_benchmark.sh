@@ -40,6 +40,9 @@ function init_params {
       --int8=*)
           int8=$(echo ${var} |cut -f2 -d=)
       ;;
+      --int4=*)
+          int4=$(echo ${var} |cut -f2 -d=)
+      ;;
     esac
   done
 
@@ -49,7 +52,7 @@ function init_params {
 # run_benchmark
 function run_benchmark {
 
-    if [[ ${int8} == "false" ]]; then
+    if [[ ${int8} == "false" ]] && [[ ${int4} == "false" ]]; then
         input_model=${config}
     fi
 

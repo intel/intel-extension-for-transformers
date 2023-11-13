@@ -67,14 +67,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
     
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
-    hparams = config.to_dict()
+    with open(os.path.join(dir_model,"config.json"), "r", encoding="utf-8") as f:
+        hparams = json.load(f)
+    if hparams["architectures"][0] != "FalconForCausalLM":
+        print("Model architecture not supported: " + hparams["architectures"][0])
+        sys.exit(1)
     print("Loading model: ", dir_model)
     model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
                     if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
     print("Model loaded: ", dir_model)
 
-    n_head_kv = hparams.get("n_head_kv", 1)
-    n_head = hparams["n_head"]
+    n_head_kv = hparams.get("num_kv_heads", 1)
+    n_head = hparams["num_attention_heads"]
     head_dim = hparams["hidden_size"] // n_head
 
     fout = open(fname_out, "wb")
@@ -85,7 +89,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", n_head))
     fout.write(struct.pack("i", n_head_kv))  # multi-query attention
-    fout.write(struct.pack("i", hparams["n_layer"]))
+    fout.write(struct.pack("i", hparams["num_hidden_layers"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
     fout.write(struct.pack("i", 0))
@@ -99,10 +103,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     
-    fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
-    fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()

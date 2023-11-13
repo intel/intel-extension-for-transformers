@@ -1,11 +1,12 @@
 datasets
 torch
-transformers
+transformers==4.34.1
 jiwer
 optimum
 onnx
-onnxruntime
+onnxruntime==1.16.0
 evaluate
 neural-compressor
 librosa
 soundfile
+pydub

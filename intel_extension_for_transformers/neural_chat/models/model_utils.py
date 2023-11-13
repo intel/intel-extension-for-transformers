@@ -28,6 +28,7 @@ from huggingface_hub import snapshot_download
 from typing import List
 from transformers import (
     GenerationConfig,
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -38,9 +39,9 @@ from transformers import (
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
-from intel_extension_for_transformers.neural_chat.config import (
-    AMPConfig,
-    WeightOnlyQuantizationConfig,
+from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
 
@@ -109,11 +110,11 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
         )
 
 
-def get_checkpoint_files(model_name_or_path, local_rank):
+def get_checkpoint_files(model_name_or_path, local_rank, token=None):
     """
     Gets the list of files for the specified model checkpoint.
     """
-    cached_repo_dir = get_repo_root(model_name_or_path, local_rank)
+    cached_repo_dir = get_repo_root(model_name_or_path, local_rank, token)
 
     # Extensions: .bin | .pt
     # Creates a list of paths from all downloaded files in cache dir
@@ -121,11 +122,11 @@ def get_checkpoint_files(model_name_or_path, local_rank):
     return file_list
 
 
-def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json):
+def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token=None):
     """
     Dumps metadata into a JSON file for DeepSpeed-inference.
     """
-    checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank)
+    checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
     if local_rank == 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
         with open(checkpoints_json, "w") as fp:
@@ -229,7 +230,7 @@ def import_deepspeed():
     print("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta):
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
 
@@ -242,7 +243,7 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json)
+        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token)
 
     torch.distributed.barrier()
 
@@ -253,22 +254,19 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"
-
-
 def load_model(
     model_name,
     tokenizer_name,
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
+    ipex_int8=False,
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
+    use_llm_runtime=False
 ):
     """
     Load the model and initialize the tokenizer.
@@ -296,10 +294,8 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu":
-        set_cpu_running_env()
 
-    if isinstance(optimization_config, AMPConfig):
+    if isinstance(optimization_config, MixedPrecisionConfig):
         dtype = optimization_config.dtype
     else:
         dtype = "float32"
@@ -330,8 +326,11 @@ def load_model(
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
         use_auth_token=hf_access_token,
+        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+            re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
@@ -339,7 +338,7 @@ def load_model(
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE):
+    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name,
@@ -348,15 +347,24 @@ def load_model(
                 use_auth_token=hf_access_token,
                 quantization_config=bitsandbytes_quant_config,
             )
-    elif (
+    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModel.from_pretrained(
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True)
+    elif ((
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("opt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-    ):
+        or re.search("qwen", model_name, re.IGNORECASE)
+        or re.search("starcoder", model_name, re.IGNORECASE)
+    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -365,9 +373,20 @@ def load_model(
                 low_cpu_mem_usage=True,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif (
+            (re.search("starcoder", model_name, re.IGNORECASE)
+            ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                import intel_extension_for_pytorch
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
+                 )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now."
+            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
@@ -379,11 +398,13 @@ def load_model(
     if (
         hasattr(model.generation_config, "pad_token_id")
         and model.generation_config.pad_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.pad_token_id = model.generation_config.pad_token_id
     if (
         hasattr(model.generation_config, "eos_token_id")
         and model.generation_config.eos_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
     if (
@@ -400,9 +421,14 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if isinstance(optimization_config, WeightOnlyQuantizationConfig):
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config)
+        model = optimize_model(model, optimization_config, use_llm_runtime)
+
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
 
     if device == "hpu":
         if peft_path:
@@ -423,6 +449,7 @@ def load_model(
                 model_name_or_path=model_name,
                 use_hpu_graphs=use_hpu_graphs,
                 is_meta=load_to_meta,
+                token=hf_access_token,
             )
     else:
         if peft_path:
@@ -432,7 +459,7 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            if torch_dtype == torch.bfloat16:
+            if torch_dtype == torch.bfloat16 and not ipex_int8:
                 import intel_extension_for_pytorch as intel_ipex
 
                 model = intel_ipex.optimize(
@@ -469,7 +496,13 @@ def load_model(
     if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
-
+    # warmup for int8 model
+    if ipex_int8:
+        input_ids = tokenizer("A chat between a curious human and an artificial intelligence assistant.\n"
+                              " Human: Tell me about Intel.\n Assistant:", return_tensors="pt").input_ids.to('cpu')
+        with torch.inference_mode(), torch.no_grad():
+            for i in range(2):
+                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
     print("Model loaded.")
@@ -478,10 +511,15 @@ def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
 
 def get_stop_token_ids(model, tokenizer):
-    if isinstance(model.generation_config.eos_token_id, list):
-        stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+    if hasattr(model, 'generation_config') and hasattr(model.generation_config, 'eos_token_id'):
+        eos_token_id = model.generation_config.eos_token_id
     else:
-        stop_token_ids = [model.generation_config.eos_token_id]
+        eos_token_id = tokenizer.eos_token_id
+
+    if isinstance(eos_token_id, list):
+        stop_token_ids = copy.deepcopy(eos_token_id)
+    else:
+        stop_token_ids = [eos_token_id]
     end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[-1]
     stop_token_ids.append(end_token_id)
     return stop_token_ids
@@ -517,6 +555,24 @@ def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
     }
     return generate_kwargs
 
+def is_llm_runtime_model(model):
+    from intel_extension_for_transformers.llm.runtime.graph import Model
+    if isinstance(model, Model):
+        return True
+    else:
+        return False
+
+def remove_prompt_history(model_name, prompt):
+    result = prompt
+    if re.search("llama", model_name, re.IGNORECASE):
+        matches = re.findall(r'\[INST\](.*?)\[/INST\]', prompt)
+        if matches:
+            result = "[INST]" + matches[-1] + "[/INST]"
+    elif re.search("chatglm", model_name, re.IGNORECASE):
+        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        if matches:
+            result = matches[-1]
+    return result
 
 output_token_len = 0
 def predict_stream(**params):
@@ -548,6 +604,7 @@ def predict_stream(**params):
         `use_hpu_graphs` (bool): 
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -577,11 +634,16 @@ def predict_stream(**params):
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
+
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -622,17 +684,46 @@ def predict_stream(**params):
                         context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                     elif device == "xpu":
                         context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-                    with context:
+                    if ipex_int8:
                         global output_token_len
                         output_token=model.generate(
-                            **input_tokens,
-                            **generate_kwargs,
-                            streamer=streamer,
-                            generation_config=generation_config,
-                            return_dict_in_generate=True,
-                        )
-                        output_token_len=output_token.sequences[0].shape[-1]
-                        return output_token
+                                **input_tokens,
+                                **generate_kwargs,
+                                streamer=streamer,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True,
+                            )
+
+                    else:
+                        with context:
+                            global output_token_len
+                            if is_llm_runtime_model(model):  # optimized model gerenate
+                                output_token=model.generate(
+                                    input_tokens['input_ids'],
+                                    streamer=streamer,
+                                    temperature=temperature,
+                                    top_p=top_p,
+                                    top_k=top_k,
+                                    repetition_penalty=repetition_penalty,
+                                    max_new_tokens=max_new_tokens,
+                                    ctx_size=max_new_tokens,
+                                    ignore_prompt=True,
+                                    interactive=True,
+                                    do_sample=do_sample,
+                                    num_beams=num_beams,
+                                    seed=1
+                                )
+                            else:
+                                output_token=model.generate(
+                                    **input_tokens,
+                                    **generate_kwargs,
+                                    streamer=streamer,
+                                    generation_config=generation_config,
+                                    return_dict_in_generate=True,
+                                )
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                                      output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -757,6 +848,7 @@ def predict(**params):
         `use_hpu_graphs` (bool): 
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -783,11 +875,16 @@ def predict(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else False
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
+
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
 
     if num_beams == 0:
         num_beams = 1
@@ -822,14 +919,37 @@ def predict(**params):
                 context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
             elif device == "xpu":
                 context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            
-            with context:
+            if ipex_int8:
                 generation_output = model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True
-                )
+                        **input_tokens,
+                        **generate_kwargs,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True
+                        )
+            else:
+                with context:
+                    if is_llm_runtime_model(model):  # optimized model gerenate
+                        generation_output = model.generate(
+                            input_tokens['input_ids'],
+                            temperature=temperature,
+                            top_p=top_p,
+                            top_k=top_k,
+                            repetition_penalty=repetition_penalty,
+                            max_new_tokens=max_new_tokens,
+                            ctx_size=max_new_tokens,
+                            ignore_prompt=True,
+                            interactive=True,
+                            do_sample=do_sample,
+                            num_beams=num_beams,
+                            seed=1
+                        )
+                    else:
+                        generation_output = model.generate(
+                            **input_tokens,
+                            **generate_kwargs,
+                            generation_config=generation_config,
+                            return_dict_in_generate=True
+                        )
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)
@@ -862,7 +982,10 @@ def predict(**params):
                 hpu_graphs=use_hpu_graphs,
                 ignore_eos=False,
             )
-    output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
+    if is_llm_runtime_model(model):  # optimized model gerenate
+        output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
+    else:
+        output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
     return output

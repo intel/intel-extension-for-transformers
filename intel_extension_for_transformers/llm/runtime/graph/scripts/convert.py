@@ -19,7 +19,7 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
+model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
 
 
 def convert_model(model, outfile, outtype):

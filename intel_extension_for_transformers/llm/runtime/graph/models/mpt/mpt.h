@@ -30,7 +30,6 @@ static const model_scratch mpt_mem_req(int n_layers) {
       return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     case 48:
       return {4096ull * MB, 4096ull * MB, 8192ull * MB};
-    // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }
@@ -41,12 +40,12 @@ class MPT : public IModel {
   model_archs arch = MODEL_MPT;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
-  int n_ctx, n_gpu_layer;
+  int n_gpu_layer;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+  void init(const char* path_model, model_context& lctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
             bool vocab_only_) override;
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };

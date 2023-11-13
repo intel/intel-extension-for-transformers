@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -20,6 +22,11 @@
 #include <cstring>
 #include <functional>
 #include <vector>
+#ifdef _WIN32
+#include <cstdlib>
+#else
+#include <stdlib.h>
+#endif
 
 #include "jit_blas.h"
 #include "xbyak/xbyak_util.h"
@@ -30,7 +37,7 @@
 #define CompileAVX512F() (defined(__GNUC__) && (__GNUC__ >= 6))
 #define CompileAVX2() (defined(__GNUC__) && (__GNUC__ >= 5))
 #define CompileAMX() (defined(__GNUC__) && (__GNUC__ >= 11))
-#define CompileBF16() (defined(__GNUC__) && (__GNUC__ >= 13))
+#define CompileBF16() (defined(__GNUC__) && (__GNUC__ >= 11))
 #define CompileFP16() (defined(__GNUC__) && (__GNUC__ >= 13))
 #define CompileAMXBF16() (CompileAMX())
 #define CompileAMXINT8() (CompileAMX())
@@ -70,14 +77,28 @@ struct bf16 {
 
 #if CompileBF16()
 #pragma GCC target("avx512vl", "avx512bf16")
-  explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
+  static uint16_t f32_to_bf16(float v) {
+    auto mm = _mm_load_ss(&v);
+    auto mm2 = _mm_cvtneps_pbh(mm);
+    uint16_t dst;
+    _mm_storeu_si16(reinterpret_cast<uint16_t*>(&dst), reinterpret_cast<__m128i>(mm2));
+    return dst;
+  }
+
+  explicit bf16(float vf32) : x(bit_cast<uint16_t>(f32_to_bf16(vf32))) {}
 #else
   explicit bf16(float vf32) { fromfloat(vf32); }
 #endif
 
 #if CompileBF16()
 #pragma GCC target("avx512vl", "avx512bf16")
-  float tofloat() const { return static_cast<float>(bit_cast<__bf16>(this->x)); }
+  float tofloat() const {
+    auto mm = _mm_loadu_si16(&(this->x));
+    auto mm2 = _mm_bslli_si128(mm, 2);
+    float dst;
+    _mm_store_ss(&dst, reinterpret_cast<__m128>(mm2));
+    return dst;
+  }
 #else
   float tofloat() const {
     bf16f32 tmp = {0.f};
@@ -96,7 +117,7 @@ struct bf16 {
 
   void fromfloat(float _v) {
 #if CompileBF16()
-    x = bit_cast<uint16_t>(_mm_cvtness_sbh(_v));
+    x = bit_cast<uint16_t>(f32_to_bf16(_v));
 #else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;
@@ -279,7 +300,7 @@ static inline _DSTT cast(_SRCT _src) {
 
 template <>
 int8_t cast(float _src) {
-  _src = _src >= 0.f ? _src + 0.5f : _src - 0.5f;
+  _src = roundf(_src);
   _src = std::min(_src, 127.f);
   _src = std::max(_src, -128.f);
   return static_cast<int8_t>(_src);
@@ -320,11 +341,36 @@ _T deserialize(int8_t*& buf) {
 static inline int padto(int a, int b) { return updiv(a, b) * b; }
 static inline size_t padto(size_t a, int b) { return updiv(a, b) * b; }
 
+template <typename _T>
+static inline _T* amalloc(size_t _size, size_t _alignment = 64) {
+  if (_size == 0) {
+    return NULL;
+  }
+  auto psize = padto(_size * sizeof(_T), _alignment);
+#ifdef _WIN32
+  return (_T*)_aligned_malloc(psize, _alignment);
+#else
+  return (_T*)aligned_alloc(_alignment, psize);
+#endif
+}
+
+static inline void afree(void* ptr) {
+  if (ptr == NULL) {
+    return;
+  }
+#ifdef _WIN32
+  _aligned_free(ptr);
+#else
+  free(ptr);
+#endif
+}
+
 template <typename _T, int _Alignment = 64>
 class aligned_vector {
  public:
   aligned_vector() : mRawsize(0), mPtr(nullptr), mAlignedsize(0) {}
-  aligned_vector(size_t _size, _T _val = _T(0)) {
+  aligned_vector(size_t _size) { resize(_size); }
+  aligned_vector(size_t _size, _T _val) {
     resize(_size);
     std::fill_n(mVec.begin(), mVec.size(), _val);
   }
@@ -502,12 +548,15 @@ class CpuDevice {
     ADD_FLAG(AVX512_BF16);
     ADD_FLAG(AVX512_FP16);
     numcores = _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
+#ifdef _OPENMP
     ompthreads = omp_get_max_threads();
-    numthreads = std::min(numcores, ompthreads);
-#ifdef FORCE_NUM_THREADS
-    numthreads = FORCE_NUM_THREADS;
+#else
+    ompthreads = numcores;
 #endif
+    numthreads = std::min(numcores, ompthreads);
+#ifdef _OPENMP
     omp_set_num_threads(numthreads);
+#endif
   }
 
   static CpuDevice* getInstance() {

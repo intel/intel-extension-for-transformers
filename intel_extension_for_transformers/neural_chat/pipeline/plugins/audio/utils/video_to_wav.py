@@ -23,12 +23,8 @@ import shlex
 from pydub import AudioSegment
 
 def convert_video_to_wav(path, output_sample_rate, is_mono=True):
-    is_dir = os.path.isdir(path)
-    if is_dir: 
-        path_list=os.listdir(shlex.quote(path))
-    else: # input is a file
-        path, basename = os.path.split(path)
-        path_list = [basename]
+    path, basename = os.path.split(path)
+    path_list = [basename]
     print(path)
 
     output_dir = os.path.join(path, "../raw")
@@ -52,10 +48,10 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
             # file name should not contain space.
             if is_mono:
                 cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(
-                    input_file_path, output_sample_rate, output_file_path)
+                    input_file_path, output_sample_rate, output_file_path).split()
             else:
                 cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(
-                    input_file_path, output_sample_rate, output_file_path)
+                    input_file_path, output_sample_rate, output_file_path).split()
             try:
                 subprocess.run(cmd, check=True)
             except subprocess.CalledProcessError as e:
@@ -68,8 +64,8 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
-    parser.add_argument("--is_mono", type=str, default=True)
-    parser.add_argument("--sr", type=int, default=16000)
+    parser.add_argument("--is_mono", type=str, default='True')
+    parser.add_argument("--sr", type=str, default='16000')
     args = parser.parse_args()
     output_sample_rate = shlex.quote(args.sr)
     is_exist = os.path.exists(shlex.quote(args.path))

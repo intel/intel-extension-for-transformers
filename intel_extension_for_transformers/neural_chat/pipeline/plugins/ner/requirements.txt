@@ -1,0 +1,7 @@
+torch
+torchvision
+torchaudio
+spacy
+neural-compressor
+transformers==4.34.1
+intel_extension_for_pytorch

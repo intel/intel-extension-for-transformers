@@ -371,7 +371,8 @@ class Finetuning:
             if training_args.gradient_checkpointing:
                 model.gradient_checkpointing_enable()
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
+                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE) or
+                re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
@@ -547,8 +548,47 @@ class Finetuning:
                     unwrapped_model.save_pretrained(
                         training_args.output_dir, state_dict=unwrapped_model.state_dict()
                     )
+        if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
+            unwrapped_model.eval()
+            class Eval_Args:
+                n_samples = 20
+                limit = 20
+                allow_code_execution = True
+                prefix = ""
+                generation_only = False
+                postprocess = False
+                save_references = False
+                save_generations = False
+                instruction_tokens = None
+                save_generations_path = None
+                load_generations_path = None
+                metric_output_path = "evaluation_results.json"
+                seed = 0
+                max_length_generation = 512
+                temperature = 0.8
+                top_p = 0.8
+                top_k = 0
+                do_sample = True
+                check_references = False
+                max_memory_per_gpu = None
+                modeltype = "causal"
+                limit_start = 0
+                batch_size = 20 # batch_size >= n_samples if do_sample.
+            eval_args = Eval_Args()
+            from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
+            with training_args.main_process_first(desc="lm_eval"):
+                if is_main_process(training_args.local_rank):
+                    with torch.no_grad():
+                        results = evaluate(
+                            model=unwrapped_model,
+                            tokenizer=tokenizer,
+                            tasks="humaneval",
+                            batch_size=eval_args.batch_size,
+                            args=eval_args,
+                        )
+                        self.logger.info(results)
 
-        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+        elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):

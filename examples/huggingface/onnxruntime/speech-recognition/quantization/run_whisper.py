@@ -30,12 +30,16 @@ parser.add_argument('--cache_dir', default=None, type=str,
 parser.add_argument('--input_model', default=None, type=str,
                     help='the folder path to fp32 models')
 parser.add_argument('--approach', default='dynamic', type=str,
-                    help='the quantization approach to use')
+                    help='the quantization approach to use, support static, dynamic and weight_only')
 parser.add_argument('--model_name_or_path', default=None, type=str)
 parser.add_argument('--cores_per_instance', default=4, type=int,
                     help='cores per instance during benchmark')
 parser.add_argument('--max_new_tokens', default=16, type=int,
                     help='the maximum numbers of tokens to generate')
+parser.add_argument('--audio_path', type=str,
+                    help='the audio path')
+parser.add_argument('--audio_test', dest='audio_test', action='store_true',
+                    help='run test for audio sample')
 
 args = parser.parse_args()
 
@@ -77,10 +81,13 @@ class Dataloader:
         self.model_path = model_path
         self.librispeech_test_clean = load_dataset("librispeech_asr", "clean", split="test", cache_dir=args.cache_dir)
         if not model_path.endswith('encoder_model.onnx'):
-            self.encoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'encoder_model.onnx'))
-            self.decoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_model.onnx'))
+            self.encoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'encoder_model.onnx'),
+                                                     providers=ort.get_available_providers())
+            self.decoder_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_model.onnx'),
+                                                     providers=ort.get_available_providers())
             if model_path.endswith('decoder_with_past_model.onnx'):
-                self.decoder_kv_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_with_past_model.onnx'))
+                self.decoder_kv_sess = ort.InferenceSession(os.path.join(os.path.dirname(model_path), 'decoder_with_past_model.onnx'),
+                                                            providers=ort.get_available_providers())
 
     def __iter__(self):
         config = AutoConfig.from_pretrained(args.model_name_or_path)
@@ -137,7 +144,19 @@ class Dataloader:
                             break
                         ort_inputs['input_ids'] = input_ids[:, -1:].detach().numpy()
                         yield ort_inputs, 0
- 
+
+def audiosegment_to_librosawav(audiosegment):
+    # https://github.com/jiaaro/pydub/blob/master/API.markdown#audiosegmentget_array_of_samples
+    # This way is faster than librosa.load or HuggingFace Dataset wrapper
+    channel_sounds = audiosegment.split_to_mono()[:1]   # only select the first channel
+    samples = [s.get_array_of_samples() for s in channel_sounds]
+
+    fp_arr = np.array(samples).T.astype(np.float32)
+    fp_arr /= np.iinfo(samples[0].typecode).max
+    fp_arr = fp_arr.reshape(-1)
+
+    return fp_arr
+
 if __name__ == "__main__":
     if args.tune:
         if os.path.exists(args.output_model):
@@ -158,9 +177,16 @@ if __name__ == "__main__":
                                            calib_dataloader=dataloader
                                            )
                 q_model.save(os.path.join(args.output_model, model))
-        else:
+        elif args.approach == 'dynamic':
             conf = PostTrainingQuantConfig(approach="dynamic",
                     op_type_dict={'^((?!(MatMul|Gather|Conv)).)*$': {'weight': {'dtype': ['fp32']}, 'activation': {'dtype': ['fp32']}}},)
+            for model in model_list:
+                q_model = quantization.fit(os.path.join(args.input_model, model),
+                                           conf=conf)
+                q_model.save(os.path.join(args.output_model, model))
+        else:
+            conf = PostTrainingQuantConfig(approach="weight_only",
+                    op_type_dict={'.*': {'weight': {'algorithm': ['RTN'], 'scheme': ['asym']}}},)
             for model in model_list:
                 q_model = quantization.fit(os.path.join(args.input_model, model),
                                            conf=conf)
@@ -181,21 +207,32 @@ if __name__ == "__main__":
                 os.path.join(args.input_model, 'decoder_with_past_model.onnx'),
                 session_options=sess_options)
         model = ORTModelForSpeechSeq2Seq(sessions[0], sessions[1], config, args.input_model, sessions[2])
-
-        librispeech_test_clean = load_dataset("librispeech_asr", "clean", split="test", cache_dir=args.cache_dir)
         processor = WhisperProcessor.from_pretrained(args.model_name_or_path)
-        total_time = 0
-        for idx, batch in enumerate(librispeech_test_clean):
-            if idx > args.iters:
-                break
-            audio = batch["audio"]
-            input_features = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt").input_features
-            tic = time.time()
-            predicted_ids = model.generate(input_features, max_new_tokens=args.max_new_tokens)
-            toc = time.time()
-            if idx >= args.warmup:
-                total_time += (toc - tic)
-        latency = total_time / (args.iters - args.warmup)
-        print('Latency: %.3f ms' % (latency * 1000))
-        print('Throughput: %.3f images/sec' % (args.batch_size / latency))
-        print('Batch size = %d' % args.batch_size)
+
+        if args.audio_test:
+            from pydub import AudioSegment
+
+            waveform = AudioSegment.from_file(args.audio_path).set_frame_rate(16000)
+            waveform = audiosegment_to_librosawav(waveform)
+            input_features = processor(waveform, sampling_rate=16000, return_tensors="pt").input_features
+            predicted_ids = model.generate(input_features)
+            transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
+            print(transcription)
+
+        else:
+            librispeech_test_clean = load_dataset("librispeech_asr", "clean", split="test", cache_dir=args.cache_dir)
+            total_time = 0
+            for idx, batch in enumerate(librispeech_test_clean):
+                if idx > args.iters:
+                    break
+                audio = batch["audio"]
+                input_features = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt").input_features
+                tic = time.time()
+                predicted_ids = model.generate(input_features, max_new_tokens=args.max_new_tokens)
+                toc = time.time()
+                if idx >= args.warmup:
+                    total_time += (toc - tic)
+            latency = total_time / (args.iters - args.warmup)
+            print('Latency: %.3f ms' % (latency * 1000))
+            print('Throughput: %.3f images/sec' % (args.batch_size / latency))
+            print('Batch size = %d' % args.batch_size)

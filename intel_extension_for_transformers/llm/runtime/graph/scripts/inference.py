@@ -19,68 +19,68 @@ from typing import List, Optional
 import subprocess
 from transformers import AutoTokenizer
 
-model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
-    parser.add_argument("--model_name", type=str, help="model name", required=True)
-    parser.add_argument("-m", "--model", type=Path, help="path ne model", required=True)
+    parser.add_argument("--model_name", type=str, help="Model name: String", required=True)
+    parser.add_argument("-m", "--model", type=Path, help="Path to the executed model: String", required=True)
     parser.add_argument(
-        "--build_dir", type=Path, help="path to build directory", default=build_path
+        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
     )
     parser.add_argument(
         "-p",
         "--prompt",
         type=str,
-        help="prompt to start generation with (default: empty)",
+        help="Prompt to start generation with: String (default: empty)",
         default="",
     )
     parser.add_argument(
-        "--glm_tokenizer",
+        "--tokenizer",
         type=str,
-        help="the path of the chatglm tokenizer",
+        help="The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)",
         default="THUDM/chatglm-6b",
     )
     parser.add_argument(
         "-n",
         "--n_predict",
         type=int,
-        help="number of tokens to predict (default: -1, -1 = infinity)",
+        help="Number of tokens to predict: Int (default: 0, -1 = all)",
         default=-1,
     )
     parser.add_argument(
         "-t",
         "--threads",
         type=int,
-        help="number of threads to use during computation (default: 56)",
+        help="Number of threads to use during computation: Int (default: 56)",
         default=56,
     )
     parser.add_argument(
         "-b",
         "--batch_size_truncate",
         type=int,
-        help="batch size for prompt processing (default: 512)",
+        help="Batch size for prompt processing: Int (default: 512)",
         default=512,
     )
     parser.add_argument(
         "-c",
         "--ctx_size",
         type=int,
-        help="size of the prompt context (default: 512)",
+        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
         "-s",
         "--seed",
         type=int,
-        help="NG seed (default: -1, use random seed for < 0)",
+        help="NG seed: Int (default: -1, use random seed for < 0)",
         default=-1,
     )
     parser.add_argument(
         "--repeat_penalty",
         type=float,
-        help="penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)",
+        help="Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)",
         default=1.1,
     )
     parser.add_argument(
@@ -91,8 +91,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--keep",
         type=int,
-        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)",
+        help="Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)",
         default=0,
+    )
+    parser.add_argument(
+        "--shift-roped-k",
+        action="store_true",
+        help="Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)",
     )
     parser.add_argument(
         "--memory-f32",
@@ -129,8 +134,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
     cmd.extend(["--keep",           str(args.keep)])
+    if args.shift_roped_k:
+        cmd.extend(["--shift-roped-k"])
     if args.color:
-        cmd.append(" --color")
+        cmd.append("--color")
     if args.memory_f32:
         cmd.extend(["--memory-f32"])
     if args.memory_f16:
@@ -140,11 +147,57 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
 
     if (args.model_name == "chatglm"):
-        tokenizer = AutoTokenizer.from_pretrained(args.glm_tokenizer, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         token_ids_list = tokenizer.encode(args.prompt)
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
-        print(token_ids_str)
+        cmd.extend(["--ids", token_ids_str])
+    elif (args.model_name == "baichuan"):
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
+        def truncate(ids, max_length):
+            """Truncates a list of integers to a given length.
+
+            Args:
+                ids: A list of integers.
+                max_length: The maximum length of the truncated list.
+            """
+            if len(ids) > max_length:
+                ids = ids[:max_length]
+
+        def encode_history(history, max_length=4096):
+            """Encodes a history of text into a list of integers.
+
+            Args:
+                history: A list of strings, representing the history of text.
+                max_length: The maximum length of the encoded history.
+
+            Returns:
+                A list of integers, representing the encoded history.
+            """
+
+            assert len(history) % 2 == 1, "invalid history size {}".format(len(history))
+
+            USER_TOKEN_ID = 195
+            ASSISTANT_TOKEN_ID = 196
+
+            ids = []
+            for i in range(len(history)):
+                if i % 2 == 0:
+                    ids.append(USER_TOKEN_ID)
+                else:
+                    ids.append(ASSISTANT_TOKEN_ID)
+
+                content_ids = tokenizer.encode(args.prompt)
+                ids.extend(content_ids)
+
+            ids.append(ASSISTANT_TOKEN_ID)
+            truncate(ids, max_length)
+            return ids
+
+        history = [args.prompt]
+        token_ids_list = encode_history(history)
+        token_ids_list = map(str, token_ids_list)
+        token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
 
     print("cmd:", cmd)

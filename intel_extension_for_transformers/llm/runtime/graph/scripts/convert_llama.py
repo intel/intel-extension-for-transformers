@@ -827,7 +827,8 @@ SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {
     'F16': DT_F16,
     'F32': DT_F32,
     'I32': DT_I32,
-    'BOOL': DT_BOOL
+    'BOOL': DT_BOOL,
+    'BF16': DT_BF16
 }
 
 
@@ -1027,7 +1028,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
 
         self.fout.write(struct.pack("i", 1)) # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
-        self.fout.write(struct.pack("i", 1))
+        self.fout.write(struct.pack("i", 2))
 
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))

@@ -12,14 +12,6 @@ cd intel-extension-for-transformers
 pip install -r requirements.txt
 python setup.py install
 ```
-Here is how to install intel-extension-for-pytorch from source.
-```shell
-#  gcc version >= 11
-git clone https://github.com/intel/intel-extension-for-pytorch.git
-cd intel-extension-for-pytorch
-git submodule sync && git submodule update --init --recursive
-python setup.py install
-```
 
 Required libraries.
 ```shell
@@ -52,7 +44,7 @@ We use the gpt_bigcode definition script [modeling_gpt_bigcode.py](https://githu
 ## 1. Quantization
 ``` bash
 python run_generation.py \
-    --model bigcode/starcoderbase \
+    --model bigcode/starcoder \
     --output_dir "./saved_results" \
     --quantize \
     --sq \
@@ -65,10 +57,16 @@ python run_generation.py \
 ```
 
 ## 2. Performance
+
 ```bash
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # --int8 is used for int8 model
-python run_generation.py \
-    --model bigcode/starcoderbase \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
     --output_dir "./saved_results" \
     --int8 \
     --ipex \
@@ -80,7 +78,7 @@ python run_generation.py \
 ```bash
 # --int8 is used for int8 model
 python run_generation.py \
-    --model bigcode/starcoderbase \
+    --model bigcode/starcoder \
     --output_dir "./saved_results" \
     --int8 \    
     --ipex \

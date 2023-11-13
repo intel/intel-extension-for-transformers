@@ -40,7 +40,7 @@
 #define NE_FILE_VERSION 1
 
 #define NE_MAX_DIMS 4
-#define NE_MAX_NODES 4096
+#define NE_MAX_NODES 8192
 #define NE_MAX_PARAMS 256
 #define NE_MAX_CONTEXTS 64
 #define NE_MAX_OPT 4
@@ -147,6 +147,8 @@ struct ne_tensor {
 
   char padding[8];
 };
+
+static const size_t NE_TENSOR_SIZE = sizeof(struct ne_tensor);
 
 // computation graph
 struct ne_cgraph {

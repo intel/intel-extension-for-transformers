@@ -19,6 +19,7 @@ import copy
 import datasets
 import re
 from itertools import chain
+from intel_extension_for_transformers.neural_chat.prompts.prompt import PromptTemplate
 
 IGNORE_INDEX = -100
 
@@ -47,21 +48,51 @@ def truncate_sequences(sequences, max_length):
     return sequences
 
 class CompletionDataPreprocess:
-    prompt_template = ALPACA_PROMPT_DICT
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name.lower()
+        if "alpaca" in self.dataset_name:
+            self.prompt_template = [
+                PromptTemplate("alpaca_without_input"),
+                PromptTemplate("alpaca_with_input")
+            ]
+            self.key_role_map = [
+                [('instruction', 0), ('output', 1)],
+                [('instruction', 0), ('input', 1), ('output', 2)]
+            ]
+        elif "stack-exchange-instruction" in self.dataset_name:
+            self.prompt_template = PromptTemplate("question_answer")
+            self.key_role_map = [('question', 0), ('response', 1)]
+        else:
+            raise NotImplementedError(
+                f"Unsupported dataset {dataset_name}, "
+                "only supports stack-exchange-instruction and Alpaca liked dataset now."
+            )
+
 
     def create_data(self, examples):
         prompts = {}
         prompts["source"] = []
         prompts["target"] = []
         for example in examples:
-            prompt_template = (
-                self.prompt_template["prompt_with_input"]
-                if example.get("input") is not None and example.get("input") != ""
-                else self.prompt_template["prompt_without_input"]
-            )
-            source = prompt_template.format_map(example)
+            prompt_template = self.prompt_template
+            key_role_map = self.key_role_map
+            if "alpaca" in self.dataset_name:
+                if "input" in example and example["input"]:
+                    prompt_template = self.prompt_template[1]
+                    key_role_map = self.key_role_map[1]
+                else:
+                    prompt_template = self.prompt_template[0]
+                    key_role_map = self.key_role_map[0]
+
+            for idx, (key, role) in enumerate(key_role_map):
+                message = example[key]
+                if idx == len(key_role_map)-1:
+                    message = ""
+                prompt_template.append_message(prompt_template.roles[role], message)
+            source = prompt_template.get_prompt()
             prompts["source"].append(source)
-            prompts["target"].append(example["output"])
+            prompts["target"].append(example[key_role_map[-1][0]])
+            prompt_template.clear_messages()
         return prompts
 
     @staticmethod
@@ -304,9 +335,11 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         preprocess = SummarizationDataPreprocess()
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
-    elif finetune_args.task == "completion":
+    elif finetune_args.task == "completion" or finetune_args.task == "code-generation":
         # default use alpaca template
-        preprocess = CompletionDataPreprocess()
+        preprocess = CompletionDataPreprocess(
+            data_args.dataset_name if data_args.dataset_name else data_args.train_file
+        )
         for key in raw_datasets:
             prompts = preprocess.create_data(raw_datasets[key])
             columns_to_be_removed = list(raw_datasets[key].features.keys())

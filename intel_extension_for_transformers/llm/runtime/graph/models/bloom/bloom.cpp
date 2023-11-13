@@ -40,24 +40,21 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
 
-static bool bloom_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                      const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
+static bool bloom_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+                                      const int n_threads) {
   const int64_t t_start_us = ne_time_us();
-
-  const int N = n_tokens;
+  // TODO static batching for now
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
 
   const int batch_size = lctx.batch_size;
+  MODEL_ASSERT(batch_size == n_input);
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -68,7 +65,8 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = hparams.n_rot;
@@ -92,7 +90,9 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
+  }
 
   // wte
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
@@ -217,13 +217,15 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
                               model.layers[il].ffn[5], cur);
       } else {
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+
         cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
 
         cur = ne_gelu(ctx0, cur);
 
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[4], cur);
+
+        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
       }
-      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[5], cur), cur);
     }
 
     cur = ne_add(ctx0, cur, inpFF);
@@ -309,8 +311,8 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!bloom_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!bloom_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

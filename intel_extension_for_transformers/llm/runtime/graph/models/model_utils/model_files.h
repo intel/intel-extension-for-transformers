@@ -87,9 +87,6 @@ struct model_load_tensor {
   int32_t rank = get_tp_rank(p_ctx);
   bool enable_tp = world_size > 1 ? true : false;
 
-  // int32_t world_size = 2;
-  // int32_t rank = 1;
-  // bool enable_tp =true;
 #endif
   std::string name;
   enum ne_type type = NE_TYPE_F32;
@@ -135,13 +132,24 @@ struct model_load_tensor {
 
 #ifdef NE_TP_MODEL
     if (enable_tp) {
+      // TODO it's not good to check type here, mmaybe move to specific model files
       if (name.find(".attn.q_proj.weight") != std::string::npos ||
           name.find(".attn.k_proj.weight") != std::string::npos ||
           name.find(".attn.v_proj.weight") != std::string::npos ||
-          name.find(".mlp.fc_in.weight") != std::string::npos) {
+          name.find(".mlp.fc_in.weight") != std::string::npos ||
+          // for llama model
+          name.find(".attention.wq.weight") != std::string::npos ||
+          name.find(".attention.wk.weight") != std::string::npos ||
+          name.find(".attention.wv.weight") != std::string::npos ||
+          name.find(".feed_forward.w1.weight") != std::string::npos ||
+          name.find(".feed_forward.w3.weight") != std::string::npos) {
         split_type = TP_1D_ROW;
       }
-      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos) {
+      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos ||
+          name.find(".attn.out_proj.weight") != std::string::npos ||
+          // TODO check if this part should be column
+          name.find(".attention.wo.weight") != std::string::npos ||
+          name.find(".feed_forward.w2.weight") != std::string::npos) {
         split_type = TP_1D_COLUMN;
       }
     }
@@ -478,14 +486,17 @@ struct model_model_loader {
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
           if (it == tensors_map.name_to_idx.end()) {
-            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
+            it = tensors_map.name_to_idx.find("model.embed_tokens.weight");  // baichuan13B
             if (it == tensors_map.name_to_idx.end()) {
-              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
+              it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
               if (it == tensors_map.name_to_idx.end()) {
-                it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
-                if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
                 if (it == tensors_map.name_to_idx.end()) {
-                  throw std::string("missing tok_embeddings.weight");
+                  it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+                  if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                  if (it == tensors_map.name_to_idx.end()) {
+                    throw std::string("missing tok_embeddings.weight");
+                  }
                 }
               }
             }

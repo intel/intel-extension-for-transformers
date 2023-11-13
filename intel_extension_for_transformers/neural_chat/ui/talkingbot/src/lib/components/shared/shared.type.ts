@@ -50,6 +50,7 @@ export enum ERROR {
 export type Message = {
   role: MESSAGE_ROLE;
   content: string | string[];
+  text?: string
 };
 
 export type ChatListItem = {

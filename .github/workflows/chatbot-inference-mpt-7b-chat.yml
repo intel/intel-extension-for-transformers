@@ -10,38 +10,43 @@ concurrency:
 jobs:
   inference:
     name: inference test
-    runs-on: lms-lab
+    runs-on: neural-chat-inference
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Load environment variables
         run: 
-          cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
-      - name: Prepare Cache
-        run: cp ${{ env.CACHE }}/torch/* ./
+          cat ~/actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
         run: 
-          ITREX_VER=${{ github.sha }} || true
-
-          docker build --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+          if [ $(docker images | grep chatbotinfer-gha | wc -l) == 0 ]; then
+            docker build  --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-gha:latest && yes | docker container prune && yes | docker image prune;
+          fi
 
       - name: Start Docker Container
         run: |
-          cid=$(docker ps -q --filter "name=chatbotinfer")
+          cid=$(docker ps -q --filter "name=chatbotinfer-gha")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer" --hostname="chatbotinfer-container" chatbotinfer:latest
+          docker run -tid -v /home/sdp/.cache/huggingface/hub:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-gha" --hostname="chatbotinfer-gha-container" chatbotinfer-gha:latest
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate neuralchat; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer-gha" bash -c "cd /root/chatbot && source activate && conda activate neuralchat; \
+                 git config --global --add safe.directory '*' && \
+                 git submodule update --init --recursive && \
+                 pip uninstall intel-extension-for-transformers -y; \
+                 pip install -r requirements.txt; \
+                 python setup.py install; \
+                 pip install -r intel_extension_for_transformers/neural_chat/requirements.txt; \
+                 python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
-        if: success() || failure()
+        if: always()
         run: |
-          cid=$(docker ps -q --filter "name=chatbotinfer")
-          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+          cid=$(docker ps -q --filter "name=chatbotinfer-gha")
+          if [[ ! -z "$cid" ]]; then docker exec "chatbotinfer-gha" bash -c "rm -rf /root/chatbot/* && rm -rf /root/chatbot/.* || echo Clean" && docker stop $cid && docker rm $cid; fi
 
       - name: Test Summary
         run: echo "Inference completed successfully"

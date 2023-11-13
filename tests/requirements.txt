@@ -1,14 +1,14 @@
 datasets>=1.17
 mlflow
-nlpaug
+nlpaug==1.1.9
 sacremoses
 neural-compressor
 onnx>=1.10
 onnxruntime
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch==2.0.1+cpu
-transformers
-intel-tensorflow==2.12.0
+--find-links https://download.pytorch.org/cpu/whl/torch_stable.html
+torch==2.1.0
+transformers==4.33
+intel-tensorflow==2.13.0
 torchprofile
 intel-extension-for-pytorch
 tokenizers<=0.12.1
@@ -16,6 +16,6 @@ sentencepiece != 0.1.92
 accelerate
 evaluate
 wget
-optimum
-optimum-intel
+optimum==1.13.2
+optimum-intel==1.11.0
 peft

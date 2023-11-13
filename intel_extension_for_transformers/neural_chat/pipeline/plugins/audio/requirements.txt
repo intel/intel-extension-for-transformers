@@ -1,5 +1,7 @@
 paddlepaddle
+paddlenlp
 paddlespeech
+paddle2onnx
 transformers
 soundfile
 datasets

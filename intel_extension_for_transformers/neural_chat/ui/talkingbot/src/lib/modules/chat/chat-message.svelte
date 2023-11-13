@@ -6,11 +6,11 @@
 		
 	export let type: string;
 	export let message: string | string[];
+	export let text: string = ''
 	export let displayTimer: Boolean = true;
 
 	let isbot = (type === MESSAGE_ROLE.ASSISTANT || type === MESSAGE_ROLE.SYSTEM)
 	let isuser = (type === MESSAGE_ROLE.HUMAN || type === MESSAGE_ROLE.USER)
-	console.log('message', message);
 
 	let playIdx = 0;
 	let autoPlay = true
@@ -41,10 +41,10 @@
 		>
 			{#if Array.isArray(message)}
 				{#key playIdx}
-					<ChatAudio src={message[playIdx]} {autoPlay} on:ended={handlePlayEnded}/>
+					<ChatAudio src={message[playIdx]} {autoPlay} {text} on:ended={handlePlayEnded} right/>
 				{/key}
 			{:else if message.includes("blob:")}
-				<ChatAudio src={message} />
+				<ChatAudio src={message} {text}/>
 			{:else}
 				<p class="text-sm message max-w-md line">{message}</p>
 			{/if}

@@ -23,26 +23,100 @@ import os
 import time
 import uuid
 
-os.system("pip install gradio==3.28.0")
+os.system("pip install gradio==3.34.0")
 
 import gradio as gr
 import requests
 
-from fastchat.conversation import (
+import sys
+sys.path.insert(0, './')
+from conversation import (
     get_conv_template,
-    SeparatorStyle,
     compute_skip_echo_len
 )
 from fastchat.constants import LOGDIR
 from fastchat.utils import (
     build_logger,
-    server_error_msg,
     violates_moderation,
-    moderation_msg,
 )
-from fastchat.serve.gradio_patch import Chatbot as grChatbot
-from fastchat.serve.gradio_css import code_highlight_css
 
+code_highlight_css = """
+#chatbot .hll { background-color: #ffffcc }
+#chatbot .c { color: #408080; font-style: italic }
+#chatbot .err { border: 1px solid #FF0000 }
+#chatbot .k { color: #008000; font-weight: bold }
+#chatbot .o { color: #666666 }
+#chatbot .ch { color: #408080; font-style: italic }
+#chatbot .cm { color: #408080; font-style: italic }
+#chatbot .cp { color: #BC7A00 }
+#chatbot .cpf { color: #408080; font-style: italic }
+#chatbot .c1 { color: #408080; font-style: italic }
+#chatbot .cs { color: #408080; font-style: italic }
+#chatbot .gd { color: #A00000 }
+#chatbot .ge { font-style: italic }
+#chatbot .gr { color: #FF0000 }
+#chatbot .gh { color: #000080; font-weight: bold }
+#chatbot .gi { color: #00A000 }
+#chatbot .go { color: #888888 }
+#chatbot .gp { color: #000080; font-weight: bold }
+#chatbot .gs { font-weight: bold }
+#chatbot .gu { color: #800080; font-weight: bold }
+#chatbot .gt { color: #0044DD }
+#chatbot .kc { color: #008000; font-weight: bold }
+#chatbot .kd { color: #008000; font-weight: bold }
+#chatbot .kn { color: #008000; font-weight: bold }
+#chatbot .kp { color: #008000 }
+#chatbot .kr { color: #008000; font-weight: bold }
+#chatbot .kt { color: #B00040 }
+#chatbot .m { color: #666666 }
+#chatbot .s { color: #BA2121 }
+#chatbot .na { color: #7D9029 }
+#chatbot .nb { color: #008000 }
+#chatbot .nc { color: #0000FF; font-weight: bold }
+#chatbot .no { color: #880000 }
+#chatbot .nd { color: #AA22FF }
+#chatbot .ni { color: #999999; font-weight: bold }
+#chatbot .ne { color: #D2413A; font-weight: bold }
+#chatbot .nf { color: #0000FF }
+#chatbot .nl { color: #A0A000 }
+#chatbot .nn { color: #0000FF; font-weight: bold }
+#chatbot .nt { color: #008000; font-weight: bold }
+#chatbot .nv { color: #19177C }
+#chatbot .ow { color: #AA22FF; font-weight: bold }
+#chatbot .w { color: #bbbbbb }
+#chatbot .mb { color: #666666 }
+#chatbot .mf { color: #666666 }
+#chatbot .mh { color: #666666 }
+#chatbot .mi { color: #666666 }
+#chatbot .mo { color: #666666 }
+#chatbot .sa { color: #BA2121 }
+#chatbot .sb { color: #BA2121 }
+#chatbot .sc { color: #BA2121 }
+#chatbot .dl { color: #BA2121 }
+#chatbot .sd { color: #BA2121; font-style: italic }
+#chatbot .s2 { color: #BA2121 }
+#chatbot .se { color: #BB6622; font-weight: bold }
+#chatbot .sh { color: #BA2121 }
+#chatbot .si { color: #BB6688; font-weight: bold }
+#chatbot .sx { color: #008000 }
+#chatbot .sr { color: #BB6688 }
+#chatbot .s1 { color: #BA2121 }
+#chatbot .ss { color: #19177C }
+#chatbot .bp { color: #008000 }
+#chatbot .fm { color: #0000FF }
+#chatbot .vc { color: #19177C }
+#chatbot .vg { color: #19177C }
+#chatbot .vi { color: #19177C }
+#chatbot .vm { color: #19177C }
+#chatbot .il { color: #666666 }
+"""
+
+server_error_msg = (
+    "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
+)
+moderation_msg = (
+    "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
+)
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
@@ -201,7 +275,7 @@ def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
 
     if state is None:
-        state = get_conv_template("neural-chat-7b-v2").copy()
+        state = get_conv_template("neural-chat-7b-v2")
 
     if len(text) <= 0:
         state.skip_next = True
@@ -247,8 +321,14 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         return
 
     if len(state.messages) == state.offset + 2:
-        # First round of conversation
-        new_state = get_conv_template("neural-chat-7b-v2").copy()
+        # model conversation name: "mpt-7b-chat", "chatglm", "chatglm2", "llama-2",
+        #                        "neural-chat-7b-v2", "neural-chat-7b-v1-1"
+        # First round of Conversation
+        if "Llama-2-7b-chat-hf" in model_name:
+            model_name = "llama-2"
+        elif "chatglm"  in model_name:
+            model_name = model_name.split('-')[0]
+        new_state = get_conv_template(model_name.split('/')[-1])
         #new_state.conv_id = uuid.uuid4().hex
         #new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
@@ -288,12 +368,15 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
             stream=True,
             timeout=20,
         )
+        output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
+                if chunk.strip() == b'data: [DONE]':
+                    break
                 data = json.loads(chunk.decode())
                 # print("data======", data, skip_echo_len)
                 if data["error_code"] == 0:
-                    output = data["text"][skip_echo_len:].strip()
+                    output += data["text"].strip() + " "
                     output = post_process_code(output)
                     state.messages[-1][-1] = output + "▌"
                     yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
@@ -561,7 +644,7 @@ def build_single_model_ui(models):
             show_label=False,
         ).style(container=False)
 
-    chatbot = grChatbot(elem_id="chatbot", visible=False).style(height=550)
+    chatbot = gr.Chatbot(elem_id="chatbot", visible=False).style(height=550)
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
             textbox = gr.Textbox(
@@ -711,5 +794,5 @@ if __name__ == "__main__":
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
-        server_name=host, share=share, max_threads=200
+        server_name=host, server_port=80, share=share, max_threads=200
     )
