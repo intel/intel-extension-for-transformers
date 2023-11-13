@@ -160,7 +160,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
+    <td colspan="2" align="center"><a href="docs/tutorials/README.md">Tutorials</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph#supported-models">LLM List</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
