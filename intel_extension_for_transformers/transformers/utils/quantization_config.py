@@ -257,3 +257,4 @@ class SmoothQuantConfig:
     op_type_dict: dict = None
     op_name_dict: dict = None
     excluded_precisions: list = field(default_factory=list)
+    example_inputs: Any = None
