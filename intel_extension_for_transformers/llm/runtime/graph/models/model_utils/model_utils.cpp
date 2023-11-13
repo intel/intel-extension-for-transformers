@@ -1549,8 +1549,9 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 
   const auto& model_hparams = lctx->model.hparams;
+  //printf("n_head_kv=%s,multi_query_group_num=%s",model_hparams.n_head_kv,model_hparams.multi_query_group_num);
   NE_ASSERT(("Can not set n_head_kv and multi_query_group_num at the same time",
-             model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0));
+             model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0 ||model_hparams.n_head_kv != model_hparams.multi_query_group_num ));
   attn_shape_t attn_shape = {
       /* .batch_size = */ lparams.batch_size * lparams.beam_size,
       /* .head_num = */ static_cast<int>(model_hparams.n_head),

@@ -145,7 +145,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
-    elif (args.model_name == "baichuan"):
+    elif (args.model_name == "baichuan" or args.model_name == "qwen"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         def truncate(ids, max_length):
             """Truncates a list of integers to a given length.
