@@ -20,7 +20,7 @@ Feel free to delve into these tutorials and unlock the features in just a matter
 |Early Exit (TangoBERT)|Text Classification|Roberta Base + Bert Tiny|[Notebook](./pytorch/text-classification/SWEET.ipynb)|
 |SetFit|Text Classification|MiniLM|[Notebook](./pytorch/text-classification/SetFit_model_compression_AGNews.ipynb)|
 |Static and dynamic post training quantization|Text Classification|Bert Base|[Notebook](./pytorch/text-classification/bert-base-uncased-MRPC.ipynb)|
-|Distillation|Text Classification|n/a|[Notebook](./pytorch/translation/distillation.ipynb)|
-|Pruning|Text Classification|Bert base|[Notebook](./pytorch/translation/pruning.ipynb)|
-|Prune Once for All|Text Classification|Bert base|[Notebook](./pytorch/translation/orchestrate_optimizations.ipynb)|
-|Prune Once for All|Text Classification|Bert Mini|[Notebook](./pytorch/translation/orchestrate_optimizations_bert_mini.ipynb)|
+|Distillation|Text Classification|n/a|[Notebook](./pytorch/text-classification/distillation.ipynb)|
+|Pruning|Text Classification|Bert base|[Notebook](./pytorch/text-classification/pruning.ipynb)|
+|Prune Once for All|Text Classification|Bert base|[Notebook](./pytorch/text-classification/orchestrate_optimizations.ipynb)|
+|Prune Once for All|Text Classification|Bert Mini|[Notebook](./pytorch/text-classification/orchestrate_optimizations_bert_mini.ipynb)|
