@@ -72,6 +72,9 @@ def get_facerender_data(
             [generated_3dmm, np.repeat(source_semantics[:, 70:], generated_3dmm.shape[0], axis=0)], axis=1
         )
 
+    # generated_3dmm: (100, 70)
+    # source_semantics[:, 64:]: (1, 6)
+    # generated_3dmm.shape[0]: 100
     if still_mode:
         generated_3dmm[:, 64:] = np.repeat(source_semantics[:, 64:], generated_3dmm.shape[0], axis=0)
 

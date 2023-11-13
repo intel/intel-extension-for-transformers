@@ -102,11 +102,12 @@ def get_data(first_coeff_path, audio_path, device, still=False):
 
     indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1).unsqueeze(0)  # bs T 1 80 16
 
-    if still:
-        ratio = torch.FloatTensor(ratio).unsqueeze(0).fill_(0.0)  # bs T
-    else:
-        ratio = torch.FloatTensor(ratio).unsqueeze(0)
-        # bs T
+    # if still:
+    #     ratio = torch.FloatTensor(ratio).unsqueeze(0).fill_(0.0)  # bs T
+    # else:
+    # Enable eye blinking as default!
+    ratio = torch.FloatTensor(ratio).unsqueeze(0)
+    # bs T
     ref_coeff = torch.FloatTensor(ref_coeff).unsqueeze(0)  # bs 1 70
 
     indiv_mels = indiv_mels.to(device)
