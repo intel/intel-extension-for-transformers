@@ -256,6 +256,7 @@ class Finetuning:
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
             object.__setattr__(training_args, "gradient_checkpointing", True)
+            object.__setattr__(training_args, "ddp_find_unused_parameters", False)
             finetune_args.peft = "lora"
             compute_dtype = (
                 torch.float16 if training_args.fp16 else
