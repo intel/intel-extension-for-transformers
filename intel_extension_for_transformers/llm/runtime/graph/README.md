@@ -28,6 +28,7 @@ LLM Runtime supports the following models:
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |
 |[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ |
+|[Qwen-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |
 
 ### Code Generation
 | model name | INT8 | INT4|
