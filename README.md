@@ -11,6 +11,9 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
+* [2023/11] Released [**Fast, accurate, and infinite LLM inference**](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/docs/infinite_inference.md) with improved [StreamingLLM](https://arxiv.org/abs/2309.17453) on Intel CPUs!
+* [2023/11] Our paper [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) has been accepted by **NeurIPS'23** on Efficient Natural Language and Speech Processing. Thanks to all the collaborators!
 * [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatible runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
 * [2023/10] LLM runtime now supports LLM inference with **infinite-length inputs up to 4 million tokens**, inspired from [StreamingLLM](https://arxiv.org/abs/2309.17453).
 * [2023/09] NeuralChat has been showcased in [**Intel Innovation’23 Keynote**](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.
@@ -38,7 +41,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), and [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md).
 
-*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels, supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj), and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox)
+*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels, supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj), and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set.
 
 
 ## 🌱Getting Started
@@ -56,36 +59,34 @@ Below is the sample code to enable weight-only INT4/INT8 inference. See more [ex
 
 ### INT4 Inference 
 ```python
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
-gen_tokens = model.generate(inputs, max_new_tokens=300)
-outputs = tokenizer.batch_decode(gen_tokens)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
 ### INT8 Inference
 ```python
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
-prompt = "Once upon a time, a little girl"
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
-gen_tokens = model.generate(inputs, max_new_tokens=300)
-outputs = tokenizer.batch_decode(gen_tokens)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
 ## 🎯Validated  Models
@@ -174,7 +175,10 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 ## 📃Selected Publications/Events
-* Video on YouTube:[Build Your Own ChatBot with Neural Chat | Intel Software](https://www.youtube.com/watch?v=KWT6yKfu4n0) (Oct 2023)
+* Blog published on marktechpost: [Intel Researchers Propose a New Artificial Intelligence Approach to Deploy LLMs on CPUs More Efficiently](https://www.marktechpost.com/2023/11/09/intel-researchers-propose-a-new-artificial-intelligence-approach-to-deploy-llms-on-cpus-more-efficiently) (Nov 2023)
+* Blog published on VMware: [AI without GPUs: A Technical Brief for VMware Private AI with Inte](https://core.vmware.com/resource/ai-without-gpus-technical-brief-vmware-private-ai-intel#section6) (Nov 2023)
+* News releases on VMware: [VMware Collaborates with Intel to Unlock Private AI Everywhere](https://news.vmware.com/releases/vmware-explore-2023-barcelona-intel-private-ai) (Nov 2023)
+* Video on YouTube: [Build Your Own ChatBot with Neural Chat | Intel Software](https://www.youtube.com/watch?v=KWT6yKfu4n0) (Oct 2023)
 * Blog published on Medium: [Layer-wise Low-bit Weight Only Quantization on a Laptop](https://medium.com/@NeuralCompressor/high-performance-low-bit-layer-wise-weight-only-quantization-on-a-laptop-712580899396) (Oct 2023)
 * Blog published on Medium: [Intel-Optimized Llama.CPP in Intel Extension for Transformers](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176) (Oct 2023)
 * Blog published on Medium: [Reduce the Carbon Footprint of Large Language Models](https://medium.com/intel-analytics-software/reduce-large-language-model-carbon-footprint-with-intel-neural-compressor-and-intel-extension-for-dfadec3af76a) (Oct 2023)
@@ -192,6 +196,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 * [Contribution Guidelines](./docs/contributions.md)
 * [Legal Information](./docs/legal.md)
 * [Security Policy](SECURITY.md)
+* [Apache License](./LICENSE)
 
 
 ## Acknowledgements

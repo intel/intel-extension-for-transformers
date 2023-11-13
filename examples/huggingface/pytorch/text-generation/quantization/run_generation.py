@@ -5,7 +5,10 @@ import json
 import torch
 import logging
 from transformers import AutoConfig, AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import (
+        AutoModelForCausalLM,
+        AutoModel
+)
 from transformers.utils import check_min_version
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
@@ -76,15 +79,18 @@ check_min_version("4.32.0")
 
 # get model config
 config = AutoConfig.from_pretrained(
-      args.model,
+      args.output_dir if (args.int8 or args.int8_bf16_mixed) else args.model,
       torchscript=True
-      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'])
+      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'] or (args.int8 or args.int8_bf16_mixed))
       else False,  # torchscript will force `return_dict=False` to avoid jit errors
       use_cache=True, # to use kv cache.
       trust_remote_code=args.trust_remote_code,
       revision=args.revision,
       )
 
+# chatglm
+if config.model_type == "chatglm":
+    AutoModelForCausalLM = AutoModel
 
 # tokenizer
 if config.model_type == "llama":
@@ -107,19 +113,33 @@ elif args.sq:
     elif re.search("mpt", config.model_type):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-            "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            "<built-in function linear>": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
     elif re.search("mistral", config.model_type) or re.search("baichuan", config.model_type):
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    if config.model_type == "chatglm":
+        query = "我该怎么办?"
+        if hasattr(tokenizer, "build_chat_inputs"):
+            inputs = tokenizer.build_chat_inputs(query)
+            eos_token_id = [tokenizer.eos_token_id, tokenizer.get_command("<|user|>"),
+                            tokenizer.get_command("<|observation|>")]
+            inputs["eos_token_id"] = eos_token_id
+        elif hasattr(tokenizer, "build_prompt"):
+            prompt = tokenizer.build_prompt(query)
+            inputs = tokenizer([prompt], return_tensors="pt")
+        else:
+            inputs = tokenizer([query], return_tensors="pt")
+
     quantization_config = SmoothQuantConfig(
-                                tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
-                                op_type_dict=op_type_dict,  # default is {}
-                                excluded_precisions=excluded_precisions,  # default is []
-                               )
+        tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        op_type_dict=op_type_dict,  # default is {}
+        excluded_precisions=excluded_precisions,  # default is []
+        example_inputs=inputs,
+    )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
@@ -163,7 +183,7 @@ if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
     user_model = TSModelForCausalLM.from_pretrained(
-        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+        args.output_dir, config=config, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
     )
 
 
@@ -207,7 +227,8 @@ if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        model_args='pretrained=' + args.model + ',tokenizer=' + args.model + \
+            ',dtype=float32' + ",trust_remote_code=" + args.trust_remote_code,
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
@@ -221,4 +242,3 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
-

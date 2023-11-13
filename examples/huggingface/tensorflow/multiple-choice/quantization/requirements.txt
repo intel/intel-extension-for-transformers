@@ -2,4 +2,4 @@ datasets >= 1.17
 sentencepiece != 0.1.92
 protobuf
 intel-tensorflow
-transformers
+transformers==4.34.1

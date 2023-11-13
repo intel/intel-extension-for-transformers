@@ -1,6 +1,6 @@
 datasets
 torch
-transformers
+transformers==4.34.1
 jiwer
 optimum
 onnx

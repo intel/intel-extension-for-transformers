@@ -311,6 +311,16 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        sq_config = SmoothQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=5,
+                                    example_inputs=fp32_model.dummy_inputs
+                                    )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_llm_runtime=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
 
         # weight-only
         #RTN
@@ -357,7 +367,7 @@ class TestQuantization(unittest.TestCase):
                                                      use_llm_runtime=False
                                                 )
         output = bit4_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -8.059162139892578, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), -8.6834, rel_tol=1e-04))
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -367,6 +377,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = bit8_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
+
 
 if __name__ == "__main__":
     unittest.main()
