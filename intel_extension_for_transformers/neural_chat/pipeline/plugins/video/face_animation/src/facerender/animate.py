@@ -205,6 +205,7 @@ class AnimateFromCoeff:
         p_num=1,
         bf16=False,
     ):
+        start_time = time.time()
         source_image = x["source_image"].type(torch.FloatTensor)
         source_semantics = x["source_semantics"].type(torch.FloatTensor)
         target_semantics = x["target_semantics_list"].type(torch.FloatTensor)
@@ -313,7 +314,10 @@ class AnimateFromCoeff:
             with open("workspace/rendering_video.mp4", "w") as f:
                 f.write(full_video_path)
 
-        #### paste back then enhancers
+        #### paste back then enhancers.
+        end_time = time.time()
+        print(f"[***5/6***] rendering takes: {end_time - start_time} sec")
+        start_time = end_time
         if enhancer:
             video_name_enhancer = x["video_name"] + "_enhanced.mp4"
             enhanced_path = os.path.join(video_save_dir, "temp_" + video_name_enhancer)
@@ -327,7 +331,10 @@ class AnimateFromCoeff:
             save_video_with_watermark(enhanced_path, new_audio_path, av_path_enhancer, watermark=False)
             print(f"The generated video is named {video_save_dir}/{video_name_enhancer}")
             os.remove(enhanced_path)
-
+            end_time = time.time()
+            print(f"[***6/6***] enhancing takes: {end_time - start_time} sec")
+        else:
+            print(f"[***6/6***] no enhancing")
         os.remove(path)
         os.remove(new_audio_path)
 

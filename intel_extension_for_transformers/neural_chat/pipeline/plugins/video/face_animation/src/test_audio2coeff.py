@@ -58,14 +58,11 @@ class Audio2Coeff:
         for param in self.audio2pose_model.parameters():
             param.requires_grad = False
 
-        try:
-            if sadtalker_path["use_safetensor"]:
-                checkpoints = safetensors.torch.load_file(sadtalker_path["checkpoint"])
-                self.audio2pose_model.load_state_dict(load_x_from_safetensor(checkpoints, "audio2pose"))
-            else:
-                load_cpk(sadtalker_path["audio2pose_checkpoint"], model=self.audio2pose_model, device=device)
-        except:
-            raise Exception("Failed in loading audio2pose_checkpoint")
+        if sadtalker_path["use_safetensor"]:
+            checkpoints = safetensors.torch.load_file(sadtalker_path["checkpoint"])
+            self.audio2pose_model.load_state_dict(load_x_from_safetensor(checkpoints, "audio2pose"))
+        else:
+            raise Exception("Make Sure you download model checkpoints beforehand!")
 
         # load audio2exp_model
         netG = SimpleWrapperV2()
@@ -73,14 +70,12 @@ class Audio2Coeff:
         for param in netG.parameters():
             netG.requires_grad = False
         netG.eval()
-        try:
-            if sadtalker_path["use_safetensor"]:
-                checkpoints = safetensors.torch.load_file(sadtalker_path["checkpoint"])
-                netG.load_state_dict(load_x_from_safetensor(checkpoints, "audio2exp"))
-            else:
-                load_cpk(sadtalker_path["audio2exp_checkpoint"], model=netG, device=device)
-        except:
-            raise Exception("Failed in loading audio2exp_checkpoint")
+        if sadtalker_path["use_safetensor"]:
+            checkpoints = safetensors.torch.load_file(sadtalker_path["checkpoint"])
+            netG.load_state_dict(load_x_from_safetensor(checkpoints, "audio2exp"))
+        else:
+            raise Exception("Make Sure you download model checkpoints beforehand!")
+
         self.audio2exp_model = Audio2Exp(netG, cfg_exp, device=device, prepare_training_loss=False)
         self.audio2exp_model = self.audio2exp_model.to(device)
         for param in self.audio2exp_model.parameters():
@@ -89,15 +84,11 @@ class Audio2Coeff:
 
         self.device = device
 
-    def generate(self, batch, coeff_save_dir, pose_style, ref_pose_coeff_path=None):
+    def generate(self, batch, coeff_save_dir, pose_style):
         with torch.no_grad():
-            # test
             results_dict_exp = self.audio2exp_model.test(batch)
             exp_pred = results_dict_exp["exp_coeff_pred"]  # bs T 64
 
-            # for class_id in  range(1):
-            # class_id = 0#(i+10)%45
-            # class_id = random.randint(0,46)                                   #46 styles can be selected
             batch["class"] = torch.LongTensor([pose_style]).to(self.device)
             results_dict_pose = self.audio2pose_model.test(batch)
             pose_pred = results_dict_pose["pose_pred"]  # bs T 6
@@ -112,9 +103,6 @@ class Audio2Coeff:
             coeffs_pred = torch.cat((exp_pred, pose_pred), dim=-1)  # bs T 70
 
             coeffs_pred_numpy = coeffs_pred[0].clone().detach().cpu().numpy()
-
-            if ref_pose_coeff_path is not None:
-                coeffs_pred_numpy = self.using_refpose(coeffs_pred_numpy, ref_pose_coeff_path)
 
             savemat(
                 os.path.join(coeff_save_dir, "%s##%s.mat" % (batch["pic_name"], batch["audio_name"])),

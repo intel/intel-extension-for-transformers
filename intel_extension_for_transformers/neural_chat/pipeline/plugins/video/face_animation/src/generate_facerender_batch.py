@@ -29,9 +29,6 @@ def get_facerender_data(
     first_coeff_path,
     audio_path,
     batch_size,
-    input_yaw_list=None,
-    input_pitch_list=None,
-    input_roll_list=None,
     expression_scale=1.0,
     still_mode=False,
     preprocess="crop",
@@ -104,16 +101,6 @@ def get_facerender_data(
     data["video_name"] = video_name
     data["audio_path"] = audio_path
 
-    if input_yaw_list is not None:
-        yaw_c_seq = gen_camera_pose(input_yaw_list, frame_num, batch_size)
-        data["yaw_c_seq"] = torch.FloatTensor(yaw_c_seq)
-    if input_pitch_list is not None:
-        pitch_c_seq = gen_camera_pose(input_pitch_list, frame_num, batch_size)
-        data["pitch_c_seq"] = torch.FloatTensor(pitch_c_seq)
-    if input_roll_list is not None:
-        roll_c_seq = gen_camera_pose(input_roll_list, frame_num, batch_size)
-        data["roll_c_seq"] = torch.FloatTensor(roll_c_seq)
-
     return data
 
 
@@ -129,40 +116,3 @@ def transform_semantic_target(coeff_3dmm, frame_index, semantic_radius):
     index = [min(max(item, 0), num_frames - 1) for item in seq]
     coeff_3dmm_g = coeff_3dmm[index, :]
     return coeff_3dmm_g.transpose(1, 0)
-
-
-def gen_camera_pose(camera_degree_list, frame_num, batch_size):
-    new_degree_list = []
-    if len(camera_degree_list) == 1:
-        for _ in range(frame_num):
-            new_degree_list.append(camera_degree_list[0])
-        remainder = frame_num % batch_size
-        if remainder != 0:
-            for _ in range(batch_size - remainder):
-                new_degree_list.append(new_degree_list[-1])
-        new_degree_np = np.array(new_degree_list).reshape(batch_size, -1)
-        return new_degree_np
-
-    degree_sum = 0.0
-    for i, degree in enumerate(camera_degree_list[1:]):
-        degree_sum += abs(degree - camera_degree_list[i])
-
-    degree_per_frame = degree_sum / (frame_num - 1)
-    for i, degree in enumerate(camera_degree_list[1:]):
-        degree_last = camera_degree_list[i]
-        degree_step = degree_per_frame * abs(degree - degree_last) / (degree - degree_last)
-        new_degree_list = new_degree_list + list(np.arange(degree_last, degree, degree_step))
-    if len(new_degree_list) > frame_num:
-        new_degree_list = new_degree_list[:frame_num]
-    elif len(new_degree_list) < frame_num:
-        for _ in range(frame_num - len(new_degree_list)):
-            new_degree_list.append(new_degree_list[-1])
-    print(len(new_degree_list))
-    print(frame_num)
-
-    remainder = frame_num % batch_size
-    if remainder != 0:
-        for _ in range(batch_size - remainder):
-            new_degree_list.append(new_degree_list[-1])
-    new_degree_np = np.array(new_degree_list).reshape(batch_size, -1)
-    return new_degree_np
