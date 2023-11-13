@@ -128,6 +128,9 @@ async def retrieval_chat(request: AskDocRequest):
     plugins['tts']['enable'] = False
     res = is_plugin_enabled('tts')
     print(f"tts plugin enable status: {res}")
+    plugins['retrieval']['enable'] = True
+    res = is_plugin_enabled('retrieval')
+    print(f"retrieval plugin enable status: {res}")
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")

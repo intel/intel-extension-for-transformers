@@ -37,6 +37,7 @@ from .voicechat_api import (
     create_speaker_embedding as talkingbot_embd
 )
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
+from ...plugins import plugins, is_plugin_enabled
 
 
 class PhotoAIAPIRouter(APIRouter):
@@ -57,8 +58,15 @@ class PhotoAIAPIRouter(APIRouter):
     async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
+            plugins['tts']['enable'] = True
+            res = is_plugin_enabled('tts')
+            print(f"tts plugin enable status: {res}")
+            plugins['retrieval']['enable'] = False
+            res = is_plugin_enabled('retrieval')
+            print(f"retrieval plugin enable status: {res}")
+
             config = GenerationConfig(audio_output_path=audio_output_path)
-            result = chatbot.chat_stream(query=prompt, config=config)
+            result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
                 for path in result:
                     with open(path,mode="rb") as file:
