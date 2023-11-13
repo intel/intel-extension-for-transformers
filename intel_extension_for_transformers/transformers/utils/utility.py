@@ -90,6 +90,11 @@ def generate_dummy_past_key_values(input_bs, model):
     d_k = hidden_size // num_attention_heads
     if hasattr(normalized_config, "num_key_value_heads"):
         num_key_value_heads = normalized_config.num_key_value_heads
+    elif hasattr(normalized_config, "num_kv_heads"):
+        num_key_value_heads = normalized_config.num_kv_heads
+        
+
+    
 
     if model.config.model_type == "bloom":
         pkv = ()
@@ -105,6 +110,12 @@ def generate_dummy_past_key_values(input_bs, model):
         new_shape = [input_bs, 1, num_attention_heads, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    elif model.config.model_type == "falcon":
+        # new_shape = [input_bs, num_attention_heads, 1, d_k]
+        new_shape = [input_bs, 1, 1, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+        
     else:
         new_shape = [input_bs, num_attention_heads, 1, d_k]
         dummy_tensor = torch.ones(size=new_shape)
@@ -120,15 +131,18 @@ def get_example_inputs_for_trace(model, return_type="tuple"):
     input_ids = model.dummy_inputs["input_ids"]
     input_bs, input_len = input_ids.shape
     past_key_values = generate_dummy_past_key_values(input_bs, model)
+    # past_key_values = None
+    # attention_mask = torch.ones(input_bs, input_len)
     attention_mask = torch.ones(input_bs, input_len + 1)
-    attention_mask[:,0] = 0
-    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
+    # attention_mask[:,0] = 0
+    # example_inputs = (input_ids, tuple(past_key_values), attention_mask)
+    example_inputs = (input_ids, past_key_values, attention_mask)
     # do inference to check example_inputs formats
     model(*example_inputs)
     if return_type != "tuple":
         example_inputs = {
             "input_ids": input_ids,
-            "past_key_values": tuple(past_key_values),
+            "past_key_values": past_key_values,
             "attention_mask": attention_mask
         }
     return example_inputs

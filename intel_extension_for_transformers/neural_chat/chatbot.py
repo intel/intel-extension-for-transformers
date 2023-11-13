@@ -47,7 +47,7 @@ def build_chatbot(config: PipelineConfig=None):
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower() :
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path:
@@ -66,6 +66,8 @@ def build_chatbot(config: PipelineConfig=None):
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
          "bloom" in config.model_name_or_path or \
+         "falcon" in config.model_name_or_path or \
+         "mistral" in config.model_name_or_path.lower() or \
          "starcoder" in config.model_name_or_path:
         from .models.base_model import BaseModel
         adapter = BaseModel()
