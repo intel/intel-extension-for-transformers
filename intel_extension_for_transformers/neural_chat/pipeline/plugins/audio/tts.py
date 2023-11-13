@@ -27,7 +27,7 @@ import numpy as np
 import contextlib
 
 from .utils.english_normalizer import EnglishNormalizer
-
+from .utils.reduce_noise import NoiseReducer
 class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
@@ -35,7 +35,8 @@ class TextToSpeech():
     2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
-    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu",
+                 reduce_noise=False):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.device = device
@@ -78,6 +79,7 @@ class TextToSpeech():
             self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
 
         self.normalizer = EnglishNormalizer()
+        self.noise_reducer = NoiseReducer() if reduce_noise else None
 
     def create_speaker_embedding(self, driven_audio_path):
         """Create the speaker's embedding.
@@ -134,7 +136,8 @@ class TextToSpeech():
         return res
 
 
-    def text2speech(self, text, output_audio_path, voice="default", do_batch_tts=False, batch_length=400):
+    def text2speech(self, text, output_audio_path, voice="default",
+                    do_batch_tts=False, batch_length=400):
         """Text to speech.
 
         text: the input text
@@ -175,6 +178,8 @@ class TextToSpeech():
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end
         sf.write(output_audio_path, all_speech, samplerate=16000)
+        if self.noise_reducer:
+            output_audio_path = self.noise_reducer.reduce_audio_amplify(output_audio_path, all_speech)
         return output_audio_path
 
     def stream_text2speech(self, generator, output_audio_path, voice="default"):

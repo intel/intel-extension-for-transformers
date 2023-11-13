@@ -7,6 +7,7 @@ on:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
+       - 'intel_extension_for_transformers/llm/library/jblas/**'
        - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
     inputs:

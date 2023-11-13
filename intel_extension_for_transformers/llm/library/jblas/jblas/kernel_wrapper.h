@@ -269,6 +269,12 @@ class QuantizeF4RowBlock {
   template <JBLAS_ISA ISA_T, JBLAS_F4_TYPE F4_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
                                    float* scales, int8_t* zero_points, int blocksize) {
+#if CompileAVX512F()
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::quantize_f32_f4_rowblock<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                     blocksize);
+    }
+#endif
     return ref::quantize_f32_f4_rowblock<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
                                                blocksize);
   }
@@ -486,6 +492,11 @@ class DequanS32Fp32 {
       return avx512f::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
     }
 #endif
+#if CompileAVX2()
+    if constexpr (utils::isa_base<ISA_T>::avx2) {
+      return avx2::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
+    }
+#endif
     return ref::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
   }
 };
@@ -523,26 +534,47 @@ class RemoveZeroPointBias {
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(float* accptr, int ldacc, int row, int col, int8_t* zps, float* scales, int lds,
                                    const float* reduce) {
+#if CompileAVX512F()
     if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::remove_wei_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
     }
+#endif
+#if CompileAVX2()
+    if constexpr (utils::isa_base<ISA_T>::avx2) {
+      return avx2::remove_wei_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
+    }
+#endif
     return ref::remove_wei_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
   }
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(float* accptr, int ldacc, int row, int col, uint8_t* zps, float* scales, int lds,
                                    const float* reduce) {
+#if CompileAVX512F()
     if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::remove_act_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
     }
+#endif
+#if CompileAVX2()
+    if constexpr (utils::isa_base<ISA_T>::avx2) {
+      return avx2::remove_act_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
+    }
+#endif
     return ref::remove_act_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
   }
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(float* accptr, int ldacc, int row, int col, uint8_t* zpa, int8_t* zpb, float* scalea,
                                    float* scaleb, int lds, int k, const float* reducea, const float* reduceb) {
+#if CompileAVX512F()
     if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::remove_zeropoint_bias(accptr, ldacc, row, col, zpa, zpb, scalea, scaleb, lds, k, reducea,
                                             reduceb);
     }
+#endif
+#if CompileAVX2()
+    if constexpr (utils::isa_base<ISA_T>::avx2) {
+      return avx2::remove_zeropoint_bias(accptr, ldacc, row, col, zpa, zpb, scalea, scaleb, lds, k, reducea, reduceb);
+    }
+#endif
     return ref::remove_zeropoint_bias(accptr, ldacc, row, col, zpa, zpb, scalea, scaleb, lds, k, reducea, reduceb);
   }
 };

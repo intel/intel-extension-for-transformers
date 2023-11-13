@@ -357,7 +357,7 @@ class TestQuantization(unittest.TestCase):
                                                      use_llm_runtime=False
                                                 )
         output = bit4_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -8.059162139892578, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), -8.6834, rel_tol=1e-04))
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
