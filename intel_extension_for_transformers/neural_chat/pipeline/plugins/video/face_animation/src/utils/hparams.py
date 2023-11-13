@@ -16,10 +16,10 @@
 # limitations under the License.
 
 from glob import glob
-import os
 
 
 class HParams:
+    """Spectrogram-related hyper parameters."""
     def __init__(self, **kwargs):
         self.data = {}
 

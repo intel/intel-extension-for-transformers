@@ -16,7 +16,6 @@
 # limitations under the License.
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
 
@@ -72,8 +71,6 @@ class SimpleWrapperV2(nn.Module):
         """
 
         self.mapping1 = nn.Linear(512 + 64 + 1, 64)
-        # self.mapping2 = nn.Linear(30, 64)
-        # nn.init.constant_(self.mapping1.weight, 0.)
         nn.init.constant_(self.mapping1.bias, 0.0)
 
     def forward(self, x, ref, ratio):

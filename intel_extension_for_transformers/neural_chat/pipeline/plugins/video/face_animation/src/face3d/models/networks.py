@@ -19,10 +19,7 @@
 """
 
 import os
-import numpy as np
 import torch.nn.functional as F
-from torch.nn import init
-import functools
 from torch.optim import lr_scheduler
 import torch
 from torch import Tensor
@@ -33,7 +30,6 @@ try:
 except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
 from typing import Type, Any, Callable, Union, List, Optional
-from .arcface_torch.backbones import get_model
 from kornia.geometry import warp_affine
 
 
@@ -85,12 +81,6 @@ def define_net_recon(net_recon, use_last_fc=False, init_path=None):
     return ReconNetWrapper(net_recon, use_last_fc=use_last_fc, init_path=init_path)
 
 
-def define_net_recog(net_recog, pretrained_path=None):
-    net = RecogNetWrapper(net_recog=net_recog, pretrained_path=pretrained_path)
-    net.eval()
-    return net
-
-
 class ReconNetWrapper(nn.Module):
     fc_dim = 257
 
@@ -130,26 +120,6 @@ class ReconNetWrapper(nn.Module):
                 output.append(layer(x))
             x = torch.flatten(torch.cat(output, dim=1), 1)
         return x
-
-
-class RecogNetWrapper(nn.Module):
-    def __init__(self, net_recog, pretrained_path=None, input_size=112):
-        super(RecogNetWrapper, self).__init__()
-        net = get_model(name=net_recog, fp16=False)
-        if pretrained_path:
-            state_dict = torch.load(pretrained_path, map_location="cpu")
-            net.load_state_dict(state_dict)
-            print("loading pretrained net_recog %s from %s" % (net_recog, pretrained_path))
-        for param in net.parameters():
-            param.requires_grad = False
-        self.net = net
-        self.preprocess = lambda x: 2 * x - 1
-        self.input_size = input_size
-
-    def forward(self, image, M):
-        image = self.preprocess(resize_n_crop(image, M, self.input_size))
-        id_feature = F.normalize(self.net(image), dim=-1, p=2)
-        return id_feature
 
 
 # adapted from https://github.com/pytorch/vision/edit/master/torchvision/models/resnet.py

@@ -70,7 +70,7 @@ def generate_blink_seq_randomly(num_frames):
     return ratio
 
 
-def get_data(first_coeff_path, audio_path, device, ref_eyeblink_coeff_path, still=False):
+def get_data(first_coeff_path, audio_path, device, still=False):
     syncnet_mel_step_size = 16
     fps = 25
 
@@ -100,28 +100,14 @@ def get_data(first_coeff_path, audio_path, device, ref_eyeblink_coeff_path, stil
     ref_coeff = source_semantics_dict["coeff_3dmm"][:1, :70]  # 1 70
     ref_coeff = np.repeat(ref_coeff, num_frames, axis=0)
 
-    if ref_eyeblink_coeff_path is not None:
-        ratio[:num_frames] = 0
-        refeyeblink_coeff_dict = scio.loadmat(ref_eyeblink_coeff_path)
-        refeyeblink_coeff = refeyeblink_coeff_dict["coeff_3dmm"][:, :64]
-        refeyeblink_num_frames = refeyeblink_coeff.shape[0]
-        if refeyeblink_num_frames < num_frames:
-            div = num_frames // refeyeblink_num_frames
-            re = num_frames % refeyeblink_num_frames
-            refeyeblink_coeff_list = [refeyeblink_coeff for i in range(div)]
-            refeyeblink_coeff_list.append(refeyeblink_coeff[:re, :64])
-            refeyeblink_coeff = np.concatenate(refeyeblink_coeff_list, axis=0)
-            print(refeyeblink_coeff.shape[0])
-
-        ref_coeff[:, :64] = refeyeblink_coeff[:num_frames, :64]
-
     indiv_mels = torch.FloatTensor(indiv_mels).unsqueeze(1).unsqueeze(0)  # bs T 1 80 16
 
-    if still:
-        ratio = torch.FloatTensor(ratio).unsqueeze(0).fill_(0.0)  # bs T
-    else:
-        ratio = torch.FloatTensor(ratio).unsqueeze(0)
-        # bs T
+    # if still:
+    #     ratio = torch.FloatTensor(ratio).unsqueeze(0).fill_(0.0)  # bs T
+    # else:
+    # Enable eye blinking as default!
+    ratio = torch.FloatTensor(ratio).unsqueeze(0)
+    # bs T
     ref_coeff = torch.FloatTensor(ref_coeff).unsqueeze(0)  # bs 1 70
 
     indiv_mels = indiv_mels.to(device)

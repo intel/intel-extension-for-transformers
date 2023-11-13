@@ -68,7 +68,7 @@ class SadTalker:
             multi_instance_cmd += (
                 f"numactl -l -C {start_core}-{end_core} python inference.py --driven_audio"
                 f" {driven_audio} --source_image {source_image} --result_dir {self.result_dir} --output_video_path"
-                f" {self.output_video_path} --cpu --rank={i} --p_num={self.p_num} {bf16} {enhancer_str} &\n "
+                f" {self.output_video_path} --still --cpu --rank={i} --p_num={self.p_num} {bf16} {enhancer_str} &\n "
             )
         multi_instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         print(multi_instance_cmd)

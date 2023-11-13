@@ -19,7 +19,6 @@
 """
 
 import numpy as np
-from PIL import Image
 from scipy.io import loadmat, savemat
 from array import array
 import os.path as osp
