@@ -18,7 +18,7 @@ farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
-chromadb
+chromadb==0.4.15
 fastapi==0.103.2
 pydantic==1.10.13
 starlette
@@ -35,3 +35,5 @@ transformers_stream_generator==0.0.4
 spacy
 neural-compressor==2.3.1
 einops
+urllib3
+langid

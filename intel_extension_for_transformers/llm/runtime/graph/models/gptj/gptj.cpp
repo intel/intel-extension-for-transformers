@@ -45,18 +45,29 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool gptj_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                     const int n_past, const int n_total, const int n_threads) {
+static bool gptj_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+                                     const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int batch_size = lctx.batch_size;  // num of beams of all batches
-  const int N = n_tokens;
-
+  MODEL_ASSERT(batch_size == n_input);
+  // TODO static batching for now
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
+  const int beam_size = lctx.beam_search ? lctx.beam_size : 1;
+  std::vector<int> block_ids;
+  std::vector<int> n_padding;
+  bool no_padding = true;
+  for (int i = 0; i < batch_size; ++i) {
+    block_ids.push_back((inputs + i)->request_idx * beam_size + (inputs + i)->beam_idx);
+    n_padding.push_back((inputs + i)->n_padding);
+    if (no_padding && (inputs + i)->n_padding != 0) no_padding = false;
+  }
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -132,7 +143,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
   for (int i = 0; i < batch_size; ++i) {
-    memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
   }
 
 #ifdef NE_TP_MODEL
@@ -189,7 +200,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       std::vector<ne_tensor*> Vcur_bs(batch_size);
       std::vector<ne_tensor*> k_bs(batch_size);
       std::vector<ne_tensor*> v_bs(batch_size);
+      // cache = [tokens, beams, requests, layers],
+      // tokens = [head_dim, head_num, n_ctx] (may different orders)
       for (int i = 0; i < batch_size; ++i) {
+        const int block_idx = block_ids[i];
         if (run_mha_fp16) {
           // batch V
           Vcur_bs[i] =
@@ -199,7 +213,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
           v_bs[i] =
               ne_view_1d(ctx0, kv_self.v, head_size * n_head * N * 1,
                          (ne_element_size(kv_self.v) * head_size * n_head) * (il * n_ctx * kv_n_ctx_block + n_past) +
-                             i * n_ctx * head_size * n_head * ne_element_size(kv_self.v));
+                             block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.v));
           // batch K
           Kcur_bs[i] = ne_permute(
               ctx0,
@@ -208,21 +222,25 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                        i * ne_element_size(Kcur) * head_size * n_head * N),
                             head_size, n_head, N, 1),
               1, 2, 0, 3);
-          k_bs[i] = ne_view_4d(
-              ctx0, kv_self.k, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.k),
-              n_ctx * ne_element_size(kv_self.k) * head_size, n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
-              ((il * n_ctx) * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block +
-               i * n_ctx * head_size * n_head * ne_element_size(kv_self.k) + n_past * ne_element_size(kv_self.k)));
+          k_bs[i] = ne_view_4d(ctx0, kv_self.k, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.k),
+                               n_ctx * ne_element_size(kv_self.k) * head_size,
+                               n_ctx * ne_element_size(kv_self.k) * head_size * n_head,
+                               ((il * n_ctx) * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block +
+                                block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.k) +
+                                n_past * ne_element_size(kv_self.k)));
         } else {
           // batch K
-          Kcur_bs[i] =
-              ne_view_4d(ctx0, Kcur, head_size, n_head, N, 1, ne_element_size(Kcur) * head_size,
-                         ne_element_size(Kcur) * head_size * n_head, ne_element_size(Kcur) * head_size * n_head * N,
-                         i * ne_element_size(Kcur) * head_size * n_head * N);
+          Kcur_bs[i] = ne_permute(ctx0,
+                                  ne_view_4d(ctx0, Kcur, head_size, n_head, N, 1, ne_element_size(Kcur) * head_size,
+                                             ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
+                                             i * ne_element_size(Kcur) * n_embd * N),
+                                  0, 2, 1, 3);
           k_bs[i] =
-              ne_view_1d(ctx0, kv_self.k, head_size * n_head * N * 1,
-                         (ne_element_size(kv_self.k) * head_size * n_head) * (il * n_ctx * kv_n_ctx_block + n_past) +
-                             i * n_ctx * head_size * n_head * ne_element_size(kv_self.k));
+              ne_view_4d(ctx0, kv_self.k, head_size, N, n_head, 1, ne_element_size(kv_self.k) * head_size,
+                         ne_element_size(kv_self.k) * head_size * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
+                         ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
+                          block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
+                          head_size * n_past * ne_element_size(kv_self.k)));
 
           // batch V
           Vcur_bs[i] = ne_permute(
@@ -232,11 +250,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                        i * ne_element_size(Vcur) * head_size * n_head * N),
                             head_size, n_head, N, 1),
               1, 2, 0, 3);
-          v_bs[i] = ne_view_4d(
-              ctx0, kv_self.v, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.v),
-              n_ctx * ne_element_size(kv_self.v) * head_size, n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
-              ((il * n_ctx) * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block +
-               i * n_ctx * head_size * n_head * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
+          v_bs[i] = ne_view_4d(ctx0, kv_self.v, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.v),
+                               n_ctx * ne_element_size(kv_self.v) * head_size,
+                               n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
+                               ((il * n_ctx) * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block +
+                                block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.v) +
+                                n_past * ne_element_size(kv_self.v)));
         }
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
@@ -305,24 +324,19 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
         K = ne_permute(ctx0, K, 0, 2, 1, 3);
       }
     } else {
-      K = ne_view_4d(ctx0, kv_self.k, head_size, n_head, n_cached, batch_size, ne_element_size(kv_self.k) * head_size,
-                     ne_element_size(kv_self.k) * head_size * n_head,
-                     ne_element_size(kv_self.k) * head_size * n_head * n_ctx,
-                     il * n_ctx * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block);
+      K = model_kv_cache_seq_concat(&gf, &lctx, ctx0, head_size, n_cached, n_head, batch_size, block_ids, il);
       if (is_ring_full) {
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
         struct ne_tensor* cossin_cache = nullptr;
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
         K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_permute(ctx0, K, 0, 2, 1, 3);
       }
-      K = ne_permute(ctx0, K, 0, 2, 1, 3);
 
       // split cached V into n_head heads
-      V = ne_view_4d(ctx0, kv_self.v, n_cached, head_size, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
-                     n_ctx * ne_element_size(kv_self.v) * head_size,
-                     n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
-                     il * n_ctx * ne_element_size(kv_self.v) * head_size * n_head * kv_n_ctx_block);
+      V = model_kv_cache_seq_concat(&gf, &lctx, ctx0, n_cached, head_size, n_head, batch_size, block_ids, il, false);
     }
     ne_set_name(K, "K");
     ne_set_name(V, "V");
@@ -365,8 +379,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       ne_set_name(KQ_scaled, "KQ_scaled");
 
       // KQ_scaled = mask_past(KQ_scaled)
-      if (n_total == 0 || !shift_roped_k) {
-        KQ_scaled = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+      if (n_total == 0 || !shift_roped_k || !no_padding) {
+        KQ_scaled = ne_diag_mask_inf_with_padding_inplace(ctx0, KQ_scaled, n_past, n_padding.data());
         ne_set_name(KQ_scaled, "KQ_masked");
       }
 
@@ -483,14 +497,11 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-
-      for (int i = 0; i < batch_size; ++i) {
-        memcpy(logits_out.data() + i * bs_stride, (float*)ne_get_data(inpL) + (i * bs_stride),
-               sizeof(float) * n_vocab * N);
-      }
+      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
+#pragma omp parallel for
       for (int i = 0; i < batch_size; ++i) {
         memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
@@ -526,9 +537,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!gptj_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!gptj_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

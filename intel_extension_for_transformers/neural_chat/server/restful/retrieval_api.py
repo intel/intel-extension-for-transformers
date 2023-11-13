@@ -22,7 +22,7 @@ import csv
 import datetime
 from datetime import timedelta, timezone
 from typing import Optional, Dict
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Request, Response
 from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
@@ -72,6 +72,22 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
+
+
+@router.post("/v1/askdoc/upload_link")
+async def retrieval_upload_link(request: Request):
+    global plugins
+    params = await request.json()
+    link_list = params['link_list']
+    try:
+        print("[askdoc - upload_link] starting to append local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.append_localdb(append_path=link_list)
+        print(f"[askdoc - upload_link] kb appended successfully")
+    except Exception as e:
+        logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+        return Response(content="Error occurred while uploading links.", status_code=500)
+    return {"knowledge_base_id": "local_kb_id"}
 
 
 @router.post("/v1/aiphotos/askdoc/create_kb")
