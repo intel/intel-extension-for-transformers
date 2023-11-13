@@ -21,7 +21,7 @@ from intel_extension_for_transformers.transformers import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--model", nargs="?", default="EleutherAI/gpt-j-6B", const="EleutherAI/gpt-j-6B"
+    "--model",  default=None
 )
 parser.add_argument("--revision", default=None, type=str)
 parser.add_argument("--trust_remote_code", default=False)
@@ -78,28 +78,37 @@ args = parser.parse_args()
 check_min_version("4.32.0")
 
 # get model config
+if args.peft_model_id:
+    from peft import PeftConfig
+    peft_config = PeftConfig.from_pretrained(args.peft_model_id)
+    if args.model is None:
+        args.model = peft_config.base_model_name_or_path
+        print("we will use peft base_model_name_or_path to get tokenizer.")
+
 config = AutoConfig.from_pretrained(
-      args.output_dir if (args.int8 or args.int8_bf16_mixed) else args.model,
-      torchscript=True
-      if (args.sq or args.woq_algo in ['AWQ', 'TEQ'] or (args.int8 or args.int8_bf16_mixed))
-      else False,  # torchscript will force `return_dict=False` to avoid jit errors
-      use_cache=True, # to use kv cache.
-      trust_remote_code=args.trust_remote_code,
-      revision=args.revision,
-      )
+    args.model,
+    torchscript=True
+    if (args.sq or args.woq_algo in ['AWQ', 'TEQ'] or (args.int8 or args.int8_bf16_mixed))
+    else False,  # torchscript will force `return_dict=False` to avoid jit errors
+    use_cache=True, # to use kv cache.
+    trust_remote_code=args.trust_remote_code,
+    revision=args.revision,
+    )
 
 # chatglm
 if config.model_type == "chatglm":
     AutoModelForCausalLM = AutoModel
-
 # tokenizer
 if config.model_type == "llama":
-   from transformers import LlamaTokenizer
-   tokenizer = LlamaTokenizer.from_pretrained(args.model)
+    from transformers import LlamaTokenizer
+    tokenizer = LlamaTokenizer.from_pretrained(args.model)
 else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
-# quantization config setting
+# use peft
+args.model = args.peft_model_id if args.peft_model_id is not None else args.model
+
+# mp/sq/woq/bitsandbytes config setting
 quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16") # default is bfloat16
@@ -120,6 +129,7 @@ elif args.sq:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    inputs = None
     if config.model_type == "chatglm":
         query = "我该怎么办?"
         if hasattr(tokenizer, "build_chat_inputs"):
@@ -169,11 +179,10 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       use_llm_runtime=False
                                                       )
 elif not args.int8 and not args.int8_bf16_mixed:
-    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
-    # peft
     if args.peft_model_id is not None:
-        from peft import PeftModel
-        user_model = PeftModel.from_pretrained(user_model, args.peft_model_id)
+        user_model = AutoModelForCausalLM.from_pretrained(args.peft_model_id, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
+    else:
+        user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
 
 # Generation
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
@@ -183,7 +192,7 @@ if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
     user_model = TSModelForCausalLM.from_pretrained(
-        args.output_dir, config=config, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
     )
 
 
@@ -224,11 +233,12 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
+    args.model = peft_config.base_model_name_or_path if args.peft_model_id else args.model
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained=' + args.model + ',tokenizer=' + args.model + \
-            ',dtype=float32' + ",trust_remote_code=" + args.trust_remote_code,
+            ',dtype=float32' + ",trust_remote_code=" + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
