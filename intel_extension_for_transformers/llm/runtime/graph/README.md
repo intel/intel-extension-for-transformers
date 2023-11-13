@@ -98,11 +98,25 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
+Argument description of WeightOnlyQuantConfig:
+| Argument          |  Type       | Description                                                                             |
+| --------------    | ----------  | -----------------------------------------------------------------------                 |
+| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                           |
+| weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
+| alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
+| group_size        | Int         | Group size: Int (default: 32)                                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
+| use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
+| not_quant         | Bool        | Determine whether or not the model will be quantized. (default: False)                  |
+| use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |
+
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
 | inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
 | streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
+| stopping_criteria | Class       | Custom stopping criteria that complement the default stopping criteria built from arguments
+ and a generation config. (default: None)    |
 | interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
 | ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
 | max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
