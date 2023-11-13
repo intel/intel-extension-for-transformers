@@ -30,7 +30,7 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...utils.record_request import record_request
-from ...plugins import plugins
+from ...plugins import plugins, is_plugin_enabled
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -109,6 +109,9 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
 @router.post("/v1/aiphotos/askdoc/chat")
 async def retrieval_chat(request: AskDocRequest):
     chatbot = router.get_chatbot()
+    plugins['tts']['enable'] = False
+    res = is_plugin_enabled('tts')
+    print(f"tts plugin enable status: {res}")
     
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
