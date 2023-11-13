@@ -4,11 +4,21 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
-- Utilize AMX, VNNI and AVX512F instruction set
+- Utilize AMX, VNNI, AVX512F and AVX2 instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
+
+## Supported Hardware
+| Hardware | Optimization |
+|-------------|:-------------:|
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |
 
 ## Supported Models
 
@@ -158,7 +168,12 @@ while True:
 ```
 
 
-## How to use: Straightforward Python script
+## How to use: Python script
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
+
 Build from source
 > :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 

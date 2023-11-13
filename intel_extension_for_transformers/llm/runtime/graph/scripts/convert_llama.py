@@ -827,7 +827,8 @@ SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {
     'F16': DT_F16,
     'F32': DT_F32,
     'I32': DT_I32,
-    'BOOL': DT_BOOL
+    'BOOL': DT_BOOL,
+    'BF16': DT_BF16
 }
 
 
