@@ -104,7 +104,7 @@ class Model:
                                     out_path = out_path, **quant_kwargs)
 
 
-    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **generate_kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
                                **generate_kwargs)
@@ -140,6 +140,8 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
+            if stopping_criteria(ret):
+                break
         if streamer:
             streamer.end()
             
