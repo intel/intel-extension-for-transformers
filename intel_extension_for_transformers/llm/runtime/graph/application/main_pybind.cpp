@@ -234,13 +234,6 @@ std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vec
   curr_input_ids = {next_token_id};
 
   generate_count++;
-  if (next_token_id == ctx->vocab.eos_token_id) {
-    token_eos = true;
-  }
-  if (params.n_predict > 0 && generate_count >= params.n_predict) {
-    token_eos = true;
-  }
-
   return {{next_token_id}};
 }
 

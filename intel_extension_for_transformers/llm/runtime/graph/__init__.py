@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
@@ -62,9 +62,10 @@ class Model:
         self.module = cpp_model
 
     def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
-        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-        model_type = model_maps.get(config.model_type, config.model_type)
-        if model_type == "chatglm" and "chatglm2" in config._name_or_path:
+        self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model_type = model_maps.get(self.config.model_type, self.config.model_type)
+        if model_type == "chatglm" and "chatglm2" in self.config._name_or_path:
             model_type = "chatglm2"
         self.__import_package(model_type)
 
@@ -105,6 +106,7 @@ class Model:
 
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
+        max_new_tokens = generate_kwargs.get("max_new_tokens", 10000)
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
                                **generate_kwargs)
@@ -132,7 +134,7 @@ class Model:
         
         if interactive:
             self.model.reset_token_end()
-        while not self.is_token_end():
+        while True:
             response = self.model.generate(input_ids = input_ids.tolist())
             if len(response) == 0:
                 break
@@ -140,7 +142,10 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
-            if stopping_criteria(ret):
+            if stopping_criteria is not None:
+                if stopping_criteria(torch.tensor(ret), None):
+                    break
+            elif ret[0][-1] == self.tokenizer.eos_token_id or self.generate_round > max_new_tokens:
                 break
         if streamer:
             streamer.end()
