@@ -70,14 +70,16 @@ class Model:
         self.__import_package(model_type)
 
         # check cache and quantization
-        fp32_bin = "ne_{}_f32.bin".format(model_type)
-        quant_bin = "ne_{}_q.bin".format(model_type)
+        output_path = "runtime_outs"
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
+        quant_bin = "{}/ne_{}_q.bin".format(output_path, model_type)
 
         if not_quant:
             self.bin_file = fp32_bin
         else:
             self.bin_file = quant_bin
-        
         if use_cache and os.path.exists(self.bin_file):
             return
 
@@ -86,9 +88,7 @@ class Model:
 
         if not_quant:
             return
-        quant_bin = "ne_{}_q.bin".format(model_type)
-        if not use_cache:
-            self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
         
         # clean
