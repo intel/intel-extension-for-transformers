@@ -32,7 +32,7 @@ class TestChineseASR(unittest.TestCase):
         if os.path.exists(audio_path):
             text = self.executor.pre_llm_inference_actions(audio_path)
         else:
-            text = self.executor.pre_llm_inference_actions("../../assets/audio/welcome.wav")
+            text = self.executor.pre_llm_inference_actions("../assets/audio/welcome.wav")
         self.assertEqual(len(text), 5)
 
 if __name__ == "__main__":

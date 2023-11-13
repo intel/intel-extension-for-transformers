@@ -30,8 +30,8 @@ class UnitTest(unittest.TestCase):
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
         else:
-            command = 'neuralchat_server start \
-                        --config_file "./textchat_with_retrieval.yaml" \
+            command = 'sed -i "s|../assets|assets|g" ./ci/server/textchat_with_retrieval.yaml && neuralchat_server start \
+                        --config_file "./ci/server/textchat_with_retrieval.yaml" \
                         --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,
