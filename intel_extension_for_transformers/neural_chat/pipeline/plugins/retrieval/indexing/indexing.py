@@ -21,7 +21,8 @@ from typing import Any, Dict, Iterator, List, Optional, Union, cast
 from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceInstructEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
+    HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
 from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
@@ -41,6 +42,24 @@ class DocumentIndexing:
         self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
+
+        try:
+            if "instruct" in embedding_model:
+                self.embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
+            elif "bge" in embedding_model:
+                self.embeddings = HuggingFaceBgeEmbeddings(
+                    model_name=embedding_model,
+                    encode_kwargs={'normalize_embeddings': True},
+                    query_instruction="Represent this sentence for searching relevant passages:")
+            elif "Google" == embedding_model:
+                self.embeddings = GooglePalmEmbeddings()
+            else:
+                self.embeddings = HuggingFaceEmbeddings(
+                    model_name=embedding_model,
+                    encode_kwargs={"normalize_embeddings": True},
+                )
+        except Exception as e:
+            print("Please selet a proper embedding model")
         
         
     def parse_document(self, input):
