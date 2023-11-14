@@ -55,11 +55,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
-  // enforce that the first token is BOS
-  if (n_total == 0 && inputs->tokens[0] != lctx.vocab.bos_token_id) {
-    fprintf(stderr, "%s: first token must be BOS\n", __func__);
-    return false;
-  }
 
   const int batch_size = lctx.batch_size;
   MODEL_ASSERT(batch_size == n_input);
@@ -72,6 +67,11 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
     block_ids.push_back((inputs + i)->request_idx * beam_size + (inputs + i)->beam_idx);
     n_padding.push_back((inputs + i)->n_padding);
     if (no_padding && (inputs + i)->n_padding != 0) no_padding = false;
+    // enforce that the first token is BOS
+    if (n_total == 0 && (inputs + i)->tokens[0 + n_padding.back()] != lctx.vocab.bos_token_id) {
+      fprintf(stderr, "%s: first token must be BOS\n", __func__);
+      return false;
+    }
   }
 
   const int64_t t_start_us = ne_time_us();

@@ -320,7 +320,7 @@ std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lct
                                                               const std::vector<model_input>& inputs,
                                                               const int& n_threads) {
   // TODO: to implement
-  static std::set<model_archs> supported_archs = {MODEL_GPTJ, MODEL_GPTNEOX};
+  static std::set<model_archs> supported_archs = {MODEL_GPTJ, MODEL_GPTNEOX, MODEL_LLAMA, MODEL_MPT};
   if (supported_archs.count(params.model_arch) != 0) {
     return beam_search(lctx, n_predict, inputs, n_threads);
   } else {
