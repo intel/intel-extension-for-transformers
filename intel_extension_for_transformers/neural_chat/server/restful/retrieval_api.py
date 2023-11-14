@@ -15,14 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import os
 import re
-import csv
 import datetime
 from datetime import timedelta, timezone
 from typing import Optional, Dict
-from fastapi import APIRouter, UploadFile, File, Request, Response
+from fastapi import APIRouter, UploadFile, File, Request, Response, Form
 from ...config import GenerationConfig
 from ...cli.log import logger
 from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
@@ -31,6 +29,7 @@ from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...utils.record_request import record_request
 from ...plugins import plugins, is_plugin_enabled
+from .photoai_services import check_user_ip
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -46,7 +45,7 @@ def get_current_beijing_time():
         name='Asia/Shanghai'
     )
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
-    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
 
 
@@ -90,36 +89,99 @@ async def retrieval_upload_link(request: Request):
     return {"knowledge_base_id": "local_kb_id"}
 
 
-@router.post("/v1/aiphotos/askdoc/create_kb")
-async def retrieval_create_kb(file: UploadFile = File(...)):
+@router.post("/v1/aiphotos/askdoc/create")
+async def retrieval_create(request: Request,
+                           file: UploadFile = File(...)):
     global plugins
     filename = file.filename
-    print(f"[askdoc - create_kb] received file: {filename}")
-
-    upload_path = f"/home/tme/letong/askdoc_upload/enterprise_docs"
-    cur_time = get_current_beijing_time()
-    cur_time = cur_time.replace(' ', '-')
-    print(f"[askdoc - create_kb] upload path: {upload_path}")
     if '/' in filename:
         filename = filename.split('/')[-1]
+    print(f"[askdoc - create] received file: {filename}")
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - create] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - create] "+str(res))
+
+    import uuid
+    kb_id = f"kb_{str(uuid.uuid1())[:8]}"
+    path_prefix = "/home/tme/photoai_retrieval_docs/"+str(user_id)
+
+    # create new upload path dir
+    if os.path.exists(path_prefix):
+        os.system(f"mkdir {path_prefix}/{kb_id}")
+    # user already created knowledge base
+    else:
+        os.system(f"mkdir {path_prefix}")
+        os.system(f"mkdir {path_prefix}/{kb_id}")
+    
+    user_upload_dir = path_prefix + '/' + kb_id + '/upload_dir'
+    user_persist_dir = path_prefix + '/' + kb_id + '/persist_dir'
+    os.system(f"mkdir {user_upload_dir}")
+    os.system(f"mkdir {user_persist_dir}")
+    cur_time = get_current_beijing_time()
+    print(f"[askdoc - create] upload path: {user_upload_dir}")
+    
+    # save file to local path
+    save_file_name = user_upload_dir + '/' + cur_time + '-' + filename
+    with open(save_file_name, 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    print(f"[askdoc - create] file saved to local path: {save_file_name}")
+
+    try:
+        # get retrieval instance and reload db with new knowledge base
+        print("[askdoc - create] starting to create local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.create(input_path=user_upload_dir, persist_dir=user_persist_dir)
+        print(f"[askdoc - create] kb created successfully")
+    except Exception as e:
+        logger.info(f"[askdoc - create] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    return {"knowledge_base_id": kb_id}
+
+
+@router.post("/v1/aiphotos/askdoc/append")
+async def retrieval_append(request: Request,
+                           file: UploadFile = File(...),
+                           knowledge_base_id: str = Form(...)):
+    global plugins
+    filename = file.filename
+    if '/' in filename:
+        filename = filename.split('/')[-1]
+    print(f"[askdoc - append] received file: {filename}, kb_id: {knowledge_base_id}")
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - append] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - append] "+str(res))
+
+    path_prefix = f"/home/tme/photoai_retrieval_docs/"+str(user_id)+'/'+knowledge_base_id
+    upload_path = path_prefix + '/upload_dir'
+    persist_path = path_prefix + '/persist_dir'
+    if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
+        return f"Knowledge base id {knowledge_base_id} does not exist for user {user_id}, \
+            Please check kb_id and save path again."
+    cur_time = get_current_beijing_time()
+    print(f"[askdoc - append] upload path: {upload_path}")
 
     # save file to local path
     save_file_name = upload_path + '/' + cur_time + '-' + filename
     with open(save_file_name, 'wb') as fout:
         content = await file.read()
         fout.write(content)
-    print(f"[askdoc - create_kb] file saved to local path: {save_file_name}")
+    print(f"[askdoc - append] file saved to local path: {save_file_name}")
 
     try:
         # get retrieval instance and reload db with new knowledge base
-        print("[askdoc - create_kb] starting to create local db...")
+        print("[askdoc - append] starting to append to local db...")
         instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=save_file_name)
-        print(f"[askdoc - create_kb] kb created successfully")
+        instance.append_localdb(append_path=save_file_name, persist_path=persist_path)
+        print(f"[askdoc - append] new file successfully appended to kb")
     except Exception as e:
-        logger.info(f"[askdoc - create_kb] create knowledge base failes! {e}")
+        logger.info(f"[askdoc - append] create knowledge base failes! {e}")
         return "Error occurred while uploading files."
-    return {"knowledge_base_id": "local_kb_id"}
+    return "Succeed"
 
 
 @router.post("/v1/aiphotos/askdoc/chat")

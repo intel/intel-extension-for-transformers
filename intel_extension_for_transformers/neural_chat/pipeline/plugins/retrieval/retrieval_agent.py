@@ -117,8 +117,8 @@ class Agent_QA():
                                    top_k=self.top_k, search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
-    def append_localdb(self, append_path):
-        self.db = self.doc_parser.KB_append(append_path)
+    def append_localdb(self, append_path, persist_path):
+        self.db = self.doc_parser.KB_append(append_path, persist_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
                            search_type=self.search_type, search_kwargs=self.search_kwargs)
 
