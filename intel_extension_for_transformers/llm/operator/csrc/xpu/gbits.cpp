@@ -171,8 +171,13 @@ static torch::Tensor gbits_quantize(const torch::Tensor &weight, bool transpose,
   int k = transpose ? weight.sizes()[1] : weight.sizes()[0];
   torch::Tensor output;
   if (initer.verbose) timer.start();
-  output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
-                    compute_type, transpose);
+  if (weight.is_meta()) {
+    torch::Tensor tmp = torch::rand(weight.sizes(), torch::kFloat32);
+    output = quantize(tmp.data_ptr<float>(), k, n, block_size, weight_type,
+                      compute_type, transpose);
+  } else
+    output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
+                      compute_type, transpose);
   if (initer.verbose) {
     timer.stop();
     std::cout << "GPU quant cost"

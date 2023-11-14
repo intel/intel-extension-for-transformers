@@ -36,7 +36,7 @@ def capture_args(f):
     return wrapper
 
 @capture_args
-def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dump_tensor_info=False):
+def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_meta, dump_tensor_info=False):
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float).to('xpu')
     tar_activation = ref_activation.clone()
@@ -47,6 +47,8 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dum
     if transpose:
         wei_row, wei_col = wei_col, wei_row
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float).to('xpu')
+    if is_meta:
+        raw_wei = torch.empty(raw_wei.shape, dtype=raw_wei.dtype).to('meta')
     if dump_tensor_info:
         print(raw_wei)
     compress_wei = gbits.quantize(
@@ -81,6 +83,7 @@ configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}
 blocksizes = [16, 32, 64, 128, 256, 1024]
 do_trans = [False, True]
 add_bias = [False, True]
+meta_weight = [True, False]
 
 for weight_type in configs:
     m = 256
@@ -90,5 +93,6 @@ for weight_type in configs:
         for blocksize in blocksizes:
             for trans in do_trans:
                 for bias in add_bias:
-                    test(m, n, k, blocksize, compute_type,
-                         weight_type, trans, bias)
+                    for is_meta in meta_weight:
+                        test(m, n, k, blocksize, compute_type,
+                             weight_type, trans, bias, is_meta)
