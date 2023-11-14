@@ -139,10 +139,6 @@ class DocumentIndexing:
         return vectordb
     
     def reload(self, local_path):
-        vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
-        return vectordb
-    
-    def reload(self, local_path):
         if self.retrieval_type == "dense":
             vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
         else:
