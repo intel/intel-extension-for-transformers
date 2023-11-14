@@ -24,6 +24,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
 )
 import neural_compressor.adaptor.pytorch as nc_torch
+from packaging.version import Version
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
