@@ -2067,7 +2067,9 @@ class BaseTrainer():
             (input, ),
             onnx_save_path,
             opset_version=opset_version,
-            input_names=list(input.keys()),
+            # input_names=list(input.keys()),
+            input_names=['input_ids', 'attention_mask', 'token_type_ids'],
+            output_names=['last_hidden_state', 'pooler_output'],
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )

@@ -532,16 +532,28 @@ def main():
             preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
         )
 
+    from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant
+    from neural_compressor.data.dataloaders.pytorch_dataloader import PyTorchDataLoader
+    
     trainer = NLPTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
+        train_dataset=train_dataset, # for calibration
+        eval_dataset=train_dataset, # for calibration
         tokenizer=tokenizer,
-        data_collator=data_collator,
     )
 
+    sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
+    sq.transform(alpha="auto", calib_iter=3, folding=True)
+    del trainer
+
+    trainer = NLPTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset, # for calibration
+        eval_dataset=train_dataset, # for calibration
+        tokenizer=tokenizer,
+    )
 
     if optim_args.tune:
 
@@ -571,13 +583,22 @@ def main():
 	    sampling_size = len(train_dataset)//20
         )
 	
-        stmodel = SentenceTransformer(model_args.model_name_or_path)
+        stmodel = SentenceTransformer(model_args.model_name_or_path) # for quick evaluate
         def eval_func(model):
-            stmodel[0].auto_model = model.bert
-            evaluation = MTEB(task_langs=['en'], tasks=['AmazonCounterfactualClassification'])
-            results = evaluation.run(stmodel, overwrite_results=True)
-            print(results)
-            return results['AmazonCounterfactualClassification']['test']['en']['accuracy']
+            stmodel[0].auto_model = model
+            evaluation = MTEB(task_langs=['en'], task_types=['STS'])
+            results = evaluation.run(stmodel, overwrite_results=True, eval_splits=["test"])
+            avg_res = 0
+            for task_name, task_res in results.items():
+                if task_name in ['STS17']:
+                    avg_res += round(task_res['test']['en-en']['cos_sim']['spearman'] * 100, 2)
+                elif task_name in ['STS22']:
+                    avg_res += round(task_res['test']['en']['cos_sim']['spearman'] * 100, 2)
+                else:
+                    avg_res += round(task_res['test']['cos_sim']['spearman'] * 100, 2)
+            
+            avg_res /= len(results)
+            return avg_res
         model = trainer.quantize(
             quant_config=quantization_config, 
             eval_func=eval_func,
