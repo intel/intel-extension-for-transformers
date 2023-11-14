@@ -160,7 +160,7 @@ async def retrieval_append(request: Request,
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
-        return f"Knowledge base id {knowledge_base_id} does not exist for user {user_id}, \
+        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
             Please check kb_id and save path again."
     cur_time = get_current_beijing_time()
     print(f"[askdoc - append] upload path: {upload_path}")
@@ -185,7 +185,7 @@ async def retrieval_append(request: Request,
 
 
 @router.post("/v1/aiphotos/askdoc/chat")
-async def retrieval_chat(request: AskDocRequest):
+async def retrieval_chat(request: Request):
     chatbot = router.get_chatbot()
     plugins['tts']['enable'] = False
     res = is_plugin_enabled('tts')
@@ -193,15 +193,33 @@ async def retrieval_chat(request: AskDocRequest):
     plugins['retrieval']['enable'] = True
     res = is_plugin_enabled('retrieval')
     print(f"retrieval plugin enable status: {res}")
-    
-    logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
-    logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig(max_new_tokens=request.max_new_tokens)
-    # Set attributes of the config object from the request
-    for attr, value in request.__dict__.items():
-        if attr == "stream":
-            continue
-        setattr(config, attr, value)
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - chat] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - chat] "+str(res))
+
+    # parse parameters
+    params = await request.json()
+    query = params['query']
+    kb_id = params['knowledge_base_id']
+    stream = params['stream']
+    max_new_tokens = params['max_new_tokens']
+    logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
+                stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
+    config = GenerationConfig(max_new_tokens=max_new_tokens)
+    if kb_id == 'default':
+        persist_dir = "/home/tme/photoai_retrieval_docs/default/persist_dir"
+    else:
+        persist_dir = f"/home/tme/photoai_retrieval_docs/"+str(user_id)+'/'+kb_id+'/persist_dir'
+    if not os.path.exists(persist_dir):
+        return f"Knowledge base id [{kb_id}] does not exist, please check again."
+
+    # reload retrieval instance with specific knowledge base
+    print("[askdoc - chat] starting to append to local db...")
+    instance = plugins['retrieval']["instance"]
+    instance.reload_localdb(local_persist_dir = persist_dir)
+
     # non-stream mode
     if not request.stream:
         response = chatbot.predict(query=request.query, config=config)
