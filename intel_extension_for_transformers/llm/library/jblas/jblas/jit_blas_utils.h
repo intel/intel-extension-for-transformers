@@ -37,7 +37,7 @@
 #define CompileAVX512F() (defined(__GNUC__) && (__GNUC__ >= 6))
 #define CompileAVX2() (defined(__GNUC__) && (__GNUC__ >= 5))
 #define CompileAMX() (defined(__GNUC__) && (__GNUC__ >= 11))
-#define CompileBF16() (defined(__GNUC__) && (__GNUC__ >= 13))
+#define CompileBF16() (defined(__GNUC__) && (__GNUC__ >= 11))
 #define CompileFP16() (defined(__GNUC__) && (__GNUC__ >= 13))
 #define CompileAMXBF16() (CompileAMX())
 #define CompileAMXINT8() (CompileAMX())
@@ -77,14 +77,28 @@ struct bf16 {
 
 #if CompileBF16()
 #pragma GCC target("avx512vl", "avx512bf16")
-  explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
+  static uint16_t f32_to_bf16(float v) {
+    auto mm = _mm_load_ss(&v);
+    auto mm2 = _mm_cvtneps_pbh(mm);
+    uint16_t dst;
+    _mm_storeu_si16(reinterpret_cast<uint16_t*>(&dst), reinterpret_cast<__m128i>(mm2));
+    return dst;
+  }
+
+  explicit bf16(float vf32) : x(bit_cast<uint16_t>(f32_to_bf16(vf32))) {}
 #else
   explicit bf16(float vf32) { fromfloat(vf32); }
 #endif
 
 #if CompileBF16()
 #pragma GCC target("avx512vl", "avx512bf16")
-  float tofloat() const { return static_cast<float>(bit_cast<__bf16>(this->x)); }
+  float tofloat() const {
+    auto mm = _mm_loadu_si16(&(this->x));
+    auto mm2 = _mm_bslli_si128(mm, 2);
+    float dst;
+    _mm_store_ss(&dst, reinterpret_cast<__m128>(mm2));
+    return dst;
+  }
 #else
   float tofloat() const {
     bf16f32 tmp = {0.f};
@@ -103,7 +117,7 @@ struct bf16 {
 
   void fromfloat(float _v) {
 #if CompileBF16()
-    x = bit_cast<uint16_t>(_mm_cvtness_sbh(_v));
+    x = bit_cast<uint16_t>(f32_to_bf16(_v));
 #else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;

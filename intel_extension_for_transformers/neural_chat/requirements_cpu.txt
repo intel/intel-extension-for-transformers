@@ -4,10 +4,10 @@ fschat
 intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
-paddlepaddle==2.4.2
-paddlenlp==2.5.2
-paddlespeech==1.4.1
-paddle2onnx==1.0.6
+paddlepaddle
+paddlenlp
+paddlespeech
+paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -17,11 +17,10 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
-chromadb
+chromadb==0.4.15
 fastapi==0.103.2
 pydantic==1.10.13
 starlette
@@ -47,3 +46,4 @@ pymysql
 deepface
 exifread
 einops
+cchardet

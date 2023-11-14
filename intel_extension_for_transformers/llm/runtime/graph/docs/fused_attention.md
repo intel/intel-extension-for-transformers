@@ -27,7 +27,7 @@ Fused attention is designed to be able to easily support various models:
   <thead>
     <tr>
       <th>Models</th>
-      <th>Attention Type & Support</th>
+      <th align="center">Attention Type & Support</th>
       <th>Runtime ISA</th>
     </tr>
   </thead>
@@ -44,7 +44,7 @@ Fused attention is designed to be able to easily support various models:
       <td>
 
 [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)</td>
-      <td align="center">GQA 🚧</td>
+      <td align="center">GQA ✅</td>
     </tr>
     <tr>
       <td>
@@ -54,12 +54,12 @@ Fused attention is designed to be able to easily support various models:
     <tr>
       <td>
 [GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b), [Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)</td>
-      <td align="center">MHA 🚧</td>
+      <td align="center">MHA ✅</td>
     </tr>
     <tr>
       <td>
 [MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)</td>
-      <td align="center">MHA with [ALiBi](https://arxiv.org/abs/2108.12409) 🚧</td>
+      <td align="center">MHA with [ALiBi](https://arxiv.org/abs/2108.12409) ✅</td>
     </tr>
     <tr>
       <td>
@@ -79,18 +79,20 @@ Fused attention is designed to be able to easily support various models:
     <tr>
       <td>
 [ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)</td>
-      <td align="center">MHA 🚧， GQA ✅</td>
+      <td align="center">MHA with the autoregressive-blank-infilling pattern 🚧,<br>GQA ✅</td>
     </tr>
     <tr>
       <td>
 [StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)</td>
-      <td align="center">MHA 🚧</td>
+      <td align="center">MHA ✅</td>
     </tr>
   </tbody>
 </table>
 
+> ✅: Supported; 🚧: WIP
+
 ### Limitations
-Currently the fused attention is only enabled when compiling the llm runtime with GCC13.
+Currently the fused attention is only enabled when compiling the llm runtime with GCC11+.
 
 ## Tips for parallelism
 Thanks to the mathematical nature of attention, one can simply parallel the whole kv-cache operations and fused attention on commonly-parallelizable dimensions. Just pass each part to every KV-cache operations (and merge them together if needed).

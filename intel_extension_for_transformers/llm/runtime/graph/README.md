@@ -4,11 +4,21 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
-- Utilize AMX, VNNI and AVX512F instruction set
+- Utilize AMX, VNNI, AVX512F and AVX2 instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
+
+## Supported Hardware
+| Hardware | Optimization |
+|-------------|:-------------:|
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |
 
 ## Supported Models
 
@@ -57,31 +67,31 @@ You can use Python API to run Hugging Face model simply. Here is the sample code
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
+config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-To enable StreamingLLM for infinite inference, here is the sample code:
+To enable [StreamingLLM for infinite inference](./docs/infinite_inference.md), here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
+prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
- 
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
+
 # Paper: https://arxiv.org/pdf/2309.17453.pdf
 # Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
@@ -112,8 +122,11 @@ Argument description of generate function:
 | early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
 | n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
 | n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
 
-### 3. Chat with LLaMA2
+### 3. Multi-Round Chat
+
+Chat with LLaMA2:
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
@@ -125,19 +138,43 @@ streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
 while True:
-    print("> ", end="")
-    prompt = input().strip()
+    prompt = input("> ").strip()
     if prompt == "quit":
         break
     b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
     outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
+                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1)
+```
+
+Chat with ChatGLM2:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "THUDM/chatglm2-6b"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    prompt = input("> ").strip()
+    if prompt == "quit":
+        break
+    prompt = tokenizer.build_prompt(prompt)  # prompt template for chatglm2
+    inputs = tokenizer([prompt], return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1, n_keep=2)
 ```
 
 
+## How to use: Python script
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
 
-## How to use: Straightforward Python script
 Build from source
 > :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 
@@ -182,12 +219,13 @@ Argument description of run.py:
 | -p / --prompt               | Prompt to start generation with: String (default: empty)                                                      |
 | -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
 | -t / --threads              | Number of threads to use during computation: Int (default: 56)                                                |
-| -b / --batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |                                      
+| -b / --batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |
 | -c / --ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length) |
 | -s / --seed                 | NG seed: Int (default: -1, use random seed for < 0)                                                           |
 | --repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                      |
 | --color                     | Colorise output to distinguish prompt and user input from generations                                         |
 | --keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |
+| --shift-roped-k             | Use [ring-buffer](./docs/infinite_inference.md#shift-rope-k-and-ring-buffer) and thus do not re-computing after reaching ctx_size (default: False) |
 
 
 ## Advanced Usage
@@ -266,13 +304,14 @@ Argument description of inference.py:
 | --repeat_penalty                                  | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                                                                                                |
 | --color                                           | Colorise output to distinguish prompt and user input from generations                                                                                                                   |
 | --keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
+| --shift-roped-k                                   | Use [ring-buffer](./docs/infinite_inference.md#shift-rope-k-and-ring-buffer) and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | --glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 & AMX) and fall back to fp16 if failed |
+| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ & AMX) and fall back to fp16 if failed |
 
 
 ### 3. Tensor Parallelism cross nodes/sockets
 
-We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
+We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket. You can refer to [tensor_parallelism.md](./docs/tensor_parallelism.md) to enable this feature.
 
 
 ### 4. Contribution

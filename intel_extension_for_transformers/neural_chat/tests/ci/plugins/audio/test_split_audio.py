@@ -38,7 +38,7 @@ class TestSplitAudio(unittest.TestCase):
             if os.path.exists(audio_path):
                 parser.add_argument("--in_path", type=str, default=audio_path)
             else:
-                parser.add_argument("--in_path", type=str, default="../../../../assets/audio/sample.wav")
+                parser.add_argument("--in_path", type=str, default="../assets/audio/sample.wav")
             parser.add_argument("--out_path", type=str, default="./split",
                                 help="please use relative path")
             parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
@@ -55,7 +55,7 @@ class TestSplitAudio(unittest.TestCase):
                     "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio"
                 self.assertTrue(os.path.exists(audio_path_prefix + '/split/sample_00.wav'))
             else:
-                self.assertTrue(os.path.exists('../../../../assets/audio/split/sample_00.wav'))
+                self.assertTrue(os.path.exists('../assets/audio/split/sample_00.wav'))
 
 if __name__ == "__main__":
     unittest.main()

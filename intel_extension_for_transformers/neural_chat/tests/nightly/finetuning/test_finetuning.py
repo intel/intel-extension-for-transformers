@@ -34,7 +34,7 @@ json_data = \
     {"instruction": "Provide the word that comes immediately after the.", "input": "He threw the ball over the fence.", "output": "fence."}
 ]
 """
-test_data_file = './test.json'
+test_data_file = './alpaca_test.json'
 
 class TestFinetuning(unittest.TestCase):
     @classmethod
