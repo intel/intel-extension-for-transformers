@@ -114,28 +114,27 @@ Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
 | inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
-| streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
-| stopping_criteria | Class       | Custom stopping criteria that complement the default stopping criteria built from arguments
- and a generation config. (default: None)    |
 | interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
+| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
 | ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
-| max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
 | batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
 | ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
 | seed              | Int         | NG seed (default: -1, use random seed for < 0)                                          |
 | threads           | Int         | Number of threads to use during computation (default: 8)                                |
-| repetition_penalty| Float       | Penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)                       |
-| num_beams         | Int         | Number of beams for beam_search (default: 1)                                            |
-| do_sample         | Int         | Whether or not to use sampling ; use greedy decoding otherwise. (default: False)        |
-| top_k             | Int         | Top-k sampling (default: 40, 0 = disabled)                                              |
-| top_p             | Int         | Top-p sampling (default: 0.95, 1.0 = disabled)                                          |
-| temperature       | Float       | Temperature (default: 0.8)                                                              |
-| min_new_tokens    | Int         | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
-| length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
-| early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
-| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
-| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
-| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
+| repetition_penalty| Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| num_beams         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| do_sample         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| top_k             | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| top_p             | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| temperature       | Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| min_new_tokens    | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| length_penalty    | Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| early_stopping    | Bool        | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| max_new_tokens    | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| streamer          | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| stopping_criteria | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 
 ### 3. Multi-Round Chat
 
