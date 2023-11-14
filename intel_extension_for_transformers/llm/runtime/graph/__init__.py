@@ -133,9 +133,11 @@ class Model:
         if not beam_search:
             # TODO support multi batch
             assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
-        
+
         if streamer:
             assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
+            assert beam_search == False, "ERROR, can not use streamer when use beam search for generation! \
+                Make sure that `num_beams` is set to 1."
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
         
