@@ -30,7 +30,7 @@ from .html_parser import load_html_data
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=True, embedding_model="hkunlp/instructor-large", max_length=512,
+                 process=True, embedding_model="BAAI/bge-base-en-v1.5", max_length=512,
                  index_name=None):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
@@ -140,6 +140,14 @@ class DocumentIndexing:
     
     def reload(self, local_path):
         vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        return vectordb
+    
+    def reload(self, local_path):
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                  port=9200, search_fields=["content", "title"])
         return vectordb
             
     def KB_construct(self, input):
