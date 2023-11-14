@@ -41,7 +41,7 @@ class UnitTest(unittest.TestCase):
                         --log_file "./neuralchat.log"'
         else:
             command = 'neuralchat_server start \
-                        --config_file "./textchat_cache.yaml" \
+                        --config_file "./server/textchat_cache.yaml" \
                         --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,

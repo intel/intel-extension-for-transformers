@@ -148,6 +148,11 @@ class _BaseQBitsAutoModelClass:
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path, *model_args, **kwargs
                 )
+                if (not torch.cuda.is_available() or
+                        device_map == "cpu" or
+                        device_map == torch.device("cpu")
+                        ) and model.config.model_type == "chatglm":
+                    model = model.float()
                 model.eval()        
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
@@ -159,6 +164,11 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
+            if (not torch.cuda.is_available() or 
+                    device_map == "cpu" or 
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
             model.eval()
             logger.info("Applying SmoothQuant.")
             try:
@@ -244,7 +254,7 @@ class _BaseQBitsAutoModelClass:
                 "smooth_quant": True,
                 "smooth_quant_args": {"alpha": quantization_config.alpha},
             }
-            example_inputs = get_example_inputs_for_trace(model)
+            example_inputs = get_example_inputs_for_trace(model, quantization_config=quantization_config)
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
@@ -276,7 +286,13 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
-            model.eval()   
+            if (not torch.cuda.is_available() or
+                    device_map == "cpu" or
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
+
+            model.eval() 
         return model
 
 
