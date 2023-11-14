@@ -99,15 +99,19 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   auto q = xpu::get_queue_from_stream(c10_stream);
   auto context = q.get_info<sycl::info::queue::context>();
   bool isDevicePointer = sycl::get_pointer_type(
-    dequantize_weight.data_ptr<float>(), context) == sycl::usm::alloc::device;
+    dequantize_weight.data_ptr(), context) == sycl::usm::alloc::device;
   if (!isDevicePointer) {
     std::cout << "gbits_dequantize requires the dequantized weight on xpu" << std::endl;
     exit(0);
   }
   CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>(), q);
   if (initer.verbose) timer.start();
-  gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
-                     compute_type, weight_type);
+  if (dequantize_weight.dtype() == torch::kFloat32)
+    gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
+                       compute_type, weight_type);
+  else
+    gpu_dequant(q, &obj, dequantize_weight.data_ptr<c10::Half>(), transpose,
+                       compute_type, weight_type);
   if (initer.verbose) {
     timer.stop();
     std::cout << "GPU dequant cost"
@@ -116,7 +120,8 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   }
 }
 
-torch::Tensor quantize(float *weight, int k, int n, int blksize,
+template <typename T>
+torch::Tensor quantize(T *weight, int k, int n, int blksize,
                        std::string weight_type, std::string cmpt_type, bool trans) {
   if (k < blksize) {
     if (initer.verbose)
@@ -135,10 +140,10 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize,
   auto q = xpu::get_queue_from_stream(c10_stream);
   auto context = q.get_info<sycl::info::queue::context>();
   bool isDevicePointer = sycl::get_pointer_type(weight, context) == sycl::usm::alloc::device;
-  float *host_weight;
+  T *host_weight;
   if (isDevicePointer) {
-    host_weight = (float *)malloc(k * n * sizeof(float));
-    q.memcpy((void *)host_weight, (void *)weight, k * n * sizeof(float)).wait();
+    host_weight = (T *)malloc(k * n * sizeof(T));
+    q.memcpy((void *)host_weight, (void *)weight, k * n * sizeof(T)).wait();
   } else {
     host_weight = weight;
   }
@@ -147,7 +152,7 @@ torch::Tensor quantize(float *weight, int k, int n, int blksize,
       torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
   if (weight_type == "s4fullrange_scalef32") {
     std::vector<int8_t> s8quant_tmp(k * n);
-    fp16 *scale = reinterpret_cast<fp16 *>(compress_wei.get_scale_ptr());
+    c10::Half *scale = reinterpret_cast<c10::Half *>(compress_wei.get_scale_ptr());
     if (trans)
       s8_quant_row_blk(host_weight, s8quant_tmp.data(), k, n, k, n, scale, blksize, trans);
     else
@@ -171,13 +176,31 @@ static torch::Tensor gbits_quantize(const torch::Tensor &weight, bool transpose,
   int k = transpose ? weight.sizes()[1] : weight.sizes()[0];
   torch::Tensor output;
   if (initer.verbose) timer.start();
-  if (weight.is_meta()) {
-    torch::Tensor tmp = torch::rand(weight.sizes(), torch::kFloat32);
-    output = quantize(tmp.data_ptr<float>(), k, n, block_size, weight_type,
-                      compute_type, transpose);
-  } else
-    output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
-                      compute_type, transpose);
+  
+  if (weight.dtype() == torch::kFloat32) {
+      if (weight.is_meta()) {
+        float * tmp = (float *)malloc(n * k * sizeof(float));
+        std::fill(tmp, tmp + n * k, 0.5);
+        output = quantize(tmp, k, n, block_size, weight_type,
+                          compute_type, transpose);
+        free(tmp);
+      } else {
+        output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
+                          compute_type, transpose);
+      }
+  } else {
+      if (weight.is_meta()) {
+        c10::Half * tmp = (c10::Half *)malloc(n * k * sizeof(c10::Half));
+        std::fill(tmp, tmp + n * k, 0.5);
+        output = quantize(tmp, k, n, block_size, weight_type,
+                          compute_type, transpose);
+        free(tmp);
+      } else {
+        output = quantize(weight.data_ptr<c10::Half>(), k, n, block_size, weight_type,
+                          compute_type, transpose);
+      }
+  }
+
   if (initer.verbose) {
     timer.stop();
     std::cout << "GPU quant cost"

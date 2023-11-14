@@ -40,8 +40,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float).to('xpu')
     tar_activation = ref_activation.clone()
-    if compute_type == "fp16":
-        tar_activation = ref_activation.to(torch.float16)
+    tar_dst = torch.zeros(m, n, dtype=torch.float).to('xpu')
     wei_row = k
     wei_col = n
     if transpose:
@@ -49,21 +48,25 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float).to('xpu')
     if is_meta:
         raw_wei = torch.empty(raw_wei.shape, dtype=raw_wei.dtype).to('meta')
+    revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float).to('xpu')
+    if compute_type == "fp16":
+        tar_dst = tar_dst.to(torch.float16)
+        tar_activation = ref_activation.to(torch.float16)
+        raw_wei = raw_wei.to(torch.float16)
+        revert_wei = revert_wei.to(torch.float16)
     if dump_tensor_info:
         print(raw_wei)
     compress_wei = gbits.quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type)
-    revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float).to('xpu')
     gbits.dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float).to('xpu')*10
     if dump_tensor_info:
         print(revert_wei)
-    tar_dst = torch.zeros(m, n, dtype=torch.float).to('xpu')
-    if compute_type == "fp16":
-        tar_dst = tar_dst.to(torch.float16)
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
+    if compute_type == "fp16":
+        revert_wei = revert_wei.to(torch.float)
     ref_dst = torch.matmul(ref_activation, revert_wei)
     gbits.linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)

@@ -18,10 +18,10 @@
 #include <ipex.h>
 #include <torch/extension.h>
 
-template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N>
+template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename T>
 void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
                                      sycl::buffer<int8_t, 2> &src,
-                                     sycl::buffer<float, 2> &dst,
+                                     sycl::buffer<T, 2> &dst,
                                      sycl::buffer<fp16, 1> &scale, int k, int n,
                                      int blksize, int k_pos, int n_pos, bool trans) {
   q.submit([&](sycl::handler &h) {
@@ -50,8 +50,9 @@ void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
   });
 }
 
+template <typename T>
 void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
-                 float *dequant_weight, bool transpose,
+                 T *dequant_weight, bool transpose,
                  const std::string &compute_type,
                  const std::string &weight_type) {
   int8_t *bit4_wei =
@@ -59,7 +60,7 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
   fp16 *scale = reinterpret_cast<fp16 *>(compress_wei->get_scale_ptr_device());
   auto row = transpose ? compress_wei->_N : compress_wei->_K;
   auto col = transpose ? compress_wei->_K : compress_wei->_N;
-  sycl::buffer<float, 2> dst_buf(
+  sycl::buffer<T, 2> dst_buf(
       dequant_weight, sycl::range<2>(row, col));
   sycl::buffer<fp16, 1> scale_buf(
       scale, sycl::range<1>(compress_wei->_K / compress_wei->_blksize *
@@ -79,15 +80,16 @@ void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
   return;
 }
 
-void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
-                      int ld_src, int ld_dst, fp16 *scales, int blocksize, bool trans) {
+template <typename T>
+void s8_quant_row_blk(const T *srcptr, int8_t *dstptr, int row, int col,
+                      int ld_src, int ld_dst, c10::Half *scales, int blocksize, bool trans) {
   int raw_blocksize = blocksize;
   for (int i = 0; i < col; i++) {
     int align_row_loop = row / blocksize * blocksize;
     int j = 0;
 
     auto s4_fullrange_calc_store_scale_and_quantv_sym = [&](int blocksize, bool trans) {
-      float amax = 0.f, max = 0.f;
+      T amax = 0.f, max = 0.f;
       for (size_t ij = 0; ij < blocksize; ij++) {
         int idx = trans ? i * ld_src + ij + j : (j + ij) * ld_src + i;
         auto v = srcptr[idx];
@@ -96,8 +98,8 @@ void s8_quant_row_blk(const float *srcptr, int8_t *dstptr, int row, int col,
           max = v;
         }
       }
-      fp16 scale = max / -8.f;
-      fp16 rscale = scale != 0.f ? 1.f / scale : 0.f;
+      c10::Half scale = max / -8.f;
+      c10::Half rscale = scale != 0.f ? 1.f / scale : 0.f;
       scales[j / raw_blocksize * ld_dst + i] = scale;
       for (size_t ij = 0; ij < blocksize; ij++) {
         int idx = trans ? i * ld_src + ij + j : (j + ij) * ld_src + i;
