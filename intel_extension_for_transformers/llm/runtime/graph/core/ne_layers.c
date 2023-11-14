@@ -11177,6 +11177,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           node->n_tasks = n_threads;
         } break;
         case NE_OP_MUL_MAT_BIAS:
+        case NE_OP_CONV_1D:
         case NE_OP_MUL_MAT: {
           node->n_tasks = n_threads;
 

@@ -737,7 +737,6 @@ int main(int argc, char** argv) {
   whisper_params params;
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
-  std::cout << "Welcome to use the " << params.model_name << " on the ITREX! " << std::endl;
 #endif
 
   if (whisper_params_parse(argc, argv, params) == false) {
@@ -770,9 +769,7 @@ int main(int argc, char** argv) {
   }
 
   // whisper init
-  std::cout << "here 1111111111111111111" <<std::endl;
   struct whisper_context* ctx = whisper_init_from_file(params.model.c_str());
-  std::cout << "here 222222222222222" <<std::endl;
 
   if (ctx == nullptr) {
     fprintf(stderr, "error: failed to initialize whisper context\n");

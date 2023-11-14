@@ -637,7 +637,6 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
   // load hparams
   {
     auto& hparams = model.hparams;
-std::cout << "9999" << std::endl;
     read_safe(loader, hparams.n_vocab);
     read_safe(loader, hparams.n_audio_ctx);
     read_safe(loader, hparams.n_audio_state);
@@ -649,7 +648,6 @@ std::cout << "9999" << std::endl;
     read_safe(loader, hparams.n_text_layer);
     read_safe(loader, hparams.n_mels);
     read_safe(loader, hparams.ftype);
-std::cout << "9999888888888" << std::endl;
 
     assert(hparams.n_text_state == hparams.n_audio_state);
 
@@ -664,21 +662,18 @@ std::cout << "9999888888888" << std::endl;
     } else if (hparams.n_audio_layer == 32) {
       model.type = e_model::MODEL_LARGE;
     }
-std::cout << "666666666666666666666661 " << (int32_t)(hparams.ftype)<< std::endl;
     const int32_t qntvr = hparams.ftype / NE_QNT_VERSION_FACTOR;
 
     hparams.ftype %= NE_QNT_VERSION_FACTOR;
 
     // for the big tensors, we have the option to store the data in 16-bit floats or quantized
     // in order to save memory and also to speed up the computation
-    std::cout << "66666666666666666666666 " << (int32_t)(hparams.ftype)<< std::endl;
 
     wctx.wtype = ne_ftype_to_ne_type((ne_ftype)(model.hparams.ftype));
     if (wctx.wtype == NE_TYPE_COUNT) {
       fprintf(stderr, "%s: invalid model (bad ftype value %d)\n", __func__, model.hparams.ftype);
       return false;
     }
-std::cout << "66666666666666333333333" << std::endl;
 
     const size_t scale = model.hparams.ftype ? 1 : 2;
 
@@ -3644,7 +3639,6 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
         // init new transcription with sot, language (opt) and task tokens
         prompt.insert(prompt.end(), prompt_init.begin(), prompt_init.end());
-        std::cout << "here is prompt " << prompt_init[0] << std::endl;
         // print the prompt
         NE_PRINT_DEBUG("\n\n");
         for (int i = 0; i < (int)prompt.size(); i++) {
@@ -3652,16 +3646,12 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         }
         NE_PRINT_DEBUG("\n\n");
         params.n_threads =1 ;
-        std::cout << "here is n_thread " << params.n_threads << std::endl;
         if (!whisper_decode_internal(*ctx, *state, state->decoders[0], prompt.data(), prompt.size(), 0,
                                      params.n_threads)) {
           fprintf(stderr, "%s: failed to decode\n", __func__);
           return -7;
         }
 
-        for (int i = 0; i < state->decoders[0].logits.size(); ++i ) {
-          std::cout << "here is decoders " << state->decoders[0].logits[i] << std::endl;
-        }
         {
           const int64_t t_start_sample_us = model_time_us();
 
@@ -3687,10 +3677,6 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
           state->t_sample_us += model_time_us() - t_start_sample_us;
         }
-        for (int i = 0; i < state->decoders[0].logits.size(); ++i ) {
-          std::cout << "here is decoders " << state->decoders[0].logits[i] << std::endl;
-        }
-
       }
 
 
