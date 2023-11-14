@@ -136,6 +136,7 @@ FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04 as nvgpu
 ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
@@ -151,7 +152,10 @@ RUN apt update \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
+WORKDIR /intel-extension-for-transformers
 
 RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && \
     pip install -r ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt && \
