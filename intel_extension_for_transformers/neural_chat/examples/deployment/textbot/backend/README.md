@@ -29,10 +29,12 @@ conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typi
 conda install jemalloc gperftools -c conda-forge -y
 ```
 
-Install other dependencies using pip:
+Install other dependencies using pip
 
+>**Note**: Please make sure transformers version is 4.34.1
 ```bash
 pip install -r ../../../requirements.txt
+pip install transformers==4.34.1
 ```
 
 # Configure the textbot.yaml
@@ -45,8 +47,6 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | port                | 8000                                   |
 | model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
 | device              | "cpu"                                  |
-| cache.enable        | true                                  |
-| safety_checker.enable | true                                |
 | tasks_list          | ['textchat']                           |
 
 
