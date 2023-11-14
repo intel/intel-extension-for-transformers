@@ -2048,7 +2048,7 @@ class BaseTrainer():
         # Prepare input data
 
         # pylint: disable=E1101
-        eval_dataloader = self.get_eval_dataloader()
+        eval_dataloader = self.get_train_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
@@ -2400,7 +2400,7 @@ class BaseTrainer():
                     return next(self.data, None)
 
             # pylint: disable=E1101
-            calib_datareader = NLPDataReader(self.get_eval_dataloader())
+            calib_datareader = NLPDataReader(self.get_train_dataloader())
             ortq.quantize_static(
                 fp32_path,
                 onnx_save_path,
@@ -2468,7 +2468,7 @@ class BaseTrainer():
     def export_to_jit(self):
         """The function to tranfer model into jit model."""
         self.model.eval()
-        eval_dataloader = self.get_eval_dataloader()
+        eval_dataloader = self.get_train_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)

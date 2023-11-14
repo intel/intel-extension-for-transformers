@@ -21,9 +21,9 @@ OUTPUT_DIR=$(pwd)
 LOG_NAME="bge_mrpc.log"
 DATASET="mrpc"
 MODEL_NAME_OR_PATH="BAAI/bge-base-en-v1.5"
-BATCH_SIZE=8
+BATCH_SIZE=1
 WARM_UP=100
-SEQUENCE_LEN=128
+SEQUENCE_LEN=512
 ITERATION=1000
 PRECISION="int8"
 CACHE_DIR="./tmp"
@@ -148,23 +148,24 @@ if [[ ${PRECISION} = 'dynamic_int8' ]]; then
     inference_model="./model_and_tokenizer/fp32-model.onnx"
 fi
 if [[ ${MODE} == "accuracy" ]]; then
-    echo "------------ACCURACY BENCHMARK---------"
-    python run_executor.py \
-      --input_model=${inference_model} \
-      --mode=$MODE \
-      --batch_size=${BATCH_SIZE} \
-      --seq_len=${SEQUENCE_LEN} \
-      --warm_up=${WARM_UP} \
-      --iteration=${ITERATION} \
-      --dataset_name=glue \
-      --task_name=${DATASET} \
-      --tokenizer_dir=./model_and_tokenizer \
-      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
-    status=$?
-    if [ ${status} != 0 ]; then
-        echo "Benchmark process returned non-zero exit code."
-        exit 1
-    fi
+    echo "No accuracy mode cuurently."
+    # echo "------------ACCURACY BENCHMARK---------"
+    # python run_executor.py \
+    #   --input_model=${inference_model} \
+    #   --mode=$MODE \
+    #   --batch_size=${BATCH_SIZE} \
+    #   --seq_len=${SEQUENCE_LEN} \
+    #   --warm_up=${WARM_UP} \
+    #   --iteration=${ITERATION} \
+    #   --dataset_name=glue \
+    #   --task_name=${DATASET} \
+    #   --tokenizer_dir=./model_and_tokenizer \
+    #   ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
+    # status=$?
+    # if [ ${status} != 0 ]; then
+    #     echo "Benchmark process returned non-zero exit code."
+    #     exit 1
+    # fi
 elif [[ ${MODE} == "latency" ]]; then
     echo "------------LATENCY BENCHMARK---------"
     python run_executor.py \

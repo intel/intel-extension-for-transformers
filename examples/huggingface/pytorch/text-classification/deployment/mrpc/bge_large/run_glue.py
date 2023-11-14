@@ -18,7 +18,6 @@
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 from mteb import MTEB
-from C_MTEB import *
 from sentence_transformers import SentenceTransformer
 import datasets
 import logging
@@ -34,6 +33,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 from transformers import (
     AutoConfig,
+    AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -377,7 +377,15 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
     else:
-        model = AutoModelForSequenceClassification.from_pretrained(
+        # model = AutoModelForSequenceClassification.from_pretrained(
+        #     model_args.model_name_or_path,
+        #     from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        #     config=config,
+        #     cache_dir=model_args.cache_dir,
+        #     revision=model_args.model_revision,
+        #     use_auth_token=True if model_args.use_auth_token else None,
+        # )
+        model = AutoModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
@@ -385,6 +393,7 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+        
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
@@ -517,14 +526,51 @@ def main():
     training_args.metric_for_best_model = metric_name
 
     # Initialize our Trainer
-    dataset_id = "SetFit/amazon_counterfactual"
-    train_dataset = datasets.load_dataset(dataset_id, name="en")['train']
+    # dataset_id = "SetFit/amazon_counterfactual"
+    # train_dataset = datasets.load_dataset(dataset_id, name="en")['train']
 
-    def preprocess_function(examples):
+    # def preprocess_function(examples):
+    #     # Tokenize the texts
+    #     args = examples['text']
+    #     result= tokenizer(args, padding=padding, max_length=max_seq_length, truncation=True)
+
+    #     return result
+
+    # with training_args.main_process_first(desc="dataset map pre-processing"):
+    #     train_dataset = train_dataset.map(
+    #         preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
+    #     )
+
+    # trainer = NLPTrainer(
+    #     model=model,
+    #     args=training_args,
+    #     train_dataset=train_dataset if training_args.do_train else None,
+    #     eval_dataset=eval_dataset if training_args.do_eval else None,
+    #     compute_metrics=compute_metrics,
+    #     tokenizer=tokenizer,
+    #     data_collator=data_collator,
+    # )
+
+    # new dataset for trainer calib_dataset
+    from datasets import Dataset
+    evaluation = MTEB(task_langs=['en'], tasks=['CQADupstackAndroidRetrieval'])
+    evaluation.select_tasks(task_langs=['en'], tasks=['CQADupstackAndroidRetrieval'])
+    evaluation.tasks[0].load_data(eval_splits=['test'])
+    task = evaluation.tasks[0]
+    corpus = task.corpus['test']
+    queries = task.queries['test']
+    queries = [queries[qid] for qid in queries]
+    corpus_ids = sorted(corpus, key=lambda k: len(corpus[k].get("title", "") + corpus[k].get("text", "")), reverse=True)
+    corpus = [corpus[cid] for cid in corpus_ids][:100]
+    corpus = [(doc["title"] + " " + doc["text"]).strip() 
+                if "title" in doc else doc["text"].strip() for doc in corpus]
+    data_list = [*queries[:100], *corpus[:100]] #extend
+    date_dict = {'text': data_list}
+    train_dataset = Dataset.from_dict(date_dict)
+
+    def preprocess_function(example):
         # Tokenize the texts
-        args = examples['text']
-        result= tokenizer(args, padding=padding, max_length=max_seq_length, truncation=True)
-
+        result= tokenizer(example['text'], padding=padding, max_length=max_seq_length, truncation=True)
         return result
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
@@ -534,6 +580,7 @@ def main():
 
     from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant
     from neural_compressor.data.dataloaders.pytorch_dataloader import PyTorchDataLoader
+    
     
     trainer = NLPTrainer(
         model=model,
@@ -583,7 +630,13 @@ def main():
 	    sampling_size = len(train_dataset)//20
         )
 	
-        stmodel = SentenceTransformer(model_args.model_name_or_path) # for quick evaluate
+        stmodel = SentenceTransformer(model_args.model_name_or_path)
+        # def eval_func(model):
+        #     stmodel[0].auto_model = model.bert
+        #     evaluation = MTEB(task_langs=['en'], tasks=['AmazonCounterfactualClassification'])
+        #     results = evaluation.run(stmodel, overwrite_results=True)
+        #     print(results)
+        #     return results['AmazonCounterfactualClassification']['test']['en']['accuracy']
         def eval_func(model):
             stmodel[0].auto_model = model
             evaluation = MTEB(task_langs=['en'], task_types=['STS'])
