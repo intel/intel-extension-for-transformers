@@ -4,4 +4,4 @@
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
 
   - init: pip install -r requirements.txt
-    command: python app.py
+    
