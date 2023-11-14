@@ -81,11 +81,11 @@
 
 #define NE_DEBUG 0
 
-#if (NE_DEBUG >= 1)
+// #if (NE_DEBUG >= 1)
 #define NE_PRINT_DEBUG(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG(...)
-#endif
+// #else
+// #define NE_PRINT_DEBUG(...)
+// #endif
 
 #if (NE_DEBUG >= 5)
 #define NE_PRINT_DEBUG_5(...) printf(__VA_ARGS__)

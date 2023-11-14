@@ -5910,6 +5910,7 @@ static void ne_compute_forward_mean(const struct ne_compute_params* params, cons
 
 static void ne_compute_forward_repeat_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                           struct ne_tensor* dst) {
+  // printf("ith = %5d \n", params->ith);
   NE_ASSERT(params->ith == 0);
   NE_ASSERT(ne_can_repeat(src0, dst));
 
@@ -5936,7 +5937,10 @@ static void ne_compute_forward_repeat_f32(const struct ne_compute_params* params
   const size_t nb01 = src0->nb[1];
   const size_t nb02 = src0->nb[2];
   const size_t nb03 = src0->nb[3];
-
+      // printf("\n");
+      // printf("ne0 = %5d, ne1 = %5d, ne2 = %5d, ne3 = %5d\n", ne0, ne1, ne2, ne3);
+      // printf("ne00 = %5d, ne01 = %5d, ne02 = %5d, ne03 = %5d\n", ne00, ne01, ne02, ne03);
+      // printf("nb00 = %5d, nb01 = %5d, nb02 = %5d, nb03 = %5d\n", nb00, nb01, nb02, nb03);
   // guaranteed to be an integer due to the check in ne_can_repeat
   const int nr0 = (int)(ne0 / ne00);
   const int nr1 = (int)(ne1 / ne01);
@@ -11153,7 +11157,6 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SUM_ROWS:
         case NE_OP_MEAN:
         case NE_OP_ABS:
-        case NE_OP_REPEAT:
         case NE_OP_SGN:
         case NE_OP_NEG:
         case NE_OP_STEP:
@@ -11231,6 +11234,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_TRANSPOSE:
         case NE_OP_GET_ROWS:
         case NE_OP_GET_ROWS_BACK:
+        case NE_OP_REPEAT:
         case NE_OP_DIAG:
         case NE_OP_DIAG_MASK_ZERO: {
           node->n_tasks = 1;

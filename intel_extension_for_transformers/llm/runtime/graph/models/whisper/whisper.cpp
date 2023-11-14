@@ -25,6 +25,7 @@
 #include <vector>
 #include <regex>
 #include <random>
+#include <iostream>
 
 #include "whisper.h"
 #include "core/data_types.h"
@@ -627,16 +628,16 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
   {
     uint32_t magic;
     read_safe(loader, magic);
-    if (magic != MODEL_FILE_MAGIC) {
-      fprintf(stderr, "%s: invalid model data (bad magic)\n", __func__);
-      return false;
-    }
+    // if (magic != MODEL_FILE_MAGIC) {
+    //   fprintf(stderr, "%s: invalid model data (bad magic)\n", __func__);
+    //   return false;
+    // }
   }
 
   // load hparams
   {
     auto& hparams = model.hparams;
-
+std::cout << "9999" << std::endl;
     read_safe(loader, hparams.n_vocab);
     read_safe(loader, hparams.n_audio_ctx);
     read_safe(loader, hparams.n_audio_state);
@@ -648,6 +649,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
     read_safe(loader, hparams.n_text_layer);
     read_safe(loader, hparams.n_mels);
     read_safe(loader, hparams.ftype);
+std::cout << "9999888888888" << std::endl;
 
     assert(hparams.n_text_state == hparams.n_audio_state);
 
@@ -662,18 +664,21 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
     } else if (hparams.n_audio_layer == 32) {
       model.type = e_model::MODEL_LARGE;
     }
-
+std::cout << "666666666666666666666661 " << (int32_t)(hparams.ftype)<< std::endl;
     const int32_t qntvr = hparams.ftype / NE_QNT_VERSION_FACTOR;
 
     hparams.ftype %= NE_QNT_VERSION_FACTOR;
 
     // for the big tensors, we have the option to store the data in 16-bit floats or quantized
     // in order to save memory and also to speed up the computation
+    std::cout << "66666666666666666666666 " << (int32_t)(hparams.ftype)<< std::endl;
+
     wctx.wtype = ne_ftype_to_ne_type((ne_ftype)(model.hparams.ftype));
     if (wctx.wtype == NE_TYPE_COUNT) {
       fprintf(stderr, "%s: invalid model (bad ftype value %d)\n", __func__, model.hparams.ftype);
       return false;
     }
+std::cout << "66666666666666333333333" << std::endl;
 
     const size_t scale = model.hparams.ftype ? 1 : 2;
 
@@ -3539,7 +3544,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
   };
 
   std::vector<beam_candidate> beam_candidates;
-
+  
   // main loop
   while (true) {
     const int progress_cur = (100 * (seek - seek_start)) / (seek_end - seek_start);
@@ -3639,20 +3644,24 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
         // init new transcription with sot, language (opt) and task tokens
         prompt.insert(prompt.end(), prompt_init.begin(), prompt_init.end());
-
+        std::cout << "here is prompt " << prompt_init[0] << std::endl;
         // print the prompt
         NE_PRINT_DEBUG("\n\n");
         for (int i = 0; i < (int)prompt.size(); i++) {
           NE_PRINT_DEBUG("%s: prompt[%d] = %s\n", __func__, i, ctx->vocab.id_to_token.at(prompt[i]).c_str());
         }
         NE_PRINT_DEBUG("\n\n");
-
+        params.n_threads =1 ;
+        std::cout << "here is n_thread " << params.n_threads << std::endl;
         if (!whisper_decode_internal(*ctx, *state, state->decoders[0], prompt.data(), prompt.size(), 0,
                                      params.n_threads)) {
           fprintf(stderr, "%s: failed to decode\n", __func__);
           return -7;
         }
 
+        for (int i = 0; i < state->decoders[0].logits.size(); ++i ) {
+          std::cout << "here is decoders " << state->decoders[0].logits[i] << std::endl;
+        }
         {
           const int64_t t_start_sample_us = model_time_us();
 
@@ -3678,7 +3687,12 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
           state->t_sample_us += model_time_us() - t_start_sample_us;
         }
+        for (int i = 0; i < state->decoders[0].logits.size(); ++i ) {
+          std::cout << "here is decoders " << state->decoders[0].logits[i] << std::endl;
+        }
+
       }
+
 
       for (int i = 0, n_max = whisper_n_text_ctx(ctx) / 2 - 4; i < n_max; ++i) {
         const int64_t t_start_sample_us = model_time_us();
@@ -3809,7 +3823,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
               has_ts = true;
             }
 
-#ifdef NE_DEBUG
+// #ifdef NE_DEBUG
             {
               const auto tt = token.pt > 0.10 ? ctx->vocab.id_to_token.at(token.tid) : "[?]";
               NE_PRINT_DEBUG(
@@ -3817,7 +3831,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
                   __func__, i, j, token.id, token.p, tt.c_str(), token.pt, result_len,
                   ctx->vocab.id_to_token.at(token.id).c_str());
             }
-#endif
+// #endif
 
             // end of segment
             if (token.id == whisper_token_eot(ctx) ||                 // end of text token
