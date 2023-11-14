@@ -2,6 +2,8 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
-
-  - init: pip install -r requirements.txt
-    
+tasks:
+  - name: Main terminal
+    before: echo 'start intel extension for transformers'
+    init: echo 'install requirements.txt'
+    command: pip install -r requirements.txt 
