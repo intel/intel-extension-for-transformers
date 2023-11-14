@@ -143,7 +143,8 @@ Chat with LLaMA2:
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
+# Please change to local path to model, llama2 does not support online conversion, currently.
+model_name = "meta-llama/Llama-2-7b-chat-hf"
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
