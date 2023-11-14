@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer-gha" bash -c "cd /root/chatbot && source activate && conda activate neuralchat;\
+          docker exec "chatbotinfer-gha" bash -c "cd /root/chatbot; \
                  git config --global --add safe.directory '*' && \
                  git submodule update --init --recursive && \
                  pip uninstall intel-extension-for-transformers -y; \
