@@ -105,18 +105,18 @@ async def retrieval_create(request: Request,
 
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
-    path_prefix = "/home/tme/photoai_retrieval_docs/"+str(user_id)
+    path_prefix = "/home/tme/photoai_retrieval_docs/"
 
     # create new upload path dir
     if os.path.exists(path_prefix):
-        os.system(f"mkdir {path_prefix}/{kb_id}")
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
     # user already created knowledge base
     else:
         os.system(f"mkdir {path_prefix}")
-        os.system(f"mkdir {path_prefix}/{kb_id}")
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
     
-    user_upload_dir = path_prefix + '/' + kb_id + '/upload_dir'
-    user_persist_dir = path_prefix + '/' + kb_id + '/persist_dir'
+    user_upload_dir = path_prefix+'/'+user_id+'-'+kb_id+'/upload_dir'
+    user_persist_dir = path_prefix+'/'+user_id+'-'+kb_id+'/persist_dir'
     os.system(f"mkdir {user_upload_dir}")
     os.system(f"mkdir {user_persist_dir}")
     cur_time = get_current_beijing_time()
@@ -156,7 +156,7 @@ async def retrieval_append(request: Request,
     res = check_user_ip(user_id)
     logger.info("[askdoc - append] "+str(res))
 
-    path_prefix = f"/home/tme/photoai_retrieval_docs/"+str(user_id)+'/'+knowledge_base_id
+    path_prefix = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
@@ -211,7 +211,7 @@ async def retrieval_chat(request: Request):
     if kb_id == 'default':
         persist_dir = "/home/tme/photoai_retrieval_docs/default/persist_dir"
     else:
-        persist_dir = f"/home/tme/photoai_retrieval_docs/"+str(user_id)+'/'+kb_id+'/persist_dir'
+        persist_dir = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+kb_id+'/persist_dir'
     if not os.path.exists(persist_dir):
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
