@@ -112,7 +112,7 @@ class Model:
 
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
-        max_new_tokens = generate_kwargs.get("max_new_tokens", 10000)
+        max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
                                **generate_kwargs)
@@ -151,7 +151,8 @@ class Model:
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif ret[0][-1] == self.tokenizer.eos_token_id or self.generate_round > max_new_tokens:
+            elif ret[0][-1] == self.tokenizer.eos_token_id or \
+                (max_new_tokens != -1 and self.generate_round > max_new_tokens):
                 break
         if streamer:
             streamer.end()
