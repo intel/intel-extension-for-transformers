@@ -115,8 +115,8 @@ async def retrieval_create(request: Request,
         os.system(f"mkdir {path_prefix}")
         os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
     
-    user_upload_dir = path_prefix+'/'+user_id+'-'+kb_id+'/upload_dir'
-    user_persist_dir = path_prefix+'/'+user_id+'-'+kb_id+'/persist_dir'
+    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
+    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
     os.system(f"mkdir {user_upload_dir}")
     os.system(f"mkdir {user_persist_dir}")
     cur_time = get_current_beijing_time()
@@ -222,11 +222,11 @@ async def retrieval_chat(request: Request):
 
     # non-stream mode
     if not request.stream:
-        response = chatbot.predict(query=request.query, config=config)
+        response = chatbot.predict(query=query, config=config)
         formatted_response = response.replace('\n', '<br/>')
         return formatted_response
     # stream mode
-    generator, link = chatbot.predict_stream(query=request.query, config=config)
+    generator, link = chatbot.predict_stream(query=query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
