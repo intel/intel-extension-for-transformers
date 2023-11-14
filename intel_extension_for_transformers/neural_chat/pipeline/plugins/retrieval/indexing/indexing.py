@@ -137,6 +137,10 @@ class DocumentIndexing:
                 vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                       port=9200, search_fields=["content", "title"])
         return vectordb
+    
+    def reload(self, local_path):
+        vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        return vectordb
             
     def KB_construct(self, input):
         """
