@@ -78,10 +78,22 @@ async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
     link_list = params['link_list']
+    knowledge_base_id = params['knowledge_base_id']
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - create] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - create] "+str(res))
+
+    persist_path = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
+    if not os.path.exists(persist_path):
+        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+            Please check kb_id and save path again."
+
     try:
         print("[askdoc - upload_link] starting to append local db...")
         instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=link_list)
+        instance.append_localdb(append_path=link_list, persist_path=persist_path)
         print(f"[askdoc - upload_link] kb appended successfully")
     except Exception as e:
         logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
