@@ -327,11 +327,11 @@ public:
         partial_matB_t partial_matB;
         //  >>>>>>>>>>>>>>>>>> pre_processing init
         pre_processing.init(g, args.pre_processing_args);
-        uint64_t base_A = slm_base_a + sg_idy * tile_size_a;
-        uint64_t base_B = slm_base_b + sg_idx * tile_size_b;
+        uint32_t base_A = slm_base_a + sg_idy * tile_size_a;
+        uint32_t base_B = slm_base_b + sg_idx * tile_size_b;
 
-        uint64_t store_idx = 0;
-        uint64_t load_idx = 0;
+        uint32_t store_idx = 0;
+        uint32_t load_idx = 0;
 
         matA_payload_t matA_payload(args.matA_base_desc);
         matA_payload_local_st_t matA_local_st_payload(base_A, tile_size_x_a,

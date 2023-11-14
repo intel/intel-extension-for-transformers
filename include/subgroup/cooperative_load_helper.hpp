@@ -42,7 +42,7 @@ public:
     static constexpr gpu_arch arch_tag = arch_tag_;
     using matAcc_t = matAcc_t_;
     using dtype = typename matAcc_t::dtype;
-    using tile_desc_t = matAcc_t::tile_desc;
+    using tile_desc_t = typename matAcc_t::tile_desc;
     static constexpr mem_layout layout = mem_layout::row_major;
 
 private:
@@ -101,7 +101,7 @@ public:
     static constexpr gpu_arch arch_tag = arch_tag_;
     using matAcc_t = matAcc_t_;
     using dtype = typename matAcc_t::dtype;
-    using tile_desc_t = matAcc_t::tile_desc;
+    using tile_desc_t = typename matAcc_t::tile_desc;
     static constexpr mem_layout layout = mem_layout::col_major;
 
 private:
