@@ -113,8 +113,7 @@ static bool qwen_model_eval_internal(model_context& lctx, const model_input* inp
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  // const bool run_mha_reordered = kv_self.k->type == NE_TYPE_JBLAS;
-  const bool run_mha_reordered = false;
+  const bool run_mha_reordered = kv_self.k->type == NE_TYPE_JBLAS;
   kv_cache_info_t kv_cache_info = {};
   if (run_mha_reordered) {
     NE_ASSERT(("kv cache should be the same dtype", kv_self.v->type == NE_TYPE_JBLAS));

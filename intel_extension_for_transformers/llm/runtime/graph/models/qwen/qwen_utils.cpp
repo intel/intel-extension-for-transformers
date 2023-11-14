@@ -174,6 +174,6 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   std::unique_ptr<QWEN> ms(new QWEN());
   ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
-  lctx.support_jblas_kv = false;
+  lctx.support_jblas_kv = true;
 }
 
