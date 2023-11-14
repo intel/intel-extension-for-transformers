@@ -40,7 +40,7 @@
 #include "models/models.h"
 
 void QWEN::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
-                   bool vocab_only_) {
+                bool vocab_only_) {
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -167,7 +167,6 @@ class qwen_quant_layer : public quant_layer_base {
 };
 REGISTER_QUANT_LAYER_CLASS(qwen);
 
-
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
@@ -176,4 +175,3 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   ms->load(lctx, progress_callback, progress_callback_user_data);
   lctx.support_jblas_kv = true;
 }
-
