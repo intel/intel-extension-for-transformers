@@ -4,10 +4,14 @@ import unittest
 import subprocess
 import torch
 import optimum.version
+import platform
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
 from packaging.version import Version
 OPTIMUM114_VERSION = Version("1.14.0")
+PYTHON_VERSION = Version(platform.python_version())
 
+@unittest.skipIf(PYTHON_VERSION.release < Version("3.9.0").release,
+    "Please use Python 3.9 or higher version for lm-eval")
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
