@@ -87,6 +87,7 @@ class Model:
         assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
         if not_quant:
+            print("FP32 model will be used.")
             return
         self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
@@ -100,7 +101,7 @@ class Model:
         if "threads" not in generate_kwargs:
             threads = os.getenv("OMP_NUM_THREADS")
             if threads is None:
-                generate_kwargs["threads"] = os.cpu_count() // 2
+                generate_kwargs["threads"] = len(os.sched_getaffinity(0))
             else:
                 generate_kwargs["threads"] = int(threads)
         self.model.init_model(model_path, **generate_kwargs)
