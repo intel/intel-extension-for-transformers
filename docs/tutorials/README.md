@@ -14,11 +14,11 @@ Feel free to delve into these tutorials and unlock the features in just a matter
 |Dynamic post training quantization|Translation|T5 small|[Notebook](./pytorch/translation/t5-small.ipynb)|
 |Static and dynamic post training quantization|Text Classification|Bert Base|[Notebook](./pytorch/text-classification/bert-base-uncased-MRPC.ipynb)|
 |Pruning|Text Classification|Bert base|[Notebook](./pytorch/text-classification/pruning.ipynb)|
-|Distillation|Question Answering|enter the model name|[Notebook](./pytorch/question-answering/distillation.ipynb)|
-|Distillation|Text Classification|enter the model name|[Notebook](./pytorch/text-classification/distillation.ipynb)|
+|Distillation|Question Answering|Specified by user|[Notebook](./pytorch/question-answering/distillation.ipynb)|
+|Distillation|Text Classification|Specified by user|[Notebook](./pytorch/text-classification/distillation.ipynb)|
 |Prune Once for All|Text Classification|Bert base|[Notebook](./pytorch/text-classification/orchestrate_optimizations.ipynb)|
 |Prune Once for All|Text Classification|Bert Mini|[Notebook](./pytorch/text-classification/orchestrate_optimizations_bert_mini.ipynb)|
-|Prune Once for ALL|Question Answering|enter the model name|[Notebook](./pytorch/question-answering/orchestrate_optimizations.ipynb)|
+|Prune Once for ALL|Question Answering|Specified by user|[Notebook](./pytorch/question-answering/orchestrate_optimizations.ipynb)|
 |Prune Once for ALL|Question Answering|Bert Mini|[Notebook](./pytorch/question-answering/orchestrate_optimizations_bert_mini.ipynb)|
 |Length-Adaptive Training and post training quantization|Question Answering|MiniLM|[Notebook](./pytorch/question-answering/Dynamic_MiniLM_SQuAD.ipynb)|
 |Early Exit (SWEET)|Text Classification|Bert Base|[Notebook](./pytorch/text-classification/SWEET.ipynb)|
