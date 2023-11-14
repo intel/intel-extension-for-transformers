@@ -139,6 +139,17 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
 void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin, int batch_size, int heads_kv,
                                             int head_size, int seq_max, int seq_keep);
 
+typedef struct jblas_fusion_attn_fp32_batch_cpy_kv_args_t {
+  char* src;
+  char* dst;
+  int heads_kv, head_size, seq_off, seq_size, seq_max;
+  bool no_zeroing;  // set to true to prevent zeroing unaligned seq
+} jblas_fusion_attn_fp32_batch_cpy_kv_args_t;
+// copy k-cache across batch from seq_off to (seq_off + seq_size)
+void jblas_fusion_attn_fp32_batch_cpy_k(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params);
+// copy v-cache across batch from seq_off to (seq_off + seq_size)
+void jblas_fusion_attn_fp32_batch_cpy_v(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params);
+
 typedef struct jblas_reordered_attn_fp32_fp32_fwd_args_t {
   float* Q;
   char* K;  // K/V should be of type and layout used in corrsponding jblas_reordered_attn_xxx_update_kv

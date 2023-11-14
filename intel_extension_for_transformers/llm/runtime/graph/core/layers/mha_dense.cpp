@@ -2052,6 +2052,78 @@ void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin
     }
 }
 
+template <bool zero_padding>
+void jblas_fusion_attn_fp32_batch_cpy_k_(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  const auto p = *params;
+  const auto pad_headsize = padto(p.head_size, 32);
+  const auto pad_seq_max = padto(p.seq_max, 48);
+  const auto step_head_num = pad_headsize * pad_seq_max;
+
+  const auto size_unaligned_cpy = std::min(padto(p.seq_off, 48) - p.seq_off, p.seq_size);
+  const auto size_aligned_cpy = pad_headsize * (padto(p.seq_off + p.seq_size, 48) - padto(p.seq_off, 48));
+#pragma omp parallel for
+  for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
+    const auto dst = reinterpret_cast<bf16*>(p.dst) + ihn * step_head_num;
+    const auto src = reinterpret_cast<bf16*>(p.src) + ihn * step_head_num;
+
+    if (size_unaligned_cpy) {
+      for (int j = 0; j < pad_headsize; j += 2) {  // K-dim padding for QK_GEMM
+        const auto ii = p.seq_off % 48;
+        const auto i_blk = p.seq_off - ii;
+        const auto off = i_blk * pad_headsize + ii * 2 + j * 48;
+        memcpy(dst + off, src + off, sizeof(bf16) * 2 * size_unaligned_cpy);
+      }
+    }
+    if constexpr (zero_padding) {
+      if (size_aligned_cpy) {
+        const auto off = padto(p.seq_off, 48) * pad_headsize;
+        memcpy(dst + off, src + off, sizeof(bf16) * size_aligned_cpy);
+      }
+    } else {
+      assert(("Unimplemented!", false));
+    }
+  }
+}
+void jblas_fusion_attn_fp32_batch_cpy_k(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  return params->no_zeroing ? jblas_fusion_attn_fp32_batch_cpy_k_<false>(params)
+                            : jblas_fusion_attn_fp32_batch_cpy_k_<true>(params);
+}
+
+template <bool zero_padding>
+void jblas_fusion_attn_fp32_batch_cpy_v_(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  const auto p = *params;
+  const auto pad_headsize = padto(p.head_size, 48);
+  const auto pad_seq_max = padto(p.seq_max, 32);
+  const auto step_head_num = pad_headsize * pad_seq_max;
+
+  const auto seq_off_aligned = padto(p.seq_off, 2);
+  const auto seq_end_aligned = padto(p.seq_off + p.seq_size, 32);
+  const auto seq_size_aligned = seq_end_aligned - seq_off_aligned;
+#pragma omp parallel for collapse(2)
+  for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
+    for (int j = 0; j < p.head_size; j += 48) {
+      const auto dst = reinterpret_cast<bf16*>(p.dst) + ihn * step_head_num + pad_seq_max * j;
+      const auto src = reinterpret_cast<bf16*>(p.src) + ihn * step_head_num + pad_seq_max * j;
+      if (p.seq_off != seq_off_aligned) {
+        const auto off = (seq_off_aligned - 2) * 48 + 1;
+        for (int jj = 0; jj < 48; ++jj) src[off + jj * 2] = dst[off + jj * 2];
+      }
+      if constexpr (zero_padding) {
+        if (seq_off_aligned != seq_end_aligned) {
+          const auto off = seq_off_aligned * 48;
+          memcpy(dst + off, src + off, sizeof(bf16) * 48 * seq_size_aligned);
+        }
+      } else {
+        assert(("Unimplemented!", false));
+      }
+    }
+  }
+}
+void jblas_fusion_attn_fp32_batch_cpy_v(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  return params->no_zeroing ? jblas_fusion_attn_fp32_batch_cpy_v_<false>(params)
+                            : jblas_fusion_attn_fp32_batch_cpy_v_<true>(params);
+}
+
 #ifdef __GNUC__
 #pragma GCC pop_options
 #endif
