@@ -156,6 +156,8 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
+            if beam_search:
+                break
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
