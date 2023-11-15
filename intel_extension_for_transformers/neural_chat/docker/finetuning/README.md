@@ -24,7 +24,7 @@ If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --b
 
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target cpu
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target cpu
 ```
 
 #### On Habana Gaudi Environment
@@ -33,7 +33,7 @@ If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --b
 
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target hpu
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target hpu
 ```
 
 #### On Nvidia GPU Environment
@@ -42,7 +42,7 @@ If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --b
 
 
 ```bash
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target nvgpu
+docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target nvgpu
 ```
 
 ### 2.2 Docker Pull from Docker Hub
@@ -56,15 +56,15 @@ docker pull intel/ai-tools:itrex-chatbot
 If you have donwloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
+docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG}
 ```
 ### On Habana Gaudi Environment
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest 
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} 
 ```
 ### On Nvidia GPU Environment
 ```bash
-docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
+docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG}
 ```
 
 # Finetune
@@ -99,7 +99,7 @@ For LLaMA2, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "Llama-2-7b-chat-hf" \
+        --model_name_or_path "meta-llama/Llama-2-7b-chat-hf" \
         --train_file "/dataset/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
@@ -218,7 +218,7 @@ export CCL_WORKER_COUNT=1
 export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
 ## for DDP ptun for LLama2
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
-    --model_name_or_path Llama-2-7b-chat-hf \
+    --model_name_or_path meta-llama/Llama-2-7b-chat-hf \
     --train_file ./alpaca_data.json \
     --bf16 True \
     --output_dir ./llama2_peft_finetuned_model \
@@ -276,7 +276,7 @@ For LLaMA2, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "Llama-2-7b-chat-hf" \
+        --model_name_or_path "meta-llama/Llama-2-7b-chat-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
