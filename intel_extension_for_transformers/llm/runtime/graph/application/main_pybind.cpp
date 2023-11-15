@@ -30,6 +30,7 @@
 #include <utility>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include "common.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
@@ -44,6 +45,8 @@
 #include <windows.h>
 #include <signal.h>
 #endif
+
+namespace py = pybind11;
 
 std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_name) {
   return ql_registry::create_ql(model_name);
@@ -71,6 +74,30 @@ class Model {
     curr_input_ids.clear();
     generate_count = 0;
   }
+
+  py::array_t<float> forward(const std::vector<std::vector<model_token>>& input_ids) {         
+    // py::array_t<float> dst                                            
+    // 获取NumPy数组的指针
+    // PyArrayObject* array = PyArray_New(NPY_FLOAT32, 10, 1, NULL, NULL, 0);
+    // float *foo = new float[size];
+    // auto data = py::array_t<float>(
+    //         {100, 1000, 1000}, // shape
+    //         {1000*1000*8, 1000*8, 8}, // C-style contiguous strides for double
+    //         foo, // the data pointer
+    //         free_when_done); // numpy array references this parent
+    // // float* w_ptr = src_w.mutable_data();
+    // // float* scales_ptr = src_scales.mutable_data();
+    // // float* dst_ptr = dst.mutable_data();
+    // // // std::cout << ptr << std::endl;
+    // // for(int i = 0; i < 4; i++)
+    // //   dst_ptr[i] = w_ptr[i] * scales_ptr[i];
+
+    // // 填充数组
+    // for (int i = 0; i < 10; i++) {
+    //   PyArray_SetItem(array, i, PyFloat_FromDouble(i));
+    // }
+    return py::array_t<float>(200);
+  }          
 
  private:
   model_context* ctx = nullptr;
@@ -435,8 +462,6 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   return 0;
 }
 
-namespace py = pybind11;
-
 #if MODEL_NAME_ID == 1
 
 PYBIND11_MODULE(gptj_cpp, m)
@@ -511,5 +536,6 @@ PYBIND11_MODULE(mistral_cpp, m)
                   py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("use_ggml") = false)
       .def("is_token_end", &Model::is_token_end)
       .def("reset_token_end", &Model::reset_token_end)
+      .def("forward", &Model::forward)
       .def("reinit", &Model::reinit);
 }

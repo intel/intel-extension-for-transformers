@@ -167,3 +167,9 @@ class Model:
 
     def is_token_end(self):
         return self.model.is_token_end()
+
+    def forward(self, input_ids):
+        if self.model is None:
+            self.init_from_bin(self.model_type, self.bin_file)
+        import pdb; pdb.set_trace()
+        return self.model.forward(input_ids.numpy())
