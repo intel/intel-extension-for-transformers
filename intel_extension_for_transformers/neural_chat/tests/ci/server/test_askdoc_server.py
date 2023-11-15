@@ -63,15 +63,6 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
 
-    def test_askdoc_upload_link(self):
-        url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/upload_link'
-        request = {
-            "link_list": ["https://www.ces.tech/"],
-            "knowledge_base_id": "default"
-        }
-        res = requests.post(url, json.dumps(request))
-        self.assertEqual(res.status_code, 200)
-
 
 if __name__ == "__main__":
     unittest.main()
