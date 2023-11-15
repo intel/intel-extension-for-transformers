@@ -148,27 +148,23 @@ if [[ ${PRECISION} = 'dynamic_int8' ]]; then
     inference_model="./model_and_tokenizer/fp32-model.onnx"
 fi
 if [[ ${MODE} == "accuracy" ]]; then
-    echo "No accuracy mode cuurently."
-    # echo "------------ACCURACY BENCHMARK---------"
-    # python run_executor.py \
-    #   --input_model=${inference_model} \
-    #   --mode=$MODE \
-    #   --batch_size=${BATCH_SIZE} \
-    #   --seq_len=${SEQUENCE_LEN} \
-    #   --warm_up=${WARM_UP} \
-    #   --iteration=${ITERATION} \
-    #   --dataset_name=glue \
-    #   --task_name=${DATASET} \
-    #   --tokenizer_dir=./model_and_tokenizer \
-    #   ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
-    # status=$?
-    # if [ ${status} != 0 ]; then
-    #     echo "Benchmark process returned non-zero exit code."
-    #     exit 1
-    # fi
+    echo "------------ACCURACY BENCHMARK---------"
+    python run_executor.py \
+        --mode=accuracy \
+        --model_name_or_path bge-small-en-v1.5-pt-onnx-int8 \
+        --task_type STS \
+        --ort_model_path ./model_and_tokenizer \
+        --file_name int8-model.onnx \
+        ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
+        status=$?
+    if [ ${status} != 0 ]; then
+        echo "Benchmark process returned non-zero exit code."
+        exit 1
+    fi
 elif [[ ${MODE} == "latency" ]]; then
     echo "------------LATENCY BENCHMARK---------"
-    python run_executor.py \
+    echo "------------0 - 3---------"
+    numactl -m 0 -C 0-3 python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \
       --batch_size=${BATCH_SIZE} \
@@ -179,6 +175,135 @@ elif [[ ${MODE} == "latency" ]]; then
       --task_name=${DATASET} \
       --tokenizer_dir=./model_and_tokenizer \
       ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+          echo "------------0 - 7---------"
+    numactl -m 0 -C 0-7 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+
+          echo "------------0 - 11---------"
+    numactl -m 0 -C 0-11 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+          echo "------------0 - 15---------"
+    numactl -m 0 -C 0-15 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+          echo "------------0 - 19---------"
+    numactl -m 0 -C 0-19 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+          echo "------------0 - 23---------"
+    numactl -m 0 -C 0-23 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+                echo "------------0 - 27---------"
+    numactl -m 0 -C 0-27 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+          echo "------------0 - 31---------"
+    numactl -m 0 -C 0-31 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+          echo "------------0 - 35---------"
+    numactl -m 0 -C 0-35 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log"
+          echo "------------0 - 39---------"
+    numactl -m 0 -C 0-39 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
+
+    echo "------------0 - 47---------"
+    numactl -m 0 -C 0-47 python run_executor.py \
+      --input_model=${inference_model} \
+      --mode="performance" \
+      --batch_size=${BATCH_SIZE} \
+      --seq_len=${SEQUENCE_LEN} \
+      --warm_up=${WARM_UP} \
+      --iteration=${ITERATION} \
+      --dataset_name=glue \
+      --task_name=${DATASET} \
+      --tokenizer_dir=./model_and_tokenizer \
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log"
     status=$?
     if [ ${status} != 0 ]; then
         echo "Benchmark process returned non-zero exit code."
