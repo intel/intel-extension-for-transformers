@@ -85,6 +85,8 @@ async def retrieval_upload_link(request: Request):
     logger.info(f'[askdoc - create] user id is: {user_id}')
 
     persist_path = f"./photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
+    cur_path = Path(persist_path)
+    cur_path.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(persist_path):
         return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
             Please check kb_id and save path again."
@@ -97,7 +99,7 @@ async def retrieval_upload_link(request: Request):
     except Exception as e:
         logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
         return Response(content="Error occurred while uploading links.", status_code=500)
-    return {"knowledge_base_id": "local_kb_id"}
+    return "Succeed"
 
 
 @router.post("/v1/aiphotos/askdoc/create")
