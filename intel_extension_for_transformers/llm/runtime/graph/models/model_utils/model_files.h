@@ -643,7 +643,8 @@ struct model_model_loader {
     }
     fclose(file);
   }
-  void jblas_split_weight(void** src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
+  size_t jblas_split_weight(void** src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
+    size_t size = 0;
     auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*src);
     // TODO adapt NTILE and KTILE from CoreType
     int NTILE = 48;
@@ -660,7 +661,7 @@ struct model_model_loader {
           src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
         auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp);
         ne_jblas::SS4Fp32 dst_w(src_w->mCoreType);
-        dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        size = dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
         dst_w.mPrologueID = src_tmp->mPrologueID;
         dst_w.assign((int8_t*)(*dst));
         // take the weight out and split
@@ -721,7 +722,7 @@ struct model_model_loader {
                  src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32PerChannelN)) {
         auto src_w = dynamic_cast<ne_jblas::SS8Fp32*>(src_tmp);
         ne_jblas::SS8Fp32 dst_w(src_w->mCoreType);
-        dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
+        size = dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
         dst_w.mPrologueID = src_tmp->mPrologueID;
         dst_w.assign((int8_t*)(*dst));
         // take the weight out and split
@@ -775,6 +776,7 @@ struct model_model_loader {
     // auto dst_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*dst);
     // assert(dst_tmp != nullptr);
     // assert(src_tmp->mPrologueID == dst_tmp->mPrologueID);
+    return size;
   }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
@@ -821,18 +823,20 @@ struct model_model_loader {
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
-      tmp_buf.resize(lt.size * lt.world_size);
-      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
       // auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(tmp_buf.addr);
       // auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp);
       // auto s_ptr = src_w->WPtr();
       if (lt.type == NE_TYPE_JBLAS) {
+        tmp_buf.resize(shard.size);
+        file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
+        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
       } else {
         // only copy part of weight form the tmp_buf of origin file
+        tmp_buf.resize(lt.size * lt.world_size);
+        file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
         memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
       }
     } else if (lt.split_type == TP_1D_COLUMN) {
@@ -843,14 +847,17 @@ struct model_model_loader {
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
-      tmp_buf.resize(lt.size * lt.world_size);
-      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
+
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
       if (lt.type == NE_TYPE_JBLAS) {
+        tmp_buf.resize(shard.size);
+        file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
+        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
       } else {
+        tmp_buf.resize(lt.size * lt.world_size);
+        file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
         size_t offset = 0;
         // different data type may have differnet per_row_size
         size_t per_row_size = lt.size / num_rows;
