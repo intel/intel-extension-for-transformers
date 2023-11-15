@@ -603,12 +603,12 @@ def predict_stream(**params):
     device = params["device"] if "device" in params else "cpu"
     temperature = float(params["temperature"]) if "temperature" in params else 0.9
     top_p = float(params["top_p"]) if "top_p" in params else 0.75
-    top_k = int(params["top_k"]) if "top_k" in params else 1
+    top_k = int(params["top_k"]) if "top_k" in params else 3
     repetition_penalty = (
         float(params["repetition_penalty"]) if "repetition_penalty" in params else 1.1
     )
     max_new_tokens = (
-        int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
+        int(params["max_new_tokens"]) if "max_new_tokens" in params else 512
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
