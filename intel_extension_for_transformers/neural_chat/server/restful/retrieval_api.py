@@ -204,6 +204,12 @@ async def retrieval_chat(request: Request):
     logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
                 stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
+
+    path_prefix = "./photoai_retrieval_docs/"
+    cur_path = Path(path_prefix) / "default" / "persist_dir"
+    os.makedirs(path_prefix, exist_ok=True)
+    cur_path.mkdir(parents=True, exist_ok=True)
+
     if kb_id == 'default':
         persist_dir = "./photoai_retrieval_docs/default/persist_dir"
     else:

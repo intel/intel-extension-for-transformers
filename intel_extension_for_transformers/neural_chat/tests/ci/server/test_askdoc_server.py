@@ -47,12 +47,12 @@ class UnitTest(unittest.TestCase):
             shutil.rmtree("./out_persist")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
         request = {
             "query": "What is Intel oneAPI Compiler?",
-            "domain": "test",
-            "blob": "",
-            "filename": ""
+            "knowledge_base_id": "default",
+            "stream": False,
+            "max_new_tokens": 256
         }
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
