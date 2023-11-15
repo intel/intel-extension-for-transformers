@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
@@ -63,44 +63,62 @@ class Model:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
 
-    def init(self, model_name, **kwargs):
-        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-        model_type = model_maps.get(config.model_type, config.model_type)
-        if model_type == "chatglm" and "chatglm2" in config._name_or_path:
+    def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
+        self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        model_type = model_maps.get(self.config.model_type, self.config.model_type)
+        if model_type == "chatglm" and "chatglm2" in self.config._name_or_path:
             model_type = "chatglm2"
         self.__import_package(model_type)
 
-        # 1. convert model
-        fp32_bin = "ne_{}_f32.bin".format(model_type)
+        # check cache and quantization
+        output_path = "runtime_outs"
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
+        quant_bin = "{}/ne_{}_q.bin".format(output_path, model_type)
+
+        if not_quant:
+            self.bin_file = fp32_bin
+        else:
+            self.bin_file = quant_bin
+        if use_cache and os.path.exists(self.bin_file):
+            return
+
         convert_model(model_name, fp32_bin, "f32")
         assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
-        # 2. quant model
-        quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        if not_quant:
+            print("FP32 model will be used.")
+            return
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
-        
-        self.model_type = model_type
-        self.bin_file = quant_bin
         
         # clean
         os.remove(fp32_bin)
 
-    def init_from_bin(self, model_name, model_path, **kwargs):
+    def init_from_bin(self, model_name, model_path, **generate_kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
-        self.model.init_model(model_path, **kwargs)
+        if "threads" not in generate_kwargs:
+            threads = os.getenv("OMP_NUM_THREADS")
+            if threads is None:
+                generate_kwargs["threads"] = len(os.sched_getaffinity(0))
+            else:
+                generate_kwargs["threads"] = int(threads)
+        self.model.init_model(model_path, **generate_kwargs)
 
-    def quant_model(self, model_name, model_path, out_path, **kwargs):
+    def quant_model(self, model_name, model_path, out_path, **quant_kwargs):
         self.__import_package(model_name)
         self.module.Model.quant_model(model_path = model_path,
-                                    out_path = out_path, **kwargs)
+                                    out_path = out_path, **quant_kwargs)
 
 
-    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
+        max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
-                               **kwargs)
+                               **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
             self.model.reinit()
@@ -111,34 +129,41 @@ class Model:
             ret = input_ids.tolist()
 
         beam_search = False
-        if ("num_beams" in kwargs and kwargs["num_beams"] > 1) and not \
-            kwargs.get("do_sample", False):
+        if ("num_beams" in generate_kwargs and generate_kwargs["num_beams"] > 1) and not \
+            generate_kwargs.get("do_sample", False):
             beam_search = True
         if not beam_search:
             # TODO support multi batch
             assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+
         if streamer:
-            if beam_search:
-                print("ERROR, can not use streamer when use beam search for generation!")
-                import sys
-                sys.exit(1)
+            assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
+            assert beam_search == False, "ERROR, can not use streamer when use beam search for generation! \
+                Make sure that `num_beams` is set to 1."
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
-            if interactive:
-                self.model.reset_token_end()
-            while not self.is_token_end():
-                out = self.model.generate(input_ids = input_ids.tolist()[0])
-                if len(out) == 0:
-                    break
-                streamer.put(torch.tensor([out]))
-                ret[0].extend(out)
-            streamer.end()
-        else:
-            response = self.model.generate_tokens(input_ids = input_ids.tolist())
-            assert (len(ret) == len(response))
+        
+        if interactive:
+            self.model.reset_token_end()
+        out_count = 0
+        while True:
+            response = self.model.generate(input_ids = input_ids.tolist())
+            if len(response) == 0:
+                break
+            if streamer:
+                streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
-        
+            if stopping_criteria is not None:
+                if stopping_criteria(torch.tensor(ret), None):
+                    break
+            elif ret[0][-1] == self.tokenizer.eos_token_id or \
+                (max_new_tokens != -1 and out_count > max_new_tokens):
+                break
+            out_count += 1
+        if streamer:
+            streamer.end()
+            
         self.generate_round += 1
         return ret
 
