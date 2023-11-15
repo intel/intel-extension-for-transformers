@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gd8799cb documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g91511d2 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -191,30 +191,42 @@
 </pre></div>
 </div>
 <p>https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b</p>
+<p>Argument description of WeightOnlyQuantConfig:
+| Argument          |  Type       | Description                                                                             |
+| ————–    | ———-  | ———————————————————————–                 |
+| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                           |
+| weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
+| alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
+| group_size        | Int         | Group size: Int (default: 32)                                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
+| use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
+| not_quant         | Bool        | Determine whether or not the model will be quantized. (default: False)                  |
+| use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |</p>
 <p>Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
 | ————–    | ———-  | ———————————————————————–                 |
 | inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
-| streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
 | interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
+| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
 | ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
-| max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
 | batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
 | ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
 | seed              | Int         | NG seed (default: -1, use random seed for &lt; 0)                                          |
 | threads           | Int         | Number of threads to use during computation (default: 8)                                |
-| repetition_penalty| Float       | Penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)                       |
-| num_beams         | Int         | Number of beams for beam_search (default: 1)                                            |
-| do_sample         | Int         | Whether or not to use sampling ; use greedy decoding otherwise. (default: False)        |
-| top_k             | Int         | Top-k sampling (default: 40, 0 = disabled)                                              |
-| top_p             | Int         | Top-p sampling (default: 0.95, 1.0 = disabled)                                          |
-| temperature       | Float       | Temperature (default: 0.8)                                                              |
-| min_new_tokens    | Int         | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
-| length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
-| early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
-| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
-| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
-| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |</p>
+| repetition_penalty| Float       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| num_beams         | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| do_sample         | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| top_k             | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| top_p             | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| temperature       | Float       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| min_new_tokens    | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| length_penalty    | Float       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| early_stopping    | Bool        | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| max_new_tokens    | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| streamer          | Class       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| stopping_criteria | Class       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |</p>
 </section>
 <section id="multi-round-chat">
 <h3>3. Multi-Round Chat<a class="headerlink" href="#multi-round-chat" title="Link to this heading"></a></h3>
@@ -222,7 +234,8 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
 
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>  <span class="c1"># or local path to model</span>
+<span class="c1"># Please change to local path to model, llama2 does not support online conversion, currently.</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span>
 <span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
@@ -401,6 +414,43 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 <h3>4. Contribution<a class="headerlink" href="#contribution" title="Link to this heading"></a></h3>
 <p>You can consider adding your own models via <a class="reference external" href="./developer_document.html">graph developer document</a>.</p>
 </section>
+<section id="custom-stopping-criteria">
+<h3>5. Custom Stopping Criteria<a class="headerlink" href="#custom-stopping-criteria" title="Link to this heading"></a></h3>
+<p>You can customize the stopping criteria according to your own needs by processing the input_ids to determine if text generation needs to be stopped.
+Here is a simple example, which requires a minimum generation length of 80 tokens. Once the <code class="docutils literal notranslate"><span class="pre">min_length</span></code> is met, encountering a terminator <code class="docutils literal notranslate"><span class="pre">eos_token_id</span></code> will end the generation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">StoppingCriteria</span><span class="p">,</span> <span class="n">StoppingCriteriaList</span>
+
+<span class="k">class</span> <span class="nc">StopOnTokens</span><span class="p">(</span><span class="n">StoppingCriteria</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">start_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">stop_token_id</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_length</span> <span class="o">=</span> <span class="n">min_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_length</span> <span class="o">=</span> <span class="n">start_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_token_id</span> <span class="o">=</span> <span class="n">stop_token_id</span>
+ 
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">,</span> <span class="n">scores</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_length</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_length</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">stop_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_token_id</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">input_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">stop_id</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<span class="n">stopping_criteria</span> <span class="o">=</span> <span class="n">StoppingCriteriaList</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">StopOnTokens</span><span class="p">(</span>
+            <span class="n">min_length</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
+            <span class="n">start_length</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">stop_token_id</span><span class="o">=</span><span class="p">[</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">stopping_criteria</span><span class="o">=</span><span class="n">stopping_criteria</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
@@ -418,7 +468,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff24c978df0> 
+   <jinja2.runtime.BlockReference object at 0x7fce609e6d10> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
