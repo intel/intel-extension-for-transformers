@@ -64,9 +64,8 @@ pip install intel-extension-for-transformers
 You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
