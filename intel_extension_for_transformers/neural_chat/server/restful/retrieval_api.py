@@ -84,16 +84,6 @@ async def retrieval_upload_link(request: Request):
 
     user_id = request.client.host
     logger.info(f'[askdoc - create] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - create] "+str(res))
-
-    try:
-        record_request(request_url="/v1/askdoc/upload_link",
-                    request_body=request,
-                    user_id=user_id)
-    except Exception as e:
-        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
-
 
     persist_path = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
     if not os.path.exists(persist_path):
@@ -154,15 +144,6 @@ async def retrieval_create(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - create] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - create] "+str(res))
-
-    try:
-        record_request(request_url="/v1/askdoc/create",
-                    request_body=request,
-                    user_id=user_id)
-    except Exception as e:
-        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
 
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
@@ -214,15 +195,6 @@ async def retrieval_append(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - append] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - append] "+str(res))
-
-    try:
-        record_request(request_url="/v1/askdoc/append",
-                    request_body=request,
-                    user_id=user_id)
-    except Exception as e:
-        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
 
     path_prefix = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
@@ -271,16 +243,7 @@ async def retrieval_chat(request: Request):
 
     user_id = request.client.host
     logger.info(f'[askdoc - chat] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - chat] "+str(res))
 
-    try:
-        record_request(request_url="/v1/askdoc/chat",
-                    request_body=request,
-                    user_id=user_id)
-    except Exception as e:
-        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
-    
     # parse parameters
     params = await request.json()
     query = params['query']
@@ -346,12 +309,7 @@ async def retrieval_chat(request: Request):
 @router.post("/v1/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
-    try:
-        record_request(request_url="/v1/askdoc/feedback",
-                    request_body=request,
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+
     mysql_db = MysqlDb()
     question, answer, feedback = request.question, request.answer, request.feedback
     feedback_str = 'dislike' if int(feedback) else 'like'
@@ -377,13 +335,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
 
 @router.get("/v1/askdoc/downloadFeedback")
 def get_feedback_from_db():
-    try:
-        record_request(request_url="/v1/askdoc/downloadFeedback",
-                    request_body={},
-                    user_id='default')
-    except Exception as e:
-        logger.error(f"[askdoc - download] Fail to record request into db. {e}")
-    
+ 
     mysql_db = MysqlDb()
     sql = f"SELECT * FROM feedback ;"
     try:
