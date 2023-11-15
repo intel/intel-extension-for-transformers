@@ -253,6 +253,8 @@ class MixedPrecisionConfig:
 
 @dataclass
 class SmoothQuantConfig:
+    backend: str = "ipex"
+    ipex_opt_llm: bool = False
     tokenizer: Any = None
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
@@ -262,3 +264,4 @@ class SmoothQuantConfig:
     op_name_dict: dict = None
     excluded_precisions: list = field(default_factory=list)
     example_inputs: Any = None
+    num_beams: int = 1
