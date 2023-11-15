@@ -937,16 +937,13 @@ def predict_stream(**params):
     )
     if return_stats:
         stats = {
-            "input_token_len": str(input_token_len),
-            "output_token_len": str(output_token_len),
-            "duration": str(duration) + " ms",
-            "first_token_latency": str(first_token_latency) + " ms",
-            "msecond_per_token": str(msecond_per_token) + " ms",
+            "input_token_len": input_token_len,
+            "output_token_len": output_token_len,
+            "duration": duration,
+            "first_token_latency": first_token_latency,
+            "msecond_per_token": msecond_per_token,
         }
-        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
-        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
-        for key, value in stats.items():
-            yield "| {:<22} | {:<27} |\n".format(key, value)
+        yield "END_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
