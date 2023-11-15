@@ -42,7 +42,7 @@ class DocumentIndexing:
         self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
-        
+
         try:
             if "instruct" in embedding_model:
                 self.embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
@@ -60,7 +60,7 @@ class DocumentIndexing:
                 )
         except Exception as e:
             print("Please selet a proper embedding model")
-            
+        
         
     def parse_document(self, input):
         """
@@ -73,6 +73,7 @@ class DocumentIndexing:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
                 chuck = [[content.strip(),input]]
+        
         elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv"):
             chuck = laod_structured_data(input, self.process, self.max_length)
         elif re.match(r'^https?:/{2}\w.+$', input):
@@ -90,6 +91,8 @@ class DocumentIndexing:
         for link in input:
             if re.match(r'^https?:/{2}\w.+$', link):
                 content = load_html_data(link)
+                if content == None:
+                    continue
                 if self.process:
                     chuck = get_chuck_data(content, self.max_length, link)
                 else:
@@ -116,7 +119,7 @@ class DocumentIndexing:
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck
-                elif filename.endswith("jsonl") or filename.endswith("xlsx") or input.endswith("csv"):
+                elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
@@ -125,7 +128,8 @@ class DocumentIndexing:
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            vectordb = Chroma(persist_directory=input, embedding_function=self.embeddings)
+            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
             if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)
