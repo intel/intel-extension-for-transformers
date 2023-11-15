@@ -101,7 +101,8 @@ class Agent_QA():
 
     # reload db from a specific path
     def reload_localdb(self, local_persist_dir):
-        assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), "Please check the local knowledge base was built!"
+        assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
+            "Please check the local knowledge base was built!"
         self.db = self.doc_parser.reload(local_persist_dir)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
                                    search_type=self.search_type, search_kwargs=self.search_kwargs)
