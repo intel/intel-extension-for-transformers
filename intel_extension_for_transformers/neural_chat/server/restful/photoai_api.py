@@ -59,11 +59,7 @@ class PhotoAIAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             plugins['tts']['enable'] = True
-            res = is_plugin_enabled('tts')
-            print(f"tts plugin enable status: {res}")
             plugins['retrieval']['enable'] = False
-            res = is_plugin_enabled('retrieval')
-            print(f"retrieval plugin enable status: {res}")
 
             config = GenerationConfig(audio_output_path=audio_output_path)
             result, link = chatbot.chat_stream(query=prompt, config=config)

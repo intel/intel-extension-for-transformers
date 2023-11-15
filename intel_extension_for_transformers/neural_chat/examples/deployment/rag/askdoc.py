@@ -21,8 +21,8 @@ from intel_extension_for_transformers.neural_chat import NeuralChatServerExecuto
 def main():
     server_executor = NeuralChatServerExecutor()
     server_executor(
-        config_file="/home/tme/itrex_askdoc_for_photoai/intel_extension_for_transformers/neural_chat/examples/deployment/rag/askdoc.yaml",
-        log_file="/home/tme/itrex_askdoc_for_photoai/intel_extension_for_transformers/neural_chat/examples/deployment/rag/askdoc.log")
+        config_file="./askdoc.yaml",
+        log_file="./askdoc.log")
 
 
 if __name__ == "__main__":

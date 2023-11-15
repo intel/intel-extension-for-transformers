@@ -21,16 +21,16 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 9000
+port: 8000
 
-model_name_or_path: "/home/tme/Llama-2-7b-chat-hf"
-device: "cpu"
+model_name_or_path: "./Llama-2-7b-chat-hf"
+device: "auto"
 
 retrieval:
     enable: true
     args:
-        input_path: "/home/tme/letong/askdoc_docs"
-        persist_dir: "/home/tme/letong/askdoc_persist"
+        input_path: "./askdoc_docs"
+        persist_dir: "./askdoc_persist"
         response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
         append: False
 
