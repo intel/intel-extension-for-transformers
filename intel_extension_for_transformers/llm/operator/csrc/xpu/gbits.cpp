@@ -99,8 +99,8 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   auto q = xpu::get_queue_from_stream(c10_stream);
   auto context = q.get_info<sycl::info::queue::context>();
   bool isDevicePointer = sycl::get_pointer_type(
-    dequantize_weight.data_ptr(), context) == sycl::usm::alloc::device;
-  if (!isDevicePointer) {
+    compressed_weight.data_ptr(), context) == sycl::usm::alloc::device;
+  if (sycl::get_pointer_type(dequantize_weight.data_ptr(), context) != sycl::usm::alloc::device) {
     std::cout << "gbits_dequantize requires the dequantized weight on xpu" << std::endl;
     exit(0);
   }
@@ -108,10 +108,10 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
   if (initer.verbose) timer.start();
   if (dequantize_weight.dtype() == torch::kFloat32)
     gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
-                       compute_type, weight_type);
+                       compute_type, weight_type, isDevicePointer);
   else
     gpu_dequant(q, &obj, dequantize_weight.data_ptr<c10::Half>(), transpose,
-                       compute_type, weight_type);
+                       compute_type, weight_type, isDevicePointer);
   if (initer.verbose) {
     timer.stop();
     std::cout << "GPU dequant cost"

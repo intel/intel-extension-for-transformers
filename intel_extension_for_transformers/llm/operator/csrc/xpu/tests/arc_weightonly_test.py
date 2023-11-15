@@ -58,6 +58,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
         print(raw_wei)
     compress_wei = gbits.quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type)
+    compress_wei = compress_wei.to('xpu')
     gbits.dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float).to('xpu')*10

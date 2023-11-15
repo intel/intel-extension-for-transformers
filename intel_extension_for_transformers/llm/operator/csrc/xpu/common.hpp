@@ -84,22 +84,30 @@ public:
   virtual ~CompressWei4Bit() {
     if (_write_buf != nullptr)
       free(_write_buf);
-    if (_wei != nullptr)
+    if (_wei != nullptr && free_dev_mem)
       free(_wei, context);
-    if (_scale != nullptr)
+    if (_scale != nullptr && free_dev_mem)
       free(_scale, context);
   }
 
   CompressWei4Bit(void *buf, sycl::queue &queue) {
     if (buf != nullptr) {
       auto device = queue.get_info<sycl::info::queue::device>();
-      size_t offset = deserialize_field(buf);
-      _wei = (void *)aligned_alloc_device(
-        DEVICE_MEM_ALIGNMENT, get_4bit_wei_size() * sizeof(int8_t), device, context);
-      _scale = (void *)aligned_alloc_device(
-        DEVICE_MEM_ALIGNMENT, get_scale_size() * sizeof(fp16), device, context);
-      queue.memcpy(_wei, (void *)((char *)buf + offset), get_4bit_wei_size() * sizeof(int8_t)).wait();
-      queue.memcpy(_scale, (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t)), get_scale_size() * sizeof(fp16)).wait();
+      bool isDevicePointer = sycl::get_pointer_type(buf, context) == sycl::usm::alloc::device;
+      if (isDevicePointer) {
+        size_t offset = deserialize_field(buf, queue);
+        _wei = (void *)((char *)buf + offset);
+        _scale = (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t));
+      } else {
+        free_dev_mem = true;
+        _wei = (void *)aligned_alloc_device(
+          DEVICE_MEM_ALIGNMENT, get_4bit_wei_size() * sizeof(int8_t), device, context);
+        _scale = (void *)aligned_alloc_device(
+          DEVICE_MEM_ALIGNMENT, get_scale_size() * sizeof(fp16), device, context);
+        size_t offset = deserialize_field(buf);
+        queue.memcpy(_wei, (void *)((char *)buf + offset), get_4bit_wei_size() * sizeof(int8_t)).wait();
+        queue.memcpy(_scale, (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t)), get_scale_size() * sizeof(fp16)).wait();
+      }
     }
   }
 
@@ -162,6 +170,18 @@ private:
     offset += sizeof(_sym);
     return offset;
   }
+    size_t deserialize_field(void *buf, sycl::queue &queue) {
+    size_t offset = 0;
+    queue.memcpy((void *)&_N, (void *)((char *)buf + offset), sizeof(_N)).wait();
+    offset += sizeof(_N);
+    queue.memcpy((void *)&_K, (void *)((char *)buf + offset), sizeof(_K)).wait();
+    offset += sizeof(_K);
+    queue.memcpy((void *)&_blksize, (void *)((char *)buf + offset), sizeof(_blksize)).wait();
+    offset += sizeof(_blksize);
+    queue.memcpy((void *)&_sym, (void *)((char *)buf + offset), sizeof(_sym)).wait();
+    offset += sizeof(_sym);
+    return offset;
+  }
   size_t get_4bit_wei_size() { return _N * _K / 2; }
   size_t get_scale_size() { return _K / _blksize * _N * sizeof(fp16); }
   size_t get_zp_size() { return 0; }
@@ -176,4 +196,5 @@ private:
   void *_wei = nullptr;
   void *_scale = nullptr;
   const sycl::context context;
+  bool free_dev_mem = false;
 };
