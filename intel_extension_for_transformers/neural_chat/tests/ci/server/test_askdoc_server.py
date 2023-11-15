@@ -42,6 +42,12 @@ class UnitTest(unittest.TestCase):
             print("Error while executing command:", e)
 
     def tearDown(self) -> None:
+        # kill server process
+        if self.server_process:
+            self.server_process.terminate()
+            self.server_process.wait()
+
+        # delete created resources
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
