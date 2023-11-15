@@ -95,7 +95,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
             self.bias.data = self.bias.data.to(x.dtype)
 
         if getattr(self.weight, 'quant_state', None) is None:
-            print('FP4 quantization state not initialized. Please call .quantize_weights().')
+            print('quantization state not initialized. Please call .set_weights_bias().')
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
@@ -112,7 +112,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
         weight = gbits.quantize(
-            weight_data.to("cpu"), True, self.blocksize, self.compute_dtype, self.weight_dtype
+            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype
         )
         weight.resize_(shape)
         self.weight = ParamsGBits(
@@ -120,7 +120,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
         )
         if bias is not None:
-            self.bias = torch.nn.Parameter(bias.to(self.device), requires_grad=False)
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
 
 # class QuantizedLinearINT4(QuantizedLinearGPU, LoraLayer):

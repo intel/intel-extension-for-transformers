@@ -98,7 +98,7 @@ class QuantizedLinearCPU(torch.nn.Linear):
             self.bias.data = self.bias.data.to(x.dtype)
 
         if getattr(self.weight, 'quant_state', None) is None:
-            print('FP4 quantization state not initialized. Please call .quantize_weights().')
+            print('quantization state not initialized. Please call .set_weights_bias().')
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])

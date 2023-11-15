@@ -625,10 +625,7 @@ class _BaseQBitsAutoModelClass:
             model = replace_linear(
                 model, quantization_config=quantization_config, device=device_map, empty_weights=True
             )
-        elif intel_gpu == "max":
-            #handle for max in next code
-            pass
-        else:
+        elif intel_gpu != "max":
             raise Exception("Unsupport device: {}.{}".format(device_map, intel_gpu))
 
         if is_sharded:
@@ -689,7 +686,9 @@ class _BaseQBitsAutoModelClass:
             quantized_ckpt = "{}/torch.pt".format(pretrained_model_name_or_path)
             print("load quantized weight by ipex from {}".format(quantized_ckpt))
             model = load_quantized_model_by_ipex(model, quantization_config, quantized_ckpt, \
-                                                amp_dtype=torch.float16, device=device_map)
+                                                 amp_dtype=torch.float16, device=device_map)
+        elif intel_gpu == "arc":
+            model = model.to("xpu")
 
 
         return model

@@ -123,9 +123,6 @@ def _replace_linear(
 
     Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
     """
-    if device == "xpu" or (is_ipex_available and device == torch.device("xpu")):
-        model = model.to("xpu")
-        model = ipex.optimize(model.eval())
     weight_dtype = get_weight_type_from_config(quantization_config)
     for name, module in model.named_children():
         if current_key_name is None:
@@ -323,7 +320,11 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                  conf,
                                  calib_func=calib_func,
                                  calib_dataloader=calib_dataloader)
-    return replace_linear(inc_model.model, None, None, config, device=device)
+    q_model = replace_linear(model, None, None, config, device=device)
+    if device == "xpu" or (is_ipex_available and device == torch.device("xpu")):
+        q_model = q_model.to("xpu")
+    return q_model
+
 
 def convert_dtype_str2torch(str_dtype):
     if str_dtype == "int8":
