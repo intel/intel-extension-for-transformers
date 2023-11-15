@@ -135,7 +135,11 @@ class DocumentIndexing:
         return vectordb
     
     def reload(self, local_path):
-        vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                  port=9200, search_fields=["content", "title"])
         return vectordb
             
     def KB_construct(self, input):
@@ -190,7 +194,7 @@ class DocumentIndexing:
             return document_store
 
 
-    def KB_append(self, input):  ### inmemory documentstore please use KB construct
+    def KB_append(self, input, persist_path=None):  ### inmemory documentstore please use KB construct
         if isinstance(input, str):
             if os.path.isfile(input):
                 data_collection = self.parse_document(input)
@@ -215,11 +219,13 @@ class DocumentIndexing:
                 new_doc = Document(page_content=data, metadata=metadata)
                 documents.append(new_doc)
             assert documents != [], "The given file/files cannot be loaded."
+            if persist_path is None:
+                persist_path = self.persist_dir
             vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
-                                             persist_directory=self.persist_dir)
+                                             persist_directory=persist_path)
             vectordb.persist()
             print("The local knowledge base has been successfully built!")
-            return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
+            return Chroma(persist_directory=persist_path, embedding_function=self.embeddings)
         elif self.retrieval_type == "sparse":
             if self.document_store == "Elasticsearch":
                 document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,

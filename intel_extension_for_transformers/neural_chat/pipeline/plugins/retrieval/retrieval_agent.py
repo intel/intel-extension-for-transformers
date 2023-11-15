@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
+from typing import List
 from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
@@ -39,6 +39,8 @@ class Agent_QA():
         self.search_kwargs = search_kwargs
         self.tokenizer = None
         self.retrieval_type = retrieval_type
+        self.document_store = document_store
+        self.process = process
         self.retriever = None
         self.append_path = append_path
         self.intent_detector = IntentDetector()
@@ -97,12 +99,12 @@ class Agent_QA():
                                    search_type=search_type, search_kwargs=search_kwargs)
 
 
-    # 
+    # reload db from a specific path
     def reload_localdb(self, local_persist_dir):
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), "Please check the local knowledge base was built!"
         self.db = self.doc_parser.reload(local_persist_dir)
-        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=1,
-                                   search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8, "k": 1})
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
+                                   search_type=self.search_type, search_kwargs=self.search_kwargs)
     
     # create a new knowledge base
     def create(self, input_path, persist_dir):
@@ -115,8 +117,8 @@ class Agent_QA():
                                    top_k=self.top_k, search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
-    def append_localdb(self, append_path):
-        self.db = self.doc_parser.KB_append(append_path)
+    def append_localdb(self, append_path, persist_path):
+        self.db = self.doc_parser.KB_append(append_path, persist_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
                            search_type=self.search_type, search_kwargs=self.search_kwargs)
 

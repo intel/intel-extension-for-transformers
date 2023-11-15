@@ -22,15 +22,16 @@ import csv
 import datetime
 from datetime import timedelta, timezone
 from typing import Optional, Dict
-from fastapi import APIRouter, UploadFile, File, Request, Response
+from fastapi import APIRouter, UploadFile, File, Request, Response, Form
 from ...config import GenerationConfig
 from ...cli.log import logger
-from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
+from ...server.restful.request import RetrievalRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...utils.record_request import record_request
-from ...plugins import plugins
+from ...plugins import plugins, is_plugin_enabled
+from .photoai_services import check_user_ip
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -46,7 +47,7 @@ def get_current_beijing_time():
         name='Asia/Shanghai'
     )
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
-    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
 
 
@@ -79,10 +80,30 @@ async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
     link_list = params['link_list']
+    knowledge_base_id = params['knowledge_base_id']
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - create] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - create] "+str(res))
+
+    try:
+        record_request(request_url="/v1/askdoc/upload_link",
+                    request_body=request,
+                    user_id=user_id)
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+
+
+    persist_path = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
+    if not os.path.exists(persist_path):
+        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+            Please check kb_id and save path again."
+
     try:
         print("[askdoc - upload_link] starting to append local db...")
         instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=link_list)
+        instance.append_localdb(append_path=link_list, persist_path=persist_path)
         print(f"[askdoc - upload_link] kb appended successfully")
     except Exception as e:
         logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
@@ -96,9 +117,6 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
     filename = file.filename
     print(f"[askdoc - create_kb] received file: {filename}")
 
-    # create kb_id
-    # import uuid
-    # kb_id = f"doc_{str(uuid.uuid1())[:8]}"
     upload_path = f"/home/tme/letong/askdoc_upload/enterprise_docs"
     cur_time = get_current_beijing_time()
     cur_time = cur_time.replace(' ', '-')
@@ -125,25 +143,172 @@ async def retrieval_create_kb(file: UploadFile = File(...)):
     return {"knowledge_base_id": "local_kb_id"}
 
 
-@router.post("/v1/askdoc/chat")
-async def retrieval_chat(request: AskDocRequest):
-    chatbot = router.get_chatbot()
+@router.post("/v1/askdoc/create")
+async def retrieval_create(request: Request,
+                           file: UploadFile = File(...)):
+    global plugins
+    filename = file.filename
+    if '/' in filename:
+        filename = filename.split('/')[-1]
+    print(f"[askdoc - create] received file: {filename}")
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - create] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - create] "+str(res))
+
+    try:
+        record_request(request_url="/v1/askdoc/create",
+                    request_body=request,
+                    user_id=user_id)
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+
+    import uuid
+    kb_id = f"kb_{str(uuid.uuid1())[:8]}"
+    path_prefix = "/home/tme/photoai_retrieval_docs/"
+
+    # create new upload path dir
+    if os.path.exists(path_prefix):
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+    # user already created knowledge base
+    else:
+        os.system(f"mkdir {path_prefix}")
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
     
-    logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
-    logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    config = GenerationConfig(max_new_tokens=request.max_new_tokens)
-    # Set attributes of the config object from the request
-    for attr, value in request.__dict__.items():
-        if attr == "stream":
-            continue
-        setattr(config, attr, value)
+    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
+    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
+    os.system(f"mkdir {user_upload_dir}")
+    os.system(f"mkdir {user_persist_dir}")
+    cur_time = get_current_beijing_time()
+    print(f"[askdoc - create] upload path: {user_upload_dir}")
+    
+    # save file to local path
+    save_file_name = user_upload_dir + '/' + cur_time + '-' + filename
+    with open(save_file_name, 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    print(f"[askdoc - create] file saved to local path: {save_file_name}")
+
+    try:
+        # get retrieval instance and reload db with new knowledge base
+        print("[askdoc - create] starting to create local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.create(input_path=user_upload_dir, persist_dir=user_persist_dir)
+        print(f"[askdoc - create] kb created successfully")
+    except Exception as e:
+        logger.info(f"[askdoc - create] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    return {"knowledge_base_id": kb_id}
+
+
+@router.post("/v1/askdoc/append")
+async def retrieval_append(request: Request,
+                           file: UploadFile = File(...),
+                           knowledge_base_id: str = Form(...)):
+    global plugins
+    filename = file.filename
+    if '/' in filename:
+        filename = filename.split('/')[-1]
+    print(f"[askdoc - append] received file: {filename}, kb_id: {knowledge_base_id}")
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - append] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - append] "+str(res))
+
+    try:
+        record_request(request_url="/v1/askdoc/append",
+                    request_body=request,
+                    user_id=user_id)
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+
+    path_prefix = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id
+    upload_path = path_prefix + '/upload_dir'
+    persist_path = path_prefix + '/persist_dir'
+    if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
+        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+            Please check kb_id and save path again."
+    cur_time = get_current_beijing_time()
+    print(f"[askdoc - append] upload path: {upload_path}")
+
+    # save file to local path
+    save_file_name = upload_path + '/' + cur_time + '-' + filename
+    with open(save_file_name, 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    print(f"[askdoc - append] file saved to local path: {save_file_name}")
+
+    try:
+        # get retrieval instance and reload db with new knowledge base
+        print("[askdoc - append] starting to append to local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.append_localdb(append_path=save_file_name, persist_path=persist_path)
+        print(f"[askdoc - append] new file successfully appended to kb")
+    except Exception as e:
+        logger.info(f"[askdoc - append] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    return "Succeed"
+
+
+@router.post("/v1/askdoc/chat")
+async def retrieval_chat(request: Request):
+    try:
+        record_request(request_url="/v1/askdoc/chat",
+                    request_body=request,
+                    user_id='default')
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+    
+    chatbot = router.get_chatbot()
+    plugins['tts']['enable'] = False
+    res = is_plugin_enabled('tts')
+    print(f"tts plugin enable status: {res}")
+    plugins['retrieval']['enable'] = True
+    res = is_plugin_enabled('retrieval')
+    print(f"retrieval plugin enable status: {res}")
+
+    user_id = request.client.host
+    logger.info(f'[askdoc - chat] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - chat] "+str(res))
+
+    try:
+        record_request(request_url="/v1/askdoc/chat",
+                    request_body=request,
+                    user_id=user_id)
+    except Exception as e:
+        logger.error(f"[askdoc - feedback] Fail to record request into db. {e}")
+    
+    # parse parameters
+    params = await request.json()
+    query = params['query']
+    kb_id = params['knowledge_base_id']
+    stream = params['stream']
+    max_new_tokens = params['max_new_tokens']
+    logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
+                stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
+    config = GenerationConfig(max_new_tokens=max_new_tokens)
+    if kb_id == 'default':
+        persist_dir = "/home/tme/photoai_retrieval_docs/default/persist_dir"
+    else:
+        persist_dir = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+kb_id+'/persist_dir'
+    if not os.path.exists(persist_dir):
+        return f"Knowledge base id [{kb_id}] does not exist, please check again."
+
+    # reload retrieval instance with specific knowledge base
+    print("[askdoc - chat] starting to reload local db...")
+    instance = plugins['retrieval']["instance"]
+    instance.reload_localdb(local_persist_dir = persist_dir)
+
     # non-stream mode
     if not request.stream:
-        response = chatbot.predict(query=request.query, config=config)
-        formatted_response = response.replace('\n', '<br/>').replace('[/INST]  ', '')
+        response = chatbot.predict(query=query, config=config)
+        formatted_response = response.replace('\n', '<br/>')
         return formatted_response
     # stream mode
-    generator, link = chatbot.predict_stream(query=request.query, config=config)
+    generator, link = chatbot.predict_stream(query=query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
