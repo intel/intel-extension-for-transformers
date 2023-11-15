@@ -17,7 +17,7 @@
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
 import os, re
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
+from typing import List
 from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document

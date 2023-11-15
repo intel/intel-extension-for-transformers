@@ -37,7 +37,7 @@ from .voicechat_api import (
     create_speaker_embedding as talkingbot_embd
 )
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
-from ...plugins import plugins, is_plugin_enabled
+from ...plugins import plugins
 
 
 class PhotoAIAPIRouter(APIRouter):

@@ -33,6 +33,5 @@ create table feedback
     answer varchar(3000),
     feedback_result tinyint,
     feedback_time datetime,
-    comments varchar(2000),
     unique (feedback_id)
 );

@@ -34,9 +34,5 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="ai_photos"
-export MYSQL_PORT=3306
-export IMAGE_SERVER_IP="198.175.88.26"
-export IMAGE2IMAGE_IP="54.87.46.229"
-export GOOGLE_API_KEY="AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
 
 nohup numactl -l -C 0-51 python -m photoai 2>&1 &
