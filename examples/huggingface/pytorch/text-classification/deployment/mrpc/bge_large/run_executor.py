@@ -73,6 +73,7 @@ if __name__ == '__main__':
         executor = Neural_Engine(args.input_model, args.log_file, "dynamic_int8")
     else:
         executor = Neural_Engine(args.input_model, args.log_file, "native")
+        #executor = Neural_Engine('./xzz-ir', args.log_file, "native")
     if args.mode == "accuracy":
         # executor.accuracy(args.batch_size, args.seq_len, args.dataset_name, args.task_name,
         #                   args.data_dir, args.tokenizer_dir)
@@ -86,18 +87,25 @@ if __name__ == '__main__':
             "BAAI/bge-small-en-v1.5": "Represent this sentence for searching relevant passages: ",
         }
 
-        if args.ort_model_path is None:
-            model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
-                                normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
-                                query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
-                                pooling_method=args.pooling_method)
-        else:
-            model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
-                                normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
-                                query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
-                                pooling_method=args.pooling_method,
-                                ort_model_path=args.ort_model_path,
-                                file_name=args.file_name,)
+        # if args.ort_model_path is None:
+        #     model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
+        #                         normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
+        #                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
+        #                         pooling_method=args.pooling_method)
+        # else:
+        #     model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
+        #                         normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
+        #                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
+        #                         pooling_method=args.pooling_method,
+        #                         ort_model_path=args.ort_model_path,
+        #                         file_name=args.file_name,)
+        model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
+                        normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
+                        query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
+                        pooling_method=args.pooling_method,
+                        ort_model_path=args.ort_model_path,
+                        file_name=args.file_name,
+                        engine_model=executor)
 
         if args.task_names is None:
             task_names = [t.description["name"] for t in MTEB(task_types=args.task_type,

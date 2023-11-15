@@ -20,6 +20,9 @@ class EngineBGEModel(DRESModel):
     ) -> None:
 
         ort_model_path = kwargs.get("ort_model_path", None)
+        engine_model = kwargs.get("engine_model", None)
+
+        self.engine_model = engine_model.graph
         self.model = None
         self.ort_model = None
         if ort_model_path is None:
@@ -120,7 +123,17 @@ class EngineBGEModel(DRESModel):
                     return_tensors="np"
                 )
 
-                ort_last_hidden_state = torch.tensor(self.ort_model(**ort_inputs).last_hidden_state)
+                #ort_last_hidden_state = torch.tensor(self.ort_model(**ort_inputs).last_hidden_state)
+                input_ids = ort_inputs['input_ids']
+                token_type_ids = ort_inputs['token_type_ids']
+                attention_mask = ort_inputs['attention_mask']
+                engine_input = [input_ids, token_type_ids, attention_mask]
+                result = self.engine_model.inference(engine_input)
+                ort_last_hidden_state = torch.tensor(result['/encoder/layer.11/output/LayerNorm/Add_1:0']).reshape(input_ids.shape[0], input_ids.shape[1], 768)
+                
+                #print("input_ids, ort_last_hidden_state.shape = ", input_ids.shape, ort_last_hidden_state.shape)
+                #result_2 = self.engine_model.inference(engine_input_2)
+                #import pdb;pdb.set_trace()
                 ort_embeddings = self.pooling(ort_last_hidden_state, inputs['attention_mask'])
                 if self.normalize_embeddings:
                     ort_embeddings = torch.nn.functional.normalize(ort_embeddings, dim=-1)
