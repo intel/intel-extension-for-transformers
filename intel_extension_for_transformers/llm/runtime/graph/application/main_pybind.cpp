@@ -92,9 +92,7 @@ class Model {
     }};
     model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
     float* logits = model_get_logits(ctx);
-    for (int i = 0; i < n_vocab; i++) {
-      dst_ptr[i] = logits[i];
-    }
+    memcpy(dst_ptr, logits, n_vocab * sizeof(float));
     return dst;
   }          
 
