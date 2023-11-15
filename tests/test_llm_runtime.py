@@ -83,17 +83,16 @@ class TestLLMRUNTIME(unittest.TestCase):
         # pytorch fp32
         pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         pt_model.eval() 
-        pt_generate_ids = pt_model.generate(**inputs, max_new_tokens=100)
-        pt_outputs = tokenizer.batch_decode(pt_generate_ids)
-        print(pt_outputs)
-        logits = pt_model(**inputs).logits
-
-        import pdb; pdb.set_trace()
+        # pt_generate_ids = pt_model.generate(**inputs, max_new_tokens=100)
+        # pt_outputs = tokenizer.batch_decode(pt_generate_ids)
+        # print(pt_outputs)
+        logits = pt_model(**inputs).logits[:,-1]
 
         model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
         outputs = model.forward(inputs.input_ids)
         # gen_tokens = model.generate(inputs.input_ids, streamer=streamer, max_new_tokens=100)
         # outputs = tokenizer.batch_decode(gen_tokens)
+        import pdb; pdb.set_trace()
         print(outputs)
         # self.assertTrue("小明" in outputs[0])
 

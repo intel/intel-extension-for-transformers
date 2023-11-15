@@ -96,7 +96,26 @@ class Model {
     // for (int i = 0; i < 10; i++) {
     //   PyArray_SetItem(array, i, PyFloat_FromDouble(i));
     // }
-    return py::array_t<float>(200);
+    auto dst = py::array_t<float>(n_vocab);
+    float* dst_ptr = dst.mutable_data();
+
+    std::vector<model_input> inputs = {model_input{
+        /*.tokens              =*/input_ids[0].data(),
+        /*.n_tokens           =*/(uint32_t)input_ids[0].size(),
+        /*.n_prompt_tokens    =*/0,
+        /*.n_past             =*/(uint32_t)n_past,
+        /*.n_total            =*/(uint32_t)n_total,
+        /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
+        /*.padding_side       =*/0,
+        /*n_padding           =*/0,
+    }};
+    model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
+    float* logits = model_get_logits(ctx);
+    for (int i = 0; i < n_vocab; i++) {
+      dst_ptr[i] = logits[i];
+    }
+    return dst;
   }          
 
  private:
