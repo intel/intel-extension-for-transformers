@@ -69,7 +69,7 @@ def perplexity(model_name, dataset_name, **kwargs):
     n_pred_per_sample = kwargs.get("n_pred_per_sample", ctx_size * 2)
     n_sampels = kwargs.get("n_sampels", 2)
     data_text_concat = kwargs.get("data_text_concat", "wikitext-2-raw-v1" in dataset_name)  # concat samples with `\n\n`
-    default_model_kwargs = {"n_batch": 256, "ctx_size": 256, "n_keep": 4}
+    default_model_kwargs = {"n_batch": ctx_size, "ctx_size": ctx_size, "n_keep": 4}
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     data = datasets.load_from_disk(dataset_name)
