@@ -76,26 +76,6 @@ class Model {
   }
 
   py::array_t<float> forward(const std::vector<std::vector<model_token>>& input_ids) {         
-    // py::array_t<float> dst                                            
-    // 获取NumPy数组的指针
-    // PyArrayObject* array = PyArray_New(NPY_FLOAT32, 10, 1, NULL, NULL, 0);
-    // float *foo = new float[size];
-    // auto data = py::array_t<float>(
-    //         {100, 1000, 1000}, // shape
-    //         {1000*1000*8, 1000*8, 8}, // C-style contiguous strides for double
-    //         foo, // the data pointer
-    //         free_when_done); // numpy array references this parent
-    // // float* w_ptr = src_w.mutable_data();
-    // // float* scales_ptr = src_scales.mutable_data();
-    // // float* dst_ptr = dst.mutable_data();
-    // // // std::cout << ptr << std::endl;
-    // // for(int i = 0; i < 4; i++)
-    // //   dst_ptr[i] = w_ptr[i] * scales_ptr[i];
-
-    // // 填充数组
-    // for (int i = 0; i < 10; i++) {
-    //   PyArray_SetItem(array, i, PyFloat_FromDouble(i));
-    // }
     auto dst = py::array_t<float>(n_vocab);
     float* dst_ptr = dst.mutable_data();
 
