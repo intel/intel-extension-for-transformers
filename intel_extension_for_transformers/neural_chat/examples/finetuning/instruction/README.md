@@ -24,25 +24,13 @@ python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-
 ### Docker 
 Pick either one of below options to setup docker environment.
 #### Option 1 : Build Docker image from scratch
-Please refer to this section : [How to build docker images for NeuralChat FineTuning](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#4-build-docker-image) to build docker image from scratch.  
-Once you have the docker image ready, please follow [run docker image](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#5-create-docker-container) session to launch a docker instance from the image.  
+Please refer to this section : [How to build docker images for NeuralChat FineTuning](../../../docker/finetuning/README.md#21-build-docker-image) to build docker image from scratch.  
 
 #### Option 2: Pull existing Docker image
-Please follow the session [itrex docker setup](https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image) and use the docker pull command to pull itrex docker image.  
-Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.  
-```shell
-wget https://raw.githubusercontent.com/oneapi-src/oneAPI-samples/master/AI-and-Analytics/Getting-Started-Samples/IntelAIKitContainer_GettingStarted/run_oneapi_docker.sh
-chmod +x run_oneapi_docker.sh
-cp requirement.txt /tmp
-# change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session
-./run_oneapi_docker.sh intel/ai-tools:itrex-0.1.1
-# don't need ipex in this sample
-pip uninstall intel_extension_for_pytorch
-# update ITREX pip package in the docker instance
-pip install intel-extension-for-transformers --upgrade
-```
-After those instructions, you should be able to run below steps inside the docker instance.  
+Please follow the session [itrex docker setup](../../../docker/finetuning/README.md#22-docker-pull-from-docker-hub) and use the docker pull command to pull itrex docker image.  
 
+
+Once you have the docker image ready, please follow [run docker image](../../../docker/finetuning/README.md#3-create-docker-container) session to launch a docker instance from the image.   
 
 
 ## 2. Prepare the Model

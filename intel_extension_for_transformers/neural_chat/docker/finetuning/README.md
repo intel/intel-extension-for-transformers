@@ -1,83 +1,59 @@
 Intel Neural Chat Finetuning Dockerfile installer for Ubuntu22.04
 
 # Prerequisite​
-
-## 1. Prepare the Model
-
-### LLaMA
-To acquire the checkpoints and tokenizer, the user has two options: completing the [Google form](https://forms.gle/jk851eBVbX1m5TAv5) or attempting [the released model on Huggingface](https://huggingface.co/decapoda-research/llama-7b-hf). 
-
-It should be noticed that the early version of LLama model's name in Transformers has resulted in many loading issues, please refer to this [revision history](https://github.com/huggingface/transformers/pull/21955). Therefore, Transformers has reorganized the code and rename LLaMA model as `Llama` in the model file. But the release model on Huggingface did not make modifications in react to this change. To avoid unexpexted confliction issues, we advise the user to modify the local `config.json` and `tokenizer_config.json` files according to the following recommendations:
-1. The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`;
-2. The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` to `LlamaForCausalLM`.
-
-### FLAN-T5
-The user can obtain the [release model](https://huggingface.co/google/flan-t5-xl) from Huggingface.
-
-## 2. Prepare Dataset
+## 1. Prepare Dataset
 The instruction-following dataset is needed for the finetuning. We select two kinds of Datasets to conduct the finetuning process: general domain dataset and domain specific dataset.
 
 1. General domain dataset: We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
 
 2. Domain-specific dataset: Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
 
-## 3. Prepare Dockerfile
-Assuming you have downloaded the model and dataset to your workspace /path/to/workspace/
-Please clone a ITREX repo to this path.
+## 2. Prepare Docker Image
+### 2.1 Build Docker Image
+
+>**Note**: If your docker daemon is too big and cost long time to build docker image, you could create a `.dockerignore` file including useless files to reduce the daemon size.
+
+#### Please clone a ITREX repo to this path.
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
 ```
 
+#### On Xeon SPR Environment
 
-## 4. Build Docker Image
-| Note: If your docker daemon is too big and cost long time to build docker image, you could create a `.dockerignore` file including useless files to reduce the daemon size.
+If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
 
-### On Xeon SPR Environment
-
-If you need to set proxy settings:
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target cpu
 ```
 
-If you don't need to set proxy settings:
+#### On Habana Gaudi Environment
+
+If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
+
 
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target hpu
 ```
 
-### On Habana Gaudi Environment
+#### On Nvidia GPU Environment
 
-If you need to set proxy settings:
+If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
 
-```bash
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile  --target hpu
-```
-
-If you don't need to set proxy settings:
-
-```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target hpu
-```
-
-### On Nvidia GPU Environment
-
-If you need to set proxy settings:
-
-```bash
-docker build --network=host --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target nvgpu
-```
-
-If you don't need to set proxy settings:
 
 ```bash
 docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune . --target nvgpu
 ```
 
-## 5. Create Docker Container
-Before creating your docker container, make sure the model has been downloaded to local. 
+### 2.2 Docker Pull from Docker Hub
+```bash
+docker pull intel/ai-tools:itrex-chatbot
+```
 
-Then mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
+
+## 3. Create Docker Container
+
+If you have donwloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
 docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
@@ -93,11 +69,11 @@ docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" 
 
 # Finetune
 
-We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently, currently, FLAN-T5 and LLaMA are supported for finetuning.
+We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently.
 
 ## 1. Single Node Fine-tuning  in Xeon SPR
 
-For FLAN-T5, use the below command line for finetuning on the Alpaca dataset. Please make sure the file path is consistent with the path mounted to docker container.
+For FLAN-T5, use the below command line for finetuning on the Alpaca dataset. If you mounted model and dataset into docker, please make sure the file path is correct.
 
 ```bash
 python finetune_seq2seq.py \
@@ -119,11 +95,11 @@ python finetune_seq2seq.py \
         --peft lora
 ```
 
-For LLaMA, use the below command line for finetuning on the Alpaca dataset.
+For LLaMA2, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "/llama_7b" \
+        --model_name_or_path "Llama-2-7b-chat-hf" \
         --train_file "/dataset/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
@@ -137,7 +113,7 @@ python finetune_clm.py \
         --overwrite_output_dir \
         --log_level info \
         --save_strategy epoch \
-        --output_dir ./llama_peft_finetuned_model \
+        --output_dir ./llama2_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false
 ```
@@ -171,8 +147,6 @@ Where the `--dataset_concatenation` argument is a way to vastly accelerate the f
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supported.
-
-Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
 
 ## 2. Multi-node Fine-tuning in Xeon SPR
 
@@ -212,7 +186,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 instruction_tun
     --no_cuda \
     --ddp_backend ccl \
 ```
-If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama alpaca finetune for example. follow the [hugginface guide](https://huggingface.co/docs/transformers/perf_train_cpu_many) to install Intel® oneCCL Bindings for PyTorch, IPEX
+If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama2 alpaca finetune for example. follow the [hugginface guide](https://huggingface.co/docs/transformers/perf_train_cpu_many) to install Intel® oneCCL Bindings for PyTorch, IPEX
 
 oneccl_bindings_for_pytorch is installed along with the MPI tool set. Need to source the environment before using it.
 
@@ -242,12 +216,12 @@ Now, run the following command in node0 and **4DDP** will be enabled in node0 an
 ``` bash
 export CCL_WORKER_COUNT=1
 export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
-## for DDP ptun for LLama
+## for DDP ptun for LLama2
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
-    --model_name_or_path decapoda-research/llama-7b-hf \
+    --model_name_or_path Llama-2-7b-chat-hf \
     --train_file ./alpaca_data.json \
     --bf16 True \
-    --output_dir ./llama_peft_finetuned_model \
+    --output_dir ./llama2_peft_finetuned_model \
     --num_train_epochs 3 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
@@ -298,11 +272,11 @@ see https://github.com/huggingface/peft
 
 Follow install guidance in [optimum-habana](https://github.com/huggingface/optimum-habana)
 
-For LLaMA, use the below command line for finetuning on the Alpaca dataset.
+For LLaMA2, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "decapoda-research/llama-7b-hf" \
+        --model_name_or_path "Llama-2-7b-chat-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
@@ -317,7 +291,7 @@ python finetune_clm.py \
         --overwrite_output_dir \
         --log_level info \
         --save_strategy epoch \
-        --output_dir ./llama_peft_finetuned_model \
+        --output_dir ./llama2_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
         --habana \
@@ -358,4 +332,3 @@ For finetuning on SPR, add `--bf16` argument will speedup the finetuning process
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
-Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
