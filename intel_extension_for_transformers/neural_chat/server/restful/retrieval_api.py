@@ -20,6 +20,7 @@ import os
 import re
 import csv
 import datetime
+from pathlib import Path
 from datetime import timedelta, timezone
 from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File, Request, Response, Form
@@ -114,19 +115,14 @@ async def retrieval_create(request: Request,
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
     path_prefix = "./photoai_retrieval_docs/"
-
-    # create new upload path dir
-    if os.path.exists(path_prefix):
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
-    # user already created knowledge base
-    else:
-        os.system(f"mkdir {path_prefix}")
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+    cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
+    os.makedirs(path_prefix, exist_ok=True)
+    cur_path.mkdir(parents=True, exist_ok=True)
     
-    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
-    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
-    os.system(f"mkdir {user_upload_dir}")
-    os.system(f"mkdir {user_persist_dir}")
+    user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
+    user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
+    user_upload_dir.mkdir(parents=True, exist_ok=True)
+    user_persist_dir.mkdir(parents=True, exist_ok=True)
     cur_time = get_current_beijing_time()
     print(f"[askdoc - create] upload path: {user_upload_dir}")
     
