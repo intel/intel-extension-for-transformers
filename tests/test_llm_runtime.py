@@ -67,3 +67,6 @@ class TestLLMRUNTIME(unittest.TestCase):
                                   pad_token=pad_token)
         for i in range(len(itrex_generate_ids)):
             self.assertListEqual(pt_generate_ids[i], itrex_generate_ids[i])
+
+if __name__ == "__main__":
+    unittest.main()

@@ -16,23 +16,26 @@
 #define _GNU_SOURCE
 #endif
 
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <stdlib.h>
+
+#include <algorithm>
 #include <cinttypes>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
-#include <string>
-#include <vector>
-#include <algorithm>
 #include <random>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <utility>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <vector>
+
 #include "common.h"
-#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
+#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -41,9 +44,11 @@
 #elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#include <windows.h>
 #include <signal.h>
+#include <windows.h>
 #endif
+
+namespace py = pybind11;
 
 std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_name) {
   return ql_registry::create_ql(model_name);
@@ -63,13 +68,14 @@ class Model {
   std::vector<std::vector<model_token>> generate(const std::vector<std::vector<model_token>>& input_ids);
   std::vector<std::vector<model_token>> generate_tokens(const std::vector<std::vector<model_token>>& input_ids);
   const std::vector<float>& evaluate_(const std::vector<std::vector<model_token>>& input_ids);
-  std::vector<std::vector<float>> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
+  py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
     if (input_ids.size() != 1) {
       fprintf(stderr, "\nERROR: only support batch == 1 input!\n");
-      return {{}};
+      return py::array_t<float>();
     }
     const auto& logits = evaluate_(input_ids);
-    return {logits};
+    return py::array_t<float, py::array::c_style>(logits.size(), logits.data())
+        .reshape({py::ssize_t(-1), static_cast<py::ssize_t>(ctx->model.hparams.n_vocab)});
   }
   bool is_token_end() { return token_eos; }
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
@@ -170,7 +176,7 @@ std::vector<std::vector<model_token>> Model::beam_generate(const std::vector<std
   MODEL_ASSERT(input_ids.size() == ctx->batch_size);
   if (ctx->batch_size > 1 && ctx->vocab.pad_token_id == -1) {
     fprintf(stderr, "\nERROR: please set pad_token for beam search multi-batch generation!\n");
-    return {{}};
+    return {};
   }
   std::vector<model_input> inputs;
   for (int bs = 0; bs < input_ids.size(); ++bs) {
@@ -263,11 +269,11 @@ std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vec
   if (ctx->beam_search) return beam_generate(input_ids);
   if (input_ids.size() > 1) {
     fprintf(stderr, "\nERROR: Only beam search supports multi-batch generation!\n");
-    return {{}};
+    return {};
   }
 
   const auto& logits = evaluate_(input_ids);
-  if (logits.empty()) return {{}};
+  if (logits.empty()) return {};
 
   model_token next_token_id = post_process(logits.data());
   curr_input_ids = {next_token_id};
@@ -473,8 +479,6 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   return 0;
 }
 
-namespace py = pybind11;
-
 #if MODEL_NAME_ID == 1
 
 PYBIND11_MODULE(gptj_cpp, m)
@@ -544,7 +548,7 @@ PYBIND11_MODULE(mistral_cpp, m)
            py::arg("batch_size") = 1, py::arg("pad_token") = -1, py::arg("memory_dtype") = "auto")
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("evaluate", &Model::evaluate, "Evaluate token with input ids and output logits",
-           py::arg("input_ids") = std::vector<model_token>{})
+           py::arg("input_ids") = std::vector<std::vector<model_token>>{})
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,

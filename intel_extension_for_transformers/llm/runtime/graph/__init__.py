@@ -31,54 +31,68 @@ class Model:
         self.bin_file = None
         self.generate_round = 0
 
-    def __import_package(self, model_name):
+    def __import_package(self, model_type):
         if self.module:
             return
-        if model_name == "gptj":
+        if model_type == "gptj":
             import intel_extension_for_transformers.llm.runtime.graph.gptj_cpp as cpp_model
-        elif model_name == "falcon":
+        elif model_type == "falcon":
             import intel_extension_for_transformers.llm.runtime.graph.falcon_cpp as cpp_model
-        elif model_name == "gptneox":
+        elif model_type == "gptneox":
             import intel_extension_for_transformers.llm.runtime.graph.gptneox_cpp as cpp_model
-        elif model_name == "dolly":
+        elif model_type == "dolly":
             import intel_extension_for_transformers.llm.runtime.graph.dolly_cpp as cpp_model
-        elif model_name == "llama" or model_name == "llama2":
+        elif model_type == "llama" or model_type == "llama2":
             import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
-        elif model_name == "mpt":
+        elif model_type == "mpt":
             import intel_extension_for_transformers.llm.runtime.graph.mpt_cpp as cpp_model
-        elif model_name == "gpt_bigcode" or model_name == "starcoder":
+        elif model_type == "gpt_bigcode" or model_type == "starcoder":
             import intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp as cpp_model
-        elif model_name == "opt":
+        elif model_type == "opt":
             import intel_extension_for_transformers.llm.runtime.graph.opt_cpp as cpp_model
-        elif model_name == "bloom":
+        elif model_type == "bloom":
             import intel_extension_for_transformers.llm.runtime.graph.bloom_cpp as cpp_model
-        elif model_name == "chatglm":
+        elif model_type == "chatglm":
             import intel_extension_for_transformers.llm.runtime.graph.chatglm_cpp as cpp_model
-        elif model_name == "chatglm2":
+        elif model_type == "chatglm2":
             import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
-        elif model_name == "baichuan":
+        elif model_type == "baichuan":
             import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
-        elif model_name == "polyglot":
+        elif model_type == "polyglot":
             import intel_extension_for_transformers.llm.runtime.graph.polyglot_cpp as cpp_model
-        elif model_name == "mistral":
+        elif model_type == "mistral":
             import intel_extension_for_transformers.llm.runtime.graph.mistral_cpp as cpp_model
         else:
-            raise TypeError("Unspported model type {}!".format(model_name))
+            raise TypeError("Unspported model type {}!".format(model_type))
         self.module = cpp_model
+
+    @staticmethod
+    def get_model_type(model_config):
+        model_type = model_maps.get(model_config.model_type, model_config.model_type)
+        if model_type == "chatglm" and "chatglm2" in model_config._name_or_path:
+            model_type = "chatglm2"
+        return model_type
 
     def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model_type = model_maps.get(self.config.model_type, self.config.model_type)
-        if model_type == "chatglm" and "chatglm2" in self.config._name_or_path:
-            model_type = "chatglm2"
+        model_type = Model.get_model_type(self.config)
         self.__import_package(model_type)
 
         # check cache and quantization
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
         fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
-        quant_bin = "{}/ne_{}_q.bin".format(output_path, model_type)
+        quant_desc = quant_kwargs['weight_dtype']
+        if quant_kwargs['use_ggml']:
+            quant_desc += "_ggml"
+        else:
+            quant_desc += "_jblas_c" + quant_kwargs['compute_dtype']
+            if quant_kwargs['group_size'] == -1:
+                quant_desc += "_pc"
+            else:
+                quant_desc += "_g{}".format(quant_kwargs['group_size'])
+        quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, model_type, quant_desc)
 
         if not_quant:
             self.bin_file = fp32_bin
@@ -87,19 +101,22 @@ class Model:
         if use_cache and os.path.exists(self.bin_file):
             return
 
-        convert_model(model_name, fp32_bin, "f32")
-        assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
+        if not os.path.exists(fp32_bin):
+            convert_model(model_name, fp32_bin, "f32")
+            assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
         if not_quant:
             print("FP32 model will be used.")
             return
         self.module.Model.quant_model(model_path=fp32_bin, out_path=quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
-        # clean
-        os.remove(fp32_bin)
 
-    def init_from_bin(self, model_name, model_path, **generate_kwargs):
-        self.__import_package(model_name)
+        # clean
+        if not use_cache:
+            os.remove(fp32_bin)
+
+    def init_from_bin(self, model_type, model_path, **generate_kwargs):
+        self.__import_package(model_type)
         self.model = self.module.Model()
         if "threads" not in generate_kwargs:
             threads = os.getenv("OMP_NUM_THREADS")
@@ -109,8 +126,8 @@ class Model:
                 generate_kwargs["threads"] = int(threads)
         self.model.init_model(model_path, **generate_kwargs)
 
-    def quant_model(self, model_name, model_path, out_path, **quant_kwargs):
-        self.__import_package(model_name)
+    def quant_model(self, model_type, model_path, out_path, **quant_kwargs):
+        self.__import_package(model_type)
         self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):

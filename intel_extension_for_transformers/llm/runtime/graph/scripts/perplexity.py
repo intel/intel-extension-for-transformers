@@ -69,7 +69,7 @@ def perplexity(model_name, dataset_name, **kwargs):
     n_pred_per_sample = kwargs.get("n_pred_per_sample", ctx_size * 2)
     n_sampels = kwargs.get("n_sampels", 2)
     data_text_concat = kwargs.get("data_text_concat", "wikitext-2-raw-v1" in dataset_name)  # concat samples with `\n\n`
-    default_model_kwargs = {"batch_size": 256, "ctx_size": 256, "n_keep": 4}
+    default_model_kwargs = {"n_batch": 256, "ctx_size": 256, "n_keep": 4}
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     data = datasets.load_from_disk(dataset_name)
@@ -94,18 +94,23 @@ def perplexity(model_name, dataset_name, **kwargs):
                 test_ids.append(ids)
                 pbar.update(1)
 
-    del tokenizer
+    quantized_weight_path = kwargs.pop('quantized_weight_path', None)
+    if quantized_weight_path:
+        from intel_extension_for_transformers.llm.runtime.graph import Model
+        model = Model()
+        assert pathlib.Path(quantized_weight_path).is_file(), "Quantized weight not exist!"
+        model.bin_file = quantized_weight_path
+        model.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+        model.model_type = Model.get_model_type(model.config)
+        model.tokenizer = tokenizer
+    else:
+        woq_kwargs = {k: kwargs[k] for k in kwargs if k in
+                      ['use_cache', 'compute_dtype', 'weight_dtype', 'scale_dtype', 'group_size', 'use_ggml']}
+        woq_config = WeightOnlyQuantConfig(**woq_kwargs)
+        model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
-    vocab_size: int = AutoConfig.from_pretrained(model_name, trust_remote_code=True).vocab_size
-
-    woq_kwargs = {k: kwargs[k] for k in kwargs if k in
-                  ['use_cache', 'compute_dtype', 'weight_dtype', 'scale_dtype', 'group_size', 'use_ggml']}
-    model_kwargs = {k: kwargs[k] for k in kwargs if k in
-                    ['n_keep', 'shift_roped_k', 'memory_dtype']}
+    model_kwargs = {k: kwargs[k] for k in kwargs if k in ['n_keep', 'shift_roped_k', 'memory_dtype']}
     model_kwargs = {**default_model_kwargs, **model_kwargs}
-    woq_config = WeightOnlyQuantConfig(**woq_kwargs)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, quantization_config=woq_config, trust_remote_code=True, **model_kwargs)
 
     ppl_hist = [{} for _ in range(n_sampels)]  # ppl_hist[i_sample][end_pos] = ppl
     sum_nll = [0. for _ in range(n_sampels)]   # sum of negative log likelyhood
@@ -122,9 +127,8 @@ def perplexity(model_name, dataset_name, **kwargs):
         end_pos = i_pred + prompt_size
         cur_input = test_ids[i_sample][:, begin_pos:end_pos]
         cur_target: torch.Tensor = test_ids[i_sample][:, end_pos]
-        out = model(cur_input, threads=n_threads, reinit=is_first)
-        out = torch.tensor(out).reshape(-1, vocab_size)
-        logsoftmax = out.log_softmax(-1)
+        out = model(cur_input, threads=n_threads, reinit=is_first, **model_kwargs)
+        logsoftmax = torch.from_numpy(out).log_softmax(-1)
         nll = logsoftmax.take_along_dim(cur_target.view(-1, 1), 1)
         assert len(nll) == 1
         nll_v = -nll.flatten().tolist()[0]
@@ -178,6 +182,10 @@ def draw_ppl(img_path: str, ppl_data: List[Dict[int, float]], ctx_size: int, mod
 
 def add_quant_args(parser: argparse.ArgumentParser):
     group = parser.add_argument_group('quantize config')
+    group.add_argument('--quantized_weight_path',
+                       type=str,
+                       help="path to quantized weight; other quant args will be ignored if specified",
+                       default="")
     group.add_argument('--use_cache',
                        action="store_true",
                        help="Use local quantized model if file exists")
