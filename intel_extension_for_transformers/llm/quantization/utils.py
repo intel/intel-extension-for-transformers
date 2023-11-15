@@ -320,7 +320,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                  conf,
                                  calib_func=calib_func,
                                  calib_dataloader=calib_dataloader)
-    q_model = replace_linear(model, None, None, config, device=device)
+    q_model = replace_linear(inc_model.model, None, None, config, device=device)
     if device == "xpu" or (is_ipex_available and device == torch.device("xpu")):
         q_model = q_model.to("xpu")
     return q_model

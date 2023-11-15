@@ -164,7 +164,8 @@ class _BaseQBitsAutoModelClass:
         quantization_config = kwargs.pop("quantization_config", None)
 
         use_llm_runtime = kwargs.pop("use_llm_runtime", True)
-        device_map = kwargs.get("device_map", 'cpu')
+        device_map = kwargs.get("device_map", "cpu")
+        kwargs["device_map"] = "cpu"
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
