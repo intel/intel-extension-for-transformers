@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import time
 import json
@@ -16,7 +17,6 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
     BitsAndBytesConfig
-
 )
 
 parser = argparse.ArgumentParser()
@@ -168,9 +168,14 @@ if quantization_config is not None:
                                                       trust_remote_code=args.trust_remote_code,
                                                       use_llm_runtime=False
                                                       )
+    # save model
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
+    elif args.mixed_precision:
+        user_model.config.save_pretrained(args.output_dir)
+        torch.save(user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
+
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
