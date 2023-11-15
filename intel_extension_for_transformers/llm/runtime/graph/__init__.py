@@ -74,7 +74,9 @@ class Model:
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
-        quant_bin = "{}/ne_{}_q.bin".format(output_path, model_type)
+        quant_bin = "{}/ne_{}_q_{}_g{}_c{}_{}.bin".format(output_path, model_type,
+                    quant_kwargs['weight_dtype'], quant_kwargs['group_size'], quant_kwargs['compute_dtype'],
+                    "ggml" if quant_kwargs['use_ggml'] else "jblas")
 
         if not_quant:
             self.bin_file = fp32_bin
@@ -83,8 +85,9 @@ class Model:
         if use_cache and os.path.exists(self.bin_file):
             return
 
-        convert_model(model_name, fp32_bin, "f32")
-        assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
+        if not use_cache or not os.path.exists(fp32_bin):
+            convert_model(model_name, fp32_bin, "f32")
+            assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
         if not_quant:
             print("FP32 model will be used.")
@@ -93,7 +96,8 @@ class Model:
         assert os.path.exists(quant_bin), "Fail to quantize model"
         
         # clean
-        os.remove(fp32_bin)
+        if not use_cache:
+            os.remove(fp32_bin)
 
     def init_from_bin(self, model_name, model_path, **generate_kwargs):
         self.__import_package(model_name)

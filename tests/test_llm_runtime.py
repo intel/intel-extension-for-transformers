@@ -1,12 +1,7 @@
 import unittest
-
+import numpy as np
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig, AutoModelForCausalLM
-from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
-from intel_extension_for_transformers.llm.runtime.graph import Model
-
-import numpy as np
-import sys
 
 def cmpData(numa, numb):
     if (numa.shape != numb.shape):
@@ -77,10 +72,10 @@ class TestLLMRUNTIME(unittest.TestCase):
 
 
     def test_llm_runtime(self):
-
-        model_name = "/mnt/disk1/data2/zhenweil/models/chatglm2-6b"  # or local path to model
-        woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True)
-        prompt = "hi, tell me about Intel"
+        # /mnt/disk1/data2/zhenweil/models/opt/opt-125m
+        model_name = "/mnt/disk1/data2/zhenweil/models/llama/Llama-2-7b-chat-hf"  # or local path to model
+        woq_config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True, use_ggml=False)
+        prompt = "What is the meaning of life?"
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         inputs = tokenizer(prompt, return_tensors="pt")
@@ -88,7 +83,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         # pytorch fp32
         pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         pt_model.eval() 
-        logits = pt_model(**inputs).logits[:,-1]
+        logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
 
         model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
         outputs = model.forward(inputs.input_ids)
