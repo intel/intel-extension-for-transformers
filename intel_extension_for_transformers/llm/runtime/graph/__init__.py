@@ -143,6 +143,7 @@ class Model:
         
         if interactive:
             self.model.reset_token_end()
+        out_count = 0
         while True:
             response = self.model.generate(input_ids = input_ids.tolist())
             if len(response) == 0:
@@ -155,8 +156,9 @@ class Model:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
             elif ret[0][-1] == self.tokenizer.eos_token_id or \
-                (max_new_tokens != -1 and self.generate_round > max_new_tokens):
+                (max_new_tokens != -1 and out_count > max_new_tokens):
                 break
+            out_count += 1
         if streamer:
             streamer.end()
             
