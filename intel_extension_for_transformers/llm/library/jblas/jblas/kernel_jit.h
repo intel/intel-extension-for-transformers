@@ -245,7 +245,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
 
   template <typename _SRC_T, typename _DST_T, typename... Eltops>
   static JBLAS_CODE forward(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstep, int dststep,
-                            void* elt_const_v = nullptr, Eltops... ops) {
+                            void* elt_const_v = nullptr, const Eltops&... ops) {
     if (col * sizeof(_SRC_T) % 4 != 0) {
       return JblasNotSupport;
     }
@@ -475,7 +475,7 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
 
   template <typename _SRC_T, typename _DST_T, typename... Eltops>
   static JBLAS_CODE forward(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstep, int dststep,
-                            void* elt_const_v = nullptr, Eltops... ops) {
+                            void* elt_const_v = nullptr, const Eltops&... ops) {
     static std::vector<kernel::jit_injector::eltwise_injector> p = {static_cast<JBLAS_ELTWISEOP>(ops)...};
     if constexpr (sizeof...(ops) != 0)
       static_assert(std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value);
