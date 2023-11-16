@@ -49,11 +49,13 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     if is_meta:
         raw_wei = torch.empty(raw_wei.shape, dtype=raw_wei.dtype).to('meta')
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float).to('xpu')
+    bias = torch.rand(n, dtype=torch.float).to('xpu')*10
     if compute_type == "fp16":
         tar_dst = tar_dst.to(torch.float16)
         tar_activation = ref_activation.to(torch.float16)
         raw_wei = raw_wei.to(torch.float16)
         revert_wei = revert_wei.to(torch.float16)
+        bias = bias.to(torch.float16)
     if dump_tensor_info:
         print(raw_wei)
     compress_wei = gbits.quantize(
@@ -61,7 +63,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     compress_wei = compress_wei.to('xpu')
     gbits.dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
-    bias = torch.rand(n, dtype=torch.float).to('xpu')*10
+    
     if dump_tensor_info:
         print(revert_wei)
     if transpose:

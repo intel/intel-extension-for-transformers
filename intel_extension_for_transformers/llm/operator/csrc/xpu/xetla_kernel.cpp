@@ -153,7 +153,7 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
 template <typename T, int dequant_s, int sg_tile_k>
 void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
                   uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                  float *D) {
+                  T *D) {
   using data_type_a = T;
   using data_type_c = T;
   linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
@@ -191,7 +191,7 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
                                            mem_desc_a_t, mem_desc_b_t>;
   using bias_op_t =
-      gpu::xetla::subgroup::bias_add_op_t<float, gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::subgroup::bias_add_op_t<T, gpu::xetla::gpu_arch::Arc>;
   using tile_op_t =
       gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
   using bias_epilogue_policy_t = gpu::xetla::group::epilogue_policy_tile_op<tile_op_t,
@@ -214,9 +214,9 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   auto *Cnt_d = static_cast<uint32_t *>(aligned_alloc_device(
       DEVICE_MEM_ALIGNMENT, p.size_cnt * sizeof(uint32_t), device, context));
 
-  bias_op_t::shape_t bias_add_shape(p.matrix_n, 1, p.matrix_n);
+  typename bias_op_t::shape_t bias_add_shape(p.matrix_n, 1, p.matrix_n);
   using epilogue_args_t = epilogue_t::arguments_t;  
-  epilogue_args_t ecpilogue_args({{static_cast<data_type_acc *>(D), bias_add_shape}});
+  epilogue_args_t ecpilogue_args({{static_cast<data_type_a *>(D), bias_add_shape}});
 
   // set up gemm arguments
   typename gemm_op_t::arguments_t gemm_arg(
@@ -278,7 +278,7 @@ void xetla_linear_base(sycl::queue queue, T *A, CompressWei4Bit *B,
 template <typename T>
 void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
                             T *C, uint32_t matrix_m, uint32_t matrix_n,
-                            uint32_t matrix_k, int dequant_s, float *D) {
+                            uint32_t matrix_k, int dequant_s, T *D) {
   switch (dequant_s) {
     case 16:
       return xetla_linear_bias<T, 16, 16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
@@ -305,7 +305,7 @@ void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
 
 void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                            int dequant_s, float *bias) {
+                            int dequant_s, fp16 *bias) {
   return xetla_linear_bias_base<fp16>(queue, A, B, C, matrix_m, matrix_n, matrix_k,
                                 dequant_s, bias);
 }

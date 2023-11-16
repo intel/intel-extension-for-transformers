@@ -24,7 +24,7 @@
 
 void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                            int dequant_s, float *bias);
+                            int dequant_s, fp16 *bias);
 
 void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
                             float *C, uint32_t matrix_m, uint32_t matrix_n,
@@ -73,7 +73,7 @@ static void gbits_linear(const torch::Tensor &activation,
     auto *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
     auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
     if (with_bias) {
-      auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
+      auto *D = reinterpret_cast<fp16 *>(bias.data_ptr<at::Half>());
       xetla_linear_fp16_bias(queue, A, &obj, C, matrix_m, matrix_n,
                              matrix_k, obj._blksize, D);
     } else {
