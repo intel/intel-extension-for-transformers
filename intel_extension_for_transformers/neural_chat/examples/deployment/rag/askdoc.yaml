@@ -33,5 +33,6 @@ retrieval:
         persist_dir: "./local_db"
         response_template: "We cannot find suitable content to answer your query, please contact us to find help. Mail: itrex.maintainers@intel.com."
         append: True
+        search_kwargs: {"score_threshold": 0.7, "k": 1}
 
 tasks_list: ['textchat', 'retrieval']
