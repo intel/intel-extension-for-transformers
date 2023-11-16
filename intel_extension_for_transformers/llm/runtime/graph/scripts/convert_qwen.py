@@ -124,7 +124,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
             fout.write(text)
             fout.write(struct.pack("f",0.0 - i))
         else :
-            text = tokenizer.decode([0]).encode('utf-8')
+            text = tokenizer.decode([tokenizer.vocab_size - 1]).encode('utf-8')
             fout.write(struct.pack("i", len(text)))
             fout.write(text)
             fout.write(struct.pack("f", -10000))
