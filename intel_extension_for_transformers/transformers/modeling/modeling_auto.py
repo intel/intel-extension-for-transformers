@@ -31,7 +31,6 @@
 # limitations under the License.
 
 
-from turtle import position
 import warnings
 
 import torch
@@ -49,6 +48,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     get_example_inputs,
     generate_dummy_past_key_values_for_opt_llm,
     get_example_inputs_for_opt_llm,
+    get_example_inputs_for_chatglm
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -192,11 +192,6 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
-                # disable
-                try:
-                    ipex._C.disable_jit_linear_repack()
-                except Exception:
-                    pass
             except ImportError:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
@@ -294,6 +289,23 @@ class _BaseQBitsAutoModelClass:
                             past_key_values=past_key_values,
                             attention_mask=attention_mask,
                         )
+
+                def calib_func_for_chatglm(model):
+                    for i, (input_ids) in enumerate(calib_dataloader):
+                        input_bs, input_len = input_ids.shape
+                        past_key_values = generate_dummy_past_key_values(input_bs, model)
+                        attention_mask = torch.ones(input_bs, input_len + 1)
+                        attention_mask[:, 0] = 0
+                        position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
+                        if i >= calib_iters:
+                            break
+                        calib_inputs = {
+                                        "input_ids":input_ids,
+                                        "attention_mask":attention_mask,
+                                        "position_ids": position_ids,
+                                        "past_key_values": tuple(past_key_values)
+                                        }
+                        model(**calib_inputs)
                 
                 def calib_func_for_opt_llm(model):
                     for i, (input_ids) in enumerate(calib_dataloader):
@@ -323,21 +335,32 @@ class _BaseQBitsAutoModelClass:
                     + "the calibration dataset is NeelNanda/pile-10k,"
                     + "batchsize is 1 and calibration iteration is 100."
                 )
-                calib_func = calib_func_for_opt_llm if quantization_config.ipex_opt_llm else default_calib_func
+                if quantization_config.ipex_opt_llm:
+                    calib_func = calib_func_for_opt_llm
+                elif model_type == "chatglm":
+                    calib_func = calib_func_for_chatglm
+                else:
+                    calib_func = default_calib_func
             # get example_inputs
             if quantization_config.example_inputs is not None:
                 example_inputs = quantization_config.example_inputs
             else:
                 if quantization_config.ipex_opt_llm:
                     example_inputs = get_example_inputs_for_opt_llm(
-                                                                    model, 
+                                                                    model,
                                                                     quantization_config=quantization_config
                                                                     )
                 else:
-                    example_inputs = get_example_inputs(
-                                                        model, 
-                                                        quantization_config=quantization_config
-                                                        )
+                    if model.config.model_type == "chatglm":
+                        example_inputs = get_example_inputs_for_chatglm(
+                                                                        model,
+                                                                        quantization_config=quantization_config
+                                                                        )
+                    else:
+                        example_inputs = get_example_inputs(
+                                                            model,
+                                                            quantization_config=quantization_config
+                                                            )
             # sq recipes
             recipes = {
                 "smooth_quant": True,
