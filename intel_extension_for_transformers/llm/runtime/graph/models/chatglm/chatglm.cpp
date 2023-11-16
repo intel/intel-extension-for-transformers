@@ -142,8 +142,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
 
       ne_set_name(query_layer, "query_layer");
       query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);
-      query_layer = ne_permute(ctx0, query_layer, 0, 2, 1,
-                               3);  // [bs, heads, qlen, head_size]
+      query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [bs, heads, qlen, head_size]
 
       ne_tensor* key_layer =
           ne_view_4d(ctx0, cur, head_size, num_attention_heads, qlen, batch_size, 3 * head_size * ne_element_size(cur),
@@ -163,11 +162,10 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
         for (int i = 0; i < batch_size; ++i) {
           const int block_idx = block_ids[i];
           // [bs, heads, qlen, head_size]
-          Kcur_bs[i] = ne_permute(
-              ctx0,
-              ne_view_4d(ctx0, key_layer, head_size, num_attention_heads, qlen, 1, key_layer->nb[1], key_layer->nb[2],
-                         key_layer->nb[3], i * ne_element_size(key_layer) * head_size * qlen * num_attention_heads),
-              0, 2, 1, 3);
+          Kcur_bs[i] = ne_permute(ctx0,
+                                  ne_view_4d(ctx0, key_layer, head_size, num_attention_heads, qlen, 1, key_layer->nb[1],
+                                             key_layer->nb[2], key_layer->nb[3], i * key_layer->nb[3]),
+                                  0, 2, 1, 3);
           k_bs[i] = ne_view_4d(
               ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads, 1, model.layers[il].k_cache->nb[1],
               model.layers[il].k_cache->nb[2], model.layers[il].k_cache->nb[3],
@@ -175,11 +173,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
                   n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, qlen, head_size]
 
           // [bs, heads, head_size, qlen]
-          Vcur_bs[i] = ne_permute(ctx0,
-                                  ne_view_4d(ctx0, value_layer, head_size, num_attention_heads, qlen, 1,
-                                             value_layer->nb[1], value_layer->nb[2], value_layer->nb[3],
-                                             i * ne_element_size(value_layer) * head_size * qlen * num_attention_heads),
-                                  1, 2, 0, 3);
+          Vcur_bs[i] =
+              ne_permute(ctx0,
+                         ne_view_4d(ctx0, value_layer, head_size, num_attention_heads, qlen, 1, value_layer->nb[1],
+                                    value_layer->nb[2], value_layer->nb[3], i * value_layer->nb[3]),
+                         1, 2, 0, 3);
           v_bs[i] = ne_view_4d(ctx0, model.layers[il].v_cache, qlen, head_size, num_attention_heads, 1,
                                model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
                                model.layers[il].v_cache->nb[3],
@@ -282,9 +280,9 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
   }
 
   lctx.use_buf(ctx0, -1);
-  if (!lctx.logits_all && embd->ne[0] / batch_size > 1) {
-    inpL = ne_view_2d(ctx0, inpL, hidden_size, batch_size, ne_element_size(inpL) * hidden_size * N,
-                      (N - 1) * hidden_size * ne_element_size(inpL));
+  if (!lctx.logits_all && qlen > 1) {
+    inpL = ne_cont(ctx0, ne_view_2d(ctx0, inpL, hidden_size, batch_size, ne_element_size(inpL) * hidden_size * N,
+                                    (N - 1) * hidden_size * ne_element_size(inpL)));
   }
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[3], inpL);
