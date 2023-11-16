@@ -18,9 +18,11 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util import Hourglass, make_coordinate_grid, kp2gaussian
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.facerender.modules.util import Hourglass, make_coordinate_grid, kp2gaussian
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
 
 
 class DenseMotionNetwork(nn.Module):
@@ -40,7 +42,6 @@ class DenseMotionNetwork(nn.Module):
         estimate_occlusion_map=False,
     ):
         super(DenseMotionNetwork, self).__init__()
-        # self.hourglass = Hourglass(block_expansion=block_expansion, in_features=(num_kp+1)*(feature_channel+1), max_features=max_features, num_blocks=num_blocks)
         self.hourglass = Hourglass(
             block_expansion=block_expansion,
             in_features=(num_kp + 1) * (compress + 1),

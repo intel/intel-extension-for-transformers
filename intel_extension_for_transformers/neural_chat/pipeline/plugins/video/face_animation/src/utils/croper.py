@@ -20,7 +20,8 @@ import numpy as np
 from PIL import Image
 import torch
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.extract_kp_videos_safe import KeypointExtractor
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.face3d.extract_kp_videos_safe import KeypointExtractor
 from facexlib.alignment import landmark_98_to_68
 
 import numpy as np

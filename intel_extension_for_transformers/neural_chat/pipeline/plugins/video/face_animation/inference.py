@@ -21,7 +21,8 @@ from time import strftime
 import os, sys, time
 from argparse import ArgumentParser
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess import CropAndExtract
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.utils.preprocess import CropAndExtract
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.test_audio2coeff import Audio2Coeff
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.animate import AnimateFromCoeff
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.generate_batch import get_data

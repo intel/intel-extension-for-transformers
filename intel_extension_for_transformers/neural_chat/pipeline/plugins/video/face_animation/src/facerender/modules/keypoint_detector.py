@@ -19,8 +19,10 @@ from torch import nn
 import torch
 import torch.nn.functional as F
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm import SynchronizedBatchNorm2d as BatchNorm2d
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util import KPHourglass, make_coordinate_grid, AntiAliasInterpolation2d, ResBottleneck
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.facerender.sync_batchnorm import SynchronizedBatchNorm2d as BatchNorm2d
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.facerender.modules.util import KPHourglass, make_coordinate_grid, AntiAliasInterpolation2d, ResBottleneck
 
 
 class KPDetector(nn.Module):

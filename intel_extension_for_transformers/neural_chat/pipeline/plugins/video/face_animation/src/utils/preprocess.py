@@ -23,17 +23,22 @@ from PIL import Image
 # 3dmm extraction
 import safetensors
 import safetensors.torch
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess import align_img
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.load_mats import load_lm3d
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models import networks
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.face3d.util.preprocess import align_img
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.face3d.util.load_mats import load_lm3d
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.face3d.models import networks
 
 from scipy.io import loadmat, savemat
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.croper import Preprocesser
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.utils.croper import Preprocesser
 
 
 import warnings
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.safetensor_helper import load_x_from_safetensor
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
+    src.utils.safetensor_helper import load_x_from_safetensor
 
 warnings.filterwarnings("ignore")
 
