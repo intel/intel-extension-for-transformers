@@ -569,11 +569,9 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        pattern = re.compile(r'问：.*?\n答：', re.DOTALL)
-        matches = pattern.findall(prompt)
+        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
         if matches:
-            result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
-
+            result = matches[-1]
     return result
 
 output_token_len = 0
@@ -647,19 +645,14 @@ def predict_stream(**params):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
 
+    streamer = TextIteratorStreamer(
+        tokenizer, skip_prompt=True, skip_special_tokens=True
+    )
     if num_beams == 0:
         num_beams = 1
         do_sample = True
 
-    if "chatglm" in model_name.lower() and is_llm_runtime_model(model):
-        prompt = tokenizer.build_prompt(prompt)
-        input_tokens = tokenizer([prompt], return_tensors="pt").input_ids
-        input_token_len = input_tokens.shape[-1]
-        streamer = TextIteratorStreamer(tokenizer)
-    else:
-        input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
-        streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-
+    input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
     )
@@ -706,20 +699,19 @@ def predict_stream(**params):
                             global output_token_len
                             if is_llm_runtime_model(model):  # optimized model gerenate
                                 output_token=model.generate(
-                                    input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
+                                    input_tokens['input_ids'],
                                     streamer=streamer,
                                     temperature=temperature,
                                     top_p=top_p,
                                     top_k=top_k,
                                     repetition_penalty=repetition_penalty,
-                                    max_new_tokens=-1,
+                                    max_new_tokens=max_new_tokens,
                                     ctx_size=max_new_tokens,
                                     ignore_prompt=True,
                                     interactive=True,
                                     do_sample=do_sample,
                                     num_beams=num_beams,
-                                    seed=1,
-                                    n_keep=2 if "chatglm" in model_name.lower() else 4
+                                    seed=1
                                 )
                             else:
                                 output_token=model.generate(
