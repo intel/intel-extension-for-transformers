@@ -220,9 +220,10 @@ async def retrieval_chat(request: Request):
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
     # reload retrieval instance with specific knowledge base
-    print("[askdoc - chat] starting to reload local db...")
-    instance = plugins['retrieval']["instance"]
-    instance.reload_localdb(local_persist_dir = persist_dir)
+    if kb_id == 'default':
+        print("[askdoc - chat] starting to reload local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.reload_localdb(local_persist_dir = persist_dir)
 
     # non-stream mode
     if not stream:
