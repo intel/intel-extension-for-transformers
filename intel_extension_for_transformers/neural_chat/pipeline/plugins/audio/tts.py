@@ -68,7 +68,7 @@ class TextToSpeech():
         else: # pragma: no cover
             import subprocess
             try:
-                p = subprocess.call(["wget",
+                p = subprocess.Popen(["wget",
                                 "https://github.com/intel/intel-extension-for-transformers/raw/main/"
                                 "intel_extension_for_transformers/neural_chat/assets/speaker_embeddings/"
                                 "spk_embed_default.pt"])
