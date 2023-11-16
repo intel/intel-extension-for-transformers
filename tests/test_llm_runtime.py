@@ -27,7 +27,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         shutil.rmtree("./runtime_outs", ignore_errors=True)
 
     def test_llm_runtime(self):
-        model_name = "/tf_dataset2/models/pytorch/Llama-2-7b-chat-hf"  # or local path to model
+        model_name = "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
         woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, not_quant=True)
         prompt = "What is the meaning of life?"
 
@@ -38,15 +38,17 @@ class TestLLMRUNTIME(unittest.TestCase):
         pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         pt_model.eval() 
         logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
-        pt_generate_ids = pt_model.generate(input_ids=inputs.input_ids, max_new_tokens=128).tolist()
-        
+        pt_generate_ids = pt_model.generate(input_ids=inputs.input_ids, do_sample=False, max_new_tokens=100)[0].tolist()
+        print(tokenizer.decode(pt_generate_ids))
+
         itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
-        outputs = itrex_model(inputs.input_ids)
-        itrex_generate_ids = itrex_model.generate(inputs.input_ids, max_new_tokens=128)
+        outputs = itrex_model.forward(inputs.input_ids)
+        itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
+        print(tokenizer.decode(itrex_generate_ids))
         print(cmpData(logits.detach().numpy().flatten(), outputs.flatten()))
 
-        for i in range(len(itrex_generate_ids)):
-            self.assertListEqual(pt_generate_ids[i], itrex_generate_ids[i])
+        for i in range(len(pt_generate_ids)):
+            self.assertEqual(pt_generate_ids[i], itrex_generate_ids[i])
 
     def test_beam_search(self):
         model_name = "/tf_dataset2/models/pytorch/gpt-j-6B"  # or local path to model
