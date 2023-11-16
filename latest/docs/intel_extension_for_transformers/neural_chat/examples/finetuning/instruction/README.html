@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g0e9a29d documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gd2d47a8 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -117,53 +117,25 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 <p>Pick either one of below options to setup docker environment.</p>
 <section id="option-1-build-docker-image-from-scratch">
 <h4>Option 1 : Build Docker image from scratch<a class="headerlink" href="#option-1-build-docker-image-from-scratch" title="Link to this heading"></a></h4>
-<p>Please refer to this section : <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#4-build-docker-image">How to build docker images for NeuralChat FineTuning</a> to build docker image from scratch.<br />Once you have the docker image ready, please follow <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#5-create-docker-container">run docker image</a> session to launch a docker instance from the image.</p>
+<p>Please refer to this section : <a class="reference external" href="../../../docker/finetuning/README.html#21-build-docker-image">How to build docker images for NeuralChat FineTuning</a> to build docker image from scratch.</p>
 </section>
 <section id="option-2-pull-existing-docker-image">
 <h4>Option 2: Pull existing Docker image<a class="headerlink" href="#option-2-pull-existing-docker-image" title="Link to this heading"></a></h4>
-<p>Please follow the session <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image">itrex docker setup</a> and use the docker pull command to pull itrex docker image.<br />Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/oneapi-src/oneAPI-samples/master/AI-and-Analytics/Getting-Started-Samples/IntelAIKitContainer_GettingStarted/run_oneapi_docker.sh
-chmod<span class="w"> </span>+x<span class="w"> </span>run_oneapi_docker.sh
-cp<span class="w"> </span>requirement.txt<span class="w"> </span>/tmp
-<span class="c1"># change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session</span>
-./run_oneapi_docker.sh<span class="w"> </span>intel/ai-tools:itrex-0.1.1
-<span class="c1"># don&#39;t need ipex in this sample</span>
-pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_pytorch
-<span class="c1"># update ITREX pip package in the docker instance</span>
-pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers<span class="w"> </span>--upgrade
-</pre></div>
-</div>
-<p>After those instructions, you should be able to run below steps inside the docker instance.</p>
+<p>Please follow the session <a class="reference external" href="../../../docker/finetuning/README.html#22-docker-pull-from-docker-hub">itrex docker setup</a> and use the docker pull command to pull itrex docker image.</p>
+<p>Once you have the docker image ready, please follow <a class="reference external" href="../../../docker/finetuning/README.html#3-create-docker-container">run docker image</a> session to launch a docker instance from the image.</p>
 </section>
 </section>
 </section>
 <section id="prepare-the-model">
 <h2>2. Prepare the Model<a class="headerlink" href="#prepare-the-model" title="Link to this heading"></a></h2>
-<section id="llama">
-<h3>LLaMA<a class="headerlink" href="#llama" title="Link to this heading"></a></h3>
-<section id="decapoda-research-llama-7b-hf">
-<h4>decapoda-research/llama-7b-hf<a class="headerlink" href="#decapoda-research-llama-7b-hf" title="Link to this heading"></a></h4>
-<p>To acquire the checkpoints and tokenizer, the user has two options: completing the <a class="reference external" href="https://forms.gle/jk851eBVbX1m5TAv5">Google form</a> or attempting <a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">the released model on Huggingface</a>.
-Users could follow below commands to get the checkpoints from github repository.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
-git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/decapoda-research/llama-7b-hf
-</pre></div>
-</div>
-<p>It should be noticed that the early version of LLama model’s name in Transformers has resulted in many loading issues, please refer to this <a class="reference external" href="https://github.com/huggingface/transformers/pull/21955">revision history</a>. Therefore, Transformers has reorganized the code and rename LLaMA model as <code class="docutils literal notranslate"><span class="pre">Llama</span></code> in the model file. But the release model on Huggingface did not make modifications in react to this change. To avoid unexpexted confliction issues, we advise the user to modify the local <code class="docutils literal notranslate"><span class="pre">config.json</span></code> and <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> files according to the following recommendations:</p>
-<ol class="simple">
-<li><p>The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMATokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaTokenizer</span></code>;</p></li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">architectures</span></code> in <code class="docutils literal notranslate"><span class="pre">config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMAForCausalLM</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaForCausalLM</span></code>.</p></li>
-</ol>
-</section>
 <section id="meta-llama-llama-2-7b">
-<h4>meta-llama/Llama-2-7b<a class="headerlink" href="#meta-llama-llama-2-7b" title="Link to this heading"></a></h4>
+<h3>meta-llama/Llama-2-7b<a class="headerlink" href="#meta-llama-llama-2-7b" title="Link to this heading"></a></h3>
 <p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="%5Bhttps://huggingface.co/mosaicml/mpt-7b%5D(https://huggingface.co/meta-llama/Llama-2-7b)">meta-llama/Llama-2-7b</a>.
 Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
 git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/meta-llama/Llama-2-7b
 </pre></div>
 </div>
-</section>
 </section>
 <section id="mpt">
 <h3>MPT<a class="headerlink" href="#mpt" title="Link to this heading"></a></h3>
@@ -233,7 +205,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 </section>
 <section id="finetune">
 <h1>Finetune<a class="headerlink" href="#finetune" title="Link to this heading"></a></h1>
-<p>We employ the <a class="reference external" href="https://arxiv.org/pdf/2106.09685.pdf">LoRA approach</a> to finetune the LLM efficiently, currently, FLAN-T5 and LLaMA are supported for finetuning.</p>
+<p>We employ the <a class="reference external" href="https://arxiv.org/pdf/2106.09685.pdf">LoRA approach</a> to finetune the LLM efficiently.</p>
 <section id="single-node-fine-tuning-in-xeon-spr">
 <h2>1. Single Node Fine-tuning in Xeon SPR<a class="headerlink" href="#single-node-fine-tuning-in-xeon-spr" title="Link to this heading"></a></h2>
 <p><strong>For FLAN-T5</strong>, use the below command line for finetuning on the Alpaca dataset.</p>
@@ -257,87 +229,8 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <span class="w">        </span>--peft<span class="w"> </span>lora
 </pre></div>
 </div>
-<section id="for-llama">
-<h3>For LLaMA<a class="headerlink" href="#for-llama" title="Link to this heading"></a></h3>
-<ul class="simple">
-<li><p>use the below command line for finetuning on the Alpaca dataset.</p></li>
-</ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;decapoda-research/llama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>use the below command line for finetuning chatbot on the <a class="reference external" href="https://huggingface.co/datasets/HuggingFaceH4/oasst1_en">HuggingFaceH4/oasst1_en</a>.</p></li>
-</ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;decapoda-research/llama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--dataset_name<span class="w"> </span><span class="s2">&quot;HuggingFaceH4/oasst1_en&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_chatbot_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--special_tokens<span class="w"> </span><span class="s2">&quot;&lt;|im_start|&gt;&quot;</span><span class="w"> </span><span class="s2">&quot;&lt;|im_end|&gt;&quot;</span>
-
-<span class="c1"># the script also support other models, like mpt.</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>use the below command line for summarization scenario on the <a class="reference external" href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a>.</p></li>
-</ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;decapoda-research/llama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--dataset_name<span class="w"> </span><span class="s2">&quot;cnn_dailymail&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--dataset_config_name<span class="w"> </span><span class="s2">&quot;3.0.0&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--no_cuda
-
-<span class="c1"># the script also support other models, like mpt.</span>
-</pre></div>
-</div>
+<section id="for-llama2">
+<h3>For LLaMA2<a class="headerlink" href="#for-llama2" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>use the below command line for code tuning with <code class="docutils literal notranslate"><span class="pre">meta-llama/Llama-2-7b</span></code> on <a class="reference external" href="https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1">theblackcat102/evol-codealpaca-v1</a>.</p></li>
 </ul>
@@ -356,7 +249,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./llama2_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--no_cuda
@@ -483,7 +376,6 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <p>For finetuning on SPR, add <code class="docutils literal notranslate"><span class="pre">--bf16</span></code> argument will speedup the finetuning process without the loss of model’s performance.
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supported.</p>
-<p>Add option <strong>“–use_fast_tokenizer False”</strong> when using latest transformers if you met failure in llama fast tokenizer for llama.</p>
 </section>
 </section>
 <section id="multi-node-fine-tuning-in-xeon-spr">
@@ -549,12 +441,12 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 <p>Now, run the following command in node0 and <strong>4DDP</strong> will be enabled in node0 and node1 with BF16 auto mixed precision:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">CCL_WORKER_COUNT</span><span class="o">=</span><span class="m">1</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">MASTER_ADDR</span><span class="o">=</span>xxx.xxx.xxx.xxx<span class="w"> </span><span class="c1">#node0 ip</span>
-<span class="c1">## for DDP ptun for LLama</span>
+<span class="c1">## for DDP ptun for LLama2</span>
 mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w"> </span>-n<span class="w"> </span><span class="m">16</span><span class="w"> </span>-ppn<span class="w"> </span><span class="m">4</span><span class="w"> </span>-genv<span class="w"> </span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>python3<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--model_name_or_path<span class="w"> </span>decapoda-research/llama-7b-hf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model_name_or_path<span class="w"> </span>meta-llama/Llama-2-7b-chat-hf<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--train_file<span class="w"> </span>./alpaca_data.json<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output_dir<span class="w"> </span>./llama2_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--per_device_train_batch_size<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
@@ -605,9 +497,9 @@ see https://github.com/huggingface/peft</p>
 <section id="single-card-fine-tuning-in-habana-dl1">
 <h2>1. Single Card Fine-tuning in Habana DL1<a class="headerlink" href="#single-card-fine-tuning-in-habana-dl1" title="Link to this heading"></a></h2>
 <p>Follow install guidance in <a class="reference external" href="https://github.com/huggingface/optimum-habana">optimum-habana</a></p>
-<p>For LLaMA, use the below command line for finetuning on the Alpaca dataset.</p>
+<p>For LLaMA2, use the below command line for finetuning on the Alpaca dataset.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;decapoda-research/llama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
@@ -624,7 +516,7 @@ see https://github.com/huggingface/peft</p>
 <span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./llama2_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--device<span class="w"> </span><span class="s2">&quot;hpu&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -664,15 +556,14 @@ see https://github.com/huggingface/peft</p>
 <p>For finetuning on SPR, add <code class="docutils literal notranslate"><span class="pre">--bf16</span></code> argument will speedup the finetuning process without the loss of model’s performance.
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</p>
-<p>Add option <strong>“–use_fast_tokenizer False”</strong> when using latest transformers if you met failure in llama fast tokenizer for llama, The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMATokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaTokenizer</span></code></p>
 </section>
 <section id="multi-card-fine-tuning-in-habana-dl1">
 <h2>2. Multi Card Fine-tuning in Habana DL1<a class="headerlink" href="#multi-card-fine-tuning-in-habana-dl1" title="Link to this heading"></a></h2>
 <p>Follow install guidance in <a class="reference external" href="https://github.com/huggingface/optimum-habana">optimum-habana</a></p>
-<p>For LLaMA, use the below command line for finetuning on the Alpaca dataset.</p>
+<p>For LLaMA2, use the below command line for finetuning on the Alpaca dataset.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>gaudi_spawn.py<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--world_size<span class="w"> </span><span class="m">8</span><span class="w"> </span>--use_mpi<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;decapoda-research/llama-7b-hf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
@@ -689,7 +580,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
 <span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./llama2_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--device<span class="w"> </span><span class="s2">&quot;hpu&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -730,7 +621,6 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
 <p>For finetuning on SPR, add <code class="docutils literal notranslate"><span class="pre">--bf16</span></code> argument will speedup the finetuning process without the loss of model’s performance.
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</p>
-<p>Add option <strong>“–use_fast_tokenizer False”</strong> when using latest transformers if you met failure in llama fast tokenizer for llama, The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMATokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaTokenizer</span></code>.</p>
 </section>
 </section>
 
@@ -748,7 +638,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc055f9faf0> 
+   <jinja2.runtime.BlockReference object at 0x7f44305911b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
