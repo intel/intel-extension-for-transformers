@@ -150,6 +150,7 @@ RUN apt update \
     && apt install -y python${PYTHON_VERSION} python3-pip \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
