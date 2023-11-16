@@ -193,10 +193,9 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if not empty_weights:
-                    model._modules[name].set_weights_bias(
-                        module.weight.data, None if module.bias is None else module.bias.data
-                    )
+                model._modules[name].set_weights_bias(
+                    module.weight.data, None if module.bias is None else module.bias.data
+                )
 
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(

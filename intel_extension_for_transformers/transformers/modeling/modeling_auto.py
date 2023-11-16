@@ -232,8 +232,6 @@ class _BaseQBitsAutoModelClass:
                         "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(
                             quantization_config.compute_dtype, torch_dtype)
 
-
-
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
             logger.info("Mixed Precision done.")
@@ -297,6 +295,7 @@ class _BaseQBitsAutoModelClass:
                 quantization_config.post_init()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
             # add quantization_config and save_low_bit to pretrained model dynamically
+            model.device_map = device_map
             model.quantization_config = quantization_config
             import types
             model.save_low_bit = types.MethodType(save_low_bit, model)
@@ -475,10 +474,10 @@ class _BaseQBitsAutoModelClass:
             **kwargs,
         )
         assert quantization_config is not None, "Detect this model is not a low-bit model."
+        kwargs["trust_remote_code"] = trust_remote_code
         config, kwargs = AutoConfig.from_pretrained(
             pretrained_model_name_or_path,
             return_unused_kwargs=True,
-            trust_remote_code=trust_remote_code,
             **kwargs,
         )
 
@@ -690,7 +689,6 @@ class _BaseQBitsAutoModelClass:
                                                  amp_dtype=torch.float16, device=device_map)
         elif intel_gpu == "arc":
             model = model.to("xpu")
-
 
         return model
 
