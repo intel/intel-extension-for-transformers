@@ -162,6 +162,6 @@ RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transfo
 RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
 RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && pip install -v .
 
-WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+WORKDIR /intel-extension-for-transformers
 
 CMD ["/usr/sbin/sshd", "-D"]
