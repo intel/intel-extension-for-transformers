@@ -201,11 +201,13 @@ class _BaseQBitsAutoModelClass:
             calib_func = quantization_config.calib_func
             example_inputs = quantization_config.example_inputs
             num_beams = quantization_config.num_beams
-            if model_type in ipex_opt_llm_supported:
-                quantization_config.ipex_opt_llm = True
-                logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
-            else:
-                quantization_config.ipex_opt_llm = False
+            if quantization_config.ipex_opt_llm is None:
+                if model_type in ipex_opt_llm_supported:
+                    quantization_config.ipex_opt_llm = True
+                    logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
+                    logger.warning("The suggest transformers version is 4.31.0 if ipex.optimize_transformers is used.")
+                else:
+                    quantization_config.ipex_opt_llm = False
 
             # ipex optimize transformers
             if quantization_config.ipex_opt_llm:

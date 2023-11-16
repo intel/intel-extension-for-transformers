@@ -254,7 +254,7 @@ class MixedPrecisionConfig:
 @dataclass
 class SmoothQuantConfig:
     backend: str = "ipex"
-    ipex_opt_llm: bool = False
+    ipex_opt_llm: bool = None
     tokenizer: Any = None
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"

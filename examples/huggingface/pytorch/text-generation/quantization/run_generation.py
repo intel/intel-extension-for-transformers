@@ -139,8 +139,8 @@ elif args.sq:
         alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
-        num_beams=generate_kwargs["num_beams"],
-    )
+        num_beams=generate_kwargs["num_beams"]
+                )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
@@ -193,7 +193,6 @@ if args.int8 or args.int8_bf16_mixed:
         else:
             torch._C._jit_set_texpr_fuser_enabled(False)
             qconfig = ipex.quantization.default_static_qconfig_mapping
-            config = AutoConfig.from_pretrained(args.model_id, torchscript=True)
             with ipex.OnDevice(dtype=torch.float, device="meta"):
                 user_model = AutoModelForCausalLM.from_pretrained(args.model, use_llm_runtime=False)
             user_model = ipex.optimize_transformers(
