@@ -347,7 +347,7 @@ class StopOnTokens(StoppingCriteria):
         self.min_length = min_length
         self.start_length = start_length
         self.stop_token_id = stop_token_id
- 
+
     def __call__(
         self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
     ) -> bool:
@@ -369,3 +369,6 @@ stopping_criteria = StoppingCriteriaList(
 
 outputs = model.generate(inputs, streamer=streamer, stopping_criteria=stopping_criteria)
 ```
+
+### 6. Perplexity (measuring model quality)
+You can use the [scripts/perplexity.py](./scripts/perplexity.py) script to over a given (subset of) dataset. Run `python scripts/perplexity.py --help` for detailed usage. For more infomation of the perplexity metric, see https://huggingface.co/docs/transformers/perplexity.
