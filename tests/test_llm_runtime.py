@@ -75,12 +75,13 @@ class TestLLMRUNTIME(unittest.TestCase):
                                             early_stopping=True, num_beams=4).tolist()
         # llm runtime fp32
         woq_config = WeightOnlyQuantConfig(not_quant=True)
-        itrex_model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-        itrex_generate_ids = itrex_model.generate(inputs.input_ids, batch_size=4, num_beams=4,
-                                  max_new_tokens=128, min_new_tokens=30, early_stopping=True,
-                                  pad_token=pad_token)
+        itrex_model = AutoModelForCausalLM.from_pretrained(
+            model_name, quantization_config=woq_config, trust_remote_code=True)
+        itrex_generate_ids = itrex_model.generate(
+            inputs.input_ids, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True, pad_token=pad_token)
         for i in range(len(itrex_generate_ids)):
             self.assertListEqual(pt_generate_ids[i], itrex_generate_ids[i])
+
 
 if __name__ == "__main__":
     unittest.main()
