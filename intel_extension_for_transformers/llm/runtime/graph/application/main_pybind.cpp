@@ -208,8 +208,9 @@ const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_t
     return empty_ret;
   }
 
-  const auto& input_id0 = input_ids[0];  // currently only support single batch
-  if (input_id0.empty()) {               // use internel input id
+  static const std::vector<model_token> empty_id{};
+  const auto& input_id0 = input_ids.empty() ? empty_id : input_ids[0];  // currently only support single batch
+  if (input_id0.empty()) {                                              // use internel input id
     if (curr_input_ids.empty()) {
       fprintf(stderr, "%s: error: no input\n", __func__);
       return empty_ret;
