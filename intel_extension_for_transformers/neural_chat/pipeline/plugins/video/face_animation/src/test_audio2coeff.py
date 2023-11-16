@@ -25,10 +25,10 @@ from scipy.signal import savgol_filter
 import safetensors
 import safetensors.torch
 
-from src.audio2pose_models.audio2pose import Audio2Pose
-from src.audio2exp_models.networks import SimpleWrapperV2
-from src.audio2exp_models.audio2exp import Audio2Exp
-from src.utils.safetensor_helper import load_x_from_safetensor
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.audio2pose import Audio2Pose
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2exp_models.networks import SimpleWrapperV2
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2exp_models.audio2exp import Audio2Exp
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.safetensor_helper import load_x_from_safetensor
 
 
 def load_cpk(checkpoint_path, model=None, optimizer=None, device="cpu"):

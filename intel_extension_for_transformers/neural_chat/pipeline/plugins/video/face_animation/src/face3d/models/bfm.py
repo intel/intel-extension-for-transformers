@@ -22,7 +22,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy.io import loadmat
-from src.face3d.util.load_mats import transferBFM09
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.load_mats import transferBFM09
 import os
 
 

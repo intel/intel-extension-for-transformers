@@ -22,7 +22,7 @@ from gfpgan import GFPGANer
 
 from tqdm import tqdm
 
-from src.utils.videoio import load_video_to_cv2
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.videoio import load_video_to_cv2
 
 import cv2
 import numpy as np

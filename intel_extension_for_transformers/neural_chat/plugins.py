@@ -71,4 +71,5 @@ def get_registered_plugins():
     return registered_plugins
 
 def get_all_plugins():
-    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int"]
+    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int",
+            "face_animation"]

@@ -25,6 +25,7 @@ from transformers import SpeechT5HifiGan
 import soundfile as sf
 import numpy as np
 import contextlib
+from pydub import AudioSegment
 
 from .utils.english_normalizer import EnglishNormalizer
 from .utils.reduce_noise import NoiseReducer
@@ -36,7 +37,7 @@ class TextToSpeech():
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu",
-                 reduce_noise=False):
+                 reduce_noise=True):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.device = device
@@ -65,8 +66,17 @@ class TextToSpeech():
         elif os.path.exists('spk_embed_default.pt'):    # for notebook
             self.default_speaker_embedding = torch.load('spk_embed_default.pt')
         else: # pragma: no cover
-            print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
-            self.default_speaker_embedding = torch.zeros((1, 512))
+            import subprocess
+            try:
+                p = subprocess.call(["wget",
+                                "https://github.com/intel/intel-extension-for-transformers/raw/main/"
+                                "intel_extension_for_transformers/neural_chat/assets/speaker_embeddings/"
+                                "spk_embed_default.pt"])
+                p.wait()
+                self.default_speaker_embedding = torch.load('spk_embed_default.pt')
+            except Exception as e:
+                print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
+                self.default_speaker_embedding = torch.zeros((1, 512))
 
         # preload the demo model in case of time-consuming runtime loading
         self.demo_model = None
@@ -81,6 +91,18 @@ class TextToSpeech():
         self.normalizer = EnglishNormalizer()
         self.noise_reducer = NoiseReducer() if reduce_noise else None
 
+    def _audiosegment_to_librosawav(self, audiosegment):
+        # https://github.com/jiaaro/pydub/blob/master/API.markdown#audiosegmentget_array_of_samples
+        # This way is faster than librosa.load or HuggingFace Dataset wrapper
+        channel_sounds = audiosegment.split_to_mono()[:1]   # only select the first channel
+        samples = [s.get_array_of_samples() for s in channel_sounds]
+
+        fp_arr = np.array(samples).T.astype(np.float32)
+        fp_arr /= np.iinfo(samples[0].typecode).max
+        fp_arr = fp_arr.reshape(-1)
+
+        return fp_arr
+
     def create_speaker_embedding(self, driven_audio_path):
         """Create the speaker's embedding.
 
@@ -88,9 +110,14 @@ class TextToSpeech():
         """
         if self.speaker_model is None:
             raise Exception("Unable to create a speaker embedding! Please check the speaker model.")
-        audio_dataset = Dataset.from_dict({"audio":
-            [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
-        waveform = audio_dataset[0]["audio"]['array']
+        try:
+            waveform = AudioSegment.from_file(driven_audio_path).set_frame_rate(16000)
+            waveform = self._audiosegment_to_librosawav(waveform)
+        except Exception as e:
+            print(f"[TTS] audiosegment to librosa wave fail: {e}")
+            audio_dataset = Dataset.from_dict({"audio":
+                [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
+            waveform = audio_dataset[0]["audio"]['array']
         with torch.no_grad():
             speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform).to("cpu"))
             speaker_embeddings = torch.nn.functional.normalize(speaker_embeddings, dim=2) # [1,1,512]

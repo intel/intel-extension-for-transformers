@@ -18,9 +18,9 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from src.facerender.modules.util import Hourglass, make_coordinate_grid, kp2gaussian
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util import Hourglass, make_coordinate_grid, kp2gaussian
 
-from src.facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
 
 
 class DenseMotionNetwork(nn.Module):

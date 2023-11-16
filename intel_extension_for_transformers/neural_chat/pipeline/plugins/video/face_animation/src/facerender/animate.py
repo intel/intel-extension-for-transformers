@@ -29,15 +29,15 @@ warnings.filterwarnings("ignore")
 import imageio
 import torch
 
-from src.facerender.modules.keypoint_detector import HEEstimator, KPDetector
-from src.facerender.modules.mapping import MappingNet
-from src.facerender.modules.generator import OcclusionAwareGenerator, OcclusionAwareSPADEGenerator
-from src.facerender.modules.make_animation import make_animation
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector import HEEstimator, KPDetector
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.mapping import MappingNet
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.generator import OcclusionAwareGenerator, OcclusionAwareSPADEGenerator
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.make_animation import make_animation
 
 from pydub import AudioSegment
-from src.utils.face_enhancer import enhancer_with_len as face_enhancer
-from src.utils.paste_pic import paste_pic
-from src.utils.videoio import save_video_with_watermark
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer import enhancer_with_len as face_enhancer
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.paste_pic import paste_pic
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.videoio import save_video_with_watermark
 import time
 
 

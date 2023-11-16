@@ -18,8 +18,8 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from src.facerender.modules.util import ResBlock2d, SameBlock2d, UpBlock2d, DownBlock2d, ResBlock3d, SPADEResnetBlock
-from src.facerender.modules.dense_motion import DenseMotionNetwork
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util import ResBlock2d, SameBlock2d, UpBlock2d, DownBlock2d, ResBlock3d, SPADEResnetBlock
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.dense_motion import DenseMotionNetwork
 
 
 class OcclusionAwareGenerator(nn.Module):

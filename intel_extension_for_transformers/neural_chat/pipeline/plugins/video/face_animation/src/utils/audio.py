@@ -22,7 +22,7 @@ import numpy as np
 # import tensorflow as tf
 from scipy import signal
 from scipy.io import wavfile
-from src.utils.hparams import hparams as hp
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.hparams import hparams as hp
 
 
 def load_wav(path, sr):

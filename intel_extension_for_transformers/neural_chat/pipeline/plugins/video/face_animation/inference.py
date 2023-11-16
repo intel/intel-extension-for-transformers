@@ -21,12 +21,12 @@ from time import strftime
 import os, sys, time
 from argparse import ArgumentParser
 
-from src.utils.preprocess import CropAndExtract
-from src.test_audio2coeff import Audio2Coeff
-from src.facerender.animate import AnimateFromCoeff
-from src.generate_batch import get_data
-from src.generate_facerender_batch import get_facerender_data
-from src.utils.init_path import init_path
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess import CropAndExtract
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.test_audio2coeff import Audio2Coeff
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.animate import AnimateFromCoeff
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.generate_batch import get_data
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.generate_facerender_batch import get_facerender_data
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.init_path import init_path
 
 from datetime import datetime
 import json
@@ -150,15 +150,18 @@ def main(args):
         bf16=args.bf16,
     )
 
+    # gc all intermediate logs
     shutil.rmtree("logs", ignore_errors=True)
     shutil.rmtree("enhancer_logs", ignore_errors=True)
     shutil.rmtree("workspace", ignore_errors=True)
-
     shutil.move(result, args.output_video_path)
+
     print("The generated video is named:", args.output_video_path)
 
     if not args.verbose:
-        shutil.rmtree(save_dir)
+        # print(save_dir)
+        # shutil.rmtree(save_dir)
+        shutil.rmtree(args.result_dir, ignore_errors=True)
     print("Face animation done: {} sec".format(datetime.timestamp(datetime.now())-all_start_timestamp))
 
 if __name__ == "__main__":

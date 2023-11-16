@@ -17,9 +17,9 @@
 
 import torch
 from torch import nn
-from src.audio2pose_models.cvae import CVAE
-from src.audio2pose_models.discriminator import PoseSequenceDiscriminator
-from src.audio2pose_models.audio_encoder import AudioEncoder
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.cvae import CVAE
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.discriminator import PoseSequenceDiscriminator
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.audio_encoder import AudioEncoder
 
 
 class Audio2Pose(nn.Module):

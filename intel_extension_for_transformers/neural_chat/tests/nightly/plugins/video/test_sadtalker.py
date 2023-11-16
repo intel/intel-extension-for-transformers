@@ -29,33 +29,32 @@ class TestSadTalker(unittest.TestCase):
         sample_audio_url = "https://github.com/intel/intel-extension-for-transformers/raw/main/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         sample_img_url = "https://raw.githubusercontent.com/OpenTalker/SadTalker/main/examples/source_image/full_body_2.png"
         img_data = requests.get(sample_img_url).content
-        with open('sample_img.jpg', 'wb') as f:
-            f.write(img_data)
-        audio_data = requests.get(sample_audio_url).content
-        with open('sample_audio.wav', 'wb') as f:
-            f.write(audio_data)
         self.source_image = os.path.join(self.cur_directory, "sample_img.jpg")
         self.driven_audio = os.path.join(self.cur_directory, "sample_audio.wav")
+        with open(self.source_image, 'wb') as f:
+            f.write(img_data)
+        audio_data = requests.get(sample_audio_url).content
+        with open(self.driven_audio, 'wb') as f:
+            f.write(audio_data)
+        self.output_video_path = os.path.join(self.cur_directory, "response.mp4")
+        self.checkpoint_dir = os.path.join(self.cur_directory, "checkpoints")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.sadtalker = SadTalker(device=self.device, bf16=True, p_num=4, enhancer=None, output_video_path='response.mp4')
+        self.sadtalker = SadTalker(device=self.device, checkpoint_dir=self.checkpoint_dir, bf16=True, p_num=4, enhancer=None, output_video_path=self.output_video_path)
 
     @classmethod
     def tearDownClass(self):
-        for dir in ['logs', 'enhancer_logs', 'workspace', 'results']:
-            shutil.rmtree(dir, ignore_errors=True)
-        os.remove('response.mp4')
-        os.chdir(self.cur_directory)
+        os.remove(self.output_video_path)
         os.remove(self.source_image)
         os.remove(self.driven_audio)
 
     def test_sadtalker_without_enhancer(self):
         self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
-        self.assertTrue(os.path.exists("./response.mp4"))
+        self.assertTrue(os.path.exists(self.output_video_path))
 
     def test_sadtalker_with_enhancer(self):
         self.sadtalker.enhancer = 'gfpgan'
         self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
-        self.assertTrue(os.path.exists("./response.mp4"))
+        self.assertTrue(os.path.exists(self.output_video_path))
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,7 @@ import subprocess
 import os
 import psutil
 import signal
-
+import sys
 
 class SadTalker:
     """Faster Talking Face Animation."""
@@ -27,28 +27,29 @@ class SadTalker:
     def __init__(
         self,
         device="cpu",
+        checkpoint_dir="./checkpoints",
         bf16=False,
         p_num=1,
         enhancer="gfpgan",
         output_video_path="./response.mp4",
         result_dir="./results",
     ):
-        # prepare the models
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        os.chdir(cur_dir)
-        scripts_dir = os.path.join(cur_dir, "scripts")
-        download_script = f"{scripts_dir}/download_models.sh"
-        subprocess.run(["bash", download_script])
+        self.inference_script = os.path.join(cur_dir, "inference.py")
         self.device = device
         self.bf16 = bf16
         self.p_num = p_num
         self.enhancer = enhancer
         self.output_video_path = output_video_path
         self.result_dir = result_dir
+        self.checkpoint_dir = checkpoint_dir
 
     def convert(self, source_image, driven_audio):
         if self.device == "cpu":
-            self.convert_cpu(source_image, driven_audio)
+            if sys.platform == "linux":
+                self.convert_cpu(source_image, driven_audio)
+            else:
+                raise Exception("Currently only support Linux platform!")
         elif self.device == "cuda":
             self.convert_gpu(source_image, driven_audio)
         else:
@@ -63,12 +64,13 @@ class SadTalker:
             start_core = (int)(i * unit)
             end_core = (int)((i + 1) * unit - 1)
             bf16 = "" if not self.bf16 else "--bf16"
-            enhancer_str = "" if not self.enhancer else f"--enhancer={self.enhancer}"
+            enhancer_str = "" if not self.enhancer else f"--enhancer {self.enhancer}"
             # compose the command for instance parallelism
             multi_instance_cmd += (
-                f"numactl -l -C {start_core}-{end_core} python inference.py --driven_audio"
+                f"numactl -l -C {start_core}-{end_core} python {self.inference_script} --driven_audio"
                 f" {driven_audio} --source_image {source_image} --result_dir {self.result_dir} --output_video_path"
-                f" {self.output_video_path} --still --cpu --rank={i} --p_num={self.p_num} {bf16} {enhancer_str} &\n "
+                f" {self.output_video_path} --still --cpu --rank {i} --p_num {self.p_num} {bf16} {enhancer_str}"
+                f" --checkpoint_dir {self.checkpoint_dir} &\n "
             )
         multi_instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         print(multi_instance_cmd)
@@ -84,10 +86,11 @@ class SadTalker:
         print(err)
 
     def convert_gpu(self, source_image, driven_audio):
-        enhancer_str = "" if not self.enhancer else f"--enhancer={self.enhancer}"
+        enhancer_str = "" if not self.enhancer else f"--enhancer {self.enhancer}"
         instance_cmd = (
-            f"python inference.py --driven_audio {driven_audio} --source_image {source_image} --result_dir"
-            f" {self.result_dir} --output_video_path {self.output_video_path} {enhancer_str} &\n "
+            f"python {self.inference_script} --driven_audio {driven_audio} --source_image {source_image} --result_dir"
+            f" {self.result_dir} --output_video_path {self.output_video_path} {enhancer_str}"
+            f" --checkpoint_dir {self.checkpoint_dir} &\n "
         )
         instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
         print(instance_cmd)

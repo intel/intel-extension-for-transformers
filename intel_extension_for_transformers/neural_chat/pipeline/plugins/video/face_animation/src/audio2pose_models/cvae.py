@@ -18,7 +18,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-from src.audio2pose_models.res_unet import ResUnet
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.res_unet import ResUnet
 
 
 def class2onehot(idx, class_num):

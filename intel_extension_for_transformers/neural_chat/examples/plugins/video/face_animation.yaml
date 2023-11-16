@@ -21,28 +21,26 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 9002
+port: 9001
 
 model_name_or_path: "facebook/opt-125m"
 device: "cpu"
-
-asr:
-    enable: true
-    args:
-        # support cpu, hpu, xpu, cuda
-        device: "cpu"
-        # support openai/whisper series
-        model_name_or_path: "openai/whisper-small"
-        # only can be set to true when the device is set to "cpu"
-        bf16: false
 
 tts:
     enable: true
     args:
         device: "cpu"
         voice: "default"
-        stream_mode: true
+        stream_mode: false
         output_audio_path: "./output_audio.wav"
 
+face_animation:
+    enable: true
+    args:
+        device: "cpu"
+        bf16: true
+        p_num: 4
+        enhancer: "gfpgan"
+
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['voicechat']
+tasks_list: ['faceanimation']

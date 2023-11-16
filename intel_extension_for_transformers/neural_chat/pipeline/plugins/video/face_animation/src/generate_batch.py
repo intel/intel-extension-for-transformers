@@ -22,7 +22,7 @@ import torch
 import numpy as np
 import random
 import scipy.io as scio
-import src.utils.audio as audio
+import intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.audio as audio
 
 
 def crop_pad_audio(wav, audio_length):

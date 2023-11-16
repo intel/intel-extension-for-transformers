@@ -21,6 +21,7 @@ import glob
 
 def init_path(checkpoint_dir, config_dir, size=512, preprocess="crop"):
     """Init checkpoint paths."""
+    print(os.path.join(checkpoint_dir, "*.safetensors"))
     if len(glob.glob(os.path.join(checkpoint_dir, "*.safetensors"))):
         print("using safetensor as default")
         sadtalker_paths = {

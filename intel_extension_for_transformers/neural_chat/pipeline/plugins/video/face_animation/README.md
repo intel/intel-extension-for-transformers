@@ -7,6 +7,7 @@ We optimize SadTalker on Intel Xeon CPU and integrate its face animation functio
 ```
 cd intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation
 conda install ffmpeg
+pip install ffmpeg-python
 pip install -r requirements.txt
 ```
 

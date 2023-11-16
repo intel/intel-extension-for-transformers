@@ -17,7 +17,7 @@
 
 import torch
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
-from datasets import load_dataset, Audio, Dataset
+from datasets import Audio, Dataset
 import time
 import contextlib
 from pydub import AudioSegment

@@ -17,7 +17,7 @@
 
 import torch
 import torch.nn as nn
-from src.audio2pose_models.networks import ResidualConv, Upsample
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.audio2pose_models.networks import ResidualConv, Upsample
 
 
 class ResUnet(nn.Module):
