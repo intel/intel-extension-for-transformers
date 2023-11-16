@@ -233,7 +233,7 @@ async def retrieval_chat(request: Request):
     instance.reload_localdb(local_persist_dir = persist_dir)
 
     # non-stream mode
-    if not request.stream:
+    if not stream:
         response = chatbot.predict(query=query, config=config)
         formatted_response = response.replace('\n', '<br/>')
         return formatted_response

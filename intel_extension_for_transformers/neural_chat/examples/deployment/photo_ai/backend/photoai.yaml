@@ -39,7 +39,7 @@ tts:
         device: "cpu"
         voice: "default"
         stream_mode: true
-        output_audio_path: "/home/tme/itrex_photoai_backend/intel_extension_for_transformers/neural_chat/examples/deployment/photo_ai/backend/output_audio"
+        output_audio_path: "/home/tme/itrex_photoai_backend/intel_extension_for_transformers/neural_chat/examples/deployment/photo_ai/backend/output_audio/tmp_audio"
 
 ner:
     enable: true
