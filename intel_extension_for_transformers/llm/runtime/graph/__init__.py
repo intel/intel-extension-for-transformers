@@ -101,7 +101,7 @@ class Model:
         if use_cache and os.path.exists(self.bin_file):
             return
 
-        if not os.path.exists(fp32_bin):
+        if not use_cache or not os.path.exists(fp32_bin):
             convert_model(model_name, fp32_bin, "f32")
             assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
@@ -171,6 +171,8 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
+            if beam_search:
+                break
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
