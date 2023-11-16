@@ -33,7 +33,7 @@ from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
-IMAGE_ROOT_PATH = "/home/nfs_images"
+IMAGE_ROOT_PATH = os.getenv("IMAGE_ROOT_PATH")
 
 
 def check_user_ip(user_ip: str) -> bool:

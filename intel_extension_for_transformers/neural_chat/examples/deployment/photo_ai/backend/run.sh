@@ -37,6 +37,8 @@ export MYSQL_DB="ai_photos"
 export MYSQL_PORT=3306
 export IMAGE_SERVER_IP="198.175.88.26"
 export IMAGE2IMAGE_IP="54.87.46.229"
+export IMAGE_ROOT_PATH="/home/nfs_images"
+export RETRIEVAL_FILE_PATH="/home/tme/photoai_retrieval_docs"
 export GOOGLE_API_KEY="AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
 
 nohup numactl -l -C 0-51 python -m photoai 2>&1 &

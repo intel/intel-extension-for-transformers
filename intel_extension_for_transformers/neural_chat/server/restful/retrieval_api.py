@@ -71,6 +71,7 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH")+'/'
 
 
 @router.post("/v1/aiphotos/askdoc/upload_link")
@@ -85,7 +86,7 @@ async def retrieval_upload_link(request: Request):
     res = check_user_ip(user_id)
     logger.info("[askdoc - create] "+str(res))
 
-    persist_path = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
+    persist_path = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id + '/persist_dir'
     if not os.path.exists(persist_path):
         return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
             Please check kb_id and save path again."
@@ -117,7 +118,7 @@ async def retrieval_create(request: Request,
 
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
-    path_prefix = "/home/tme/photoai_retrieval_docs/"
+    path_prefix = RETRIEVAL_FILE_PATH
 
     # create new upload path dir
     if os.path.exists(path_prefix):
@@ -168,7 +169,7 @@ async def retrieval_append(request: Request,
     res = check_user_ip(user_id)
     logger.info("[askdoc - append] "+str(res))
 
-    path_prefix = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id
+    path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
@@ -221,9 +222,9 @@ async def retrieval_chat(request: Request):
                 stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
     if kb_id == 'default':
-        persist_dir = "/home/tme/photoai_retrieval_docs/default/persist_dir"
+        persist_dir = RETRIEVAL_FILE_PATH+"default/persist_dir"
     else:
-        persist_dir = f"/home/tme/photoai_retrieval_docs/"+user_id+'-'+kb_id+'/persist_dir'
+        persist_dir = RETRIEVAL_FILE_PATH+user_id+'-'+kb_id+'/persist_dir'
     if not os.path.exists(persist_dir):
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
