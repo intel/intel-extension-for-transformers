@@ -34,7 +34,7 @@ torch.ops.load_library(
 class DropoutQBits_(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, probability):
-        mask = torch.ops.weight_only_jblasop.qbits_dropout_fwd(input, probability)
+        mask = torch.ops.qbits_customop.qbits_dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
             ctx.tensors = (mask, )
         else:
@@ -47,7 +47,7 @@ class DropoutQBits_(torch.autograd.Function):
         mask = ctx.tensors[0]
         grad_input = None
 
-        if req_grad_input: grad_input = torch.ops.weight_only_jblasop.qbits_dropout_bwd(grad_output, mask)
+        if req_grad_input: grad_input = torch.ops.qbits_customop.qbits_dropout_bwd(grad_output, mask)
 
         return grad_input, None
 
