@@ -264,7 +264,7 @@ if __name__ == '__main__':
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
-        include_package_data=True,
+        include_package_data=False,
         package_data={
             '': ["*.yaml", "*.mat"],
         },
