@@ -160,7 +160,8 @@ WORKDIR /intel-extension-for-transformers
 
 RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
 RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
-RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && pip install -v .
+RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt 
+#&& pip install -v .
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
