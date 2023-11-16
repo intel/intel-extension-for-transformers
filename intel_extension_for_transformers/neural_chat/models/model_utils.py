@@ -362,6 +362,7 @@ def load_model(
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
     ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
