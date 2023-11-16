@@ -145,7 +145,7 @@ ENV LANG C.UTF-8
 SHELL ["/bin/bash", "--login", "-c"]
 RUN apt update \
     && apt install -y build-essential \
-    && apt install -y wget numactl git \
+    && apt install -y wget numactl git nvidia-cuda* \
     && apt install -y openssh-server \
     && apt install -y python${PYTHON_VERSION} python3-pip \
     && apt clean \
@@ -160,8 +160,7 @@ WORKDIR /intel-extension-for-transformers
 
 RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
 RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
-RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt 
-#&& pip install -v .
+RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && pip install -v .
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
