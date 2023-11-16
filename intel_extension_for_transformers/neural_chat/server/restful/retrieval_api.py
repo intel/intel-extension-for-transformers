@@ -226,17 +226,20 @@ async def retrieval_chat(request: Request):
     else:
         persist_dir = RETRIEVAL_FILE_PATH+user_id+'-'+kb_id+'/persist_dir'
     if not os.path.exists(persist_dir):
+        print(f"Can not find persist dir {persist_dir}")
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
     # reload retrieval instance with specific knowledge base
-    print("[askdoc - chat] starting to reload local db...")
+    print(f"[askdoc - chat] starting to reload local db using {persist_dir}")
     instance = plugins['retrieval']["instance"]
     instance.reload_localdb(local_persist_dir = persist_dir)
+    print(f"[askdoc - chat] successfully reload local db.")
 
     # non-stream mode
     if not stream:
         response = chatbot.predict(query=query, config=config)
         formatted_response = response.replace('\n', '<br/>')
+        print(f"[askdoc - chat] non-stream response: {formatted_response}")
         return formatted_response
     # stream mode
     generator, link = chatbot.predict_stream(query=query, config=config)
