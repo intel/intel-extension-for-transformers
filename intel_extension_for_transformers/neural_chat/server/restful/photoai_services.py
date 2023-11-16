@@ -716,16 +716,22 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
 
 
 def delete_user_infos(user_id: str):
-    logger.info(f'[delete user] start query from ner results')
+    logger.info(f'[delete user] start delete user info')
 
     try:
         mysql_db = MysqlDb()
         with mysql_db.transaction():
-            # delete image_face and face_info
-            logger.info(f'[delete user] delete image_face and face_info of user {user_id}.')
+            # delete image_face
+            logger.info(f'[delete user] delete image_face of user {user_id}.')
             mysql_db.delete(
-                sql=f"""DELETE image_face, face_info FROM image_face 
-                INNER JOIN face_info ON image_face.face_id=face_info.face_id WHERE user_id='{user_id}'""", 
+                sql=f"""DELETE FROM image_face WHERE user_id='{user_id}'""", 
+                params=None)
+            
+            # delete face_info
+            logger.info(f'[delete user] delete face_info of user {user_id}.')
+            mysql_db.delete(
+                sql=f"""DELETE face_info FROM face_info LEFT JOIN image_face 
+                ON face_info.face_id = image_face.face_id WHERE image_face.face_id IS NULL""", 
                 params=None)
 
             # delete image_info
