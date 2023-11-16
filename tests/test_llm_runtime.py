@@ -37,15 +37,15 @@ class TestLLMRUNTIME(unittest.TestCase):
         # pytorch fp32
         pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
         pt_model.eval() 
-        logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
+        pt_logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
         pt_generate_ids = pt_model.generate(input_ids=inputs.input_ids, do_sample=False, max_new_tokens=100)[0].tolist()
         print(tokenizer.decode(pt_generate_ids))
 
         itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
-        outputs = itrex_model.forward(inputs.input_ids)
+        itrex_outputs = itrex_model(inputs.input_ids)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
-        print(cmpData(logits.detach().numpy().flatten(), outputs.flatten()))
+        print(cmpData(pt_logits.detach().numpy().flatten(), itrex_outputs.flatten()))
 
         for i in range(len(pt_generate_ids)):
             self.assertEqual(pt_generate_ids[i], itrex_generate_ids[i])
