@@ -2930,7 +2930,7 @@ struct ne_tensor* ne_padding_mask_inf_impl(struct ne_context* ctx, struct ne_ten
 }
 
 struct ne_tensor* ne_padding_left_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int* n_padding) {
-  return ne_padding_mask_inf_impl(ctx, a, 0, n_padding, false, true);
+  return ne_padding_mask_inf_impl(ctx, a, 0, n_padding, true, false);
 }
 
 struct ne_tensor* ne_padding_left_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int* n_padding) {
