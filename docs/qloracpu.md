@@ -35,7 +35,7 @@ model = get_peft_model(model, peft_config)
 
 ### Neural Chat Example
 
-To use QLoRA on Neural Chat with CPU device, just add `--qlora` argument to the normal Neural Chat Example, for example, as below.
+To use QLoRA on Neural Chat with CPU device, just add `--qlora` argument to the normal [Neural Chat Fine-tuning Example](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction), for example, as below.
 
 ```bash
 python finetune_clm.py \
@@ -58,4 +58,5 @@ python finetune_clm.py \
         --use_fast_tokenizer false \
         --no_cuda
         --qlora
+        --max_train_samples 500
 ```
