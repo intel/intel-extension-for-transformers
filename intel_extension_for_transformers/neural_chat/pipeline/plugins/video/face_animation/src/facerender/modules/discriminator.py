@@ -17,8 +17,6 @@
 
 from torch import nn
 import torch.nn.functional as F
-from facerender.modules.util import kp2gaussian
-import torch
 
 
 class DownBlock2d(nn.Module):
@@ -45,6 +43,7 @@ class DownBlock2d(nn.Module):
         if self.norm:
             out = self.norm(out)
         out = F.leaky_relu(out, 0.2)
+        # pylint: disable=E1102
         if self.pool:
             out = F.avg_pool2d(out, (2, 2))
         return out
@@ -73,6 +72,7 @@ class Discriminator(nn.Module):
 
         self.down_blocks = nn.ModuleList(down_blocks)
         self.conv = nn.Conv2d(self.down_blocks[-1].conv.out_channels, out_channels=1, kernel_size=1)
+        # pylint: disable=E1102
         if sn:
             self.conv = nn.utils.spectral_norm(self.conv)
 

@@ -172,8 +172,8 @@ class CropAndExtract:
                     .to(self.device)
                     .unsqueeze(0)
                 )
-
                 with torch.no_grad():
+                    # pylint: disable=E1102
                     full_coeff = self.net_recon(im_t)
                     coeffs = split_coeff(full_coeff)
 

@@ -25,6 +25,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_an
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.\
     facerender.sync_batchnorm import SynchronizedBatchNorm3d as BatchNorm3d
 
+# pylint: disable=E1102
 import torch.nn.utils.spectral_norm as spectral_norm
 
 

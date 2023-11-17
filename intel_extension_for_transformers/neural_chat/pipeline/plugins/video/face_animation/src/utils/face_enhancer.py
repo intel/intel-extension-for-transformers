@@ -85,32 +85,8 @@ def enhancer_no_len(images, method="gfpgan", bg_upsampler="realesrgan", rank=0, 
     else:
         raise ValueError(f"Wrong model version {method}.")
 
-    # ------------------------ set up background upsampler ------------------------
-    if bg_upsampler == "realesrgan":
-        if not torch.cuda.is_available():  # CPU
-            import warnings
-
-            warnings.warn(
-                "The unoptimized RealESRGAN is slow on CPU. We do not use it. "
-                "If you really want to use it, please modify the corresponding codes."
-            )
-            bg_upsampler = None
-        else:
-            from basicsr.archs.rrdbnet_arch import RRDBNet
-            from realesrgan import RealESRGANer
-
-            model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
-            bg_upsampler = RealESRGANer(
-                scale=2,
-                model_path="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
-                model=model,
-                tile=400,
-                tile_pad=10,
-                pre_pad=0,
-                half=True,
-            )  # need to set False in CPU mode
-    else:
-        bg_upsampler = None
+    # set None to upsampler
+    bg_upsampler = None
 
     # determine model paths
     model_path = os.path.join("gfpgan/weights", model_name + ".pth")
@@ -227,32 +203,8 @@ def enhancer_generator_no_len(images, method="gfpgan", bg_upsampler="realesrgan"
     else:
         raise ValueError(f"Wrong model version {method}.")
 
-    # ------------------------ set up background upsampler ------------------------
-    if bg_upsampler == "realesrgan":
-        if not torch.cuda.is_available():  # CPU
-            import warnings
-
-            warnings.warn(
-                "The unoptimized RealESRGAN is slow on CPU. We do not use it. "
-                "If you really want to use it, please modify the corresponding codes."
-            )
-            bg_upsampler = None
-        else:
-            from basicsr.archs.rrdbnet_arch import RRDBNet
-            from realesrgan import RealESRGANer
-
-            model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
-            bg_upsampler = RealESRGANer(
-                scale=2,
-                model_path="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth",
-                model=model,
-                tile=400,
-                tile_pad=10,
-                pre_pad=0,
-                half=True,
-            )  # need to set False in CPU mode
-    else:
-        bg_upsampler = None
+    # set None to upsampler
+    bg_upsampler = None
 
     # determine model paths
     model_path = os.path.join("gfpgan/weights", model_name + ".pth")

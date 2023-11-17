@@ -32,14 +32,7 @@ from torch.multiprocessing import Pool, Process, set_start_method
 
 class KeypointExtractor:
     def __init__(self, device="cuda"):
-        ### gfpgan/weights
-        try:
-            import webui  # in webui
-
-            root_path = "extensions/SadTalker/gfpgan/weights"
-
-        except:
-            root_path = "gfpgan/weights"
+        root_path = "gfpgan/weights"
 
         print("---------device-----------", device)
         self.detector = init_alignment_model("awing_fan", device=device, model_rootpath=root_path)

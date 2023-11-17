@@ -19,7 +19,6 @@
 """
 
 import os
-import torch.nn.functional as F
 from torch.optim import lr_scheduler
 import torch
 from torch import Tensor
@@ -88,7 +87,7 @@ class ReconNetWrapper(nn.Module):
         super(ReconNetWrapper, self).__init__()
         self.use_last_fc = use_last_fc
         if net_recon not in func_dict:
-            return NotImplementedError("network [%s] is not implemented", net_recon)
+            raise NotImplementedError("network [%s] is not implemented", net_recon)
         func, last_dim = func_dict[net_recon]
         backbone = func(use_last_fc=use_last_fc, num_classes=self.fc_dim)
         if init_path and os.path.isfile(init_path):
