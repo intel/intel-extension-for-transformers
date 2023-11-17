@@ -21,9 +21,9 @@
 #
 # ============================================================================
 # How to build: 
-#   docker build ./ -f Dockerfile -t chatbot_finetune:latest
+#   docker build ./ -f Dockerfile_chatbot -t chatbot_finetune:latest
 # If you need to use proxy, please use the following command
-#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile -t chatbot_finetune:latest
+#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile_chatbot -t chatbot_finetune:latest
 
 ## SPR environment
 ARG UBUNTU_VER=22.04
