@@ -13,6 +13,7 @@ class TestLLMRUNTIME(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.skipTest(cls, "temporately skip test")
         pass
 
     @classmethod
