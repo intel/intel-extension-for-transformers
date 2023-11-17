@@ -137,8 +137,6 @@ class OcclusionAwareGenerator(nn.Module):
                     occlusion_map = F.interpolate(occlusion_map, size=out.shape[2:], mode="bilinear")
                 out = out * occlusion_map
 
-            # output_dict["deformed"] = self.deform_input(source_image, deformation)  # 3d deformation cannot deform 2d image
-
         # Decoding part
         out = self.resblocks_2d(out)
         for i in range(len(self.up_blocks)):

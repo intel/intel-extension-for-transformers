@@ -61,7 +61,6 @@ class KPDetector(nn.Module):
 
         if estimate_jacobian:
             self.num_jacobian_maps = 1 if single_jacobian_map else num_kp
-            # self.jacobian = nn.Conv3d(in_channels=self.predictor.out_filters, out_channels=9 * self.num_jacobian_maps, kernel_size=7, padding=3)
             self.jacobian = nn.Conv3d(
                 in_channels=self.predictor.out_filters,
                 out_channels=9 * self.num_jacobian_maps,
