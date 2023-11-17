@@ -168,8 +168,9 @@ register_conv_template(
 )
 
 class PromptTemplate:
-    def __init__(self, name="one_shot"):
+    def __init__(self, name="one_shot", clear_after_gen=False):
         self.conv = get_conv_template(name)
+        self.clear_after_gen = clear_after_gen
 
     @property
     def roles(self):
@@ -179,7 +180,10 @@ class PromptTemplate:
         self.conv.append_message(role, message)
 
     def get_prompt(self) -> str:
-        return self.conv.get_prompt()
+        res = self.conv.get_prompt()
+        if self.clear_after_gen:
+            self.clear_messages()
+        return res
 
     def clear_messages(self) -> str:
         self.conv.messages = []
