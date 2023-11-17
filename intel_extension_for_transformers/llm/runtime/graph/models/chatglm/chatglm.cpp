@@ -218,7 +218,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
         ne_set_name(masked_attn_scores, "masked_attn_scores");
         ne_build_forward_expand(&gf, ne_cpy(ctx0, inf, masked_attn_scores));
       }
-
+      // mask left pad token
+      attn_scores = ne_padding_left_mask_inf_inplace(ctx0, attn_scores, n_padding.data());
       attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
       ne_set_name(attn_scores, "attn_scores");
 

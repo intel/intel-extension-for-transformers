@@ -406,6 +406,7 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "DIAG",
     "DIAG_MASK_INF",
     "DIAG_MASK_ZERO",
+    "PADDING_MASK_INF",
     "SOFT_MAX",
     "ROPE",
     "ROPE_BACK",
@@ -478,6 +479,7 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "diag(x)",
     "diag_mask_inf(x)",
     "diag_mask_zero(x)",
+    "padding_mask_inf(x)",
     "soft_max(x)",
     "rope(x)",
     "rope_back(x)",
@@ -2887,6 +2889,52 @@ struct ne_tensor* ne_diag_mask_zero(struct ne_context* ctx, struct ne_tensor* a,
 
 struct ne_tensor* ne_diag_mask_zero_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past) {
   return ne_diag_mask_zero_impl(ctx, a, n_past, true);
+}
+
+// ne_padding_mask_inf
+
+struct ne_tensor* ne_padding_mask_inf_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int* n_padding,
+                                           bool padding_left, bool inplace) {
+  NE_ASSERT(padding_left);
+  bool is_node = false;
+
+  if (a->grad) {
+    is_node = true;
+  }
+
+  struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
+
+  ne_scratch_save(ctx);
+
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2 + bs, NE_SIZE_CALC);
+
+  ((int32_t*)b->data)[0] = n_past;
+  ((int32_t*)b->data)[1] = inplace ? 1 : 0;
+  for (int i = 0; i < bs; ++i) {
+    if (n_padding == NULL) {
+      ((int32_t*)b->data)[2 + i] = 0;
+    } else {
+      ((int32_t*)b->data)[2 + i] = *(n_padding + i);
+    }
+  }
+
+  ne_scratch_load(ctx);
+
+  result->op = NE_OP_PADDING_MASK_INF;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = a;
+  result->src1 = b;
+
+  return result;
+}
+
+struct ne_tensor* ne_padding_left_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int* n_padding) {
+  return ne_padding_mask_inf_impl(ctx, a, 0, n_padding, false, true);
+}
+
+struct ne_tensor* ne_padding_left_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int* n_padding) {
+  return ne_padding_mask_inf_impl(ctx, a, 0, n_padding, true, true);
 }
 
 // ne_soft_max
@@ -7416,6 +7464,70 @@ static void ne_compute_forward_diag_mask_zero(const struct ne_compute_params* pa
   }
 }
 
+// ne_compute_forward_padding_mask_inf
+
+static void ne_compute_forward_padding_mask_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                                const struct ne_tensor* src1, struct ne_tensor* dst,
+                                                const float value) {
+  assert(src1->type == NE_TYPE_I32);
+  const int bs = src0->ne[3];
+  assert(ne_nelements(src1) == (2 + bs));
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  const int n_past = ((int32_t*)src1->data)[0];
+  const bool inplace = (bool)((int32_t*)src1->data)[1];
+
+  assert(n_past >= 0);
+
+  if (!inplace && (params->type == NE_TASK_INIT)) {
+    // memcpy needs to be synchronized across threads to avoid race conditions.
+    // => do it in INIT phase
+    NE_ASSERT(ne_nelements(dst) == ne_nelements(src0));
+    NE_ASSERT(ne_is_contiguous(dst) && ne_is_contiguous(src0));
+    memcpy(((char*)dst->data), ((char*)src0->data), ne_nbytes(dst));
+  }
+
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+
+  // TODO: handle transposed/permuted matrices
+
+  const int n = ne_nrows(src0);
+  const int nc = src0->ne[0];
+  const int nr = src0->ne[1];
+  const int nz = n / nr;
+
+  assert(dst->nb[0] == sizeof(float));
+  assert(src0->nb[0] == sizeof(float));
+
+  // mask padding token (padding left)
+  for (int b = 0; b < bs; b++) {
+    const int n_padding = ((int32_t*)src1->data)[2 + b];
+    if (n_padding == 0) continue;
+    for (int k = 0; k < (nz / bs); k++) {
+      for (int j = ith; j < nr; j += nth) {
+        // it will not affect next token if don't mask the pad_token row
+        ne_vec_set_f32(n_padding, (float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]), value);
+      }
+    }
+  }
+}
+
+static void ne_compute_forward_padding_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                                const struct ne_tensor* src1, struct ne_tensor* dst) {
+  switch (src0->type) {
+    case NE_TYPE_F32: {
+      ne_compute_forward_padding_mask_f32(params, src0, src1, dst, -INFINITY);
+    } break;
+    default: {
+      NE_ASSERT(false);
+    } break;
+  }
+}
+
 // ne_compute_forward_soft_max
 
 static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -9339,6 +9451,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     case NE_OP_DIAG_MASK_ZERO: {
       ne_compute_forward_diag_mask_zero(params, tensor->src0, tensor->src1, tensor);
     } break;
+    case NE_OP_PADDING_MASK_INF: {
+      ne_compute_forward_padding_mask_inf(params, tensor->src0, tensor->src1, tensor);
+    } break;
     case NE_OP_SOFT_MAX: {
       ne_compute_forward_soft_max(params, tensor->src0, tensor);
     } break;
@@ -10353,6 +10468,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           node->n_tasks = 1;
         } break;
         case NE_OP_DIAG_MASK_INF:
+        case NE_OP_PADDING_MASK_INF:
         case NE_OP_ROPE:
           if (node->type == NE_TYPE_JBLAS) {
             node->n_tasks = 1;
