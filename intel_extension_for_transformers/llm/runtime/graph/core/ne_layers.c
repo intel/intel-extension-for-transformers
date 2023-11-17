@@ -6680,7 +6680,8 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
   if (params->type == NE_TASK_FINALIZE) {
     return;
   }
-  jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0, params->wdata);
+  jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, nb11 / ne_element_size(src1),
+                       nb1 / ne_element_size(dst), params->wdata);
 }
 
 static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,

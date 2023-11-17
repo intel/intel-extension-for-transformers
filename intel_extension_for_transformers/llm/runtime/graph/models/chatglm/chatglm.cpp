@@ -281,8 +281,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
 
   lctx.use_buf(ctx0, -1);
   if (!lctx.logits_all && qlen > 1) {
-    inpL = ne_cont(ctx0, ne_view_2d(ctx0, inpL, hidden_size, batch_size, ne_element_size(inpL) * hidden_size * N,
-                                    (N - 1) * hidden_size * ne_element_size(inpL)));
+    inpL = ne_view_2d(ctx0, inpL, hidden_size, batch_size, ne_element_size(inpL) * hidden_size * N,
+                      (N - 1) * hidden_size * ne_element_size(inpL));
   }
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[3], inpL);
