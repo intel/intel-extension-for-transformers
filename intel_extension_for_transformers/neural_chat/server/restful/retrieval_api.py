@@ -159,6 +159,10 @@ async def retrieval_chat(request: AskDocRequest):
                     yield f"data: {formatted_link}\n\n"
                 else:
                     formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    if '**:' in formatted_str:
+                        formatted_str = formatted_str.replace('**:', '</b>:')
+                    if '**' in formatted_str:
+                        formatted_str = formatted_str.replace('**', '<b>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
             if link != []:
