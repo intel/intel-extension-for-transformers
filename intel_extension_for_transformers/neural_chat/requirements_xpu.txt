@@ -14,7 +14,6 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding

@@ -20,6 +20,8 @@ namespace jblas {
 namespace kernel {
 namespace avx512_bf16 {
 
+#pragma GCC push_options
+#pragma GCC target("avx512bf16")
 static inline JBLAS_CODE bf16_cvt_fp32_2D_write_back(const utils::bf16* src_ptr, float* dst_ptr, int row, int col,
                                                      int src_step, int dst_step, bool zeropadding) {
 #if CompileBF16()
@@ -81,7 +83,7 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
 #endif
   return avx512f::fp32_cvt_bf16_2D_write_back(raw_srcptr, raw_dstptr, row, col, srcstride, dststride, zeropadding);
 }
-
+#pragma GCC pop_options
 }  // namespace avx512_bf16
 }  // namespace kernel
 }  // namespace jblas

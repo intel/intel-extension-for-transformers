@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2023/11] Released [**NeuralChat-v3**](https://huggingface.co/Intel/neural-chat-7b-v3), new **top-1 7B-sized LLM** available on Hugging Face. The model is fine-tuned on Habana Gaudi2 with supervised fine-tuning and direct preference optimization. Check out the [blog](https://medium.com/@NeuralCompressor/the-practice-of-supervised-finetuning-and-direct-preference-optimization-on-habana-gaudi2-a1197d8a3cd3).
 * [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
 * [2023/11] Released [**Fast, accurate, and infinite LLM inference**](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/docs/infinite_inference.md) with improved [StreamingLLM](https://arxiv.org/abs/2309.17453) on Intel CPUs!
 * [2023/11] Our paper [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) has been accepted by **NeurIPS'23** on Efficient Natural Language and Speech Processing. Thanks to all the collaborators!
@@ -60,32 +61,30 @@ Below is the sample code to enable weight-only INT4/INT8 inference. See more [ex
 ### INT4 Inference 
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
+model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
 ### INT8 Inference
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
+model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
@@ -125,7 +124,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-python-api">Streaming LLM</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/docs/tensor_parallelism.md">Tensor Parallelism</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">LLM COMPRESSION</th>
@@ -160,7 +159,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
+    <td colspan="2" align="center"><a href="docs/tutorials/README.md">Tutorials</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph#supported-models">LLM List</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
