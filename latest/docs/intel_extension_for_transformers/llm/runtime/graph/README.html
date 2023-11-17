@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g5f5fd84 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g9ea74e9 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -115,27 +115,27 @@
 <p>LLM Runtime supports the following models:</p>
 <section id="text-generation">
 <h3>Text Generation<a class="headerlink" href="#text-generation" title="Link to this heading"></a></h3>
-<p>| model name | INT8 | INT4|
-|—|:—:|:—:|
-|<a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf">LLaMA2-70B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-13b-hf">LLaMA-13B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-j-6b">GPT-J-6B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-neox-20b">GPT-NeoX-20B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/databricks/dolly-v2-3b">Dolly-v2-3B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT-7B</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-30b">MPT-30B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">Falcon-7B</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">Falcon-40B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan-13B-Chat">Baichuan-13B-Chat</a>, <a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat">Baichuan2-13B-Chat</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">Mistral-7B</a>| ✅ | ✅ |</p>
+<p>| Model Name | INT8 | INT4 | Transformer Version |
+|—|:—:|:—:|:—:|
+|<a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf">LLaMA2-70B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-13b-hf">LLaMA-13B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-j-6b">GPT-J-6B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-neox-20b">GPT-NeoX-20B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/databricks/dolly-v2-3b">Dolly-v2-3B</a>| ✅ | ✅ |  4.28.1 or newer |
+|<a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT-7B</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-30b">MPT-30B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">Falcon-7B</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">Falcon-40B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan-13B-Chat">Baichuan-13B-Chat</a>, <a class="reference external" href="https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat">Baichuan2-13B-Chat</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">Mistral-7B</a>| ✅ | ✅ | 4.34.0 or newer |</p>
 </section>
 <section id="code-generation">
 <h3>Code Generation<a class="headerlink" href="#code-generation" title="Link to this heading"></a></h3>
-<p>| model name | INT8 | INT4|
-|—|:—:|:—:|
-|<a class="reference external" href="https://huggingface.co/codellama/CodeLlama-7b-hf">Code-LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/codellama/CodeLlama-13b-hf">Code-LLaMA-13B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-1b">StarCoder-1B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-3b">StarCoder-3B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoder">StarCoder-15.5B</a>| ✅ | ✅ |</p>
+<p>| Model Name | INT8 | INT4 | Transformer Version |
+|—|:—:|:—:|:—:|
+|<a class="reference external" href="https://huggingface.co/codellama/CodeLlama-7b-hf">Code-LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/codellama/CodeLlama-13b-hf">Code-LLaMA-13B</a>| ✅ | ✅ |  Latest |
+|<a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-1b">StarCoder-1B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoderbase-3b">StarCoder-3B</a>, <a class="reference external" href="https://huggingface.co/bigcode/starcoder">StarCoder-15.5B</a>| ✅ | ✅ |  Latest |</p>
 </section>
 </section>
 <section id="how-to-use">
@@ -152,8 +152,12 @@
 <h3>1. Install<a class="headerlink" href="#install" title="Link to this heading"></a></h3>
 <p>Install from binary</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w">  </span><span class="c1"># under graph folder</span>
 </pre></div>
 </div>
+<blockquote>
+<div><p>Some models only support specific versions of transformers. Please refer to the table above or official documentation.</p>
+</div></blockquote>
 </section>
 <section id="run-llm-with-transformer-based-api">
 <h3>2. Run LLM with Transformer-based API<a class="headerlink" href="#run-llm-with-transformer-based-api" title="Link to this heading"></a></h3>
@@ -467,7 +471,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1d4a93d120> 
+   <jinja2.runtime.BlockReference object at 0x7fe1c4808700> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
