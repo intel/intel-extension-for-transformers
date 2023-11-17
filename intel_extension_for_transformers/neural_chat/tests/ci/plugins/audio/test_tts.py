@@ -98,7 +98,7 @@ class TestTTS(unittest.TestCase):
         if os.path.exists(driven_audio_path):
             spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
         else:
-            spk_embed = self.tts.create_speaker_embedding("../../../../assets/audio/sample.wav")
+            spk_embed = self.tts.create_speaker_embedding("../assets/audio/sample.wav")
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
 

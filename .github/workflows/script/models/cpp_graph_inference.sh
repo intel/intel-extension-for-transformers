@@ -117,8 +117,9 @@ function main() {
                     if [[ ! -e ${quantized_model} ]]; then
                         if [[ ${precision} == "q4_j_vnni_b128" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_dtype int8 --alg sym
-                        elif [[ ${precision} == "q4_j_vnni_bf16_b32" ]]; then
-                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype bf16 --compute_dtype int8 --alg sym
+                        # deprecated since bfloat16 scale not mature    
+                        # elif [[ ${precision} == "q4_j_vnni_bf16_b32" ]]; then
+                        #     ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype bf16 --compute_dtype int8 --alg sym
                         elif [[ ${precision} == "q4_j_vnni_b32" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_dtype int8 --alg sym
                         elif [[ ${precision} == "q4_j_b32" ]]; then

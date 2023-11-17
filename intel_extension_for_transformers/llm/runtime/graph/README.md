@@ -4,36 +4,46 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
-- Utilize AMX, VNNI and AVX512F instruction set
+- Utilize AMX, VNNI, AVX512F and AVX2 instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
 
+## Supported Hardware
+| Hardware | Optimization |
+|-------------|:-------------:|
+|Intel Xeon Scalable Processors | ✔ |
+|Intel Xeon CPU Max Series | ✔ |
+|Intel Core Processors | ✔ |
+|Intel Arc GPU Series | WIP |
+|Intel Data Center GPU Max Series | WIP |
+|Intel Gaudi2 | Not yet |
+
 ## Supported Models
 
 LLM Runtime supports the following models:
 ### Text Generation
-| model name | INT8 | INT4|
-|---|:---:|:---:|
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ |
-|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ |
-|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ |
-|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ |
-|[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ |
-|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ |
-|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ |
-|[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |
-|[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |
-|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
-|[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |
-|[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ |
+| Model Name | INT8 | INT4 | Transformer Version |
+|---|:---:|:---:|:---:|
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ |  Latest |
+|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ |  Latest |
+|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ |  Latest |
+|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ |  Latest |
+|[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ |  4.28.1 or newer |
+|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ |  Latest |
+|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ |  Latest |
+|[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |  Latest |
+|[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  Latest |
+|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |  Latest |
+|[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |  Latest |
+|[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | 4.34.0 or newer |
 
 ### Code Generation
-| model name | INT8 | INT4|
-|---|:---:|:---:|
-|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ |
-|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ |
+| Model Name | INT8 | INT4 | Transformer Version |
+|---|:---:|:---:|:---:|
+|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ |  Latest |
+|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ |  Latest |
 
 
 ## How to Use
@@ -47,23 +57,24 @@ There are two methods for utilizing the LLM runtime:
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
+pip install -r requirements.txt  # under graph folder
 ```
+> Some models only support specific versions of transformers. Please refer to the table above or official documentation.
 
 ### 2. Run LLM with Transformer-based API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
+model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
@@ -88,30 +99,43 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
+Argument description of WeightOnlyQuantConfig:
+| Argument          |  Type       | Description                                                                             |
+| --------------    | ----------  | -----------------------------------------------------------------------                 |
+| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                           |
+| weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
+| alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
+| group_size        | Int         | Group size: Int (default: 32)                                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
+| use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
+| not_quant         | Bool        | Determine whether or not the model will be quantized. (default: False)                  |
+| use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |
+
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
 | inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
-| streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
 | interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
+| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
+| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
 | ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
-| max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
 | batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
 | ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
 | seed              | Int         | NG seed (default: -1, use random seed for < 0)                                          |
 | threads           | Int         | Number of threads to use during computation (default: 8)                                |
-| repetition_penalty| Float       | Penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)                       |
-| num_beams         | Int         | Number of beams for beam_search (default: 1)                                            |
-| do_sample         | Int         | Whether or not to use sampling ; use greedy decoding otherwise. (default: False)        |
-| top_k             | Int         | Top-k sampling (default: 40, 0 = disabled)                                              |
-| top_p             | Int         | Top-p sampling (default: 0.95, 1.0 = disabled)                                          |
-| temperature       | Float       | Temperature (default: 0.8)                                                              |
-| min_new_tokens    | Int         | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
-| length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
-| early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
-| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
-| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
-| shift_roped_k     | Bool        | Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)   |
+| repetition_penalty| Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| num_beams         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| do_sample         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| top_k             | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| top_p             | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| temperature       | Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| min_new_tokens    | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| length_penalty    | Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| early_stopping    | Bool        | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| max_new_tokens    | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| streamer          | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| stopping_criteria | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 
 ### 3. Multi-Round Chat
 
@@ -120,7 +144,8 @@ Chat with LLaMA2:
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
+# Please change to local path to model, llama2 does not support online conversion, currently.
+model_name = "meta-llama/Llama-2-7b-chat-hf"
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
@@ -158,7 +183,12 @@ while True:
 ```
 
 
-## How to use: Straightforward Python script
+## How to use: Python script
+Install from binary
+```shell
+pip install intel-extension-for-transformers
+```
+
 Build from source
 > :warning: **If you want to use ```from_pretrain``` API**: please follow [Transformer-based API](#How-to-use-Transformer-based-API)
 
@@ -290,7 +320,7 @@ Argument description of inference.py:
 | --keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
 | --shift-roped-k                                   | Use [ring-buffer](./docs/infinite_inference.md#shift-rope-k-and-ring-buffer) and thus do not re-computing after reaching ctx_size (default: False)                                      |
 | --glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 & AMX) and fall back to fp16 if failed |
+| --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ & AMX) and fall back to fp16 if failed |
 
 
 ### 3. Tensor Parallelism cross nodes/sockets
@@ -301,3 +331,41 @@ We support tensor parallelism strategy for distributed inference/training on mul
 ### 4. Contribution
 
 You can consider adding your own models via [graph developer document](./developer_document.md).
+
+### 5. Custom Stopping Criteria
+
+You can customize the stopping criteria according to your own needs by processing the input_ids to determine if text generation needs to be stopped.
+Here is a simple example, which requires a minimum generation length of 80 tokens. Once the `min_length` is met, encountering a terminator `eos_token_id` will end the generation.
+
+```python
+import torch
+from typing import List
+from transformers import StoppingCriteria, StoppingCriteriaList
+
+class StopOnTokens(StoppingCriteria):
+    def __init__(self, min_length: int, start_length: int, stop_token_id: List[int]):
+        self.min_length = min_length
+        self.start_length = start_length
+        self.stop_token_id = stop_token_id
+ 
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
+    ) -> bool:
+        if input_ids.shape[-1] - self.start_length > self.min_length:
+            for stop_id in self.stop_token_id:
+                if input_ids[0][input_ids.shape[-1] - 1] == stop_id:
+                    return True
+        return False
+
+stopping_criteria = StoppingCriteriaList(
+    [
+        StopOnTokens(
+            min_length=80,
+            start_length=inputs.shape[1],
+            stop_token_id=[tokenizer.eos_token_id],
+        )
+    ]
+)
+
+outputs = model.generate(inputs, streamer=streamer, stopping_criteria=stopping_criteria)
+```

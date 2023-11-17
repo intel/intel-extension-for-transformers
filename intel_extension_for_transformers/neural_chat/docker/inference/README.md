@@ -5,32 +5,27 @@ Intel Neural Chat Inference Dockerfile installer for Ubuntu22.04
 ## Environment Setup
 
 ### Setup Xeon SPR Environment
+Option 1 (default): you could use docker build to build the docker image in your environment.  
+If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when `docker build`.  
+If you need to clone repo in docker, add `--build-arg ITREX_VER="${branch} --build-arg REPO="${you_repo_path}"` when `docker build`.  
+If you need to use local repository, add `--build-arg REPO_PATH="."` when `docker build`.
+
 
 ```bash
-cd /path/to/workspace/intel-extension-for-transformers
-docker build  --no-cache ./ --target cpu \ 
-        --build-arg REPO="${you_repo_path}" \  # Optional, set repository(default: https://github.com/intel/intel-extension-for-transformers.git)
-        --build-arg ITREX_VER="${branch}" \  # Optional, set branch(default: main)
-        --build-arg http_proxy="${http_proxy}" \  # Optional, use proxy
-        --build-arg https_proxy="${https_proxy}" \  # Optional, use proxy
-        --build-arg REPO_PATH="." \  # Optional, use local files
-        -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile \ 
-        -t chatbotinfer:latest
+docker build --format docker --network=host -t ${IMAGE_NAME}:${IMAGE_TAG}  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --target cpu
 ```
 
-If you need to set proxy settings:
-
+Option 2: Download from docker hub.
 ```bash
-docker build --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer:latest . --target cpu
+docker pull intel/ai-tools:itrex-chatbot 
 ```
 
-If you don't need to set proxy settings:
-
+If you have downloaded models and dataset locally, just mount the files to the docker container using '-v'. Make sure using the absolute path for host_dir.
 ```bash
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer:latest . --target cpu
+docker run -it -v ${host_dir}:${mount_dir} ${IMAGE_NAME}:${IMAGE_TAG}
 ```
 
-If you need to use local files:
+>**Note**: `${host_dir}` is your local directory, `${mount_dir}` is the docker's directory. If you need to use proxy, add `-e http_proxy=${http_proxy} -e https_proxy=${https_proxy}`
 
 ```bash
 cd /path/to/workspace/intel-extension-for-transformers
@@ -49,44 +44,14 @@ docker run -it chatbotinfer:latest /bin/bash
 
 ### Setup Habana Gaudi Environment
 ```bash
-cd /path/to/workspace/intel-extension-for-transformers
-docker build  --no-cache ./ --target hpu \ 
-        --build-arg REPO="${you_repo_path}" \  # Optional, set repository(default: https://github.com/intel/intel-extension-for-transformers.git)
-        --build-arg ITREX_VER="${branch}" \  # Optional, set branch(default: main)
-        --build-arg http_proxy="${http_proxy}" \  # Optional, use proxy
-        --build-arg https_proxy="${https_proxy}" \  # Optional, use proxy
-        --build-arg REPO_PATH="." \  # Optional, use local files
-        -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile \ 
-        -t chatbothabana:latest
+DOCKER_BUILDKIT=1 docker build --format docker --network=host -t ${IMAGE_NAME}:${IMAGE_TAG}  ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.11.0" --build-arg REVISION="587" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
 ```
 
 If you need to set proxy settings:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbothabana:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --target hpu
-```
-
-If you don't need to set proxy settings:
-
-```bash
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbothabana:latest . --target hpu
-```
-
-If you need to use local files:
-
-```bash
-cd /path/to/workspace/intel-extension-for-transformers
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --build-arg REPO_PATH="." -t chatbothabana:latest . --target hpu
-```
-
-If you need to use forked repository or other branch:
-
-```bash
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile --build-arg REPO=<forked_repository> --build-arg ITREX_VER=<your_branch_name> -t chatbothabana:latest . --target hpu
-```
-
-```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbothabana:latest /bin/bash
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} 
 ```
 
 ## Run the Inference
