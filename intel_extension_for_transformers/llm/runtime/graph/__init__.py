@@ -145,8 +145,9 @@ class Model:
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
         max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
+        self.batch_size = input_ids.shape[0]
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
+            self.init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
                                **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
@@ -160,9 +161,9 @@ class Model:
         beam_search = False
         if (generate_kwargs.get("num_beams", 1) > 1) and not generate_kwargs.get("do_sample", False):
             beam_search = True
-        if not beam_search:
-            # TODO support multi batch
-            assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        # if not beam_search:
+        #     # TODO support multi batch
+        #     assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
 
         if streamer:
             assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
@@ -190,9 +191,14 @@ class Model:
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif ret[0][-1] == self.eos_token_id() or \
-                    (max_new_tokens != -1 and out_count >= max_new_tokens):
+            elif (max_new_tokens != -1 and out_count > max_new_tokens):
                 break
+            else:
+                all_done = [(r[-1] in [self.eos_token_id(), self.pad_token_id()])
+                           for r in ret]
+                if False not in all_done:
+                    break
+            out_count += 1
         if streamer:
             streamer.end()
 
@@ -206,6 +212,15 @@ class Model:
         if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
+    
+    def pad_token_id(self):
+        if self.tokenizer.pad_token_id == None:
+            if self.batch_size == 1:
+                return None
+            else:
+                raise ValueError("Please set pad_token_id when doing multi batch inference"\
+                                  " with padding!")
+        return self.tokenizer.pad_token_id
 
     def __call__(self, input_ids, reinit=False, **kwargs):
         if self.model is None:
