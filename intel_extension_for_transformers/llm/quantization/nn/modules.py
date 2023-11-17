@@ -168,7 +168,6 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         if lora_dropout > 0:
             self.lora_dropout = torch.nn.ModuleDict({adapter_name: DropoutQBits(p=lora_dropout)})
-        self.active_adapter = adapter_name
 
     def merge(self):
         if self.merged:

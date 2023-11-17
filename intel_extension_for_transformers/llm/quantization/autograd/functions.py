@@ -56,7 +56,8 @@ class MatMulKBit(torch.autograd.Function):
 
         # 3. Save state
         ctx.compute_dtype, ctx.weight_dtype = compute_dtype, weight_dtype
-        ctx.dtype_A, ctx.dtype_B, ctx.dtype_bias = A.dtype, B.dtype, None if bias is None else bias.dtype # B_dequant.dtype
+        ctx.dtype_A, ctx.dtype_B, ctx.dtype_bias = A.dtype, B.dtype, None if bias is None else bias.dtype
+        # B_dequant.dtype
 
         if any(ctx.needs_input_grad[:2]):
             ctx.tensors = (A, B) # B_dequant
