@@ -388,8 +388,8 @@ def load_model(
                  )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, \
-              only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/MISTRAL/NEURAL-CHAT now."
+            f"Unsupported model {model_name}, only supports "
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
