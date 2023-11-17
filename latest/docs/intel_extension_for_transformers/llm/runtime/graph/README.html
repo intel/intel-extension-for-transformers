@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g71bc910 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+ge1cca32 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -286,7 +286,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <blockquote>
 <div><p>:warning: <strong>If you want to use <code class="docutils literal notranslate"><span class="pre">from_pretrain</span></code> API</strong>: please follow <a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p>
 </div></blockquote>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux and WSL</span>
 <span class="c1"># make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder</span>
 git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
 mkdir<span class="w"> </span>build
@@ -301,10 +301,9 @@ ninja
 <span class="n">mkdir</span> <span class="n">build</span>
 <span class="nb">cd </span><span class="n">build</span>
 <span class="n">cmake</span> <span class="p">..</span>
-<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span>
+<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span> <span class="p">-</span><span class="n">-config</span> <span class="n">Release</span>
 </pre></div>
 </div>
-<p>Note: add compile args <code class="docutils literal notranslate"><span class="pre">-DNE_AVX512=OFF</span> <span class="pre">-DNE_AVX512_VBMI=OFF</span> <span class="pre">-DNE_AVX512_VNNI=OFF</span></code> to <code class="docutils literal notranslate"><span class="pre">cmake</span></code> when compiling it on a CPU without AVX512</p>
 <section id="run-llm-with-python-script">
 <h3>1. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
 <p>You can run LLM with one-click python script including conversion, quantization and inference.</p>
@@ -381,13 +380,19 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># recommed to use numactl to bind cores in Intel cpus for better performance</span>
 <span class="c1"># if you use different core numbers, please also  change -t arg value</span>
 <span class="c1"># please type prompt about codes when run `StarCoder`, for example, -p &quot;def fibonnaci(&quot;.</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
+
+<span class="c1">#Linux and WSL</span>
+<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
 
 <span class="c1"># if you want to generate fixed outputs, please set --seed arg, for example:</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span>
+<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span>
 
 <span class="c1"># if you want to reduce repeated generated texts, please set --repeat_penalty (value &gt; 1.0, default = 1.0), for example:</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
+<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
+
+<span class="c1">#Windows</span>
+<span class="c1">#Recommend to build and run our project in WSL to get a better and stable performance</span>
+python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores<span class="p">|</span>P-cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
 </pre></div>
 </div>
 <p>Argument description of inference.py:
@@ -471,7 +476,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f23009b4580> 
+   <jinja2.runtime.BlockReference object at 0x7f3512a7cd60> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
