@@ -23,10 +23,13 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     Seq2SeqTrainingArguments,
 )
+import neural_compressor.adaptor.pytorch as nc_torch
+from packaging.version import Version
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
+PT_VERSION = nc_torch.get_torch_version()
 
 class DummyDataset(data.Dataset):
     def __init__(self):
@@ -287,7 +290,9 @@ class TestQuantization(unittest.TestCase):
             if 'MatMul' in tensor.name:
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
-
+    
+    @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
+            "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
         model_name_or_path = "facebook/opt-125m"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)

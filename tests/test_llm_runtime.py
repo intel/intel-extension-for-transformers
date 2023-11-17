@@ -31,7 +31,10 @@ class TestLLMRUNTIME(unittest.TestCase):
         streamer = TextStreamer(tokenizer)
 
         model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
-        gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=300)
+        gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=300, seed=1)
+        outputs = tokenizer.batch_decode(gen_tokens)
+        print(outputs)
+        self.assertTrue("小明" in outputs[0])
 
     def test_beam_search(self):
         model_name = "/tf_dataset2/models/pytorch/gpt-j-6B"  # or local path to model
@@ -57,11 +60,8 @@ class TestLLMRUNTIME(unittest.TestCase):
         pt_generate_ids = pt_model.generate(**inputs, max_new_tokens=128, min_new_tokens=30,
                                             early_stopping=True, num_beams=4).tolist()
         # llm runtime fp32
-        convert_model(model_name, "gptj_fp32.bin", "f32")
-        itrex_model = Model()
-        itrex_model.init_from_bin("gptj", "gptj_fp32.bin", batch_size=4, num_beams=4,
-                                  max_new_tokens=128, min_new_tokens=30, early_stopping=True,
-                                  pad_token=pad_token)
+        woq_config = WeightOnlyQuantConfig(not_quant=True)
+        itrex_model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, batch_size=4, num_beams=4,
                                   max_new_tokens=128, min_new_tokens=30, early_stopping=True,
                                   pad_token=pad_token)
