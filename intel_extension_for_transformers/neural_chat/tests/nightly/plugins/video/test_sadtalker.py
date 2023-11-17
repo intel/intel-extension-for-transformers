@@ -43,15 +43,15 @@ class TestSadTalker(unittest.TestCase):
         self.checkpoint_dir = os.path.join(self.cur_directory, "checkpoints")
         self.enhancer_dir = os.path.join(self.cur_directory, "gfpgan")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.sadtalker = SadTalker(device=self.device, checkpoint_dir=self.checkpoint_dir, bf16=True, p_num=1, enhancer=None, output_video_path=self.output_video_path)
+        self.sadtalker = SadTalker(device=self.device, checkpoint_dir=self.checkpoint_dir, bf16=True, p_num=4, enhancer=None, output_video_path=self.output_video_path)
 
     @classmethod
     def tearDownClass(self):
         os.remove(self.output_video_path)
         os.remove(self.source_image)
         os.remove(self.driven_audio)
-        # shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
-        # shutil.rmtree(self.enhancer_dir, ignore_errors=True)
+        shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
+        shutil.rmtree(self.enhancer_dir, ignore_errors=True)
 
     def test_sadtalker_without_enhancer(self):
         self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
