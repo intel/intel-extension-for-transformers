@@ -113,12 +113,14 @@ async def retrieval_chat(request: AskDocRequest):
 
     chatbot = router.get_chatbot()
     
+    translated_query = request.translated_query
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
+    logger.info(f"[askdoc - chat] translated query '{translated_query}'")
     config = GenerationConfig()
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
-        if attr == "stream":
+        if attr == "stream" or attr == "translated_query":
             continue
         setattr(config, attr, value)
     generator, link = chatbot.predict_stream(query=request.query, config=config)

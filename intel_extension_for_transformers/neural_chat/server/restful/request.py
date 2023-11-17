@@ -59,6 +59,7 @@ class AskDocRequest(RequestBaseModel):
     params: Optional[dict] = None
     debug: Optional[bool] = False
     stream: bool = True
+    translated_query: Optional[str]
 
 
 class FeedbackRequest(RequestBaseModel):
