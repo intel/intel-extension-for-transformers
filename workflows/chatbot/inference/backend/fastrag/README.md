@@ -29,7 +29,6 @@ conda install pytorch torchvision cpuonly -c pytorch-nightly
 Install other dependencies using pip:
 
 ```bash
-pip install farm-haystack==1.14.0
 pip install intel_extension_for_pytorch
 pip install SentencePiece peft evaluate nltk datasets
 pip install transformers diffusers accelerate intel_extension_for_transformers

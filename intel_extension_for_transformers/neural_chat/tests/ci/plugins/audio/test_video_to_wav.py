@@ -30,8 +30,8 @@ class TestVideo2Wav(unittest.TestCase):
             shutil.rmtree(video_path+"../raw", ignore_errors=True)
             os.mkdir(video_path+"../raw")
         else:
-            shutil.rmtree("../../../../assets/raw", ignore_errors=True)
-            os.mkdir("../../../../assets/raw")
+            shutil.rmtree("../assets/raw", ignore_errors=True)
+            os.mkdir("../assets/raw")
 
     def tearDown(self) -> None:
         video_path = \
@@ -39,7 +39,7 @@ class TestVideo2Wav(unittest.TestCase):
         if os.path.exists(video_path):
             shutil.rmtree(video_path+"../raw", ignore_errors=True)
         else:
-            shutil.rmtree("./../../../assets/raw", ignore_errors=True)
+            shutil.rmtree("../assets/raw", ignore_errors=True)
 
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
@@ -48,7 +48,7 @@ class TestVideo2Wav(unittest.TestCase):
         if os.path.exists(video_path):
             parser.add_argument("--path", type=str, default=video_path)
         else:
-            parser.add_argument("--path", type=str, default='../../../../assets/video/intel.mp4')
+            parser.add_argument("--path", type=str, default='../assets/video/intel.mp4')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
         parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
@@ -67,7 +67,7 @@ class TestVideo2Wav(unittest.TestCase):
                "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/"
             self.assertTrue(os.path.exists(video_path_prefix+ '../raw/intel.wav'))
         else:
-            self.assertTrue(os.path.exists('../../../../assets/raw/intel.wav'))
+            self.assertTrue(os.path.exists('../assets/raw/intel.wav'))
 
 
 if __name__ == "__main__":

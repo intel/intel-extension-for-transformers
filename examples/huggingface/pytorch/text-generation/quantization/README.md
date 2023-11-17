@@ -40,10 +40,11 @@ pip install -r requirements.txt
 
 
 # Run
-We support compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device are provided, the followings are command to show how to use it.
+We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, and also support `PEFT` optimized model compression, the followings are command to show how to use it.
 
 ## 1. Performance
 ``` bash
+# Please use "--peft_model_id" to replace "--model" if the peft model is used.
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
@@ -86,6 +87,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 
 ## 2. Accuracy
 ```bash
+# Please use "--peft_model_id" to replace "--model" if the peft model is used.
 # fp32
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
