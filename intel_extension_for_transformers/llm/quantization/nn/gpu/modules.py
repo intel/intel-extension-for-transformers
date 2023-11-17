@@ -16,12 +16,12 @@
 # limitations under the License.
 
 
-import os
 import torch
 import intel_extension_for_pytorch
 import intel_extension_for_transformers.gbits as gbits
 from functools import reduce
 from operator import mul
+from ...utils import logger
 
 class ParamsGBits(torch.nn.Parameter):
     def __new__(
@@ -95,7 +95,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
             self.bias.data = self.bias.data.to(x.dtype)
 
         if getattr(self.weight, 'quant_state', None) is None:
-            print('quantization state not initialized. Please call .set_weights_bias().')
+            logger.warning('quantization state not initialized. Please call .set_weights_bias().')
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
