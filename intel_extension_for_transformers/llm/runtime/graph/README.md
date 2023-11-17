@@ -57,6 +57,7 @@ There are two methods for utilizing the LLM runtime:
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
+pip install -r requirements.txt  # under graph folder
 ```
 
 ### 2. Run LLM with Transformer-based API
