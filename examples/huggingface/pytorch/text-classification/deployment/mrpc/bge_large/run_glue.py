@@ -590,9 +590,9 @@ def main():
         tokenizer=tokenizer,
     )
 
-    sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
-    sq.transform(alpha="auto", calib_iter=3, folding=True)
-    del trainer
+    # sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
+    # sq.transform(alpha="auto", calib_iter=3, folding=True)
+    # del trainer
 
     trainer = NLPTrainer(
         model=model,
@@ -692,6 +692,9 @@ def main():
     if optim_args.to_onnx:
         trainer.enable_executor = True
         trainer.export_to_onnx()
+
+
+    
 
 if __name__ == "__main__":
     main()

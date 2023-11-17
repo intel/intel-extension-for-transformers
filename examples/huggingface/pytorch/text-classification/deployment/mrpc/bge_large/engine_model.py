@@ -6,7 +6,7 @@ from mteb import DRESModel
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 from optimum.onnxruntime import ORTModelForFeatureExtraction
-
+import copy
 
 class EngineBGEModel(DRESModel):
     def __init__(
@@ -16,22 +16,32 @@ class EngineBGEModel(DRESModel):
             normalize_embeddings: bool = True,
             query_instruction_for_retrieval: str = None,
             batch_size: int = 256,
+            backend: str = 'Engine',
             **kwargs
     ) -> None:
 
+        self.pytorch_model = None
+        self.ort_model = None
+        self.engine_model = None
         ort_model_path = kwargs.get("ort_model_path", None)
         engine_model = kwargs.get("engine_model", None)
+        self.backend = kwargs.get("backend", 'Engine')
 
-        self.engine_model = engine_model.graph
-        self.model = None
-        self.ort_model = None
-        if ort_model_path is None:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-            self.model = AutoModel.from_pretrained(model_name_or_path)
-        else:
+        if backend == 'Engine':
+            self.engine_model = engine_model.graph
             file_name = kwargs.get("file_name", None)
-            print('Evaluate on onnx model', file_name)
-            self.tokenizer = AutoTokenizer.from_pretrained(ort_model_path)
+            print('The backend is Neural Engine, evaluate on: ', ort_model_path, file_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+            self.ort_model = ORTModelForFeatureExtraction.from_pretrained(ort_model_path, file_name=file_name)
+        elif backend == 'Pytorch':
+            print('The backend is Pytorch, evaluate on: ', ort_model_path, file_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+            self.pytorch_model = AutoModel.from_pretrained(model_name_or_path)
+        elif backend == 'Onnxruntime':
+            print('The backend is Onnxruntime.')
+            file_name = kwargs.get("file_name", None)
+            print('The backend is Onnxruntime, evaluate on: ', ort_model_path, file_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
             self.ort_model = ORTModelForFeatureExtraction.from_pretrained(ort_model_path, file_name=file_name)
 
         self.query_instruction_for_retrieval = query_instruction_for_retrieval
@@ -40,12 +50,12 @@ class EngineBGEModel(DRESModel):
         self.batch_size = batch_size
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-        if self.model is not None:
-            self.model = self.model.to(self.device)
+        if self.pytorch_model is not None:
+            self.pytorch_model = self.pytorch_model.to(self.device)
 
             num_gpus = torch.cuda.device_count()
             if num_gpus > 1:
-                self.model = torch.nn.DataParallel(self.model)
+                self.pytorch_model = torch.nn.DataParallel(self.pytorch_model)
                 self.batch_size = self.batch_size * num_gpus
 
 
@@ -75,35 +85,7 @@ class EngineBGEModel(DRESModel):
 
     @torch.no_grad()
     def encode(self, sentences: List[str], **kwargs) -> np.ndarray:
-        if self.model is not None:
-            self.model.eval()
-
-            all_embeddings = []
-            for start_index in tqdm(range(0, len(sentences), self.batch_size), desc="Batches", disable=len(sentences)<256):
-                sentences_batch = sentences[start_index:start_index + self.batch_size]
-                inputs = self.tokenizer(
-                    sentences_batch,
-                    padding=True,
-                    truncation=True,
-                    return_tensors='pt',
-                    max_length=512,
-                ).to(self.device)
-                ort_inputs = self.tokenizer(
-                    sentences_batch,
-                    padding=True,
-                    truncation=True,
-                    max_length=512,
-                    return_tensors="np"
-                )
-                last_hidden_state = self.model(**inputs, return_dict=True).last_hidden_state
-                embeddings = self.pooling(last_hidden_state, inputs['attention_mask'])
-                if self.normalize_embeddings:
-                    embeddings = torch.nn.functional.normalize(embeddings, dim=-1)
-                embeddings = cast(torch.Tensor, embeddings)
-                all_embeddings.append(embeddings.cpu().numpy())
-            return np.concatenate(all_embeddings, axis=0)
-        
-        elif self.ort_model is not None:
+        if self.backend == 'Engine':
             ort_all_embeddings = []
             for start_index in tqdm(range(0, len(sentences), self.batch_size), desc="Batches", disable=len(sentences)<256):
                 sentences_batch = sentences[start_index:start_index + self.batch_size]
@@ -123,17 +105,67 @@ class EngineBGEModel(DRESModel):
                     return_tensors="np"
                 )
 
-                #ort_last_hidden_state = torch.tensor(self.ort_model(**ort_inputs).last_hidden_state)
-                input_ids = ort_inputs['input_ids']
-                token_type_ids = ort_inputs['token_type_ids']
-                attention_mask = ort_inputs['attention_mask']
+                input_ids = np.ascontiguousarray(ort_inputs['input_ids'])
+                token_type_ids = np.ascontiguousarray(ort_inputs['token_type_ids'])
+                attention_mask = np.ascontiguousarray(ort_inputs['attention_mask'])
+
                 engine_input = [input_ids, token_type_ids, attention_mask]
-                result = self.engine_model.inference(engine_input)
-                ort_last_hidden_state = torch.tensor(result['/encoder/layer.11/output/LayerNorm/Add_1:0']).reshape(input_ids.shape[0], input_ids.shape[1], 768)
-                
-                #print("input_ids, ort_last_hidden_state.shape = ", input_ids.shape, ort_last_hidden_state.shape)
-                #result_2 = self.engine_model.inference(engine_input_2)
-                #import pdb;pdb.set_trace()
+                result = copy.deepcopy(self.engine_model.inference(engine_input))  
+                ort_last_hidden_state = torch.tensor(result['last_layer_reshape:0'])
+                ort_embeddings = self.pooling(ort_last_hidden_state, inputs['attention_mask'])
+                if self.normalize_embeddings:
+                    ort_embeddings = torch.nn.functional.normalize(ort_embeddings, dim=-1)
+                ort_embeddings = cast(torch.Tensor, ort_embeddings)
+                ort_all_embeddings.append(ort_embeddings.cpu().numpy())
+            return np.concatenate(ort_all_embeddings, axis=0)
+        elif self.backend == 'Pytorch':
+            self.pytorch_model.eval()
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), self.batch_size), desc="Batches", disable=len(sentences)<256):
+                sentences_batch = sentences[start_index:start_index + self.batch_size]
+                inputs = self.tokenizer(
+                    sentences_batch,
+                    padding=True,
+                    truncation=True,
+                    return_tensors='pt',
+                    max_length=512,
+                ).to(self.device)
+                ort_inputs = self.tokenizer(
+                    sentences_batch,
+                    padding=True,
+                    truncation=True,
+                    max_length=512,
+                    return_tensors="np"
+                )
+                last_hidden_state = self.pytorch_model(**inputs, return_dict=True).last_hidden_state
+                embeddings = self.pooling(last_hidden_state, inputs['attention_mask'])
+                if self.normalize_embeddings:
+                    embeddings = torch.nn.functional.normalize(embeddings, dim=-1)
+                embeddings = cast(torch.Tensor, embeddings)
+                all_embeddings.append(embeddings.cpu().numpy())
+            return np.concatenate(all_embeddings, axis=0)
+        
+        elif self.backend == 'Onnxruntime':
+            ort_all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), self.batch_size), desc="Batches", disable=len(sentences)<256):
+                sentences_batch = sentences[start_index:start_index + self.batch_size]
+                inputs = self.tokenizer(
+                    sentences_batch,
+                    padding=True,
+                    truncation=True,
+                    return_tensors='pt',
+                    max_length=512,
+                ).to(self.device)
+
+                ort_inputs = self.tokenizer(
+                    sentences_batch,
+                    padding=True,
+                    truncation=True,
+                    max_length=512,
+                    return_tensors="np"
+                )
+
+                ort_last_hidden_state = torch.tensor(self.ort_model(**ort_inputs).last_hidden_state)
                 ort_embeddings = self.pooling(ort_last_hidden_state, inputs['attention_mask'])
                 if self.normalize_embeddings:
                     ort_embeddings = torch.nn.functional.normalize(ort_embeddings, dim=-1)

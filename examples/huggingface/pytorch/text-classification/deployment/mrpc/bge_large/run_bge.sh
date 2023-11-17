@@ -151,10 +151,9 @@ if [[ ${MODE} == "accuracy" ]]; then
     echo "------------ACCURACY BENCHMARK---------"
     python run_executor.py \
         --mode=accuracy \
-        --model_name_or_path bge-small-en-v1.5-pt-onnx-int8 \
+        --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --task_type STS \
-        --ort_model_path ./model_and_tokenizer \
-        --file_name int8-model.onnx \
+        --ort_model_path ./model_and_tokenizer/ --file_name int8-model.onnx \
         ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
         status=$?
     if [ ${status} != 0 ]; then
@@ -189,7 +188,7 @@ elif [[ ${MODE} == "latency" ]]; then
       ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
 
 
-          echo "------------0 - 11---------"
+        echo "------------0 - 11---------"
     numactl -m 0 -C 0-11 python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \

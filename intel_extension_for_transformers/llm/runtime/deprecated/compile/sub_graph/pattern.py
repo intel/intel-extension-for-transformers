@@ -147,7 +147,7 @@ supported_patterns = [
     'OperatorAdaptor',
     'EmbeddingsTo2DBeforeInnerProduct',
     'QuantGatherToBF16',
-    'MultiHeadAttention',
+    #'MultiHeadAttention',
     'OutputData',
     'QuantizedGraphDtypeRefactor',
     'ExplicitNHWCTransposeForConv',

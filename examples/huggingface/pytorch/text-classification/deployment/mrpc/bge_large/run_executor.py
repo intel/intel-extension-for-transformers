@@ -72,8 +72,19 @@ if __name__ == '__main__':
     if args.dynamic_quantize:
         executor = Neural_Engine(args.input_model, args.log_file, "dynamic_int8")
     else:
-        executor = Neural_Engine(args.input_model, args.log_file, "native")
-        #executor = Neural_Engine('./xzz-ir', args.log_file, "native")
+        #executor = Neural_Engine(args.input_model, args.log_file, "native")
+        #executor = Neural_Engine('./model_and_tokenizer/fp32-model.onnx', args.log_file, "native")
+        #executor = Neural_Engine('./model_and_tokenizer/int8-model.onnx', args.log_file, "native")
+        #executor = Neural_Engine('./fp32-ir', args.log_file, "native")
+        #executor = Neural_Engine('./int8-ir', args.log_file, "native")
+        #executor = Neural_Engine('./int8-yuwen-ir', args.log_file, "native")
+        #executor = Neural_Engine('./bge-base-int8-static-pt-to-onnx-v2/int8-model.onnx', args.log_file, "native")
+        #executor = Neural_Engine('./bge-base-int8-static-pt-to-onnx-v3/int8-model.onnx', args.log_file, "native")
+        #executor.graph.save('int8-yuwen-ir-v3')
+        #executor.graph.save('int8-zhenzhong-ir-withoutSQ')
+
+        #executor = Neural_Engine('./int8-yuwen-ir-v3', args.log_file, "native")
+        executor = Neural_Engine('./int8-zhenzhong-ir-withoutSQ', args.log_file, "native")
     if args.mode == "accuracy":
         # executor.accuracy(args.batch_size, args.seq_len, args.dataset_name, args.task_name,
         #                   args.data_dir, args.tokenizer_dir)
@@ -87,67 +98,31 @@ if __name__ == '__main__':
             "BAAI/bge-small-en-v1.5": "Represent this sentence for searching relevant passages: ",
         }
 
-        # if args.ort_model_path is None:
-        #     model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
-        #                         normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
-        #                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
-        #                         pooling_method=args.pooling_method)
-        # else:
-        #     model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
-        #                         normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
-        #                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
-        #                         pooling_method=args.pooling_method,
-        #                         ort_model_path=args.ort_model_path,
-        #                         file_name=args.file_name,)
         model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
                         normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
-                        pooling_method=args.pooling_method,
                         ort_model_path=args.ort_model_path,
                         file_name=args.file_name,
-                        engine_model=executor)
+                        engine_model=executor,
+                        backend='Engine')
 
         if args.task_names is None:
             task_names = [t.description["name"] for t in MTEB(task_types=args.task_type,
                                                             task_langs=['en']).tasks]
         else:
             task_names = [args.task_names]
-        # task_names.remove("ClimateFEVER")
         print("task_names", task_names)
         
         results = {}
         for task in task_names:
-            # # useless
-            # if task in ['MSMARCOv2']:
-            #     print('Skip task: {}, since it has no test split'.format(task))
-            #     continue
-
-            # # useless
-            # if 'CQADupstack' in task or task in ['Touche2020', 'SciFact', 'TRECCOVID', 'NQ',
-            #                                     'NFCorpus', 'MSMARCO', 'HotpotQA', 'FiQA2018',
-            #                                     'FEVER', 'DBPedia', 'ClimateFEVER', 'SCIDOCS', ]:
-            #     if args.model_name_or_path not in query_instruction_for_retrieval_dict:
-            #         if args.add_instruction:
-            #             instruction = "Represent this sentence for searching relevant passages: "
-            #         else:
-            #             instruction = None
-            #         print(f"{args.model_name_or_path} not in query_instruction_for_retrieval_dict, set instruction={instruction}")
-            #     else:
-            #         instruction = query_instruction_for_retrieval_dict[args.model_name_or_path]
-            # else:
-            #     instruction = None
-
-            #model.query_instruction_for_retrieval = instruction
             model.query_instruction_for_retrieval = None
 
             evaluation = MTEB(tasks=[task], task_langs=['en'], eval_splits = ["test" if task not in ['MSMARCO'] else 'dev'])
             result = evaluation.run(model, output_folder=f"en_results/{args.model_name_or_path.split('/')[-1]}")
             results.update(result)
-            # 存的是各个task ： STS0, STS01, STS02, STS02,XXXXXX的精度
             print(results)
         avg_res = 0
         
-        # 算精度的
         for task_name, task_res in results.items():
             if task_name in ['STS17']:
                 avg_res += round(task_res['test']['en-en']['cos_sim']['spearman'] * 100, 2)
