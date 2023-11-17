@@ -197,7 +197,7 @@ class _BaseQBitsAutoModelClass:
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
             assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            ipex_opt_llm_supported = ["gptj", "gpt_neox", "opt", "llama", "falcon"]
+            ipex_opt_llm_supported = ["gptj", "opt", "llama"]
             calib_func = quantization_config.calib_func
             example_inputs = quantization_config.example_inputs
             num_beams = quantization_config.num_beams
