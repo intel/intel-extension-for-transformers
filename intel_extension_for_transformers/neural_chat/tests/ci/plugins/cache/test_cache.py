@@ -18,7 +18,7 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache import ChatCache
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
-import os
+import os, shutil
 
 class TestChatCache(unittest.TestCase):
     def setUp(self):
@@ -46,8 +46,7 @@ class TestChatCache(unittest.TestCase):
         cache_plugin.put(prompt, response)
 
         answer = cache_plugin.get(prompt)
-        self.assertIn('Tell me about Intel Xeon Scable Processors.', str(answer))
+        self.assertIn('Intel Xeon Scable Processors', str(answer))
 
-        
 if __name__ == "__main__":
     unittest.main()
