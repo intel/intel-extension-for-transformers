@@ -20,15 +20,15 @@ jobs:
 
       - name: Build Docker Image
         run: 
-          if [ $(docker images | grep chatbotinfer-gha | wc -l) == 0 ]; then
-            docker build  --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-gha:latest && yes | docker container prune && yes | docker image prune;
+          if [ $(docker images | grep chatbotinfer-1-gha | wc -l) == 0 ]; then
+            docker build  --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-1-gha:latest && yes | docker container prune && yes | docker image prune;
           fi
 
       - name: Start Docker Container
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-gha")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /home/sdp/.cache/huggingface/hub:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-gha" --hostname="chatbotinfer-gha-container" chatbotinfer-gha:latest
+          docker run -tid -v /home/sdp/.cache/huggingface/hub:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-gha" --hostname="chatbotinfer-gha-container" chatbotinfer-1-gha:latest
 
       - name: Run Inference Test
         run: |
