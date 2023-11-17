@@ -150,8 +150,8 @@ class TestWeightOnly(unittest.TestCase):
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
                 lora_weights[name] = [
-                    getattr(module.lora_A, module.active_adapter).weight.clone(),
-                    getattr(module.lora_B, module.active_adapter).weight.clone()
+                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
                 ]
         self.assertTrue(len(lora_weights) > 0)
 
@@ -164,8 +164,8 @@ class TestWeightOnly(unittest.TestCase):
         trainer.train()
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
-                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter).weight).any())
-                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter).weight).any())
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
 
     def test_int8_training(self):
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_llm_runtime=False)
@@ -183,8 +183,8 @@ class TestWeightOnly(unittest.TestCase):
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
                 lora_weights[name] = [
-                    getattr(module.lora_A, module.active_adapter).weight.clone(),
-                    getattr(module.lora_B, module.active_adapter).weight.clone()
+                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
                 ]
         self.assertTrue(len(lora_weights) > 0)
 
@@ -197,8 +197,8 @@ class TestWeightOnly(unittest.TestCase):
         trainer.train()
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
-                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter).weight).any())
-                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter).weight).any())
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
 
 if __name__ == "__main__":
     unittest.main()
