@@ -47,8 +47,6 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | port                | 8000                                   |
 | model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
 | device              | "cpu"                                  |
-| cache.enable        | true                                  |
-| safety_checker.enable | true                                |
 | tasks_list          | ['textchat']                           |
 
 

@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Pipline Modificaiton based from the diffusers 0.12.1 StableDiffusionImg2ImgPipeline"""
 
 import inspect
 from typing import Callable, List, Optional, Union
@@ -428,13 +429,11 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
         # Original Pytorch Diffuser Vae Code
         # image = self.vae.decode(latents).sample
 
-        # print(image, image.shape)
         # The ITREX Vae Codes
         latents = latents.contiguous()
         output = vae_decoder_graph.inference([latents])
         image = torch.from_numpy(output['sample:0'])
 
-        #import pdb;pdb.set_trace()
         image = (image / 2 + 0.5).clamp(0, 1)
         # we always cast to float32 as this does not cause significant overhead and is compatible with bfloa16
         image = image.cpu().permute(0, 2, 3, 1).float().numpy()
@@ -700,7 +699,7 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
-                # # Original Pytorch Diffuser Unet Code: predict the noise residual
+                # Original Pytorch Diffuser Unet Code: predict the noise residual
                 # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
 
                 # The ITREX Unet Code
