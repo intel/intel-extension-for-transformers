@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
+from typing import Dict, List
 from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
