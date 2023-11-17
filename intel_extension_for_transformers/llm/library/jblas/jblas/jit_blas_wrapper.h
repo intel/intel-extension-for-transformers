@@ -26,6 +26,7 @@ namespace jblas {
 namespace wrapper {
 namespace gemm_pack_weight {
 
+
 template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T, JBLAS_ISA> class _PrologueA_T,
           template <class _T, JBLAS_ISA> class _PrologueB_T, template <JBLAS_ISA> class _Epilogue_T>
 class GemmLauncherPackWeight {
@@ -65,8 +66,11 @@ class GemmLauncherPackWeight {
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
+    tmpB = utils::pointer_align<64>(tmpB);
     auto tmpA = (AType*)(tmpB + (size_t)_config.NStep * _config.KStep);
+    tmpA = utils::pointer_align<64>(tmpA);
     auto tmpC = (CType*)(tmpA + (size_t)GemmCore::MTILE * _config.KStep);
+    tmpC = utils::pointer_align<64>(tmpC);
     for (int itern = 0; itern < colremain; itern += _config.NStep) {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
