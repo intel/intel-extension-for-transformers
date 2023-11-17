@@ -590,9 +590,9 @@ def main():
         tokenizer=tokenizer,
     )
 
-    # sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
-    # sq.transform(alpha="auto", calib_iter=3, folding=True)
-    # del trainer
+    sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
+    sq.transform(alpha="auto", calib_iter=3, folding=True)
+    del trainer
 
     trainer = NLPTrainer(
         model=model,
@@ -692,9 +692,35 @@ def main():
     if optim_args.to_onnx:
         trainer.enable_executor = True
         trainer.export_to_onnx()
+        import onnx
+        if trainer.enable_inc_quant == True and trainer.enable_bf16 == False:
+            model_path = './model_and_tokenizer/int8-model.onnx'
+        
+        if trainer.enable_inc_quant == False and trainer.enable_bf16 == False:
+            model_path = './model_and_tokenizer/fp32-model.onnx'
 
+        model = onnx.load(model_path)
+        remove_nodes = []
+        for node in reversed(model.graph.node):
+            if node.name == "/encoder/layer.11/output/LayerNorm/Add_1":
+                node.output[0] = "last_hidden_state"
+                break
+            remove_nodes.append(node)
 
-    
+        for node in remove_nodes:
+            model.graph.node.remove(node)
+            print('remove node', node.name, node.op_type)
+
+        remove_output = []
+        for output in model.graph.output:
+            remove_output.append(output)
+        for output in remove_output:
+            model.graph.output.remove(output)
+            print('remove output', output.name)
+        model.graph.output.extend([onnx.ValueInfoProto(name="last_hidden_state")])
+        print(model.graph.output)
+        onnx.save(model, model_path)
+
 
 if __name__ == "__main__":
     main()

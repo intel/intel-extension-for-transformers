@@ -72,23 +72,8 @@ if __name__ == '__main__':
     if args.dynamic_quantize:
         executor = Neural_Engine(args.input_model, args.log_file, "dynamic_int8")
     else:
-        #executor = Neural_Engine(args.input_model, args.log_file, "native")
-        #executor = Neural_Engine('./model_and_tokenizer/fp32-model.onnx', args.log_file, "native")
-        #executor = Neural_Engine('./model_and_tokenizer/int8-model.onnx', args.log_file, "native")
-        #executor = Neural_Engine('./fp32-ir', args.log_file, "native")
-        #executor = Neural_Engine('./int8-ir', args.log_file, "native")
-        #executor = Neural_Engine('./int8-yuwen-ir', args.log_file, "native")
-        #executor = Neural_Engine('./bge-base-int8-static-pt-to-onnx-v2/int8-model.onnx', args.log_file, "native")
-        #executor = Neural_Engine('./bge-base-int8-static-pt-to-onnx-v3/int8-model.onnx', args.log_file, "native")
-        #executor.graph.save('int8-yuwen-ir-v3')
-        #executor.graph.save('int8-zhenzhong-ir-withoutSQ')
-
-        #executor = Neural_Engine('./int8-yuwen-ir-v3', args.log_file, "native")
-        executor = Neural_Engine('./int8-zhenzhong-ir-withoutSQ', args.log_file, "native")
+        executor = Neural_Engine(args.input_model, args.log_file, "native")
     if args.mode == "accuracy":
-        # executor.accuracy(args.batch_size, args.seq_len, args.dataset_name, args.task_name,
-        #                   args.data_dir, args.tokenizer_dir)
-
         query_instruction_for_retrieval_dict = {
             "BAAI/bge-large-en": "Represent this sentence for searching relevant passages: ",
             "BAAI/bge-base-en": "Represent this sentence for searching relevant passages: ",

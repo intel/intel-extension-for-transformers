@@ -153,7 +153,7 @@ if [[ ${MODE} == "accuracy" ]]; then
         --mode=accuracy \
         --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --task_type STS \
-        --ort_model_path ./model_and_tokenizer/ --file_name int8-model.onnx \
+        --ort_model_path ./model_and_tokenizer/ --file_name ${PRECISION}-model.onnx \
         ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
         status=$?
     if [ ${status} != 0 ]; then

@@ -111,7 +111,7 @@ class EngineBGEModel(DRESModel):
 
                 engine_input = [input_ids, token_type_ids, attention_mask]
                 result = copy.deepcopy(self.engine_model.inference(engine_input))  
-                ort_last_hidden_state = torch.tensor(result['last_layer_reshape:0'])
+                ort_last_hidden_state = torch.tensor(result['last_hidden_state:0']).reshape(input_ids.shape[0], input_ids.shape[1], 768)
                 ort_embeddings = self.pooling(ort_last_hidden_state, inputs['attention_mask'])
                 if self.normalize_embeddings:
                     ort_embeddings = torch.nn.functional.normalize(ort_embeddings, dim=-1)
