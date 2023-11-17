@@ -374,15 +374,14 @@ struct gelu_bwd_op_t<dtype_in_, arch_tag,
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_bias Is the data type of bias buffer.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_bias, gpu_arch arch_tag, class enable = void>
+template <typename mem_desc_bias_t_, gpu_arch arch_tag, class enable = void>
 struct bias_add_op_t {};
 /// @brief Is the bias_add op functor, specialized for Xe architecture.
-template <typename dtype_bias_, gpu_arch arch_tag>
-struct bias_add_op_t<dtype_bias_, arch_tag,
+template <typename mem_desc_bias_t_, gpu_arch arch_tag>
+struct bias_add_op_t<mem_desc_bias_t_, arch_tag,
         std::enable_if_t<(arch_tag <= gpu_arch::Xe)>> {
-    using dtype_bias = dtype_bias_;
-    using mem_desc_bias_t
-            = mem_desc_t<dtype_bias, mem_layout::row_major, mem_space::global>;
+    using mem_desc_bias_t = mem_desc_bias_t_;
+    using dtype_bias = typename mem_desc_bias_t::dtype;
     using shape_t = typename mem_desc_bias_t::shape_t;
     using coord_t = typename mem_desc_bias_t::coord_t;
     using base_t = typename mem_desc_bias_t::base_t;

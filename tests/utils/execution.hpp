@@ -175,7 +175,7 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
 /// @param nd_range the range of workitems
 /// @param validate_result validation function, taking 3 parameters buffer A, B as input C as output
 ///
-template <typename data_type, class KERNEL, size_t SLMSIZE = 128 * 1024,
+template <typename data_type, class KERNEL, size_t SLMSIZE = 8 * 1024,
         size_t BARNUM = 32, size_t Size = 4096>
 void kernel_run(auto nd_range, auto validate_result) {
 

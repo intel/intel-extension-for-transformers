@@ -214,7 +214,7 @@ template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_,
 struct mem_payload_t<mem_desc_t<dtype_, mem_layout::row_major,
                              mem_space::global, alignment_>,
         tile_desc_, msg_type::block_1d, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using mem_desc_t = mem_desc_t<dtype_, mem_layout::row_major,
             mem_space::global, alignment_>;
     using dtype = dtype_;
@@ -586,7 +586,7 @@ template <typename dtype_, typename tile_desc_, mem_layout mem_layout_,
 struct mem_payload_t<
         mem_desc_t<dtype_, mem_layout_, mem_space::global, alignment_>,
         tile_desc_, msg_type::unaligned_2d, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using dtype = dtype_;
     using mem_desc_t
             = mem_desc_t<dtype_, mem_layout_, mem_space::global, alignment_>;
@@ -596,7 +596,7 @@ struct mem_payload_t<
     static constexpr msg_type message_type = msg_type::unaligned_2d;
     static constexpr uint32_t alignment_in_bytes
             = mem_desc_t::alignment_in_bytes;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -605,7 +605,7 @@ private:
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
 
     using this_payload_t = mem_payload_t<mem_desc_t, tile_desc,
-            msg_type::unaligned_2d, gpu_arch::Xe>;
+            msg_type::unaligned_2d, arch_tag_>;
 
 public:
     static constexpr bool mem_transpose
@@ -630,8 +630,9 @@ public:
             typename std::conditional<(alignment_in_bytes % sizeof(uint32_t)
                                               == 0),
                     uint32_t, dtype>::type>::type;
-    static constexpr uint32_t scale_factor = sizeof(mem_dtype) / sizeof(dtype);
-
+    static constexpr uint32_t scale_factor = std::is_same<int4x2, dtype>::value
+            ? (sizeof(mem_dtype) / sizeof(dtype)) / 1
+            : sizeof(mem_dtype) / sizeof(dtype);
     // for pvc, we can use simd16 or simd32
     static constexpr uint32_t min_store_bytes = 16 * sizeof(dtype);
     static constexpr uint32_t max_store_bytes = 32 * sizeof(dtype);
@@ -641,8 +642,9 @@ public:
             ? 32
             : 16;
 
-    static constexpr uint32_t num_channel_x
-            = block_size_x * sizeof(dtype) / sizeof(mem_dtype);
+    static constexpr uint32_t num_channel_x = block_size_x >= scale_factor
+            ? block_size_x * sizeof(dtype) / sizeof(mem_dtype)
+            : 1;
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
 
     xetla_vector<uint32_t, num_channel> channel_offset;
@@ -790,7 +792,7 @@ template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_,
 struct mem_payload_t<
         mem_desc_t<dtype_, mem_layout::row_major, mem_space::local, alignment_>,
         tile_desc_, msg_type::scatter, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using mem_desc_t = mem_desc_t<dtype_, mem_layout::row_major,
             mem_space::local, alignment_>;
     using dtype = dtype_;

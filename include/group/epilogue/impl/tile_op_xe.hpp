@@ -98,10 +98,9 @@ private:
     }
 
 public:
-    static constexpr msg_type msg_type_c = (mem_space_c == mem_space::global
-                    ? (arch_tag == gpu_arch::Xe ? msg_type::block_2d
-                                                : msg_type::unaligned_2d)
-                    : msg_type::scatter);
+    static constexpr msg_type msg_type_c
+            = (mem_space_c == mem_space::global ? msg_type::unaligned_2d
+                                                : msg_type::scatter);
 
     /// @brief Default epilogue.
     /// 1) Call tile_op/chained_tile_op 2) Convert dtype_acc to dtype_c

@@ -126,7 +126,7 @@ struct tile_load_store_unaligned_2d_func {
         payload_load_t payload_load(mem_desc_a);
         prefetch_payload_t payload_prefetch(mem_desc_a);
         payload_store_t payload_store(mem_desc_c);
-        tile_prefetch(payload_prefetch);
+        // tile_prefetch(payload_prefetch);
         tile_load(matA, payload_load);
         matC.reg = matA.reg;
         tile_store(matC, payload_store);

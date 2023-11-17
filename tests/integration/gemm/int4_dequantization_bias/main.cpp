@@ -16,7 +16,7 @@
 
 #include "utils/utils.hpp"
 #include "xetla.hpp"
-
+// #define UT_DEBUG 1
 using namespace gpu::xetla;
 //The number of times the kernel is executed
 constexpr int ITER = 1;
@@ -64,9 +64,9 @@ public:
     static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = fp16;
+    using data_type_a = float;
     using data_type_b = int4x2;
-    using data_type_c = fp16;
+    using data_type_c = float;
 };
 
 template <class Test>
@@ -127,11 +127,17 @@ void dequantize_gemm_run(int iter) {
     static constexpr uint32_t prefetch_distance = 3;
 
     using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
-            mem_space::global>;
+            mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_a)>;
     using mem_desc_b_t = xetla::mem_desc_t<data_type_b, mem_layout::row_major,
-            mem_space::global>;
+            mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_b)>;
     using mem_desc_c_t = xetla::mem_desc_t<data_type_c, mem_layout::row_major,
-            mem_space::global>;
+            mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_c)>;
+    using mem_desc_scale_t = xetla::mem_desc_t<data_type_scale,
+            mem_layout::row_major, mem_space::global,
+            DEVICE_MEM_ALIGNMENT / sizeof(data_type_scale)>;
+    using mem_desc_bias_t = xetla::mem_desc_t<data_type_bias,
+            mem_layout::row_major, mem_space::global,
+            DEVICE_MEM_ALIGNMENT / sizeof(data_type_bias)>;
 
     using compute_attr = xetla::group::compute_attr_t<data_type_acc_in,
             data_type_acc_in, data_type_acc>;
@@ -145,9 +151,9 @@ void dequantize_gemm_run(int iter) {
                     data_type_scale, dequant_s, gpu_arch::Arc>;
 
     using gemm_t = xetla::group::gemm_t<compute_policy, tile_shape,
-            mem_desc_a_t, mem_desc_b_t>;
+            mem_desc_a_t, mem_desc_b_t, mem_desc_scale_t>;
 
-    using bias_op_t = gpu::xetla::subgroup::bias_add_op_t<data_type_bias,
+    using bias_op_t = gpu::xetla::subgroup::bias_add_op_t<mem_desc_bias_t,
             gpu::xetla::gpu_arch::Arc>;
     using tile_op_t = gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
 
@@ -209,12 +215,21 @@ void dequantize_gemm_run(int iter) {
 
     for (unsigned i = 0; i < size_a; ++i) {
         A_h[i] = random_float();
+#ifdef UT_DEBUG
+        A_h[i] = 1.f;
+#endif
     }
     for (unsigned i = 0; i < size_b; ++i) {
         B_h[i] = uint8_t(random_uint8());
+        // #ifdef UT_DEBUG
+        B_h[i] = 153;
+        // #endif
     }
     for (unsigned i = 0; i < size_scale; ++i) {
         scale_h[i] = random_float();
+#ifdef UT_DEBUG
+        scale_h[i] = 1.f;
+#endif
     }
     for (unsigned i = 0; i < size_zero_pt; ++i) {
         zero_pt_h[i] = 0.f;
@@ -230,6 +245,9 @@ void dequantize_gemm_run(int iter) {
     }
     for (unsigned i = 0; i < size_bias; ++i) {
         bias_h[i] = random_float();
+#ifdef UT_DEBUG
+        bias_h[i] = 0.f;
+#endif
     }
 
     queue.memcpy((void *)A_d, (void *)A_h, size_a * sizeof(data_type_a)).wait();
