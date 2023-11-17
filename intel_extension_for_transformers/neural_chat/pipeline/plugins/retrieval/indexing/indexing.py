@@ -23,7 +23,6 @@ from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
-from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
 
@@ -131,11 +130,13 @@ class DocumentIndexing:
             embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
-            if self.document_store == "inmemory":
-                vectordb = self.KB_construct(input)
-            else:
-                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                      port=9200, search_fields=["content", "title"])
+            # if self.document_store == "inmemory":
+            #     vectordb = self.KB_construct(input)
+            # else:
+            #     vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                           port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
         return vectordb
     
     def reload(self, local_path):
@@ -196,7 +197,6 @@ class DocumentIndexing:
             document_store.write_documents(documents)
             print("The local knowledge base has been successfully built!")
             return document_store
-
 
     def KB_append(self, input, persist_path=None):  ### inmemory documentstore please use KB construct
         if isinstance(input, str):

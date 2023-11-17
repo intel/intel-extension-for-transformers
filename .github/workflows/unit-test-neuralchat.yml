@@ -98,7 +98,7 @@ jobs:
           && pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 \
           && pip install shortuuid gptcache evaluate \
           && pip install fschat pydub python-multipart PyPDF2 langchain \
-          && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
+          && pip install python-docx scikit-learn librosa beautifulsoup4 \
           && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
           && pip install yacs uvicorn optimum optimum[habana] \
           && pip install sentence_transformers unstructured markdown rouge_score \
