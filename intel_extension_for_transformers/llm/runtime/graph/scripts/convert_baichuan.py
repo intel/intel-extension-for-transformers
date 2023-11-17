@@ -20,7 +20,6 @@ import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
 from transformers import AutoModel, AutoConfig, AutoModelForCausalLM, AutoTokenizer
-import sentencepiece.sentencepiece_model_pb2 as model
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
