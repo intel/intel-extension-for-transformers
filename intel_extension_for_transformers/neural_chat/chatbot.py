@@ -62,7 +62,7 @@ def build_chatbot(config: PipelineConfig=None):
     elif "Qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
-    if "mistral" in config.model_name_or_path.lower():
+    elif "mistral" in config.model_name_or_path.lower():
         from .models.mistral_model import MistralModel
         adapter = MistralModel()
     elif "opt" in config.model_name_or_path.lower() or \
