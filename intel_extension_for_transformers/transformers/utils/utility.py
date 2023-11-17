@@ -198,7 +198,7 @@ def get_example_inputs_for_opt_llm(model, quantization_config=None, return_type=
         past_key_values = generate_dummy_past_key_values_for_opt_llm(input_bs, model, 
                                                                      num_beams=quantization_config.num_beams)
         attention_mask = torch.ones(input_bs, input_len)
-        position_ids = torch.arange(input_len).repeat(input_bs)
+        position_ids = torch.arange(input_len).repeat(input_bs, 1)
         if model.config.model_type != "opt":
             example_inputs = {
                 "input_ids": input_ids,
@@ -206,14 +206,16 @@ def get_example_inputs_for_opt_llm(model, quantization_config=None, return_type=
                 "position_ids": position_ids,
                 "attention_mask": attention_mask
             }
+            example_inputs = (input_ids, attention_mask, position_ids, tuple(past_key_values))
         else:
             example_inputs = {
                 "input_ids": input_ids,
                 "past_key_values": tuple(past_key_values),
                 "attention_mask": attention_mask
             }
+            example_inputs = (input_ids, attention_mask, tuple(past_key_values))
         # do inference to check example_inputs correct.
-        out = model(**example_inputs)
+        # out = model(**example_inputs)
         return example_inputs
 
 def get_example_inputs_for_chatglm(model, quantization_config=None, return_type="dict"):
@@ -310,7 +312,7 @@ class TSModelCausalLMForOPTLLM(TSModelForCausalLM):
             if position_ids is not None:
                 inputs["position_ids"] = position_ids
             else:
-                inputs["position_ids"] = torch.arange(input_len).repeat(batch_size)
+                inputs["position_ids"] = torch.arange(input_len).repeat(batch_size, 1)
 
         outputs = self.model(**inputs)
 

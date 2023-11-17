@@ -278,59 +278,61 @@ class _BaseQBitsAutoModelClass:
                     This is the default calibration function, the dataset is NeelNanda/pile-10k,
                     the default calib_iters is 100.
                     """
-
-                    for i, (input_ids) in enumerate(calib_dataloader):
-                        input_bs, input_len = input_ids.shape
-                        past_key_values = generate_dummy_past_key_values(input_bs, model)
-                        attention_mask = torch.ones(input_bs, input_len + 1)
-                        attention_mask[:, 0] = 0
-                        if i >= calib_iters:
-                            break
-                        model(
-                            input_ids=input_ids,
-                            past_key_values=past_key_values,
-                            attention_mask=attention_mask,
-                        )
+                    with torch.no_grad():
+                        for i, (input_ids) in enumerate(calib_dataloader):
+                            input_bs, input_len = input_ids.shape
+                            past_key_values = generate_dummy_past_key_values(input_bs, model)
+                            attention_mask = torch.ones(input_bs, input_len + 1)
+                            attention_mask[:, 0] = 0
+                            if i >= calib_iters:
+                                break
+                            model(
+                                input_ids=input_ids,
+                                past_key_values=past_key_values,
+                                attention_mask=attention_mask,
+                            )
 
                 def calib_func_for_chatglm(model):
-                    for i, (input_ids) in enumerate(calib_dataloader):
-                        input_bs, input_len = input_ids.shape
-                        past_key_values = generate_dummy_past_key_values(input_bs, model)
-                        attention_mask = torch.ones(input_bs, input_len + 1)
-                        attention_mask[:, 0] = 0
-                        position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
-                        if i >= calib_iters:
-                            break
-                        calib_inputs = {
-                                        "input_ids":input_ids,
-                                        "attention_mask":attention_mask,
-                                        "position_ids": position_ids,
-                                        "past_key_values": tuple(past_key_values)
-                                        }
-                        model(**calib_inputs)
-                
-                def calib_func_for_opt_llm(model):
-                    for i, (input_ids) in enumerate(calib_dataloader):
-                        input_bs, input_len = input_ids.shape
-                        past_key_values = generate_dummy_past_key_values_for_opt_llm(input_bs, model, num_beams)
-                        attention_mask = torch.ones(input_bs, input_len)
-                        position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
-                        if i >= calib_iters:
-                            break
-                        if model.config.model_type != "opt":
-                            calib_inputs = { 
+                    with torch.no_grad():
+                        for i, (input_ids) in enumerate(calib_dataloader):
+                            input_bs, input_len = input_ids.shape
+                            past_key_values = generate_dummy_past_key_values(input_bs, model)
+                            attention_mask = torch.ones(input_bs, input_len + 1)
+                            attention_mask[:, 0] = 0
+                            position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
+                            if i >= calib_iters:
+                                break
+                            calib_inputs = {
                                             "input_ids":input_ids,
                                             "attention_mask":attention_mask,
                                             "position_ids": position_ids,
                                             "past_key_values": tuple(past_key_values)
                                             }
-                        else:
-                            calib_inputs = {
-                                            "input_ids":input_ids,
-                                            "attention_mask":attention_mask,
-                                            "past_key_values": tuple(past_key_values)
-                                            }
-                        model(**calib_inputs)
+                            model(**calib_inputs)
+
+                def calib_func_for_opt_llm(model):
+                    with torch.no_grad():
+                        for i, (input_ids) in enumerate(calib_dataloader):
+                            input_bs, input_len = input_ids.shape
+                            past_key_values = generate_dummy_past_key_values_for_opt_llm(input_bs, model, num_beams)
+                            attention_mask = torch.ones(input_bs, input_len)
+                            position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
+                            if i >= calib_iters:
+                                break
+                            if model.config.model_type != "opt":
+                                calib_inputs = {
+                                                "input_ids":input_ids,
+                                                "attention_mask":attention_mask,
+                                                "position_ids": position_ids,
+                                                "past_key_values": tuple(past_key_values)
+                                                }
+                            else:
+                                calib_inputs = {
+                                                "input_ids":input_ids,
+                                                "attention_mask":attention_mask,
+                                                "past_key_values": tuple(past_key_values)
+                                                }
+                            model(**calib_inputs)
                 
                 logger.info(
                     "The default calibration funcation is used, "
