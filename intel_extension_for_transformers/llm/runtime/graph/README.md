@@ -35,7 +35,7 @@ LLM Runtime supports the following models:
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ |  N/A |
 |[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |  N/A |
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  N/A |
-|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |  4.30.2 |
+|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |  4.33.1 |
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |  N/A |
 |[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | 4.34.0 or newer |
 
