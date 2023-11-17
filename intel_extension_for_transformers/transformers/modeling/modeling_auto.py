@@ -101,7 +101,6 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
         return
 
     os.makedirs(save_directory, exist_ok=True)
-    self.to('cpu')
     self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',

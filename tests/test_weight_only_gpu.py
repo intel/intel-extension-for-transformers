@@ -21,7 +21,8 @@ class DummyDataset(data.Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             model_max_length=self.seqlen,
-            padding_side="right",)
+            padding_side="right",
+            trust_remote_code=True)
         self.sequence_a = "intel-extension-for-transformers is based in SH"
         self.sequence_b = "Where is intel-extension-for-transformers based? NYC or SH"
         self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b)
@@ -148,14 +149,16 @@ class TestArcWeightOnly(unittest.TestCase):
         device_map = "xpu"
 
         model_name ="hf-internal-testing/tiny-random-gptj"
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float)
-        model.seqlen = 2048
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         prompt = "how to test the code?"
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            trust_remote_code=True)
+        model.seqlen = 2048
         output = model(input_ids)
+        fp32_logits = output['logits']
+        print("fp32 logits {}".format(fp32_logits.shape))
 
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=128, compute_dtype="fp16")
         config.calib_dataloader = DataLoader(
@@ -164,17 +167,19 @@ class TestArcWeightOnly(unittest.TestCase):
             shuffle=False,
         )
         qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
-                                                      device_map=device_map, quantization_config=config)
+                                                      device_map=device_map, quantization_config=config,
+                                                      trust_remote_code=True)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
-        fp16_logits = output['logits']
         quan_logits = output_quant['logits'].to('cpu')
-        print("fp16 logits {}".format(fp16_logits.shape))
         print("int4 logits {}".format(quan_logits.shape))
 
         qmodel.save_low_bit(self.workspace)
-        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace)
+        # move model to CPU
+        qmodel.to("cpu")
+        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace, trust_remote_code=True)
         output_reload = loaded_model(input_ids.to(torch.device("xpu")))
-        assert torch.allclose(output_reload.to("cpu"), output_quant.to("cpu"), rtol=0.01)
+        reload_logits = output_reload['logits'].to('cpu')
+        assert torch.allclose(reload_logits, quan_logits, rtol=0.01)
 
     def test_int4_ipex_arc(self):
         from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
