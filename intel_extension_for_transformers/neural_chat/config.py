@@ -379,11 +379,11 @@ class TTSFinetuningConfig:
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.1
-    top_k: int = 1
+    top_k: int = 3
     top_p: float = 0.75
     repetition_penalty: float = 1.1
     num_beams: int = 0
-    max_new_tokens: int = 256
+    max_new_tokens: int = 1024
     do_sample: bool = True
     num_return_sequences: int = 1
     bad_words_ids: List[int] = None
