@@ -6,24 +6,3 @@
 .. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.multi_head_attention
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.multi_head_attention.MultiHeadAttention
-
-
-
-
-.. py:class:: MultiHeadAttention
-
-
-
-
-   The bass pattern class.
-
-
