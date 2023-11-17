@@ -364,6 +364,7 @@ def load_model(
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
+        or re.search("Mistral", model_name, re.IGNORECASE)
     ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -386,7 +387,8 @@ def load_model(
                  )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
+            f"Unsupported model {model_name}, only supports "
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
