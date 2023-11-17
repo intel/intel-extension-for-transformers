@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   The class definition for the retriever. Supporting langchain-based and haystack-based retriever.
+   The class definition for the retriever. Supporting langchain-based retriever.
 
 
 
