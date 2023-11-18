@@ -108,7 +108,7 @@ class BaseModel(ABC):
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
         self.ipex_int8 = kwargs["ipex_int8"]
-        load_model(model_name=kwargs["model_name"],
+        return load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
