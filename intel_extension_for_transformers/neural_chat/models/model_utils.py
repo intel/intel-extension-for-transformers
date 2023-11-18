@@ -358,17 +358,18 @@ def load_model(
                 low_cpu_mem_usage=True,
                 use_auth_token=hf_access_token,
                 trust_remote_code=True)
-    elif (
+    elif ((
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("opt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
-    ) and not ipex_int8:
+        or re.search("Mistral", model_name, re.IGNORECASE)
+    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -389,9 +390,10 @@ def load_model(
                         file_name="best_model.pt",
                  )
     else:
-        logger.error(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
-        return ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
+        raise ValueError(
+            f"Unsupported model {model_name}, only supports "
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL now."
+        )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -725,7 +727,8 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len=output_token.sequences[0].shape[-1]
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                                      output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
@@ -991,4 +994,12 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "### Assistant" in output:
+        return output.split("### Assistant:")[1].strip()
+    if "\nassistant\n" in output:
+        return output.split("\nassistant\n")[1].strip()
+    if "[/INST]" in output:
+        return output.split("[/INST]")[1].strip()
+    if "答：" in output:
+        return output.split("答：")[1].strip()
     return output

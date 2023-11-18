@@ -244,7 +244,7 @@ def main():
         print(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
 
-    for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config):
+    for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
     print("\n"*3)
@@ -256,7 +256,7 @@ def main():
             print("=" * 30 + idxs + "=" * 30)
             print(f"Instruction: {instruction}")
             print("Response: ")
-        for new_text in chatbot.predict_stream(query=instruction, config=gen_config):
+        for new_text in chatbot.predict_stream(query=instruction, config=gen_config)[0]:
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
         if args.local_rank in [-1, 0]:
