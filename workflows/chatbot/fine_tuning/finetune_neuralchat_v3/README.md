@@ -1,6 +1,6 @@
 # How to train Intel/neural-chat-7b-v3-1 on Gaudi2
 
-[Intel/neural-chat-7b-v3-1](https://huggingface.co/Intel/neural-chat-7b-v3-1) ranks top1 on the [HuggingFaceH4/open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) comparing with all the submitted 7B models (date: 11/17/2023). In this notebook, we would like to share the details for the training process.
+[Intel/neural-chat-7b-v3-1](https://huggingface.co/Intel/neural-chat-7b-v3-1) ranks top1 on the [HuggingFaceH4/open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) comparing with all the submitted 7B models (date: 11/17/2023). In this tutorial, we would like to share the details for the training process.
 
 Similar to most finetuning work, we mainly divide the training to two stages.
 - First stage: Use supervised finetuning (SFT) to improve the performance of the base model like [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1).
