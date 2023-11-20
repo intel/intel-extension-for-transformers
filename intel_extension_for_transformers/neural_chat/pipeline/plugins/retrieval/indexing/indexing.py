@@ -23,6 +23,7 @@ from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
+from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
 
