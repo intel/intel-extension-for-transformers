@@ -28,6 +28,9 @@ jobs:
   unit-test:
     runs-on: [self-hosted, linux, X64, llmruntime-node]
     steps:
+      - name: Load environment variables
+        run: cat ~/actions-runner2/.env >> $GITHUB_ENV
+      
       - name: Docker Clean Up
         run: |
           docker ps -a
@@ -50,7 +53,7 @@ jobs:
 
       - name: Docker Build
         run: |
-          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile --build-arg http_proxy="${{ env.HTTP_PROXY }}" --build-arg https_proxy="${{ env.HTTPS_PROXY }}" -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
 
       - name: Docker Run
         run: |
@@ -59,8 +62,10 @@ jobs:
             docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          -e http_proxy="${{ env.HTTP_PROXY }}" \
+          -e https_proxy="${{ env.HTTPS_PROXY }}" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
-          -v /dataset/tf_dataset2:/tf_dataset2 \
+          -v /tf_dataset2:/tf_dataset2 \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
@@ -79,7 +84,6 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
-          && export HF_HOME=/dataset/cache/ \
           && bash run_unit_test_llmruntime.sh"
 
       - name: Publish pipeline artifact

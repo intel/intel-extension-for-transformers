@@ -18,6 +18,17 @@ function llmruntime_test() {
     $BOLD_YELLOW && echo "------UT start-------" && $RESET
     bash run.sh 2>&1 | tee -a ${ut_log_name}
     $BOLD_YELLOW && echo "------UT end -------" && $RESET
+
+    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ] ||
+        [ $(grep -c "OK" ${ut_log_name}) == 0 ] ||
+        [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ] ||
+        [ $(grep -c "core dumped" ${ut_log_name}) != 0 ] ||
+        [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in engine test, please check the output..." && $RESET
+        exit 1
+    else
+        $BOLD_GREEN && echo "engine test finished successfully!" && $RESET
+    fi
 }
 
 function main() {
