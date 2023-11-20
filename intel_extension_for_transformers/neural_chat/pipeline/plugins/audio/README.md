@@ -22,7 +22,7 @@ sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 For other operating systems such as CentOS, you will need to make slight adjustments.
 
-# Automatic Speech Recognition (ASR)
+# Multilingual Automatic Speech Recognition (ASR)
 
 ## Dependencies Installation
 

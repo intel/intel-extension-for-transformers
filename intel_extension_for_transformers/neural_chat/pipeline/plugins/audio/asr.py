@@ -89,7 +89,7 @@ class AudioSpeechRecognition():
         # pylint: disable=E1101
         result = self.processor.tokenizer.batch_decode(
             predicted_ids, skip_special_tokens=True, normalize=True)[0]
-        if self.language == "auto":
+        if self.language == "auto" or self.language == "cn":
             from zhconv import convert
             result = convert(result, 'zh-cn')
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
