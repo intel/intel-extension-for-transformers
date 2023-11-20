@@ -41,7 +41,7 @@ class RandBuffer {
   }
 
 #pragma GCC push_options
-#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512vbmi", "avx512dq")
+#pragma GCC target("avx512f")
   __m512 gen_randfp(int thread_idx) {
     auto zmm_one = _mm512_set1_epi32(0x3F800000);
     auto rand = next1(thread_idx);
@@ -89,7 +89,7 @@ class RandBuffer {
       mwcfac0, 0, mwcfac1, 0, mwcfac2, 0, mwcfac3, 0, mwcfac4, 0, mwcfac5, 0, mwcfac6, 0, mwcfac7, 0};
 
 #pragma GCC push_options
-#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512vbmi", "avx512dq")
+#pragma GCC target("avx512f")
   __m512i next1(int thread_idx) {  // Get 512 bits from MWC
     uint32_t* buffer = load_buffer + 16 * thread_idx;
     // Factors for multiply-with-carry

@@ -12,9 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include <ATen/core/TensorBody.h>
-#include <emmintrin.h>
 #include <immintrin.h>
-#include <xmmintrin.h>
 
 #include <cassert>
 
@@ -23,7 +21,7 @@
 #include "jblas/kernel_avx2.h"
 
 #pragma GCC push_options
-#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512vbmi", "avx512dq", "avx512bf16")
+#pragma GCC target("avx512f", , "avx512bw", "avx512vl", "avx512bf16")
 template <bool BF16>
 static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int dt_size, double p, char* mask_ptr) {
   int i = 0;
@@ -41,7 +39,8 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       _mm512_storeu_ps(data + i * dt_size, ans);
       _mm512_storeu_ps(mask_ptr + i * dt_size, mul_scale);
     } else {
-      auto ans = _mm512_cvtpbh_ps((__m256bh)_mm256_loadu_ps(reinterpret_cast<float*>(data + i * dt_size)));
+      auto ans = reinterpret_cast<__m512>(
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
       auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       auto bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
@@ -63,7 +62,8 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       _mm512_mask_storeu_ps(mask_ptr + i * dt_size, ls_mask, mul_scale);
     } else {
       __m256i ymm_tmp;
-      auto ans = _mm512_cvtpbh_ps((__m256bh)_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, data + i * dt_size));
+      auto ans = reinterpret_cast<__m512>(
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
       auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       auto bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
@@ -83,8 +83,10 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       ans = _mm512_mul_ps(ans, _mm512_loadu_ps(mask_ptr + i * dt_size));
       _mm512_storeu_ps(grad + i * dt_size, ans);
     } else {
-      auto ans = _mm512_cvtpbh_ps((__m256bh)_mm256_loadu_ps(reinterpret_cast<float*>(grad + i * dt_size)));
-      auto zmm_mask = _mm512_cvtpbh_ps((__m256bh)_mm256_loadu_ps(reinterpret_cast<float*>(mask_ptr + i * dt_size)));
+      auto ans = reinterpret_cast<__m512>(
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(grad + i * dt_size)), 2));
+      auto zmm_mask = reinterpret_cast<__m512>(
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
       auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       _mm256_storeu_epi16(grad + i * dt_size, bf16_ans);
@@ -99,8 +101,10 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       _mm512_mask_storeu_ps(grad + i * dt_size, ls_mask, ans);
     } else {
       __m256i ymm_tmp;
-      auto ans = _mm512_cvtpbh_ps((__m256bh)_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, grad + i * dt_size));
-      auto zmm_mask = _mm512_cvtpbh_ps((__m256bh)_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, mask_ptr + i * dt_size));
+      auto ans = reinterpret_cast<__m512>(
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, grad + i * dt_size)), 2));
+      auto zmm_mask = reinterpret_cast<__m512>(_mm512_bslli_epi128(
+          _mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
       auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       _mm256_mask_storeu_epi16(grad + i * dt_size, ls_mask, bf16_ans);
