@@ -37,6 +37,7 @@ def record_request(request_url: str, request_body: Dict, user_id: str):
     request_body = json.dumps(request_body).replace("'", "^")
     sql = f"""INSERT INTO record VALUES \
         (null, '{request_url}', '{request_body}', '{user_id}', '{beijing_time}');"""
+    print(f"[record request] sql: {sql}")
     try:
         with mysqldb.transaction():
             mysqldb.insert(sql, None)
