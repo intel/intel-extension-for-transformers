@@ -11,15 +11,16 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+#include "dispatcher/include/jblas_weightonly_dispatcher.hpp"
+#include "include/dropout.hpp"
 #include <ATen/core/TensorBody.h>
 #include <c10/core/ScalarType.h>
 #include <c10/util/BFloat16.h>
 #include <c10/util/Exception.h>
+#include <map>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <torch/types.h>
-#include <map>
-#include "dispatcher/include/jblas_weightonly_dispatcher.hpp"
 
 static std::map<torch::ScalarType, QBITS_DT> qbits_dt_map{{torch::kFloat32, QBITS_FP32},
                                                           {torch::kBFloat16, QBITS_BF16}};
@@ -36,10 +37,12 @@ static void inline init_qbits_config_param(qbits_config_param* p, qbits_runtime_
   switch (TASK) {
     case QBITS_QUANTIZE:
       p->src_dt = get_qbits_dt(ctx->weight);
-      p->dst_dt = QBITS_FP32;  // jblas dosen't care about dst_dt in quantize-task, so we set fp32 as default.
+      p->dst_dt = QBITS_FP32;  // jblas dosen't care about dst_dt in quantize-task,
+                               // so we set fp32 as default.
       break;
     case QBITS_DEQUANTIZE:
-      p->src_dt = QBITS_FP32;  // jblas dosen't care about src_dt in dequantize-task, so we set fp32 as default.
+      p->src_dt = QBITS_FP32;  // jblas dosen't care about src_dt in
+                               // dequantize-task, so we set fp32 as default.
       p->dst_dt = get_qbits_dt(ctx->output);
       break;
     case QBITS_LINEAR:
@@ -94,9 +97,18 @@ static void qbits_set_weightonly_workspace(const torch::Tensor& workspace) {
   set_jblas_workspace(const_cast<torch::Tensor*>(&workspace));
 }
 
+static torch::Tensor qbits_dropout_fwd(torch::Tensor& output, double p) { return dropout_fwd(output, p); }
+
+static void qbits_dropout_bwd(torch::Tensor& grad, torch::Tensor& scale) { dropout_bwd(grad, scale); }
+
 TORCH_LIBRARY(weight_only_jblasop, m) {
   m.def("qbits_quantize", &qbits_quantize);
   m.def("qbits_linear", &qbits_linear);
   m.def("qbits_dequantize", &qbits_dequantize);
   m.def("qbits_set_weightonly_workspace", &qbits_set_weightonly_workspace);
+}
+
+TORCH_LIBRARY(qbits_customop, m) {
+  m.def("qbits_dropout_fwd", &qbits_dropout_fwd);
+  m.def("qbits_dropout_bwd", &qbits_dropout_bwd);
 }

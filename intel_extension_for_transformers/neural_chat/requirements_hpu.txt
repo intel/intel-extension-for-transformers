@@ -41,3 +41,5 @@ pymysql
 deepface
 exifread
 einops
+urllib3
+langid
