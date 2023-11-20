@@ -142,11 +142,11 @@ class BaseModel(ABC):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
-        # query_include_prompt = False
-        # self.get_conv_template(self.model_name, config.task)
-        # if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-        #       "starcoder" in self.model_name:
-        #     query_include_prompt = True
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+            query_include_prompt = True
 
         # plugin pre actions
         link = []
@@ -221,11 +221,11 @@ class BaseModel(ABC):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
-        # query_include_prompt = False
-        # self.get_conv_template(self.model_name, config.task)
-        # if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-        #        "starcoder" in self.model_name:
-        #     query_include_prompt = True
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+            query_include_prompt = True
 
         # plugin pre actions
         for plugin_name in get_registered_plugins():
