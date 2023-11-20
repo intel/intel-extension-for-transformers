@@ -39,12 +39,8 @@ namespace avx512f {
 #endif
 
 inline __m512 zmm_cvt_bf16_fp32(__m256i vbf16) {
-#if CompileBF16()
-  return _mm512_cvtpbh_ps((__m256bh)vbf16);
-#else
   auto vf32 = _mm512_cvtepu16_epi32(vbf16);
   return _mm512_castsi512_ps(_mm512_slli_epi32(vf32, 16));
-#endif
 }
 
 inline __m256i zmm_cvt_fp32_bf16(__m512 vfp32) {
