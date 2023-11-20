@@ -138,6 +138,9 @@ class BaseModel(ABC):
         config.use_cache = self.use_cache
         config.ipex_int8 = self.ipex_int8
 
+        my_query = query
+        my_origin_query = origin_query
+
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
@@ -169,10 +172,13 @@ class BaseModel(ABC):
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker":
-                            if response:
+                            sign1=plugin_instance.pre_llm_inference_actions(my_query)
+                            if sign1:
                                 return "Your query contains sensitive words, please try another query.", link
-                            elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
-                                return "Your query contains sensitive words, please try another query.", link
+                            if not my_origin_query=="":
+                                sign2=plugin_instance.pre_llm_inference_actions(my_origin_query)
+                                if sign2:
+                                    return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
