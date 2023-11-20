@@ -25,7 +25,7 @@ import numpy as np
 
 class AudioSpeechRecognition():
     """Convert audio to text."""
-    def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, language="english", device="cpu"):
+    def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, language=None, device="cpu"):
         self.device = device
         self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
         self.processor = WhisperProcessor.from_pretrained(model_name_or_path)
@@ -77,7 +77,9 @@ class AudioSpeechRecognition():
         inputs = self.processor.feature_extractor(waveform, return_tensors="pt",
                         sampling_rate=16_000).input_features.to(self.device)
         with torch.cpu.amp.autocast() if self.bf16 else contextlib.nullcontext():
-            if self.language == "multilingual":
+            if self.language is None:
+                predicted_ids = self.model.generate(inputs)
+            elif self.language == "auto":
                 self.model.config.forced_decoder_ids = None
                 predicted_ids = self.model.generate(inputs)
             else:
@@ -87,6 +89,9 @@ class AudioSpeechRecognition():
         # pylint: disable=E1101
         result = self.processor.tokenizer.batch_decode(
             predicted_ids, skip_special_tokens=True, normalize=True)[0]
+        if self.language == "auto":
+            from zhconv import convert
+            result = convert(result, 'zh-cn')
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
         return result
 

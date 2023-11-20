@@ -39,3 +39,4 @@ pymysql
 deepface
 exifread
 einops
+zhconv

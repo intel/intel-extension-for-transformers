@@ -45,3 +45,4 @@ deepface
 exifread
 einops
 cchardet
+zhconv

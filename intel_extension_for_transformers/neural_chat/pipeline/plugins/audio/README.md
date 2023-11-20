@@ -38,9 +38,9 @@ The AudioSpeechRecognition class provides functionality for converting English/M
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
-# pass the parameter language="multilingual" to let the asr model automatically detect language
-# otherwise, you can pass an arbitrary language to the model
-asr = AudioSpeechRecognition("openai/whisper-small", language="multilingual", device=self.device)
+# pass the parameter language="auto" to let the asr model automatically detect language
+# otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)
+asr = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
 audio_path = "~/audio.wav"  # Replace with the path to your English audio file (supports MP3 and WAV)
 result = asr.audio2text(audio_path)
 print("ASR Result:", result)
