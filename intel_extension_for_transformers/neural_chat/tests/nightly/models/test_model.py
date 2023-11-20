@@ -144,5 +144,33 @@ class TestNeuralChatModel(unittest.TestCase):
         print(result)
         self.assertIn('The Intel Xeon Scalable Processors', str(result))
 
+class TestStarCoderModel(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_code_gen(self):
+        config = PipelineConfig(model_name_or_path="bigcode/starcoder")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("def print_hello_world():")
+        print(result)
+        self.assertIn("""print('Hello World')""", str(result))
+
+class TestCodeLlamaModel(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_code_gen(self):
+        config = PipelineConfig(model_name_or_path="codellama/CodeLlama-7b-hf")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("def print_hello_world():")
+        print(result)
+        self.assertIn("""print('Hello World')""", str(result))
+
 if __name__ == "__main__":
     unittest.main()
