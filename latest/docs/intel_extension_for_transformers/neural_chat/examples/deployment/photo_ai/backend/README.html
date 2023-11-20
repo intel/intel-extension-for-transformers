@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Environment &mdash; Intel® Extension for Transformers 0.1.dev1+gbecf6bf documentation</title>
+  <title>Setup Environment &mdash; Intel® Extension for Transformers 0.1.dev1+gda138c4 documentation</title>
       <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
@@ -163,7 +163,7 @@ mysql
 </section>
 <section id="configurate-photoai-yaml">
 <h1>Configurate photoai.yaml<a class="headerlink" href="#configurate-photoai-yaml" title="Link to this heading"></a></h1>
-<p>You can customize the configuration file ‘photoai.yaml’ to match your environment setup. Here’s a table to help you understand the configurable options:</p>
+<p>You can customize the configuration file <code class="docutils literal notranslate"><span class="pre">photoai.yaml</span></code> to match your environment setup. Here’s a table to help you understand the configurable options:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -206,6 +206,55 @@ mysql
 </tr>
 </tbody>
 </table></section>
+<section id="configurate-environment-variables">
+<h1>Configurate Environment Variables<a class="headerlink" href="#configurate-environment-variables" title="Link to this heading"></a></h1>
+<p>Configurate all of the environment variables in file <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> using <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">XXX=xxx</span></code>. Here’s a table of all the variables needed to configurate.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Variable</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MYSQL_HOST</td>
+<td>127.0.0.1 if you deploy mysql on local server.</td>
+</tr>
+<tr>
+<td>MYSQL_USER</td>
+<td>default: 'root'</td>
+</tr>
+<tr>
+<td>MYSQL_PASSWORD</td>
+<td>password of the specified user</td>
+</tr>
+<tr>
+<td>MYSQL_PORT</td>
+<td>default: 3306</td>
+</tr>
+<tr>
+<td>MYSQL_DB</td>
+<td>default: 'ai_photos'</td>
+</tr>
+<tr>
+<td>IMAGE_SERVER_IP</td>
+<td>The IP of server which you store user uploaded images</td>
+</tr>
+<tr>
+<td>IMAGE_ROOT_PATH</td>
+<td>local path of image storing path</td>
+</tr>
+<tr>
+<td>RETRIEVAL_FILE_PATH</td>
+<td>local path of where you store retrieval files</td>
+</tr>
+<tr>
+<td>GOOGLE_API_KEY</td>
+<td>your google api key to get gps infomation from images</td>
+</tr>
+</tbody>
+</table></section>
 <section id="run-the-photoai-server">
 <h1>Run the PhotoAI server<a class="headerlink" href="#run-the-photoai-server" title="Link to this heading"></a></h1>
 <p>To start the PhotoAI server, use the following command:</p>
@@ -228,7 +277,7 @@ mysql
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff18e0d3820> 
+   <jinja2.runtime.BlockReference object at 0x7f632027a290> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
