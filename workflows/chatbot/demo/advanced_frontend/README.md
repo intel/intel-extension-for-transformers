@@ -2,8 +2,6 @@
 
 <h2>🚀 Demo</h2>
 
-[http://neuralstudio.intel.com/NeuralChat](http://neuralstudio.intel.com/NeuralChat)
-
 <h2>📸 Project Screenshots:</h2>
 
 <img src="https://imgur.com/04qfWb8.png" alt="project-screenshot" width="800" height="400/">
