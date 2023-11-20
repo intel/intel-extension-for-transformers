@@ -34,5 +34,8 @@ retrieval:
         response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
         append: True
 
+safety_checker:
+    enable: true
+
 tasks_list: ['textchat', 'retrieval']
 
