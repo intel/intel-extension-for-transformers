@@ -17,6 +17,40 @@
 
 from fastchat.conversation import get_conv_template, register_conv_template, Conversation, SeparatorStyle
 
+# neuralchat-v3-1 prompt template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3-1",
+        system_message="""### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, \
+short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
+# neuralchat-v3 prompt template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3",
+        system_message="""### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, \
+short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
 # neuralchat-v2 prompt template
 register_conv_template(
     Conversation(
