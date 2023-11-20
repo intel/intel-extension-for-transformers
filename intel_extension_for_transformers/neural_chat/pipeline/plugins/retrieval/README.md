@@ -35,6 +35,9 @@ We have already provided support for popular file farmat on retrieval. When usin
 | json/jsonl  | {'doc':xxx, 'doc_id':xxx}|
 | txt  | / |
 | html  | / |
+| markdown  | / |
+| word  | / |
+| pdf  | / |
 
 # Usage
 The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/plugins/retrieval). The user could refer to it for a simple test. 
