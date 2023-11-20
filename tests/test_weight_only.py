@@ -166,6 +166,10 @@ class TestWeightOnly(unittest.TestCase):
             if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
                 self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
                 self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
+                module.merge()
+                module.unmerge()
+        model.merge_and_unload()
+
 
     def test_int8_training(self):
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_llm_runtime=False)

@@ -166,53 +166,76 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
 
         init_lora_weights = kwargs.pop("init_lora_weights", True)
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
-        if lora_dropout > 0 and "qbits_customop" in torch.ops._dir:
+        qbits_customop_available = True
+        try:
+            torch.ops.qbits_customop.qbits_dropout_fwd
+        except:
+            qbits_customop_available = False
+        if lora_dropout > 0 and qbits_customop_available:
             self.lora_dropout = torch.nn.ModuleDict({adapter_name: DropoutQBits(p=lora_dropout)})
 
-    def merge(self):
+    def merge(self, safe_merge: bool = False) -> None:
+        """
+        Merge the active adapter weights into the base weights
+
+        Args:
+            safe_merge (`bool`, *optional*):
+                If True, the merge operation will be performed in a copy of the original weights and check for NaNs
+                before merging the weights. This is useful if you want to check if the merge operation will produce
+                NaNs. Defaults to `False`.
+        """
         if self.merged:
             print(
                 f"Already following adapters were merged {','.join(self.merged_adapters)}. "
                 f"You are now additionally merging {','.join(self.active_adapters)}."
             )
+        w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
+        torch.ops.weight_only_jblasop.qbits_dequantize(
+            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+        w_data = w_dequant
         for active_adapter in self.active_adapters:
-            if active_adapter not in self.lora_A.keys():
-                continue
-            lora_data = self.get_delta_weight(active_adapter)
-            w_dequant = torch.zeros(self.out_features, self.in_features, dtype=lora_data.dtype)
-            torch.ops.weight_only_jblasop.qbits_dequantize(
-                self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
-            w_data = w_dequant + lora_data
-            weight = torch.ops.weight_only_jblasop.qbits_quantize(
-                w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
-            self.weight = ParamsQBits(
-                data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-                compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
-            )
-            self.merged = True
+            if active_adapter in self.lora_A.keys():
+                if safe_merge:
+                    # Note that safe_merge will be slower than the normal merge
+                    # because of the copy operation.
+                    orig_weights = w_data.clone()
+                    orig_weights += self.get_delta_weight(active_adapter)
 
-    def unmerge(self):
+                    if not torch.isfinite(orig_weights).all():
+                        raise ValueError(
+                            f"NaNs detected in the merged weights. The adapter {active_adapter} seems to be broken"
+                        )
+
+                    w_data = orig_weights
+                else:
+                    w_data += self.get_delta_weight(active_adapter)
+        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+        self.weight = ParamsQBits(
+            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+        )
+
+    def unmerge(self) -> None:
         if not self.merged:
             print("Already unmerged. Nothing to do.")
             return
+        w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
+        torch.ops.weight_only_jblasop.qbits_dequantize(
+            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+        w_data = w_dequant
         while len(self.merged_adapters) > 0:
             active_adapter = self.merged_adapters.pop()
-            if active_adapter not in self.lora_A.keys():
-                continue
-            lora_data = self.get_delta_weight(active_adapter)
-            w_dequant = torch.zeros(self.out_features, self.in_features, dtype=lora_data.dtype)
-            torch.ops.weight_only_jblasop.qbits_dequantize(
-                self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
-            w_data = w_dequant - lora_data
-            weight = torch.ops.weight_only_jblasop.qbits_quantize(
-                w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
-            self.weight = ParamsQBits(
-                data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-                compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
-            )
-            self.merged = False
+            if active_adapter in self.lora_A.keys():
+                w_data -= self.get_delta_weight(active_adapter)
+        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+        self.weight = ParamsQBits(
+            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+        )
 
-    def get_delta_weight(self, adapter):
+    def get_delta_weight(self, adapter) -> torch.Tensor:
         return (
             transpose(
                 self.lora_B[adapter].weight @ self.lora_A[adapter].weight,
