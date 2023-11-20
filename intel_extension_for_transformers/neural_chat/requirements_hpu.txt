@@ -40,3 +40,5 @@ deepface
 exifread
 einops
 zhconv
+urllib3
+langid
