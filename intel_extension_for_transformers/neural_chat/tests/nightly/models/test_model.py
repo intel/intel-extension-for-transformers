@@ -105,6 +105,26 @@ class TestNeuralChatModel(unittest.TestCase):
     def test_get_default_conv_template_v2(self):
         result = NeuralChatModel().get_default_conv_template(model_path='Intel/neural-chat-7b-v2')
         self.assertIn("### System:", str(result))
+        config = PipelineConfig(model_name_or_path="Intel/neural-chat-7b-v2")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        self.assertIn('The Intel Xeon Scalable Processors', str(result))
+
+    def test_get_default_conv_template_v3(self):
+        result = NeuralChatModel().get_default_conv_template(model_path='Intel/neural-chat-7b-v3')
+        self.assertIn("### System:", str(result))
+        config = PipelineConfig(model_name_or_path="Intel/neural-chat-7b-v3")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        self.assertIn('The Intel Xeon Scalable Processors', str(result))
+
+    def test_get_default_conv_template_v3_1(self):
+        result = NeuralChatModel().get_default_conv_template(model_path='Intel/neural-chat-7b-v3-1')
+        self.assertIn("### System:", str(result))
+        config = PipelineConfig(model_name_or_path="Intel/neural-chat-7b-v3-1")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        self.assertIn('The Intel Xeon Scalable Processors', str(result))
 
     def test_get_default_conv_template_v3(self):
         result = NeuralChatModel().get_default_conv_template(model_path='Intel/neural-chat-7b-v3')
@@ -123,6 +143,34 @@ class TestNeuralChatModel(unittest.TestCase):
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)
         self.assertIn('The Intel Xeon Scalable Processors', str(result))
+
+class TestStarCoderModel(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_code_gen(self):
+        config = PipelineConfig(model_name_or_path="bigcode/starcoder")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("def print_hello_world():")
+        print(result)
+        self.assertIn("""print('Hello World')""", str(result))
+
+class TestCodeLlamaModel(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_code_gen(self):
+        config = PipelineConfig(model_name_or_path="codellama/CodeLlama-7b-hf")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("def print_hello_world():")
+        print(result)
+        self.assertIn("""print('Hello World')""", str(result))
 
 if __name__ == "__main__":
     unittest.main()

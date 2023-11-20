@@ -104,8 +104,13 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
+<<<<<<< HEAD
         raise ValueError(f"NeuralChat Error: Unsupported model name or path {config.model_name_or_path}, \
                          only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL now.")
+=======
+        raise ValueError("NeuralChat Error: Unsupported model name or path, \
+           only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+>>>>>>> f7d6baa03e7a481eb85988af3373e9ada730f08b
 
     # register plugin instance in model adaptor
     if config.plugins:
