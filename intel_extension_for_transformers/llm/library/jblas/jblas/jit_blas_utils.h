@@ -75,37 +75,13 @@ struct bf16 {
   };
   bf16() : x(0) {}
 
-#if CompileBF16()
-#pragma GCC target("avx512vl", "avx512bf16")
-  static uint16_t f32_to_bf16(float v) {
-    auto mm = _mm_load_ss(&v);
-    auto mm2 = _mm_cvtneps_pbh(mm);
-    uint16_t dst;
-    _mm_storeu_si16(reinterpret_cast<uint16_t*>(&dst), reinterpret_cast<__m128i>(mm2));
-    return dst;
-  }
-
-  explicit bf16(float vf32) : x(bit_cast<uint16_t>(f32_to_bf16(vf32))) {}
-#else
   explicit bf16(float vf32) { fromfloat(vf32); }
-#endif
 
-#if CompileBF16()
-#pragma GCC target("avx512vl", "avx512bf16")
-  float tofloat() const {
-    auto mm = _mm_loadu_si16(&(this->x));
-    auto mm2 = _mm_bslli_si128(mm, 2);
-    float dst;
-    _mm_store_ss(&dst, reinterpret_cast<__m128>(mm2));
-    return dst;
-  }
-#else
   float tofloat() const {
     bf16f32 tmp = {0.f};
     tmp.bf16[1] = x;
     return tmp.f32;
   }
-#endif
 
   operator float() const { return tofloat(); }
 
@@ -116,16 +92,12 @@ struct bf16 {
   }
 
   void fromfloat(float _v) {
-#if CompileBF16()
-    x = bit_cast<uint16_t>(f32_to_bf16(_v));
-#else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;
     // See document of VCVTNEPS2BF16 in Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 2
     const auto lsb = tmp.bf16[1] & 1;
     tmp.u += 0x7fff + lsb;
     x = tmp.bf16[1];
-#endif
   }
 };
 
@@ -137,9 +109,6 @@ struct fp16 {
   explicit fp16(bf16 val) { (*this) = static_cast<float>(val); }
 
   fp16& operator=(float val) {
-#if CompileFP16()
-    this->x = bit_cast<uint16_t>(static_cast<_Float16>(val));
-#else
     // round-to-nearest-even: add last bit after truncated mantissa
     const uint32_t b = bit_cast<uint32_t>(val) + 0x00001000;
     const uint32_t e = (b & 0x7F800000) >> 23;  // exponent
@@ -150,13 +119,9 @@ struct fp16 {
     this->x = static_cast<uint16_t>((b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
                                     ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) |
                                     (e > 143) * 0x7FFF);
-#endif
     return *this;
   }
   explicit operator float() const {
-#if CompileFP16()
-    return static_cast<float>(bit_cast<_Float16>(this->x));
-#else
     // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15,
     // +-131008.0, +-6.1035156E-5, +-5.9604645E-8, 3.311 digits
     const uint32_t e = (x & 0x7C00) >> 10;  // exponent
@@ -166,12 +131,8 @@ struct fp16 {
     // sign : normalized : denormalized
     return bit_cast<float>((x & 0x8000) << 16 | (e != 0) * ((e + 112) << 23 | m) |
                            ((e == 0) & (m != 0)) * ((v - 37) << 23 | ((m << (150 - v)) & 0x007FE000)));
-#endif
   }
   explicit operator bf16() const {
-#if CompileBF16() && CompileFP16()
-    return bf16(static_cast<float>(bit_cast<_Float16>(this->x)));
-#else
     // Extract the exponent, and mantissa from the fp16 value.
     int exponent = x >> 10 & 0x1f;
     int mantissa = x & 0x3ff;
@@ -191,7 +152,6 @@ struct fp16 {
       int sign = x & 0x8000;
       return bf16::from_bin(static_cast<uint16_t>(sign | (exponent + 128 - 16) << 7 | mantissa >> 3));
     }
-#endif
   }
 };
 
@@ -296,6 +256,12 @@ static inline int remainsize(int pos, int size, int N) { return pos + N <= size 
 template <typename _SRCT, typename _DSTT>
 static inline _DSTT cast(_SRCT _src) {
   return static_cast<_DSTT>(_src);
+}
+
+template <int _Alignment, typename _T>
+static inline _T* pointer_align(_T* src) {
+  auto uptr = reinterpret_cast<uint64_t>(src);
+  return reinterpret_cast<_T*>((uptr + _Alignment - 1) / _Alignment * _Alignment);
 }
 
 template <>

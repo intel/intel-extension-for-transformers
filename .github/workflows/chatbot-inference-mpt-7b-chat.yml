@@ -29,11 +29,11 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-gha")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /home/sdp/.cache/huggingface/hub:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-gha" --hostname="chatbotinfer-gha-container" chatbotinfer-gha:latest
+          docker run -tid -v /home/sdp/.cache/huggingface/hub:/root/.cache/huggingface/hub -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-gha" --hostname="chatbotinfer-gha-container" chatbotinfer-gha:latest
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer-gha" bash -c "cd /root/chatbot && source activate && conda activate neuralchat; \
+          docker exec "chatbotinfer-gha" bash -c "cd /intel-extension-for-transformers && source activate && conda activate neuralchat; \
                  git config --global --add safe.directory '*' && \
                  git submodule update --init --recursive && \
                  pip uninstall intel-extension-for-transformers -y; \
@@ -46,7 +46,7 @@ jobs:
         if: always()
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-gha")
-          if [[ ! -z "$cid" ]]; then docker exec "chatbotinfer-gha" bash -c "rm -rf /root/chatbot/* && rm -rf /root/chatbot/.* || echo Clean" && docker stop $cid && docker rm $cid; fi
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
 
       - name: Test Summary
         run: echo "Inference completed successfully"

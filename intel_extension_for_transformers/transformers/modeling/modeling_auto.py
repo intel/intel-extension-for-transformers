@@ -101,9 +101,14 @@ class _BaseQBitsAutoModelClass:
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="nf4"
-                    )
+                    if use_llm_runtime: 
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="int8", weight_dtype="int4"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=torch_dtype, weight_dtype="nf4"
+                        )
                 else:
                     assert (
                         "4" in quantization_config.weight_dtype
@@ -112,9 +117,14 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="int8"
-                    )
+                    if use_llm_runtime: 
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="bf16", weight_dtype="int8"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=torch_dtype, weight_dtype="int8"
+                        )
                 else:
                     assert (
                         quantization_config.weight_dtype == "int8"
@@ -142,12 +152,19 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
+                    not_quant=quantization_config.not_quant,
+                    use_cache=quantization_config.use_cache,
                 )
                 return model
             else:
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path, *model_args, **kwargs
                 )
+                if (not torch.cuda.is_available() or
+                        device_map == "cpu" or
+                        device_map == torch.device("cpu")
+                        ) and model.config.model_type == "chatglm":
+                    model = model.float()
                 model.eval()        
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
@@ -159,6 +176,11 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
+            if (not torch.cuda.is_available() or 
+                    device_map == "cpu" or 
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
             model.eval()
             logger.info("Applying SmoothQuant.")
             try:
@@ -244,7 +266,7 @@ class _BaseQBitsAutoModelClass:
                 "smooth_quant": True,
                 "smooth_quant_args": {"alpha": quantization_config.alpha},
             }
-            example_inputs = get_example_inputs_for_trace(model)
+            example_inputs = get_example_inputs_for_trace(model, quantization_config=quantization_config)
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
@@ -276,7 +298,13 @@ class _BaseQBitsAutoModelClass:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
-            model.eval()   
+            if (not torch.cuda.is_available() or
+                    device_map == "cpu" or
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
+
+            model.eval() 
         return model
 
 

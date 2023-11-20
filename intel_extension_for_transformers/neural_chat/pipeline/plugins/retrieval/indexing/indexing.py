@@ -16,14 +16,13 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
+
 import os, re
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
-from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
+from typing import Dict, List
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
-from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
 
@@ -129,11 +128,8 @@ class DocumentIndexing:
         if self.retrieval_type=="dense":
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         else:
-            if self.document_store == "inmemory":
-                vectordb = self.KB_construct(input)
-            else:
-                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                      port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
         return vectordb
             
     def KB_construct(self, input):
@@ -170,22 +166,7 @@ class DocumentIndexing:
             print("The local knowledge base has been successfully built!")
             return vectordb
         elif self.retrieval_type == "sparse":
-            if self.document_store == "inmemory":
-                document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
-            elif self.document_store == "Elasticsearch":
-                document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                            port=9200, search_fields=["content", "title"])
-            documents = []
-            for data, meta in data_collection:
-                metadata = {"source": meta}
-                if len(data) < 5:
-                    continue
-                new_doc = SDocument(content=data, meta=metadata)
-                documents.append(new_doc)
-            assert documents != [], "The given file/files cannot be loaded."
-            document_store.write_documents(documents)
-            print("The local knowledge base has been successfully built!")
-            return document_store
+            print("Will be removed in another PR")
 
 
     def KB_append(self, input):  ### inmemory documentstore please use KB construct
@@ -219,20 +200,4 @@ class DocumentIndexing:
             print("The local knowledge base has been successfully built!")
             return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         elif self.retrieval_type == "sparse":
-            if self.document_store == "Elasticsearch":
-                document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                            port=9200, search_fields=["content", "title"])
-                documents = []
-                for data, meta in data_collection:
-                    metadata = {"source": meta}
-                    if len(data) < 5:
-                        continue
-                    new_doc = SDocument(content=data, meta=metadata)
-                    documents.append(new_doc)
-                assert documents != [], "The given file/files cannot be loaded."
-                document_store.write_documents(documents)
-                print("The local knowledge base has been successfully built!")
-                return ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                          port=9200, search_fields=["content", "title"])
-            else:
-                print("The target document type is not available.")
+            print("Will be removed in another PR.")
