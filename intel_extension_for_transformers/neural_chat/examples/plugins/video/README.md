@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ## Prepare Models
 
 ```
-bash download_models.sh
+bash download_models.sh checkpoints gfpgan/weights
 ```
 
 ## Usage

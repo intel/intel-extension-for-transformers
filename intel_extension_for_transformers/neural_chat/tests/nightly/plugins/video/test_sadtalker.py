@@ -26,9 +26,12 @@ import subprocess
 class TestSadTalker(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        p = subprocess.Popen(["bash", "download_models.sh"])
-        p.wait()
         self.cur_directory = os.path.dirname(os.path.abspath(__file__))
+        p = subprocess.Popen(["bash",
+                              os.path.join(self.cur_directory, "download_models.sh"),
+                              os.path.join(self.cur_directory, "checkpoints"),
+                              os.path.join(self.cur_directory, "gfpgan/weights")])
+        p.wait()
         sample_audio_url = "https://github.com/intel/intel-extension-for-transformers/raw/main/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         sample_img_url = "https://raw.githubusercontent.com/OpenTalker/SadTalker/main/examples/source_image/full_body_2.png"
         img_data = requests.get(sample_img_url).content
