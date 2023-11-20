@@ -366,7 +366,7 @@ def load_model(
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
         or re.search("codellama", model_name, re.IGNORECASE)
-        or re.search("Mistral", model_name, re.IGNORECASE)
+        or re.search("mistral", model_name, re.IGNORECASE)
     ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(

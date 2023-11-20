@@ -322,7 +322,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     if len(state.messages) == state.offset + 2:
         # model conversation name: "mpt-7b-chat", "chatglm", "chatglm2", "llama-2",
-        #                          "neural-chat-7b-v3-1", "neural-chat-7b-v3",
+        #                          "mistral", "neural-chat-7b-v3-1", "neural-chat-7b-v3",
         #                          "neural-chat-7b-v2", "neural-chat-7b-v1-1"
         # First round of Conversation
         if "Llama-2-7b-chat-hf" in model_name:
