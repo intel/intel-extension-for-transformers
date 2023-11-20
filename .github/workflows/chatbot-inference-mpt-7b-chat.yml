@@ -12,6 +12,12 @@ jobs:
     name: inference test
     runs-on: neural-chat-inference
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          cid=$(docker ps -q --filter "name=chatbotinfer-gha")
+          if [[ ! -z "$cid" ]]; then docker exec "chatbotinfer-gha" bash -c "rm -rf /root/chatbot/* && rm -rf /root/chatbot/.* || echo Clean" && docker stop $cid && docker rm $cid; fi
+      
       - name: Checkout
         uses: actions/checkout@v2
 
