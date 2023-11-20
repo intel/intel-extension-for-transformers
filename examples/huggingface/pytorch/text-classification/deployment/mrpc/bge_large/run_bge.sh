@@ -149,7 +149,9 @@ if [[ ${PRECISION} = 'dynamic_int8' ]]; then
 fi
 if [[ ${MODE} == "accuracy" ]]; then
     echo "------------ACCURACY BENCHMARK---------"
+    rm -rf en_results
     python run_executor.py \
+        --input_model=${inference_model} \
         --mode=accuracy \
         --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --task_type STS \
