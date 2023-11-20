@@ -106,10 +106,6 @@ class AnimateFromCoeff:
         self.he_estimator.eval()
         self.mapping.eval()
         self.bf16 = bf16
-        if self.bf16:
-            import intel_extension_for_pytorch as ipex
-
-            self.generator = ipex.optimize(self.generator, dtype=torch.bfloat16)
         self.device = device
 
     def load_cpk_facevid2vid_safetensor(
