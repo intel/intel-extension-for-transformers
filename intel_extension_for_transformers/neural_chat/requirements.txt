@@ -47,3 +47,5 @@ spacy
 neural-compressor==2.3.1
 pymysql
 einops
+urllib3
+langid
