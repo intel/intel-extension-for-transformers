@@ -8,6 +8,8 @@ from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQ
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 from intel_extension_for_transformers.llm.runtime.graph import Model
 
+import matplotlib.pyplot as plt
+
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
     totalNum = (np.abs(numa)**2).sum()
@@ -28,27 +30,36 @@ class TestLLMRUNTIME(unittest.TestCase):
 
     def test_llm_runtime(self):
         model_name = "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
-        woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, not_quant=True)
         prompt = "What is the meaning of life?"
 
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         inputs = tokenizer(prompt, return_tensors="pt")
-
-        # pytorch fp32
-        pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-        pt_model.eval() 
-        pt_logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
-        pt_generate_ids = pt_model.generate(input_ids=inputs.input_ids, do_sample=False, max_new_tokens=100)[0].tolist()
+        
+        pt_logits = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_logits.pth")[:,-1]
+        pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/llama2_pt_generate_ids.pth")[0].tolist()
         print(tokenizer.decode(pt_generate_ids))
 
+        # check output ids
+        woq_config = WeightOnlyQuantConfig(use_cache=True, not_quant=True)
         itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
-        itrex_outputs = itrex_model(inputs.input_ids)
         itrex_generate_ids = itrex_model.generate(inputs.input_ids, do_sample=False, max_new_tokens=100)[0]
         print(tokenizer.decode(itrex_generate_ids))
-        print(cmpData(pt_logits.detach().numpy().flatten(), itrex_outputs.flatten()))
-
         for i in range(len(pt_generate_ids)):
             self.assertEqual(pt_generate_ids[i], itrex_generate_ids[i])
+
+        # check diff of logits
+        woq_configs = {
+            "fp32": WeightOnlyQuantConfig(use_cache=True, not_quant=True),
+            # "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
+            "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
+            # "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
+            }
+        for config_type in woq_configs:
+            itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type], 
+                                                    use_llm_runtime=True, trust_remote_code=True)
+            itrex_logits = itrex_model(inputs.input_ids)
+            print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
+
 
     def test_beam_search(self):
         model_name = "/tf_dataset2/models/pytorch/gpt-j-6B"  # or local path to model
@@ -69,12 +80,10 @@ class TestLLMRUNTIME(unittest.TestCase):
         inputs = tokenizer(prompts, padding=True, return_tensors='pt')
 
         # pytorch fp32
-        pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-        pt_model.eval()
-        pt_generate_ids = pt_model.generate(**inputs, max_new_tokens=128, min_new_tokens=30,
-                                            early_stopping=True, num_beams=4).tolist()
+        pt_generate_ids = torch.load("/tf_dataset2/inc-ut/nlptoolkit_ut_model/beam_pt_generate_ids.pth").tolist()
+
         # llm runtime fp32
-        woq_config = WeightOnlyQuantConfig(not_quant=True)
+        woq_config = WeightOnlyQuantConfig(not_quant=True, use_cache=True)
         itrex_model = AutoModelForCausalLM.from_pretrained(
             model_name, quantization_config=woq_config, trust_remote_code=True)
         itrex_generate_ids = itrex_model.generate(
