@@ -46,3 +46,5 @@ exifread
 einops
 cchardet
 zhconv
+urllib3
+langid

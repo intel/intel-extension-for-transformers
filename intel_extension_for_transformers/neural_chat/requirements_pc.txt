@@ -40,3 +40,5 @@ spacy
 neural-compressor==2.3.1
 einops
 zhconv
+urllib3
+langid

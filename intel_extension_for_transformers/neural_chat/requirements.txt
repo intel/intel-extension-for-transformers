@@ -46,3 +46,5 @@ neural-compressor==2.3.1
 pymysql
 einops
 zhconv
+urllib3
+langid
