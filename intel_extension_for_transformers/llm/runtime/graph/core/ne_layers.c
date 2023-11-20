@@ -2832,7 +2832,9 @@ struct ne_tensor* ne_diag(struct ne_context* ctx, struct ne_tensor* a) {
 
 // ne_diag_mask_inf
 
-struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, bool inplace) {
+struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, bool inplace,
+                                        int* n_padding, bool padding_left) {
+  NE_ASSERT(padding_left);
   bool is_node = false;
 
   if (a->grad) {
@@ -2843,10 +2845,18 @@ struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2, NE_SIZE_CALC);
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2 + bs, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = inplace ? 1 : 0;
+  for (int i = 0; i < bs; ++i) {
+    if (n_padding == NULL) {
+      ((int32_t*)b->data)[2 + i] = 0;
+    } else {
+      ((int32_t*)b->data)[2 + i] = *(n_padding + i);
+    }
+  }
 
   ne_scratch_load(ctx);
 
@@ -2859,11 +2869,21 @@ struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor
 }
 
 struct ne_tensor* ne_diag_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int n_past) {
-  return ne_diag_mask_inf_impl(ctx, a, n_past, false);
+  return ne_diag_mask_inf_impl(ctx, a, n_past, false, NULL, true);
 }
 
 struct ne_tensor* ne_diag_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past) {
-  return ne_diag_mask_inf_impl(ctx, a, n_past, true);
+  return ne_diag_mask_inf_impl(ctx, a, n_past, true, NULL, true);
+}
+
+struct ne_tensor* ne_diag_mask_inf_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                int* n_padding) {
+  return ne_diag_mask_inf_impl(ctx, a, n_past, false, n_padding, true);
+}
+
+struct ne_tensor* ne_diag_mask_inf_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                        int* n_padding) {
+  return ne_diag_mask_inf_impl(ctx, a, n_past, true, n_padding, true);
 }
 
 // ne_diag_mask_zero
@@ -2933,8 +2953,8 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 // ne_rope
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                               int prompt_size, bool inplace) {
-  NE_ASSERT(n_past >= 0);
+                               int prompt_size, bool inplace, int n_keep, struct ne_tensor* cossin) {
+  NE_ASSERT(n_past >= 0 || n_keep >= 0);
   bool is_node = false;
 
   if (!inplace && a->grad) {
@@ -2945,12 +2965,13 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
   ((int32_t*)b->data)[3] = prompt_size;
+  ((int32_t*)b->data)[4] = n_keep;  // set to non-negative value to enable shift mode
 
   ne_scratch_load(ctx);
 
@@ -2958,18 +2979,24 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
   result->src1 = b;
+  result->opt[0] = cossin;
 
   return result;
 }
 
 struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                           int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                                   int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL);
+}
+
+struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims, int mode,
+                                        int prompt_size, int n_keep, struct ne_tensor* cossin) {
+  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin);
 }
 
 // ne_rope_back
@@ -3163,26 +3190,35 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
 
 // ne_flash_attn_kv_update
 struct ne_tensor* ne_flash_attn_kv_update(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
-                                          int n_past, bool is_v) {
+                                          int n_past, bool no_zeroing, bool is_v) {
   NE_ASSERT(!(cache->grad || cur->grad));  // backward not implemented
   // make a view of the destination
   struct ne_tensor* result = ne_view_tensor(ctx, cache);
+
+  ne_scratch_save(ctx);
+
+  struct ne_tensor* params = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
+
+  ((int32_t*)params->data)[0] = n_past;
+  ((int32_t*)params->data)[1] = (int)is_v;
+  ((int32_t*)params->data)[2] = (int)no_zeroing;
+
+  ne_scratch_load(ctx);
 
   result->op = NE_OP_FLASH_ATTN_KV_UPDATE;
   result->grad = NULL;
   result->src0 = cache;
   result->src1 = cur;
-  *(int*)result->padding = n_past;
-  *(bool*)&result->padding[sizeof(n_past)] = is_v;
+  result->opt[0] = params;
   return result;
 }
 struct ne_tensor* ne_flash_attn_update_k(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
-                                         int n_past) {
-  return ne_flash_attn_kv_update(ctx, cache, cur, n_past, false);
+                                         int n_past, bool no_zeroing) {
+  return ne_flash_attn_kv_update(ctx, cache, cur, n_past, no_zeroing, false);
 }
 struct ne_tensor* ne_flash_attn_update_v(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
-                                         int n_past) {
-  return ne_flash_attn_kv_update(ctx, cache, cur, n_past, true);
+                                         int n_past, bool no_zeroing) {
+  return ne_flash_attn_kv_update(ctx, cache, cur, n_past, no_zeroing, true);
 }
 
 // ne_flash_ff
@@ -7286,7 +7322,8 @@ static void ne_compute_forward_diag(const struct ne_compute_params* params, cons
 static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                              const struct ne_tensor* src1, struct ne_tensor* dst, const float value) {
   assert(src1->type == NE_TYPE_I32);
-  assert(ne_nelements(src1) == 2);
+  const int bs = src0->ne[3];
+  assert(ne_nelements(src1) == (2 + bs));
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7317,6 +7354,18 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
 
   assert(dst->nb[0] == sizeof(float));
   assert(src0->nb[0] == sizeof(float));
+
+  // mask padding token (padding left)
+  for (int b = 0; b < bs; b++) {
+    const int n_padding = ((int32_t*)src1->data)[2 + b];
+    if (n_padding == 0) continue;
+    for (int k = 0; k < (nz / bs); k++) {
+      for (int j = ith; j < nr; j += nth) {
+        // it will not affect next token if don't mask the pad_token row
+        ne_vec_set_f32(n_padding, (float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]), value);
+      }
+    }
+  }
 
   for (int k = 0; k < nz; k++) {
     for (int j = ith; j < nr; j += nth) {
@@ -7394,7 +7443,7 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
     float max = -INFINITY;
     ne_vec_max_f32(nc, &max, sp);
 
-    ne_float sum = 0.0;
+    ne_float sum = (max == -INFINITY) ? (1.0 * nc) : 0.0;
 
     uint16_t scvt;
     for (int i = 0; i < nc; i++) {
@@ -7660,14 +7709,17 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
   }
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
 
-  float freq_base = 10000.0f;
-  float freq_scale = 1.0f;
+  static const float freq_base = 10000.0f;
+  static const float freq_scale = 1.0f;
 
   const int64_t n_past = ((int32_t*)src1->data)[0];
   const int64_t n_dims = ((int32_t*)src1->data)[1];
   const int64_t mode = ((int32_t*)src1->data)[2];
   const int64_t prompt_size = ((int32_t*)src1->data)[3];
+  const int64_t n_keep = ((int32_t*)src1->data)[4];
 
   assert(n_past >= 0);
 
@@ -7695,12 +7747,15 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
   const float theta_scale = powf(freq_base, -2.0f / n_dims);
 
+  const bool skip = mode & 1;
   const bool is_neox = mode & 2;
   const bool is_glm = mode & 4;
+  const bool is_shift = n_keep >= 0;
+  NE_ASSERT(("RoPE shift not supported!", !is_shift));
 
   for (int64_t i3 = 0; i3 < ne3; i3++) {
-    for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
-      const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
+    for (int64_t i2 = (skip ? n_past : 0); i2 < ne2; i2++) {
+      const int64_t p = skip ? i2 : n_past + i2;
       for (int64_t i1 = 0; i1 < ne1; i1++) {
         if (ir++ < ir0) continue;
         if (ir > ir1) break;
@@ -7738,7 +7793,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
             const float cos_theta = cosf(theta);
             const float sin_theta = sinf(theta);
 
-            theta *= theta_scale;
+            theta *= theta_scale;  // theta = i2 * theta_scale^(i0/2)
 
             const float* const src = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
             float* dst_data = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
@@ -7780,18 +7835,19 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
 static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         const struct ne_tensor* src1, struct ne_tensor* dst) {
-  NE_ASSERT(src1->type == NE_TYPE_I32);
-  NE_ASSERT(ne_nelements(src1) == 3);
-
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
   }
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
 
   const int n_past = ((int32_t*)src1->data)[0];
   const int n_dims = ((int32_t*)src1->data)[1];
   const int mode = ((int32_t*)src1->data)[2];
+  const int prompt_size = ((int32_t*)src1->data)[3];
+  const int n_keep = ((int32_t*)src1->data)[4];
 
-  assert(n_past >= 0);
+  assert(n_past >= 0 || n_keep >= 0);
 
   const size_t nb00 = src0->nb[0];
   const size_t nb01 = src0->nb[1];
@@ -7830,11 +7886,55 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
 
   const float theta_scale = powf(10000.0, -2.0f / n_dims);
 
+  const bool skip = mode & 1;
   const bool is_neox = mode & 2;
+  const bool is_glm = mode & 4;
+  NE_ASSERT(("glm mode RoPE is not implemented!", !is_glm));
+  const bool is_shift = n_keep >= 0;
+  NE_ASSERT(("shift RoPE is only implemented for the vanilla mode", !is_shift || !(is_glm || is_neox || skip)));
+
+  if (is_shift) {
+    float theta = n_past;
+    ne_fp16_t* cossin = (dst->opt[0] != NULL) ? dst->opt[0]->data : NULL;
+    if (cossin == NULL) {
+      cossin = malloc(ne0 * sizeof(ne_fp16_t));
+      for (int i0 = 0; i0 < ne0; i0 += 2) {
+        cossin[i0 + 0] = NE_FP32_TO_FP16(cosf(theta));
+        cossin[i0 + 1] = NE_FP32_TO_FP16(sinf(theta));
+        theta *= theta_scale;
+      }
+    }
+
+    for (int64_t i3 = 0; i3 < ne3; i3++) {
+      for (int64_t i2 = 0; i2 < ne2; i2++) {    // along seq
+        for (int64_t i1 = 0; i1 < ne1; i1++) {  // along head num
+          if (ir++ < ir0) continue;
+          if (ir > ir1) break;
+          if (i2 < n_keep) continue;  // The "break" will break `ir`
+
+          for (int64_t i0 = 0; i0 < ne0; i0 += 2) {  // along head size
+            const ne_fp16_t* const src =
+                (ne_fp16_t*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
+            ne_fp16_t* dst_data = (ne_fp16_t*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
+
+            const float x0 = NE_FP16_TO_FP32(src[0]);
+            const float x1 = NE_FP16_TO_FP32(src[1]);
+            const float cos = NE_FP16_TO_FP32(cossin[i0 + 0]);
+            const float sin = NE_FP16_TO_FP32(cossin[i0 + 1]);
+
+            dst_data[0] = NE_FP32_TO_FP16(x0 * cos - x1 * sin);
+            dst_data[1] = NE_FP32_TO_FP16(x1 * cos + x0 * sin);
+          }
+        }
+      }
+    }
+    if (dst->opt[0] == NULL) free(cossin);
+    return;
+  }
 
   for (int64_t i3 = 0; i3 < ne3; i3++) {
-    for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
-      const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
+    for (int64_t i2 = (skip ? n_past : 0); i2 < ne2; i2++) {
+      const int64_t p = skip ? i2 : n_past + i2;
       for (int64_t i1 = 0; i1 < ne1; i1++) {
         if (ir++ < ir0) continue;
         if (ir > ir1) break;
@@ -7888,6 +7988,50 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
   }
 }
 
+static void ne_compute_forward_rope_jblas(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                          const struct ne_tensor* src1, struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) return;
+  NE_ASSERT(("use internal multi-threading", params->nth == 1));
+
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
+
+  const int n_past = ((int32_t*)src1->data)[0];
+  const int n_dims = ((int32_t*)src1->data)[1];
+  const int mode = ((int32_t*)src1->data)[2];
+  const int prompt_size = ((int32_t*)src1->data)[3];
+  const int n_keep = ((int32_t*)src1->data)[4];
+  const bool skip = mode & 1;
+  const bool is_neox = mode & 2;
+  const bool is_glm = mode & 4;
+  NE_ASSERT(("glm mode RoPE is not implemented!", !is_glm));
+  const bool is_shift = n_keep >= 0;
+  NE_ASSERT(("shift RoPE is only implemented for the vanilla mode", !is_shift || !(is_glm || is_neox || skip)));
+
+  const int batch_size = dst->ne[3];
+  const int head_num = dst->ne[2];
+  const int seq_len = dst->ne[1];
+  const int head_size = dst->ne[0];
+
+  if (is_shift) {
+    ne_fp16_t* cossin = (dst->opt[0] != NULL) ? dst->opt[0]->data : NULL;
+    if (cossin == NULL) {
+      float theta = n_past;
+      const float theta_scale = powf(10000.0, -2.0f / n_dims);
+      cossin = malloc(head_size * sizeof(ne_fp16_t));
+      for (int i0 = 0; i0 < head_size; i0 += 2) {
+        cossin[i0 + 0] = NE_FP32_TO_FP16(cosf(theta));
+        cossin[i0 + 1] = NE_FP32_TO_FP16(sinf(theta));
+        theta *= theta_scale;
+      }
+    }
+    jblas_reordered_attn_fp32_shift_rope_k(dst->data, cossin, batch_size, head_num, head_size, seq_len, n_keep);
+    if (dst->opt[0] == NULL) free(cossin);
+    return;
+  }
+  NE_ASSERT(("Only shift-RoPE is implemented for customized K!", false));
+}
+
 static void ne_compute_forward_rope(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                     const struct ne_tensor* src1, struct ne_tensor* dst) {
   switch (src0->type) {
@@ -7896,6 +8040,9 @@ static void ne_compute_forward_rope(const struct ne_compute_params* params, cons
     } break;
     case NE_TYPE_F32: {
       ne_compute_forward_rope_f32(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_JBLAS: {
+      ne_compute_forward_rope_jblas(params, src0, src1, dst);
     } break;
     default: {
       NE_ASSERT(false);
@@ -9248,8 +9395,11 @@ static void ne_compute_forward_flash_attn_kv_update(const struct ne_compute_para
                                                     const struct ne_tensor* cache, const struct ne_tensor* cur,
                                                     struct ne_tensor* dst) {
   if (params->type != NE_TASK_COMPUTE) return;
-  const int n_past = *(int*)dst->padding;
-  const bool is_v = *(bool*)&dst->padding[sizeof(n_past)];
+  NE_ASSERT(ne_nelements(dst->opt[0]) == 3);  // 3 params
+  const int* p_data = dst->opt[0]->data;
+  const int n_past = p_data[0];
+  const bool is_v = (bool)p_data[1];
+  const bool no_zeroing = (bool)p_data[2];
   NE_ASSERT(cur->type == NE_TYPE_F32);
   jblas_fusion_attn_fp32_update_kv_args_t args = {
       .src = cur->data,
@@ -9264,6 +9414,7 @@ static void ne_compute_forward_flash_attn_kv_update(const struct ne_compute_para
       .step_head_num = cur->nb[1] / NE_TYPE_SIZE[cur->type],
       .step_seq = cur->nb[2] / NE_TYPE_SIZE[cur->type],
       .step_head_size = cur->nb[0] / NE_TYPE_SIZE[cur->type],
+      .no_zeroing = no_zeroing,
   };
   if (is_v)
     jblas_reordered_attn_fp32_update_v(&args);
@@ -10683,7 +10834,9 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_DIAG_MASK_INF:
         case NE_OP_ROPE:
-          if (node->src0->ne[1] > 4) {
+          if (node->type == NE_TYPE_JBLAS) {
+            node->n_tasks = 1;
+          } else if (node->src0->ne[1] > 4) {
             node->n_tasks = n_threads;
           } else {
             node->n_tasks = 1;

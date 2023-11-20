@@ -111,7 +111,6 @@ enum model_file_version {
 // default hparams (LLaMA 7B)
 struct model_hparams {
   uint32_t n_vocab = 32000;
-  uint32_t n_ctx = 512;  // this is provided as user input?
   uint32_t n_embd = 4096;
   uint32_t n_mult = 256;
   uint32_t n_head = 32;
@@ -152,15 +151,33 @@ struct model_layer {
   struct ne_tensor* v_cache;
 };
 
+typedef int32_t model_pos;
+typedef int32_t model_seq_id;
+
+struct kv_token_cell {
+  model_pos pos = -1;   // token idx (for rope)
+  model_pos delta = 0;  // token shift delta (pos += delta)
+};
+
+struct kv_seq_cell {
+  std::vector<kv_token_cell> token_cells;
+  model_seq_id seq_id = -1;
+  bool empty = true;
+};
+
 struct model_kv_cache {
-  struct ne_tensor* k;
-  struct ne_tensor* v;
+  struct ne_tensor* k = NULL;
+  struct ne_tensor* v = NULL;
+  struct ne_tensor* cossin = NULL;  // cached cos/sin value for shifting RoPE
 
   struct ne_context* ctx = NULL;
 
   model_ctx_buffer buf;
 
   int n;  // number of tokens currently in the cache
+
+  bool has_shift = false;  // ring-buffer (for too long text generation like streaming-llm)
+  std::vector<kv_seq_cell> seq_cells;
 
   ~model_kv_cache() {
     if (ctx) {
@@ -251,10 +268,23 @@ struct model_context {
   int32_t n_eval = 0;    // number of eval calls
   int32_t n_p_eval = 0;  // number of tokens in eval calls for the prompt (with batch size > 1)
 
+  int32_t n_ctx = 512;  // number of tokens to keep as context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int32_t n_keep = 0;
+
   model_struct model;
   model_vocab vocab;
+  // maximum num of bearable requests in current env
+  int max_request_bs = 32;  // TODO
+  // num of current execution prompts
+  int request_running_bs = 1;
+  // length of current execution tokens list
+  // first token (prefill) generation is equal to `request_running_bs`
+  // next tokens (decoding) generation may be larger than `request_running_bs`(for example, beam search)
   int batch_size = 1;
   bool beam_search = false;
+  bool shift_roped_k = false;     // whether to store non-RoPEd K cache
   bool support_jblas_kv = false;  // whether the model graph supports jblas-kvcache
   int beam_size = 1;
   int kv_n_ctx_block = 1;
@@ -335,9 +365,36 @@ typedef struct model_token_data_array {
 
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
+struct model_input {
+  // embd or next token
+  const model_token* tokens = nullptr;
+  // tokens length
+  uint32_t n_tokens = 0;
+  // prompt length
+  uint32_t n_prompt_tokens = 0;
+  // kv cache n_past
+  uint32_t n_past = 0;
+  // text tokens length (prompt + all next tokens)
+  // the number of tokens evaluated so far (including evicted tokens if there is any)
+  uint32_t n_total = 0;
+  // request id
+  int request_idx = -1;
+  // beam id in beam search
+  int beam_idx = 0;
+  // padding related, attention mask
+  // (0: left, 1: right)
+  // only support padding left in decoder only model
+  int padding_side = 0;
+  // padding length
+  uint32_t n_padding = 0;
+};
+
 struct model_context_params {
-  model_archs arch;     // arch of models (GPT-J, LLAMA)
-  int n_ctx;            // text context
+  model_archs arch;  // arch of models (GPT-J, LLAMA)
+  int n_ctx;         // text context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int n_keep;
   int n_gpu_layers;     // number of layers to store in VRAM
   int seed;             // RNG seed, -1 for random
   KV_MEM_TYPE kv_type;  // KV cache type specification
@@ -349,6 +406,7 @@ struct model_context_params {
   int batch_size;       // batch_size of prompt
   bool beam_search;     // beam search or not
   int beam_size;        // number of beams for beam search
+  bool shift_roped_k;   // whether to store non-RoPEd K cache
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;

@@ -57,10 +57,13 @@
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
-                          const int batch_size, const int beam_size, model_struct* model) {
+                          const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
+                          model_struct* model) {
   const auto n_layer = hparams.n_layer;
+  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
+  const auto head_size = hparams.n_embd / hparams.n_head;
   int32_t k_size, v_size;
-  get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
+  get_batch_kv_elements_from_gpt_params(heads_kv, head_size, n_ctx, wtype, &k_size, &v_size);
 
   int64_t layer_ne_k = batch_size * beam_size * k_size;
   int64_t layer_ne_v = batch_size * beam_size * v_size;
@@ -74,6 +77,10 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 #endif
 
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
+  cache.seq_cells.resize(batch_size * beam_size);
+  for (int i = 0; i < cache.seq_cells.size(); ++i) {
+    cache.seq_cells[i].token_cells.resize(n_ctx);
+  }
 
   struct ne_init_params params;
   params.mem_size = cache.buf.size;
@@ -97,8 +104,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
         const int head_size = hparams.n_embd / hparams.n_head;
         const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, heads_kv);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, heads_kv);
+        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv);
+        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -129,13 +136,41 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     ne_set_name(cache.v, "cache_v");
   }
 
+  if (shift_roped_k) {  // prepare rope helper for fused-attention
+    const auto cossin_dtype = wtype == NE_TYPE_JBLAS ? NE_TYPE_F16 : wtype;
+    cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
+    ne_set_name(cache.cossin, "cossin(-1)");
+    float theta = -1;
+    float theta_scale = (model != nullptr && model->arch == MODEL_CHATGLM2)
+                            ? std::pow(10000.f, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
+                        : hparams.n_rot > 0 ? std::pow(10000.f, -2.0f / hparams.n_rot)
+                                            : std::pow(10000.f, -2.0f / head_size);
+    if (cossin_dtype == NE_TYPE_F16) {
+      const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
+      for (int i = 0; i < head_size; i += 2) {
+        data[i + 0] = NE_FP32_TO_FP16(std::cos(theta));
+        data[i + 1] = NE_FP32_TO_FP16(std::sin(theta));
+        theta *= theta_scale;
+      }
+    } else if (cossin_dtype == NE_TYPE_F32) {
+      const auto data = reinterpret_cast<float*>(cache.cossin->data);
+      for (int i = 0; i < head_size; i += 2) {
+        data[i + 0] = std::cos(theta);
+        data[i + 1] = std::sin(theta);
+        theta *= theta_scale;
+      }
+    } else {
+      NE_ASSERT(("Unexpected cossin type!", false));
+    }
+  }
   return true;
 }
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
-      /*arch                         =*/MODEL_LLAMA,
+      /*.arch                        =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
+      /*.n_keep                      =*/0,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
       /*.kv_type                     =*/KV_MEM_TYPE_AUTO,
@@ -147,6 +182,7 @@ struct model_context_params model_context_default_params() {
       /*.batch_size                  =*/1,
       /*.beam_search                 =*/false,
       /*.beam_size                   =*/1,
+      /*.shift_roped_k               =*/false,
       /*.progress_callback           =*/nullptr,
       /*.progress_callback_user_data =*/nullptr,
   };
@@ -175,13 +211,15 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                       bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, bool use_mmap,
+                       bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
+    lctx.t_start_us = ne_time_us();
     lctx.model.arch = arch;
-    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+    model_load_internal(fname, arch, lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
+    lctx.t_load_us = ne_time_us() - lctx.t_start_us;
     return true;
   } catch (const std::string& err) {
     fprintf(stderr, "error loading model: %s\n", err.c_str());
@@ -835,129 +873,129 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   auto dstbptr = (int8_t*)dstpr;
   cd->setThreads(nthread);
+  if (params.scale_dtype != quant_sdtype::fp32) {
+    // TODO(BesTLA): add unified scale type
+    printf("Current not support none-float scale, reset to f32\n");
+  }
   if (params.bits == quant_bits::q4) {
-    if (params.scale_dtype == quant_sdtype::fp32) {
-      if (params.compute_dtype == quant_comp::int8) {
-        if (params.alg != quant_alg::sym) {
-          printf("Current not support asymmetric int8 computation, reset to symmetric\n");
-        }
-        if (params.group_size == -1) {
-          using Kernel = WeiS4ClipFp32PerN<GcCompInt8, JblasAVX512F>;
-          using KernelRef = WeiS4ClipFp32PerN<GcCompInt8, JblasNoSIMD>;
-          static Kernel kernel;
-          static KernelRef kernelref;
-          auto packedw = kernel.createStorage(n, k, false);
-          packedw.assign(dstbptr);
-          if (cd->AVX512F()) {
-            kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          } else {
-            kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          }
-          return packedw.mSize;
-        } else {
-          using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
-          using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
-          static Kernel kernel;
-          static KernelRef kernelref;
-          auto packedw = kernel.createStorage(n, k, params.group_size);
-          packedw.assign(dstbptr);
-          if (cd->AVX512F()) {
-            kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          } else {
-            kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          }
-          return packedw.mSize;
-        }
-      } else if (params.compute_dtype == quant_comp::fp32) {
-        using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512F>;
-        using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
+    if (params.compute_dtype == quant_comp::int8) {
+      if (params.alg != quant_alg::sym) {
+        printf("Current not support asymmetric int8 computation, reset to symmetric\n");
+      }
+      if (params.group_size == -1) {
+        using Kernel = WeiS4ClipFp32PerN<GcCompInt8, JblasAVX512F>;
+        using KernelRef = WeiS4ClipFp32PerN<GcCompInt8, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+        auto packedw = kernel.createStorage(n, k, false);
         packedw.assign(dstbptr);
-        if (cd->AVX512_FP16()) {
+        if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
         }
         return packedw.mSize;
-      } else if (params.compute_dtype == quant_comp::bf16) {
-        using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAVX512F>;
-        using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
+      } else {
+        using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+        using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+        auto packedw = kernel.createStorage(n, k, params.group_size);
         packedw.assign(dstbptr);
-        if (cd->AMX_BF16()) {
+        if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
         }
         return packedw.mSize;
       }
+    } else if (params.compute_dtype == quant_comp::fp32) {
+      using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512F>;
+      using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
+      static Kernel kernel;
+      static KernelRef kernelref;
+      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+      packedw.assign(dstbptr);
+      if (cd->AVX512_FP16()) {
+        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      } else {
+        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      }
+      return packedw.mSize;
+    } else if (params.compute_dtype == quant_comp::bf16) {
+      using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAVX512F>;
+      using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
+      static Kernel kernel;
+      static KernelRef kernelref;
+      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+      packedw.assign(dstbptr);
+      if (cd->AMX_BF16()) {
+        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      } else {
+        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      }
+      return packedw.mSize;
     }
 
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization
-    if (params.scale_dtype == quant_sdtype::fp32) {
-      if (params.compute_dtype == quant_comp::int8) {
-        if (params.alg != quant_alg::sym) {
-          printf("Current not support asymmetric int8 computation, reset to symmetric\n");
-        }
-        if (params.group_size == -1) {
-          using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
-          using KernelRef = WeiS8Fp32PerN<GcCompInt8, JblasNoSIMD>;
-          static Kernel kernel;
-          static KernelRef kernelref;
-          auto packedw = kernel.createStorage(n, k, false);
-          packedw.assign(dstbptr);
-          if (cd->AVX512F()) {
-            kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          } else {
-            kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          }
-          return packedw.mSize;
-        } else {
-          using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-          using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
-          static Kernel kernel;
-          static KernelRef kernelref;
-          auto packedw = kernel.createStorage(n, k, params.group_size);
-          packedw.assign(dstbptr);
-          if (cd->AVX512F()) {
-            kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          } else {
-            kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-          }
-          return packedw.mSize;
-        }
-      } else if (params.compute_dtype == quant_comp::fp32) {
-        using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
+    if (params.compute_dtype == quant_comp::int8) {
+      if (params.alg != quant_alg::sym) {
+        printf("Current not support asymmetric int8 computation, reset to symmetric\n");
+      }
+      if (params.group_size == -1) {
+        using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
+        using KernelRef = WeiS8Fp32PerN<GcCompInt8, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+        auto packedw = kernel.createStorage(n, k, false);
         packedw.assign(dstbptr);
-        if (cd->AVX512_FP16()) {
+        if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
         }
         return packedw.mSize;
-      } else if (params.compute_dtype == quant_comp::bf16) {
-        using Kernel = WeiS8Fp32<GcCompBf16, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
+      } else {
+        using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+        using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+        auto packedw = kernel.createStorage(n, k, params.group_size);
         packedw.assign(dstbptr);
-        if (cd->AMX_BF16()) {
+        if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
         }
         return packedw.mSize;
       }
+    } else if (params.compute_dtype == quant_comp::fp32) {
+      using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512F>;
+      using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
+      static Kernel kernel;
+      static KernelRef kernelref;
+      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+      packedw.assign(dstbptr);
+      if (cd->AVX512_FP16()) {
+        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      } else {
+        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      }
+      return packedw.mSize;
+    } else if (params.compute_dtype == quant_comp::bf16) {
+      using Kernel = WeiS8Fp32<GcCompBf16, JblasAVX512F>;
+      using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
+      static Kernel kernel;
+      static KernelRef kernelref;
+      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
+      packedw.assign(dstbptr);
+      if (cd->AMX_BF16()) {
+        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      } else {
+        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      }
+      return packedw.mSize;
     }
   }
   return 0;
@@ -1130,6 +1168,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
+  ctx->n_ctx = params.n_ctx;
+  ctx->n_keep = params.n_keep;
+  ctx->shift_roped_k = params.shift_roped_k;
   if (params.beam_search) {
     ctx->beam_search = true;
     ctx->beam_size = params.beam_size;
@@ -1138,8 +1179,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
-  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock,
-                  params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
+  if (!model_load(path_model, arch, *ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock, params.vocab_only,
+                  params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
     return nullptr;
@@ -1149,13 +1190,18 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   if (!params.vocab_only) {
     const auto& hparams = ctx->model.hparams;
 
+    if (params.shift_roped_k) {
+      const std::array supported{MODEL_LLAMA, MODEL_GPTJ, MODEL_CHATGLM2};
+      NE_ASSERT(("Current model does not support shifting RoPE-ed K cache",
+                 std::any_of(supported.cbegin(), supported.cend(), [arch](auto m) { return arch == m; })));
+    }
     const attn_shape_t attn_shape = {
         /* .batch_size = */ ctx->batch_size * ctx->beam_size,
         /* .head_num = */ static_cast<int>(hparams.n_head),
         /* .heads_kv = */ static_cast<int>(hparams.n_head_kv),
         /* .head_size = */ static_cast<int>(hparams.n_embd / hparams.n_head),
         /* .sl_q = */ 1,  // for next-token inference
-        /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
+        /* .sl_kv = */ static_cast<int>(ctx->n_ctx),
     };
     const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
     fprintf(stderr, "%s: support_jblas_kv = %d\n", __func__, support_jblas_kv);
@@ -1167,9 +1213,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
                                     : NE_TYPE_COUNT;
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
-    if (!kv_cache_init(
-            ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
-            ((arch == MODEL_CHATGLM2 || arch == MODEL_CHATGLM || arch == MODEL_BAICHUAN) ? &ctx->model : nullptr))) {
+    const bool kv_in_layers = (arch == MODEL_CHATGLM2 || arch == MODEL_CHATGLM || arch == MODEL_BAICHUAN);
+    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->n_ctx, ctx->batch_size, ctx->beam_size,
+                       params.shift_roped_k, (kv_in_layers ? &ctx->model : nullptr))) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
@@ -1193,7 +1239,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
     // resized during inference
     if (params.logits_all) {
-      ctx->logits.reserve(hparams.n_ctx * hparams.n_vocab);
+      ctx->logits.reserve(ctx->n_ctx * hparams.n_vocab);
     } else {
       ctx->logits.reserve(hparams.n_vocab);
     }
@@ -1492,6 +1538,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
 
   lparams.arch = params.model_arch;
   lparams.n_ctx = params.n_ctx;
+  lparams.n_keep = params.n_keep;
   lparams.n_gpu_layers = params.n_gpu_layers;
   lparams.seed = params.seed;
   lparams.kv_type = params.memory_type;
@@ -1502,6 +1549,11 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   lparams.batch_size = params.batch_size;
   lparams.beam_search = params.beam_search;
   lparams.beam_size = params.beam_size;
+  NE_ASSERT(("non-RoPEd K cache is not supported by this model!",  //
+             !lparams.shift_roped_k || lparams.arch == MODEL_LLAMA));
+  lparams.shift_roped_k = params.shift_roped_k;
+
+  NE_ASSERT(("Start size cannot be greater than the maximun context size!", lparams.n_keep < lparams.n_ctx));
 
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 
@@ -1514,7 +1566,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
       /* .heads_kv = */ static_cast<int>(model_hparams.n_head_kv + model_hparams.multi_query_group_num),
       /* .head_size = */ static_cast<int>(model_hparams.n_embd / model_hparams.n_head),
       /* .sl_q = */ 1,  // Note: make sure that jblas reordered attn supports next token inferencing
-      /* .sl_kv = */ static_cast<int>(model_hparams.n_ctx),
+      /* .sl_kv = */ static_cast<int>(lparams.n_ctx),
   };
   const auto k_cache_example = lctx->model.kv_self.k != nullptr ? lctx->model.kv_self.k           // llama.cpp style
                                                                 : lctx->model.layers[0].k_cache;  // chatglm style
@@ -1537,18 +1589,16 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   return lctx;
 }
 
-void get_batch_kv_elements_from_gpt_params(const struct model_hparams& hparams, ne_type wtype, int32_t* k_size,
+void get_batch_kv_elements_from_gpt_params(int heads_kv, int head_size, int n_ctx, ne_type wtype, int32_t* k_size,
                                            int32_t* v_size) {
-  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
-  const auto head_size = hparams.n_embd / hparams.n_head;
   if (wtype == NE_TYPE_F16 || wtype == NE_TYPE_F32) {
-    *k_size = hparams.n_ctx * heads_kv * head_size;
-    *v_size = hparams.n_ctx * heads_kv * head_size;
+    *k_size = n_ctx * heads_kv * head_size;
+    *v_size = n_ctx * heads_kv * head_size;
   } else if (wtype == NE_TYPE_JBLAS) {
     kv_shape_t kv_shape = {
-        /* .heads_kv = */ heads_kv,
-        /* .head_size = */ head_size,
-        /* .sl_kv_max = */ hparams.n_ctx,
+        /* .heads_kv = */ static_cast<uint32_t>(heads_kv),
+        /* .head_size = */ static_cast<uint32_t>(head_size),
+        /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
     };
     kv_cache_info_t kv_cache_info;
     jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
@@ -1649,7 +1699,7 @@ size_t model_copy_state_data(struct model_context* ctx, uint8_t* dst) {
     const auto& hparams = ctx->model.hparams;
     const int n_layer = hparams.n_layer;
     const int n_embd = hparams.n_embd;
-    const int n_ctx = hparams.n_ctx;
+    const int n_ctx = ctx->n_ctx;
 
     const size_t kv_size = kv_self.buf.size;
     const int kv_ntok = model_get_kv_cache_token_count(ctx);
@@ -1760,7 +1810,7 @@ size_t model_set_state_data(struct model_context* ctx, uint8_t* src) {
     const auto& hparams = ctx->model.hparams;
     const int n_layer = hparams.n_layer;
     const int n_embd = hparams.n_embd;
-    const int n_ctx = hparams.n_ctx;
+    const int n_ctx = ctx->n_ctx;
 
     size_t kv_size;
     int kv_ntok;
@@ -1923,7 +1973,7 @@ std::vector<model_token> model_tokenize(struct model_context* ctx, const std::st
 
 int model_n_vocab(const struct model_context* ctx) { return ctx->vocab.id_to_token.size(); }
 
-int model_n_ctx(const struct model_context* ctx) { return ctx->model.hparams.n_ctx; }
+int model_n_ctx(const struct model_context* ctx) { return ctx->n_ctx; }
 
 int model_n_embd(const struct model_context* ctx) { return ctx->model.hparams.n_embd; }
 
@@ -1993,11 +2043,127 @@ std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tenso
   return ctx->model.tensors_by_name;
 }
 
+static void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                      const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
+  const uint32_t kv_n_ctx_block = ctx->kv_n_ctx_block;
+  const uint32_t n_head = ctx->model.hparams.n_head_kv > 0 ? ctx->model.hparams.n_head_kv : ctx->model.hparams.n_head;
+  const uint32_t head_dim = ctx->model.hparams.n_embd / ctx->model.hparams.n_head;
+  const uint32_t n_embd = n_head * head_dim;
+  const uint32_t n_ctx = ctx->n_ctx;
+  const size_t k_elem_size = ne_element_size(ctx->model.kv_self.k);
+  const size_t v_elem_size = ne_element_size(ctx->model.kv_self.v);
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
+    // [head_dim, N, n_head]
+    for (int nh = 0; nh < n_head; ++nh) {
+      memcpy(static_cast<char*>(ctx->model.kv_self.k->data) + i * n_ctx * k_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_dst * n_ctx * k_elem_size * n_embd + k_elem_size * nh * head_dim * n_ctx +
+                 p0 * k_elem_size * head_dim,
+             static_cast<char*>(ctx->model.kv_self.k->data) + i * n_ctx * k_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_src * n_ctx * k_elem_size * n_embd + k_elem_size * nh * head_dim * n_ctx +
+                 p0 * k_elem_size * head_dim,
+             k_elem_size * head_dim * (p1 - p0 + 1));
+    }
+  }
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+    // [N, head_dim, n_head] or [N, n_embd]
+    for (int nm = 0; nm < n_embd; ++nm) {
+      memcpy(static_cast<char*>(ctx->model.kv_self.v->data) + i * n_ctx * v_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_dst * n_ctx * v_elem_size * n_embd + n_ctx * nm * v_elem_size + p0 * v_elem_size,
+             static_cast<char*>(ctx->model.kv_self.v->data) + i * n_ctx * v_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_src * n_ctx * v_elem_size * n_embd + n_ctx * nm * v_elem_size + p0 * v_elem_size,
+             v_elem_size * (p1 - p0 + 1));
+    }
+  }
+}
+
+void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src, const model_seq_id& seq_id_dst,
+                            const model_pos& p0, const model_pos& p1) {
+  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
+    ne_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
+  } else {
+    return;
+    // jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
+  }
+}
+
+static ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
+                                               struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
+                                               const int64_t& ne2, const int64_t& ne3,
+                                               const std::vector<int>& block_ids, const int& layer_idx,
+                                               const bool& concat_k) {
+  MODEL_ASSERT(ne3 == block_ids.size());  // moctx->batch_size
+  struct ne_tensor* cache = concat_k ? moctx->model.kv_self.k : moctx->model.kv_self.v;
+  // K = [head_dim, n_past+N, n_head, batch_size]
+  // V = [N_past+N, head_dim, n_head, batch_size]
+  const uint32_t n_embd_kv = concat_k ? ne0 * ne2 : ne1 * ne2;
+  struct ne_tensor* dst = nullptr;
+  if (concat_k) {
+    MODEL_ASSERT(ne1 <= moctx->n_ctx);
+  } else {
+    MODEL_ASSERT(ne0 <= moctx->n_ctx);
+  }
+  const size_t elem_size = ne_element_size(cache);
+  const size_t nb1 = concat_k ? elem_size * ne0 : elem_size * moctx->n_ctx;
+  const size_t nb2 = concat_k ? nb1 * moctx->n_ctx : nb1 * ne1;
+  const size_t nb3 = nb2 * ne2;
+  int cont_bs = 1;
+  int start_idx = block_ids[0];
+  int id = 1;
+  size_t dst_off = 0;
+  while (id < block_ids.size()) {
+    if (block_ids[id] - block_ids[id - 1] <= 1) {
+      cont_bs++;
+      id++;
+      continue;
+    } else {
+      if (dst == nullptr) {
+        dst = ne_new_tensor_4d(nectx, cache->type, ne0, ne1, ne2, ne3, NE_SIZE_CALC);
+      }
+      struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
+                                           elem_size * ne0 * ne1 * ne2, dst_off);
+      dst_off += elem_size * ne0 * ne1 * ne2 * cont_bs;
+      size_t off = layer_idx * moctx->n_ctx * elem_size * n_embd_kv * moctx->kv_n_ctx_block +
+                   start_idx * moctx->n_ctx * elem_size * n_embd_kv;
+      ne_build_forward_expand(
+          cgraph, ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb1, nb2, nb3, off), dst_i));
+      start_idx = block_ids[id];
+      cont_bs = 1;
+      id++;
+    }
+  }
+
+  size_t off = layer_idx * moctx->n_ctx * elem_size * n_embd_kv * moctx->kv_n_ctx_block +
+               start_idx * moctx->n_ctx * elem_size * n_embd_kv;
+  if (start_idx == block_ids[0]) {
+    // continuous among all batch tokens
+    return ne_view_4d(nectx, cache, ne0, ne1, ne2, ne3, nb1, nb2, nb3, off);
+  } else {
+    // last cont batch
+    struct ne_tensor* dst_i = ne_view_4d(nectx, dst, ne0, ne1, ne2, cont_bs, elem_size * ne0, elem_size * ne0 * ne1,
+                                         elem_size * ne0 * ne1 * ne2, dst_off);
+    ne_build_forward_expand(cgraph,
+                            ne_cpy(nectx, ne_view_4d(nectx, cache, ne0, ne1, ne2, cont_bs, nb1, nb2, nb3, off), dst_i));
+    return dst;
+  }
+}
+
+ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx, struct ne_context* nectx,
+                                     const int64_t& ne0, const int64_t& ne1, const int64_t& ne2, const int64_t& ne3,
+                                     const std::vector<int>& block_ids, const int& layer_idx, const bool& concat_k) {
+  if (moctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
+    return ne_model_kv_cache_seq_concat(cgraph, moctx, nectx, ne0, ne1, ne2, ne3, block_ids, layer_idx, concat_k);
+  } else {
+    return nullptr;  // jblas
+  }
+}
+
 // beam search
 // A struct for calculating logits-related info.
 struct logits_info {
   const model_context* const ctx = nullptr;
-  // (batch, seq_len * vocab_size)  batch = input_prompt_bs* beam_size
+  // [vocab_size * seq_len * batch]  batch = input_prompt_bs* beam_size
   const float* const logits = nullptr;
   const int batch_size;
   const int32_t n_vocab;
@@ -2070,117 +2236,96 @@ struct logits_info {
   }
 };
 
-void logits_processor::min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id) {
+void logits_processor::min_new_tokens_logits_process(const std::vector<uint32_t>& cur_lens,
+                                                     const model_vocab::id& eos_token_id) {
   MODEL_ASSERT(ctx->generation_conf.min_new_tokens >= 0);
-  if (ctx->generation_conf.min_new_tokens == 0 || ctx->generation_conf.min_new_tokens <= cur_len) {
+  if (ctx->generation_conf.min_new_tokens == 0) {
     return;
-  } else {
-    int batch_size = ctx->batch_size;
-    size_t offset = ctx->logits.size() / ctx->batch_size - ctx->model.hparams.n_vocab;
-    size_t bs_stride = ctx->logits.size() / ctx->batch_size;
-    for (int i = 0; i < batch_size; ++i) {
-      // forbidden to choose eos_token if cur_len < min_new_tokens
-      *(model_get_logits(ctx) + i * bs_stride + offset + eos_token_id) = NEG_INF;
+  }
+  int batch_size = ctx->batch_size;
+  MODEL_ASSERT(batch_size == cur_lens.size());
+  size_t offset = ctx->logits.size() / ctx->batch_size - ctx->model.hparams.n_vocab;
+  size_t bs_stride = ctx->logits.size() / ctx->batch_size;
+  for (int i = 0; i < batch_size; ++i) {
+    if (ctx->generation_conf.min_new_tokens <= cur_lens[i]) {
+      continue;
     }
+    // forbidden to choose eos_token if cur_len < min_new_tokens
+    *(model_get_logits(ctx) + i * bs_stride + offset + eos_token_id) = NEG_INF;
   }
 }
 
-void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& eos_token_id) {
+void logits_processor::process(const std::vector<uint32_t>& cur_lens, const model_vocab::id& eos_token_id) {
   MODEL_ASSERT(model_get_logits(ctx) != nullptr);
   if (min_new_tokens > 0) {
-    min_new_tokens_logits_process(cur_len, eos_token_id);
+    min_new_tokens_logits_process(cur_lens, eos_token_id);
   }
 }
 
-//  TODO dispatch JBLAS kv cache manager
-void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
+                                          const std::vector<uint32_t>& n_prompt_tokens,
+                                          const std::vector<int> request_running_indices,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
-  // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-  NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
-  // first step
-  if (n_past == n_prompt_tokens) {
-    // cpy batch 1 to all batches
-#pragma omp parallel for collapse(2)
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-      for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // [n_embd, N]
-        memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                   (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                    j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd),
-               static_cast<char*>(ctx->model.kv_self.k->data) +
-                   i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
-               ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
-      }
-    }
-#pragma omp parallel for collapse(3)
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-      for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // [N, n_embd]
-        for (int k = 0; k < n_embd; ++k) {
-          memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
-                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                 static_cast<char*>(ctx->model.kv_self.v->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                 ne_element_size(ctx->model.kv_self.v) * n_prompt_tokens);
-        }
-      }
-    }
-  } else if (n_past > n_prompt_tokens) {
-    // next setp
-    for (auto t : kv_reorder_indices) {
-      int cur_id = std::get<0>(t);
-      int cpy_id = std::get<1>(t);
-      if (cur_id != cpy_id) {
-        uint32_t len = next_beams[cur_id].token_ids.size() - 1;
-        // last token in beam is for next step inference
-        MODEL_ASSERT(len == n_past - n_prompt_tokens);
-        size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
-        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
-        if (len + n_prompt_tokens > n_ctx) {
-          // all token hidden states cache should be updated
-          input_token_offset_k = 0;
-          input_token_offset_v = 0;
-          len = n_ctx;
-        }
-#pragma omp parallel for
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-          // [n_embd, N]
-          memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      cur_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
-                     input_token_offset_k,
-                 static_cast<char*>(ctx->model.kv_self.k->data) +
-                     i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                     cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                 ne_element_size(ctx->model.kv_self.k) * n_embd * len);
-        }
-#pragma omp parallel for collapse(2)
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-          // [N, n_embd]
-          for (int k = 0; k < n_embd; ++k) {
-            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        cur_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                   static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                   ne_element_size(ctx->model.kv_self.v) * len);
-          }
-        }
-      }
-    }
-  } else {
+  // TODO beam search unsupport shift kv cache when prompt + new_tokens > nctx
+  if (ctx->model.kv_self.has_shift) {
+    fprintf(stderr, "%s: error: unimplement shifted kv cache update\n", __func__);
     return;
   }
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("start to update kv cache for next step...\n");
+#endif
+  MODEL_ASSERT(request_running_indices.size() == ctx->request_running_bs);
+  if (!kv_reorder_indices.empty()) MODEL_ASSERT(kv_reorder_indices.size() == ctx->request_running_bs * ctx->beam_size);
+  int count = 0;
+  for (int rb = 0; rb < ctx->request_running_bs; ++rb) {
+    const int request_idx = request_running_indices[rb];
+    const uint32_t off = ctx->beam_size * request_idx;
+    const uint32_t cur_n_past = n_past[request_idx];
+    const uint32_t cur_n_prompt_tokens = n_prompt_tokens[request_idx];
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("------request_idx: %d, n_past: %d, n_prompt_tokens: %d, offset: %d------ \n", request_idx, cur_n_past,
+           cur_n_prompt_tokens, off);
+#endif
+    // first step
+    if (cur_n_past == cur_n_prompt_tokens) {
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+      printf("copy beam 1 first token to the left beams\n");
+#endif
+      for (int b = 1; b < ctx->beam_size; ++b) {
+        model_kv_cache_seq_cpy(ctx, 0 + off, b + off, 0, cur_n_prompt_tokens);
+      }
+    } else if (cur_n_past > cur_n_prompt_tokens) {
+      // next setp
+      for (int t = 0; t < ctx->beam_size; ++t) {
+        int cur_id = std::get<0>(kv_reorder_indices[count]);
+        int cpy_id = std::get<1>(kv_reorder_indices[count]);
+        count++;
+        if (cur_id == cpy_id) continue;
+        model_pos p0 = cur_n_prompt_tokens;
+        model_pos p1 = cur_n_past;
+        // TODO too long text
+        if (cur_n_past > n_ctx) {
+          // all token hidden states cache should be updated
+          p0 = 0;
+          p1 = n_ctx;
+        }
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+        printf("copy beam %d to beam %d in pos [%d, %d] \n", cpy_id, cur_id, p0, p1);
+#endif
+        model_kv_cache_seq_cpy(ctx, cpy_id + off, cur_id + off, p0, p1);
+      }
+    } else {
+      fprintf(stderr, "%s: error: unable to update kv cache\n", __func__);
+      return;
+    }
+  }
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+#endif
 }
 
-// Return top k token_data by score. (prompt_bs * sample_scale * num_beam)
+// Return top k token_data by score. (request_running_bs * sample_scale * num_beam)
 // each beam gives top_k results --> + prev_scores --> from (num_beam * top_k) sort num_beam
 // for example, huggingface transformers repo implements like this:
 // log_softmax(num_beam*n_vocab) -- > + prev_scores --> sort num_beam
@@ -2188,19 +2333,24 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
 // we sample top_k logits for each beam, than compute scores in these logits positions
 // then we sample top_k results among all beams.
 // this approach will accelerate sampling speed by log_softmax times reduction
-std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
+std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_context* ctx,
                                                                       const std::vector<float>& beams_score,
                                                                       const std::vector<int>& num_beams,
                                                                       const std::vector<int> beam_indices,
                                                                       const int& sample_scale, const int& dim) {
-  MODEL_ASSERT(dim == -1);   // raise unimplemented error
-  const int request_bs = 1;  // TODO ctx->request_running_num
+  MODEL_ASSERT(dim == -1);  // raise unimplemented error
+  // TODO different requests may have different num_beams (ctx->beam_size >= num_beams[i])?
+  const int request_running_bs = ctx->request_running_bs;
   logits_info li(ctx);
-  lp.process(cur_len, ctx->vocab.eos_token_id);
-  const int raw_k = sample_scale * beam_size;
+  std::vector<uint32_t> cur_lens;
+  for (int i = 0; i < ctx->batch_size; ++i) {
+    cur_lens.push_back(cur_beams[i].token_ids.size());
+  }
+  lp.process(cur_lens, ctx->vocab.eos_token_id);
+  const int raw_k = sample_scale * (*std::max_element(num_beams.begin(), num_beams.end()));
   // raw logits top_k
   std::vector<std::vector<beam_next_token>> raw_top_k = li.vocab_top_k(raw_k);
-  MODEL_ASSERT(raw_top_k.size() == ctx->batch_size);  // request_bs * num_beam
+  MODEL_ASSERT(raw_top_k.size() == ctx->batch_size);  // request_running_bs * num_beam
   MODEL_ASSERT(raw_top_k[0].size() == raw_k);
   MODEL_ASSERT(beams_score.size() == ctx->batch_size);
   // compute score: log_softmax + prev_score
@@ -2209,18 +2359,17 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
     std::for_each(raw_top_k[i].begin(), raw_top_k[i].end(),
                   [&](beam_next_token& r) { r.score = li.log_probability_from_logit(i, r.score) + beams_score[i]; });
   }
-  MODEL_ASSERT(num_beams.size() == request_bs);
+  MODEL_ASSERT(num_beams.size() == request_running_bs);
   std::vector<beam_next_token> res;
   res.reserve(sample_scale * std::accumulate(num_beams.begin(), num_beams.end(), 0));
-  std::vector<beam_next_token> min_heap;
   const uint32_t n_vocab = ctx->model.hparams.n_vocab;
   size_t row_off = 0;
   auto comp = [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; };
-  for (int i = 0; i < request_bs; ++i) {
+  for (int i = 0; i < request_running_bs; ++i) {
     const int num_beam = num_beams[i];
     const int sample_k = sample_scale * num_beam;
     MODEL_ASSERT(raw_k >= sample_k);
-    min_heap.clear();
+    std::vector<beam_next_token> min_heap;
     min_heap.reserve(sample_k);
     for (int j = 0; j < num_beam; ++j) {
       int n = 0;
@@ -2243,7 +2392,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
         }
       }
     }
-    row_off += i * num_beam;
+    row_off += num_beam;
     std::sort(min_heap.begin(), min_heap.end(),
               [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; });
     for (const auto b : min_heap) {
@@ -2253,84 +2402,108 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
   return res;
 }
 
-// TODO debug info unify (function ptr?)
 void beam_search_flow::fill_next_beams_by_top_scores() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
-  std::vector<model_token> embd_inp;
-  int record = 0;
+  std::vector<model_input> next_inputs;
   int batch_size = 0;
-  uint32_t cur_len = 0;
+  request_running_indices.clear();
   std::vector<int> beam_indices;
   std::vector<float> beams_score;
-  for (int i = 0; i < beam_size; ++i) {
-    MODEL_ASSERT(!cur_beams[i].eos());
-    if (cur_len != 0) {
-      MODEL_ASSERT(cur_len == cur_beams[i].token_ids.size());
+  // filter cur_beams
+  for (int i = 0; i < cur_beams.size(); ++i) {
+    if (cur_beams[i].done) continue;
+    if (request_running_indices.empty()) {
+      request_running_indices.push_back(cur_beams[i].request_idx);
     } else {
-      cur_len = cur_beams[i].token_ids.size();
+      if (request_running_indices.back() != cur_beams[i].request_idx) {
+        request_running_indices.push_back(cur_beams[i].request_idx);
+      }
     }
     // (batch, 1)
-    // ordered by infer_bs_id
-    embd_inp.push_back(cur_beams[i].token_ids.back());
+    // ordered by request_idx
+    next_inputs.push_back(model_input{
+        /*.tokens              =*/&cur_beams[i].token_ids.back(),
+        /*.n_tokens           =*/1,
+        /*.n_prompt_tokens    =*/n_prompt_tokens[request_running_indices.back()],
+        /*.n_past             =*/n_past[request_running_indices.back()],
+        /*.n_total            =*/n_total[request_running_indices.back()],
+        /*.request_idx        =*/request_running_indices.back(),
+        /*.beam_idx           =*/cur_beams[i].beam_idx,
+        /*.padding_side       =*/padding_side[request_running_indices.back()],
+        /*n_padding           =*/n_padding[request_running_indices.back()],
+    });
     batch_size++;
-    beam_indices.push_back(i);
+    beam_indices.push_back(cur_beams[i].beam_idx);
     beams_score.push_back(cur_beams[i].score);
   }
+  MODEL_ASSERT(request_running_indices.size() * beam_size == batch_size);
+  ctx->batch_size = batch_size;
+  ctx->request_running_bs = request_running_indices.size();
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("========================================================================================= \n");
   printf("next_tokens for inference: \n");
-  for (auto kk : embd_inp) {
+  printf("request_running_bs: %d, batch_size for inference: %d\n", ctx->request_running_bs, ctx->batch_size);
+  for (int k = 0; k < next_inputs.size(); ++k) {
+    model_token kk = *(next_inputs[k].tokens);
     printf("%d: %s \n", kk, (ctx->vocab.id_to_token.at(kk).tok).c_str());
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  ctx->batch_size = batch_size;
-  int n_tokens = 1;
 
-  model_eval(ctx, embd_inp.data(), n_tokens, n_past, num_threads);
+  model_eval(ctx, next_inputs.data(), next_inputs.size(), num_threads);
 
   const int sample_scale = 2;
+  std::vector<int> num_beams(ctx->request_running_bs, beam_size);
   std::vector<beam_next_token> next_tokens =
-      beam_top_k_next_tokens(ctx, cur_len, beams_score, {batch_size}, beam_indices, sample_scale);
-
+      beam_top_k_next_tokens(ctx, beams_score, num_beams, beam_indices, sample_scale);
+  MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);  // request_running_bs * beam_size * sample_scale
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("top_k next_tokens: \n");
-  for (auto kk : next_tokens) {
-    printf("%d: %s, score: %10.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.score,
-           kk.beam_idx);
+  int bb = 0;
+  for (int kk = 0; kk < next_tokens.size(); ++kk) {
+    if (kk % (beam_size * sample_scale) == 0) printf("------batch_%d------\n", bb++);
+    printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
+           (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
+           next_tokens[kk].beam_idx);
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);
-  MODEL_ASSERT(next_beams.empty());
-  for (int i = 0; i < next_tokens.size(); ++i) {
-    if (next_tokens[i].id == ctx->vocab.eos_token_id) {
-      // if beam_token does not belong to top num_beams tokens, it should not be added
-      bool is_beam_token_worse_than_top_num_beams = i >= beam_size ? true : false;
-      if (is_beam_token_worse_than_top_num_beams) {
-        continue;
+
+  const int rb_off = beam_size * sample_scale;
+  for (int rb = 0; rb < request_running_indices.size(); ++rb) {
+    int record_push = 0;
+    for (int nt = 0; nt < rb_off; ++nt) {
+      int i = rb * rb_off + nt;
+      int cb_off = next_tokens[i].beam_idx + request_running_indices[rb] * beam_size;
+      if (next_tokens[i].id == ctx->vocab.eos_token_id) {
+        // if beam_token does not belong to top num_beams tokens, it should not be added
+        bool is_beam_token_worse_than_top_num_beams = nt >= beam_size ? true : false;
+        if (is_beam_token_worse_than_top_num_beams) continue;
+        // update score with eos next token
+        cur_beams[cb_off].score = next_tokens[i].score;
+        beam_hypos[request_running_indices[rb]].add(cur_beams[cb_off], n_prompt_tokens[rb]);
+      } else {
+        beam next_beam = cur_beams[cb_off];
+        next_beam.token_ids.push_back(next_tokens[i].id);
+        next_beam.score = next_tokens[i].score;
+        next_beams[request_running_indices[rb] * beam_size + record_push] = std::move(next_beam);
+        record_push++;
       }
-      // update score with eos next token
-      cur_beams[next_tokens[i].beam_idx].score = next_tokens[i].score;
-      beam_hypos[0].add(cur_beams[next_tokens[i].beam_idx], n_prompt_tokens);
-    } else {
-      beam next_beam = cur_beams[next_tokens[i].beam_idx];
-      next_beam.token_ids.push_back(next_tokens[i].id);
-      next_beam.score = next_tokens[i].score;
-      next_beams.push_back(std::move(next_beam));
-    }
-    if (next_beams.size() == beam_size) {
-      break;
+      if (record_push == beam_size) {
+        // sort by beam_idx rather than top-k for kv cache updating
+        std::sort(next_beams.begin() + request_running_indices[rb] * beam_size,
+                  next_beams.begin() + (request_running_indices[rb] + 1) * beam_size,
+                  [](beam& a, beam& b) { return a.beam_idx < b.beam_idx; });
+        break;
+      }
     }
   }
-
-  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
 }
 
 // get kv cache reorder indices,
-// idx_0: dst_beam batch idx, idx_1: src_beam batch idx
+// idx_0: dst_beam idx, idx_1: src_beam idx
 // for copy predicted past token kv cache
 // for example:
 //     - c
@@ -2343,145 +2516,164 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
 // kv_cache_reorder_indices = {{0,0}, {1,0}}
 // if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
 std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indices() {
-  MODEL_ASSERT(next_beams.size() == beam_size);
-  MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("kv cache update indices info: \n");
-  printf("cur_beams: ");
-  for (int i = 0; i < beam_size; ++i) {
-    printf("%d, ", cur_beams[i].infer_bs_id);
+  printf("cur_beams:\n");
+  for (int bb = 0; bb < request_running_indices.size(); ++bb) {
+    printf("------batch_%d------\n", bb);
+    for (int i = 0; i < beam_size; ++i) {
+      printf("%d, ", cur_beams[i + request_running_indices[bb] * beam_size].beam_idx);
+    }
+    printf("\n");
   }
-  printf("\n");
-  printf("next_beams: ");
-  for (int i = 0; i < beam_size; ++i) {
-    printf("%d, ", next_beams[i].infer_bs_id);
+  printf("next_beams:\n");
+  for (int bb = 0; bb < request_running_indices.size(); ++bb) {
+    printf("------batch_%d------\n", bb);
+    for (int i = 0; i < beam_size; ++i) {
+      printf("%d, ", next_beams[i + request_running_indices[bb] * beam_size].beam_idx);
+    }
+    printf("\n");
   }
-  printf("\n");
 #endif
   std::vector<std::tuple<int, int>> kv_reorder_indices;
-  kv_reorder_indices.reserve(beam_size);
-  // shuffle beams which are early stopped (eos)
-  // keep them behind beams which have non-eos
-  // next_beams infer_bs_id: [0, 1(eos), 2(eos), 3] - > [0, 3, 1(eos), 2(eos)]
-  std::vector<int> cpy_eos_bs_ids;
-  std::vector<int> cpy_final_bs_ids;
-  std::vector<int> nb_eos_ids;
+  kv_reorder_indices.resize(ctx->request_running_bs * beam_size);
   std::vector<int> nb_shuffle_ids;
-  cpy_final_bs_ids.reserve(beam_size);
-  for (int i = 0; i < beam_size; ++i) {
-    MODEL_ASSERT(cur_beams[i].infer_bs_id == i);
-    if (next_beams[i].eos()) {
-      cpy_eos_bs_ids.push_back(next_beams[i].infer_bs_id);
-      nb_eos_ids.push_back(i);
-    } else {
-      cpy_final_bs_ids.push_back(next_beams[i].infer_bs_id);
-      nb_shuffle_ids.push_back(i);
+  for (int rb = 0; rb < request_running_indices.size(); ++rb) {
+    std::vector<int> cpy_final_bs_ids;
+    const int rb_off = request_running_indices[rb] * beam_size;
+    for (int i = 0; i < beam_size; ++i) {
+      MODEL_ASSERT(cur_beams[i + rb_off].beam_idx == i);
+      cpy_final_bs_ids.push_back(next_beams[i + rb_off].beam_idx);
+      // update beam_idx for next token generation
+      next_beams[i + rb_off].beam_idx = i;
     }
-  }
-  cpy_final_bs_ids.insert(cpy_final_bs_ids.end(), cpy_eos_bs_ids.begin(), cpy_eos_bs_ids.end());
-  nb_shuffle_ids.insert(nb_shuffle_ids.end(), nb_eos_ids.begin(), nb_eos_ids.end());
-
-  // update indices and batch ids
-  for (int i = 0; i < beam_size; ++i) {
-    // update infer_bs_id before next beam generation
-    next_beams[nb_shuffle_ids[i]].infer_bs_id = i;
-  }
-  // beams should be ordered by batch id
-  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
-
-  // we arrange beams by inference batch indice rather score for memcpy time reduction
-  // so there will be 2 circumstances (ignore no memcpy : 0,1,2,3 --> 0,1,2,3)
-  // 1. cpoy former beams into latter beams, like: 0,1,2,3 --> 0,0,0,1
-  // 2. copy latter beams into former beams, like: 0,1,2,3 -- > 1,2,2,3
-  // kv cache memcpy happens in itself which would cause memory dislocation if follows wrong order
-  // so we give the contrary order to beams vector indice, which is:
-  // if 1, copy order is from tail to head
-  // if 2, copy order is from head to tail
-  bool cpy_from_head = true;
-  int dst_idx_sum = 0;
-  int src_idx_sum = 0;
-  for (int i = 0; i < cpy_final_bs_ids.size(); ++i) {
-    dst_idx_sum += i;
-    src_idx_sum += cpy_final_bs_ids[i];
-    if (src_idx_sum < dst_idx_sum) {
-      cpy_from_head = false;
-      break;
-    }
-  }
-  if (cpy_from_head) {
+    // we arrange beams by inference batch indice rather score for memcpy time reduction
+    // so there will be 2 circumstances (ignore no memcpy : 0,1,2,3 --> 0,1,2,3)
+    // 1. cpoy former beams into latter beams, like: 0,1,2,3 --> 0,0,0,1
+    // 2. copy latter beams into former beams, like: 0,1,2,3 -- > 1,2,2,3
+    // kv cache memcpy happens in itself which would cause memory dislocation if follows wrong order
+    // so we give the contrary order to beams vector indice, which is:
+    // if 1, copy order is from tail to head
+    // if 2, copy order is from head to tail
+    bool cpy_from_head = true;
+    int dst_idx_sum = 0;
+    int src_idx_sum = 0;
     for (int i = 0; i < cpy_final_bs_ids.size(); ++i) {
-      kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
+      dst_idx_sum += i;
+      src_idx_sum += cpy_final_bs_ids[i];
+      if (src_idx_sum < dst_idx_sum) {
+        cpy_from_head = false;
+        break;
+      }
     }
-  } else {
-    for (int i = cpy_final_bs_ids.size() - 1; i >= 0; --i) {
-      kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
+    if (cpy_from_head) {
+      int insert_idx = 0;
+      for (int i = 0; i < cpy_final_bs_ids.size(); ++i) {
+        kv_reorder_indices[insert_idx + rb_off] = std::move(std::make_tuple(i, cpy_final_bs_ids[i]));
+        insert_idx++;
+      }
+    } else {
+      int insert_idx = 0;
+      for (int i = cpy_final_bs_ids.size() - 1; i >= 0; --i) {
+        kv_reorder_indices[insert_idx + rb_off] = std::move(std::make_tuple(i, cpy_final_bs_ids[i]));
+        insert_idx++;
+      }
     }
-  }
-
-  // DEBUG
+    // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
-  printf("cpy_final_bs_ids: ");
-  for (int i = 0; i < beam_size; ++i) {
-    printf("%d, ", cpy_final_bs_ids[i]);
-  }
-  printf("\n");
-  printf("nb_shuffle_ids: ");
-  for (int i = 0; i < beam_size; ++i) {
-    printf("%d, ", nb_shuffle_ids[i]);
-  }
-  printf("\n");
-  printf("next_beams after: ");
-  for (int i = 0; i < beam_size; ++i) {
-    printf("%d, ", next_beams[i].infer_bs_id);
-  }
-  printf("\n");
-  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+    printf("batch_%d cpy_final_bs_ids: ", rb);
+    for (int i = 0; i < beam_size; ++i) {
+      printf("%d, ", cpy_final_bs_ids[i]);
+    }
+    printf("\n");
+    printf("copy order: ");
+    if (cpy_from_head) {
+      printf("copy_from_head ---> \n");
+    } else {
+      printf("copy_from_tail <--- \n");
+    }
+    if (rb == request_running_indices.size() - 1) {
+      printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+    }
 #endif
+  }
   return kv_reorder_indices;
 }
 
+void beam_search_flow::update_status() {
+  // check if done
+  next_done_request_ids.clear();
+  for (int h = 0; h < beam_hypos.size(); ++h) {
+    if (requests_done[h]) continue;
+    const bool enough_new_tokens = (cur_beams[h * beam_size].token_ids.size() == ctx->generation_conf.max_new_tokens);
+    if (beam_hypos[h].is_done() || enough_new_tokens) {
+      requests_done[h] = true;
+      next_done_request_ids.push_back(h);
+      // mark  done beams of current request_idx
+      // batch reduction
+      std::for_each(cur_beams.begin() + h * beam_size, cur_beams.begin() + (h + 1) * beam_size,
+                    [&](auto& b) { b.done = true; });
+    }
+  }
+}
+
 // Return beam with highest probability.
-const beam& beam_search_flow::finalize() {
+const beam& beam_search_flow::finalize(const int& request_idx) {
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("========================================================================================= \n");
-  printf("finalize: \n");
+  printf("request_idx_%d finalize:\n", request_idx);
   printf("before: \n");
-  for (auto b : beam_hypos[0].beams) {
+  for (auto b : beam_hypos[request_idx].beams) {
     b.print();
   }
   printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-  if (!requests_done[0]) {
-    for (const auto b : cur_beams) {
-      beam_hypos[0].add(b, n_prompt_tokens);
+  if (!beam_hypos[request_idx].is_done()) {
+    for (int i = 0; i < beam_size; ++i) {
+      beam b = cur_beams[request_idx * beam_size + i];
+      beam_hypos[request_idx].add(b, n_prompt_tokens[request_idx]);
     }
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
     printf("after (adding more beams from outside): \n");
-    for (auto b : beam_hypos[0].beams) {
+    for (auto b : beam_hypos[request_idx].beams) {
       b.print();
     }
     printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
-    printf("========================================================================================= \n");
 #endif
   }
-  return beam_hypos[0].top1();
+  const beam& top_b = beam_hypos[request_idx].top1();
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("final beam of request_idx %d:\n", request_idx);
+  top_b.print();
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+  printf("========================================================================================= \n");
+#endif
+  return top_b;
 }
 
-// TODO batch_size = 1 only
-// TODO batch prompt processing
-std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, const int& n_tokens,
-                                                const int& n_threads) {
-  if (n_tokens > model_n_ctx(ctx)) {
-    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(ctx) - 4);
-    return std::vector<model_token>();
+const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::vector<model_input>& inputs,
+                                                                    const int& n_threads) {
+  // n_past, n_tokens, n_prompt_tokens should be same among batches in static batching inference
+  n_tokens.assign(request_bs, inputs[0].n_tokens);
+  if (n_tokens[0] > model_n_ctx(ctx)) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens[0], model_n_ctx(ctx) - 4);
+    return response;
   }
   num_threads = n_threads;
-  n_prompt_tokens = n_tokens;
-  std::vector<model_token> beam_search_response;
-  std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
+  n_past.assign(request_bs, 0);
+  n_prompt_tokens.assign(request_bs, n_tokens[0]);
+  n_total.assign(request_bs, 0);
+  for (const auto& input : inputs) {
+    padding_side.push_back(input.padding_side);
+    n_padding.push_back(input.n_padding);
+  }
 
-  ctx->batch_size = 1;
+  ctx->batch_size = request_bs;
+  ctx->request_running_bs = request_bs;
+  for (int i = 0; i < request_bs; ++i) {
+    request_running_indices.push_back(i);
+  }
   const uint32_t max_new_tokens = ctx->generation_conf.max_new_tokens;
 
   // Loop ends in: 1. all requests done; or 2. reach max_new_tokens length
@@ -2490,45 +2682,55 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
-    printf("WARNING: using default kv cache update function. \n");
+    printf(
+        "WARNING: Using default kv cache update function. Ignore this warning if your K shape = [head_dim, N, n_head], "
+        "V shape = [N, head_dim, n_head]\n");
 #endif
   }
-  beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
-  requests_done.push_back(false);
   for (int n = 0; n < max_new_tokens; ++n) {
     // first step
-    if (n_past == 0) {
-      model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
-      n_past += n_tokens;
-      kv_reorder->update(n_past, n_tokens);
-      std::vector<beam_next_token> next_tokens = beam_top_k_next_tokens(ctx, 0, {0.0f}, {1}, {0}, beam_size);
-      MODEL_ASSERT(next_tokens.size() == beam_size);
-      cur_beams.clear();
+    if (n_past[0] == 0) {
+      model_eval(ctx, inputs.data(), inputs.size(), num_threads);
+      std::for_each(n_past.begin(), n_past.end(), [&](auto& n) { n += n_tokens[0]; });
+      std::for_each(n_total.begin(), n_total.end(), [&](auto& n) { n += n_tokens[0]; });
+      kv_reorder->update(n_past, n_prompt_tokens, request_running_indices);
+      std::vector<float> beam_scores(ctx->batch_size, 0.0f);
+      std::vector<int> num_beams(ctx->request_running_bs, 1);
+      std::vector<int> beam_indices(ctx->batch_size, 0);
+      std::vector<beam_next_token> next_tokens =
+          beam_top_k_next_tokens(ctx, beam_scores, num_beams, beam_indices, beam_size);
+      MODEL_ASSERT(next_tokens.size() == ctx->request_running_bs * beam_size);
       // DEBUG
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
       printf("========================================================================================== \n");
       printf("top_k next_tokens: \n");
-      for (auto kk : next_tokens) {
-        printf("%d: %s, score: %12.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(),
-               kk.score, kk.beam_idx);
+      int bb = 0;
+      for (int kk = 0; kk < next_tokens.size(); ++kk) {
+        if (kk % beam_size == 0) printf("------batch_%d------\n", bb++);
+        printf("%d: %s, score: %10.6f, beam_idx: %d \n", next_tokens[kk].id,
+               (ctx->vocab.id_to_token.at(next_tokens[kk].id).tok).c_str(), next_tokens[kk].score,
+               next_tokens[kk].beam_idx);
       }
       printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
-      for (int i = 0; i < beam_size; ++i) {
-        beam b;
-        b.ctx = ctx;
-        b.token_ids.push_back(next_tokens[i].id);
-        b.score = next_tokens[i].score;
-        b.infer_bs_id = i;
-        cur_beams.push_back(b);
+      for (int rb = 0; rb < request_running_indices.size(); ++rb) {
+        for (int i = 0; i < beam_size; ++i) {
+          beam b;
+          b.ctx = ctx;
+          b.token_ids.push_back(next_tokens[i + rb * beam_size].id);
+          b.score = next_tokens[i + rb * beam_size].score;
+          b.beam_idx = i;
+          b.request_idx = request_running_indices[rb];
+          cur_beams[request_running_indices[rb] * beam_size + i] = std::move(b);
+        }
       }
     } else {
       fill_next_beams_by_top_scores();
       std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
-      n_past += 1;
-      kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
+      std::for_each(n_past.begin(), n_past.end(), [&](auto& n) { n++; });
+      std::for_each(n_total.begin(), n_total.end(), [&](auto& n) { n++; });
+      kv_reorder->update(n_past, n_prompt_tokens, request_running_indices, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
-      next_beams.clear();
     }
 
     // DEBUG: print current beams for this iteration
@@ -2542,41 +2744,22 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
     printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
 
-    // check if done
-    for (int h = 0; h < beam_hypos.size(); ++h) {
-      if (requests_done[h]) {
-        continue;
-      }
-      if (beam_hypos[h].is_done()) {
-        requests_done[h] = true;
-      }
+    update_status();
+    // collect request final generation result if done
+    for (const auto& didx : next_done_request_ids) {
+      const beam& top_b = finalize(didx);
+      response[didx] = top_b.token_ids;
     }
-    auto const done_or_not = [](const bool& flag) { return flag; };
-    if (std::all_of(requests_done.begin(), requests_done.end(), done_or_not)) {
-      break;
-    }
+    // return if all requests done in static batching
+    if (std::find(requests_done.begin(), requests_done.end(), false) == requests_done.end()) break;
   }
 
-  const beam& top_b = finalize();
-
-#ifdef NE_BEAM_SEARCH_VERBOSE_ON  // DEBUG: print final beam result
-  printf("========================================================================================= \n");
-  printf("final beam:\n");
-  top_b.print();
-  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
-  printf("========================================================================================= \n");
-#endif
-
-  beam_search_response.clear();
-  for (const auto& id : top_b.token_ids) {
-    beam_search_response.push_back(id);
-  }
-  return beam_search_response;
+  return response;
 }
 
-std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                                     const int& n_tokens, const int& n_threads) {
+std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,
+                                                  const std::vector<model_input>& inputs, const int& n_threads) {
   lctx->generation_conf.max_new_tokens = n_predict;
-  beam_search_flow bsf(lctx);
-  return bsf.loop(tokens_inp, n_tokens, n_threads);
+  beam_search_flow bsf(lctx, inputs.size());
+  return bsf.loop(inputs, n_threads);
 }

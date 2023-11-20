@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the parameter configuration file for NeuralChat Serving.
+
+#################################################################################
+#                             SERVER SETTING                                    #
+#################################################################################
+host: 0.0.0.0
+port: 7000
+
+model_name_or_path: "./Llama-2-7b-chat-hf"
+device: "cpu"
+
+asr:
+    enable: true
+    args:
+        device: "cpu"
+        model_name_or_path: "openai/whisper-small"
+        bf16: false
+
+tts:
+    enable: true
+    args:
+        device: "cpu"
+        voice: "default"
+        stream_mode: true
+        output_audio_path: "./output_audio"
+
+ner:
+    enable: true
+    args:
+        device: "cpu"
+        model_path: "./Llama-2-7b-chat-hf"
+        spacy_model: "en_core_web_lg"
+        bf16: true
+
+retrieval:
+    enable: true
+    args:
+        input_path: "./photoai_retrieval_docs/default/input_path"
+        persist_dir: "./photoai_retrieval_docs/default/persist_dir"
+        response_template: "We cannot find suitable content to answer your query."
+        append: False
+
+tasks_list: ['textchat', 'voicechat', 'retrieval', 'photoai']

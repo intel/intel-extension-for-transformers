@@ -88,8 +88,11 @@ def generate_dummy_past_key_values(input_bs, model):
     num_attention_heads = normalized_config.num_attention_heads
     hidden_size = normalized_config.hidden_size
     d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
     if hasattr(normalized_config, "num_key_value_heads"):
         num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
     elif hasattr(normalized_config, "num_kv_heads"):
         num_key_value_heads = normalized_config.num_kv_heads
         
@@ -100,14 +103,16 @@ def generate_dummy_past_key_values(input_bs, model):
         pkv = ()
         for nb_pkv in range(nb_pkv):
             if nb_pkv % 2 == 0:
-                new_shape = [input_bs * num_attention_heads, d_k, 1]
+                new_shape = [input_bs * num_key_value_heads, d_k, 1]
             else:
-                new_shape = [input_bs * num_attention_heads, 1, d_k]
+                new_shape = [input_bs * num_key_value_heads, 1, d_k]
             pkv = pkv + (torch.ones(size=new_shape),)
-    elif model.config.model_type == "mistral":
-        new_shape = [input_bs, num_key_value_heads, 1, d_k]
     elif model.config.model_type == "qwen":
-        new_shape = [input_bs, 1, num_attention_heads, d_k]
+        new_shape = [input_bs, 1, num_key_value_heads, d_k]
+        dummy_tensor = torch.ones(size=new_shape)
+        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
+    elif model.config.model_type == "chatglm":
+        new_shape = [1, input_bs, num_key_value_heads, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     elif model.config.model_type == "falcon":
@@ -117,30 +122,44 @@ def generate_dummy_past_key_values(input_bs, model):
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
         
     else:
-        new_shape = [input_bs, num_attention_heads, 1, d_k]
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
     return past_key_values
 
-def get_example_inputs_for_trace(model, return_type="tuple"):
+def get_example_inputs_for_trace(model, quantization_config=None, return_type="dict"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
     """
-    input_ids = model.dummy_inputs["input_ids"]
-    input_bs, input_len = input_ids.shape
-    past_key_values = generate_dummy_past_key_values(input_bs, model)
-    attention_mask = torch.ones(input_bs, input_len + 1)
-    # attention_mask[:,0] = 0
-    # example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    example_inputs = (input_ids, past_key_values, attention_mask)
-    # do inference to check example_inputs formats
-    model(*example_inputs)
-    if return_type != "tuple":
+    if quantization_config and quantization_config.example_inputs is not None:
+        example_inputs = quantization_config.example_inputs
+        input_ids = example_inputs["input_ids"]
+        input_bs, input_len = input_ids.shape
+        attention_mask = torch.ones(input_bs, input_len + 1)
+        attention_mask[:, 0] = 0
+        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        if "past_key_values" not in example_inputs:
+            example_inputs["past_key_values"] = tuple(past_key_values)
+        example_inputs["attention_mask"] = attention_mask
+        if "position_ids" in example_inputs.keys():
+            example_inputs.pop("position_ids")
+    else:
+        input_ids = model.dummy_inputs["input_ids"]
+        input_bs, input_len = input_ids.shape
+        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        attention_mask = torch.ones(input_bs, input_len + 1)
+        attention_mask[:, 0] = 0
         example_inputs = {
             "input_ids": input_ids,
-            "past_key_values": past_key_values,
-            "attention_mask": attention_mask
+            "past_key_values": tuple(past_key_values),
+            "attention_mask": attention_mask,
         }
+    if return_type == "tuple":
+        example_inputs = (example_inputs["input_ids"], example_inputs["past_key_values"],
+                          example_inputs["attention_mask"])
+
+    # do inference to check example_inputs correct.
+    out = model(**example_inputs) if return_type == "dict" else model(*example_inputs)
     return example_inputs

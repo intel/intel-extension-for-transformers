@@ -321,9 +321,14 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         return
 
     if len(state.messages) == state.offset + 2:
-        # First round of conversation
+        # model conversation name: "mpt-7b-chat", "chatglm", "chatglm2", "llama-2",
+        #                          "mistral", "neural-chat-7b-v3-1", "neural-chat-7b-v3",
+        #                          "neural-chat-7b-v2", "neural-chat-7b-v1-1"
+        # First round of Conversation
         if "Llama-2-7b-chat-hf" in model_name:
             model_name = "llama-2"
+        elif "chatglm"  in model_name:
+            model_name = model_name.split('-')[0]
         new_state = get_conv_template(model_name.split('/')[-1])
         #new_state.conv_id = uuid.uuid4().hex
         #new_state.model_name = state.model_name or model_selector
@@ -367,6 +372,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
+                if chunk.strip() == b'data: [DONE]':
+                    break
                 data = json.loads(chunk.decode())
                 # print("data======", data, skip_echo_len)
                 if data["error_code"] == 0:
@@ -788,5 +795,5 @@ if __name__ == "__main__":
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
-        server_name=host, share=share, max_threads=200
+        server_name=host, server_port=80, share=share, max_threads=200
     )

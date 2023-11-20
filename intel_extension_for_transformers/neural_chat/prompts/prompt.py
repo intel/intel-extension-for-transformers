@@ -17,6 +17,40 @@
 
 from fastchat.conversation import get_conv_template, register_conv_template, Conversation, SeparatorStyle
 
+# neuralchat-v3-1 prompt template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3-1",
+        system_message="""### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, \
+short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
+# neuralchat-v3 prompt template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3",
+        system_message="""### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, \
+short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
 # neuralchat-v2 prompt template
 register_conv_template(
     Conversation(
@@ -115,14 +149,29 @@ register_conv_template(
     )
 )
 
+
+# Rag with threshold
+register_conv_template(
+    Conversation(
+        name="rag_with_threshold",
+        system_message="You are served as an AI agent to help the user complete a task." + \
+            " You are required to comprehend the usr query and then use the given context to" + \
+            " generate a suitable response.\n\n",
+        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+
 # Intent template
 register_conv_template(
     Conversation(
         name="intent",
-        system_message="Please identify the intent of the provided context." + \
+        system_message="Please identify the intent of the user query." + \
             " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
             " or engaging in conversation.\n",
-        roles=("Context:", "Intent:"),
+        roles=("### User Query: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -142,6 +191,16 @@ register_conv_template(
     )
 )
 
+# QA template
+register_conv_template(
+    Conversation(
+        name="question_answer",
+        roles=("Question: ", "Answer: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n\n",
+    )
+)
+
 class PromptTemplate:
     def __init__(self, name="one_shot"):
         self.conv = get_conv_template(name)
@@ -155,4 +214,6 @@ class PromptTemplate:
 
     def get_prompt(self) -> str:
         return self.conv.get_prompt()
-    
+
+    def clear_messages(self) -> str:
+        self.conv.messages = []

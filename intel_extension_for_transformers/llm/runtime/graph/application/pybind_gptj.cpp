@@ -40,7 +40,16 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
     return 1;
   }
 
-  if (model_eval(ctx, tokens, n_eval, n_past, n_threads)) {
+  std::vector<model_input> inputs = {model_input{
+      /*.tokens              =*/tokens,
+      /*.n_tokens           =*/static_cast<uint32_t>(n_eval),
+      /*.n_prompt_tokens    =*/0,
+      /*.n_past             =*/static_cast<uint32_t>(n_past),
+      /*.n_total            =*/static_cast<uint32_t>(n_past),
+      /*.request_idx        =*/0,
+      /*.beam_idx           =*/0,
+  }};
+  if (model_eval(ctx, inputs.data(), inputs.size(), n_threads)) {
     fprintf(stderr, "%s : failed to eval\n", __func__);
     return 1;
   }
@@ -93,12 +102,21 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
 
   auto hparams = lctx->model.hparams;
 
-  n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)ind_size);
+  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)ind_size);
   std::vector<model_token> res;
   bool do_beam_search = lctx->beam_search;
 
   if (do_beam_search) {
-    res = beam_search(lctx, n_predict, embd_inp_ptr, ind_size, n_threads);
+    std::vector<model_input> inputs = {model_input{
+        /*.tokens             =*/embd_inp_ptr,
+        /*.n_tokens           =*/static_cast<uint32_t>(ind_size),
+        /*.n_prompt_tokens    =*/0,
+        /*.n_past             =*/0,
+        /*.n_total            =*/0,
+        /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
+    }};
+    res = beam_search(lctx, n_predict, inputs, n_threads)[0];
   } else {
     std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
     std::vector<model_token> embd;
@@ -151,13 +169,24 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
 
   auto hparams = lctx->model.hparams;
   std::vector<model_token> embd_inp = ::model_tokenize(lctx, std::string(prom), false);
-  n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)embd_inp.size());
+  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)embd_inp.size());
   std::string res;
   std::vector<model_token> embd;
 
   bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
-    embd = beam_search(lctx, n_predict, embd_inp.data(), embd_inp.size(), N_threads);
+    std::vector<model_input> inputs = {model_input{
+        /*.tokens             =*/embd_inp.data(),
+        /*.n_tokens           =*/static_cast<uint32_t>(embd_inp.size()),
+        /*.n_prompt_tokens    =*/0,
+        /*.n_past             =*/0,
+        /*.n_total            =*/0,
+        /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
+        /*.padding_side       =*/0,
+        /*n_padding           =*/0,
+    }};
+    embd = beam_search(lctx, n_predict, inputs, N_threads)[0];
     for (auto id : embd_inp) {
       res += model_token_to_str(lctx, id);
     }
@@ -229,7 +258,7 @@ int main(int argc, char* argv[]) {
   for (auto gptj_in_all : ctxs) {
     auto res = eval_gptj_char(
         gptj_in_all,
-        // "she opened the door and see",
+        //"she opened the door and see",
         // "Once upon a time",
         // "Tell me 10 things about jazz music",
         // "A spaceship lands on the moon",

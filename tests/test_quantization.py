@@ -23,10 +23,13 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     Seq2SeqTrainingArguments,
 )
+import neural_compressor.adaptor.pytorch as nc_torch
+from packaging.version import Version
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
+PT_VERSION = nc_torch.get_torch_version()
 
 class DummyDataset(data.Dataset):
     def __init__(self):
@@ -287,14 +290,16 @@ class TestQuantization(unittest.TestCase):
             if 'MatMul' in tensor.name:
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
-
+    
+    @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
+            "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
         model_name_or_path = "facebook/opt-125m"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
-            WeightOnlyQuantConfig,
             SmoothQuantConfig,
+            WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -311,6 +316,17 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        sq_config = SmoothQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=5,
+                                    example_inputs=fp32_model.dummy_inputs
+                                    )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_llm_runtime=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+
         # weight-only
         #RTN
         woq_config = WeightOnlyQuantConfig()
@@ -356,7 +372,7 @@ class TestQuantization(unittest.TestCase):
                                                      use_llm_runtime=False
                                                 )
         output = bit4_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -8.059162139892578, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), -8.6834, rel_tol=1e-04))
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -366,6 +382,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = bit8_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
+
 
 if __name__ == "__main__":
     unittest.main()

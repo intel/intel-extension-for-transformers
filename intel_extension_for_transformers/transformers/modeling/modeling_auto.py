@@ -98,13 +98,17 @@ class _BaseQBitsAutoModelClass:
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
-
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="nf4"
-                    )
+                    if use_llm_runtime: 
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="int8", weight_dtype="int4"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=torch_dtype, weight_dtype="nf4"
+                        )
                 else:
                     assert (
                         "4" in quantization_config.weight_dtype
@@ -113,29 +117,32 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=torch_dtype, weight_dtype="int8"
-                    )
+                    if use_llm_runtime: 
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="bf16", weight_dtype="int8"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=torch_dtype, weight_dtype="int8"
+                        )
                 else:
                     assert (
                         quantization_config.weight_dtype == "int8"
                         and quantization_config.compute_dtype == torch_dtype
                     ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
-
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
             logger.info("Mixed Precision done.")
-        model = cls.ORIG_MODEL.from_pretrained(
-            pretrained_model_name_or_path, *model_args, **kwargs
-        )
-        model.eval()
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from intel_extension_for_transformers.llm.runtime.graph import Model
-
                 model = Model()
                 model.init(
                     pretrained_model_name_or_path,
@@ -145,17 +152,36 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
+                    not_quant=quantization_config.not_quant,
+                    use_cache=quantization_config.use_cache,
                 )
                 return model
             else:
+                model = cls.ORIG_MODEL.from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                if (not torch.cuda.is_available() or
+                        device_map == "cpu" or
+                        device_map == torch.device("cpu")
+                        ) and model.config.model_type == "chatglm":
+                    model = model.float()
+                model.eval()        
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
-
                 model = convert_to_quantized_model(model, quantization_config)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            if (not torch.cuda.is_available() or 
+                    device_map == "cpu" or 
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
             logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
@@ -163,6 +189,7 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
+            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             calib_func = quantization_config.calib_func
             if calib_func is None:
                 if quantization_config.tokenizer is None:
@@ -239,13 +266,14 @@ class _BaseQBitsAutoModelClass:
                 "smooth_quant": True,
                 "smooth_quant_args": {"alpha": quantization_config.alpha},
             }
-            example_inputs = get_example_inputs_for_trace(model)
+            example_inputs = get_example_inputs_for_trace(model, quantization_config=quantization_config)
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
                 backend="ipex",
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
+                op_name_dict=quantization_config.op_name_dict,
                 recipes=recipes,
                 example_inputs=example_inputs,
             )
@@ -266,6 +294,17 @@ class _BaseQBitsAutoModelClass:
                                     calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
                                     )
             logger.info("SmoothQuant done.")
+        else:
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            if (not torch.cuda.is_available() or
+                    device_map == "cpu" or
+                    device_map == torch.device("cpu")
+                    ) and model.config.model_type == "chatglm":
+                model = model.float()
+
+            model.eval() 
         return model
 
 

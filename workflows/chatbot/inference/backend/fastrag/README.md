@@ -4,7 +4,7 @@ First, install and configure the Conda environment:
 
 ```bash
 wget  https://repo.anaconda.com/miniconda/Miniconda3-py310_22.11.1-1-Linux-x86_64.sh
-bash `Miniconda*.sh`
+bash Miniconda*.sh
 source ~/.bashrc
 ```
 
@@ -29,7 +29,6 @@ conda install pytorch torchvision cpuonly -c pytorch-nightly
 Install other dependencies using pip:
 
 ```bash
-pip install farm-haystack==1.14.0
 pip install intel_extension_for_pytorch
 pip install SentencePiece peft evaluate nltk datasets
 pip install transformers diffusers accelerate intel_extension_for_transformers

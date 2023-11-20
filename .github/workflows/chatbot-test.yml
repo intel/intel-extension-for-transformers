@@ -21,7 +21,7 @@ on:
       - 'workflows/chatbot/inference/**'
       - 'workflows/chatbot/fine_tuning/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
-      - '!intel_extension_for_transformers/neural_chat/tests/**'
+      - '!intel_extension_for_transformers/neural_chat/tests/ci/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'
       - '!intel_extension_for_transformers/neural_chat/README.md'
@@ -41,15 +41,13 @@ jobs:
   call-inference-mpt-7b-chat:
     uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
 
-  #call-finetune-mpt-7b-chat:
-  #  uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml
 
-  call-inference-llama-2-7b-chat-hf-hpu:
-    uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf-hpu.yml
-
-  call-inference-mpt-7b-chat-hpu:
-    uses: ./.github/workflows/chatbot-inference-mpt-7b-chat-hpu.yml
-
-  call-finetune-mpt-7b-chat-hpu:
-    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml
+#  call-inference-llama-2-7b-chat-hf-hpu:
+#    uses: ./.github/workflows/chatbot-inference-llama-2-7b_70b-chat-hf-hpu.yml
+#
+#  call-inference-mpt-7b-chat-hpu:
+#    uses: ./.github/workflows/chatbot-inference-mpt-7b-chat-hpu.yml
+#
+#  call-finetune-mpt-7b-chat-hpu:
+#    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml
 

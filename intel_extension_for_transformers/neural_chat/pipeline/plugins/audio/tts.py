@@ -27,7 +27,7 @@ import numpy as np
 import contextlib
 
 from .utils.english_normalizer import EnglishNormalizer
-
+from .utils.reduce_noise import NoiseReducer
 class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
@@ -35,8 +35,8 @@ class TextToSpeech():
     2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
-    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", 
-      asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu",
+                 reduce_noise=False):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.device = device
@@ -51,42 +51,35 @@ class TextToSpeech():
                 source=self.spk_model_name,
                 run_opts={"device": "cpu"},
                 savedir=os.path.join("/tmp", self.spk_model_name))
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             print(f"[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
             self.speaker_model = None
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                          + '/assets/speaker_embeddings/spk_embed_default.pt'):
-            default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                              + '/assets/speaker_embeddings/spk_embed_default.pt'
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
-            default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
-        elif os.path.exists('spk_embed_default.pt'):
-            default_speaker_embedding_path = 'spk_embed_default.pt'
-        else:
+        self.default_speaker_embedding = None
+        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
+            default_speaker_embedding_path = os.path.join(
+                script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')
+            self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
+        elif os.path.exists('spk_embed_default.pt'):    # for notebook
+            self.default_speaker_embedding = torch.load('spk_embed_default.pt')
+        else: # pragma: no cover
             print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
-            default_speaker_embedding_path = None
-        # load the default speaker embedding
-        self.default_speaker_embedding = torch.load(default_speaker_embedding_path) if default_speaker_embedding_path \
-            else None
+            self.default_speaker_embedding = torch.zeros((1, 512))
 
         # preload the demo model in case of time-consuming runtime loading
         self.demo_model = None
-        if os.path.exists("demo_model.pt"):
+        if os.path.exists("demo_model.pt"):  # pragma: no cover
             self.demo_model = torch.load("demo_model.pt", map_location=device)
 
         self.male_speaker_embeddings = None
         pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_male.pt')
         if os.path.exists(pat_speaker_embedding_path):
             self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):
-            self.male_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt'))
-
-        self.backup_speaker_embedding = torch.ones((1, 512))
 
         self.normalizer = EnglishNormalizer()
+        self.noise_reducer = NoiseReducer() if reduce_noise else None
 
     def create_speaker_embedding(self, driven_audio_path):
         """Create the speaker's embedding.
@@ -104,25 +97,17 @@ class TextToSpeech():
             speaker_embeddings = speaker_embeddings[0] # [1,512]
         return speaker_embeddings.to(self.device)
 
-    def _lookup_voice_embedding(self, voice, 
-      asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
+    def _lookup_voice_embedding(self, voice):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(f"speaker_embeddings/spk_embed_{voice}.pt") == False:
-            if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
-                default_speaker_embedding_path = os.path.join(script_dir,
-                                                    '../../../assets/speaker_embeddings/spk_embed_default.pt')
-            elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
-                print("No customized speaker embedding is found! Use the default one")
-                default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
-            else:   # pragma: no cover
-                print("No customized speaker embedding or default embedding are found! Use the backup one")
-                return self.backup_speaker_embedding
-            print("No customized speaker embedding is found! Use the default one")
-            return torch.load(default_speaker_embedding_path)
-        else:
+        if os.path.exists(os.path.join(script_dir, f'../../../assets/speaker_embeddings/spk_embed_{voice}.pt')):
             specific_speaker_embedding_path = os.path.join(script_dir,
                                         f"../../../assets/speaker_embeddings/spk_embed_{voice}.pt")
             return torch.load(specific_speaker_embedding_path)
+        elif os.path.exists(f'spk_embed_{voice}.pt'):    # for notebook
+            return torch.load(f'spk_embed_{voice}.pt')
+        else:
+            print("No customized speaker embedding is found! Use the default one")
+            return self.default_speaker_embedding
 
     def _batch_long_text(self, text, batch_length):
         """Batch the long text into sequences of shorter sentences."""
@@ -147,10 +132,12 @@ class TextToSpeech():
             idx += 1
         # deal with the last sequence
         res.append(text[cur_start:idx])
+        res = [i + "." for i in res]    # avoid unexpected end of sequence
         return res
 
 
-    def text2speech(self, text, output_audio_path, voice="default", do_batch_tts=False, batch_length=400):
+    def text2speech(self, text, output_audio_path, voice="default",
+                    do_batch_tts=False, batch_length=400):
         """Text to speech.
 
         text: the input text
@@ -167,16 +154,15 @@ class TextToSpeech():
             texts = self._batch_long_text(text, batch_length)
         else:
             texts = [text]
-        print(texts)
+        print(f"[TTS] batched texts: {texts}")
         model = self.original_model
-        speaker_embeddings = self.default_speaker_embedding if self.default_speaker_embedding is not None else \
-            self.backup_speaker_embedding
+        speaker_embeddings = self.default_speaker_embedding
         if voice == "male":
             if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
-            else:
+            else: # pragma: no cover
                 model = self.demo_model
-            if self.male_speaker_embeddings == None:
+            if self.male_speaker_embeddings == None: # pragma: no cover
                 print("Male speaker embedding is not found! Use the default one")
             else:
                 speaker_embeddings = self.male_speaker_embeddings
@@ -192,6 +178,8 @@ class TextToSpeech():
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end
         sf.write(output_audio_path, all_speech, samplerate=16000)
+        if self.noise_reducer:
+            output_audio_path = self.noise_reducer.reduce_audio_amplify(output_audio_path, all_speech)
         return output_audio_path
 
     def stream_text2speech(self, generator, output_audio_path, voice="default"):
@@ -201,6 +189,8 @@ class TextToSpeech():
 
 
     def post_llm_inference_actions(self, text_or_generator):
+        from intel_extension_for_transformers.neural_chat.plugins import plugins
+        self.voice = plugins.tts.args["voice"]
         if self.stream_mode:
             def cache_words_into_sentences():
                 buffered_texts = []

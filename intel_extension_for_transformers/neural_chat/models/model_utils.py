@@ -39,9 +39,9 @@ from transformers import (
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
-from intel_extension_for_transformers.neural_chat.config import (
-    AMPConfig,
-    WeightOnlyQuantizationConfig,
+from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
 
@@ -266,6 +266,7 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
+    use_llm_runtime=False
 ):
     """
     Load the model and initialize the tokenizer.
@@ -294,7 +295,7 @@ def load_model(
 
         adapt_transformers_to_gaudi()
 
-    if isinstance(optimization_config, AMPConfig):
+    if isinstance(optimization_config, MixedPrecisionConfig):
         dtype = optimization_config.dtype
     else:
         dtype = "float32"
@@ -354,19 +355,20 @@ def load_model(
                 low_cpu_mem_usage=True,
                 use_auth_token=hf_access_token,
                 trust_remote_code=True)
-    elif (
+    elif ((
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("falcon", model_name, re.IGNORECASE)
-        or re.search("mistral", model_name, re.IGNORECASE)
-        or re.search("opt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
-    ) and not ipex_int8:
+        or re.search("codellama", model_name, re.IGNORECASE)
+        or re.search("mistral", model_name, re.IGNORECASE)
+    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -377,6 +379,7 @@ def load_model(
             )
     elif (
             (re.search("starcoder", model_name, re.IGNORECASE)
+             or re.search("codellama", model_name, re.IGNORECASE)
             ) and ipex_int8
         ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -388,7 +391,8 @@ def load_model(
                  )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
+            f"Unsupported model {model_name}, only supports "
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
@@ -423,9 +427,14 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if isinstance(optimization_config, WeightOnlyQuantizationConfig):
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config)
+        model = optimize_model(model, optimization_config, use_llm_runtime)
+
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
 
     if device == "hpu":
         if peft_path:
@@ -508,10 +517,15 @@ def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
 
 def get_stop_token_ids(model, tokenizer):
-    if isinstance(model.generation_config.eos_token_id, list):
-        stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+    if hasattr(model, 'generation_config') and hasattr(model.generation_config, 'eos_token_id'):
+        eos_token_id = model.generation_config.eos_token_id
     else:
-        stop_token_ids = [model.generation_config.eos_token_id]
+        eos_token_id = tokenizer.eos_token_id
+
+    if isinstance(eos_token_id, list):
+        stop_token_ids = copy.deepcopy(eos_token_id)
+    else:
+        stop_token_ids = [eos_token_id]
     end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[-1]
     stop_token_ids.append(end_token_id)
     return stop_token_ids
@@ -547,6 +561,24 @@ def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
     }
     return generate_kwargs
 
+def is_llm_runtime_model(model):
+    from intel_extension_for_transformers.llm.runtime.graph import Model
+    if isinstance(model, Model):
+        return True
+    else:
+        return False
+
+def remove_prompt_history(model_name, prompt):
+    result = prompt
+    if re.search("llama", model_name, re.IGNORECASE):
+        matches = re.findall(r'\[INST\](.*?)\[/INST\]', prompt)
+        if matches:
+            result = "[INST]" + matches[-1] + "[/INST]"
+    elif re.search("chatglm", model_name, re.IGNORECASE):
+        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        if matches:
+            result = matches[-1]
+    return result
 
 output_token_len = 0
 def predict_stream(**params):
@@ -615,6 +647,10 @@ def predict_stream(**params):
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
 
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
     )
@@ -667,14 +703,32 @@ def predict_stream(**params):
                     else:
                         with context:
                             global output_token_len
-                            output_token=model.generate(
-                                **input_tokens,
-                                **generate_kwargs,
-                                streamer=streamer,
-                                generation_config=generation_config,
-                                return_dict_in_generate=True,
-                            )
-                    output_token_len=output_token.sequences[0].shape[-1]
+                            if is_llm_runtime_model(model):  # optimized model gerenate
+                                output_token=model.generate(
+                                    input_tokens['input_ids'],
+                                    streamer=streamer,
+                                    temperature=temperature,
+                                    top_p=top_p,
+                                    top_k=top_k,
+                                    repetition_penalty=repetition_penalty,
+                                    max_new_tokens=max_new_tokens,
+                                    ctx_size=max_new_tokens,
+                                    ignore_prompt=True,
+                                    interactive=True,
+                                    do_sample=do_sample,
+                                    num_beams=num_beams,
+                                    seed=1
+                                )
+                            else:
+                                output_token=model.generate(
+                                    **input_tokens,
+                                    **generate_kwargs,
+                                    streamer=streamer,
+                                    generation_config=generation_config,
+                                    return_dict_in_generate=True,
+                                )
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                                      output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
@@ -834,6 +888,10 @@ def predict(**params):
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+
     if num_beams == 0:
         num_beams = 1
         do_sample = True
@@ -876,12 +934,28 @@ def predict(**params):
                         )
             else:
                 with context:
-                    generation_output = model.generate(
-                        **input_tokens,
-                        **generate_kwargs,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True
-                    )
+                    if is_llm_runtime_model(model):  # optimized model gerenate
+                        generation_output = model.generate(
+                            input_tokens['input_ids'],
+                            temperature=temperature,
+                            top_p=top_p,
+                            top_k=top_k,
+                            repetition_penalty=repetition_penalty,
+                            max_new_tokens=max_new_tokens,
+                            ctx_size=max_new_tokens,
+                            ignore_prompt=True,
+                            interactive=True,
+                            do_sample=do_sample,
+                            num_beams=num_beams,
+                            seed=1
+                        )
+                    else:
+                        generation_output = model.generate(
+                            **input_tokens,
+                            **generate_kwargs,
+                            generation_config=generation_config,
+                            return_dict_in_generate=True
+                        )
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)
@@ -914,7 +988,18 @@ def predict(**params):
                 hpu_graphs=use_hpu_graphs,
                 ignore_eos=False,
             )
-    output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
+    if is_llm_runtime_model(model):  # optimized model gerenate
+        output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
+    else:
+        output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "### Assistant" in output:
+        return output.split("### Assistant:")[1].strip()
+    if "\nassistant\n" in output:
+        return output.split("\nassistant\n")[1].strip()
+    if "[/INST]" in output:
+        return output.split("[/INST]")[1].strip()
+    if "答：" in output:
+        return output.split("答：")[1].strip()
     return output

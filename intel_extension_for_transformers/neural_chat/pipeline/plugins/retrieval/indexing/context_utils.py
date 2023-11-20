@@ -121,7 +121,6 @@ def load_xlsx(input):
     df = pd.read_excel(input)
     all_data = []
     documents = []
-
     for index, row in df.iterrows():
         sub = "User Query: " + row['Questions'] + "Answer: " + row["Answers"]
         all_data.append(sub)
@@ -132,6 +131,38 @@ def load_xlsx(input):
         new_doc = [data, input]
         documents.append(new_doc)
     return documents
+
+
+def load_faq_xlsx(input):
+    """Load and process faq xlsx file."""
+    df = pd.read_excel(input)
+    all_data = []
+
+    for index, row in df.iterrows():
+        sub = "Question: " + row['question'] + " Answer: " + row["answer"]
+        sub = sub.replace('#', " ")
+        sub = sub.replace(r'\t', " ")
+        sub = sub.replace('\n', ' ')
+        sub = sub.replace('\n\n', ' ')
+        sub = re.sub(r'\s+', ' ', sub)
+        all_data.append([sub, row['link']])
+    return all_data
+
+
+def load_general_xlsx(input):
+    """Load and process doc xlsx file."""
+    df = pd.read_excel(input)
+    all_data = []
+
+    for index, row in df.iterrows():
+        sub = row['context']
+        sub = sub.replace('#', " ")
+        sub = sub.replace(r'\t', " ")
+        sub = sub.replace('\n', ' ')
+        sub = sub.replace('\n\n', ' ')
+        sub = re.sub(r'\s+', ' ', sub)
+        all_data.append([sub, row['link']])
+    return all_data
 
 
 def load_unstructured_data(input):
@@ -158,9 +189,32 @@ def laod_structured_data(input, process, max_length):
     """Load structured context."""
     if input.endswith("jsonl"):
         content = load_json(input, process, max_length)
+    elif "faq" in input and input.endswith("xlsx"):
+        content = load_faq_xlsx(input)
+    elif "enterprise_docs" in input and input.endswith("xlsx"):
+        content = load_general_xlsx(input)
+    elif input.endswith("csv"):
+        content = load_csv(input)
     else:
         content = load_xlsx(input)
     return content
+
+
+def load_csv(input):
+    """ Load the csv file."""
+    df = pd.read_csv(input)
+    all_data = []
+    documents = []
+    for index, row in df.iterrows():
+        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
+        all_data.append(sub)
+
+    for data in all_data:
+        data.replace('#', " ")
+        data = re.sub(r'\s+', ' ', data)
+        new_doc = [data, input]
+        documents.append(new_doc)
+    return documents
 
 
 def get_chuck_data(content, max_length, input):

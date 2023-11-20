@@ -1,6 +1,10 @@
 # Documentation Overview and Installation
 
+
+You can find install guidelines in [installation.md](installation.md).
+
 These documents offer a comprehensive description of Intel Extension for Transformers:
+
 
 - [architecture.md](architecture.md): Provides an overview of Intel Extension for Transformers, covering various architectural levels.
 - [installation.md](installation.md): Contains installation guidelines.
@@ -15,7 +19,11 @@ These documents offer a comprehensive description of Intel Extension for Transfo
 - [export.md](export.md): Explains PyTorch to ONNX, including the int8 model.
 - [get_started.md](get_started.md): Guides you through using the optimization API and sparse inference.
 
+
+We also provide examples in [examples.md](examples.md). P.S., smoothquant, weight-only quantization, and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
+
 **API Documentation**:
+
 
 For comprehensive API guidance, visit the [API doc](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html), generated using [api_doc](api_doc) and [build_docs](build_docs). You can disregard the two mentioned folders.
 
@@ -29,6 +37,10 @@ Practical examples can be found in [examples.md](examples.md). Note that `smooth
 **Tutorials**:
 
 Explore various tutorials for different tasks in [tutorials/pytorch/](tutorials/pytorch).
+
+
+[publication.md](publication.md) lists the publications related to this project, some of them can be found in [pubs/](pubs/).
+[release.md](release.md) provides links to all releases. License and legal information can be found in [legal.md](legal.md)
 
 # Other Functionalities Documentation
 

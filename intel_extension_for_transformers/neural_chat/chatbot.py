@@ -50,30 +50,31 @@ def build_chatbot(config: PipelineConfig=None):
     if "llama" in config.model_name_or_path.lower() :
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path.lower():
         from .models.mpt_model import MptModel
         adapter = MptModel()
-    elif "neural-chat" in config.model_name_or_path:
+    elif "neural-chat" in config.model_name_or_path.lower():
         from .models.neuralchat_model import NeuralChatModel
         adapter = NeuralChatModel()
-    elif "chatglm" in config.model_name_or_path:
+    elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path:
+    elif "Qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
-    elif "opt" in config.model_name_or_path or \
-         "gpt" in config.model_name_or_path or \
-         "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path or \
-         "falcon" in config.model_name_or_path or \
-         "mistral" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path:
+    elif "mistral" in config.model_name_or_path.lower():
+        from .models.mistral_model import MistralModel
+        adapter = MistralModel()
+    elif "opt" in config.model_name_or_path.lower() or \
+         "gpt" in config.model_name_or_path.lower() or \
+         "flan-t5" in config.model_name_or_path.lower() or \
+         "bloom" in config.model_name_or_path.lower() or \
+         "starcoder" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
+           only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -127,6 +128,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
@@ -145,12 +147,14 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config):
+def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
     Args:
-        config (OptimizationConfig): Configuration for optimizing the model.
+        model: large language model
+        config (OptimizationConfig): The configuration required for optimizing the model.
+        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model)
+    model = optimization.optimize(model, use_llm_runtime)
     return model

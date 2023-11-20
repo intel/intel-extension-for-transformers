@@ -16,7 +16,7 @@ class TestDistillation(unittest.TestCase):
     def setUpClass(self):
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'hf-internal-testing/tiny-random-DistilBertModel')
+            'hf-internal-testing/tiny-random-distilbert')
         self.teacher_model = TFAutoModelForSequenceClassification.from_pretrained(
             'hf-internal-testing/tiny-random-DistilBertForSequenceClassification')
 

@@ -4,7 +4,9 @@ fschat
 num2words
 speechbrain
 paddlepaddle
-paddlespeech==1.4.1
+paddlenlp
+paddlespeech
+paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -14,13 +16,12 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
-chromadb
-fastapi
-pydantic
+chromadb==0.4.15
+fastapi==0.103.2
+pydantic==1.10.13
 starlette
 yacs
 uvicorn
@@ -33,9 +34,12 @@ rouge_score
 openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
-lm_eval
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0
 torchaudio==2.1.0
 spacy
-neural-compressor
+neural-compressor==2.3.1
+einops
+urllib3
+langid

@@ -1,9 +1,10 @@
 #!/bin/bash
+
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.neural-chat-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests/ci/"
 # get parameters
 PATTERN='[-a-zA-Z0-9_]*='
 PERF_STABLE_CHECK=true
@@ -26,19 +27,31 @@ function pytest() {
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
     export GLOG_minloglevel=2
 
-    itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
-    echo -e '
-# Kill the neuralchat server processes
-ports="7000 8000 9000"
-# Loop through each port and find associated PIDs
-for port in $ports; do
-    # Use lsof to find the processes associated with the port
-    pids=$(lsof -ti :$port)
+    # Kill the neuralchat server processes
+    ports="5000 6000 6060 7000 7070 8000 8080 9000 9090"
+    # Loop through each port and find associated PIDs
+    for port in $ports; do
+        # Use lsof to find the processes associated with the port
+        pids=$(lsof -ti :$port)
+        if [ -n "$pids" ]; then
+            echo "Processes running on port $port: $pids"
+            # Terminate the processes gracefully with SIGTERM
+            kill $pids
+            echo "Terminated processes on port $port."
+        else
+            echo "No processes found on port $port."
+        fi
+    done
 
+    itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
+    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
+    sort run.sh -o run.sh
+    echo -e '
+ports="5000 6000 6060 7000 7070 8000 8080 9000 9090"
+for port in $ports; do
+    pids=$(lsof -ti :$port)
     if [ -n "$pids" ]; then
         echo "Processes running on port $port: $pids"
-        # Terminate the processes gracefully with SIGTERM
         kill $pids
         echo "Terminated processes on port $port."
     else
@@ -49,10 +62,13 @@ done
     coverage erase
 
     # run UT
+    sleep 1
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
     cat run.sh | tee ${ut_log_name}
+    sleep 1
     $BOLD_YELLOW && echo "------UT start-------" && $RESET
-    bash run.sh 2>&1 | tee -a ${ut_log_name}
+    bash -x run.sh 2>&1 | tee -a ${ut_log_name}
+    sleep 1
     $BOLD_YELLOW && echo "------UT end -------" && $RESET
 
     # run coverage report
@@ -61,10 +77,23 @@ done
     coverage xml -o ${coverage_log_dir}/coverage.xml --rcfile=${COVERAGE_RCFILE}
 
     # check UT status
-    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ] || [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
-        $BOLD_RED && echo "Find errors in UT test, please check the output..." && $RESET
+    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [FAILED]..." && $RESET
         exit 1
     fi
+    if [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [ModuleNotFoundError:]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "core dumped" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT test, please search [core dumped]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
+        $BOLD_RED && echo "No pass case found, please check the output..." && $RESET
+        exit 1
+    fi
+
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 
@@ -73,6 +102,10 @@ function main() {
     apt-get update
     apt-get install ffmpeg -y
     apt-get install lsof
+    apt-get install libgl1
+    apt-get install -y libgl1-mesa-glx
+    apt-get install -y libgl1-mesa-dev
+    apt-get install libsm6 libxext6 -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch
