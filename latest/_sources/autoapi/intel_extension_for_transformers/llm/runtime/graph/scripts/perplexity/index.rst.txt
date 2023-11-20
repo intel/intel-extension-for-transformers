@@ -1,0 +1,50 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.graph.scripts.perplexity`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.graph.scripts.perplexity
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.graph.scripts.perplexity.get_ppl
+   intel_extension_for_transformers.llm.runtime.graph.scripts.perplexity.add_log_ppl_line
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.graph.scripts.perplexity.logger
+
+
+.. py:data:: logger
+
+   Preparing test dataset:
+
+   >>> import datasets
+   >>> dataset = datasets.load_dataset("wikitext", "wikitext-2-raw-v1", split='test', num_proc=16)
+   >>> dataset.save_to_disk('~/wikitext-2-raw-v1-data-test')
+   >>> dataset = datasets.load_dataset("pg19", split='test', num_proc=16)
+   >>> dataset.save_to_disk('~/pg19-data-test')
+
+.. py:function:: get_ppl(sum_nll, sum_nll2, cnt: int)
+
+   Get ppl and its standard deviation from sum of negative log likelihood
+
+
+.. py:function:: add_log_ppl_line(ax: matplotlib.pyplot.Axes, ppl_data: List[Dict[int, float]], label='log PPL')
+
+   Plot PPL and return xmax / ymax
+
+
