@@ -8,8 +8,6 @@ from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQ
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 from intel_extension_for_transformers.llm.runtime.graph import Model
 
-import matplotlib.pyplot as plt
-
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
     totalNum = (np.abs(numa)**2).sum()
