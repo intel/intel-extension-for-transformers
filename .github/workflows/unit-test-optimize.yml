@@ -11,6 +11,7 @@ on:
       - intel_extension_for_transformers/llm/evaluation/**
       - intel_extension_for_transformers/llm/quantization/**
       - intel_extension_for_transformers/llm/runtime/graph/**
+      - intel_extension_for_transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - .github/workflows/script/unitTest/**
