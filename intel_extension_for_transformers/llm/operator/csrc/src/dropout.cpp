@@ -21,7 +21,7 @@
 #include "jblas/kernel_avx2.h"
 
 #pragma GCC push_options
-#pragma GCC target("avx512f", , "avx512bw", "avx512vl", "avx512bf16")
+#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512bf16")
 template <bool BF16>
 static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int dt_size, double p, char* mask_ptr) {
   int i = 0;
