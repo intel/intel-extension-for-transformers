@@ -362,6 +362,7 @@ def load_model(
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
         or re.search("Mistral", model_name, re.IGNORECASE)
@@ -990,4 +991,12 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "### Assistant" in output:
+        return output.split("### Assistant:")[1].strip()
+    if "\nassistant\n" in output:
+        return output.split("\nassistant\n")[1].strip()
+    if "[/INST]" in output:
+        return output.split("[/INST]")[1].strip()
+    if "答：" in output:
+        return output.split("答：")[1].strip()
     return output

@@ -51,6 +51,7 @@ class FinetuneRequest(RequestBaseModel):
 
 class AskDocRequest(RequestBaseModel):
     query: str
+    translated_query: str
     domain: str
     blob: Optional[str]
     filename: Optional[str]
@@ -59,7 +60,6 @@ class AskDocRequest(RequestBaseModel):
     params: Optional[dict] = None
     debug: Optional[bool] = False
     stream: bool = True
-    translated_query: Optional[str]
 
 
 class FeedbackRequest(RequestBaseModel):

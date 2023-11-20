@@ -120,12 +120,13 @@ class BaseModel(ABC):
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"])
 
-    def predict_stream(self, query, config=None):
+    def predict_stream(self, query, origin_query="", config=None):
         """
         Predict using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -167,8 +168,11 @@ class BaseModel(ABC):
                                 return plugin_instance.response_template, link
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
-                        if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query.", link
+                        if plugin_name == "safety_checker":
+                            if response:
+                                return "Your query contains sensitive words, please try another query.", link
+                            elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
+                                return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
@@ -194,12 +198,13 @@ class BaseModel(ABC):
 
         return response, link
 
-    def predict(self, query, config=None):
+    def predict(self, query, origin_query="", config=None):
         """
         Predict using a non-streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -242,7 +247,10 @@ class BaseModel(ABC):
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query."
+                            if response:
+                                return "Your query contains sensitive words, please try another query.", link
+                            elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
+                                return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
@@ -267,25 +275,27 @@ class BaseModel(ABC):
 
         return response
 
-    def chat_stream(self, query, config=None):
+    def chat_stream(self, query, origin_query="", config=None):
         """
         Chat using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
-        return self.predict_stream(query=query, config=config)
+        return self.predict_stream(query=query, origin_query=origin_query, config=config)
 
-    def chat(self, query, config=None):
+    def chat(self, query, origin_query="", config=None):
         """
         Chat using a non-streaming approach.
 
         Args:
             query: The input query for conversation.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for conversation.
         """
-        return self.predict(query=query, config=config)
+        return self.predict(query=query, origin_query=origin_query, config=config)
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """

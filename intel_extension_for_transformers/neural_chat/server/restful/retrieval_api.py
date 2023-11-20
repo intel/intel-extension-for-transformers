@@ -112,18 +112,18 @@ async def retrieval_chat(request: AskDocRequest):
         logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
 
     chatbot = router.get_chatbot()
-    
-    translated_query = request.translated_query
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
-    logger.info(f"[askdoc - chat] translated query '{translated_query}'")
+    logger.info(f"[askdoc - chat] translated query '{request.translated_query}'")
     config = GenerationConfig()
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
         if attr == "stream" or attr == "translated_query":
             continue
         setattr(config, attr, value)
-    generator, link = chatbot.predict_stream(query=request.query, config=config)
+    generator, link = chatbot.predict_stream(query=request.translated_query,
+                                             origin_query=request.query,
+                                             config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
