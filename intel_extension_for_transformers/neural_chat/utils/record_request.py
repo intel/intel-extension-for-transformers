@@ -41,8 +41,7 @@ def record_request(request_url: str, request_body: Dict, user_id: str):
     try:
         with mysqldb.transaction():
             mysqldb.insert(sql, None)
-    except:
-        raise Exception("""Exception occurred when inserting data into MySQL, \
-                        please check the db session and your syntax.""")
+    except Exception as e:
+        raise Exception(f"[record request] Exception occurred: {e}")
     mysqldb._close()
         
