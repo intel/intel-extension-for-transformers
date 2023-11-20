@@ -85,7 +85,7 @@ class Crawler:
                 url = 'http://' + url
             print(f'start fetch {url}...')
             try:
-                response = requests.get(url, headers=headers, verify=False)
+                response = requests.get(url, headers=headers)
                 if response.status_code != 200:
                     print(f'fail to fetch {url}, respose status code: {response.status_code}')
                 else:
@@ -139,7 +139,7 @@ class Crawler:
     def download(self, url, file_name):
         print(f'download {url} into {file_name}...')
         try:
-            r = requests.get(url, stream=True, headers=self.headers, verify=False)
+            r = requests.get(url, stream=True, headers=self.headers)
             f = open(file_name, "wb")
             for chunk in r.iter_content(chunk_size=512):
                 if chunk:
