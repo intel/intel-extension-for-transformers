@@ -136,6 +136,7 @@ async def retrieval_chat(request: AskDocRequest):
                     "text": output,
                     "error_code": 0,
                 }
+                flag = False
                 if '<' in output and '>' in output:
                     output = output.replace('<', '').replace('>', '').replace(' ', '')
                     if output.endswith('\n'):
