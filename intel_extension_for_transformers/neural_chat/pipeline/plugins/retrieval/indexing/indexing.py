@@ -16,7 +16,7 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-import os
+import os, re
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
