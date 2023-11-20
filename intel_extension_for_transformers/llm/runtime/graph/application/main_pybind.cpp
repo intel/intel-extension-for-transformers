@@ -212,31 +212,36 @@ void Model::reinit() {
 }
 
 bool Model::check_input_and_count_padding(const std::vector<std::vector<model_token>>& input_ids) {
-  if (input_ids.empty()) return false;
-  if (input_ids.size() == 1) {
+  if (input_ids.empty()) {  // next token generation (internal)
+    if (curr_input_ids.empty()) {
+      fprintf(stderr, "%s: error: no input\n", __func__);
+      return false;
+    }
+    return true;
+  } else if (input_ids.size() == 1) {
     padding_count = {0};
     return true;
+  } else {  // multi-batch inputs (first token)
+    MODEL_ASSERT(input_ids.size() == ctx->batch_size);
+    static std::set<model_archs> batched_model_archs = {MODEL_GPTJ, MODEL_GPTNEOX, MODEL_CHATGLM};
+    if (batched_model_archs.count(params.model_arch) == 0) {
+      fprintf(stderr, "\nERROR: Only gpt-j, gpt-neox, chatglm support multi-batch generation!\n");
+      return false;
+    }
+    if (ctx->vocab.pad_token_id == -1) {
+      fprintf(stderr, "\nERROR: please set pad_token for static multi-batch generation (tokenizer.pad_token_id)!\n");
+      return false;
+    }
+    if (!padding_count.empty()) padding_count.clear();
+    for (int bs = 0; bs < input_ids.size(); ++bs) {
+      model_vocab::id pad_token_id = ctx->vocab.pad_token_id;
+      auto iter = std::find_if(input_ids[bs].begin(), input_ids[bs].end(),
+                               [&pad_token_id](model_token t) { return (t != pad_token_id); });
+      if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
+      padding_count.push_back(std::distance(input_ids[bs].begin(), iter));
+    }
+    return true;
   }
-  // multi-batch inputs
-  MODEL_ASSERT(input_ids.size() == ctx->batch_size);
-  static std::set<model_archs> batched_model_archs = {MODEL_GPTJ, MODEL_GPTNEOX, MODEL_CHATGLM};
-  if (batched_model_archs.count(params.model_arch) == 0) {
-    fprintf(stderr, "\nERROR: Only gpt-j, gpt-neox, chatglm support multi-batch generation!\n");
-    return false;
-  }
-  if (ctx->vocab.pad_token_id == -1) {
-    fprintf(stderr, "\nERROR: please set pad_token for static multi-batch generation (tokenizer.pad_token_id)!\n");
-    return false;
-  }
-  if (!padding_count.empty()) padding_count.clear();
-  for (int bs = 0; bs < input_ids.size(); ++bs) {
-    model_vocab::id pad_token_id = ctx->vocab.pad_token_id;
-    auto iter = std::find_if(input_ids[bs].begin(), input_ids[bs].end(),
-                             [&pad_token_id](model_token t) { return (t != pad_token_id); });
-    if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
-    padding_count.push_back(std::distance(input_ids[bs].begin(), iter));
-  }
-  return true;
 }
 
 std::vector<std::vector<model_token>> Model::beam_generate(const std::vector<std::vector<model_token>>& input_ids) {
@@ -262,7 +267,7 @@ const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_t
 
   static const std::vector<model_token> empty_id{};
   std::vector<model_input> inputs;
-  for (int bs = 0; bs < input_ids.size(); ++bs) {
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
     const auto& input_id_cb = input_ids.empty() ? empty_id : input_ids[bs];
     if (input_id_cb.empty()) {  // use internel input id
       if (curr_input_ids[bs].empty()) {
@@ -318,7 +323,6 @@ const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_t
   n_past += curr_input_ids[0].size();
   n_total += curr_input_ids[0].size();
 
-  curr_input_ids.clear();  // add new tok to curr_input_ids if necessary after post processing
   return ctx->logits;
 }
 
@@ -330,6 +334,7 @@ std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vec
   if (logits.empty()) return {};
 
   std::vector<model_token> next_token_ids = post_process(logits.data());
+  MODEL_ASSERT(next_token_ids.size() == ctx->batch_size);
   std::vector<std::vector<model_token>> ret_next_tokens;
   for (int bs = 0; bs < next_token_ids.size(); ++bs) {
     // padding eos seq for continuous batched kv cache
@@ -679,7 +684,7 @@ PYBIND11_MODULE(qwen_cpp, m)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("evaluate", &Model::evaluate, "Evaluate token with input ids and output logits",
            py::arg("input_ids") = std::vector<std::vector<model_token>>{})
-        // deprecated API
+      // deprecated API
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
