@@ -2,9 +2,7 @@ transformers>=4.32.0
 fschat
 num2words
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate

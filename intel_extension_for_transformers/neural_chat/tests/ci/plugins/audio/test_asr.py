@@ -38,10 +38,12 @@ class TestASR(unittest.TestCase):
         else:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        self.asr_multiligual = AudioSpeechRecognition("openai/whisper-small", language="multilingual", device=self.device)
         if self.device == "cpu" and self.is_ipex_available:
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
         else:
             self.asr_bf16 = None
+
 
     def test_audio2text(self):
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
@@ -60,6 +62,14 @@ class TestASR(unittest.TestCase):
         else:
             text = self.asr_bf16.audio2text("../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
+
+    def test_audio2text_chinese(self):
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample_cn.wav"
+        if os.path.exists(audio_path):
+            text = self.asr_multiligual.audio2text(audio_path)
+        else:
+            text = self.asr_multiligual.audio2text("../assets/audio/sample_cn.wav")
+        self.assertEqual(text.lower(), "欢迎使用".lower())
 
 if __name__ == "__main__":
     unittest.main()
