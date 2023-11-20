@@ -1183,12 +1183,6 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 
       const size_t bpe = ne_type_sizef(ne_type(ttype));
 
-      if ((nelements * bpe) / ne_blck_size(tensor->type) != ne_nbytes(tensor)) {
-        fprintf(stderr, "%s: tensor '%s' has wrong size in model file: got %zu, expected %zu\n", __func__, name.data(),
-                ne_nbytes(tensor), nelements * bpe);
-        return false;
-      }
-
       loader->read(loader->context, tensor->data, ne_nbytes(tensor));
 
       // printf("%48s - [%5d, %5d, %5d], type = %6s, %6.2f MB\n", name.data(), ne[0], ne[1], ne[2],
