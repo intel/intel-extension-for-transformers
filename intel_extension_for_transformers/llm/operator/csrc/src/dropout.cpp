@@ -21,7 +21,11 @@
 #include "jblas/kernel_avx2.h"
 
 #pragma GCC push_options
-#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512bf16")
+#pragma GCC target("avx512f", "avx512bw", "avx512vl")
+#if CompileBF16()
+#pragma GCC target("avx512bf16")
+#endif
+
 template <bool BF16>
 static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int dt_size, double p, char* mask_ptr) {
   int i = 0;
@@ -42,8 +46,14 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       auto ans = reinterpret_cast<__m512>(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
-      auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
-      auto bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
+      __m256i bf16_ans, bf16_mul_scale;
+#if CompileBF16()
+      bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+      bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
+#else
+      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_mul_scale = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
+#endif
       _mm256_storeu_epi16(data + i * dt_size, bf16_ans);
       _mm256_storeu_epi16(mask_ptr + i * dt_size, bf16_mul_scale);
     }
@@ -65,8 +75,14 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       auto ans = reinterpret_cast<__m512>(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
-      auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
-      auto bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
+      __m256i bf16_ans, bf16_mul_scale;
+#if CompileBF16()
+      bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+      bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
+#else
+      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_mul_scale = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
+#endif
       _mm256_mask_storeu_epi16(data + i * dt_size, ls_mask, bf16_ans);
       _mm256_mask_storeu_epi16(mask_ptr + i * dt_size, ls_mask, bf16_mul_scale);
     }
@@ -88,7 +104,12 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       auto zmm_mask = reinterpret_cast<__m512>(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
-      auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+      __m256i bf16_ans;
+#if CompileBF16()
+      bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+#else
+      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+#endif
       _mm256_storeu_epi16(grad + i * dt_size, bf16_ans);
     }
   }
@@ -106,7 +127,12 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       auto zmm_mask = reinterpret_cast<__m512>(_mm512_bslli_epi128(
           _mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
-      auto bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+      __m256i bf16_ans;
+#if CompileBF16()
+      bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
+#else
+      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+#endif
       _mm256_mask_storeu_epi16(grad + i * dt_size, ls_mask, bf16_ans);
     }
   }
