@@ -18,6 +18,5 @@ cid=$(docker ps -q --filter "name=$cont_name")
 if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
 
 # run checks
-script_dir=$(dirname "$0")
-docker run --rm --runtime=habana -v $script_dir:/root/chatbot --name="$cont_name" --hostname="chatbot-hpu-check-container" "$image_name" bash -c "python /root/chatbot/to_hpu.py"
+docker run --rm --runtime=habana --name="$cont_name" --hostname="chatbot-hpu-check-container" "$image_name" bash -c "python /intel-extension-for-transformers/.github/workflows/script/chatbot/hpu_check/to_hpu.py"
 

@@ -365,6 +365,7 @@ def load_model(
         or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
+        or re.search("codellama", model_name, re.IGNORECASE)
         or re.search("mistral", model_name, re.IGNORECASE)
     ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -377,6 +378,7 @@ def load_model(
             )
     elif (
             (re.search("starcoder", model_name, re.IGNORECASE)
+             or re.search("codellama", model_name, re.IGNORECASE)
             ) and ipex_int8
         ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -389,7 +391,7 @@ def load_model(
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports "
-            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL now."
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):

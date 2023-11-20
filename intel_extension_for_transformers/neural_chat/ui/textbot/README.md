@@ -17,7 +17,7 @@ We recommend using Gradio as the Space SDK, keeping the default values for the o
 For detailed information about the configuration settings, please refer to the [Hugging Face Spaces Config Reference](https://huggingface.co/docs/hub/spaces-config-reference).
 
 ## 🚀 Setup application
-We strongly recommend utilizing the provided textbot frontend code as it represents the reference implementation already deployed on Hugging Face Space. To establish your application, simply copy the code files from this directory and adjust their configurations as necessary. Alternatively, you have the option to clone the existing space from [https://huggingface.co/spaces/Intel/NeuralChat-GNR-1](https://huggingface.co/spaces/Intel/NeuralChat-GNR-1).
+We strongly recommend utilizing the provided textbot frontend code as it represents the reference implementation already deployed on Hugging Face Space. To establish your application, simply copy the code files from this directory and adjust their configurations as necessary. Alternatively, you have the option to clone the existing space from [NeuralChat-ICX-INT4](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4).
 
 ![Clone Space](https://i.imgur.com/76N8m5B.png)
 
