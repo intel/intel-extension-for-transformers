@@ -18,7 +18,7 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache import ChatCache
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
-import os
+import os, shutil
 
 class TestChatCache(unittest.TestCase):
     def setUp(self):
@@ -36,18 +36,17 @@ class TestChatCache(unittest.TestCase):
         return super().tearDown()
     
     def test_chat_cache(self):
-        cache_plugin = ChatCache(embedding_model_dir="/tf_dataset2/models/nlp_toolkit/instructor-large")
+        cache_plugin = ChatCache(embedding_model_dir="hkunlp/instructor-large")
         cache_plugin.init_similar_cache_from_config()
 
-        prompt = "Tell me about Intel Xeon Scable Processors."
+        prompt = "Tell me about Intel Xeon Scalable Processors."
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         response = chatbot.predict(prompt)
         cache_plugin.put(prompt, response)
 
         answer = cache_plugin.get(prompt)
-        self.assertIn('Tell me about Intel Xeon Scable Processors.', str(answer))
+        self.assertIn('Intel Xeon Scalable', str(answer['choices'][0]['text']))
 
-        
 if __name__ == "__main__":
     unittest.main()
