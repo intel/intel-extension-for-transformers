@@ -37,7 +37,6 @@ other	New Tang Dynasty
 other	lascivious
 other	stupor
 other	Ecstasy
-other	bug
 other	Mark Six Lottery
 other	Buy and sell guns
 other	triazolam
@@ -80,9 +79,7 @@ other	Passionate little movie
 other	porn movies
 other	swan journey
 other	Pangu Band
-other	college riots
 other	University group incident
-other	university riots
 other	college riots
 other	aphrodisiac
 other	Shoulder-slapping magic medicine
@@ -121,7 +118,6 @@ other	Cunning Feng Shui Master
 other	Li Ying Scorpion Heart
 other	Qin Qing's happy life
 other	Dragon Girl of the Four Seas
-other	Escape
 other	sexual enlightenment
 other	The Legend of Modern Yandi
 other	Starlight accompanies me
@@ -230,7 +226,6 @@ other	June 4 coup
 other	Battle of June Fourth
 other	27 Army Commander smashed the bathing center
 other	Chinese Communist Cult
-other	truth commission
 other	WOIPFG
 other	CCP atrocities
 other	Dafa is spread widely
@@ -269,7 +264,6 @@ other	Ganjiang College riot
 other	Quit the Party nationwide
 other	Hunger strike to resist violence
 other	Defending rights and resisting violence
-other	living organs
 other	Tyranny of the Chinese Communist Party
 other	organ transplant
 other	Chinese Communist authorities
@@ -374,7 +368,6 @@ other	Spray drug
 other	Jin Bofan
 other	Cui Yingjie
 other	gunpowder making
-other	Jiang
 other	16th representative
 other	Yanshou Police
 other	The happier you are, the more depraved you become
@@ -1030,7 +1023,6 @@ other	Jiang Zehui
 other	Jiang thieves
 other	Jiang thieves
 other	Jiang Zhemin
-other	Jiangzhu
 other	Chairman Jiang
 other	Jiang Chunyun
 other	General and people
@@ -1339,15 +1331,12 @@ other	Liberal Democratic Party
 other	liberal democracy forum
 other	smuggling
 other	Yin hole
-other	young girl
 other	public opinion
-other	wheel
 other	pro-Japanese
 other	traitor
 other	regime
 other	political opposition
 other	political
-other	China
 other	Guidance Jiangshan Forum
 other	Sino-Russian border
 other	Zhonggong
@@ -1423,7 +1412,6 @@ other	Mongolian independence
 other	your dad
 other	big b
 other	Sichuan alone
-other	Awesome
 other	Taiwan independence
 other	sexual intercourse
 other	sperm
@@ -1437,7 +1425,6 @@ other	Damn you
 other	Xinjiang independence
 other	Fuck your mother
 other	damn it
-other	My day
 other	fuck you
 other	Sample B
 other	Japan you
@@ -1458,21 +1445,14 @@ other	Licking tits
 other	Adult library
 other	Pornographic pictures
 other	sexual intercourse
-other	Nurse
-other	couple
-other	bleed
 other	pussy
-other	young woman
 other	Beijing authorities
-other	Beijing Spring
 other	North American Freedom Forum
 other	Boxun
 other	Cai Chongguo
 other	Cheng Kai
 other	The Epoch Times News Network
-other	Real people and real stories
 other	Discussion on southeast, northwest and northwest
-other	block
 other	He Yong
 other	Jiangzhu’s daughter-in-law
 other	Sauce pig daughter-in-law
@@ -1536,9 +1516,6 @@ other	poppy shell
 other	poppy seed
 other	Mark 6 Lottery
 other	baccarat
-other	change cards
-other	Change the card absolutely
-other	jackpot
 other	Lottery
 other	Lottery number selection machine
 other	lottery predictions
@@ -1551,20 +1528,13 @@ other	Dealing cards absolutely
 other	Sense of Poker
 other	Six HE colors
 other	cash betting
-other	Apply for undergraduate degree
 other	Handle various
 other	Handle bills
-other	Apply for diploma
 other	deal with truth
-other	Apply for documents
-other	Apply for certificate
 other	Qualification
 other	Get a diploma
 other	Be startled
-other	Apply for certificate
 other	half bayonet
-other	Graduation
-other	Apply for certificate
 other	Help people get pregnant
 other	Take the exam on your behalf
 other	Debt collection agency
@@ -1579,12 +1549,8 @@ other	Kao Alliance
 other	Pre-exam answers
 other	Pay before exam
 other	Pre-exam secret papers
-other	Pre-exam prediction
-other	exam, answer
 other	exam, cheating device
-other	Passed the exam
 other	Examination guarantee
-other	exam answers
 other	Examination body
 other	Exam Alliance
 other	exam gun
@@ -1596,26 +1562,19 @@ other	football betting
 other	underground banks
 other	perspective mirror
 other	perspective flutter
-other	Perspective
 other	see through eyes
 other	see-through glasses
-other	X-ray medicine
 other	fluoroscopy
 other	mafia
-other	black car
 other	China Unicom VIP Card
 other	Lianzong
 other	This leaflet from the Federation General Assembly
 other	Voice of the Federation leaflet
 other	high interest loan
 other	Disciples of high-ranking cadres
-other	Congratulations on your number
-other	Congratulations on your number
-other	follower
 other	Tracker
 other	jammer
 other	hole camera
-other	Predict the answer
 other	bow list
 other	Huo Zha
 other	wooden warehouse
@@ -1624,7 +1583,6 @@ other	nuclear egg
 other	step gun
 other	fried
 other	Explode
-other	baozha
 other	zha medicine
 other	bomb
 other	Fried Dan
@@ -1692,15 +1650,7 @@ other	make a comment
 other	Fa Lun Gong
 other	Fa Lungong
 other	Send forth righteous thoughts
-other	hair
 other	Daze
-other	glance
-other	penalty swing
-other	Punishment
-other	punishment
-other	punished
-other	Penalty
-other	Penalty
 other	raft swing
 other	raft wheel
 other	Valen
@@ -1708,26 +1658,17 @@ other	Vallon
 other	Raft
 other	Folun
 other	raft theory
-other	Raft
 other	cut down
 other	Cutting wheel
 other	Valen
-other	Valen
 other	Fallen
 other	criticism
-other	cut off
 other	Lack of strength
 other	Falun
-other	Fulun
-other	Fulun
 other	exhausted
-other	Lun
 other	Lack of discussion
 other	tired
 other	valve swing
-other	Valen
-other	Valun
-other	Valve
 other	Valen
 other	valve theory
 other	Valve
@@ -1743,8 +1684,6 @@ other	Falun Gong
 other	Falun
 other	Falun Dafa
 other	Falun Dharma
-other	Falun Gong
-other	Fallon
 other	Fallon
 other	Falun
 other	Faron
@@ -1766,11 +1705,9 @@ other	Falan
 other	Faren
 other	Five sets of exercises
 other	荭志
-other	Hong Zhi
 other	Go away
 other	Go to Chelun Gongli
 other	Zhuan Falun
-other	weight
 other	weight wheel
 other	Valencia
 other	Balun
@@ -1780,16 +1717,11 @@ other	Truthfulness, Compassion, Forbearance
 other	Shinrikyo
 other	truth, goodness and beauty
 other	Truthfulness-Compassion-Forbearance
-other	weight theory
-other	weight
-other	Hongzhi
 other	Qi people
 other	Failon
 other	enamel
 other	琐囵
-other	falun
 other	Falundafa
-other	wheel
 other	Flg
 other	underground church
 other	Do the exercises
@@ -1802,7 +1734,6 @@ other	mormonism
 other	Sanshui Dharma Wheel
 other	Chechnya
 other	Dalai Lama
-other	Kung Fu
 other	Lecture
 other	Fachalun
 other	Go to Chelun three times
@@ -1812,7 +1743,6 @@ other	Faxgong
 other	Fa Gong
 other	Dharma0gong
 other	Dharma wheel and one gong
-other	wheel power
 other	Chelun Gongli
 other	6-4tianwang
 other	89-64cdjp
@@ -1829,7 +1759,6 @@ other	Crestbone
 other	dajiyuan
 other	dfdz
 other	DICK
-other	falun
 other	falundafa
 other	Feelmistone
 other	freechina
@@ -3264,7 +3193,6 @@ other	朱毛
 other	朱溶剂
 other	猪聋畸
 other	猪毛
-other	猪毛1
 other	天安门录影带
 other	天安门事件
 other	天安门屠杀
