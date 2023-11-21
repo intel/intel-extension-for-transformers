@@ -7,9 +7,7 @@ intel_extension_for_pytorch
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -47,3 +45,6 @@ spacy
 neural-compressor==2.3.1
 pymysql
 einops
+zhconv
+urllib3
+langid

@@ -35,7 +35,8 @@ NO_DEFAULT_PATH)
 
 add_subdirectory(dispatcher)
 
-file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
+file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 # Define our library target
 add_library(qbits SHARED ${qbits_src})
 # Enable C++14

@@ -65,6 +65,24 @@ class TestFinetuning(unittest.TestCase):
         )
         finetune_model(finetune_cfg)
 
+    def test_finetune_clm_qlora(self):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = TrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', qlora=True)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        finetune_model(finetune_cfg)
+
     def test_finetune_seq2seq(self):
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)

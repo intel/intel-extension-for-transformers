@@ -145,7 +145,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name:
+              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -220,7 +220,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name:
+               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -315,15 +315,17 @@ class BaseModel(ABC):
         if not task:
             self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
         else:
+            clear_after_gen = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
                 name = "neural-chat-7b-v2"
+                clear_after_gen = False
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name)
+            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
 
     def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
         self.get_conv_template(model_path, task)

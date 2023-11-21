@@ -4,9 +4,7 @@ fschat
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -41,3 +39,6 @@ torchaudio==2.1.0
 spacy
 neural-compressor==2.3.1
 einops
+zhconv
+urllib3
+langid
