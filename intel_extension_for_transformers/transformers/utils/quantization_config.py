@@ -133,8 +133,8 @@ class WeightOnlyQuantConfig:
         if self.scale_dtype not in ["fp32", "fp16"]:
             raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
 
-        if self.group_size not in [32, 128]:
-            raise ValueError("group_size must be an integer in [32, 128]")
+        if self.group_size not in [-1, 32, 128]:
+            raise ValueError("group_size must be an integer in [-1, 32, 128]")
 
         if self.scheme not in ["sym", "asym"]:
             raise ValueError("scheme must be 'sym', 'asym'.")
