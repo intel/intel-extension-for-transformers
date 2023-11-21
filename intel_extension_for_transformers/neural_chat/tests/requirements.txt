@@ -1,9 +1,11 @@
 transformers>=4.32.0
 peft
 fschat
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
 torch==2.1.0
 torchaudio==2.1.0
-torchvision==0.16.0
+torchvision==0.16.0+cpu
 intel_extension_for_pytorch
 num2words
 speechbrain
