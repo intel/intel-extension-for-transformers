@@ -49,6 +49,41 @@ def get_current_beijing_time():
     return beijing_time
 
 
+async def create_kb(path_prefix, user_id, kb_id, filename, file):
+    # create new upload path dir
+    if os.path.exists(path_prefix):
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+    # user already created knowledge base
+    else:
+        os.system(f"mkdir {path_prefix}")
+        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+    
+    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
+    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
+    os.system(f"mkdir {user_upload_dir}")
+    os.system(f"mkdir {user_persist_dir}")
+    cur_time = get_current_beijing_time()
+    print(f"<create> upload path: {user_upload_dir}")
+    
+    # save file to local path
+    save_file_name = user_upload_dir + '/' + cur_time + '-' + filename
+    with open(save_file_name, 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    print(f"<create> file saved to local path: {save_file_name}")
+
+    try:
+        # get retrieval instance and reload db with new knowledge base
+        print("<create> starting to create local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.create(input_path=user_upload_dir, persist_dir=user_persist_dir)
+        print(f"<create> kb created successfully")
+    except Exception as e:
+        logger.info(f"<create> create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    return {"knowledge_base_id": kb_id}
+
+
 class RetrievalAPIRouter(APIRouter):
 
     def __init__(self) -> None:
@@ -79,28 +114,63 @@ async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
     link_list = params['link_list']
-    knowledge_base_id = params['knowledge_base_id']
 
     user_id = request.client.host
-    logger.info(f'[askdoc - create] user id is: {user_id}')
+    logger.info(f'[askdoc - upload_link] user id is: {user_id}')
     res = check_user_ip(user_id)
-    logger.info("[askdoc - create] "+str(res))
+    logger.info("[askdoc - upload_link] "+str(res))
 
-    persist_path = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id + '/persist_dir'
-    if not os.path.exists(persist_path):
-        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
-            Please check kb_id and save path again."
+    # append link into existed kb
+    if 'knowledge_base_id' in params.keys():
+        print(f"[askdoc - upload_link] append")
+        knowledge_base_id = params['knowledge_base_id']
+        persist_path = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id + '/persist_dir'
+        if not os.path.exists(persist_path):
+            return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+                Please check kb_id and save path again."
 
-    try:
-        print("[askdoc - upload_link] starting to append local db...")
-        instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=link_list, persist_path=persist_path)
-        print(f"[askdoc - upload_link] kb appended successfully")
-    except Exception as e:
-        logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
-        return Response(content="Error occurred while uploading links.", status_code=500)
-    return {"knowledge_base_id": "local_kb_id"}
-
+        try:
+            print("[askdoc - upload_link] starting to append local db...")
+            instance = plugins['retrieval']["instance"]
+            instance.append_localdb(append_path=link_list, persist_path=persist_path)
+            print(f"[askdoc - upload_link] kb appended successfully")
+        except Exception as e:
+            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            return Response(content="Error occurred while uploading links.", status_code=500)
+        return {"Succeed"}
+    
+    # create new kb with link
+    else:
+        print(f"[askdoc - upload_link] create")
+        import uuid
+        kb_id = f"kb_{str(uuid.uuid1())[:8]}"
+        path_prefix = RETRIEVAL_FILE_PATH
+        
+        # create new upload path dir
+        if os.path.exists(path_prefix):
+            os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+        # user already created knowledge base
+        else:
+            os.system(f"mkdir {path_prefix}")
+            os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+        
+        user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
+        user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
+        os.system(f"mkdir {user_upload_dir}")
+        os.system(f"mkdir {user_persist_dir}")
+        print(f"[askdoc - upload_link] upload path: {user_upload_dir}")
+        
+        try:
+            # get retrieval instance and reload db with new knowledge base
+            print("[askdoc - upload_link] starting to create local db...")
+            instance = plugins['retrieval']["instance"]
+            instance.create(input_path=link_list, persist_dir=user_persist_dir)
+            print(f"[askdoc - upload_link] kb created successfully")
+        except Exception as e:
+            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            return "Error occurred while uploading files."
+        return {"knowledge_base_id": kb_id}
+        
 
 @router.post("/v1/aiphotos/askdoc/create")
 async def retrieval_create(request: Request,
