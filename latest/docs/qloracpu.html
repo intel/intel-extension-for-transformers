@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; Intel® Extension for Transformers 0.1.dev1+gd2bd4d9 documentation</title>
+  <title>QLoRA on CPU &mdash; Intel® Extension for Transformers 0.1.dev1+gadb109b documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -76,7 +76,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="breadcrumb-item active">QLoRA on CPU</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/docs/qloracpu.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -86,7 +86,71 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <p>TBD</p>
+  <section id="qlora-on-cpu">
+<h1>QLoRA on CPU<a class="headerlink" href="#qlora-on-cpu" title="Link to this heading"></a></h1>
+<ol>
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p>
+<p>2.1. <a class="reference external" href="#python-api">Python API</a></p>
+<p>2.2. <a class="reference external" href="#neural-chat-example">Neural Chat Example</a></p>
+</li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://arxiv.org/abs/2305.14314">QLoRA</a> is an efficient finetuning approach that reduces memory usage of Large Language Models (LLMs) finetuning, it backpropagates gradients through a frozen, quantized LLMs into Low Rank Adapters~(LoRA). Currently it only supports finetuning on CUDA devices, we have developed necessary API to support QLoRA on CPU device, where 4-bit NormalFloat (NF4), Float4 (FP4), INT4 and INT8 are supported data type for LLMs quantization.</p>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.modeling</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="s1">&#39;decapoda-research/llama-7b-hf&#39;</span><span class="p">,</span>
+    <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
+    <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">peft</span> <span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">get_peft_model</span><span class="p">,</span> <span class="n">prepare_model_for_kbit_training</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">prepare_model_for_kbit_training</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span> <span class="n">use_gradient_checkpointing</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">gradient_checkpointing_enable</span><span class="p">()</span>
+<span class="n">peft_config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>
+    <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">CAUSAL_LM</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">get_peft_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">peft_config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="neural-chat-example">
+<h3>Neural Chat Example<a class="headerlink" href="#neural-chat-example" title="Link to this heading"></a></h3>
+<p>To use QLoRA on Neural Chat with CPU device, just add <code class="docutils literal notranslate"><span class="pre">--qlora</span></code> argument to the normal <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction">Neural Chat Fine-tuning Example</a>, for example, as below.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_name<span class="w"> </span>/path/to/alpaca_data.json<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./llama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--no_cuda
+<span class="w">        </span>--qlora
+<span class="w">        </span>--max_train_samples<span class="w"> </span><span class="m">500</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
 
 
            </div>
@@ -102,7 +166,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f55ffaa3eb0> 
+   <jinja2.runtime.BlockReference object at 0x7f8ced4e69b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
