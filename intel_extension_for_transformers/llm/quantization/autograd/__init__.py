@@ -16,4 +16,4 @@
 # limitations under the License.
 
 
-from .functions import matmul_4bit
+from .functions import matmul_kbit
