@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The class definition for the retriever. Supporting langchain-based and haystack-based retriever."""
+"""The class definition for the retriever. Supporting langchain-based retriever."""
 
-from .retrieval_bm25 import SparseBM25Retriever
+# from .retrieval_bm25 import SparseBM25Retriever
 from .retrieval_chroma import ChromaRetriever
 
 class Retriever():
@@ -33,8 +33,9 @@ class Retriever():
                                              search_type=search_type,
                                              search_kwargs=search_kwargs)
         else:
-            self.retriever = SparseBM25Retriever(document_store=document_store, top_k=top_k)
-
+            # self.retriever = SparseBM25Retriever(document_store=document_store, top_k=top_k)
+            ### Will be removed in another PR
+            print("This vector database will be removed in another PR.")
     def get_context(self, query):
         context, links = self.retriever.query_the_database(query)
         return context, links

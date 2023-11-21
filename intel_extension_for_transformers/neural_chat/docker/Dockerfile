@@ -30,7 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
 
@@ -39,13 +39,14 @@ ENV LANG C.UTF-8
 
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
-RUN apt-get update \
-    && apt-get install -y build-essential \
-    && apt-get install -y wget numactl git \
-    && apt-get install -y openssh-server \
-    && apt-get install -y libgl1-mesa-glx \
+RUN apt update \
+    && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx libjemalloc2 google-perftools \
+    && apt install -y python${PYTHON_VERSION} python3-pip \
+    && pip install --upgrade pip setuptools wheel \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Download ITREX code
 RUN mkdir -p /intel-extension-for-transformers
@@ -53,28 +54,12 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-# Install miniconda
-ENV CONDA_DIR /opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
-
-# Put conda in path so we can use conda activate
-SHELL ["/bin/bash", "--login", "-c"]
-ENV PATH=$CONDA_DIR/bin:$PATH
-RUN conda init bash && \
-    unset -f conda && \
-    export PATH=$CONDA_DIR/bin/:${PATH} && \
-    conda config --add channels intel && \
-    conda create -yn neuralchat python=${PYTHON_VERSION} && \
-    echo "conda activate neuralchat" >> ~/.bashrc && \
-    source ~/.bashrc
-
-RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
+RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && \
+    pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses -y && \
-    conda install jemalloc gperftools -c conda-forge -y && \
+    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
     pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
@@ -121,13 +106,11 @@ RUN cd /intel-extension-for-transformers && \
 COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard 0fb6bb6b7bbfb06b85a6c10f113b8283aa028b02 && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
-    pip install peft && \
-    pip install einops && \
-    pip install datasets && pip list && \
+    pip install peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.12 origin/1.12.0 && \
@@ -142,7 +125,7 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements_hpu.txt && \
     pip install transformers==4.34.1 && \
-    pip install accelerate==0.23.0 && \
+    pip install accelerate==0.24.0 && \
     pip install pymysql
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
@@ -151,45 +134,34 @@ WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neura
 FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04 as nvgpu
 
 ARG ITREX_VER=main
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
 
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
-RUN apt-get update \
-    && apt-get install -y build-essential \
-    && apt-get install -y wget numactl git \
-    && apt-get install -y openssh-server \
-    && apt-get clean \
+RUN apt update \
+    && apt install -y build-essential \
+    && apt install -y wget numactl git nvidia-cuda* \
+    && apt install -y openssh-server \
+    && apt install -y python${PYTHON_VERSION} python3-pip \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
+WORKDIR /intel-extension-for-transformers
 
-# Install miniconda
-ENV CONDA_DIR /opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
+RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
+RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
+RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && pip install -v .
 
-# Put conda in path so we can use conda activate
-SHELL ["/bin/bash", "--login", "-c"]
-ENV PATH=$CONDA_DIR/bin:$PATH
-RUN conda init bash && \
-    unset -f conda && \
-    export PATH=$CONDA_DIR/bin/:${PATH} && \
-    conda config --add channels intel && \
-    conda create -yn neuralchat python=${PYTHON_VERSION} && \
-    echo "conda activate neuralchat" >> ~/.bashrc && \
-    echo "export PYTHONPATH=/intel-extension-for-transformers" >> ~/.bashrc && \
-    source ~/.bashrc
-
-RUN source activate && conda activate neuralchat && cd /intel-extension-for-transformers && \
-    pip install -r ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt && \
-    pip install -r ./intel_extension_for_transformers/neural_chat/requirements.txt
-
-WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+WORKDIR /intel-extension-for-transformers
 
 CMD ["/usr/sbin/sshd", "-D"]

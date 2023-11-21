@@ -47,3 +47,5 @@ deepface
 exifread
 einops
 cchardet
+urllib3
+langid

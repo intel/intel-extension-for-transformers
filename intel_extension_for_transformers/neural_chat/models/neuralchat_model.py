@@ -51,6 +51,8 @@ class NeuralChatModel(BaseModel):
         """
         if "neural-chat-7b-v2" in model_path.lower():
             return get_conv_template("neural-chat-7b-v2")
+        elif "neural-chat-7b-v3" in model_path.lower():
+            return get_conv_template("neural-chat-7b-v3")
         else:
             return get_conv_template("neural-chat-7b-v1-1")
 

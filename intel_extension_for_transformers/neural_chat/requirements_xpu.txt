@@ -14,7 +14,6 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -35,3 +34,5 @@ transformers_stream_generator==0.0.4
 spacy
 neural-compressor==2.3.1
 einops
+urllib3
+langid
