@@ -125,7 +125,8 @@ if args.benchmark:
     print("---- Prompt size:", input_size)
 
     user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
-
+    import intel_extension_for_pytorch as ipex
+    user_model = ipex.optimize_transformers(user_model, dtype=torch.float16, device="xpu")
     # start
     total_time = 0.0
     num_iter = args.iters

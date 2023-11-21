@@ -59,7 +59,6 @@ if ipex_available and get_gpu_family() == "arc":
     RUNTIME_ONLY = False
     USE_ARC = True
 
-
 if not SKIP_RUNTIME or USE_ARC:
     from cmake import CMAKE_BIN_DIR
     from cpuinfo import get_cpu_info
@@ -149,6 +148,9 @@ class AutoBuild(DpcppBuildExtension):
         if isinstance(ext, CMakeExtension):
             self.build_extension_cmake(ext)
         else:
+            ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)
+            extdir = ext_fullpath.parent.resolve()
+            ext.library_dirs.append(str(extdir))
             super().build_extension(ext)
 
     def build_extension_cmake(self, ext: CMakeExtension) -> None:
@@ -299,7 +301,6 @@ if __name__ == '__main__':
                     name='intel_extension_for_transformers.gbits',
                     sources=['intel_extension_for_transformers/llm/operator/csrc/xpu/gbits.cpp'],
                     extra_compile_args={'cxx':['-std=c++17', '-fPIC']},
-                    library_dirs=["intel_extension_for_transformers"],
                     libraries=["xetla_kernel"],
             ),
         ]
