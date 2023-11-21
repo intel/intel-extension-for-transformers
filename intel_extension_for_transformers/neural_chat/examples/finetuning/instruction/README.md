@@ -100,6 +100,15 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
+### Dataset related arguments
+- **dataset_name**: The name of the dataset to use (via the datasets library).
+- **dataset_config_name**: The configuration name of the dataset to use (via the datasets library).
+- **train_file**: The input training data file (a text file).
+- **validation_file**: An optional input evaluation data file to evaluate the perplexity on (a text file).
+- **max_seq_length**: The maximum total input sequence length after tokenization. Sequences longer than this will be truncated.
+- **validation_split_percentage**: The percentage of the train set used as validation set in case there's no validation split.
+- **dataset_concatenation**: Whether to concatenate the sentence for more efficient training.
+
 # Finetune
 
 We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently.
@@ -548,3 +557,17 @@ Where the `--dataset_concatenation` argument is a way to vastly accelerate the f
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
+
+
+# Evaluation Metrics
+
+- **train loss:** `--do_train` is setted for training, `train loss` will be logged during training.
+
+- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` arguement (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
+
+- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval ture` and `--lm_eval_tasks truthfulqa_mc`
+
+- **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
+
+- **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
+

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - intel_extension_for_transformers/llm/library/kernels/**
+      - intel_extension_for_transformers/llm/library/jblas/**
       - .github/workflows/unit-test-kernel.yml
       - .github/workflows/script/unitTest/**
       - '!intel_extension_for_transformers/llm/library/kernels/docs/**'

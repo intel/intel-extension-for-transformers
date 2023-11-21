@@ -15,5 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import torch
+import inspect
+import time
+from functools import wraps
+torch.ops.load_library("../build/libqbits.so")
 
-from .functions import matmul_kbit
+def capture_args(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        sig = inspect.signature(f)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        arg_strs = []
+        for name, value in bound_args.arguments.items():
+            arg_strs.append(f'{name}={value}')
+        result = ', '.join(arg_strs)
+        print(result)
+        return f(*args, **kwargs)
+    return wrapper
