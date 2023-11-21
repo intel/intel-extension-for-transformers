@@ -98,7 +98,7 @@ done
 }
 
 function main() {
-    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
+    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh ${WORKING_DIR}
     apt-get update
     apt-get install ffmpeg -y
     apt-get install lsof
@@ -114,12 +114,6 @@ function main() {
     pip install --upgrade git+https://github.com/UKPLab/sentence-transformers.git
     pip install -U sentence-transformers
     cd ${WORKING_DIR} || exit 1
-    if [ -f "requirements.txt" ]; then
-        python -m pip install --default-timeout=100 -r requirements.txt
-        pip list
-    else
-        echo "Not found requirements.txt file."
-    fi
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"

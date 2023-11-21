@@ -44,8 +44,6 @@ class TestPipeline(unittest.TestCase):
         self.assertAlmostEqual(outputs[0]['score'], 0.8, None, message, 0.3)
 
 
-@unittest.skipIf(PT_VERSION.release >= Version("1.12.0").release,
-    "Please use PyTroch 1.11 or lower version for executor backend")
 class TestExecutorPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
