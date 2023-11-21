@@ -19,6 +19,12 @@
 #include <assert.h>
 #include <iostream>
 
+inline bool check_amx() { return jblas::utils::parallel::CpuDevice::getInstance()->AMX_BF16(); }
+inline bool check_avx512_vnni() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX512_VNNI(); }
+inline bool check_avx_vnni() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX_VNNI(); };
+inline bool check_avx512f() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX512F(); }
+inline bool check_avx2() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX2(); }
+
 enum QBITS_TASK {
   QBITS_QUANTIZE,
   QBITS_DEQUANTIZE,

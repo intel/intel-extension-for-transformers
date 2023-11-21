@@ -103,7 +103,9 @@ jobs:
           && pip install yacs uvicorn optimum optimum[habana] \
           && pip install sentence_transformers unstructured markdown rouge_score \
           && pip install einops \
-          && pip install --upgrade accelerate"
+          && pip install --upgrade accelerate \
+          && pip install urllib3 \
+          && pip install langid "
 
       - name: Run UT
         run: |

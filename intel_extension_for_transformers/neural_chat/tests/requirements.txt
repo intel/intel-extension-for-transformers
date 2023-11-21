@@ -46,3 +46,6 @@ pymysql
 deepface
 exifread
 protobuf==3.20.2
+einops
+urllib3
+langid
