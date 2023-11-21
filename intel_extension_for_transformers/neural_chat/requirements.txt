@@ -7,9 +7,7 @@ intel_extension_for_pytorch
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -65,5 +63,6 @@ dlib-bin
 av
 safetensors
 ffmpeg-python==0.2.0
+zhconv
 urllib3
 langid

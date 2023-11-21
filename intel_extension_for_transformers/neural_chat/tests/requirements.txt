@@ -8,9 +8,7 @@ intel_extension_for_pytorch
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -41,7 +39,7 @@ tiktoken==0.4.0
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 spacy
 neural-compressor==2.3.1
-onnxruntime==1.15.0
+onnxruntime
 pymysql
 deepface
 exifread

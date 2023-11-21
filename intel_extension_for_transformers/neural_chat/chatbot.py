@@ -90,9 +90,6 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
                     plugins[plugin_name]['class'] = AudioSpeechRecognition
-                elif plugin_name == "asr_chinese":
-                    from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-                    plugins[plugin_name]['class'] = ChineseAudioSpeechRecognition
                 elif plugin_name == "retrieval":
                     from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
                     plugins[plugin_name]['class'] = Agent_QA
