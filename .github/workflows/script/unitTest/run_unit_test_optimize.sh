@@ -21,7 +21,7 @@ function pytest() {
     mkdir -p ${coverage_log_dir}
     pip install --no-cache-dir protobuf==3.20.0
 
-    cd /intel-extension-for-transformers/CI/tests || exit 1
+    cd /intel-extension-for-transformers/tests/CI || exit 1
     JOB_NAME=unit_test
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
     export GLOG_minloglevel=2
