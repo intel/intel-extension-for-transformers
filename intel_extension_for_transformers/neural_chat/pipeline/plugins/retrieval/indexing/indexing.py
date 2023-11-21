@@ -16,12 +16,13 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-import os
+import os, re
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
+from .html_parser import load_html_data
 
 
 class DocumentIndexing:
@@ -74,6 +75,27 @@ class DocumentIndexing:
         else:
             print("This file is ignored. Will support this file format soon.")
         return chuck
+    
+
+    def parse_html(self, input):
+        """
+        Parse the uploaded file.
+        """
+        chucks = []
+        for link in input:
+            if re.match(r'^https?:/{2}\w.+$', link):
+                content = load_html_data(link)
+                if content == None:
+                    continue
+                if self.process:
+                    chuck = get_chuck_data(content, self.max_length, link)
+                else:
+                    chuck = [[content.strip(), link]]
+                chucks += chuck
+            else:
+                print("The given link/str {} cannot be parsed.".format(link))
+
+        return chucks
 
 
     def batch_parse_document(self, input):
@@ -107,6 +129,16 @@ class DocumentIndexing:
             # else:
             #     vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
             #                                           port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
+        return vectordb
+    
+    def reload(self, local_path):
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            # vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                       port=9200, search_fields=["content", "title"])
             vectordb=None
             print("will be removed in another PR")
         return vectordb
