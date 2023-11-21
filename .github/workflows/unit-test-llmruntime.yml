@@ -1,20 +1,13 @@
-name: Optimize Unit Test
+name: LLM Runtime Unit Test
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/transformers/**
-      - requirements.txt
-      - setup.py
-      - intel_extension_for_transformers/utils/**
-      - intel_extension_for_transformers/llm/evaluation/**
-      - intel_extension_for_transformers/llm/quantization/**
       - intel_extension_for_transformers/llm/runtime/graph/**
-      - intel_extension_for_transformers/llm/operator/**
-      - tests/**
-      - .github/workflows/unit-test-optimize.yml
+      - .github/workflows/unit-test-llmruntime.yml
       - .github/workflows/script/unitTest/**
+      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
       - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
 
@@ -33,15 +26,11 @@ env:
 
 jobs:
   unit-test:
-    runs-on: [self-hosted, Linux, X64, itrex-node]
-    strategy:
-      matrix:
-        include:
-          - test_branch: ${{ github.ref }}
-            test_name: "PR-test"
-          - test_branch: "main"
-            test_name: "baseline"
+    runs-on: [self-hosted, linux, X64, llmruntime-node]
     steps:
+      - name: Load environment variables
+        run: cat ~/actions-runner2/.env >> $GITHUB_ENV
+      
       - name: Docker Clean Up
         run: |
           docker ps -a
@@ -60,12 +49,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
-          ref: ${{ matrix.test_branch }}
           fetch-tags: true
 
       - name: Docker Build
         run: |
-          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile --build-arg http_proxy="${{ env.HTTP_PROXY }}" --build-arg https_proxy="${{ env.HTTPS_PROXY }}" -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
 
       - name: Docker Run
         run: |
@@ -74,9 +62,10 @@ jobs:
             docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          -e http_proxy="${{ env.HTTP_PROXY }}" \
+          -e https_proxy="${{ env.HTTPS_PROXY }}" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
-          -v /dataset/tf_dataset2:/tf_dataset2 \
-          -v /dataset/cache/huggingface:/root/.cache/huggingface \
+          -v /tf_dataset2:/tf_dataset2 \
           -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
@@ -89,60 +78,17 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget tensorflow sentencepiece \
-          && pip install --upgrade accelerate"
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
-          && export HF_HOME=/dataset/cache/ \
-          && bash run_unit_test_optimize.sh --test_name=${{ matrix.test_name }}"
-      
-      - name: Collect log
-        if: ${{ !cancelled() }}
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash -c "cd /intel-extension-for-transformers && \
-                   mv /log_dir . "
-      - name: Publish pipeline artifact
-        uses: actions/upload-artifact@v3
-        if: ${{ !cancelled() }}
-        with:
-          name: "UnitTest${{ matrix.test_name }}"
-          path: ${{ github.workspace }}/log_dir
-
-
-  Genreate-Report:
-    runs-on: itrex-node-spell
-    needs: [unit-test]
-    steps:
-      - name: Checkout out Repo
-        uses: actions/checkout@v3
-        
-      - name: Download UT PR Log
-        uses: actions/download-artifact@v3
-        with:
-          path: ${{ github.workspace }}/log_dir
-           
-      - name: Display structure of downloaded files
-        run: cd ${{ github.workspace }}/log_dir && ls -R
-        
-      - name: Calculte coverage
-        run: |
-          cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
-          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
+          && bash run_unit_test_llmruntime.sh"
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
-          name: Optimize Unit Test
-          path: ${{ github.workspace }}/log_dir
-          retention-days: 5
-
-
-      
-
-      
+          name: LLM Runtime Unit Test
+          path: ${{ github.workspace }}/log_dir/unit_test*.*
