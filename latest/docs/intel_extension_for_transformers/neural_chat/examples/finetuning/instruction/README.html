@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g9c6ea17 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+ga6f84df documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -623,6 +623,16 @@ You could also indicate <code class="docutils literal notranslate"><span class="
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</p>
 </section>
 </section>
+<section id="evaluation-metrics">
+<h1>Evaluation Metrics<a class="headerlink" href="#evaluation-metrics" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><strong>train loss:</strong> <code class="docutils literal notranslate"><span class="pre">--do_train</span></code> is setted for training, <code class="docutils literal notranslate"><span class="pre">train</span> <span class="pre">loss</span></code> will be logged during training.</p></li>
+<li><p><strong>eval loss:</strong> set <code class="docutils literal notranslate"><span class="pre">--do_eval</span></code>. If dataset path doesn’t have the <code class="docutils literal notranslate"><span class="pre">validation</span></code> split, the validation dataset will be split from train dataset with the <code class="docutils literal notranslate"><span class="pre">validation_split_percentage</span></code> arguement (default is 0). For example, you can set <code class="docutils literal notranslate"><span class="pre">--validation_split_percentage</span> <span class="pre">5</span></code> to split %5 of train dataset.</p></li>
+<li><p><strong>lm-eval (for finetuning <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">chat</span></code> or <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">completion</span></code>):</strong> set <code class="docutils literal notranslate"><span class="pre">--do_lm_eval</span> <span class="pre">ture</span></code> and <code class="docutils literal notranslate"><span class="pre">--lm_eval_tasks</span> <span class="pre">truthfulqa_mc</span></code></p></li>
+<li><p><strong>rouge related metrics:</strong> the metrics will be calculated when the finetuning task is summarization <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">summarization</span></code></p></li>
+<li><p><strong>human eval (code generation metric):</strong> the metric will be calculated when the finetuning task is code-generation <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">code-generation</span></code></p></li>
+</ul>
+</section>
 
 
            </div>
@@ -638,7 +648,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7eff67868130> 
+   <jinja2.runtime.BlockReference object at 0x7f3f1e65c3a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
