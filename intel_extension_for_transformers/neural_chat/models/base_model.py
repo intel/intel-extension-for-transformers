@@ -146,7 +146,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name:
+              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -225,7 +225,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name:
+               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -249,9 +249,9 @@ class BaseModel(ABC):
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
                             if response:
-                                return "Your query contains sensitive words, please try another query.", link
+                                return "Your query contains sensitive words, please try another query."
                             elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
-                                return "Your query contains sensitive words, please try another query.", link
+                                return "Your query contains sensitive words, please try another query."
                         else:
                             if response != None and response != False:
                                 query = response

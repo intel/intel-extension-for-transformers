@@ -46,18 +46,24 @@ class UnitTest(unittest.TestCase):
             print("Error while executing command:", e)
 
     def tearDown(self) -> None:
+        # kill server process
+        if self.server_process:
+            self.server_process.terminate()
+            self.server_process.wait()
+
+        # delete created resources
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
         request = {
             "query": "oneAPI编译器是什么?",
             "translated": "What is Intel oneAPI Compiler?",
-            "domain": "test",
-            "blob": "",
-            "filename": ""
+            "knowledge_base_id": "default",
+            "stream": False,
+            "max_new_tokens": 256
         }
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
@@ -65,9 +71,9 @@ class UnitTest(unittest.TestCase):
         request = {
             "query": "蔡英文是谁?",
             "translated": "Who is Tsai Ing-wen?",
-            "domain": "test",
-            "blob": "",
-            "filename": ""
+            "knowledge_base_id": "default",
+            "stream": False,
+            "max_new_tokens": 256
         }
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)

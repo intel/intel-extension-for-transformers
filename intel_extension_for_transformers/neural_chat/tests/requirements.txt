@@ -45,3 +45,6 @@ onnxruntime==1.15.0
 pymysql
 deepface
 exifread
+einops
+urllib3
+langid

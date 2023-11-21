@@ -3,6 +3,6 @@ Welcome to Photo AI! This example introduces how to deploy the Text Chatbot syst
 | Section              | Link                      |
 | ---------------------| --------------------------|
 | Backend Setup        | [Backend README](./backend/README.md) |
-| Frontend Setup       | [Frontend README](./frontend/README.md) |
+| Frontend Setup       | [Frontend README](../../../ui/talking_photo/README.md) |
 
 

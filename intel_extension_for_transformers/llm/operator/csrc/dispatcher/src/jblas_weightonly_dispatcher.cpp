@@ -39,16 +39,12 @@
             template <class _T, JBLAS_ISA> class _PrologueB_T, template <JBLAS_ISA> class _Epilogue_T> \
   class Launcher
 
-inline bool check_amx() { return jblas::utils::parallel::CpuDevice::getInstance()->AMX_BF16(); }
-inline bool check_avx512_vnni() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX512_VNNI(); }
-inline bool check_avx_vnni() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX_VNNI(); };
-inline bool check_avx512f() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX512F(); }
-inline bool check_avx2() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX2(); }
 class env_initer {
  public:
   env_initer() {
     if (check_amx()) jblas::utils::request_perm_xtile_data();
     verbose = std::getenv("QBITS_VERBOSE") != nullptr;
+    FLAGS_caffe2_log_level = 0;
   }
   bool verbose;
 };
@@ -68,11 +64,12 @@ concept normal_PrologueA = requires {
 
 template <typename T>
 concept perchannel_Gemmcore = std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI> ||
-    std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8> ||
-    std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI>;
+                              std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8> ||
+                              std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI>;
 
 template <typename T>
-concept int8_cmptype_kblock_Gemmcore = std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK> ||
+concept int8_cmptype_kblock_Gemmcore =
+    std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK> ||
     std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK> ||
     std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_1x48_AVX_VNNI_KBLOCK>;
 
@@ -110,9 +107,9 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
-    std::cout << "QBits quantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+    LOG(INFO) << "QBits quantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
               << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->weight)
-              << " execute time:" << cost_time << "ms" << std::endl;
+              << " execute time:" << cost_time << "ms";
   }
 }
 
@@ -131,9 +128,9 @@ void qbits_dequantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
-    std::cout << "QBits dequantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+    LOG(INFO) << "QBits dequantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
               << " blocksize:" << ctx->blocksize << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output)
-              << " execute time:" << cost_time << "ms" << std::endl;
+              << " execute time:" << cost_time << "ms";
   }
 }
 
@@ -149,11 +146,11 @@ void do_compute(qbits_config_param* p, qbits_runtime_ctx* ctx, const ParamA para
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
-    std::cout << "QBits linear verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
+    LOG(INFO) << "QBits linear verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
               << " weight_type:" << p->weight_type << " compute_type:" << p->compute_type
               << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->activation)
               << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output) << " execute time:" << cost_time
-              << "ms" << std::endl;
+              << "ms";
   }
 }
 
