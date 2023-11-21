@@ -1,1 +1,2 @@
-optimum
+optimum==1.13.2
+optimum-intel==1.11.0
