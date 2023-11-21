@@ -63,3 +63,6 @@ dlib-bin
 av
 safetensors
 ffmpeg-python==0.2.0
+einops
+urllib3
+langid

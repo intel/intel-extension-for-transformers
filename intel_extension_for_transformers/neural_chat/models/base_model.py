@@ -146,7 +146,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name:
+              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -221,7 +221,7 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name:
+               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
