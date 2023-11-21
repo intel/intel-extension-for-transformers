@@ -131,6 +131,14 @@ class DocumentIndexing:
             vectordb=None
             print("will be removed in another PR")
         return vectordb
+
+    def reload(self, local_path):
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            vectordb=None
+            print("will be removed in another PR")
+        return vectordb
             
     def KB_construct(self, input):
         """
