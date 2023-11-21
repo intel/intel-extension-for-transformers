@@ -100,6 +100,15 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
+### Dataset related arguments
+- **dataset_name**: The name of the dataset to use (via the datasets library).
+- **dataset_config_name**: The configuration name of the dataset to use (via the datasets library).
+- **train_file**: The input training data file (a text file).
+- **validation_file**: An optional input evaluation data file to evaluate the perplexity on (a text file).
+- **max_seq_length**: The maximum total input sequence length after tokenization. Sequences longer than this will be truncated.
+- **validation_split_percentage**: The percentage of the train set used as validation set in case there's no validation split.
+- **dataset_concatenation**: Whether to concatenate the sentence for more efficient training.
+
 # Finetune
 
 We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently.
