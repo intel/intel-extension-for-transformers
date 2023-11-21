@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Install System Dependency &mdash; Intel® Extension for Transformers 0.1.dev1+g2ba4fda documentation</title>
+  <title>Install System Dependency &mdash; Intel® Extension for Transformers 0.1.dev1+g62d002a documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -104,45 +104,23 @@ sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </spa
 </div>
 <p>For other operating systems such as CentOS, you will need to make slight adjustments.</p>
 </section>
-<section id="english-automatic-speech-recognition-asr">
-<h1>English Automatic Speech Recognition (ASR)<a class="headerlink" href="#english-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
+<section id="multilingual-automatic-speech-recognition-asr">
+<h1>Multilingual Automatic Speech Recognition (ASR)<a class="headerlink" href="#multilingual-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
 <section id="dependencies-installation">
 <h2>Dependencies Installation<a class="headerlink" href="#dependencies-installation" title="Link to this heading"></a></h2>
-<p>To use the English ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
+<p>To use the ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>datasets<span class="w"> </span>pydub
 </pre></div>
 </div>
 </section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
-<p>The AudioSpeechRecognition class provides functionality for converting English audio to text. Here’s how to use it:</p>
+<p>The AudioSpeechRecognition class provides functionality for converting English/Multiligual audio to text. Here’s how to use it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">AudioSpeechRecognition</span>
-<span class="n">asr</span> <span class="o">=</span> <span class="n">AudioSpeechRecognition</span><span class="p">()</span>
+<span class="c1"># pass the parameter language=&quot;auto&quot; to let the asr model automatically detect language</span>
+<span class="c1"># otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)</span>
+<span class="n">asr</span> <span class="o">=</span> <span class="n">AudioSpeechRecognition</span><span class="p">(</span><span class="s2">&quot;openai/whisper-small&quot;</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 <span class="n">audio_path</span> <span class="o">=</span> <span class="s2">&quot;~/audio.wav&quot;</span>  <span class="c1"># Replace with the path to your English audio file (supports MP3 and WAV)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">asr</span><span class="o">.</span><span class="n">audio2text</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ASR Result:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="chinese-automatic-speech-recognition-asr">
-<h1>Chinese Automatic Speech Recognition (ASR)<a class="headerlink" href="#chinese-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
-<section id="id1">
-<h2>Dependencies Installation<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
-<p>To use the Chinese ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddlepaddle</span><span class="o">==</span><span class="m">2</span>.4.2
-pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddlenlp</span><span class="o">==</span><span class="m">2</span>.5.2
-pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddlespeech</span><span class="o">==</span><span class="m">1</span>.4.1
-pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddle2onnx</span><span class="o">==</span><span class="m">1</span>.0.6
-</pre></div>
-</div>
-</section>
-<section id="id2">
-<h2>Usage<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
-<p>The ChineseAudioSpeechRecognition class provides functionality for converting Chinese audio to text. Here’s how to use it:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">ChineseAudioSpeechRecognition</span>
-<span class="n">asr</span> <span class="o">=</span> <span class="n">ChineseAudioSpeechRecognition</span><span class="p">()</span>
-<span class="n">audio_path</span> <span class="o">=</span> <span class="s2">&quot;~/audio.wav&quot;</span>  <span class="c1"># Replace with the path to your audio file</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">asr</span><span class="o">.</span><span class="n">audio2text</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ASR Result:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
 </pre></div>
@@ -151,15 +129,15 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddl
 </section>
 <section id="english-text-to-speech-tts">
 <h1>English Text-to-Speech (TTS)<a class="headerlink" href="#english-text-to-speech-tts" title="Link to this heading"></a></h1>
-<section id="id3">
-<h2>Dependencies Installation<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="id1">
+<h2>Dependencies Installation<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
 <p>To use the English TTS module, you need to install the required dependencies. Run the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>soundfile<span class="w"> </span>speechbrain
 </pre></div>
 </div>
 </section>
-<section id="id4">
-<h2>Usage<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<section id="id2">
+<h2>Usage<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <p>The TextToSpeech class in your module provides the capability to convert English text to speech. Here’s how to use it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">TextToSpeech</span>
 <span class="n">tts</span> <span class="o">=</span> <span class="n">TextToSpeech</span><span class="p">()</span>
@@ -173,15 +151,15 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddl
 </section>
 <section id="chinese-text-to-speech-tts">
 <h1>Chinese Text-to-Speech (TTS)<a class="headerlink" href="#chinese-text-to-speech-tts" title="Link to this heading"></a></h1>
-<section id="id5">
-<h2>Dependencies Installation<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<section id="id3">
+<h2>Dependencies Installation<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
 <p>To use the Chinese TTS module, you need to install the required dependencies. Run the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>paddlespeech<span class="w"> </span>paddlepaddle
 </pre></div>
 </div>
 </section>
-<section id="id6">
-<h2>Usage<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<section id="id4">
+<h2>Usage<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
 <p>The ChineseTextToSpeech class within your module provides functionality for TTS. Here’s how to use it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">ChineseTextToSpeech</span>
 <span class="c1"># Initialize the TTS module</span>
@@ -216,7 +194,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="nv">paddl
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fba101157b0> 
+   <jinja2.runtime.BlockReference object at 0x7f816b021a50> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
