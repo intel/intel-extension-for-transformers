@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+ga6f84df documentation</title>
+  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+gd2bd4d9 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -101,7 +101,16 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values</span></code></a>(input_bs, model)</p></td>
 <td><p>Generate the dummy past_key_values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_trace" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs_for_trace</span></code></a>(model[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs</span></code></a>(model[, quantization_config, ...])</p></td>
+<td><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values_for_opt_llm</span></code></a>(input_bs, model)</p></td>
+<td><p>Generate the dummy past_key_values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_opt_llm" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_opt_llm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs_for_opt_llm</span></code></a>(model[, ...])</p></td>
+<td><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_chatglm" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_chatglm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs_for_chatglm</span></code></a>(model[, ...])</p></td>
 <td><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p></td>
 </tr>
 </tbody>
@@ -119,8 +128,26 @@
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_trace">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs_for_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dict'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_trace" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dict'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="Link to this definition"></a></dt>
+<dd><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">generate_dummy_past_key_values_for_opt_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_bs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_beams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm" title="Link to this definition"></a></dt>
+<dd><p>Generate the dummy past_key_values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_opt_llm">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs_for_opt_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dict'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_opt_llm" title="Link to this definition"></a></dt>
+<dd><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_chatglm">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs_for_chatglm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dict'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_chatglm" title="Link to this definition"></a></dt>
 <dd><p>Generate the example_input for tracing, support models load from AutoModelForCausalLM.</p>
 </dd></dl>
 
@@ -142,7 +169,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3f1fc5c100> 
+   <jinja2.runtime.BlockReference object at 0x7f5604bf8670> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
