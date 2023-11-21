@@ -67,39 +67,6 @@
   const type prefix##3 = (pointer)->array[3];          \
   NE_UNUSED(prefix##3);
 
-#define NE_ASSERT(x)                                                     \
-  do {                                                                   \
-    if (!(x)) {                                                          \
-      fprintf(stderr, "NE_ASSERT: %s:%d: %s\n", __FILE__, __LINE__, #x); \
-      abort();                                                           \
-    }                                                                    \
-  } while (0)
-
-//
-// logging
-//
-
-#define NE_DEBUG 0
-
-#if (NE_DEBUG >= 1)
-#define NE_PRINT_DEBUG(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG(...)
-#endif
-
-#if (NE_DEBUG >= 5)
-#define NE_PRINT_DEBUG_5(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG_5(...)
-#endif
-
-#if (NE_DEBUG >= 10)
-#define NE_PRINT_DEBUG_10(...) printf(__VA_ARGS__)
-#else
-#define NE_PRINT_DEBUG_10(...)
-#endif
-
-#define NE_PRINT(...) printf(__VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C" {

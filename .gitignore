@@ -1,3 +1,8 @@
+/intel_extension_for_transformers/llm/runtime/graph/*
+!/intel_extension_for_transformers/llm/runtime/graph/*.*
+!/intel_extension_for_transformers/llm/runtime/graph/*/
+### ignore binary files in llm-runtime ###
+
 *.pyc
 .vscode
 .idea
@@ -11,6 +16,7 @@
 *.log
 *.swp
 *.onnx
+*.bin
 tags
 build/
 _build
@@ -32,6 +38,8 @@ CMakeUserPresets.json
 
 /intel_extension_for_transformers/llm/runtime/.vs
 /intel_extension_for_transformers/llm/runtime/out
+/intel_extension_for_transformers/llm/runtime/graph/out
+/intel_extension_for_transformers/llm/runtime/graph/runtime_outs
 /examples/**/*.npy
 /examples/**/*.bin
 /examples/**/*.yaml
