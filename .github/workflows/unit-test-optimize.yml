@@ -89,7 +89,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |

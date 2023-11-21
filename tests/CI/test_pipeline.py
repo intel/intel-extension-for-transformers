@@ -55,8 +55,7 @@ class TestExecutorPipeline(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        from test_benchmark import TestExecutorBenchmark
-        TestExecutorBenchmark.tearDownClass()
+        shutil.rmtree(cls.workspace, ignore_errors=True)
 
     def test_fp32_executor_model(self):
         text_classifier = pipeline(
