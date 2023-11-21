@@ -332,6 +332,15 @@ def load_model(
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
+
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
+        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
+
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
@@ -425,15 +434,6 @@ def load_model(
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
-
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
-        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config, use_llm_runtime)
-
-        MODELS[model_name]["model"] = model
-        MODELS[model_name]["tokenizer"] = tokenizer
-        print("Optimized Model loaded.")
-        return
 
     if device == "hpu":
         if peft_path:
