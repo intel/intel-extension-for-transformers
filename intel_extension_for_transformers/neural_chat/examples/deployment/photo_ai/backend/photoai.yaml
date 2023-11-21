@@ -26,6 +26,12 @@ port: 7000
 model_name_or_path: "/home/tme/Llama-2-7b-chat-hf"
 device: "cpu"
 
+optimization:
+    use_llm_runtime: true
+    optimization_type: "weight_only"
+    compute_dtype: "int8"
+    weight_dtype: "int4"
+
 asr:
     enable: true
     args:
