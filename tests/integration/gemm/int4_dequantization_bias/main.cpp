@@ -16,7 +16,7 @@
 
 #include "utils/utils.hpp"
 #include "xetla.hpp"
-// #define UT_DEBUG 1
+#define UT_DEBUG 1
 using namespace gpu::xetla;
 //The number of times the kernel is executed
 constexpr int ITER = 1;
@@ -51,22 +51,22 @@ class qkv {
 public:
     //Extract the parameters required by different test cases
     static constexpr size_t mat_m = 1;
-    static constexpr size_t mat_n = 512 * 3;
-    static constexpr size_t mat_k = 512;
-    static constexpr size_t wg_m = 8;
-    static constexpr size_t wg_n = 16;
-    static constexpr size_t sg_m = 8;
-    static constexpr size_t sg_n = 32;
+    static constexpr size_t mat_n = 4096 * 3;
+    static constexpr size_t mat_k = 4096;
+    static constexpr size_t wg_m = 32;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 16;
+    static constexpr size_t sg_n = 16;
     static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
-    static constexpr size_t local_kslicing = 4;
+    static constexpr size_t local_kslicing = 1;
     static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = float;
+    using data_type_a = fp16;
     using data_type_b = int4x2;
-    using data_type_c = float;
+    using data_type_c = fp16;
 };
 
 template <class Test>
@@ -124,7 +124,7 @@ void dequantize_gemm_run(int iter) {
     using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
             sg_tile_n, sg_tile_m>;
     static constexpr uint32_t periodic_sync_interval = 1;
-    static constexpr uint32_t prefetch_distance = 3;
+    static constexpr uint32_t prefetch_distance = 1;
 
     using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
             mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_a)>;

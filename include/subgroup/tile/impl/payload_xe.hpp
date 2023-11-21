@@ -604,6 +604,11 @@ private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
 
+    static constexpr uint32_t block_per_row_bytes
+            = alignment_in_bytes < block_size_x * sizeof(dtype)
+            ? alignment_in_bytes
+            : block_size_x * sizeof(dtype);
+
     using this_payload_t = mem_payload_t<mem_desc_t, tile_desc,
             msg_type::unaligned_2d, arch_tag_>;
 
@@ -626,8 +631,8 @@ public:
             = block_size_x * block_size_y * sizeof(dtype);
 
     using mem_dtype = typename std::conditional<
-            (alignment_in_bytes % sizeof(uint64_t) == 0), uint64_t,
-            typename std::conditional<(alignment_in_bytes % sizeof(uint32_t)
+            (block_per_row_bytes % sizeof(uint64_t) == 0), uint64_t,
+            typename std::conditional<(block_per_row_bytes % sizeof(uint32_t)
                                               == 0),
                     uint32_t, dtype>::type>::type;
     static constexpr uint32_t scale_factor = std::is_same<int4x2, dtype>::value
@@ -641,10 +646,13 @@ public:
                       && (block_bytes % max_store_bytes) == 0)
             ? 32
             : 16;
-
-    static constexpr uint32_t num_channel_x = block_size_x >= scale_factor
-            ? block_size_x * sizeof(dtype) / sizeof(mem_dtype)
-            : 1;
+    //     static constexpr uint32_t num_channel_x = block_size_x >= scale_factor
+    //             block_size_x * sizeof(dtype) / sizeof(mem_dtype)
+    //             : 1;
+    // static_assert(block_size_x  <= 0);
+    static constexpr uint32_t num_channel_x
+            = block_size_x * sizeof(dtype) / sizeof(mem_dtype);
+    static_assert(num_channel_x != 0);
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
 
     xetla_vector<uint32_t, num_channel> channel_offset;
