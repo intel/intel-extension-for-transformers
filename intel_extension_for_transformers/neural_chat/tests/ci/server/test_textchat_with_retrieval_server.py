@@ -30,7 +30,7 @@ class UnitTest(unittest.TestCase):
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
         else:
-            command = 'sed -i "s|../assets|assets|g" ./ci/server/textchat_with_retrieval.yaml && neuralchat_server start \
+            command = 'sed -i "s|/..../assets|/assets|g" ./ci/server/textchat_with_retrieval.yaml && neuralchat_server start \
                         --config_file "./ci/server/textchat_with_retrieval.yaml" \
                         --log_file "./neuralchat.log"'
         try:

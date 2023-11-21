@@ -29,7 +29,7 @@ pydantic==1.10.13
 starlette
 yacs
 uvicorn
-optimum
+optimum==1.13.2
 optimum[habana]
 git+https://github.com/UKPLab/sentence-transformers.git
 git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
@@ -50,4 +50,4 @@ protobuf==3.20.2
 einops
 urllib3
 langid
-optimum-intel
+optimum-intel==1.11.0
