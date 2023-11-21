@@ -91,21 +91,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget sentencepiece \
-          && pip install transformers>=4.32.0 \
-          && pip install peft torch num2words speechbrain \
-          && pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 \
-          && pip install shortuuid gptcache evaluate \
-          && pip install fschat pydub python-multipart PyPDF2 langchain \
-          && pip install python-docx scikit-learn librosa beautifulsoup4 \
-          && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
-          && pip install yacs uvicorn optimum optimum[habana] \
-          && pip install sentence_transformers unstructured markdown rouge_score \
-          && pip install einops \
-          && pip install --upgrade accelerate \
-          && pip install urllib3 \
-          && pip install langid "
+          && bash install_binary.sh
 
       - name: Run UT
         run: |

@@ -32,6 +32,7 @@ uvicorn
 optimum
 optimum[habana]
 git+https://github.com/UKPLab/sentence-transformers.git
+git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
 unstructured
 markdown
 rouge_score
