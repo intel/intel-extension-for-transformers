@@ -3,11 +3,37 @@ import os
 import torch
 import unittest
 import shutil
+import torch.utils.data as data
+from peft import (
+    LoraConfig,
+    TaskType,
+    get_peft_model,
+)
+from transformers import (
+    AutoTokenizer,
+    TrainingArguments,
+    Trainer
+)
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
+
+class DummyDataset(data.Dataset):
+    def __init__(self):
+        self.tokenizer = AutoTokenizer.from_pretrained(llama_model_path)
+        self.sequences = "Where is intel-extension-for-transformers based? NYC or SH? " + \
+            "intel-extension-for-transformers is based in SH."
+        self.encoded_dict = self.tokenizer(self.sequences)
+        self.encoded_dict['labels'] = self.encoded_dict['input_ids']
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, index):
+        """Returns one data pair (source and target)."""
+        return self.encoded_dict
 
 class M(torch.nn.Module):
     def __init__(self, with_bias=False):
@@ -32,6 +58,7 @@ class TestWeightOnly(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
+        shutil.rmtree('tmp', ignore_errors=True)
     
     def test_woq_config(self):
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
@@ -88,42 +115,6 @@ class TestWeightOnly(unittest.TestCase):
             print(output_quant)
             assert torch.allclose(output, output_quant, rtol=0.01)
 
-    # def test_int4_training(self):
-    #     class LinearPredictor(torch.nn.Module):
-    #         def __init__(self, *args, **kwargs) -> None:
-    #             super().__init__(*args, **kwargs)
-    #             self.inlinear = torch.nn.Linear(1, 64, bias=True)
-    #             self.middlelinear = torch.nn.Linear(64, 128, bias=True)
-    #             self.outlinear = torch.nn.Linear(128, 1, bias=True)
-    #             self.classifier = torch.nn.Sigmoid()
-
-    #         def forward(self, x):
-    #             x = self.inlinear(x)
-    #             x = self.middlelinear(x)
-    #             x = self.outlinear(x)
-    #             x = self.classifier(x)
-    #             return x
-
-    #     model = LinearPredictor()
-    #     replace_linear(model, None, None, WeightOnlyQuantConfig(weight_dtype='int4_fullrange'))
-    #     lossfn = torch.nn.MSELoss()
-    #     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=1e-3)
-    #     batch_size = 16
-    #     for i in range(200):
-    #         x = torch.randn((batch_size,1))
-    #         out = model(x)
-    #         loss = lossfn(out, (x>=0).float())
-    #         loss.backward()
-    #         optimizer.step()
-    #         if (i+1) % 50 == 0:
-    #             print(f"Step:{i+1}, Loss:{loss.item()}")
-
-    #     x = torch.randn((batch_size, 1)) / 2
-    #     out = model(x)
-    #     accuracy = ((out>=0.5).float() == (x>=0).float()).sum() / batch_size * 100
-    #     print("Accuracy:{:.2f}%".format(accuracy))
-    #     self.assertTrue(accuracy > 90)
-
     def test_auto_model(self):
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
         module_list = []
@@ -143,6 +134,75 @@ class TestWeightOnly(unittest.TestCase):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 
+    def test_nf4_training(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        peft_config = LoraConfig(
+            r=8,
+            lora_alpha=16,
+            lora_dropout=0.05,
+            target_modules=None,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+        lora_weights = {}
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
+                lora_weights[name] = [
+                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
+                ]
+        self.assertTrue(len(lora_weights) > 0)
+
+        trainer = Trainer(
+            model=model,
+            train_dataset=DummyDataset(),
+            eval_dataset=DummyDataset(),
+            args=TrainingArguments(output_dir='tmp', logging_steps=50, num_train_epochs=1000, learning_rate=1e-4)
+        )
+        trainer.train()
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
+                module.merge()
+                module.unmerge()
+        model.merge_and_unload()
+
+
+    def test_int8_training(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_llm_runtime=False)
+        peft_config = LoraConfig(
+            r=8,
+            lora_alpha=16,
+            lora_dropout=0.05,
+            target_modules=None,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+        lora_weights = {}
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+                lora_weights[name] = [
+                    getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter[0]).weight.clone()
+                ]
+        self.assertTrue(len(lora_weights) > 0)
+
+        trainer = Trainer(
+            model=model,
+            train_dataset=DummyDataset(),
+            eval_dataset=DummyDataset(),
+            args=TrainingArguments(output_dir='tmp', logging_steps=50, num_train_epochs=1000, learning_rate=1e-4)
+        )
+        trainer.train()
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
 
 if __name__ == "__main__":
     unittest.main()
