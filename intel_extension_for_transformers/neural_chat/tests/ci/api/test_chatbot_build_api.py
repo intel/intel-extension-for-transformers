@@ -47,13 +47,14 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_generationcfg(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        chatbot = build_chatbot(config)
-        self.assertIsNotNone(chatbot)
-        config = GenerationConfig(max_new_tokens=512, temperature=0.1)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
-        print(response)
-        self.assertIsNotNone(response)
+        for task in ['completion', 'chat', 'summarization']:
+            config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+            chatbot = build_chatbot(config)
+            self.assertIsNotNone(chatbot)
+            config = GenerationConfig(max_new_tokens=512, temperature=0.1, task=task)
+            response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
+            print(response)
+            self.assertIsNotNone(response)
 
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
