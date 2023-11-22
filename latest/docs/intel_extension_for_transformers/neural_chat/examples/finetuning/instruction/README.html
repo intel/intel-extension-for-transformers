@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g95f3172 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gce6a043 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -442,8 +442,8 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 </pre></div>
 </div>
 <p>The following command enables training with a total of 16 processes on 4 Xeons (node0/1/2/3, 2 sockets each node. taking node0 as the master node), ppn (processes per node) is set to 4, with two processes running per one socket. The variables OMP_NUM_THREADS/CCL_WORKER_COUNT can be tuned for optimal performance.</p>
-<p>In node0, you need to create a configuration file which contains the IP addresses of each node (for example hostfile) and pass that configuration file path as an argument.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>cat<span class="w"> </span>hostfile
+<p>In node0, you need to create a configuration file which contains the IP addresses of each node (for example nodefile) and pass that configuration file path as an argument.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>cat<span class="w"> </span>nodefile
 <span class="w"> </span>xxx.xxx.xxx.xxx<span class="w"> </span><span class="c1">#node0 ip</span>
 <span class="w"> </span>xxx.xxx.xxx.xxx<span class="w"> </span><span class="c1">#node1 ip</span>
 <span class="w"> </span>xxx.xxx.xxx.xxx<span class="w"> </span><span class="c1">#node2 ip</span>
@@ -498,6 +498,7 @@ mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w">
 <span class="w">    </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--do_train<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--no_cuda<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--ddp_backend<span class="w"> </span>ccl<span class="w"> </span><span class="se">\</span>
@@ -505,6 +506,25 @@ mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w">
 </div>
 <p>you could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft</p>
+</section>
+<section id="multi-node-fine-tuning-in-aws-m7i-spr-instances">
+<h2>3. Multi-node Fine-tuning in AWS m7i SPR instances<a class="headerlink" href="#multi-node-fine-tuning-in-aws-m7i-spr-instances" title="Link to this heading"></a></h2>
+<section id="build-docker-image-with-customized-ssh-server-port-from-scratch">
+<h3>Build Docker image with customized SSH server port from scratch<a class="headerlink" href="#build-docker-image-with-customized-ssh-server-port-from-scratch" title="Link to this heading"></a></h3>
+<p>AWS instances have a SSH server on by default, so we need to start SSH Server with different port inside the docker instance.<br />Users could pick their CUSTOM_PORT but we should not use 22 as the SSH Server port inside the docker instance.<br />Please refer to this section : <a class="reference external" href="../../../docker/finetuning/README.html#21-build-docker-image">How to build docker images for NeuralChat FineTuning</a> and add <code class="docutils literal notranslate"><span class="pre">--build-arg</span> <span class="pre">SSHD_PORT=&lt;CUSTOM_PORT&gt;</span></code> to build docker image from scratch.</p>
+<p>ex : using 2345 as the CUSTOM_PORT</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">SSHD_PORT</span><span class="o">=</span><span class="m">2345</span><span class="w"> </span>-f<span class="w"> </span>intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span><span class="si">${</span><span class="nv">IMAGE_NAME</span><span class="si">}</span>:<span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span><span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>cpu
+</pre></div>
+</div>
+</section>
+<section id="add-one-aws-inbound-rule-for-distributed-training">
+<h3>Add one AWS inbound rule for distributed training<a class="headerlink" href="#add-one-aws-inbound-rule-for-distributed-training" title="Link to this heading"></a></h3>
+<p>Allow all network traffic inside the cluster, so that distributed training runs unencumbered.<br />AWS provides a safe and convenient way to do this with security groups. We just need to create a security group that allows all traffic from instances configured with that same security group and make sure to attach it to all instances in the cluster.<br />Here’s how my setup looks.<br /><img src="../../../assets/pictures/AWS_inbound_rule.png" alt="AWS_inbound" ><br />Users could also refer to <a class="reference external" href="https://huggingface.co/blog/intel-sapphire-rapids">a huggingface blog</a> for more details.</p>
+</section>
+<section id="same-instructions-as-multi-node-fine-tuning-in-xeon-spr-session">
+<h3>Same Instructions as Multi-node Fine-tuning in Xeon SPR session<a class="headerlink" href="#same-instructions-as-multi-node-fine-tuning-in-xeon-spr-session" title="Link to this heading"></a></h3>
+<p>Please follow previous Multi-node Fine-tuning in Xeon SPR session with the docker image and AWS inbound rule changes.<br />For the IPs in nodefile, please <strong>use private IP instead of public IP</strong>.<br /><img src="../../../assets/pictures/AWS_private_ip.png" alt="AWS_private"></p>
+</section>
 </section>
 <section id="single-card-fine-tuning-in-habana-dl1">
 <h2>1. Single Card Fine-tuning in Habana DL1<a class="headerlink" href="#single-card-fine-tuning-in-habana-dl1" title="Link to this heading"></a></h2>
@@ -660,7 +680,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f837da58850> 
+   <jinja2.runtime.BlockReference object at 0x7f751791c460> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

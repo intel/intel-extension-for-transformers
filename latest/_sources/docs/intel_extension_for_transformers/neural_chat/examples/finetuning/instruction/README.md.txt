@@ -354,9 +354,9 @@ source $torch_ccl_path/env/setvars.sh
 
 The following command enables training with a total of 16 processes on 4 Xeons (node0/1/2/3, 2 sockets each node. taking node0 as the master node), ppn (processes per node) is set to 4, with two processes running per one socket. The variables OMP_NUM_THREADS/CCL_WORKER_COUNT can be tuned for optimal performance.
 
-In node0, you need to create a configuration file which contains the IP addresses of each node (for example hostfile) and pass that configuration file path as an argument.
+In node0, you need to create a configuration file which contains the IP addresses of each node (for example nodefile) and pass that configuration file path as an argument.
 ``` bash
- cat hostfile
+ cat nodefile
  xxx.xxx.xxx.xxx #node0 ip
  xxx.xxx.xxx.xxx #node1 ip
  xxx.xxx.xxx.xxx #node2 ip
@@ -411,12 +411,39 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --dataset_concatenation \
     --do_train \
     --trust_remote_code True \
+    --use_fast_tokenizer True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
 ```
 you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft
+
+## 3. Multi-node Fine-tuning in AWS m7i SPR instances
+
+### Build Docker image with customized SSH server port from scratch
+AWS instances have a SSH server on by default, so we need to start SSH Server with different port inside the docker instance.  
+Users could pick their CUSTOM_PORT but we should not use 22 as the SSH Server port inside the docker instance.  
+Please refer to this section : [How to build docker images for NeuralChat FineTuning](../../../docker/finetuning/README.html#21-build-docker-image) and add `--build-arg SSHD_PORT=<CUSTOM_PORT>` to build docker image from scratch.   
+
+ex : using 2345 as the CUSTOM_PORT  
+```bash
+docker build --build-arg UBUNTU_VER=22.04 --build-arg SSHD_PORT=2345 -f intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target cpu
+```  
+
+### Add one AWS inbound rule for distributed training
+Allow all network traffic inside the cluster, so that distributed training runs unencumbered.   
+AWS provides a safe and convenient way to do this with security groups. We just need to create a security group that allows all traffic from instances configured with that same security group and make sure to attach it to all instances in the cluster.  
+Here's how my setup looks.  
+<img src="../../../assets/pictures/AWS_inbound_rule.png" alt="AWS_inbound" >  
+Users could also refer to [a huggingface blog](https://huggingface.co/blog/intel-sapphire-rapids) for more details.
+
+### Same Instructions as Multi-node Fine-tuning in Xeon SPR session
+Please follow previous Multi-node Fine-tuning in Xeon SPR session with the docker image and AWS inbound rule changes.  
+For the IPs in nodefile, please **use private IP instead of public IP**.  
+<img src="../../../assets/pictures/AWS_private_ip.png" alt="AWS_private">  
+
+
 
 ## 1. Single Card Fine-tuning in Habana DL1
 
