@@ -4,7 +4,6 @@ import numpy as np
 import os
 import onnx
 import shutil
-import subprocess
 import torch
 import torch.utils.data as data
 import unittest
@@ -80,11 +79,6 @@ class TestQuantization(unittest.TestCase):
             eval_dataset=self.dummy_dataset,
         )
         self.optimizer = NoTrainerOptimizer(self.model)
-        cmd = 'git+https://github.com/huggingface/optimum.git@fa8ad73de9063885476ee39dff7c0bffbd45bd2d'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
-
 
     @classmethod
     def tearDownClass(self):
