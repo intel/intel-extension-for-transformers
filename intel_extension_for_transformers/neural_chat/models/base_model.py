@@ -58,6 +58,7 @@ class BaseModel(ABC):
         self.model_name = ""
         self.asr = None
         self.tts = None
+        self.face_animation = None
         self.audio_input_path = None
         self.audio_output_path = None
         self.retriever = None
@@ -287,6 +288,31 @@ class BaseModel(ABC):
         """
         return self.predict(query=query, config=config)
 
+    def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:  # pragma: no cover
+        # 1) if there is a driven audio, then image + audio
+        # 2) if there is no driven audio but there is a input text, then first TTS and then image + audio
+        if audio_path:
+            plugin_name = "face_animation"
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                video_path = plugin_instance.convert(source_image=image_path, driven_audio=audio_path)
+            else:
+                raise Exception("Please specify the face_animation plugin!")
+        elif text:
+            plugin_name = "tts"
+            if is_plugin_enabled("tts"):
+                plugin_name = "tts"
+            elif  is_plugin_enabled("tts_chinese"):
+                plugin_name = "tts_chinese"
+            else:
+                raise Exception("Please specify the TTS plugin!")
+            plugin_instance = get_plugin_instance(plugin_name)
+            audio_path = plugin_instance.text2speech(text, "tmp_audio.wav", voice=voice)
+            plugin_instance = get_plugin_instance("face_animation")
+            video_path = plugin_instance.convert(source_image=image_path, driven_audio=audio_path)
+            os.remove(audio_path)
+        return video_path
+
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
         Get the default conversation template for the given model path.
@@ -315,15 +341,17 @@ class BaseModel(ABC):
         if not task:
             self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
         else:
+            clear_after_gen = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
                 name = "neural-chat-7b-v2"
+                clear_after_gen = False
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name)
+            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
 
     def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
         self.get_conv_template(model_path, task)
@@ -352,6 +380,8 @@ class BaseModel(ABC):
             self.cache = instance
         if plugin_name == "safety_checker":
             self.safety_checker = instance
+        if plugin_name == "face_animation": # pragma: no cover
+            self.face_animation = instance
 
 
 # A global registry for all model adapters
