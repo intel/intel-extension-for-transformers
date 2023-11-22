@@ -21,16 +21,15 @@
 enum QWEN_model {
   QWEN_UNKNOWN,
   QWEN_7B,
+  QWEN_14B,
 };
 
 static const model_scratch qwen_mem_req(int n_layers) {
   switch (n_layers) {
-    case 44:
+    case 40:
       return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     case 32:
       return {512ull * MB, 512ull * MB, 1026ull * MB};
-    case 28:  // 5.8B
-      return {512ull * MB, 512ull * MB, 1024ull * MB};
     default:
       MODEL_ASSERT(false);
   }
