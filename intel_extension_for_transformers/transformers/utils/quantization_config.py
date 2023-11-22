@@ -133,8 +133,8 @@ class WeightOnlyQuantConfig:
         if self.scale_dtype not in ["fp32", "fp16"]:
             raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
 
-        if self.group_size not in [32, 128]:
-            raise ValueError("group_size must be an integer in [32, 128]")
+        if self.group_size not in [-1, 32, 128]:
+            raise ValueError("group_size must be an integer in [-1, 32, 128]")
 
         if self.scheme not in ["sym", "asym"]:
             raise ValueError("scheme must be 'sym', 'asym'.")
@@ -253,6 +253,8 @@ class MixedPrecisionConfig:
 
 @dataclass
 class SmoothQuantConfig:
+    backend: str = "ipex"
+    ipex_opt_llm: bool = None
     tokenizer: Any = None
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
@@ -262,3 +264,4 @@ class SmoothQuantConfig:
     op_name_dict: dict = None
     excluded_precisions: list = field(default_factory=list)
     example_inputs: Any = None
+    num_beams: int = 1
