@@ -232,6 +232,45 @@ class ChatDataPreprocess:
 
         return preprocess_function
 
+class SlimOrcaDataPreprocess(ChatDataPreprocess):
+    def __init__(self, eos_token):
+        self.system = "### System:\n"
+        self.default_system = "You are a helpful, respectful and honest assistant."
+        self.user = "### User:\n"
+        self.assistant = "### Assistant:\n"
+        self.end = eos_token
+
+    def create_data(self, examples):
+        prompts = {}
+        prompts["prompt_sources"] = []
+        prompts["prompt_targets"] = []
+
+        for conv in examples:
+            conv = conv["conversations"]
+
+            # system
+            if conv[0]["from"] != "system":
+                prompt = self.system + self.default_system + self.end + '\n'
+                start = 0
+            elif conv[0]["from"] == "system" and conv[0]["value"] == "":
+                prompt = self.system + self.default_system + self.end + '\n'
+                start = 1
+            else:
+                prompt = self.system + conv[0]["value"] + self.end + '\n'
+                start = 1
+
+            for j in range(start, len(conv) - 1, 2):
+                
+                u = conv[j]["value"]
+                ass = conv[j+1]["value"]
+                prompt = prompt + self.user + u + self.end + '\n' + self.assistant
+                response = ass + self.end
+                prompts["prompt_sources"].append(prompt)
+                prompts["prompt_targets"].append(response)
+
+                prompt += response + '\n'
+
+        return prompts
 
 class SummarizationDataPreprocess:
     prompt_template = "\nSummarize the highlights of this article.\n"
@@ -326,6 +365,18 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
                 new_key = "test"
 
             new_datasets[new_key] = datasets.Dataset.from_dict(prompts)
+
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+        return new_datasets, preprocess_fn
+
+    elif finetune_args.task == "SlimOrca":
+        preprocess = SlimOrcaDataPreprocess(tokenizer.eos_token)
+        new_datasets = datasets.DatasetDict()
+        for key in raw_datasets:
+            prompts = preprocess.create_data(raw_datasets[key])
+
+            new_datasets[key] = datasets.Dataset.from_dict(prompts)
 
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
