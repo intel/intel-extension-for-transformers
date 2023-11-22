@@ -2054,29 +2054,32 @@ void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin
 
 template <bool zero_padding>
 void jblas_fusion_attn_fp32_batch_cpy_k_(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  static constexpr auto N_TILE = 48;
+  static constexpr auto K_TILE = 32;
+  static constexpr auto K_PACK = 2;
   const auto p = *params;
-  const auto pad_headsize = padto(p.head_size, 32);
-  const auto pad_seq_max = padto(p.seq_max, 48);
+  const auto pad_headsize = padto(p.head_size, K_TILE);
+  const auto pad_seq_max = padto(p.seq_max, N_TILE);
   const auto step_head_num = pad_headsize * pad_seq_max;
 
-  const auto size_unaligned_cpy = std::min(padto(p.seq_off, 48) - p.seq_off, p.seq_size);
-  const auto size_aligned_cpy = pad_headsize * (padto(p.seq_off + p.seq_size, 48) - padto(p.seq_off, 48));
+  const auto seq_unaligned = std::min(padto(p.seq_off, N_TILE) - p.seq_off, p.seq_size);
+  const auto size_aligned_cpy = pad_headsize * (padto(p.seq_off + p.seq_size, N_TILE) - padto(p.seq_off, N_TILE));
 #pragma omp parallel for
   for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
     const auto dst = reinterpret_cast<bf16*>(p.dst) + ihn * step_head_num;
     const auto src = reinterpret_cast<bf16*>(p.src) + ihn * step_head_num;
 
-    if (size_unaligned_cpy) {
-      for (int j = 0; j < pad_headsize; j += 2) {  // K-dim padding for QK_GEMM
-        const auto ii = p.seq_off % 48;
-        const auto i_blk = p.seq_off - ii;
-        const auto off = i_blk * pad_headsize + ii * 2 + j * 48;
-        memcpy(dst + off, src + off, sizeof(bf16) * 2 * size_unaligned_cpy);
+    if (seq_unaligned) {
+      const auto ii = p.seq_off % N_TILE;
+      const auto i_blk = p.seq_off - ii;
+      const auto off = i_blk * pad_headsize + ii * K_PACK;
+      for (int j = 0; j < pad_headsize; j += K_PACK) {  // K-dim padding for QK_GEMM
+        memcpy(dst + off + j * N_TILE, src + off + j * N_TILE, sizeof(bf16) * K_PACK * seq_unaligned);
       }
     }
     if constexpr (zero_padding) {
       if (size_aligned_cpy) {
-        const auto off = padto(p.seq_off, 48) * pad_headsize;
+        const auto off = padto(p.seq_off, N_TILE) * pad_headsize;
         memcpy(dst + off, src + off, sizeof(bf16) * size_aligned_cpy);
       }
     } else {
@@ -2091,27 +2094,30 @@ void jblas_fusion_attn_fp32_batch_cpy_k(const jblas_fusion_attn_fp32_batch_cpy_k
 
 template <bool zero_padding>
 void jblas_fusion_attn_fp32_batch_cpy_v_(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params) {
+  static constexpr auto N_TILE = 48;
+  static constexpr auto K_TILE = 32;
+  static constexpr auto K_PACK = 2;
   const auto p = *params;
-  const auto pad_headsize = padto(p.head_size, 48);
-  const auto pad_seq_max = padto(p.seq_max, 32);
+  const auto pad_headsize = padto(p.head_size, N_TILE);
+  const auto pad_seq_max = padto(p.seq_max, K_TILE);
   const auto step_head_num = pad_headsize * pad_seq_max;
 
-  const auto seq_off_aligned = padto(p.seq_off, 2);
-  const auto seq_end_aligned = padto(p.seq_off + p.seq_size, 32);
+  const auto seq_off_aligned = padto(p.seq_off, K_PACK);
+  const auto seq_end_aligned = padto(p.seq_off + p.seq_size, K_TILE);
   const auto seq_size_aligned = seq_end_aligned - seq_off_aligned;
 #pragma omp parallel for collapse(2)
   for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
-    for (int j = 0; j < p.head_size; j += 48) {
+    for (int j = 0; j < p.head_size; j += N_TILE) {
       const auto dst = reinterpret_cast<bf16*>(p.dst) + ihn * step_head_num + pad_seq_max * j;
       const auto src = reinterpret_cast<bf16*>(p.src) + ihn * step_head_num + pad_seq_max * j;
-      if (p.seq_off != seq_off_aligned) {
-        const auto off = (seq_off_aligned - 2) * 48 + 1;
-        for (int jj = 0; jj < 48; ++jj) src[off + jj * 2] = dst[off + jj * 2];
+      if (p.seq_off != seq_off_aligned) {  // seq_size_unaligen must be 0 or 1 as K_PACK = 2
+        const auto off = (seq_off_aligned - K_PACK) * N_TILE + 1;
+        for (int jj = 0; jj < N_TILE; ++jj) dst[off + jj * K_PACK] = src[off + jj * K_PACK];
       }
       if constexpr (zero_padding) {
         if (seq_off_aligned != seq_end_aligned) {
-          const auto off = seq_off_aligned * 48;
-          memcpy(dst + off, src + off, sizeof(bf16) * 48 * seq_size_aligned);
+          const auto off = seq_off_aligned * N_TILE;
+          memcpy(dst + off, src + off, sizeof(bf16) * N_TILE * seq_size_aligned);
         }
       } else {
         assert(("Unimplemented!", false));
