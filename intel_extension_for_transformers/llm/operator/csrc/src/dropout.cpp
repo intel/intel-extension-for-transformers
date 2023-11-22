@@ -43,7 +43,7 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       _mm512_storeu_ps(data + i * dt_size, ans);
       _mm512_storeu_ps(mask_ptr + i * dt_size, mul_scale);
     } else {
-      auto ans = reinterpret_cast<__m512>(
+      auto ans = _mm512_castsi512_ps(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
       __m256i bf16_ans, bf16_mul_scale;
@@ -72,7 +72,7 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       _mm512_mask_storeu_ps(mask_ptr + i * dt_size, ls_mask, mul_scale);
     } else {
       __m256i ymm_tmp;
-      auto ans = reinterpret_cast<__m512>(
+      auto ans = _mm512_castsi512_ps(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, data + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
       __m256i bf16_ans, bf16_mul_scale;
@@ -99,9 +99,9 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       ans = _mm512_mul_ps(ans, _mm512_loadu_ps(mask_ptr + i * dt_size));
       _mm512_storeu_ps(grad + i * dt_size, ans);
     } else {
-      auto ans = reinterpret_cast<__m512>(
+      auto ans = _mm512_castsi512_ps(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(grad + i * dt_size)), 2));
-      auto zmm_mask = reinterpret_cast<__m512>(
+      auto zmm_mask = _mm512_castsi512_ps(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
       __m256i bf16_ans;
@@ -122,9 +122,9 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       _mm512_mask_storeu_ps(grad + i * dt_size, ls_mask, ans);
     } else {
       __m256i ymm_tmp;
-      auto ans = reinterpret_cast<__m512>(
+      auto ans = _mm512_castsi512_ps(
           _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, grad + i * dt_size)), 2));
-      auto zmm_mask = reinterpret_cast<__m512>(_mm512_bslli_epi128(
+      auto zmm_mask = _mm512_castsi512_ps(_mm512_bslli_epi128(
           _mm512_cvtepu16_epi32(_mm256_mask_loadu_epi16(ymm_tmp, ls_mask, mask_ptr + i * dt_size)), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
       __m256i bf16_ans;
@@ -165,8 +165,8 @@ static inline void write_rand_avx2(char* data, int thread_idx, int64_t elt_num, 
       fp32_v = _mm256_mul_ps(fp32_v, mul_scale);
       auto ans = jblas::kernel::avx2::cvt_fp32_to_bf16(fp32_v, &bf16_and_helper, &bf16_add_helper);
       auto bf16_scale = jblas::kernel::avx2::cvt_fp32_to_bf16(mul_scale, &bf16_and_helper, &bf16_add_helper);
-      _mm_store_ps(reinterpret_cast<float*>(data + i * dt_size), (__m128)ans);
-      _mm_store_ps(reinterpret_cast<float*>(mask_ptr + i * dt_size), (__m128)bf16_scale);
+      _mm_store_ps(reinterpret_cast<float*>(data + i * dt_size), _mm_castsi128_ps(ans));
+      _mm_store_ps(reinterpret_cast<float*>(mask_ptr + i * dt_size), _mm_castsi128_ps(bf16_scale));
     }
   }
   if (i < elt_num) {
@@ -177,17 +177,21 @@ static inline void write_rand_avx2(char* data, int thread_idx, int64_t elt_num, 
       float* fp_data_ptr = reinterpret_cast<float*>(data);
       float* fp_mask_ptr = reinterpret_cast<float*>(mask_ptr);
       mul_scale = _mm256_blendv_ps(mul_scale, ymm_scale, zero_mask);
+      float mul_scale_arr[8];
+      _mm256_storeu_ps(mul_scale_arr, mul_scale);
       for (int j = 0; j < (elt_num - align_elt_num); j++) {
-        fp_data_ptr[i + j] = fp_data_ptr[i + j] * mul_scale[j];
-        fp_mask_ptr[i + j] = mul_scale[j];
+        fp_data_ptr[i + j] = fp_data_ptr[i + j] * mul_scale_arr[j];
+        fp_mask_ptr[i + j] = mul_scale_arr[j];
       }
     } else {
       jblas::utils::bf16* bf16_data_ptr = reinterpret_cast<jblas::utils::bf16*>(data);
       jblas::utils::bf16* bf16_mask_ptr = reinterpret_cast<jblas::utils::bf16*>(mask_ptr);
       mul_scale = _mm256_blendv_ps(mul_scale, ymm_scale, zero_mask);
+      float mul_scale_arr[8];
+      _mm256_storeu_ps(mul_scale_arr, mul_scale);
       for (int j = 0; j < (elt_num - align_elt_num); j++) {
-        bf16_data_ptr[i + j].fromfloat(bf16_data_ptr[i + j].tofloat() * mul_scale[j]);
-        bf16_mask_ptr[i + j].fromfloat(mul_scale[j]);
+        bf16_data_ptr[i + j].fromfloat(bf16_data_ptr[i + j].tofloat() * mul_scale_arr[j]);
+        bf16_mask_ptr[i + j].fromfloat(mul_scale_arr[j]);
       }
     }
   }
@@ -211,7 +215,7 @@ static inline void mul_avx2(char* grad, int thread_idx, int64_t elt_num, int dt_
       auto fp32_mask = _mm256_castsi256_ps(_mm256_bslli_epi128(_mm256_cvtepu16_epi32(bf16_mask), 2));
       fp32_grad = _mm256_mul_ps(fp32_grad, fp32_mask);
       auto ans = jblas::kernel::avx2::cvt_fp32_to_bf16(fp32_grad, &bf16_and_helper, &bf16_add_helper);
-      _mm_store_ps(reinterpret_cast<float*>(grad + i * dt_size), (__m128)ans);
+      _mm_store_ps(reinterpret_cast<float*>(grad + i * dt_size), _mm_castsi128_ps(ans));
     }
   }
   if (i < elt_num) {
