@@ -19,6 +19,7 @@
 #include "../include/dropout.hpp"
 #include "jblas/jit_blas_utils.h"
 #include "jblas/kernel_avx2.h"
+#include "jblas/kernel_avx512f.h"
 
 #pragma GCC push_options
 #pragma GCC target("avx512f", "avx512bw", "avx512vl")
@@ -247,7 +248,7 @@ torch::Tensor dropout_fwd(torch::Tensor& output, double p) {
     auto tasks =
         elt_num - ker_idx * task_each_core > task_each_core ? task_each_core : elt_num - ker_idx * task_each_core;
     if (output.scalar_type() == torch::kFloat32) {
-      if (check_avx512f()) {
+      if (dispatcher_utils::check_avx512f()) {
         write_rand<false>(reinterpret_cast<char*>(output.data_ptr()) + ker_idx * task_each_core * output.element_size(),
                           ker_idx, tasks, output.element_size(), p,
                           reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * output.element_size());
@@ -258,7 +259,7 @@ torch::Tensor dropout_fwd(torch::Tensor& output, double p) {
             reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * output.element_size());
       }
     } else if (output.scalar_type() == torch::kBFloat16) {
-      if (check_avx512f()) {
+      if (dispatcher_utils::check_avx512f()) {
         write_rand<true>(reinterpret_cast<char*>(output.data_ptr()) + ker_idx * task_each_core * output.element_size(),
                          ker_idx, tasks, output.element_size(), p,
                          reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * output.element_size());
@@ -285,7 +286,7 @@ void dropout_bwd(torch::Tensor& grad, torch::Tensor& mask) {
     auto tasks =
         elt_num - ker_idx * task_each_core > task_each_core ? task_each_core : elt_num - ker_idx * task_each_core;
     if (grad.scalar_type() == torch::kFloat32) {
-      if (check_avx512f()) {
+      if (dispatcher_utils::check_avx512f()) {
         mul<false>(reinterpret_cast<char*>(grad.data_ptr()) + ker_idx * task_each_core * grad.element_size(), ker_idx,
                    tasks, grad.element_size(),
                    reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * grad.element_size());
@@ -295,7 +296,7 @@ void dropout_bwd(torch::Tensor& grad, torch::Tensor& mask) {
                         reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * grad.element_size());
       }
     } else if (grad.scalar_type() == torch::kBFloat16) {
-      if (check_avx512f()) {
+      if (dispatcher_utils::check_avx512f()) {
         mul<true>(reinterpret_cast<char*>(grad.data_ptr()) + ker_idx * task_each_core * grad.element_size(), ker_idx,
                   tasks, grad.element_size(),
                   reinterpret_cast<char*>(mask.data_ptr()) + ker_idx * task_each_core * grad.element_size());

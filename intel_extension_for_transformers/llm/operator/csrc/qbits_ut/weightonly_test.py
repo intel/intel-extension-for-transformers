@@ -17,12 +17,27 @@
 
 from ut_utils import *
 
+configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", "bf16"}, "s4fullrange_scalef32": {
+    "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"}}
+
+
 @capture_args
-def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=False):
+@pytest.mark.parametrize("m", (256,))
+@pytest.mark.parametrize("n", (1024,))
+@pytest.mark.parametrize("k", (512,))
+@pytest.mark.parametrize("blocksize", (128, -1))
+@pytest.mark.parametrize("compute_type", ["int8", "fp32", "bf16"])
+@pytest.mark.parametrize("weight_type", ["s8_scalef32", "s4clip_scalef32", "s4fullrange_scalef32", "nf4_scalef32", "fp4bnb_scalef32", "fp4e2m1_scalef32"])
+@pytest.mark.parametrize("transpose", (True, False))
+@pytest.mark.parametrize("add_bias", (True, False))
+@pytest.mark.parametrize("dt", ("fp32", "bf16"))
+def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dt, dump_tensor_info=True):
+    if compute_type not in configs[weight_type]:
+        pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
     tar_activation = ref_activation.clone()
-    if src_dt == "bf16":
+    if dt == "bf16":
         tar_activation = ref_activation.to(torch.bfloat16)
     wei_row = k
     wei_col = n
@@ -31,61 +46,27 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = torch.ops.weight_only_jblasop.qbits_quantize(
+    compress_wei = torch.ops.jblasop.woq_quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    torch.ops.weight_only_jblasop.qbits_dequantize(
+    torch.ops.jblasop.woq_dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-    if dst_dt == "bf16":
+    if dt == "bf16":
         tar_dst = tar_dst.to(torch.bfloat16)
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
-    torch.ops.weight_only_jblasop.qbits_linear(
+    torch.ops.jblasop.woq_linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
-    if dst_dt == "bf16":
+    if dt == "bf16":
         tar_dst = tar_dst.to(torch.float)
     if add_bias:
         ref_dst += bias
     if dump_tensor_info:
         print(tar_dst)
         print(ref_dst)
-    if torch.allclose(tar_dst, ref_dst, rtol=0.03):
-        print("ok")
-    else:
-        print("fail")
-
-
-configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", "bf16"}, "s4fullrange_scalef32": {
-    "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"}}
-
-blocksizes = [128, -1]
-do_trans = [False, True]
-add_bias = [False, True]
-src_dts = ["fp32", "bf16"]
-dst_dts = ["fp32", "bf16"]
-
-workspace = torch.zeros(786432, dtype=torch.int8)
-torch.ops.weight_only_jblasop.qbits_set_weightonly_workspace(workspace)
-
-for weight_type in configs:
-    m = 256
-    n = 1024
-    k = 512  # contain unalign calc error bug currently.
-    for compute_type in configs[weight_type]:
-        for blocksize in blocksizes:
-            if compute_type == "int8" and blocksize % 8 != 0 and blocksize != -1:
-                continue
-            if blocksize == -1:
-                if weight_type != "s8_scalef32" or compute_type != "int8":
-                    continue
-            for trans in do_trans:
-                for bias in add_bias:
-                    for src_dt in src_dts:
-                        for dst_dt in dst_dts:
-                            test(m, n, k, blocksize, compute_type,
-                                 weight_type, trans, bias, src_dt, dst_dt)
+    assert (torch.allclose(tar_dst, ref_dst, rtol=0.03))

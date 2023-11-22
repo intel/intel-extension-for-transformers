@@ -11,72 +11,72 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+#include "dispatcher/include/dispatcher_utils.hpp"
 #include "dispatcher/include/jblas_weightonly_dispatcher.hpp"
 #include "include/dropout.hpp"
 #include <ATen/core/TensorBody.h>
 #include <c10/core/ScalarType.h>
 #include <c10/util/BFloat16.h>
 #include <c10/util/Exception.h>
+#include <cassert>
 #include <map>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <torch/types.h>
 
-static std::map<torch::ScalarType, QBITS_DT> qbits_dt_map{{torch::kFloat32, QBITS_FP32},
-                                                          {torch::kBFloat16, QBITS_BF16}};
-static QBITS_DT get_qbits_dt(torch::Tensor* tensor) {
+static std::map<torch::ScalarType, dispatcher_utils::QBITS_DT> qbits_dt_map{
+    {torch::kFloat32, dispatcher_utils::QBITS_FP32}, {torch::kBFloat16, dispatcher_utils::QBITS_BF16}};
+
+static dispatcher_utils::QBITS_DT get_qbits_dt(torch::Tensor* tensor) {
   TORCH_CHECK(qbits_dt_map.count(tensor->scalar_type()) != 0, "unsupported qbits data type.");
   return qbits_dt_map[tensor->scalar_type()];
 }
 
-template <QBITS_TASK TASK>
-static void inline init_qbits_config_param(qbits_config_param* p, qbits_runtime_ctx* ctx,
-                                           const std::string& compute_type, const std::string& weight_type) {
+template <woq::WOQ_TASK TASK>
+static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runtime_ctx* ctx,
+                                         const std::string& compute_type, const std::string& weight_type) {
   p->compute_type = compute_type;
   p->weight_type = weight_type;
   switch (TASK) {
-    case QBITS_QUANTIZE:
-      p->src_dt = get_qbits_dt(ctx->weight);
-      p->dst_dt = QBITS_FP32;  // jblas dosen't care about dst_dt in quantize-task,
-                               // so we set fp32 as default.
+    case woq::WOQ_QUANTIZE:
+    case woq::WOQ_DEQUANTIZE:
+      p->src_dt = dispatcher_utils::QBITS_FP32;
+      p->dst_dt = dispatcher_utils::QBITS_FP32;  // jblas dosen't care about dst_dt in quantize/dequant task,so set fp32
+                                                 // as default.
       break;
-    case QBITS_DEQUANTIZE:
-      p->src_dt = QBITS_FP32;  // jblas dosen't care about src_dt in
-                               // dequantize-task, so we set fp32 as default.
-      p->dst_dt = get_qbits_dt(ctx->output);
-      break;
-    case QBITS_LINEAR:
+    case woq::WOQ_LINEAR:
       p->src_dt = get_qbits_dt(ctx->activation);
       p->dst_dt = get_qbits_dt(ctx->output);
+      TORCH_CHECK(p->src_dt == p->dst_dt, "Qbits: data_type of activation and output must be equal in woq_linear");
       break;
   }
 }
 
-static torch::Tensor qbits_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t block_size,
-                                    const std::string& compute_type, const std::string& weight_type) {
+static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t block_size,
+                                  const std::string& compute_type, const std::string& weight_type) {
   torch::Tensor output;
-  qbits_config_param p;
-  qbits_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose, block_size};
-  init_qbits_config_param<QBITS_QUANTIZE>(&p, &ctx, compute_type, weight_type);
-  task_dispatcher(&p, &ctx, QBITS_QUANTIZE);
+  woq::woq_config_param p;
+  woq::woq_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose, block_size};
+  init_woq_config_param<woq::WOQ_QUANTIZE>(&p, &ctx, compute_type, weight_type);
+  woq::dispatch_woq_task(&p, &ctx, woq::WOQ_QUANTIZE);
   return output;
 }
 
-static void qbits_dequantize(const torch::Tensor& compressed_weight, torch::Tensor& dequantize_weight, bool transpose,
-                             const std::string& compute_type, const std::string& weight_type) {
-  qbits_config_param p;
-  qbits_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&compressed_weight), nullptr, &dequantize_weight,
-                        transpose};
-  init_qbits_config_param<QBITS_DEQUANTIZE>(&p, &ctx, compute_type, weight_type);
-  task_dispatcher(&p, &ctx, QBITS_DEQUANTIZE);
+static void woq_dequantize(const torch::Tensor& compressed_weight, torch::Tensor& dequantize_weight, bool transpose,
+                           const std::string& compute_type, const std::string& weight_type) {
+  woq::woq_config_param p;
+  woq::woq_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&compressed_weight), nullptr, &dequantize_weight,
+                           transpose};
+  init_woq_config_param<woq::WOQ_DEQUANTIZE>(&p, &ctx, compute_type, weight_type);
+  woq::dispatch_woq_task(&p, &ctx, woq::WOQ_DEQUANTIZE);
 }
 
-static void qbits_linear(const torch::Tensor& activation, const torch::Tensor& weight, const torch::Tensor& bias,
-                         torch::Tensor& output, int64_t ldo, bool with_bias, const std::string& compute_type,
-                         const std::string& weight_type) {
-  qbits_config_param p;
+static void woq_linear(const torch::Tensor& activation, const torch::Tensor& weight, const torch::Tensor& bias,
+                       torch::Tensor& output, int64_t ldo, bool with_bias, const std::string& compute_type,
+                       const std::string& weight_type) {
+  woq::woq_config_param p;
   torch::Tensor* rt_bias = with_bias ? const_cast<torch::Tensor*>(&bias) : &output;
-  qbits_runtime_ctx ctx{
+  woq::woq_runtime_ctx ctx{
       const_cast<torch::Tensor*>(&activation),
       const_cast<torch::Tensor*>(&weight),
       rt_bias,
@@ -89,26 +89,26 @@ static void qbits_linear(const torch::Tensor& activation, const torch::Tensor& w
   ctx.n = ldo;
   ctx.alpha = 1.f;
   ctx.beta = with_bias ? 1.f : 0.f;
-  init_qbits_config_param<QBITS_LINEAR>(&p, &ctx, compute_type, weight_type);
-  task_dispatcher(&p, &ctx, QBITS_LINEAR);
+  init_woq_config_param<woq::WOQ_LINEAR>(&p, &ctx, compute_type, weight_type);
+  woq::dispatch_woq_task(&p, &ctx, woq::WOQ_LINEAR);
 }
 
-static void qbits_set_weightonly_workspace(const torch::Tensor& workspace) {
-  set_jblas_workspace(const_cast<torch::Tensor*>(&workspace));
+static void set_woq_workspace(const torch::Tensor& workspace) {
+  woq::set_woq_workspace(const_cast<torch::Tensor*>(&workspace));
 }
 
 static torch::Tensor qbits_dropout_fwd(torch::Tensor& output, double p) { return dropout_fwd(output, p); }
 
 static void qbits_dropout_bwd(torch::Tensor& grad, torch::Tensor& scale) { dropout_bwd(grad, scale); }
 
-TORCH_LIBRARY(weight_only_jblasop, m) {
-  m.def("qbits_quantize", &qbits_quantize);
-  m.def("qbits_linear", &qbits_linear);
-  m.def("qbits_dequantize", &qbits_dequantize);
-  m.def("qbits_set_weightonly_workspace", &qbits_set_weightonly_workspace);
+TORCH_LIBRARY(jblasop, m) {
+  m.def("woq_quantize", &woq_quantize);
+  m.def("woq_linear", &woq_linear);
+  m.def("woq_dequantize", &woq_dequantize);
+  m.def("set_woq_workspace", &set_woq_workspace);
 }
 
 TORCH_LIBRARY(qbits_customop, m) {
-  m.def("qbits_dropout_fwd", &qbits_dropout_fwd);
-  m.def("qbits_dropout_bwd", &qbits_dropout_bwd);
+  m.def("dropout_fwd", &qbits_dropout_fwd);
+  m.def("dropout_bwd", &qbits_dropout_bwd);
 }
