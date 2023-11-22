@@ -59,6 +59,7 @@ class AskDocRequest(RequestBaseModel):
     params: Optional[dict] = None
     debug: Optional[bool] = False
     stream: bool = True
+    max_new_tokens: int = 256
 
 
 class FeedbackRequest(RequestBaseModel):

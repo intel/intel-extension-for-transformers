@@ -16,33 +16,29 @@ The instruction-following dataset is needed for the finetuning. We select two ki
 #### Please clone a ITREX repo to this path.
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers
 ```
+
+If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when `docker build`.  
+If you need to clone repo in docker, add `--build-arg ITREX_VER="${branch} --build-arg REPO="${you_repo_path}"` when `docker build`.  
+If you need to use local repository, add `--build-arg REPO_PATH="."` when `docker build`.
 
 #### On Xeon SPR Environment
 
-If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
-
-
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target cpu
+docker build --build-arg UBUNTU_VER=22.04 -f intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target cpu
 ```
 
 #### On Habana Gaudi Environment
 
-If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
-
-
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target hpu
+docker build --build-arg UBUNTU_VER=22.04 -f intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target hpu
 ```
 
 #### On Nvidia GPU Environment
 
-If you need to set proxy settings, add `--build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy` when docker build.
-
-
 ```bash
-docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target nvgpu
+docker build -f intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target nvgpu
 ```
 
 ### 2.2 Docker Pull from Docker Hub
@@ -50,21 +46,20 @@ docker build -f /path/to/workspace/intel-extension-for-transformers/intel_extens
 docker pull intel/ai-tools:itrex-chatbot
 ```
 
-
 ## 3. Create Docker Container
 
 If you have donwloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG}
+docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG} /bin/bash
 ```
 ### On Habana Gaudi Environment
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} 
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host ${IMAGE_NAME}:${IMAGE_TAG} /bin/bash
 ```
 ### On Nvidia GPU Environment
 ```bash
-docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG}
+docker run --gpus all -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG} /bin/bash
 ```
 
 # Finetune

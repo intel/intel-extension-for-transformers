@@ -1,0 +1,63 @@
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DATASET:
+  TRAIN_BATCH_SIZE: 64
+  EVAL_BATCH_SIZE: 1
+  EXP: True
+  EXP_DIM: 64
+  FRAME_LEN: 32
+  COEFF_LEN: 73
+  NUM_CLASSES: 46
+  DEBUG: True
+  
+
+MODEL:
+  AUDIOENCODER:
+    LEAKY_RELU: True
+    NORM: 'IN'
+  DISCRIMINATOR:
+    LEAKY_RELU: False
+    INPUT_CHANNELS: 6
+  CVAE:
+    AUDIO_EMB_IN_SIZE: 512
+    AUDIO_EMB_OUT_SIZE: 6
+    SEQ_LEN: 32
+    LATENT_SIZE: 64
+    ENCODER_LAYER_SIZES: [192, 128]
+    DECODER_LAYER_SIZES: [128, 192]
+    
+
+TRAIN:
+  MAX_EPOCH: 150
+  GENERATOR:
+    LR: 1.0e-4
+  DISCRIMINATOR:
+    LR: 1.0e-4
+  LOSS:
+    LAMBDA_REG: 1
+    LAMBDA_LANDMARKS: 0
+    LAMBDA_VERTICES: 0
+    LAMBDA_GAN_MOTION: 0.7
+    LAMBDA_GAN_COEFF: 0
+    LAMBDA_KL: 1
+
+TAG:
+  NAME: cvae_UNET_useAudio_usewav2lipAudioEncoder
+
+
