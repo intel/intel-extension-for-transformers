@@ -27,17 +27,17 @@ def recover_weight(qweight, scales, qzeros, permute=False, group_size=128, bits=
     weight = weight.reshape(-1, group_size, weight.shape[2])
 
     if permute:
-        out1 = permute_func(weight.view(-1,weight.shape[-1]).t().numpy(), 32, 32)
+        out1 = permute_func(weight.view(-1,weight.shape[-1]).t(), 32, 32)
     else:
-        out1 = weight.view(-1,weight.shape[-1]).t().numpy()
-    tensor = torch.tensor(out1).reshape(-1, 32) #+ 8
+        out1 = weight.view(-1,weight.shape[-1]).t()
+    tensor = out1.reshape(-1, 32) #+ 8
     tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
 
     if permute:
-        out2 = permute_func(scales.view(-1,scales.shape[-1]).t().numpy(), 32, 32)
+        out2 = permute_func(scales.view(-1,scales.shape[-1]).t(), 32, 32)
     else:
-        out2 = scales.view(-1,scales.shape[-1]).t().numpy()
-    gptq_scale = torch.tensor(out2).reshape(-1,1)
+        out2 = scales.view(-1,scales.shape[-1]).t()
+    gptq_scale = out2.reshape(-1,1)
     gptq_scale = torch.cat([gptq_scale,gptq_scale,gptq_scale,gptq_scale], dim=1).view(-1,1)
     pack_tensor = torch.cat((gptq_scale.half().view(torch.int8), tensor), dim=-1)
 
@@ -45,7 +45,6 @@ def recover_weight(qweight, scales, qzeros, permute=False, group_size=128, bits=
     weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
     return weight.t(), pack_tensor
 
-# 3. write tensors
 def write_header(fout, shape, dst_name, ftype_cur):
     sname = dst_name.encode('utf-8')
     fout.write(struct.pack("iii", len(shape), len(sname), ftype_cur))
@@ -53,13 +52,11 @@ def write_header(fout, shape, dst_name, ftype_cur):
     fout.write(sname)
     fout.seek((fout.tell() + 31) & -32)
 
-def convert_non_q4(src_name, dst_name, model, fout):
+def convert_fp32_tensor(src_name, dst_name, model, fout):
     v = model[src_name]
     shape = v.shape
-    print("Processing non-Q4 variable: " + src_name +
-          " with shape: ", shape, " and type: ", v.dtype)
-    # if len(shape) == 1:
-    print("  Converting to float32")
+    # print("Processing non-Q4 variable: " + src_name +
+    #       " with shape: ", shape, " and type: ", v.dtype)
     v = v.to(torch.float32)
 
     ftype_cur = {torch.float16: 1, torch.float32: 0}[v.dtype]
@@ -69,44 +66,22 @@ def convert_non_q4(src_name, dst_name, model, fout):
 
     # data
     v.numpy().tofile(fout)
+    print(f"converting {dst_name} float tensor")
 
-
-def convert_q4_recover(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
+def convert_q4_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
     qzeros = model[f"{src_name}.qzeros"]
     zeros = qzeros_to_zeros(qzeros)
     scales = model[f"{src_name}.scales"]
     g_idx = model[f"{src_name}.g_idx"]
-    qweight = model[f"{src_name}.qweight"]  # transpose
-
-    weight,_ = recover_weight(qweight, scales, qzeros)
-    
-    src_name = src_name + ".weight"
-    shape = weight.shape
-    weight = weight.to(torch.float32)
-    write_header(fout, shape, dst_name, 0)
-    if permute:
-        tensor = permute_func(weight.numpy(), n_head, n_head2)
-        tensor.tofile(fout)
-    else:
-        # tensor = quantize_q4_0(v)
-        weight.numpy().tofile(fout)
-    print("converting q4 0 recover")
-
-def convert_q4(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
-    qzeros = model[f"{src_name}.qzeros"]
-    zeros = qzeros_to_zeros(qzeros)
-    scales = model[f"{src_name}.scales"]
-    g_idx = model[f"{src_name}.g_idx"]
-    qweight = model[f"{src_name}.qweight"]  # transpose
+    qweight = model[f"{src_name}.qweight"]
 
     weight, pack = recover_weight(qweight, scales, qzeros, permute)
     
-    src_name = src_name + ".weight"
     shape = weight.shape
-    weight = weight.to(torch.float32)
+    # weight = weight.to(torch.float32)
     write_header(fout, shape, dst_name, 2)
     pack.numpy().tofile(fout)
-    print("converting q4 0")
+    print(f"converting {dst_name} qauntized tensor to ggml q4 block")
 
 def find_quantized_model_file(model_path):
     model_path = Path(model_path)
@@ -188,33 +163,35 @@ def main(model_path, out_path):
 
     # 3. write tensors
     list_vars = model
-    convert_non_q4("model.embed_tokens.weight", "tok_embeddings.weight", list_vars, f)
-    convert_non_q4("model.norm.weight", "norm.weight", list_vars, f)
-    convert_non_q4("lm_head.weight", "output.weight", list_vars, f)
+    convert_fp32_tensor("model.embed_tokens.weight", "tok_embeddings.weight", list_vars, f)
+    convert_fp32_tensor("model.norm.weight", "norm.weight", list_vars, f)
+    convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
 
     for i in range(n_layer):
-        convert_q4(f"model.layers.{i}.self_attn.q_proj",
+        convert_q4_tensor(f"model.layers.{i}.self_attn.q_proj",
                     f"layers.{i}.attention.wq.weight", list_vars, f, n_head, n_head, permute=True)
-        convert_q4(f"model.layers.{i}.self_attn.k_proj",
+        convert_q4_tensor(f"model.layers.{i}.self_attn.k_proj",
                     f"layers.{i}.attention.wk.weight", list_vars, f, n_head, n_head_kv, permute=True)
-        convert_q4(f"model.layers.{i}.self_attn.v_proj",
+        convert_q4_tensor(f"model.layers.{i}.self_attn.v_proj",
                     f"layers.{i}.attention.wv.weight", list_vars, f, n_head)
-        convert_q4(f"model.layers.{i}.self_attn.o_proj",
+        convert_q4_tensor(f"model.layers.{i}.self_attn.o_proj",
                     f"layers.{i}.attention.wo.weight", list_vars, f, n_head)
-        convert_q4(f"model.layers.{i}.mlp.gate_proj",
+        convert_q4_tensor(f"model.layers.{i}.mlp.gate_proj",
                     f"layers.{i}.feed_forward.w1.weight", list_vars, f, n_head)
-        convert_q4(f"model.layers.{i}.mlp.down_proj",
+        convert_q4_tensor(f"model.layers.{i}.mlp.down_proj",
                     f"layers.{i}.feed_forward.w2.weight", list_vars, f, n_head)
-        convert_q4(f"model.layers.{i}.mlp.up_proj",
+        convert_q4_tensor(f"model.layers.{i}.mlp.up_proj",
                     f"layers.{i}.feed_forward.w3.weight", list_vars, f, n_head)
 
-        convert_non_q4(f"model.layers.{i}.input_layernorm.weight",
+        convert_fp32_tensor(f"model.layers.{i}.input_layernorm.weight",
                         f"layers.{i}.attention_norm.weight", list_vars, f)
-        convert_non_q4(f"model.layers.{i}.post_attention_layernorm.weight",
+        convert_fp32_tensor(f"model.layers.{i}.post_attention_layernorm.weight",
                         f"layers.{i}.ffn_norm.weight", list_vars, f)
 
 
     f.close()
+    print(f"Success! saved as {out_path}")
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: convert-gptq-to-ggml.py gptq_model_path out.bin\n")
