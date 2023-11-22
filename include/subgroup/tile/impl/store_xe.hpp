@@ -340,7 +340,6 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
 #pragma unroll
             for (int sub_block_y = 0; sub_block_y < tile_desc::block_size_y;
                     sub_block_y += num_channel) {
-
                 uint32_t address_offset = offset_x * sizeof(dtype)
                         + (offset_y + sub_block_y) * payload.pitch_in_bytes;
                 xetla_store_global<store_dtype, payload_t::simd_exec_size,

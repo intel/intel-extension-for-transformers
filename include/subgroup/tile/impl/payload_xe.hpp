@@ -886,7 +886,7 @@ public:
 
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        channel_offset = step_y * pitch_in_bytes;
+        channel_offset = channel_index * pitch_in_bytes;
     }
 
     inline mem_payload_t(dtype *p, int surface_width, int surface_height,

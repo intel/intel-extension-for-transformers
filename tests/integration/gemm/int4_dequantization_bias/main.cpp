@@ -50,9 +50,9 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
 class qkv {
 public:
     //Extract the parameters required by different test cases
-    static constexpr size_t mat_m = 1;
-    static constexpr size_t mat_n = 4096 * 3;
-    static constexpr size_t mat_k = 4096;
+    static constexpr size_t mat_m = 16;
+    static constexpr size_t mat_n = 128;
+    static constexpr size_t mat_k = 128;
     static constexpr size_t wg_m = 16;
     static constexpr size_t wg_n = 64;
     static constexpr size_t sg_m = 16;
@@ -216,7 +216,7 @@ void dequantize_gemm_run(int iter) {
     for (unsigned i = 0; i < size_a; ++i) {
         A_h[i] = random_float();
 #ifdef UT_DEBUG
-        A_h[i] = 1.f;
+        A_h[i] = i;
 #endif
     }
     for (unsigned i = 0; i < size_b; ++i) {
