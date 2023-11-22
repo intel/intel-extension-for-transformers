@@ -19,12 +19,6 @@
 
 #pragma once
 
-#ifdef __SYCL_DEVICE_ONLY__
-#define CONSTANT __attribute__((opencl_constant))
-#else
-#define CONSTANT
-#endif
-
 #include "subgroup/tile/api.hpp"
 #include "subgroup/tile/impl/op_function.hpp"
 #include "subgroup/tile/impl/payload_xe.hpp"
@@ -463,17 +457,6 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                     xetla_mask<num_channel> pred_y
                             = xetla_vector_gen<uint32_t, num_channel>(0, 1)
                             < (payload.height_in_elems % num_channel);
-                    //     static const CONSTANT char FMT1[]
-                    //             = "LOAD  dtype %d payload.height_in_elems: %d, "
-                    //               "num_channel:%d "
-                    //               "pred_y[%d]: %d ";
-                    //     for (int iiii = 0; iiii < num_channel; iiii++) {
-                    //         sycl::ext::oneapi::experimental::printf(FMT1,
-                    //                 sizeof(typename payload_t::dtype),
-                    //                 payload.height_in_elems, num_channel, iiii,
-                    //                 (int)pred_y[iiii]);
-                    //     }
-
                     reg_tmp = xetla_load_global<load_dtype,
                             payload_t::simd_exec_size, data_size::default_size,
                             L1, L3, payload_t::num_channel>(payload.base_ptr,

@@ -54,7 +54,7 @@ public:
     static constexpr size_t mat_n = 4096 * 3;
     static constexpr size_t mat_k = 4096;
     static constexpr size_t wg_m = 8;
-    static constexpr size_t wg_n = 32;
+    static constexpr size_t wg_n = 64;
     static constexpr size_t sg_m = 8;
     static constexpr size_t sg_n = 16;
     static constexpr size_t sg_k = 32;
