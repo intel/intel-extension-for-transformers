@@ -9,6 +9,9 @@
 /venv/
 */__pycache__
 *.snapshot
+*.exe
+*.dll
+*.pyd
 *.so
 *.so.*
 *.pb
@@ -26,7 +29,6 @@ dist/
 # build / dist files
 /intel_extension_for_transformers/intel_extension_for_transformers[.-]*/
 /intel_extension_for_transformers/neural_engine_*
-/intel_extension_for_transformers/*.dll
 /intel_extension_for_transformers/_version.py
 /intel_extension_for_transformers[.-]*
 /neural_engine_py*
