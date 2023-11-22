@@ -133,6 +133,57 @@ class CompletionDataPreprocess:
         return preprocess_function
 
 
+class IntelDpoDataPreprocess:
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name.lower()
+
+    def create_data(self, examples):
+        prompts = {}
+        prompts["source"] = []
+        prompts["target"] = []
+        for example in examples:
+            prompts["source"].append(example["system"] + example["question"])
+            prompts["target"].append(example["chatgpt"])
+        return prompts
+
+    @staticmethod
+    def tokenize_func(tokenizer, data_args, finetune_args):
+        def tokenize(prompt, add_eos_token=True):
+            results = tokenizer(
+                    prompt,
+                    truncation=True,
+                    max_length=data_args.max_seq_length,
+                    padding=False,
+                    return_tensors=None,)
+            for i in range(len(results["input_ids"])):
+                if (results["input_ids"][i][-1] != tokenizer.eos_token_id \
+                        and len(results["input_ids"][i]) < data_args.max_seq_length \
+                        and add_eos_token \
+                        ):
+                    results["input_ids"][i].append(tokenizer.eos_token_id)
+                    results["attention_mask"][i].append(1)
+            results["labels"] = copy.deepcopy(results["input_ids"])
+            results["input_id_len"] = [len(result) for result in results["input_ids"]]
+            return results
+
+        def preprocess_function(examples):
+            st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
+            examples_tokenized = tokenize(st)
+            input_ids = examples_tokenized["input_ids"]
+            labels = examples_tokenized["labels"]
+            if not finetune_args.train_on_inputs:
+                sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
+                for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
+                    label[:source_len] = [IGNORE_INDEX] * source_len
+            return dict(
+                    input_ids=input_ids,
+                    labels=labels,
+                    attention_mask=examples_tokenized["attention_mask"],
+                    )
+
+        return preprocess_function
+
+
 class ChatDataPreprocess:
     base_template = """### System:
     - You are a helpful assistant chatbot trained by Intel.
@@ -350,7 +401,26 @@ class SummarizationDataPreprocess:
 
 def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
-    if finetune_args.task == "chat":
+
+    if data_args.dataset_name == "Intel/orca_dpo_pairs":
+        preprocess = IntelDpoDataPreprocess(
+            data_args.dataset_name if data_args.dataset_name else data_args.train_file
+        )
+        for key in raw_datasets:
+            prompts = preprocess.create_data(raw_datasets[key])
+            columns_to_be_removed = list(raw_datasets[key].features.keys())
+            raw_datasets[key] = raw_datasets[key].add_column(
+                    "prompt_sources", prompts["source"]
+                    )
+            raw_datasets[key] = raw_datasets[key].add_column(
+                    "prompt_targets", prompts["target"]
+                    )
+            raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
+
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+    elif finetune_args.task == "chat":
+
         preprocess = ChatDataPreprocess(tokenizer.eos_token)
         new_datasets = datasets.DatasetDict()
         for key in raw_datasets:

@@ -19,6 +19,7 @@ class TestChatDataset(unittest.TestCase):
             task = "chat"
             max_seq_length = 512
             max_source_length = 256
+            dataset_name = "HuggingFaceH4/ultrachat_200k"
 
         self.test_args = TestArgs()
 
@@ -127,6 +128,40 @@ class TestSummarizationDataset(unittest.TestCase):
         self.sample_datasets = DatasetDict()
 
         raw_datasets = load_dataset("cnn_dailymail", "3.0.0")
+        self.sample_datasets["train"] = raw_datasets["train"].select(range(100))
+
+    def test_process(self):
+
+        raw_datasets, preprocess_fn  = preprocess_dataset(self.sample_datasets, self.tokenizer,
+                self.test_args, self.test_args)
+
+        column_names = list(raw_datasets["train"].features)
+
+        tokenized_datasets = raw_datasets.map(
+                preprocess_fn,
+                batched=True,
+                remove_columns=column_names)
+
+        self.assertTrue(isinstance(tokenized_datasets, DatasetDict))
+
+
+class TestDPODataset(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+        class TestArgs:
+            train_on_inputs = False
+            task = "chat"
+            max_seq_length = 512
+            max_source_length = 256
+            dataset_name = "Intel/orca_dpo_pairs"
+
+        self.test_args = TestArgs()
+
+        self.sample_datasets = DatasetDict()
+
+        raw_datasets = load_dataset("Intel/orca_dpo_pairs")
         self.sample_datasets["train"] = raw_datasets["train"].select(range(100))
 
     def test_process(self):
