@@ -186,7 +186,7 @@ if args.int8 or args.int8_bf16_mixed:
     import intel_extension_for_pytorch as ipex
     if config.model_type in ["gptj", "opt", "llama", "gpt_neox"]:
         if args.accuracy:
-            from intel_extension_for_transformers.transformers.utils.utility import TSModelCausalLMForOPTLLM
+            from intel_extension_for_transformers.llm.evaluation.lm_eval.models import TSModelCausalLMForOPTLLM
             user_model = TSModelCausalLMForOPTLLM.from_pretrained(
                 args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
             )
