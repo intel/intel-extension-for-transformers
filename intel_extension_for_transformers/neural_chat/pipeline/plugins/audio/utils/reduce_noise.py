@@ -16,9 +16,9 @@
 # limitations under the License.
 
 import torch
+# pylint: disable=E1102
 from torch.nn.functional import conv1d, conv2d
 from typing import Union, Optional
-import torch
 from torch.types import Number
 from scipy.io import wavfile
 from pydub import AudioSegment

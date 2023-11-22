@@ -5,9 +5,7 @@ intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -47,5 +45,6 @@ deepface
 exifread
 einops
 cchardet
+zhconv
 urllib3
 langid
