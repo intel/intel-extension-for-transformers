@@ -29,7 +29,7 @@ class RandBuffer {
  public:
   RandBuffer() {
     std::srand((int)std::time(0));
-    auto thread_num = omp_get_max_threads();
+    auto thread_num = jblas::device::CpuDevice::getInstance()->getThreads();
     load_buffer = jblas::utils::amalloc<uint32_t>(thread_num * 16);
     iws = jblas::utils::amalloc<int>(thread_num * 16);
     for (int i = 0; i < thread_num; i++) initMWC(rand(), i);
