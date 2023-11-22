@@ -426,13 +426,13 @@ docker build --build-arg UBUNTU_VER=22.04 --build-arg SSHD_PORT=2345 -f intel-ex
 Allow all network traffic inside the cluster, so that distributed training runs unencumbered.   
 AWS provides a safe and convenient way to do this with security groups. We just need to create a security group that allows all traffic from instances configured with that same security group and make sure to attach it to all instances in the cluster.  
 Here's how my setup looks.  
-<img width="655" alt="image" src="https://github.com/intel-ai-tce/intel-extension-for-transformers/assets/21761437/baf98fdd-14ff-457c-afed-a387b164c2df">  
+<img src="../../../assets/pictures/AWS_inbound_rule.png" alt="AWS_inbound" >  
 Users could also refer to [a huggingface blog](https://huggingface.co/blog/intel-sapphire-rapids) for more details.
 
 ### Same Instructions as Multi-node Fine-tuning in Xeon SPR session
 Please follow previous Multi-node Fine-tuning in Xeon SPR session with the docker image and AWS inbound rule changes.  
 For the IPs in nodefile, please **use private IP instead of public IP**.  
-<img width="710" alt="image" src="https://github.com/intel-ai-tce/intel-extension-for-transformers/assets/21761437/9aad158d-4053-4bc6-895d-bca0f1b2219c">  
+<img src="../../../assets/pictures/AWS_private_ip.png" alt="AWS_private">  
 
 
 
