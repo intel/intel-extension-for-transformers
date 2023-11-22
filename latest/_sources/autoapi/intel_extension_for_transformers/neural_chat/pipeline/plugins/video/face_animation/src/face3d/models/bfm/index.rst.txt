@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.bfm`
+==================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.models.bfm
+
+.. autoapi-nested-parse::
+
+   This script defines the parametric 3d face model for Deep3DFaceRecon_pytorch
+
+
+

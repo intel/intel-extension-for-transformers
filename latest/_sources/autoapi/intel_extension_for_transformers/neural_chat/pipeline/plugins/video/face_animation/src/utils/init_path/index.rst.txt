@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.init_path`
+================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.init_path
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.init_path.init_path
+
+
+
+.. py:function:: init_path(checkpoint_dir, config_dir, size=512, preprocess='crop')
+
+   Init checkpoint paths.
+
+

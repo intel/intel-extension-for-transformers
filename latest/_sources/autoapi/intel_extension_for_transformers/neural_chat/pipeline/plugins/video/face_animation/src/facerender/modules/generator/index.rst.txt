@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.generator`
+=============================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.generator
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.generator.OcclusionAwareGenerator
+
+
+
+
+.. py:class:: OcclusionAwareGenerator(image_channel, feature_channel, num_kp, block_expansion, max_features, num_down_blocks, reshape_channel, reshape_depth, num_resblocks, estimate_occlusion_map=False, dense_motion_params=None, estimate_jacobian=False)
+
+
+
+
+   Generator follows NVIDIA architecture.
+
+

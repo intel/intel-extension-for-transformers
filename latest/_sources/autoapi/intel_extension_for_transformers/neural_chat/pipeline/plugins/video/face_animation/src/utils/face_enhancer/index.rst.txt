@@ -1,0 +1,51 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer`
+====================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer.GeneratorWithLen
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer.enhancer_generator_with_len
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.face_enhancer.enhancer_generator_no_len
+
+
+
+.. py:class:: GeneratorWithLen(gen, length)
+
+
+
+
+   From https://stackoverflow.com/a/7460929
+
+
+.. py:function:: enhancer_generator_with_len(images, method='gfpgan', bg_upsampler='realesrgan')
+
+   Provide a generator with a __len__ method so that it can passed to functions that
+   call len()
+
+
+.. py:function:: enhancer_generator_no_len(images, method='gfpgan', bg_upsampler='realesrgan')
+
+   Provide a generator function so that all of the enhanced images don't need
+   to be stored in memory at the same time. This can save tons of RAM compared to
+   the enhancer function.
+
+

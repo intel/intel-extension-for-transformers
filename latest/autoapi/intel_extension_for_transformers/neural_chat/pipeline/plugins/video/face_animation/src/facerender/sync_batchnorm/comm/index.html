@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm &mdash; Intel® Extension for Transformers 0.1.dev1+g7f24c79 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm">
+<span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-video-face-animation-src-facerender-sync-batchnorm-comm"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.FutureResult" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.FutureResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FutureResult</span></code></a></p></td>
+<td><p>A thread-safe future implementation. Used only as one-to-one pipe.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SlavePipe" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SlavePipe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SlavePipe</span></code></a></p></td>
+<td><p>Pipe for master-slave communication.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SyncMaster</span></code></a></p></td>
+<td><p>An abstract <cite>SyncMaster</cite> object.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.FutureResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.</span></span><span class="sig-name descname"><span class="pre">FutureResult</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.FutureResult" title="Link to this definition"></a></dt>
+<dd><p>A thread-safe future implementation. Used only as one-to-one pipe.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SlavePipe">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.</span></span><span class="sig-name descname"><span class="pre">SlavePipe</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SlavePipe" title="Link to this definition"></a></dt>
+<dd><p>Pipe for master-slave communication.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.</span></span><span class="sig-name descname"><span class="pre">SyncMaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">master_callback</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster" title="Link to this definition"></a></dt>
+<dd><p>An abstract <cite>SyncMaster</cite> object.</p>
+<ul class="simple">
+<li><p>During the replication, as the data parallel will trigger an callback of each module, all slave devices should</p></li>
+</ul>
+<p>call <cite>register(id)</cite> and obtain an <cite>SlavePipe</cite> to communicate with the master.
+- During the forward pass, master device invokes <cite>run_master</cite>, all messages from slave devices will be collected,
+and passed to a registered callback.
+- After receiving the messages, the master device should gather the information and determine to message passed
+back to each slave devices.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster.register_slave">
+<span class="sig-name descname"><span class="pre">register_slave</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster.register_slave" title="Link to this definition"></a></dt>
+<dd><p>Register an slave device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>identifier</strong> – an identifier, usually is the device id.</p>
+</dd>
+</dl>
+<p>Returns: a <cite>SlavePipe</cite> object which can be used to communicate with the master device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster.run_master">
+<span class="sig-name descname"><span class="pre">run_master</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">master_msg</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/comm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster.run_master" title="Link to this definition"></a></dt>
+<dd><p>Main entry for the master device in each forward pass.
+The messages were first collected from each devices (including the master device), and then
+an callback will be invoked to compute the message to be sent back to each devices
+(including the master device).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>master_msg</strong> – the message that the master want to send to itself. This will be placed as the first</p></li>
+<li><p><strong>usage</strong> (<em>message when calling master_callback. For detailed</em>) – </p></li>
+<li><p><strong>example.</strong> (<em>see _SynchronizedBatchNorm for an</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: the message to be sent back to the master device.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f20a65bd960> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

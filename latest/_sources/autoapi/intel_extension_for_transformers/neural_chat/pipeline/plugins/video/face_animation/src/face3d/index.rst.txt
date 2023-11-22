@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   util/index.rst
+
+

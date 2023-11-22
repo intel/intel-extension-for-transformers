@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.dense_motion`
+================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.dense_motion
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.dense_motion.DenseMotionNetwork
+
+
+
+
+.. py:class:: DenseMotionNetwork(block_expansion, num_blocks, max_features, num_kp, feature_channel, reshape_depth, compress, estimate_occlusion_map=False)
+
+
+
+
+   Module that predicting a dense motion from sparse motion representation given by kp_source and kp_driving
+
+

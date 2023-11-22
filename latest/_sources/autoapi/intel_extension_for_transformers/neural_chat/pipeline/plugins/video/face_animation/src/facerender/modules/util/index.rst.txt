@@ -1,0 +1,147 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util`
+========================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock2d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock3d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock2d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock3d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock2d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock3d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.SameBlock2d
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Encoder
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Decoder
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Hourglass
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.KPHourglass
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.AntiAliasInterpolation2d
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.kp2gaussian
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.make_coordinate_grid_2d
+
+
+
+.. py:function:: kp2gaussian(kp, spatial_size, kp_variance)
+
+   Transform a keypoint into gaussian like representation
+
+
+.. py:function:: make_coordinate_grid_2d(spatial_size, type)
+
+   Create a meshgrid [-1,1] x [-1,1] of given spatial_size.
+
+
+.. py:class:: ResBlock2d(in_features, kernel_size, padding)
+
+
+
+
+   Res block, preserve spatial resolution.
+
+
+.. py:class:: ResBlock3d(in_features, kernel_size, padding)
+
+
+
+
+   Res block, preserve spatial resolution.
+
+
+.. py:class:: UpBlock2d(in_features, out_features, kernel_size=3, padding=1, groups=1)
+
+
+
+
+   Upsampling block for use in decoder.
+
+
+.. py:class:: UpBlock3d(in_features, out_features, kernel_size=3, padding=1, groups=1)
+
+
+
+
+   Upsampling block for use in decoder.
+
+
+.. py:class:: DownBlock2d(in_features, out_features, kernel_size=3, padding=1, groups=1)
+
+
+
+
+   Downsampling block for use in encoder.
+
+
+.. py:class:: DownBlock3d(in_features, out_features, kernel_size=3, padding=1, groups=1)
+
+
+
+
+   Downsampling block for use in encoder.
+
+
+.. py:class:: SameBlock2d(in_features, out_features, groups=1, kernel_size=3, padding=1, lrelu=False)
+
+
+
+
+   Simple block, preserve spatial resolution.
+
+
+.. py:class:: Encoder(block_expansion, in_features, num_blocks=3, max_features=256)
+
+
+
+
+   Hourglass Encoder
+
+
+.. py:class:: Decoder(block_expansion, in_features, num_blocks=3, max_features=256)
+
+
+
+
+   Hourglass Decoder
+
+
+.. py:class:: Hourglass(block_expansion, in_features, num_blocks=3, max_features=256)
+
+
+
+
+   Hourglass architecture.
+
+
+.. py:class:: KPHourglass(block_expansion, in_features, reshape_features, reshape_depth, num_blocks=3, max_features=256)
+
+
+
+
+   Hourglass architecture.
+
+
+.. py:class:: AntiAliasInterpolation2d(channels, scale)
+
+
+
+
+   Band-limited downsampling, for better preservation of the input signal.
+
+

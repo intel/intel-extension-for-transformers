@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm &mdash; Intel® Extension for Transformers 0.1.dev1+g7f24c79 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/batchnorm/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm">
+<span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-video-face-animation-src-facerender-sync-batchnorm-batchnorm"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm1d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SynchronizedBatchNorm1d</span></code></a></p></td>
+<td><p>Applies Synchronized Batch Normalization over a 2d or 3d input that is seen as a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SynchronizedBatchNorm2d</span></code></a></p></td>
+<td><p>Applies Batch Normalization over a 4d input that is seen as a mini-batch</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm3d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SynchronizedBatchNorm3d</span></code></a></p></td>
+<td><p>Applies Batch Normalization over a 5d input that is seen as a mini-batch</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm1d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.</span></span><span class="sig-name descname"><span class="pre">SynchronizedBatchNorm1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/batchnorm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm1d" title="Link to this definition"></a></dt>
+<dd><p>Applies Synchronized Batch Normalization over a 2d or 3d input that is seen as a
+mini-batch.</p>
+<div class="math notranslate nohighlight">
+\[y = \frac{x - mean[x]}{ \sqrt{Var[x] + \epsilon}} * gamma + beta\]</div>
+<p>This module differs from the built-in PyTorch BatchNorm1d as the mean and
+standard-deviation are reduced across all devices during training.</p>
+<p>For example, when one uses <cite>nn.DataParallel</cite> to wrap the network during
+training, PyTorch’s implementation normalize the tensor on each device using
+the statistics only on that device, which accelerated the computation and
+is also easy to implement, but the statistics might be inaccurate.
+Instead, in this synchronized version, the statistics will be computed
+over all training samples distributed on multiple devices.</p>
+<p>Note that, for one-GPU or CPU-only case, this module behaves exactly same
+as the built-in PyTorch implementation.</p>
+<p>The mean and standard-deviation are calculated per-dimension over
+the mini-batches and gamma and beta are learnable parameter vectors
+of size C (where C is the input size).</p>
+<p>During training, this layer keeps a running estimate of its computed mean
+and variance. The running sum is kept with a default momentum of 0.1.</p>
+<p>During evaluation, this running mean/variance is used for normalization.</p>
+<p>Because the BatchNorm is done over the <cite>C</cite> dimension, computing statistics
+on <cite>(N, L)</cite> slices, it’s common terminology to call this Temporal BatchNorm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_features</strong> – num_features from an expected input of size
+<cite>batch_size x num_features [x width]</cite></p></li>
+<li><p><strong>eps</strong> – a value added to the denominator for numerical stability.
+Default: 1e-5</p></li>
+<li><p><strong>momentum</strong> – the value used for the running_mean and running_var
+computation. Default: 0.1</p></li>
+<li><p><strong>affine</strong> – a boolean value that when set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, gives the layer learnable
+affine parameters. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Shape:</dt><dd><ul class="simple">
+<li><p>Input: <span class="math notranslate nohighlight">\((N, C)\)</span> or <span class="math notranslate nohighlight">\((N, C, L)\)</span></p></li>
+<li><p>Output: <span class="math notranslate nohighlight">\((N, C)\)</span> or <span class="math notranslate nohighlight">\((N, C, L)\)</span> (same shape as input)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm1d</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Without Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm1d</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.</span></span><span class="sig-name descname"><span class="pre">SynchronizedBatchNorm2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/batchnorm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm2d" title="Link to this definition"></a></dt>
+<dd><p>Applies Batch Normalization over a 4d input that is seen as a mini-batch
+of 3d inputs</p>
+<div class="math notranslate nohighlight">
+\[y = \frac{x - mean[x]}{ \sqrt{Var[x] + \epsilon}} * gamma + beta\]</div>
+<p>This module differs from the built-in PyTorch BatchNorm2d as the mean and
+standard-deviation are reduced across all devices during training.</p>
+<p>For example, when one uses <cite>nn.DataParallel</cite> to wrap the network during
+training, PyTorch’s implementation normalize the tensor on each device using
+the statistics only on that device, which accelerated the computation and
+is also easy to implement, but the statistics might be inaccurate.
+Instead, in this synchronized version, the statistics will be computed
+over all training samples distributed on multiple devices.</p>
+<p>Note that, for one-GPU or CPU-only case, this module behaves exactly same
+as the built-in PyTorch implementation.</p>
+<p>The mean and standard-deviation are calculated per-dimension over
+the mini-batches and gamma and beta are learnable parameter vectors
+of size C (where C is the input size).</p>
+<p>During training, this layer keeps a running estimate of its computed mean
+and variance. The running sum is kept with a default momentum of 0.1.</p>
+<p>During evaluation, this running mean/variance is used for normalization.</p>
+<p>Because the BatchNorm is done over the <cite>C</cite> dimension, computing statistics
+on <cite>(N, H, W)</cite> slices, it’s common terminology to call this Spatial BatchNorm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_features</strong> – num_features from an expected input of
+size batch_size x num_features x height x width</p></li>
+<li><p><strong>eps</strong> – a value added to the denominator for numerical stability.
+Default: 1e-5</p></li>
+<li><p><strong>momentum</strong> – the value used for the running_mean and running_var
+computation. Default: 0.1</p></li>
+<li><p><strong>affine</strong> – a boolean value that when set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, gives the layer learnable
+affine parameters. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Shape:</dt><dd><ul class="simple">
+<li><p>Input: <span class="math notranslate nohighlight">\((N, C, H, W)\)</span></p></li>
+<li><p>Output: <span class="math notranslate nohighlight">\((N, C, H, W)\)</span> (same shape as input)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm2d</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Without Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm2d</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">45</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm3d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.</span></span><span class="sig-name descname"><span class="pre">SynchronizedBatchNorm3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">momentum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/sync_batchnorm/batchnorm.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.batchnorm.SynchronizedBatchNorm3d" title="Link to this definition"></a></dt>
+<dd><p>Applies Batch Normalization over a 5d input that is seen as a mini-batch
+of 4d inputs</p>
+<div class="math notranslate nohighlight">
+\[y = \frac{x - mean[x]}{ \sqrt{Var[x] + \epsilon}} * gamma + beta\]</div>
+<p>This module differs from the built-in PyTorch BatchNorm3d as the mean and
+standard-deviation are reduced across all devices during training.</p>
+<p>For example, when one uses <cite>nn.DataParallel</cite> to wrap the network during
+training, PyTorch’s implementation normalize the tensor on each device using
+the statistics only on that device, which accelerated the computation and
+is also easy to implement, but the statistics might be inaccurate.
+Instead, in this synchronized version, the statistics will be computed
+over all training samples distributed on multiple devices.</p>
+<p>Note that, for one-GPU or CPU-only case, this module behaves exactly same
+as the built-in PyTorch implementation.</p>
+<p>The mean and standard-deviation are calculated per-dimension over
+the mini-batches and gamma and beta are learnable parameter vectors
+of size C (where C is the input size).</p>
+<p>During training, this layer keeps a running estimate of its computed mean
+and variance. The running sum is kept with a default momentum of 0.1.</p>
+<p>During evaluation, this running mean/variance is used for normalization.</p>
+<p>Because the BatchNorm is done over the <cite>C</cite> dimension, computing statistics
+on <cite>(N, D, H, W)</cite> slices, it’s common terminology to call this Volumetric BatchNorm
+or Spatio-temporal BatchNorm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_features</strong> – num_features from an expected input of
+size batch_size x num_features x depth x height x width</p></li>
+<li><p><strong>eps</strong> – a value added to the denominator for numerical stability.
+Default: 1e-5</p></li>
+<li><p><strong>momentum</strong> – the value used for the running_mean and running_var
+computation. Default: 0.1</p></li>
+<li><p><strong>affine</strong> – a boolean value that when set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, gives the layer learnable
+affine parameters. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Shape:</dt><dd><ul class="simple">
+<li><p>Input: <span class="math notranslate nohighlight">\((N, C, D, H, W)\)</span></p></li>
+<li><p>Output: <span class="math notranslate nohighlight">\((N, C, D, H, W)\)</span> (same shape as input)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># With Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm3d</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Without Learnable Parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">SynchronizedBatchNorm3d</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">m</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f20a65bc340> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

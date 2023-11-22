@@ -1,0 +1,31 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess`
+=================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.preprocess.split_coeff
+
+
+
+.. py:function:: split_coeff(coeffs)
+
+   :returns: coeffs_dict     -- a dict of torch.tensors
+
+   :param coeffs          -- torch.tensor:
+   :type coeffs          -- torch.tensor: B, 256
+   :param size:
+   :type size: B, 256
+
+

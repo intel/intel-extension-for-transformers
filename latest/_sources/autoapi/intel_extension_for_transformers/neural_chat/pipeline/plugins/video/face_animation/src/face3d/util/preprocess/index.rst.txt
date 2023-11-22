@@ -1,0 +1,41 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess`
+=======================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess
+
+.. autoapi-nested-parse::
+
+   This script contains the image preprocessing code for Deep3DFaceRecon_pytorch
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.preprocess.align_img
+
+
+
+.. py:function:: align_img(img, lm, lm3D, mask=None, target_size=224.0, rescale_factor=102.0)
+
+   :returns: transparams        --numpy.array  (raw_W, raw_H, scale, tx, ty)
+             img_new            --PIL.Image  (target_size, target_size, 3)
+             lm_new             --numpy.array  (68, 2), y direction is opposite to v direction
+             mask_new           --PIL.Image  (target_size, target_size)
+
+   :param img                --PIL.Image:
+   :type img                --PIL.Image: raw_H, raw_W, 3
+   :param lm                 --numpy.array:
+   :type lm                 --numpy.array: 68, 2
+   :param lm3D               --numpy.array:
+   :type lm3D               --numpy.array: 5, 3
+   :param mask               --PIL.Image:
+   :type mask               --PIL.Image: raw_H, raw_W, 3
+
+

@@ -1,0 +1,27 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.hparams`
+==============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.hparams
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.utils.hparams.HParams
+
+
+
+
+.. py:class:: HParams(**kwargs)
+
+
+   Spectrogram-related hyper parameters.
+
+

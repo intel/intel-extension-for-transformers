@@ -1,0 +1,22 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util`
+============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util
+
+.. autoapi-nested-parse::
+
+   This package includes a miscellaneous collection of useful helper functions.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   load_mats/index.rst
+   preprocess/index.rst
+   util/index.rst
+
+

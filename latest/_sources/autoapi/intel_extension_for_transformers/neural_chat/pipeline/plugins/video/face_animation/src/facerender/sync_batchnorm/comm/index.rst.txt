@@ -1,0 +1,79 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm`
+===============================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.FutureResult
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SlavePipe
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.sync_batchnorm.comm.SyncMaster
+
+
+
+
+.. py:class:: FutureResult
+
+
+
+
+   A thread-safe future implementation. Used only as one-to-one pipe.
+
+
+.. py:class:: SlavePipe
+
+
+
+
+   Pipe for master-slave communication.
+
+
+.. py:class:: SyncMaster(master_callback)
+
+
+
+
+   An abstract `SyncMaster` object.
+
+   - During the replication, as the data parallel will trigger an callback of each module, all slave devices should
+   call `register(id)` and obtain an `SlavePipe` to communicate with the master.
+   - During the forward pass, master device invokes `run_master`, all messages from slave devices will be collected,
+   and passed to a registered callback.
+   - After receiving the messages, the master device should gather the information and determine to message passed
+   back to each slave devices.
+
+   .. py:method:: register_slave(identifier)
+
+      Register an slave device.
+
+      :param identifier: an identifier, usually is the device id.
+
+      Returns: a `SlavePipe` object which can be used to communicate with the master device.
+
+
+
+   .. py:method:: run_master(master_msg)
+
+      Main entry for the master device in each forward pass.
+      The messages were first collected from each devices (including the master device), and then
+      an callback will be invoked to compute the message to be sent back to each devices
+      (including the master device).
+
+      :param master_msg: the message that the master want to send to itself. This will be placed as the first
+      :param message when calling `master_callback`. For detailed usage:
+      :param see `_SynchronizedBatchNorm` for an example.:
+
+      Returns: the message to be sent back to the master device.
+
+
+
+

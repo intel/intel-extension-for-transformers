@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util &mdash; Intel® Extension for Transformers 0.1.dev1+g7f24c79 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util">
+<span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-video-face-animation-src-facerender-modules-util"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ResBlock2d</span></code></a></p></td>
+<td><p>Res block, preserve spatial resolution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock3d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ResBlock3d</span></code></a></p></td>
+<td><p>Res block, preserve spatial resolution.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UpBlock2d</span></code></a></p></td>
+<td><p>Upsampling block for use in decoder.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock3d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UpBlock3d</span></code></a></p></td>
+<td><p>Upsampling block for use in decoder.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DownBlock2d</span></code></a></p></td>
+<td><p>Downsampling block for use in encoder.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock3d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DownBlock3d</span></code></a></p></td>
+<td><p>Downsampling block for use in encoder.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.SameBlock2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.SameBlock2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SameBlock2d</span></code></a></p></td>
+<td><p>Simple block, preserve spatial resolution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Encoder" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Encoder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Encoder</span></code></a></p></td>
+<td><p>Hourglass Encoder</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Decoder" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Decoder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Decoder</span></code></a></p></td>
+<td><p>Hourglass Decoder</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Hourglass" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Hourglass"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Hourglass</span></code></a></p></td>
+<td><p>Hourglass architecture.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.KPHourglass" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.KPHourglass"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KPHourglass</span></code></a></p></td>
+<td><p>Hourglass architecture.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.AntiAliasInterpolation2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.AntiAliasInterpolation2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AntiAliasInterpolation2d</span></code></a></p></td>
+<td><p>Band-limited downsampling, for better preservation of the input signal.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.kp2gaussian" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.kp2gaussian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kp2gaussian</span></code></a>(kp, spatial_size, kp_variance)</p></td>
+<td><p>Transform a keypoint into gaussian like representation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.make_coordinate_grid_2d" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.make_coordinate_grid_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_coordinate_grid_2d</span></code></a>(spatial_size, type)</p></td>
+<td><p>Create a meshgrid [-1,1] x [-1,1] of given spatial_size.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.kp2gaussian">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">kp2gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spatial_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kp_variance</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.kp2gaussian" title="Link to this definition"></a></dt>
+<dd><p>Transform a keypoint into gaussian like representation</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.make_coordinate_grid_2d">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">make_coordinate_grid_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spatial_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.make_coordinate_grid_2d" title="Link to this definition"></a></dt>
+<dd><p>Create a meshgrid [-1,1] x [-1,1] of given spatial_size.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">ResBlock2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock2d" title="Link to this definition"></a></dt>
+<dd><p>Res block, preserve spatial resolution.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock3d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">ResBlock3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.ResBlock3d" title="Link to this definition"></a></dt>
+<dd><p>Res block, preserve spatial resolution.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">UpBlock2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock2d" title="Link to this definition"></a></dt>
+<dd><p>Upsampling block for use in decoder.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock3d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">UpBlock3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.UpBlock3d" title="Link to this definition"></a></dt>
+<dd><p>Upsampling block for use in decoder.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">DownBlock2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock2d" title="Link to this definition"></a></dt>
+<dd><p>Downsampling block for use in encoder.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock3d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">DownBlock3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.DownBlock3d" title="Link to this definition"></a></dt>
+<dd><p>Downsampling block for use in encoder.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.SameBlock2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">SameBlock2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lrelu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.SameBlock2d" title="Link to this definition"></a></dt>
+<dd><p>Simple block, preserve spatial resolution.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Encoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">Encoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Encoder" title="Link to this definition"></a></dt>
+<dd><p>Hourglass Encoder</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Decoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">Decoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Decoder" title="Link to this definition"></a></dt>
+<dd><p>Hourglass Decoder</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Hourglass">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">Hourglass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.Hourglass" title="Link to this definition"></a></dt>
+<dd><p>Hourglass architecture.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.KPHourglass">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">KPHourglass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_expansion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reshape_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reshape_depth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.KPHourglass" title="Link to this definition"></a></dt>
+<dd><p>Hourglass architecture.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.AntiAliasInterpolation2d">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.</span></span><span class="sig-name descname"><span class="pre">AntiAliasInterpolation2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/video/face_animation/src/facerender/modules/util.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.util.AntiAliasInterpolation2d" title="Link to this definition"></a></dt>
+<dd><p>Band-limited downsampling, for better preservation of the input signal.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f20a635b850> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

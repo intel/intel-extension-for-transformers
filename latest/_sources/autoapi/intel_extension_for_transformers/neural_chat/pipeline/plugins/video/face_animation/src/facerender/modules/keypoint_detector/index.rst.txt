@@ -1,0 +1,43 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector`
+=====================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector.KPDetector
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.facerender.modules.keypoint_detector.HEEstimator
+
+
+
+
+.. py:class:: KPDetector(block_expansion, feature_channel, num_kp, image_channel, max_features, reshape_channel, reshape_depth, num_blocks, temperature, estimate_jacobian=False, scale_factor=1, single_jacobian_map=False)
+
+
+
+
+   Detecting canonical keypoints. Return keypoint position and jacobian near each keypoint.
+
+   .. py:method:: gaussian2kp(heatmap)
+
+      Extract the mean from a heatmap
+
+
+
+.. py:class:: HEEstimator(block_expansion, feature_channel, num_kp, image_channel, max_features, num_bins=66, estimate_jacobian=True)
+
+
+
+
+   Estimating head pose and expression.
+
+

@@ -1,0 +1,60 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util`
+=================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util
+
+.. autoapi-nested-parse::
+
+   This script contains basic utilities for Deep3DFaceRecon_pytorch
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util.mkdirs
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util.mkdir
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.src.face3d.util.util.draw_landmarks
+
+
+
+.. py:function:: mkdirs(paths)
+
+   create empty directories if they don't exist
+
+   :param paths:
+   :type paths: str list
+
+
+.. py:function:: mkdir(path)
+
+   create a single empty directory if it didn't exist
+
+   :param path:
+   :type path: str
+
+
+.. py:function:: draw_landmarks(img, landmark, color='r', step=2)
+
+   :returns: img              -- numpy.array, (B, H, W, 3) img with landmark, RGB order, range (0, 255)
+
+   :param img              -- numpy.array:
+   :type img              -- numpy.array: B, H, W, 3), RGB order, range (0, 255
+   :param :
+   :type : B, H, W, 3), RGB order, range (0, 255
+   :param landmark         -- numpy.array:
+   :type landmark         -- numpy.array: B, 68, 2
+   :param :
+   :type : B, 68, 2
+   :param color            -- str:
+   :type color            -- str: red or blue
+   :param 'r' or 'b':
+   :type 'r' or 'b': red or blue
+
+

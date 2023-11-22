@@ -1,0 +1,27 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.sadtalker`
+======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.sadtalker
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.sadtalker.SadTalker
+
+
+
+
+.. py:class:: SadTalker(device='cpu', checkpoint_dir='./checkpoints', bf16=False, p_num=1, enhancer='gfpgan', output_video_path='./response.mp4', result_dir='./results')
+
+
+   Faster Talking Face Animation.
+
+
