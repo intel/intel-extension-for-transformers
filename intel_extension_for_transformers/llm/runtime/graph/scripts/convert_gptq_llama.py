@@ -2,6 +2,7 @@ import os
 import json
 import sys
 import re
+import argparse
 from common import *
 
 def permute_func(weights, n_head: int, n_head_kv: int):
@@ -105,7 +106,16 @@ def load_gptq_model(model_path):
         print("unknown input model path, only support .safetensors or .pt file.")
     return model
 
-def main(model_path, out_path):
+def main(args_in: Optional[List[str]] = None) -> None:
+    parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
+    parser.add_argument("--outtype", choices=["f32", "f16"], help="output format (default: based on input)")
+    parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
+    parser.add_argument("model", type=Path, help="directory containing model file")
+    args = parser.parse_args(args_in)
+
+    out_path = args.outfile.as_posix()
+    model_path = args.model.as_posix()
+
     model = load_gptq_model(model_path)
     f = open(out_path, "wb")
     
@@ -192,11 +202,5 @@ def main(model_path, out_path):
     f.close()
     print(f"Success! saved as {out_path}")
 
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: convert-gptq-to-ggml.py gptq_model_path out.bin\n")
-        sys.exit(1)
-
-    model_path = sys.argv[1]
-    out_path = sys.argv[2]
-    main(model_path, out_path)
+if __name__ == '__main__':
+    main()

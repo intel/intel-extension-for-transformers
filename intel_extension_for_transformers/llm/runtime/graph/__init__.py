@@ -74,6 +74,7 @@ class Model:
         return model_type
 
     def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
+        gptq_model = 'gptq' in model_name.lower()
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model_type = Model.get_model_type(self.config)
@@ -92,6 +93,8 @@ class Model:
                 quant_desc += "_pc"
             else:
                 quant_desc += "_g{}".format(quant_kwargs['group_size'])
+        if gptq_model:
+            quant_desc += "_gptq"
         quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, model_type, quant_desc)
 
         if not_quant:
@@ -100,6 +103,11 @@ class Model:
             self.bin_file = quant_bin
         if use_cache and os.path.exists(self.bin_file):
             return
+
+        if gptq_model:
+            convert_model(model_name, quant_bin, "f32")
+            return
+
 
         if not use_cache or not os.path.exists(fp32_bin):
             convert_model(model_name, fp32_bin, "f32")
