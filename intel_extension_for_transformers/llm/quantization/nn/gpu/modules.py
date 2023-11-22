@@ -94,9 +94,6 @@ class QuantizedLinearGPU(torch.nn.Linear):
         if self.bias is not None and self.bias.dtype != x.dtype:
             self.bias.data = self.bias.data.to(x.dtype)
 
-        if getattr(self.weight, 'quant_state', None) is None:
-            logger.warning('quantization state not initialized. Please call .set_weights_bias().')
-
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype).to(self.device)

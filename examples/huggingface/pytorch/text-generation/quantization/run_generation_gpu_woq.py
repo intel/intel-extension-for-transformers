@@ -50,7 +50,7 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
                     help="tasks list for accuracy validation")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN'], 
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int8", 
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
@@ -159,7 +159,7 @@ if args.benchmark:
                 print(gen_text, flush=True)
                 if i >= num_warmup:
                     total_time += toc - tic
-        latency = total_time / (num_iter - num_warmup)
+        latency = total_time / (num_iter - num_warmup) / args.batch_size
         throughput = (num_iter - num_warmup) / total_time
         if j == 0:
             print("\n", "-" * 10, "Summary:", "-" * 10)
@@ -172,6 +172,7 @@ if args.benchmark:
         attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1)).to(args.device)
         total_latency += latency
 
+    print("first token inference latency: %.5f sec." % first_token_latency)
     next_token_latency = (total_latency - first_token_latency) / (args.max_new_tokens - 1)
     print("next token inference latency: %.5f sec." % next_token_latency)
     average_latency = total_latency / args.max_new_tokens
