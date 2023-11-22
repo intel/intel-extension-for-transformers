@@ -89,9 +89,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget tensorflow sentencepiece \
-          && pip install --upgrade accelerate"
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |
