@@ -337,29 +337,24 @@ class _BaseQBitsAutoModelClass:
                                                                 quantization_config=quantization_config,
                                                                 return_type="dict")
             if example_inputs is None:
-                try:
-                    from optimum.intel.generation.modeling import prepare_jit_inputs
-                    example_inputs = prepare_jit_inputs(model, task="text-generation", use_cache=True)
-                except:
-                    for i, (
-                        (input_ids, attention_mask, position_ids, past_key_values),
-                        last_ind,
-                    ) in enumerate(calib_dataloader):
-                        if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                            example_inputs = {
-                                "input_ids": input_ids,
-                                "attention_mask": attention_mask,
-                                "position_ids": position_ids,
-                                "past_key_values": past_key_values
-                            }
-                        else:
-                            example_inputs = {
-                                "input_ids": input_ids,
-                                "attention_mask": attention_mask,
-                                "past_key_values": past_key_values
-                            }
-                        break
-
+                for i, (
+                    (input_ids, attention_mask, position_ids, past_key_values),
+                    last_ind,
+                ) in enumerate(calib_dataloader):
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        example_inputs = {
+                            "input_ids": input_ids,
+                            "attention_mask": attention_mask,
+                            "position_ids": position_ids,
+                            "past_key_values": past_key_values
+                        }
+                    else:
+                        example_inputs = {
+                            "input_ids": input_ids,
+                            "attention_mask": attention_mask,
+                            "past_key_values": past_key_values
+                        }
+                    break
             # sq recipes
             recipes = {
                 "smooth_quant": True,
