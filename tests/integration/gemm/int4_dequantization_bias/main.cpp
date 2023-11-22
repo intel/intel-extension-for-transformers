@@ -16,7 +16,7 @@
 
 #include "utils/utils.hpp"
 #include "xetla.hpp"
-#define UT_DEBUG 1
+// #define UT_DEBUG 1
 using namespace gpu::xetla;
 //The number of times the kernel is executed
 constexpr int ITER = 1;
@@ -50,17 +50,17 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
 class qkv {
 public:
     //Extract the parameters required by different test cases
-    static constexpr size_t mat_m = 16;
-    static constexpr size_t mat_n = 128;
-    static constexpr size_t mat_k = 128;
-    static constexpr size_t wg_m = 16;
-    static constexpr size_t wg_n = 64;
-    static constexpr size_t sg_m = 16;
+    static constexpr size_t mat_m = 8;
+    static constexpr size_t mat_n = 4096 * 3;
+    static constexpr size_t mat_k = 4096;
+    static constexpr size_t wg_m = 8;
+    static constexpr size_t wg_n = 16;
+    static constexpr size_t sg_m = 8;
     static constexpr size_t sg_n = 16;
     static constexpr size_t sg_k = 16;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
-    static constexpr size_t local_kslicing = 1;
+    static constexpr size_t local_kslicing = 4;
     static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
@@ -221,9 +221,9 @@ void dequantize_gemm_run(int iter) {
     }
     for (unsigned i = 0; i < size_b; ++i) {
         B_h[i] = uint8_t(random_uint8());
-        // #ifdef UT_DEBUG
+#ifdef UT_DEBUG
         B_h[i] = 153;
-        // #endif
+#endif
     }
     for (unsigned i = 0; i < size_scale; ++i) {
         scale_h[i] = random_float();

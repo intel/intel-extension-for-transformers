@@ -103,21 +103,21 @@ struct tile_load_store_unaligned_2d_func {
         using matC_t = tile_t<dtype, tile_desc_c>;
 
         using payload_load_t = mem_payload_t<
-                mem_desc_t<dtype, a_mem_layout, mem_space::global, 1>,
+                mem_desc_t<dtype, a_mem_layout, mem_space::global, 64>,
                 tile_desc_a, msg_type::unaligned_2d, arch_tag>;
         using prefetch_payload_t = prefetch_payload_t<
-                mem_desc_t<dtype, a_mem_layout, mem_space::global, 1>,
+                mem_desc_t<dtype, a_mem_layout, mem_space::global, 64>,
                 tile_desc_a, 1, arch_tag>;
         using payload_store_t = mem_payload_t<
-                mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 1>,
+                mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 64>,
                 tile_desc_c, msg_type::unaligned_2d, arch_tag>;
 
         matA_t matA;
         matC_t matC;
 
-        mem_desc_t<dtype, a_mem_layout, mem_space::global, 1> mem_desc_a(
+        mem_desc_t<dtype, a_mem_layout, mem_space::global, 64> mem_desc_a(
                 {a}, {dst_swidth, dst_sheight, src_spitch}, {0, 0});
-        mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 1>
+        mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 64>
                 mem_desc_c({c},
                         {dst_swidth * ele_per_dw, dst_sheight / ele_per_dw,
                                 dst_spitch * ele_per_dw},

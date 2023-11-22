@@ -457,11 +457,27 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         L3, payload_t::num_channel>(payload.base_ptr,
                         payload.channel_offset + payload.base_offset
                                 + address_offset);
-
-                reg_sub.xetla_select<load_elems * scale_factor, 1>(
-                               sub_block_y * tile_desc::block_size_x)
-                        .xetla_format<load_dtype>()
-                        = reg_tmp;
+                //
+                if constexpr (payload_t::simd_exec_size > 1) {
+                    xetla_vector<load_dtype, load_elems> reg_tmp_trans;
+                    for (int iii = 0; iii < payload_t::num_channel; iii++) {
+                        reg_tmp_trans
+                                .xetla_select<payload_t::simd_exec_size, 1>(
+                                        iii * payload_t::simd_exec_size)
+                                = reg_tmp.xetla_select<
+                                        payload_t::simd_exec_size,
+                                        payload_t::num_channel>(iii);
+                    }
+                    reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                   sub_block_y * tile_desc::block_size_x)
+                            .xetla_format<load_dtype>()
+                            = reg_tmp_trans;
+                } else {
+                    reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                   sub_block_y * tile_desc::block_size_x)
+                            .xetla_format<load_dtype>()
+                            = reg_tmp;
+                }
             }
         }
     }

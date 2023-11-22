@@ -342,14 +342,39 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                     sub_block_y += num_channel) {
                 uint32_t address_offset = offset_x * sizeof(dtype)
                         + (offset_y + sub_block_y) * payload.pitch_in_bytes;
-                xetla_store_global<store_dtype, payload_t::simd_exec_size,
-                        data_size::default_size, L1, L3, num_channel>(
-                        payload.base_ptr,
-                        (payload.base_offset + address_offset
-                                + payload.channel_offset),
-                        reg_sub.xetla_select<load_elems * scale_factor, 1>(
-                                       sub_block_y * tile_desc::block_size_x)
-                                .xetla_format<store_dtype>());
+
+                xetla_vector<store_dtype, load_elems> reg_tmp
+                        = reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                         sub_block_y * tile_desc::block_size_x)
+                                  .xetla_format<store_dtype>();
+
+                if constexpr (payload_t::simd_exec_size > 1) {
+                    xetla_vector<store_dtype, load_elems> reg_tmp_trans;
+                    for (int iii = 0; iii < payload_t::num_channel; iii++) {
+                        reg_tmp_trans.xetla_select<payload_t::simd_exec_size,
+                                payload_t::num_channel>(iii)
+                                = reg_tmp.xetla_select<
+                                        payload_t::simd_exec_size, 1>(
+                                        iii * payload_t::simd_exec_size);
+                    }
+
+                    xetla_store_global<store_dtype, payload_t::simd_exec_size,
+                            data_size::default_size, L1, L3, num_channel>(
+                            payload.base_ptr,
+                            (payload.base_offset + address_offset
+                                    + payload.channel_offset),
+                            reg_tmp_trans);
+                } else {
+                    xetla_store_global<store_dtype, payload_t::simd_exec_size,
+                            data_size::default_size, L1, L3, num_channel>(
+                            payload.base_ptr,
+                            (payload.base_offset + address_offset
+                                    + payload.channel_offset),
+                            reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                                           sub_block_y
+                                           * tile_desc::block_size_x)
+                                    .xetla_format<store_dtype>());
+                }
             }
         }
     }
