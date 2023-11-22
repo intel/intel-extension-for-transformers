@@ -22,7 +22,7 @@ using namespace gpu::xetla;
 constexpr int ITER = 1;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_acc = float, typename data_type_bias = float>
+        typename data_type_acc = float, typename data_type_bias = data_type_a>
 int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
         data_type_bias *bias, uint32_t m, uint32_t k, uint32_t n,
         mem_layout mem_layout_a_ = mem_layout::row_major,
@@ -60,7 +60,7 @@ public:
     static constexpr size_t sg_k = 16;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
-    static constexpr size_t local_kslicing = 8;
+    static constexpr size_t local_kslicing = 1;
     static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;

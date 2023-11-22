@@ -108,14 +108,14 @@ struct xetla_nbarrier_t<num_producers, num_consumers, gpu_arch::Arc> {
     /// @brief Generic work-group split barrier.
     ///
     __XETLA_API void arrive() {
-        // __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::signal>();
+        __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::signal>();
     }
 
     /// @brief named barrier wait within subgroup.
     ///
     __XETLA_API void wait() {
-        // __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::wait>();
-        __ESIMD_NS::barrier();
+        __ESIMD_ENS::split_barrier<__ESIMD_ENS::split_barrier_action::wait>();
+        // __ESIMD_NS::barrier();
     }
 
     /// @brief named barrier signal from subgroup.
