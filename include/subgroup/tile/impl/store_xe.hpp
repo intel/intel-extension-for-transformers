@@ -330,6 +330,7 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                     template unaligned_2d<payload_t::tile_desc::block_size_x>;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
+    //     XETLA_PRINT<block_size_y>();
     // using num_block_x = tile_desc::num_block_x;
     constexpr uint32_t num_channel = payload_t::num_channel;
     constexpr uint32_t load_elems = num_channel * payload_t::simd_exec_size;
@@ -365,14 +366,15 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                         iii * payload_t::simd_exec_size);
                     }
                 } else {
-
                     reg_tmp = reg_sub.xetla_select<load_elems * scale_factor,
                                              1>(sub_block_y
                                              * tile_desc::block_size_x)
                                       .xetla_format<store_dtype>();
                 }
                 if (payload.base_y + offset_y + sub_block_y + num_channel
-                        > payload.height_in_elems) {
+                                > payload.height_in_elems
+                        && payload.base_y + offset_y + sub_block_y
+                                < payload.height_in_elems) {
 
                     xetla_vector<uint32_t, num_channel> channel_index
                             = xetla_vector_gen<uint32_t, num_channel>(0, 1);
@@ -380,13 +382,25 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                     xetla_mask<num_channel> pred_y = channel_index
                             < (payload.height_in_elems % num_channel);
 
+                    //     static const CONSTANT char FMT1[]
+                    //             = "STORE  dtype %d payload.height_in_elems: %d, "
+                    //               "num_channel:%d "
+                    //               "pred_y[%d]: %d ";
+                    //     for (int iiii = 0; iiii < num_channel; iiii++) {
+                    //         sycl::ext::oneapi::experimental::printf(FMT1,
+                    //                 sizeof(typename payload_t::dtype),
+                    //                 payload.height_in_elems, num_channel, iiii,
+                    //                 (int)pred_y[iiii]);
+                    //     }
+
                     xetla_store_global<store_dtype, payload_t::simd_exec_size,
                             data_size::default_size, L1, L3, num_channel>(
                             payload.base_ptr,
                             (payload.base_offset + address_offset
                                     + payload.channel_offset),
                             reg_tmp, pred_y);
-                } else {
+                } else if (payload.base_y + offset_y + sub_block_y + num_channel
+                        <= payload.height_in_elems) {
 
                     xetla_store_global<store_dtype, payload_t::simd_exec_size,
                             data_size::default_size, L1, L3, num_channel>(
