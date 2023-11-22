@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to train Intel/neural-chat-7b-v3-1 on Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+gf8bf64b documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">How to train Intel/neural-chat-7b-v3-1 on Gaudi2</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/finetune_neuralchat_v3/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-train-intel-neural-chat-7b-v3-1-on-gaudi2">
+<h1>How to train Intel/neural-chat-7b-v3-1 on Gaudi2<a class="headerlink" href="#how-to-train-intel-neural-chat-7b-v3-1-on-gaudi2" title="Link to this heading"></a></h1>
+<p><a class="reference external" href="https://huggingface.co/Intel/neural-chat-7b-v3-1">Intel/neural-chat-7b-v3-1</a> ranks top1 on the <a class="reference external" href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard">HuggingFaceH4/open_llm_leaderboard</a> comparing with all the submitted 7B models (date: 11/17/2023). In this tutorial, we would like to share the details for the training process.</p>
+<p>Similar to most finetuning work, we mainly divide the training to two stages.</p>
+<ul class="simple">
+<li><p>First stage: Use supervised finetuning (SFT) to improve the performance of the base model like <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a>.</p></li>
+<li><p>Second stage: apply Direct Preference Optimization (DPO) to align the SFT model with preference dataset.</p></li>
+</ul>
+<section id="prepare-environment">
+<h2>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h2>
+<p>In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.</p>
+<p>IMPORTANT: Please note Habana’s Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Habana HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
+<p>To run finetuning on Habana HPU, please execute below steps</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
+<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/neural_chat/docker/finetuning/
+
+<span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--tag<span class="w"> </span>chatbot_finetuning:latest<span class="w"> </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">BASE_NAME</span><span class="o">=</span><span class="s2">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ARTIFACTORY_URL</span><span class="o">=</span><span class="s2">&quot;vault.habana.ai&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;1.10.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REVISION</span><span class="o">=</span><span class="s2">&quot;494&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">PT_VERSION</span><span class="o">=</span><span class="s2">&quot;2.0.1&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">OS_NUMBER</span><span class="o">=</span><span class="s2">&quot;2204&quot;</span>
+
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>chatbot_finetuning:latest
+</pre></div>
+</div>
+</section>
+<section id="sft">
+<h2>SFT<a class="headerlink" href="#sft" title="Link to this heading"></a></h2>
+<p>We select the latest pretrained <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a> and the open source dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/SlimOrca">Open-Orca/SlimOrca</a> to conduct the experiment.</p>
+<p>The below script use deepspeed zero2 to lanuch the training with 8 cards (GPUs/HPUs). In the <code class="docutils literal notranslate"><span class="pre">finetune_neuralchat_v3.py</span></code>, the default <code class="docutils literal notranslate"><span class="pre">use_habana=True,</span> <span class="pre">use_lazy_mode=True,</span> <span class="pre">device=&quot;hpu&quot;</span></code> for Gaudi2. And if you want to run it on Nvidia GPU, you can set them <code class="docutils literal notranslate"><span class="pre">use_habana=False,</span> <span class="pre">use_lazy_mode=False,</span> <span class="pre">device=&quot;auto&quot;</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">deepspeed</span> <span class="o">--</span><span class="n">include</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span> \
+    <span class="o">--</span><span class="n">master_port</span> <span class="mi">29501</span> \
+    <span class="n">finetune_neuralchat_v3</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<section id="merge-the-lora-weights">
+<h3>Merge the lora weights<a class="headerlink" href="#merge-the-lora-weights" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">apply_lora</span><span class="o">.</span><span class="n">py</span> \
+    <span class="o">--</span><span class="n">base</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="n">mistralai</span><span class="o">/</span><span class="n">Mistral</span><span class="o">-</span><span class="mi">7</span><span class="n">B</span><span class="o">-</span><span class="n">v0</span><span class="mf">.1</span> \
+    <span class="o">--</span><span class="n">lora</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="n">finetuned_model</span><span class="o">/</span> \
+    <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="n">path</span> <span class="n">finetuned_model_lora</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="direct-preference-optimization-dpo">
+<h2>Direct Preference Optimization (DPO)<a class="headerlink" href="#direct-preference-optimization-dpo" title="Link to this heading"></a></h2>
+<p>For Better aligning human preferences, we apply <a class="reference external" href="https://arxiv.org/pdf/2305.18290.pdf">Direct Preference Optimization</a> (DPO) algorithm, which is stable and computationally lightweight. The algorithm derives the probability of human preference data for the optimal policy to replace the reward model that reinforcement learning from human feedback (RLHF) needs and formulates a maximum likelihood objective for a parameterized policy.</p>
+<p>The preference dataset contains 12k examples selected from <a class="reference external" href="https://arxiv.org/abs/2306.02707">Orca</a> style dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/OpenOrca">Open-Orca/OpenOrca</a> and its completions that are generated from GPT-4 or GPT-3.5 are regarded as chosen response. In term of reject responses, we use <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">meta-llama/Llama-2-13b-chat-hf</a> model to generate corresponding completions automatically because maybe better rejected responses are also better for alignment.</p>
+<p>For details of the dataset and DPO training code, you can refer <a class="reference external" href="https://huggingface.co/datasets/Intel/orca_dpo_pairs">Intel/orca_dpo_pairs</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline">DPO example</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">../../../../</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">finetuning</span><span class="o">/</span><span class="n">dpo_pipeline</span><span class="o">/</span><span class="n">dpo_clm</span><span class="o">.</span><span class="n">py</span> \
+        <span class="o">--</span><span class="n">model_name_or_path</span> <span class="s2">&quot;./finetuned_model_lora&quot;</span> \
+        <span class="o">--</span><span class="n">output_dir</span> <span class="s2">&quot;./finetuned_model_lora_plus_dpo&quot;</span> \
+        <span class="o">--</span><span class="n">per_device_train_batch_size</span> <span class="mi">8</span> \
+        <span class="o">--</span><span class="n">gradient_accumulation_steps</span> <span class="mi">8</span> \
+        <span class="o">--</span><span class="n">learning_rate</span> <span class="mf">5e-4</span> \
+        <span class="o">--</span><span class="n">max_steps</span> <span class="mi">1000</span> \
+        <span class="o">--</span><span class="n">save_steps</span> <span class="mi">10</span> \
+        <span class="o">--</span><span class="n">logging_steps</span> <span class="mi">10</span> \
+        <span class="o">--</span><span class="n">lora_alpha</span> <span class="mi">16</span> \
+        <span class="o">--</span><span class="n">lora_rank</span> <span class="mi">16</span> \
+        <span class="o">--</span><span class="n">lora_dropout</span> <span class="mf">0.05</span> \
+        <span class="o">--</span><span class="n">dataset_name</span> <span class="o">/</span><span class="n">lkk</span><span class="o">/</span><span class="n">orca_dpo_pairs</span> \
+        <span class="o">--</span><span class="n">bf16</span> \
+        <span class="o">--</span><span class="n">max_length</span> <span class="mi">1536</span> \
+        <span class="o">--</span><span class="n">max_prompt_length</span> <span class="mi">1024</span> \
+        <span class="o">--</span><span class="n">lr_scheduler_type</span> <span class="s2">&quot;cosine&quot;</span> \
+        <span class="o">--</span><span class="n">warmup_steps</span> <span class="mi">100</span> \
+        <span class="o">--</span><span class="n">use_habana</span> \
+        <span class="o">--</span><span class="n">use_lazy_mode</span> \
+        <span class="o">--</span><span class="n">pad_max</span> <span class="n">true</span> \
+        <span class="o">--</span><span class="n">gradient_checkpointing</span> <span class="n">true</span> \
+        <span class="o">--</span><span class="n">lora_all_linear</span> <span class="n">false</span> \
+        <span class="o">--</span><span class="n">lora_target_modules</span> <span class="s1">&#39;k_proj&#39;</span> <span class="s1">&#39;q_proj&#39;</span> <span class="s1">&#39;v_proj&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f747c06c550> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
