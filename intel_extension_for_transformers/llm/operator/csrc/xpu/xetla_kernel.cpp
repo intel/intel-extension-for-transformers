@@ -156,6 +156,7 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
                   T *D) {
   using data_type_a = T;
   using data_type_c = T;
+  using data_type_bias = T;
   linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
   auto context = queue.get_info<sycl::info::queue::context>();
   auto device = queue.get_info<sycl::info::queue::device>();
@@ -177,6 +178,9 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   using mem_desc_c_t =
       gpu::xetla::mem_desc_t<data_type_c, gpu::xetla::mem_layout::row_major,
                              gpu::xetla::mem_space::global>;
+  using mem_desc_bias_t =
+      gpu::xetla::mem_desc_t<data_type_bias, gpu::xetla::mem_layout::row_major,
+                             gpu::xetla::mem_space::global>;
 
   using compute_attr =
       gpu::xetla::group::compute_attr_t<data_type_acc_in, data_type_acc_in,
@@ -191,7 +195,7 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
                                            mem_desc_a_t, mem_desc_b_t>;
   using bias_op_t =
-      gpu::xetla::subgroup::bias_add_op_t<T, gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::subgroup::bias_add_op_t<mem_desc_bias_t, gpu::xetla::gpu_arch::Arc>;
   using tile_op_t =
       gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
   using bias_epilogue_policy_t = gpu::xetla::group::epilogue_policy_tile_op<tile_op_t,
