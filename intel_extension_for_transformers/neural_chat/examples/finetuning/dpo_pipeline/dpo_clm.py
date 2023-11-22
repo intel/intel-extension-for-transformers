@@ -443,11 +443,12 @@ if __name__ == "__main__":
             attention_mask=attention_mask,
         )
 
-            
     if finetune_args.lora_all_linear:
         target_modules = find_all_linear_names(model)
+    elif finetune_args.lora_target_modules is not None:
+        target_modules = finetune_args.lora_target_modules
     else:
-        target_modules=[
+        target_modules = [
             "q_proj",
             "v_proj",
             "k_proj",
