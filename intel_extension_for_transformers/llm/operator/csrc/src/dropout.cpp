@@ -44,7 +44,7 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       _mm512_storeu_ps(mask_ptr + i * dt_size, mul_scale);
     } else {
       auto ans = _mm512_castsi512_ps(
-          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(data + i * dt_size)), 2));
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_si256((__m256i*)(data + i * dt_size))), 2));
       ans = _mm512_mul_ps(ans, mul_scale);
       __m256i bf16_ans, bf16_mul_scale;
 #if CompileBF16()
@@ -54,8 +54,8 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
       bf16_mul_scale = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
 #endif
-      _mm256_storeu_epi16(data + i * dt_size, bf16_ans);
-      _mm256_storeu_epi16(mask_ptr + i * dt_size, bf16_mul_scale);
+      _mm256_storeu_si256((__m256i*)(data + i * dt_size), bf16_ans);
+      _mm256_storeu_si256((__m256i*)(mask_ptr + i * dt_size), bf16_mul_scale);
     }
   }
   if (i < elt_num) {
@@ -100,9 +100,9 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
       _mm512_storeu_ps(grad + i * dt_size, ans);
     } else {
       auto ans = _mm512_castsi512_ps(
-          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(grad + i * dt_size)), 2));
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_si256((__m256i*)(grad + i * dt_size))), 2));
       auto zmm_mask = _mm512_castsi512_ps(
-          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_epi16(mask_ptr + i * dt_size)), 2));
+          _mm512_bslli_epi128(_mm512_cvtepu16_epi32(_mm256_loadu_si256((__m256i*)(mask_ptr + i * dt_size))), 2));
       ans = _mm512_mul_ps(ans, zmm_mask);
       __m256i bf16_ans;
 #if CompileBF16()
@@ -110,7 +110,7 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
 #else
       bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
 #endif
-      _mm256_storeu_epi16(grad + i * dt_size, bf16_ans);
+      _mm256_storeu_si256((__m256i*)(grad + i * dt_size), bf16_ans);
     }
   }
   if (i < elt_num) {
