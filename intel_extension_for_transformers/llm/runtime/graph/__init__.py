@@ -60,9 +60,9 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
         elif model_type == "polyglot":
             import intel_extension_for_transformers.llm.runtime.graph.polyglot_cpp as cpp_model
-        elif model_name == "qwen":
+        elif model_type == "qwen":
             import intel_extension_for_transformers.llm.runtime.graph.qwen_cpp as cpp_model
-        elif model_name == "mistral":
+        elif model_type == "mistral":
             import intel_extension_for_transformers.llm.runtime.graph.mistral_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_type))
