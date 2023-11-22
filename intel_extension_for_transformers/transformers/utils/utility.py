@@ -21,7 +21,6 @@ import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
 from neural_compressor.utils.utility import LazyImport
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -172,89 +171,24 @@ def get_example_inputs_for_chatglm(model, quantization_config=None, return_type=
         inputs["eos_token_id"] = eos_token_id
         input_ids = inputs["input_ids"]
         input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len + 1)
-        attention_mask[:, 0] = 0
-        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
     elif hasattr(tokenizer, "build_prompt"):
         prompt = tokenizer.build_prompt(query)
         inputs = tokenizer([prompt], return_tensors="pt")
         input_ids = inputs["input_ids"]
         input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len + 1)
-        attention_mask[:, 0] = 0
-        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
     else:
         inputs = tokenizer([query], return_tensors="pt")
         input_ids = inputs["input_ids"]
         input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len + 1)
-        attention_mask[:, 0] = 0
-        past_key_values = generate_dummy_past_key_values(input_bs, model)
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
     example_inputs = {
         "input_ids": input_ids,
         "past_key_values": tuple(past_key_values),
         "attention_mask": attention_mask
     }
     return example_inputs
-
-from optimum.intel.generation.modeling import TSModelForCausalLM
-class TSModelCausalLMForOPTLLM(TSModelForCausalLM):
-    def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-        position_ids: Optional[torch.FloatTensor] = None,
-        **kwargs,
-    ) -> CausalLMOutputWithPast:
-        if attention_mask is None:
-            attention_mask = torch.ones_like(input_ids)
-
-        inputs = {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-        }
-
-        model_type = self.config.model_type.replace("_", "-")
-        if self.use_cache:
-            if past_key_values is None:
-                nb_pkv = 2
-                num_layers = self.normalized_config.num_layers
-                d_k = self.normalized_config.hidden_size // self.normalized_config.num_attention_heads
-                batch_size = input_ids.shape[0]
-                input_len = input_ids.shape[1]  
-                num_attention_heads = self.normalized_config.num_attention_heads
-                num_key_value_heads = num_attention_heads
-                if hasattr(self.normalized_config, "num_key_value_heads"):
-                    num_key_value_heads = self.normalized_config.num_key_value_heads
-                if hasattr(self.normalized_config, "multi_query_group_num"):
-                    num_key_value_heads = self.normalized_config.multi_query_group_num
-                elif self.config.model_type == "qwen":
-                    new_shape = [batch_size, 1, num_key_value_heads, d_k]
-                elif self.config.model_type == "chatglm":
-                    new_shape = [1, batch_size, num_key_value_heads, d_k]
-                else:
-                    new_shape = [batch_size, num_key_value_heads, 1, d_k]
-
-                beam_idx_tmp = torch.zeros((2048, int(batch_size)), dtype=torch.long)
-                past_key_values = [(torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
-                        torch.zeros(size=new_shape).contiguous(),
-                        torch.zeros(size=new_shape).contiguous(),
-                        beam_idx_tmp) for _ in range(num_layers)]
-                past_key_values = tuple(past_key_values)
-            inputs["past_key_values"] = past_key_values
-        if model_type != "opt":
-            if position_ids is not None:
-                inputs["position_ids"] = position_ids
-            else:
-                inputs["position_ids"] = torch.arange(input_len).repeat(batch_size, 1)
-
-        outputs = self.model(**inputs)
-
-        if isinstance(outputs, (list, tuple)):
-            logits = outputs[0]
-            past_key_values = outputs[1] if self.use_cache else None
-        else:
-            logits = outputs["logits"]
-            past_key_values = outputs["past_key_values"] if self.use_cache else None
-        return CausalLMOutputWithPast(logits=logits, past_key_values=past_key_values)

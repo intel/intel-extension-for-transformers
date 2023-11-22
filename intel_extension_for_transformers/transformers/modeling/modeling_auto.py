@@ -31,7 +31,6 @@
 # limitations under the License.
 
 
-from turtle import position
 import warnings
 
 import torch
@@ -46,7 +45,8 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     logger,
     LazyImport,
     generate_dummy_past_key_values,
-    generate_dummy_past_key_values_for_opt_llm
+    generate_dummy_past_key_values_for_opt_llm,
+    get_example_inputs_for_chatglm
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -179,7 +179,6 @@ class _BaseQBitsAutoModelClass:
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
                 import intel_extension_for_pytorch as ipex
-                ipex._C.disable_jit_linear_repack()
             except ImportError:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
@@ -208,7 +207,7 @@ class _BaseQBitsAutoModelClass:
                 if model_type in ipex_opt_llm_supported:
                     quantization_config.ipex_opt_llm = True
                     logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
-                    logger.warning("The suggested transformers version is 4.31.0 if ipex.optimize_transformers is used.")
+                    logger.warning("The suggested transformers version is 4.31.0.")
                 else:
                     quantization_config.ipex_opt_llm = False
             if quantization_config.ipex_opt_llm:
@@ -225,7 +224,11 @@ class _BaseQBitsAutoModelClass:
             # past_key_values
             num_beams = quantization_config.num_beams
             if quantization_config.ipex_opt_llm:
-                past_key_values = generate_dummy_past_key_values_for_opt_llm(config=model.config, input_bs=1, num_beams=num_beams)
+                past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                                                                            config=model.config,
+                                                                            input_bs=1,
+                                                                            num_beams=num_beams
+                                                                            )
             else:
                 past_key_values = generate_dummy_past_key_values(config=model.config, input_bs=1)
           
@@ -328,30 +331,34 @@ class _BaseQBitsAutoModelClass:
                 calib_func = calib_func
 
             # example_inputs
-            if quantization_config.example_inputs is not None:
-                example_inputs = quantization_config.example_inputs
-            try:
-                from optimum.intel.generation.modeling import prepare_jit_inputs
-                example_inputs = prepare_jit_inputs(model, task="text-generation", use_cache=True)
-            except:
-                for i, (
-                    (input_ids, attention_mask, position_ids, past_key_values),
-                    last_ind,
-                ) in enumerate(calib_dataloader):
-                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        example_inputs = {
-                            "input_ids": input_ids,
-                            "attention_mask": attention_mask,
-                            "position_ids": position_ids,
-                            "past_key_values": past_key_values
-                        }
-                    else:
-                        example_inputs = {
-                            "input_ids": input_ids,
-                            "attention_mask": attention_mask,
-                            "past_key_values": past_key_values
-                        }
-                    break
+            example_inputs = quantization_config.example_inputs
+            if model_type == "chatglm":
+                example_inputs = get_example_inputs_for_chatglm(model, 
+                                                                quantization_config=quantization_config,
+                                                                return_type="dict")
+            if example_inputs is None:
+                try:
+                    from optimum.intel.generation.modeling import prepare_jit_inputs
+                    example_inputs = prepare_jit_inputs(model, task="text-generation", use_cache=True)
+                except:
+                    for i, (
+                        (input_ids, attention_mask, position_ids, past_key_values),
+                        last_ind,
+                    ) in enumerate(calib_dataloader):
+                        if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                            example_inputs = {
+                                "input_ids": input_ids,
+                                "attention_mask": attention_mask,
+                                "position_ids": position_ids,
+                                "past_key_values": past_key_values
+                            }
+                        else:
+                            example_inputs = {
+                                "input_ids": input_ids,
+                                "attention_mask": attention_mask,
+                                "past_key_values": past_key_values
+                            }
+                        break
 
             # sq recipes
             recipes = {
