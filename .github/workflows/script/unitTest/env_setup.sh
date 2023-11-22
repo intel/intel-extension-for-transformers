@@ -19,16 +19,15 @@ until [ "$n" -ge 5 ]; do
 done
 
 # Install test requirements
-cd /intel-extension-for-transformers/tests
+echo "Install Tests Requirements"
+cd $1 || exit 1
+pwd
 if [ -f "requirements.txt" ]; then
     python -m pip install --default-timeout=100 -r requirements.txt
     pip list
 else
     echo "Not found requirements.txt file."
 fi
-
-# same as jenkins ci
-pip install scipy==1.10.1
 
 pip install coverage
 pip install pytest
