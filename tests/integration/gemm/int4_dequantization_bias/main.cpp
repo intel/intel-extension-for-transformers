@@ -54,10 +54,10 @@ public:
     static constexpr size_t mat_n = 4096 * 3;
     static constexpr size_t mat_k = 4096;
     static constexpr size_t wg_m = 8;
-    static constexpr size_t wg_n = 16;
+    static constexpr size_t wg_n = 32;
     static constexpr size_t sg_m = 8;
     static constexpr size_t sg_n = 16;
-    static constexpr size_t sg_k = 16;
+    static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
     static constexpr size_t local_kslicing = 4;
@@ -215,9 +215,9 @@ void dequantize_gemm_run(int iter) {
 
     for (unsigned i = 0; i < size_a; ++i) {
         A_h[i] = random_float();
-#ifdef UT_DEBUG
-        A_h[i] = i;
-#endif
+        // #ifdef UT_DEBUG
+        //         A_h[i] = i;
+        // #endif
     }
     for (unsigned i = 0; i < size_b; ++i) {
         B_h[i] = uint8_t(random_uint8());

@@ -266,8 +266,8 @@ TEST(tile_load_store_unaligned_2d, esimd) {
     auto result_validate = std::bind(tile_load_store_result_validate<date_type>,
             _1, _2, _3, 127, 63, 32, 32, 0);
     kernel_run<date_type,
-            tile_load_store_unaligned_2d_func<date_type, 16, 16, 16, 16, 16, 16,
-                    16>>(nd_range, result_validate);
+            tile_load_store_unaligned_2d_func<date_type, 16, 1, 16, 16, 8, 16,
+                    8>>(nd_range, result_validate);
 }
 
 // TEST(tile_load_store_oob_1, esimd) {

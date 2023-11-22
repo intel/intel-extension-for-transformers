@@ -19,6 +19,12 @@
 
 #pragma once
 
+#ifdef __SYCL_DEVICE_ONLY__
+#define CONSTANT __attribute__((opencl_constant))
+#else
+#define CONSTANT
+#endif
+
 #include "subgroup/tile/api.hpp"
 #include "subgroup/tile/impl/op_function.hpp"
 #include "subgroup/tile/impl/payload_xe.hpp"
@@ -445,19 +451,42 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
 #pragma unroll
             for (int sub_block_y = 0; sub_block_y < tile_desc::block_size_y;
                     sub_block_y += num_channel) {
-                xetla_vector<load_dtype, load_elems> reg_tmp;
+                xetla_vector<load_dtype, load_elems> reg_tmp = 0;
                 uint32_t address_offset = payload_t::trans
                         ? offset_x * payload.pitch_in_bytes
                                 + (offset_y + 0) * sizeof(dtype)
                         : offset_x * sizeof(dtype)
                                 + (offset_y + 0) * payload.pitch_in_bytes;
+                if (payload.base_y + offset_y + sub_block_y + num_channel
+                        > payload.height_in_elems) {
 
-                reg_tmp = xetla_load_global<load_dtype,
-                        payload_t::simd_exec_size, data_size::default_size, L1,
-                        L3, payload_t::num_channel>(payload.base_ptr,
-                        payload.channel_offset + payload.base_offset
-                                + address_offset);
-                //
+                    xetla_mask<num_channel> pred_y
+                            = xetla_vector_gen<uint32_t, num_channel>(0, 1)
+                            < (payload.height_in_elems % num_channel);
+                    static const CONSTANT char FMT1[]
+                            = "LOAD  dtype %d payload.height_in_elems: %d, "
+                              "num_channel:%d "
+                              "pred_y[%d]: %d ";
+                    for (int iiii = 0; iiii < num_channel; iiii++) {
+                        sycl::ext::oneapi::experimental::printf(FMT1,
+                                sizeof(typename payload_t::dtype),
+                                payload.height_in_elems, num_channel, iiii,
+                                (int)pred_y[iiii]);
+                    }
+
+                    reg_tmp = xetla_load_global<load_dtype,
+                            payload_t::simd_exec_size, data_size::default_size,
+                            L1, L3, payload_t::num_channel>(payload.base_ptr,
+                            payload.channel_offset + payload.base_offset
+                                    + address_offset,
+                            pred_y);
+                } else {
+                    reg_tmp = xetla_load_global<load_dtype,
+                            payload_t::simd_exec_size, data_size::default_size,
+                            L1, L3, payload_t::num_channel>(payload.base_ptr,
+                            payload.channel_offset + payload.base_offset
+                                    + address_offset);
+                }
                 if constexpr (payload_t::simd_exec_size > 1) {
                     xetla_vector<load_dtype, load_elems> reg_tmp_trans;
                     for (int iii = 0; iii < payload_t::num_channel; iii++) {
@@ -481,55 +510,6 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
             }
         }
     }
-    //     //process the tail
-    //     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
-    //         constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
-    //         constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;
-    //         constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
-    //         constexpr uint32_t remain_block_elems
-    //                 = remained_size_y * tile_desc::block_size_x;
-    // #pragma unroll
-    //         for (int j = 0; j < tile_desc::num_block_x; j++) {
-    //             uint32_t offset_x = j * tile_desc::block_size_x;
-    //             auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
-    //                     processed_elems + j * remain_block_elems);
-    //             xetla_mask<load_elems> pred_x = oob_check
-    //                     ? payload.step_x + payload.base_x + offset_x
-    //                             < payload.width_in_elems
-    //                     : 1;
-    // #pragma unroll
-    //             for (int sub_block_y = 0; sub_block_y < remained_size_y;
-    //                     sub_block_y += num_channel) {
-    //                 xetla_vector<load_dtype, load_elems> reg_tmp;
-    //                 xetla_mask<load_elems> pred_y = oob_check
-    //                         ? payload.step_y + payload.base_y + offset_y
-    //                                         + sub_block_y
-    //                                 < payload.height_in_elems
-    //                         : 1;
-
-    //                 uint32_t address_offset = payload_t::trans
-    //                         ? offset_x * payload.pitch_in_bytes
-    //                                 + (offset_y + sub_block_y) * sizeof(dtype)
-    //                         : offset_x * sizeof(dtype)
-    //                                 + (offset_y + sub_block_y)
-    //                                         * payload.pitch_in_bytes;
-
-    //                 reg_tmp = xetla_load_global<load_dtype, 1,
-    //                         data_size::default_size, L1, L3, load_elems>(
-    //                         payload.base_ptr,
-    //                         payload.channel_offset + payload.base_offset
-    //                                 + address_offset,
-    //                         pred_x && pred_y);
-
-    //                 reg_tmp.xetla_merge(reg_tmp, 0, pred_x && pred_y);
-
-    //                 reg_sub.xetla_select<load_elems * scale_factor, 1>(
-    //                                sub_block_y * tile_desc::block_size_x)
-    //                         .xetla_format<load_dtype>()
-    //                         = reg_tmp;
-    //             }
-    //         }
-    // }
 
     if constexpr (payload_t::mem_transform) {
         SW_BARRIER();
