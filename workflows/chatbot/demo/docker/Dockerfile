@@ -90,7 +90,6 @@ RUN source activate && conda activate chatbot-demo && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
     conda install git-lfs && \
-    pip install 'farm-haystack[inference]' && \
     pip install intel_extension_for_pytorch && \
     pip install transformers diffusers accelerate && \
     pip install einops SentencePiece peft evaluate nltk datasets && \
