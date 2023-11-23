@@ -184,7 +184,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    if config.model_type in ["gptj", "opt", "llama"]:
+    if config.model_type in ["gptj", "opt", "llama", "gpt_neox"]:
         if args.accuracy:
             from intel_extension_for_transformers.llm.evaluation.lm_eval.models import TSModelCausalLMForOPTLLM
             user_model = TSModelCausalLMForOPTLLM.from_pretrained(

@@ -85,14 +85,8 @@ function gtest() {
 }
 
 function main() {
-    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
+    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "${WORKING_DIR}/test/pytest"
     cd ${WORKING_DIR}/test/pytest || exit 1
-    if [ -f "requirements.txt" ]; then
-        python -m pip install --default-timeout=100 -r requirements.txt
-        pip list
-    else
-        echo "Not found requirements.txt file."
-    fi
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
         gtest

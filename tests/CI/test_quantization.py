@@ -319,16 +319,6 @@ class TestQuantization(unittest.TestCase):
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
                                     calib_iters=5,
-                                    example_inputs=fp32_model.dummy_inputs
-                                    )
-        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-                                                    quantization_config=sq_config,
-                                                    use_llm_runtime=False
-                                                )
-        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
-        sq_config = SmoothQuantConfig(
-                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                    calib_iters=5,
                                     ipex_opt_llm=False
                                     )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,

@@ -119,12 +119,12 @@ class RandBuffer {
     uint32_t* buffer = load_buffer + 8 * thread_idx;
     auto iw = iws[thread_idx * 16];
     __m256i x, f, y, y_cp;
-    x = _mm256_loadu_si256((__m256i_u*)(buffer + iw));
-    f = _mm256_loadu_si256((__m256i_u*)(MWCFactors + iw));
+    x = _mm256_loadu_si256((__m256i*)(buffer + iw));
+    f = _mm256_loadu_si256((__m256i*)(MWCFactors + iw));
     y = _mm256_mul_epu32(x, f);
     x = _mm256_srl_epi64(x, _mm_cvtsi32_si128((int32_t)32u));
     y = _mm256_add_epi64(x, y);
-    _mm256_storeu_si256((__m256i_u*)(buffer + iw), y);
+    _mm256_storeu_si256((__m256i*)(buffer + iw), y);
     y_cp = _mm256_sll_epi64(y, _mm_cvtsi32_si128(shw1));
     y = _mm256_xor_si256(y, y_cp);
     y_cp = _mm256_srl_epi64(y, _mm_cvtsi32_si128((int32_t)shw2));
