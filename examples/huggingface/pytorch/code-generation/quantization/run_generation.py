@@ -16,7 +16,6 @@ from transformers import AutoTokenizer, PretrainedConfig, AutoConfig
 import transformers
 from optimum.utils import NormalizedConfigManager
 from intel_extension_for_transformers.transformers import (
-    MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
 )
@@ -36,9 +35,6 @@ parser.add_argument("--revision", default=None, type=str)
 parser.add_argument(
     "--dataset", nargs="?", default="mbpp", const="mbpp"
 )
-parser.add_argument(
-    "--calib_split", nargs="?", default="test", const="test"
-)
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
@@ -51,7 +47,7 @@ parser.add_argument(
     "--pad_max_length", default=512, type=int, help="Pad input ids to max length."
 )
 parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
-parser.add_argument("--calib_batch_size", default=1, type=int, help="calibration iters.")
+parser.add_argument("--calib_batch_size", default=1, type=int, help="calibration batch size.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
@@ -73,9 +69,9 @@ parser.add_argument("--tasks", default="humaneval", type=str, \
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
                     help="Weight-only parameter.")
-parser.add_argument("--woq_dtype", type=str, default="int8", 
+parser.add_argument("--woq_dtype", type=str, default="int4_fullrange", 
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
-parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--woq_enable_full_range", action="store_true")
@@ -156,6 +152,7 @@ if args.ipex:
     import intel_extension_for_pytorch as ipex
     from optimum.intel.generation.modeling import TSModelForCausalLM
 
+calib_dataset = args.dataset
 op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
@@ -168,12 +165,15 @@ if args.sq:
         alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
+        calib_dataset=calib_dataset,
+        calib_iters=args.calib_iters
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
-        compute_dtype="fp32",
-        weight_dtype="int4_fullrange",
-        group_size=32
+        weight_dtype=args.woq_dtype,
+        group_size=args.woq_group_size,
+        scheme=args.woq_scheme,
+        algorithm=args.woq_algo
     ) #default is A32W4G32
 else:
     from neural_compressor import PostTrainingQuantConfig
@@ -181,6 +181,8 @@ else:
         backend="ipex" if args.ipex else "default",
         excluded_precisions=excluded_precisions,
         op_type_dict=op_type_dict,
+        calib_dataset=calib_dataset,
+        calib_iters=args.calib_iters
     )
 
 if quantization_config is not None:
@@ -199,12 +201,19 @@ if quantization_config is not None:
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
 if args.int8 or args.int8_bf16_mixed:
-    # TorchScript model don't attribute generate method, the wrapper is provided.
-    import intel_extension_for_pytorch as ipex
-    user_model = TSModelForCausalLM.from_pretrained(
-        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
-    )
-
+    if args.ipex:
+        # TorchScript model don't attribute generate method, the wrapper is provided.
+        import intel_extension_for_pytorch as ipex
+        from intel_extension_for_transformers.llm.evaluation?models import TSModelCausalLMForOPTLLM
+        user_model = TSModelCausalLMForOPTLLM.from_pretrained(
+            args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+        )
+        print("Load torchscript int8 model successfully.")
+    else:
+        from neural_compressor.utils.pytorch import load
+        user_model = load(args.output_dir, user_model)
+        print("Load int8 model successfully.")
+    
 if args.benchmark:
     print("---- Prompt size:", args.prompt_size)
 

@@ -1,9 +1,9 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for Starcoder models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
+We provide the inference benchmarking script `run_generation.py` for Starcoder and CodeLlama models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase), [codellama/CodeLlama-7b-hf](https://huggingface.co/codellama/CodeLlama-7b-hf) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
 
 
 # Prerequisite​
-## 1. Create Environment​
+## 1. Environment​
 Recommend python 3.7 or higher version is recommended. The dependent packages are listed in requirements, please install them as follows,
 
 ```shell
@@ -12,32 +12,10 @@ cd intel-extension-for-transformers
 pip install -r requirements.txt
 python setup.py install
 ```
-
 Required libraries.
 ```shell
 pip install -r requirements.txt
 ```
-
-We use the gpt_bigcode definition script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
-```diff
-# Line 227 in modeling_gpt_bigcode.py on transformers 4.28.1
--      query, key_value = self.c_attn(hidden_states).split((self.embed_dim, 2 * self.kv_dim), dim=2)
-+      query, key, value = self.c_attn(hidden_states).split((self.embed_dim, self.kv_dim, self.kv_dim), dim=2)
-
-# Line 239 in modeling_gpt_bigcode.py on transformers 4.28.1
-+      key_value = torch.cat((key, value), dim=-1)
-
-
-# Line 642 in modeling_gpt_bigcode.py on transformers 4.28.1
--      presents = [] if use_cache else None
-+      presents = () if use_cache else None
-
-# Line 682 in modeling_gpt_bigcode.py on transformers 4.28.1
--      presents.append(outputs[1])
-+      presents += (outputs[1],)
-
-```
-
 
 # Run
 
@@ -52,8 +30,7 @@ python run_generation.py \
     --ipex \
     --calib_iters 500 \
     --calib_batch_size 1 \
-    --dataset "mbpp" \
-    --calib_split "test"
+    --dataset "mbpp"
 ```
 
 ## 2. Performance
@@ -119,7 +96,6 @@ python3 run_generation.py \
     --calib_iters 500 \
     --calib_batch_size 1 \
     --dataset "mbpp" \
-    --calib_split "test" \ 
     --output_dir "$(CURDIR)/saved_results" \
     --int8 \
     --accuracy \
@@ -142,5 +118,3 @@ docker run -v $(CURDIR):$(CURDIR) \
     --do_sample --temperature 0.2 --limit 2
 
 ```
-
-

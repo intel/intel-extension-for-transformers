@@ -248,7 +248,7 @@ class _BaseQBitsAutoModelClass:
                 from torch.utils.data import DataLoader
                 calib_dataset = quantization_config.calib_dataset
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, split="train")
+                calib_dataset = load_dataset(calib_dataset, split="test" if calib_dataset in ["mbpp", "openai_humaneval"] else "train")
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
@@ -355,6 +355,12 @@ class _BaseQBitsAutoModelClass:
                             "past_key_values": past_key_values
                         }
                     break
+            # sq recipes
+            recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": quantization_config.alpha},
+            }
+
             # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
             conf = PostTrainingQuantConfig(
@@ -362,15 +368,14 @@ class _BaseQBitsAutoModelClass:
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
                 op_name_dict=quantization_config.op_name_dict,
-                recipes=quantization_config.recipes,
+                recipes=recipes,
                 example_inputs=example_inputs,
             )
             model = quantization.fit(
                                     model, 
                                     conf,
                                     calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader if \
-                                        quantization_config.recipes['smooth_quant_args']['alpha']=="auto" else None
+                                    calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
                                     )
             logger.info("SmoothQuant done.")
         else:
