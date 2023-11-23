@@ -17,7 +17,10 @@
 
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
+from config_logging import configure_logging
 import argparse
+
+logger = configure_logging()
 parser = argparse.ArgumentParser(
                     prog='asr',
                     description='Audio Speech Recognition')
@@ -27,4 +30,4 @@ parser.add_argument('-d', '--device', default="cuda")
 args = parser.parse_args()
 asr = AudioSpeechRecognition(model_name_or_path=args.model_name_or_path, device=args.device)
 text = asr.audio2text(args.input_audio)
-print(text)
+logger.info(text)

@@ -23,6 +23,9 @@ from torch.types import Number
 from scipy.io import wavfile
 from pydub import AudioSegment
 import numpy as np
+from config_logging import configure_logging
+
+logger = configure_logging()
 
 @torch.no_grad()
 def amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) -> torch.Tensor:
@@ -354,13 +357,13 @@ class NoiseReducer:
 
     def reduce_audio_amplify(self, output_audio_path, y):
         original_sound = AudioSegment.from_file(output_audio_path, format="wav")
-        print("[1/2] reduce noise")
+        logger.info("[1/2] reduce noise")
         reduced_noise = self.tg(torch.tensor(y, dtype=torch.float32).unsqueeze(0))
         wavfile.write(f"{output_audio_path}_rn.wav", self.sr, reduced_noise.numpy()[0])
         original_db = original_sound.dBFS
         rn_sound = AudioSegment.from_file(f"{output_audio_path}_rn.wav", format="wav")
         rn_db = rn_sound.dBFS
-        print(f"[2/2] amplifying {original_db - rn_db} dB")
+        logger.info("[2/2] amplifying %s dB", original_db - rn_db)
         rn_am_sound = rn_sound.apply_gain(original_db - rn_db)
         rn_am_sound.export(f"{output_audio_path}_rn_ap.wav")
         return f"{output_audio_path}_rn_ap.wav"

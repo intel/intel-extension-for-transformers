@@ -26,6 +26,8 @@ from transformers import SpeechT5HifiGan
 import soundfile as sf
 from datetime import datetime
 from num2words import num2words
+from config_logging import configure_logging
+logger = configure_logging()
 
 workdir = os.getcwd()
 
@@ -102,7 +104,7 @@ def correct_number(text):
             try:
                 word = num2words(word)
             except Exception as e:
-                print(f"num2words fail with word: {word} and exception: {e}")
+                logger.info("num2words fail with word: %s and exception: %s", word, e)
         else:
             try:
                 val = int(word)
@@ -130,5 +132,5 @@ while True:
         time_stamp = now.strftime("%d_%m_%Y_%H_%M_%S")
         sf.write(f"output_{time_stamp}.wav", speech.cpu().numpy(), samplerate=16000)
     except Exception as e:
-        print(f"Catch exception: {e}")
-        print("Restarting\n")
+        logger.info("Catch exception: %s", e)
+        logger.info("Restarting\n")

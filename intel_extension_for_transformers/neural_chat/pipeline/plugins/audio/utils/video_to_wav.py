@@ -19,13 +19,16 @@ import os
 import argparse
 import subprocess
 import shlex
+from config_logging import configure_logging
 
 from pydub import AudioSegment
+
+logger = configure_logging()
 
 def convert_video_to_wav(path, output_sample_rate, is_mono=True):
     path, basename = os.path.split(path)
     path_list = [basename]
-    print(path)
+    logger.info(path)
 
     output_dir = os.path.join(path, "../raw")
     if not os.path.exists(output_dir):
@@ -35,7 +38,7 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         if os.path.isdir(os.path.join(path, filename)):
             continue
         filename_suffix = os.path.splitext(filename)[1]
-        print(filename)
+        logger.info(filename)
         input_file_path = os.path.join(path, filename)
         output_file_path = os.path.join(output_dir, os.path.splitext(filename)[0] + ".wav")
         if filename_suffix == '.flv':
@@ -55,9 +58,9 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
             try:
                 subprocess.run(cmd, check=True)
             except subprocess.CalledProcessError as e:
-                print("Error while executing command:", e)
+                logger.error("Error while executing command: %s", e)
         else:
-            print("file ", filename, " format not supported!")
+            logger.info("file %s format not supported!", filename)
             continue
         
 
@@ -70,7 +73,7 @@ if __name__ == '__main__':
     output_sample_rate = shlex.quote(args.sr)
     is_exist = os.path.exists(shlex.quote(args.path))
     if not is_exist:
-        print("path not existed!")
+        logger.info("path not existed!")
     else:
         path = shlex.quote(args.path)
         is_mono = shlex.quote(args.is_mono)

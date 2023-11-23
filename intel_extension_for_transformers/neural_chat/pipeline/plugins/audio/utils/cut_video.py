@@ -18,6 +18,9 @@ import subprocess
 import os
 import argparse
 import shlex
+from config_logging import configure_logging
+
+logger = configure_logging()
 
 def get_length(filename):
     result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
@@ -40,7 +43,7 @@ def cut_video(args, outdir):
         t_second = int(get_length(os.path.join(path, file_name))) % 60
         t_hour = min // 60
         t_min = min % 60
-        print("total:", t_hour, t_min, t_second)
+        logger.info("total: %s hours, %s minutes, %s seconds", t_hour, t_min, t_second)
 
         start_hour = 0
         start_min = 0
@@ -51,7 +54,7 @@ def cut_video(args, outdir):
         mark = 0
         
         for i in range(0, min + 1, delta_X):
-            print("i:", i)
+            logger.info("i: %s", i)
             if min >= delta_X:
                 end_min = start_min + delta_X
                 end_sec = start_sec
@@ -94,12 +97,12 @@ def cut_video(args, outdir):
                 command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(
                     os.path.join(path,file_name), start_hour, start_min, start_sec, end_hour,
                     end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav').split()
-                print(start_hour, start_min, start_sec)
-                print(end_hour, end_min, end_sec)
+                logger.info("%s hours, %s minutes, %s seconds", start_hour, start_min, start_sec)
+                logger.info("%s hours, %s minutes, %s seconds", end_hour, end_min, end_sec)
                 try:
                     subprocess.run(command, check=True)
                 except subprocess.CalledProcessError as e:
-                    print("Error while executing command:", e)
+                    logger.error("Error while executing command: %s", e)
                 start_hour = int(end_hour)
                 start_min = int(end_min)
                 start_sec = int(end_sec)

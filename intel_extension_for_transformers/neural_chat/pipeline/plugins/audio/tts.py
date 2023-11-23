@@ -27,8 +27,11 @@ import numpy as np
 import contextlib
 from pydub import AudioSegment
 
+from config_logging import configure_logging
+
 from .utils.english_normalizer import EnglishNormalizer
 from .utils.reduce_noise import NoiseReducer
+logger = configure_logging()
 class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
@@ -53,7 +56,7 @@ class TextToSpeech():
                 run_opts={"device": "cpu"},
                 savedir=os.path.join("/tmp", self.spk_model_name))
         except Exception as e: # pragma: no cover
-            print(f"[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
+            logger.warning("[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
             self.speaker_model = None
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
@@ -75,7 +78,7 @@ class TextToSpeech():
                 p.wait()
                 self.default_speaker_embedding = torch.load('spk_embed_default.pt')
             except Exception as e:
-                print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
+                logger.warning("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
                 self.default_speaker_embedding = torch.zeros((1, 512))
 
         # preload the demo model in case of time-consuming runtime loading
@@ -114,7 +117,7 @@ class TextToSpeech():
             waveform = AudioSegment.from_file(driven_audio_path).set_frame_rate(16000)
             waveform = self._audiosegment_to_librosawav(waveform)
         except Exception as e:
-            print(f"[TTS] audiosegment to librosa wave fail: {e}")
+            logger.error(f"[TTS] audiosegment to librosa wave fail: {e}")
             audio_dataset = Dataset.from_dict({"audio":
                 [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
             waveform = audio_dataset[0]["audio"]['array']
@@ -133,7 +136,7 @@ class TextToSpeech():
         elif os.path.exists(f'spk_embed_{voice}.pt'):    # for notebook
             return torch.load(f'spk_embed_{voice}.pt')
         else:
-            print("No customized speaker embedding is found! Use the default one")
+            logger.warning("No customized speaker embedding is found! Use the default one")
             return self.default_speaker_embedding
 
     def _batch_long_text(self, text, batch_length):
@@ -148,7 +151,7 @@ class TextToSpeech():
                 if cur_end != -1 and cur_end > cur_start:
                     res.append(text[cur_start:cur_end+1])
                 else:
-                    print(f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
+                    logger.warning(f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
                         + f"in each {batch_length} charaters! Try to add batch_length!")
                     cur_end = cur_start+batch_length-1
                     res.append(text[cur_start:cur_end+1])
@@ -171,7 +174,7 @@ class TextToSpeech():
         voice: default/male/female/...
         batch_length: the batch length for spliting long texts into batches to do text to speech
         """
-        print(text)
+        logger.info(text)
         if batch_length > 600 or batch_length < 50:
             raise Exception(f"[TTS] Invalid batch_length {batch_length}, should be between 50 and 600!")
         text = self.normalizer.correct_abbreviation(text)
@@ -181,16 +184,16 @@ class TextToSpeech():
             texts = self._batch_long_text(text, batch_length)
         else:
             texts = [text]
-        print(f"[TTS] batched texts: {texts}")
+        logger.info(f"[TTS] batched texts: {texts}")
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
         if voice == "male":
             if self.demo_model == None:
-                print("Finetuned model is not found! Use the default one")
+                logger.warning("Finetuned model is not found! Use the default one")
             else: # pragma: no cover
                 model = self.demo_model
             if self.male_speaker_embeddings == None: # pragma: no cover
-                print("Male speaker embedding is not found! Use the default one")
+                logger.warning("Male speaker embedding is not found! Use the default one")
             else:
                 speaker_embeddings = self.male_speaker_embeddings
         elif voice != "default":
@@ -223,7 +226,7 @@ class TextToSpeech():
                 buffered_texts = []
                 hitted_ends = ['.', '!', '?', ';', ':']
                 for new_text in text_or_generator:
-                    print(f"new text: ==={new_text}===")
+                    logger.info(f"new text: ==={new_text}===")
                     if len(new_text.strip()) == 0:
                         continue
                     buffered_texts.append(new_text)

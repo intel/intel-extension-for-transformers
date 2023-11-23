@@ -22,6 +22,10 @@ import time
 import contextlib
 from pydub import AudioSegment
 import numpy as np
+from config_logging import configure_logging
+
+logger = configure_logging()
+
 
 class AudioSpeechRecognition():
     """Convert audio to text."""
@@ -49,7 +53,7 @@ class AudioSpeechRecognition():
         return fp_arr
 
     def _convert_audio_type(self, audio_path): # pragma: no cover
-        print("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
+        logger.warning("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
         audio_file_name = audio_path.split(".")[0]
         AudioSegment.from_file(audio_path).export(f"{audio_file_name}.mp3", format="mp3")
         return f"{audio_file_name}.mp3"
@@ -69,7 +73,7 @@ class AudioSpeechRecognition():
             waveform = AudioSegment.from_file(audio_path).set_frame_rate(16000)
             waveform = self._audiosegment_to_librosawav(waveform)
         except Exception as e:
-            print(f"[ASR] audiosegment to librosa wave fail: {e}")
+            logger.error(f"[ASR] audiosegment to librosa wave fail: {e}")
             audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
             waveform = audio_dataset[0]["audio"]['array']
 
@@ -92,7 +96,7 @@ class AudioSpeechRecognition():
         if self.language == "auto" or self.language == "cn":
             from zhconv import convert
             result = convert(result, 'zh-cn')
-        print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
+        logger.info(f"generated text in {time.time() - start} seconds, and the result is: {result}")
         return result
 
     def pre_llm_inference_actions(self, audio_path):

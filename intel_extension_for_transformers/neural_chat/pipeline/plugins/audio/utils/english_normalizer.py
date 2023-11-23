@@ -16,8 +16,10 @@
 # limitations under the License.
 
 from num2words import num2words
+from config_logging import configure_logging
 import re
 
+logger = configure_logging()
 class EnglishNormalizer:
     def __init__(self):
         self.correct_dict = {
@@ -94,7 +96,7 @@ class EnglishNormalizer:
                     else:
                         word = num2words(word)
                 except Exception as e:
-                    print(f"num2words fail with word: {word} and exception: {e}")
+                    logger.info("num2words fail with word: %s and exception: %s", word, e)
             else:
                 try:
                     val = int(word)
