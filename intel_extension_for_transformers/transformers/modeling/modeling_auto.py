@@ -355,12 +355,6 @@ class _BaseQBitsAutoModelClass:
                             "past_key_values": past_key_values
                         }
                     break
-            # sq recipes
-            recipes = {
-                "smooth_quant": True,
-                "smooth_quant_args": {"alpha": quantization_config.alpha},
-            }
-
             # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
             conf = PostTrainingQuantConfig(
@@ -368,7 +362,7 @@ class _BaseQBitsAutoModelClass:
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
                 op_name_dict=quantization_config.op_name_dict,
-                recipes=recipes,
+                recipes=quantization_config.recipes,
                 example_inputs=example_inputs,
             )
             model = quantization.fit(
