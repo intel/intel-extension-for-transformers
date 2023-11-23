@@ -3,17 +3,12 @@ import re
 import time
 import json
 import torch
-import logging
 from transformers import AutoConfig, AutoTokenizer
+from transformers.generation import GenerationConfig
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
-from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
-    MixedPrecisionConfig,
     WeightOnlyQuantConfig,
-    SmoothQuantConfig,
-    BitsAndBytesConfig
-
 )
 
 parser = argparse.ArgumentParser()
@@ -57,7 +52,6 @@ parser.add_argument("--woq_dtype", type=str, default="int8",
 parser.add_argument("--woq_group_size", type=int, default=-1)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
-parser.add_argument("--woq_enable_full_range", action="store_true")
 parser.add_argument("--device", default="cpu")
 parser.add_argument("--compute_dtype", default="fp32")
 # ============BitsAndBytes configs==============
@@ -79,6 +73,8 @@ config = AutoConfig.from_pretrained(
     trust_remote_code=args.trust_remote_code,
     revision=args.revision,
 )
+generation_config = GenerationConfig.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+generation_config.do_sample = False
 user_model = None
 
 # tokenizer
@@ -98,7 +94,7 @@ if quantization_config is not None:
                                                       device_map=args.device,
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
-                                                      torch_dtype=torch_dtype,
+                                                      fp16=True,
                                                       use_llm_runtime=False
                                                       )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -113,12 +109,9 @@ tokenizer.save_pretrained(args.output_dir)
 if user_model is not None:
     user_model.save_low_bit(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
-# Generation
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
 if args.benchmark:
-    # prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
-    prompt = "Once upon a time, there existed a little girl, who liked to have adventures."
+    prompt = "也许你能给我介绍一下中国的首都么？"
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -126,7 +119,7 @@ if args.benchmark:
 
     user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
     import intel_extension_for_pytorch as ipex
-    user_model = ipex.optimize_transformers(user_model, dtype=torch.float16, device="xpu")
+    user_model = ipex.optimize_transformers(user_model.eval(), device="xpu")
     # start
     total_time = 0.0
     num_iter = args.iters
@@ -140,22 +133,18 @@ if args.benchmark:
         total_time = 0.0
         with torch.inference_mode(), torch.no_grad():
             for i in range(num_iter):
-                tic = time.time()
                 if j==0:
-                    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(args.device)
-                    attention_mask = torch.ones(input_ids.shape)
-                    inp = {"input_ids": input_ids}
+                    inp = tokenizer(prompt, return_tensors="pt").to(args.device)
+                    attention_mask = inp["attention_mask"] if "attention_mask" in inp else torch.ones(inp["input_ids"].shape)
                 else:
                     inp = {"input_ids": input_ids,
                             "past_key_values": past_key_values,
                             "attention_mask": attention_mask}
-                # gen_ids = user_model.generate(
-                #     input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs
-                # )
+                tic = time.time()
                 out = user_model(**inp)
+                toc = time.time()
                 gen_id = torch.argmax(out[0][:, -1:, :], axis = -1).to("cpu")
                 gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
-                toc = time.time()
                 print(gen_text, flush=True)
                 if i >= num_warmup:
                     total_time += toc - tic

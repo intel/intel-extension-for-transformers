@@ -164,7 +164,6 @@ class _BaseQBitsAutoModelClass:
 
         use_llm_runtime = kwargs.pop("use_llm_runtime", True)
         device_map = kwargs.get("device_map", "cpu")
-        kwargs["device_map"] = "cpu"
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -235,8 +234,8 @@ class _BaseQBitsAutoModelClass:
             kwargs["torch_dtype"] = torch.bfloat16
             logger.info("Mixed Precision done.")
         kwargs["low_cpu_mem_usage"] = True
+        kwargs["device_map"] = "cpu"
         try:
-            kwargs["device_map"] = "cpu"
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
@@ -249,9 +248,8 @@ class _BaseQBitsAutoModelClass:
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
             model.config.update({"low_cpu_mem_usage": False})
-        model = model.to("cpu")
-        model.config.update({"device": "cpu"})
         model.eval()
+        model.config.update({"device": "cpu"})
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
@@ -411,6 +409,7 @@ class _BaseQBitsAutoModelClass:
                                     calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
                                     )
             logger.info("SmoothQuant done.")
+        model = model.to(device_map)
         return model
 
     @classmethod
