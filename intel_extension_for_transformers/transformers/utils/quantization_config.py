@@ -290,5 +290,8 @@ class SmoothQuantConfig:
     example_inputs: Any = None
     num_beams: int = 1
     recipes: dict = field(
-        default_factory={"smooth_quant": True, "smooth_quant_args": {"alpha": 0.5}}
+        default_factory=lambda: {
+            "smooth_quant": True,
+            "smooth_quant_args": {"alpha": 0.5},
+        }
     )
