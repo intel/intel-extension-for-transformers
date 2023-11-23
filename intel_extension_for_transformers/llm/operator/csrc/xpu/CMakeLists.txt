@@ -17,7 +17,7 @@ set(CMAKE_CXX_COMPILER "icpx")
 
 project(xetla_kernel LANGUAGES C CXX)
 
-add_compile_options(-fsycl -fPIC)
+add_compile_options(-fsycl -fPIC -fp-model=precise)
 add_link_options(-fsycl -lpthread -lm -fPIC)
 
 file(GLOB xetla_kernel_src xetla_kernel.cpp)

@@ -121,6 +121,7 @@ public:
     offset += sizeof(_blksize);
     memcpy((char *)buf + offset, &_sym, sizeof(_sym));
     offset += sizeof(_sym);
+    offset = (offset / 64 + 1) * 64;
     memcpy((char *)buf + offset, _write_buf, get_buf_size());
   }
 
@@ -168,7 +169,7 @@ private:
     offset += sizeof(_blksize);
     memcpy(&_sym, (char *)buf + offset, sizeof(_sym));
     offset += sizeof(_sym);
-    return offset;
+    return (offset / 64 + 1) * 64;
   }
     size_t deserialize_field(void *buf, sycl::queue &queue) {
     size_t offset = 0;
@@ -180,7 +181,7 @@ private:
     offset += sizeof(_blksize);
     queue.memcpy((void *)&_sym, (void *)((char *)buf + offset), sizeof(_sym)).wait();
     offset += sizeof(_sym);
-    return offset;
+    return (offset / 64 + 1) * 64;
   }
   size_t get_4bit_wei_size() { return _N * _K / 2; }
   size_t get_scale_size() { return _K / _blksize * _N * sizeof(fp16); }
@@ -189,7 +190,7 @@ private:
     return get_4bit_wei_size() + get_scale_size() + get_zp_size();
   }
   size_t get_meta_data_size() {
-    return sizeof(_N) + sizeof(_K) + sizeof(_blksize) + sizeof(_sym);
+    return ((sizeof(_N) + sizeof(_K) + sizeof(_blksize) + sizeof(_sym)) / 64 + 1) * 64;
   }
   bool _sym;
   char *_write_buf = nullptr;

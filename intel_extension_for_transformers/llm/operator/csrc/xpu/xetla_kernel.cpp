@@ -17,14 +17,14 @@
 #define DEVICE_MEM_ALIGNMENT (64)
 
 static constexpr size_t wg_tile_m = 8;
-static constexpr size_t wg_tile_n = 16;
+static constexpr size_t wg_tile_n = 64;
 static constexpr size_t sg_tile_m = 8;
-static constexpr size_t sg_tile_n = 32;
+static constexpr size_t sg_tile_n = 16;
 static constexpr size_t num_buffer = 64;
 static constexpr size_t local_kslicing = 4;
 static constexpr size_t global_kslicing = 1;
-static constexpr uint32_t periodic_sync_interval = 0;
-static constexpr uint32_t prefetch_distance = 0;
+static constexpr uint32_t periodic_sync_interval = 1;
+static constexpr uint32_t prefetch_distance = 3;
 static constexpr gpu::xetla::mem_layout layout_a =
     gpu::xetla::mem_layout::row_major;
 static constexpr gpu::xetla::mem_layout layout_b =
@@ -84,14 +84,16 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
                                                      sg_tile_n, sg_tile_m>;
   using mem_desc_a_t =
       gpu::xetla::mem_desc_t<data_type_a, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_a)>;
   using mem_desc_b_t =
       gpu::xetla::mem_desc_t<data_type_b, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_b)>;
   using mem_desc_c_t =
       gpu::xetla::mem_desc_t<data_type_c, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
-
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_c)>;
+  using mem_desc_scale_t = gpu::xetla::mem_desc_t<data_type_scale,
+      gpu::xetla::mem_layout::row_major, gpu::xetla::mem_space::global,
+      DEVICE_MEM_ALIGNMENT / sizeof(data_type_scale)>;
   using compute_attr =
       gpu::xetla::group::compute_attr_t<data_type_acc_in, data_type_acc_in,
                                         data_type_acc>;
@@ -101,14 +103,14 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   using compute_policy = gpu::xetla::group::compute_policy_bit4_dequantize_xmx<
       compute_attr, perf_tuning_knob,
       gpu::xetla::group::quant_type::S4_FULLRANGE, data_type_scale, dequant_s,
-      gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::gpu_arch::Dg2>;
   using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
-                                           mem_desc_a_t, mem_desc_b_t>;
+                                mem_desc_a_t, mem_desc_b_t, mem_desc_scale_t>;
   using epilogue_t = gpu::xetla::group::epilogue_t<
-      gpu::xetla::group::epilogue_policy_unaligned<gpu::xetla::gpu_arch::Arc>,
+      gpu::xetla::group::epilogue_policy_unaligned<gpu::xetla::gpu_arch::Dg2>,
       tile_shape, mem_desc_c_t>;
   using group_swizzle =
-      gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Dg2>;
   using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
       gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
           group_swizzle, global_kslicing, local_kslicing>,
@@ -171,16 +173,19 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
 
   using mem_desc_a_t =
       gpu::xetla::mem_desc_t<data_type_a, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_a)>;
   using mem_desc_b_t =
       gpu::xetla::mem_desc_t<data_type_b, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_b)>;
   using mem_desc_c_t =
       gpu::xetla::mem_desc_t<data_type_c, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_c)>;
+  using mem_desc_scale_t = gpu::xetla::mem_desc_t<data_type_scale,
+      gpu::xetla::mem_layout::row_major, gpu::xetla::mem_space::global,
+      DEVICE_MEM_ALIGNMENT / sizeof(data_type_scale)>;
   using mem_desc_bias_t =
       gpu::xetla::mem_desc_t<data_type_bias, gpu::xetla::mem_layout::row_major,
-                             gpu::xetla::mem_space::global>;
+      gpu::xetla::mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_bias)>;
 
   using compute_attr =
       gpu::xetla::group::compute_attr_t<data_type_acc_in, data_type_acc_in,
@@ -191,20 +196,20 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   using compute_policy = gpu::xetla::group::compute_policy_bit4_dequantize_xmx<
       compute_attr, perf_tuning_knob,
       gpu::xetla::group::quant_type::S4_FULLRANGE, data_type_scale, dequant_s,
-      gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::gpu_arch::Dg2>;
   using gemm_t = gpu::xetla::group::gemm_t<compute_policy, tile_shape,
-                                           mem_desc_a_t, mem_desc_b_t>;
+                                      mem_desc_a_t, mem_desc_b_t, mem_desc_scale_t>;
   using bias_op_t =
-      gpu::xetla::subgroup::bias_add_op_t<mem_desc_bias_t, gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::subgroup::bias_add_op_t<mem_desc_bias_t, gpu::xetla::gpu_arch::Dg2>;
   using tile_op_t =
       gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
   using bias_epilogue_policy_t = gpu::xetla::group::epilogue_policy_tile_op<tile_op_t,
-      gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::gpu_arch::Dg2>;
   using epilogue_t = gpu::xetla::group::epilogue_t<
-      gpu::xetla::group::epilogue_policy_tile_op<tile_op_t, gpu::xetla::gpu_arch::Arc>,
+      gpu::xetla::group::epilogue_policy_tile_op<tile_op_t, gpu::xetla::gpu_arch::Dg2>,
       tile_shape, mem_desc_c_t>;
   using group_swizzle =
-      gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Arc>;
+      gpu::xetla::kernel::group_swizzle_default<gpu::xetla::gpu_arch::Dg2>;
   using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
       gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
           group_swizzle, global_kslicing, local_kslicing>,
@@ -263,7 +268,7 @@ void xetla_linear_base(sycl::queue queue, T *A, CompressWei4Bit *B,
     case 64:
       return xetla_linear<T, 64, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 128:
-      return xetla_linear<T, 128, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
+      return xetla_linear<T, 128, 32>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 256:
       return xetla_linear<T, 256, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     case 512:
@@ -314,12 +319,12 @@ void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16
                                 dequant_s, bias);
 }
 
-void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
-                            float *C, uint32_t matrix_m, uint32_t matrix_n,
-                            uint32_t matrix_k, int dequant_s, float *bias) {
-  return xetla_linear_bias_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k,
-                                dequant_s, bias);
-}
+// void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
+//                             float *C, uint32_t matrix_m, uint32_t matrix_n,
+//                             uint32_t matrix_k, int dequant_s, float *bias) {
+//   return xetla_linear_bias_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k,
+//                                 dequant_s, bias);
+// }
 
 void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
@@ -327,8 +332,8 @@ void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
   return xetla_linear_base<fp16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);
 }
 
-void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
-                       float *C, uint32_t matrix_m, uint32_t matrix_n,
-                       uint32_t matrix_k, int dequant_s) {
-  return xetla_linear_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);
-}
+// void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
+//                        float *C, uint32_t matrix_m, uint32_t matrix_n,
+//                        uint32_t matrix_k, int dequant_s) {
+//   return xetla_linear_base<float>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);
+// }
