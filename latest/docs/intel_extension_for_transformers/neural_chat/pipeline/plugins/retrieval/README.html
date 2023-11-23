@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g1e0d7ee documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g4101a80 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -110,7 +110,7 @@
 | <a class="reference external" href="https://huggingface.co/hkunlp/instructor-large">instructor-large</a>  | 1.34 |768  |512  |61.59|</p>
 <p>In addition, our plugin seamlessly integrates the online embedding model, Google Palm2 embedding. To set up this feature, please follow the <a class="reference external" href="https://developers.generativeai.google/tutorials/embeddings_quickstart">Google official guideline</a> to obtain your API key. Once you have your API key, you can activate the Palm2 embedding service by setting the <code class="docutils literal notranslate"><span class="pre">embedding_model</span></code> parameter to ‘Google’.</p>
 <p>The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The <code class="docutils literal notranslate"><span class="pre">Agent_QA</span></code> initializes itself using the provided <code class="docutils literal notranslate"><span class="pre">input_path</span></code> to construct a local database. During a conversation, the user’s query is first passed to the <code class="docutils literal notranslate"><span class="pre">IntentDetector</span></code> to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the <code class="docutils literal notranslate"><span class="pre">IntentDetector</span></code> determines that the user’s query requires an answer, the retriever is activated to search the database using the user’s query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs).</p>
-<p>We have already provided support for popular file farmat on retrieval. When using xlsx, csv, json/jsonl, predefined structure should be used.
+<p>We have already provided support for popular file format on retrieval. When using xlsx, csv, json/jsonl, predefined structure should be used.
 |  File Type   | Predefined Structure  |
 |  :—-:  | :—-:  |
 | xlsx  | [’Questions’, ‘Answers’]<br>[’question’, ‘answer’, ‘link’]<br>[’context’, ‘link’] |
@@ -192,7 +192,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f8aa4305690> 
+   <jinja2.runtime.BlockReference object at 0x7f5acbbf6dd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
