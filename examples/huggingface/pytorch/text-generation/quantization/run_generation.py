@@ -134,9 +134,13 @@ elif args.sq:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": args.alpha},
+            }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
