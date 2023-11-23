@@ -369,7 +369,8 @@ class _BaseQBitsAutoModelClass:
                                     model, 
                                     conf,
                                     calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader if quantization_config.recipes["alpha"]=="auto" else None
+                                    calib_dataloader=calib_dataloader if \
+                                        quantization_config.recipes['smooth_quant_args']['alpha']=="auto" else None
                                     )
             logger.info("SmoothQuant done.")
         else:
