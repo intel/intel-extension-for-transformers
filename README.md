@@ -174,6 +174,10 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
+* QLoRA on client CPU
+
+https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
+
 ## 📃Selected Publications/Events
 * Video on YouTube: [Neural Chat 7B v3-1 Installation on Windows - Step by Step](https://www.youtube.com/watch?v=7_urstS-noU) (Nov 2023)
 * Video on YouTube: [Intel's Neural-Chat 7b: Most Powerful 7B Model! Beats GPT-4!?](https://www.youtube.com/watch?v=bWhZ1u_1rlc) (Nov 2023)
