@@ -178,7 +178,7 @@ class Model:
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif ret[0][-1] == self.tokenizer.eos_token_id or \
+            elif ret[0][-1] == self.eos_token_id() or \
                     (max_new_tokens != -1 and out_count > max_new_tokens):
                 break
             out_count += 1
@@ -190,6 +190,11 @@ class Model:
 
     def is_token_end(self):
         return self.model.is_token_end()
+    
+    def eos_token_id(self):
+        if self.tokenizer.eos_token_id == None:
+            return self.tokenizer.special_tokens['<|endoftext|>']
+        return self.tokenizer.eos_token_id
 
     def __call__(self, input_ids, reinit=False, **kwargs):
         if self.model is None:
