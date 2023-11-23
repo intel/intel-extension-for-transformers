@@ -73,8 +73,7 @@ class Model:
             model_type = "chatglm2"
         return model_type
 
-    def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
-        from_gptq = quant_kwargs['from_gptq']
+    def init(self, model_name, not_quant=False, use_cache=False, from_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model_type = Model.get_model_type(self.config)
