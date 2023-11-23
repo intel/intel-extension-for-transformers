@@ -216,6 +216,9 @@ if __name__ == "__main__":
 
     model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
 
+    if training_args.use_cpu:
+        load_in_4bit = False
+
     set_seed(training_args.seed)
 
     raw_datasets = load_dataset(

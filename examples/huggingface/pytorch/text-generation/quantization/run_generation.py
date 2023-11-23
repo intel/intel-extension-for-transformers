@@ -134,9 +134,13 @@ elif args.sq:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": args.alpha},
+            }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
@@ -184,9 +188,9 @@ elif not args.int8 and not args.int8_bf16_mixed:
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    if config.model_type in ["gptj", "opt", "llama"]:
+    if config.model_type in ["gptj", "opt", "llama", "gpt_neox"]:
         if args.accuracy:
-            from intel_extension_for_transformers.transformers.utils.utility import TSModelCausalLMForOPTLLM
+            from intel_extension_for_transformers.llm.evaluation.lm_eval.models import TSModelCausalLMForOPTLLM
             user_model = TSModelCausalLMForOPTLLM.from_pretrained(
                 args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
             )

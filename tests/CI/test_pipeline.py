@@ -43,7 +43,6 @@ class TestPipeline(unittest.TestCase):
         outputs = text_classifier("This is great !")
         self.assertAlmostEqual(outputs[0]['score'], 0.8, None, message, 0.3)
 
-
 @unittest.skipIf(PT_VERSION.release >= Version("1.12.0").release,
     "Please use PyTroch 1.11 or lower version for executor backend")
 class TestExecutorPipeline(unittest.TestCase):
@@ -57,8 +56,8 @@ class TestExecutorPipeline(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        from test_benchmark import TestExecutorBenchmark
-        TestExecutorBenchmark.tearDownClass()
+        from test_quantization import TestQuantization
+        TestQuantization.tearDownClass()
 
     def test_fp32_executor_model(self):
         text_classifier = pipeline(

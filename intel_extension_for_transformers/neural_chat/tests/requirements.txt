@@ -65,3 +65,5 @@ protobuf==3.20.2
 einops
 urllib3
 langid
+optimum-intel==1.11.0
+zhconv

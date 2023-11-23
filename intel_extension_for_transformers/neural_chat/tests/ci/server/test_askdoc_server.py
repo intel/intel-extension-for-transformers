@@ -30,6 +30,10 @@ class UnitTest(unittest.TestCase):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
+        elif os.path.exists("./askdoc.yaml"):
+            command = f'neuralchat_server start \
+                                    --config_file ./askdoc.yaml \
+                                    --log_file "./neuralchat.log"'
         else:
             command = 'sed -i "s|askdoc|ci/server/askdoc|g" ./ci/server/askdoc.yaml && neuralchat_server start \
                         --config_file "./ci/server/askdoc.yaml" \
@@ -37,7 +41,7 @@ class UnitTest(unittest.TestCase):
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(120)
+            time.sleep(60)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
 
@@ -55,7 +59,8 @@ class UnitTest(unittest.TestCase):
     def test_askdoc_chat(self):
         url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
         request = {
-            "query": "What is Intel oneAPI Compiler?",
+            "query": "oneAPI编译器是什么?",
+            "translated": "What is Intel oneAPI Compiler?",
             "knowledge_base_id": "default",
             "stream": False,
             "max_new_tokens": 256
@@ -63,6 +68,16 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
 
+        request = {
+            "query": "蔡英文是谁?",
+            "translated": "Who is Tsai Ing-wen?",
+            "knowledge_base_id": "default",
+            "stream": False,
+            "max_new_tokens": 256
+        }
+        res = requests.post(url, json.dumps(request))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('Your query contains sensitive words, please try another query', str(res.text))
 
 if __name__ == "__main__":
     unittest.main()

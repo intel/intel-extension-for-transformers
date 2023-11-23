@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2023/11] Supported **LLM QLoRA on CPU**, first time enabling LLM fine-tuning on client CPUs (see [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md)).
 * [2023/11] Refreshed **top-1 7B-sized LLM** by releasing [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
 * [2023/11] Released [**NeuralChat-v3**](https://huggingface.co/Intel/neural-chat-7b-v3), new **top-1 7B-sized LLM** available on Hugging Face. The model is fine-tuned on Habana Gaudi2 with supervised fine-tuning and direct preference optimization. Check out the [blog](https://medium.com/@NeuralCompressor/the-practice-of-supervised-finetuning-and-direct-preference-optimization-on-habana-gaudi2-a1197d8a3cd3).
 * [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
@@ -170,9 +171,13 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 
 ## 🙌Demo
 
-* Infinite inference (up to 4M tokens)
+* LLM Infinite Inference (up to 4M tokens)
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
+
+* LLM QLoRA on Client CPU
+
+https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
 * Video on YouTube: [Neural Chat 7B v3-1 Installation on Windows - Step by Step](https://www.youtube.com/watch?v=7_urstS-noU) (Nov 2023)
