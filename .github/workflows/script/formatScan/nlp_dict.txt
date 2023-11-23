@@ -2408,3 +2408,5 @@ Sudhanshu
 Tripathi
 akarX
 dalvishruti
+NormalFloat
+backpropagates

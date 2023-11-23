@@ -5,9 +5,7 @@ fschat
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -16,7 +14,6 @@ python-multipart
 PyPDF2
 langchain
 python-docx
-farm-haystack>=1.20.1
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -42,3 +39,6 @@ pymysql
 deepface
 exifread
 einops
+zhconv
+urllib3
+langid

@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import time
 import json
@@ -16,7 +17,6 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
     BitsAndBytesConfig
-
 )
 
 parser = argparse.ArgumentParser()
@@ -39,6 +39,7 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
+parser.add_argument("--quantized_model_path", type=str, default="saved_results/best_model.pt", help="the int8 model path")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
@@ -75,7 +76,8 @@ args = parser.parse_args()
 
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
-check_min_version("4.32.0")
+# 4.31.0 for ipex.optimize_transformers
+check_min_version("4.31.0")
 
 # get model config
 if args.peft_model_id:
@@ -108,6 +110,9 @@ else:
 # use peft
 args.model = args.peft_model_id if args.peft_model_id is not None else args.model
 
+# Generation
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
+
 # mp/sq/woq/bitsandbytes config setting
 quantization_config = None
 if args.mixed_precision:
@@ -129,27 +134,17 @@ elif args.sq:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    inputs = None
-    if config.model_type == "chatglm":
-        query = "我该怎么办?"
-        if hasattr(tokenizer, "build_chat_inputs"):
-            inputs = tokenizer.build_chat_inputs(query)
-            eos_token_id = [tokenizer.eos_token_id, tokenizer.get_command("<|user|>"),
-                            tokenizer.get_command("<|observation|>")]
-            inputs["eos_token_id"] = eos_token_id
-        elif hasattr(tokenizer, "build_prompt"):
-            prompt = tokenizer.build_prompt(query)
-            inputs = tokenizer([prompt], return_tensors="pt")
-        else:
-            inputs = tokenizer([query], return_tensors="pt")
-
+    recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": args.alpha},
+            }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
-        example_inputs=inputs,
-    )
+        num_beams=generate_kwargs["num_beams"],
+        )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
@@ -168,9 +163,14 @@ if quantization_config is not None:
                                                       trust_remote_code=args.trust_remote_code,
                                                       use_llm_runtime=False
                                                       )
+    # save model
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
+    elif args.mixed_precision:
+        user_model.config.save_pretrained(args.output_dir)
+        torch.save(user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
+
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
@@ -184,16 +184,37 @@ elif not args.int8 and not args.int8_bf16_mixed:
     else:
         user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
 
-# Generation
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
-
 
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    user_model = TSModelForCausalLM.from_pretrained(
-        args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
-    )
+    if config.model_type in ["gptj", "opt", "llama", "gpt_neox"]:
+        if args.accuracy:
+            from intel_extension_for_transformers.llm.evaluation.lm_eval.models import TSModelCausalLMForOPTLLM
+            user_model = TSModelCausalLMForOPTLLM.from_pretrained(
+                args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+            )
+        else:
+            torch._C._jit_set_texpr_fuser_enabled(False)
+            qconfig = ipex.quantization.default_static_qconfig_mapping
+            with ipex.OnDevice(dtype=torch.float, device="meta"):
+                user_model = AutoModelForCausalLM.from_pretrained(args.model, use_llm_runtime=False)
+            user_model = ipex.optimize_transformers(
+                user_model.eval(),
+                dtype=torch.float,
+                inplace=True,
+                quantization_config=qconfig,
+                deployment_mode=False,
+            )
+            if not hasattr(user_model, "trace_graph"):
+                print("load_quantized_model")
+                self_jit = torch.jit.load(args.quantized_model_path)
+                self_jit = torch.jit.freeze(self_jit.eval())
+                ipex._set_optimized_model_for_generation(user_model, optimized_model=self_jit)            
+    else:
+        user_model = TSModelForCausalLM.from_pretrained(
+            args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+        )
 
 
 if args.benchmark:

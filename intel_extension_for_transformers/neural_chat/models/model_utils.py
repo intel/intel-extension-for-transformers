@@ -332,6 +332,15 @@ def load_model(
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
+
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
+        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
+
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
@@ -362,8 +371,11 @@ def load_model(
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
         or re.search("starcoder", model_name, re.IGNORECASE)
+        or re.search("codellama", model_name, re.IGNORECASE)
+        or re.search("mistral", model_name, re.IGNORECASE)
     ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -375,6 +387,7 @@ def load_model(
             )
     elif (
             (re.search("starcoder", model_name, re.IGNORECASE)
+             or re.search("codellama", model_name, re.IGNORECASE)
             ) and ipex_int8
         ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -386,7 +399,8 @@ def load_model(
                  )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
+            f"Unsupported model {model_name}, only supports "
+            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
@@ -420,15 +434,6 @@ def load_model(
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
-
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
-        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config, use_llm_runtime)
-
-        MODELS[model_name]["model"] = model
-        MODELS[model_name]["tokenizer"] = tokenizer
-        print("Optimized Model loaded.")
-        return
 
     if device == "hpu":
         if peft_path:
@@ -988,4 +993,12 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "### Assistant" in output:
+        return output.split("### Assistant:")[1].strip()
+    if "\nassistant\n" in output:
+        return output.split("\nassistant\n")[1].strip()
+    if "[/INST]" in output:
+        return output.split("[/INST]")[1].strip()
+    if "答：" in output:
+        return output.split("答：")[1].strip()
     return output
