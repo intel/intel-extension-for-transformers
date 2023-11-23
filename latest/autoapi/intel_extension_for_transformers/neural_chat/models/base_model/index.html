@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.models.base_model &mdash; Intel® Extension for Transformers 0.1.dev1+g452cbd1 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.models.base_model &mdash; Intel® Extension for Transformers 0.1.dev1+g6e03862 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -161,12 +161,13 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict_stream">
-<span class="sig-name descname"><span class="pre">predict_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict_stream" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin_query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict_stream" title="Link to this definition"></a></dt>
 <dd><p>Predict using a streaming approach.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>query</strong> – The input query for prediction.</p></li>
+<li><p><strong>origin_query</strong> – The origin Chinese query for safety checker.</p></li>
 <li><p><strong>config</strong> – Configuration for prediction.</p></li>
 </ul>
 </dd>
@@ -175,12 +176,13 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin_query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.predict" title="Link to this definition"></a></dt>
 <dd><p>Predict using a non-streaming approach.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>query</strong> – The input query for prediction.</p></li>
+<li><p><strong>origin_query</strong> – The origin Chinese query for safety checker.</p></li>
 <li><p><strong>config</strong> – Configuration for prediction.</p></li>
 </ul>
 </dd>
@@ -189,12 +191,13 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat_stream">
-<span class="sig-name descname"><span class="pre">chat_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat_stream" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">chat_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin_query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat_stream" title="Link to this definition"></a></dt>
 <dd><p>Chat using a streaming approach.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>query</strong> – The input query for prediction.</p></li>
+<li><p><strong>origin_query</strong> – The origin Chinese query for safety checker.</p></li>
 <li><p><strong>config</strong> – Configuration for prediction.</p></li>
 </ul>
 </dd>
@@ -203,12 +206,13 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat">
-<span class="sig-name descname"><span class="pre">chat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">chat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin_query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.chat" title="Link to this definition"></a></dt>
 <dd><p>Chat using a non-streaming approach.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>query</strong> – The input query for conversation.</p></li>
+<li><p><strong>origin_query</strong> – The origin Chinese query for safety checker.</p></li>
 <li><p><strong>config</strong> – Configuration for conversation.</p></li>
 </ul>
 </dd>
@@ -295,7 +299,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f34b6558190> 
+   <jinja2.runtime.BlockReference object at 0x7ff44a631c00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

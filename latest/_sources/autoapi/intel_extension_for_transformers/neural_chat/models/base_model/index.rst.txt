@@ -68,35 +68,39 @@ Functions
       }
 
 
-   .. py:method:: predict_stream(query, config=None)
+   .. py:method:: predict_stream(query, origin_query='', config=None)
 
       Predict using a streaming approach.
 
       :param query: The input query for prediction.
+      :param origin_query: The origin Chinese query for safety checker.
       :param config: Configuration for prediction.
 
 
-   .. py:method:: predict(query, config=None)
+   .. py:method:: predict(query, origin_query='', config=None)
 
       Predict using a non-streaming approach.
 
       :param query: The input query for prediction.
+      :param origin_query: The origin Chinese query for safety checker.
       :param config: Configuration for prediction.
 
 
-   .. py:method:: chat_stream(query, config=None)
+   .. py:method:: chat_stream(query, origin_query='', config=None)
 
       Chat using a streaming approach.
 
       :param query: The input query for prediction.
+      :param origin_query: The origin Chinese query for safety checker.
       :param config: Configuration for prediction.
 
 
-   .. py:method:: chat(query, config=None)
+   .. py:method:: chat(query, origin_query='', config=None)
 
       Chat using a non-streaming approach.
 
       :param query: The input query for conversation.
+      :param origin_query: The origin Chinese query for safety checker.
       :param config: Configuration for conversation.
 
 
