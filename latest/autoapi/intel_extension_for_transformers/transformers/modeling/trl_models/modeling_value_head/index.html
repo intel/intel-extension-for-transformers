@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head &mdash; Intel® Extension for Transformers 0.1.dev1+g936c2d2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head">
+<span id="intel-extension-for-transformers-transformers-modeling-trl-models-modeling-value-head"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.ValueHead" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.ValueHead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ValueHead</span></code></a></p></td>
+<td><p>The ValueHead class implements a head for GPT2 that returns a scalar for each output token.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoModelForCausalLMWithValueHead</span></code></a></p></td>
+<td><p>An autoregressive model with a value head in addition to the language model head.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoModelForSeq2SeqLMWithValueHead</span></code></a></p></td>
+<td><p>A seq2seq model with a value head in addition to the language model head.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.ValueHead">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.</span></span><span class="sig-name descname"><span class="pre">ValueHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.ValueHead" title="Link to this definition"></a></dt>
+<dd><p>The ValueHead class implements a head for GPT2 that returns a scalar for each output token.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.</span></span><span class="sig-name descname"><span class="pre">AutoModelForCausalLMWithValueHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead" title="Link to this definition"></a></dt>
+<dd><p>An autoregressive model with a value head in addition to the language model head.
+This class inherits from <cite>~trl.PreTrainedModelWrapper</cite> and wraps a
+<cite>transformers.PreTrainedModel</cite> class. The wrapper class supports classic functions
+such as <cite>from_pretrained</cite>, <cite>push_to_hub</cite> and <cite>generate</cite>. To call a method of the wrapped
+model, simply manipulate the <cite>pretrained_model</cite> attribute of this class.</p>
+<dl>
+<dt>Class attributes:</dt><dd><ul>
+<li><dl class="simple">
+<dt><strong>transformers_parent_class</strong> (<cite>transformers.PreTrainedModel</cite>) – The parent class of the wrapped model. This</dt><dd><p>should be set to <cite>transformers.AutoModelForCausalLM</cite> for this class.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>lm_head_namings</strong> (<cite>tuple</cite>) – A tuple of strings that are used to identify the language model head of the</dt><dd><p>wrapped model. This is set to <cite>(“lm_head”, “embed_out”)</cite> for this class but can be changed for other models
+in the future</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt><strong>supported_args</strong> (<cite>tuple</cite>) – A tuple of strings that are used to identify the arguments that are supported</dt><dd><p>by the <cite>ValueHead</cite> class. Currently, the supported args are:
+- <strong>summary_dropout_prob</strong> (<cite>float</cite>, <cite>optional</cite>, defaults to <cite>None</cite>) – The dropout probability for the</p>
+<blockquote>
+<div><p><cite>ValueHead</cite> class.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>v_head_initializer_range</strong> (<cite>float</cite>, <cite>optional</cite>, defaults to <cite>0.2</cite>) – The initializer range for the</dt><dd><p><cite>ValueHead</cite> if a specific initialization strategy is selected.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>v_head_init_strategy</strong> (<cite>str</cite>, <cite>optional</cite>, defaults to <cite>None</cite>) – The initialization strategy for the</dt><dd><p><cite>ValueHead</cite>. Currently, the supported strategies are:
+- <strong>`None`</strong> – Initializes the weights of the <cite>ValueHead</cite> with a random distribution. This is the
+default strategy.
+- <strong>“normal”</strong> – Initializes the weights of the <cite>ValueHead</cite> with a normal distribution.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_key_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.forward" title="Link to this definition"></a></dt>
+<dd><p>Applies a forward pass to the wrapped model and returns the logits of the value head.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_ids</strong> (<cite>torch.LongTensor</cite> of shape <cite>(batch_size, sequence_length)</cite>) – Indices of input sequence tokens in the vocabulary.</p></li>
+<li><p><strong>past_key_values</strong> (<cite>tuple(tuple(torch.FloatTensor))</cite>, <cite>optional</cite>) – Contains pre-computed hidden-states (key and values in the attention blocks) as computed by the model
+(see <cite>past_key_values</cite> input) to speed up sequential decoding.</p></li>
+<li><p><strong>attention_mask</strong> (<cite>torch.FloatTensor</cite> of shape <cite>(batch_size, sequence_length)</cite>, <cite>optional</cite>) – Mask to avoid performing attention on padding token indices. Mask values selected in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>:
+- 1 for tokens that are <strong>not masked</strong>,
+- 0 for tokens that are <strong>masked</strong>.</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>, <cite>optional</cite>) – Additional keyword arguments, that are passed to the wrapped model.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.generate" title="Link to this definition"></a></dt>
+<dd><p>A simple wrapper around the <cite>generate</cite> method of the wrapped model.
+Please refer to the [<cite>generate</cite>](<a class="reference external" href="https://huggingface.co/docs/transformers/internal/generation_utils">https://huggingface.co/docs/transformers/internal/generation_utils</a>)
+method of the wrapped model for more information about the supported arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<cite>list</cite>, <em>optional</em>) – Positional arguments passed to the <cite>generate</cite> method of the wrapped model.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Keyword arguments passed to the <cite>generate</cite> method of the wrapped model.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Returns the state dictionary of the model. We add the state dictionary of the value head
+to the state dictionary of the wrapped model by prepending the key with <cite>v_head.</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.push_to_hub">
+<span class="sig-name descname"><span class="pre">push_to_hub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.push_to_hub" title="Link to this definition"></a></dt>
+<dd><p>Push the pretrained model to the hub. This method is a wrapper around
+<cite>transformers.PreTrainedModel.push_to_hub</cite>. Please refer to the documentation
+of <cite>transformers.PreTrainedModel.push_to_hub</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<cite>list</cite>, <em>optional</em>) – Positional arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Keyword arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.post_init">
+<span class="sig-name descname"><span class="pre">post_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead.post_init" title="Link to this definition"></a></dt>
+<dd><p>We add the state dictionary of the value head to the state dictionary of the wrapped model
+by prepending the key with <cite>v_head.</cite>. This function removes the <cite>v_head.</cite> prefix from the
+keys of the value head state dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.</span></span><span class="sig-name descname"><span class="pre">AutoModelForSeq2SeqLMWithValueHead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead" title="Link to this definition"></a></dt>
+<dd><p>A seq2seq model with a value head in addition to the language model head.
+This class inherits from <cite>~trl.PreTrainedModelWrapper</cite> and wraps a
+<cite>transformers.PreTrainedModel</cite> class. The wrapper class supports classic functions
+such as <cite>from_pretrained</cite> and <cite>push_to_hub</cite> and also provides some additional
+functionalities such as <cite>generate</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pretrained_model</strong> (<cite>transformers.PreTrainedModel</cite>) – The model to wrap. It should be a causal language model such as GPT2.
+or any model mapped inside the <cite>AutoModelForSeq2SeqLM</cite> class.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments passed along to the <cite>ValueHead</cite> class.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.post_init">
+<span class="sig-name descname"><span class="pre">post_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.post_init" title="Link to this definition"></a></dt>
+<dd><p>We add the state dictionary of the value head to the state dictionary of the wrapped model
+by prepending the key with <cite>v_head.</cite>. This function removes the <cite>v_head.</cite> prefix from the
+keys of the value head state dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Returns the state dictionary of the model. We add the state dictionary of the value head
+to the state dictionary of the wrapped model by prepending the key with <cite>v_head.</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.push_to_hub">
+<span class="sig-name descname"><span class="pre">push_to_hub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.push_to_hub" title="Link to this definition"></a></dt>
+<dd><p>Push the pretrained model to the hub. This method is a wrapper around
+<cite>transformers.PreTrainedModel.push_to_hub</cite>. Please refer to the documentation
+of <cite>transformers.PreTrainedModel.push_to_hub</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<cite>list</cite>, <em>optional</em>) – Positional arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Keyword arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_value_head.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead.generate" title="Link to this definition"></a></dt>
+<dd><p>We call <cite>generate</cite> on the wrapped model.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fdc14376200> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

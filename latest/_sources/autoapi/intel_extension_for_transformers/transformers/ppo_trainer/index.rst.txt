@@ -1,0 +1,294 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.ppo_trainer`
+===================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.ppo_trainer
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.ppo_trainer.AdaptiveKLController
+   intel_extension_for_transformers.transformers.ppo_trainer.FixedKLController
+   intel_extension_for_transformers.transformers.ppo_trainer.PPOTrainer
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.ppo_trainer.get_global_statistics
+
+
+
+.. py:function:: get_global_statistics(accelerator, xs: torch.Tensor, mask=None, device='cpu') -> Tuple[float, float, int]
+
+   Computes element-wise mean and variance of the tensor across processes. Reference:
+   https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L57C1-L73C75
+
+
+.. py:class:: AdaptiveKLController(init_kl_coef, target, horizon)
+
+
+   Adaptive KL controller described in the paper:
+   https://arxiv.org/pdf/1909.08593.pdf
+
+
+.. py:class:: FixedKLController(kl_coef)
+
+
+   Fixed KL controller.
+
+
+.. py:class:: PPOTrainer(config: intel_extension_for_transformers.transformers.ppo_config.PPOConfig = None, model: intel_extension_for_transformers.transformers.modeling.trl_models.PreTrainedModelWrapper = None, ref_model: Optional[intel_extension_for_transformers.transformers.modeling.trl_models.PreTrainedModelWrapper] = None, tokenizer: transformers.PreTrainedTokenizerBase = None, dataset: Optional[Union[torch.utils.data.Dataset, datasets.Dataset]] = None, optimizer: Optional[torch.optim.Optimizer] = None, data_collator: Optional[Callable] = None, num_shared_layers: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None)
+
+
+
+
+   Initialize PPOTrainer, refer: https://github.com/huggingface/trl/blob/main/trl/trainer/ppo_trainer.py
+   The PPOTrainer uses Proximal Policy Optimization to optimise language models.
+   Note, this trainer is heavily inspired by the original OpenAI learning to summarize work here:
+   https://github.com/openai/summarize-from-feedback
+
+   .. attribute:: \*\*config**
+
+      details.
+
+      :type: `PPOConfig`
+
+   .. attribute:: \*\*model**
+
+      Check the documentation of `PreTrainedModelWrapper` for more details.
+
+      :type: `PreTrainedModelWrapper`
+
+   .. attribute:: \*\*ref_model**
+
+      transformer model with a casual language modelling head. Check the documentation of `PreTrainedModelWrapper`
+      for more details. If no reference model is provided, the trainer will create a reference model with the same
+       architecture as the model to be optimized with shared layers.
+
+      :type: `PreTrainedModelWrapper`, *optional*
+
+   .. attribute:: \*\*tokenizer**
+
+      data. Check the documentation of `transformers.PreTrainedTokenizer` and
+      `transformers.PreTrainedTokenizerFast` for more details.
+
+      :type: `PreTrainedTokenizerBase`
+
+   .. attribute:: \*\*dataset**
+
+      
+      
+      Face dataset. This is used to create a PyTorch dataloader. If no dataset is provided, the dataloader must be
+       created outside the trainer users needs to design their own dataloader and make sure the batch
+      size that is used is the same as the one specified in the configuration object.
+
+      :type: Union[`torch.utils.data.Dataset`, `datasets.Dataset`], *optional*
+
+   .. attribute:: \*\*optimizer**
+
+      provided, the trainer will create an Adam optimizer with the learning rate specified in the configuration
+      object.
+
+      :type: `torch.optim.Optimizer`, *optional*
+
+   .. attribute:: \*\*data_collator**
+
+      passed along the dataloader
+
+      :type: DataCollatorForLanguageModeling, *optional*
+
+   .. attribute:: \*\*num_shared_layers**
+
+      model, if no reference model is passed. If no number is provided, all the layers will be shared.
+
+      :type: int, *optional*
+
+   .. attribute:: \*\*lr_scheduler**
+
+      
+
+      :type: `torch.optim.lr_scheduler`, *optional*
+
+   .. py:method:: prepare_dataloader(dataset: Union[torch.utils.data.Dataset, datasets.Dataset], data_collator=None)
+
+      Prepare the dataloader for training.
+
+      :param dataset: PyTorch dataset or Hugging Face dataset. If a Hugging Face dataset is passed, the dataset
+                      will be preprocessed by removing the columns that are not used by the model.
+      :type dataset: Union[`torch.utils.data.Dataset`, `datasets.Dataset`]
+      :param data_collator: Data collator function.
+      :type data_collator: Optional[function]
+
+      :returns: PyTorch dataloader
+      :rtype: `torch.utils.data.DataLoader`
+
+
+   .. py:method:: generate(query_tensor: Union[torch.Tensor, List[torch.Tensor]], length_sampler: Callable = None, batch_size: int = 4, return_prompt: bool = True, generate_ref_response: bool = False, **generation_kwargs)
+
+      Generate response with the model given the query tensor.
+      call the `generate` method of the model.
+
+      :param query_tensor: A tensor of shape (`seq_len`) containing query tokens or a list of tensors of shape (`seq_len`).
+      :type query_tensor: `torch.LongTensor`
+      :param generation_kwargs: Keyword arguments for generation.
+      :type generation_kwargs: dict[str, Any]
+      :param length_sampler: Callable that returns the number of newly generated tokens.
+      :type length_sampler: `Callable`, *optional*
+      :param batch_size: Batch size used for generation, defaults to `4`.
+      :type batch_size: `int`, *optional
+      :param return_prompt: If set to `False` the prompt is not returned but only the newly generated tokens, defaults to `True`.
+      :type return_prompt: `bool`, *optional*
+      :param generate_ref_response: If set to `True` the reference response is also generated, defaults to `False`.
+      :type generate_ref_response: `bool`, *optional*
+
+      :returns: A tensor of shape (`batch_size`, `gen_len`) containing response tokens.
+      :rtype: `torch.LongTensor`
+
+
+   .. py:method:: step(queries: List[torch.LongTensor], responses: List[torch.LongTensor], scores: List[torch.FloatTensor], response_masks: Optional[List[torch.LongTensor]] = None)
+
+      Run a PPO optimisation step given a list of queries, model responses, and rewards.
+
+      :param queries: List of tensors containing the encoded queries of shape (`query_length`)
+      :type queries: List[`torch.LongTensor`]
+      :param responses: List of tensors containing the encoded responses of shape (`response_length`)
+      :type responses: List[`torch.LongTensor`]
+      :param scores: List of tensors containing the scores.
+      :type scores: List[`torch.FloatTensor`]
+      :param response_masks: List of tensors containing masks of the response tokens.
+      :type response_masks: List[`torch.FloatTensor`], *optional*)
+
+      :returns: A summary of the training statistics
+      :rtype: `dict[str, Any]`
+
+
+   .. py:method:: gather_stats(stats)
+
+      Gather stats from all processes. Useful in the context of distributed training.
+
+      :param stats:
+      :type stats: dict[str, Any]
+      :param a dictionary of stats to be gathered. The stats should contain torch tensors.:
+
+      :returns: A dictionary of stats with the tensors gathered.
+      :rtype: `dict[str, Any]`
+
+
+   .. py:method:: batched_forward_pass(model: intel_extension_for_transformers.transformers.modeling.trl_models.PreTrainedModelWrapper, queries: torch.Tensor, responses: torch.Tensor, model_inputs: dict, return_logits: bool = False, response_masks: Optional[torch.Tensor] = None)
+
+      Calculate model outputs in multiple batches.
+
+      :param queries: List of tensors containing the encoded queries, shape (`batch_size`, `query_length`)
+      :type queries: `torch.LongTensor`
+      :param responses: List of tensors containing the encoded responses, shape (`batch_size`, `response_length`)
+      :type responses: `torch.LongTensor`
+      :param return_logits: Whether to return all_logits. Set to `False` if logits are not needed to reduce memory consumption.
+      :type return_logits: `bool`, *optional*, defaults to `False`
+
+      :returns:
+
+                    - all_logprobs (`torch.FloatTensor`): Log probabilities of the responses,
+                        shape (`batch_size`, `response_length`)
+                    - all_ref_logprobs (`torch.FloatTensor`): Log probabilities of the responses,
+                        shape (`batch_size`, `response_length`)
+                    - all_values (`torch.FloatTensor`): Values of the responses, shape (`batch_size`, `response_length`)
+      :rtype: (tuple)
+
+
+   .. py:method:: train_minibatch(old_logprobs: torch.FloatTensor, values: torch.FloatTensor, logprobs: torch.FloatTensor, logits: torch.FloatTensor, vpreds: torch.FloatTensor, mask: torch.LongTensor, advantages: torch.FloatTensor, returns: torch.FloatTensor)
+
+      Train one PPO minibatch
+
+      :param logprobs: Log probabilities of the model, shape [batch_size, response_length]
+      :type logprobs: `torch.FloatTensor`
+      :param values: Values of the value head, shape [batch_size, response_length]
+      :type values: `torch.FloatTensor`
+      :param query: Encoded queries, shape [batch_size, query_length]
+      :type query: `torch.LongTensor`
+      :param response: Encoded responses, shape [batch_size, response_length]
+      :type response: `torch.LongTensor`
+      :param model_input: Concatenated queries and responses, shape [batch_size, query_length+response_length]
+      :type model_input: `torch.LongTensor`
+
+      :returns:     Dictionary of training statistics
+      :rtype: train_stats (dict[str, `torch.Tensor`])
+
+
+   .. py:method:: compute_rewards(scores: torch.FloatTensor, logprobs: torch.FloatTensor, ref_logprobs: torch.FloatTensor, masks: torch.LongTensor)
+
+      Compute per token rewards from scores and KL-penalty.
+
+      :param scores: Scores from the reward model, shape (`batch_size`)
+      :type scores: `torch.FloatTensor`
+      :param logprobs: Log probabilities of the model, shape (`batch_size`, `response_length`)
+      :type logprobs: `torch.FloatTensor`
+      :param ref_logprobs: Log probabilities of the reference model, shape (`batch_size`, `response_length`)
+      :type ref_logprobs: `torch.FloatTensor`
+
+
+   .. py:method:: loss(old_logprobs: torch.FloatTensor, values: torch.FloatTensor, logits: torch.FloatTensor, vpreds: torch.FloatTensor, logprobs: torch.FloatTensor, mask: torch.LongTensor, advantages: torch.FloatTensor, returns: torch.FloatTensor)
+
+      Calculate policy and value losses.
+
+      :param old_logprobs: Log probabilities of the model, shape (`batch_size`, `response_length`)
+      :type old_logprobs: `torch.FloatTensor`
+      :param values: Values of the value head, shape (`batch_size`, `response_length`)
+      :type values: `torch.FloatTensor`
+      :param rewards: Rewards from the reward model, shape (`batch_size`, `response_length`)
+      :type rewards: `torch.FloatTensor`
+      :param logits: Logits of the model, shape (`batch_size`, `response_length`, `vocab_size`)
+      :type logits: `torch.FloatTensor`
+      :param v_pred: Values of the value head, shape (`batch_size`, `response_length`)
+      :type v_pred: `torch.FloatTensor`
+      :param logprobs: Log probabilities of the model, shape (`batch_size`, `response_length`)
+      :type logprobs: `torch.FloatTensor`
+
+
+   .. py:method:: record_step_stats(kl_coef: float, **data)
+
+      Record training step statistics.
+
+
+      :param kl_coef: KL coefficient
+      :type kl_coef: `float`
+      :param data: Dictionary of training step data
+      :type data: `dict`
+
+      :returns:     Dictionary of training step statistics
+      :rtype: stats (`dict`)
+
+
+   .. py:method:: log_stats(stats: dict, batch: dict, rewards: List[torch.FloatTensor], columns_to_log: List[str] = ['query', 'response'])
+
+      A function that logs all the training stats. Call it at the end of each epoch.
+
+      :param stats: A dictionary of training stats.
+      :type stats: dict[str, Any]
+      :param batch: A dictionary of batch data, this contains the queries and responses.
+      :type batch: dict[str, Any]
+      :param rewards: A tensor of rewards.
+      :type rewards: `List[torch.FloatTensor]`
+
+
+   .. py:method:: create_model_card(path: str, model_name: Optional[str] = 'TRL Model') -> None
+
+      Creates and saves a model card for a TRL model.
+
+      :param path: The path to save the model card to.
+      :type path: `str`
+      :param model_name: The name of the model, defaults to `TRL Model`.
+      :type model_name: `str`, *optional*
+
+
+

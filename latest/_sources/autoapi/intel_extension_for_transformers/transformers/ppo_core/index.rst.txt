@@ -1,0 +1,104 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.ppo_core`
+================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.ppo_core
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.ppo_core.LengthSampler
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.ppo_core.flatten_dict
+   intel_extension_for_transformers.transformers.ppo_core.convert_to_scalar
+   intel_extension_for_transformers.transformers.ppo_core.stack_dicts
+   intel_extension_for_transformers.transformers.ppo_core.logprobs_from_logits
+   intel_extension_for_transformers.transformers.ppo_core.masked_mean
+   intel_extension_for_transformers.transformers.ppo_core.masked_var
+   intel_extension_for_transformers.transformers.ppo_core.masked_whiten
+   intel_extension_for_transformers.transformers.ppo_core.clip_by_value
+   intel_extension_for_transformers.transformers.ppo_core.entropy_from_logits
+   intel_extension_for_transformers.transformers.ppo_core.stats_to_np
+   intel_extension_for_transformers.transformers.ppo_core.set_seed
+
+
+
+.. py:function:: flatten_dict(nested, sep='/')
+
+   Flatten dictionary and concatenate nested keys with separator.
+
+
+.. py:function:: convert_to_scalar(stats)
+
+   Converts the stats from a flattened dict to single scalar dicts
+
+
+.. py:function:: stack_dicts(stats_dicts)
+
+   Stack the values of a dict.
+
+
+.. py:function:: logprobs_from_logits(logits, labels, gather=True)
+
+   See: https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591
+
+
+.. py:function:: masked_mean(values, mask, axis=None)
+
+   Compute mean of tensor with a masked values.
+
+
+.. py:function:: masked_var(values, mask, unbiased=True)
+
+   Compute variance of tensor with masked values.
+
+
+.. py:function:: masked_whiten(values, mask, shift_mean=True)
+
+   Whiten values with masked values.
+
+
+.. py:function:: clip_by_value(x, tensor_min, tensor_max)
+
+   Tensor extenstion to torch.clamp
+   https://github.com/pytorch/pytorch/issues/2793#issuecomment-428784713
+
+
+.. py:function:: entropy_from_logits(logits)
+
+   Calculate entropy from logits.
+
+
+.. py:function:: stats_to_np(stats_dict)
+
+   Cast all torch.tensors in dict to numpy arrays.
+
+
+.. py:function:: set_seed(seed: int)
+
+   Helper function for reproducible behavior to set the seed in `random`, `numpy`, and `torch`.
+
+   :param seed: The seed to set.
+   :type seed: `int`
+
+
+.. py:class:: LengthSampler(min_value, max_value)
+
+
+   Samples a length
+
+

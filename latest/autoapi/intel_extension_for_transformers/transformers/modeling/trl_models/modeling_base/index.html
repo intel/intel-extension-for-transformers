@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base &mdash; Intel® Extension for Transformers 0.1.dev1+g936c2d2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base">
+<span id="intel-extension-for-transformers-transformers-modeling-trl-models-modeling-base"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PreTrainedModelWrapper</span></code></a></p></td>
+<td><p>A wrapper class around a (<cite>transformers.PreTrainedModel</cite>) to be compatible with the</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.create_reference_model" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.create_reference_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_reference_model</span></code></a>(→ PreTrainedModelWrapper)</p></td>
+<td><p>Creates a static reference copy of a model. Note that model will be in <cite>.eval()</cite> mode.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.</span></span><span class="sig-name descname"><span class="pre">PreTrainedModelWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper" title="Link to this definition"></a></dt>
+<dd><p>A wrapper class around a (<cite>transformers.PreTrainedModel</cite>) to be compatible with the
+(<cite>~transformers.PreTrained</cite>) class in order to keep some attributes and methods of the
+(<cite>~transformers.PreTrainedModel</cite>) class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.pretrained_model">
+<span class="sig-name descname"><span class="pre">pretrained_model</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.pretrained_model" title="Link to this definition"></a></dt>
+<dd><p>(<cite>transformers.PreTrainedModel</cite>)
+The model to be wrapped.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.parent_class">
+<span class="sig-name descname"><span class="pre">parent_class</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.parent_class" title="Link to this definition"></a></dt>
+<dd><p>(<cite>transformers.PreTrainedModel</cite>)
+The parent class of the model to be wrapped.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.supported_args">
+<span class="sig-name descname"><span class="pre">supported_args</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.supported_args" title="Link to this definition"></a></dt>
+<dd><p>(<cite>list</cite>)
+The list of arguments that are supported by the wrapper class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.from_pretrained">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">model_args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.from_pretrained" title="Link to this definition"></a></dt>
+<dd><p>Instantiates a new model from a pretrained model from <cite>transformers</cite>. The
+pretrained model is loaded using the <cite>from_pretrained</cite> method of the
+<cite>transformers.PreTrainedModel</cite> class. The arguments that are specific to the
+<cite>transformers.PreTrainedModel</cite> class are passed along this method and filtered
+out from the <cite>kwargs</cite> argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pretrained_model_name_or_path</strong> (<cite>str</cite> or <cite>transformers.PreTrainedModel</cite>) – The path to the pretrained model or its name.</p></li>
+<li><p><strong>*model_args</strong> (<cite>list</cite>, <em>optional</em>)) – Additional positional arguments passed along to the underlying model’s
+<cite>from_pretrained</cite> method.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Additional keyword arguments passed along to the underlying model’s
+<cite>from_pretrained</cite> method. We also pre-process the kwargs to extract
+the arguments that are specific to the <cite>transformers.PreTrainedModel</cite>
+class and the arguments that are specific to trl models. The kwargs
+also support <cite>prepare_model_for_kbit_training</cite> arguments from
+<cite>peft</cite> library.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.push_to_hub">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">push_to_hub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.push_to_hub" title="Link to this definition"></a></dt>
+<dd><p>Push the pretrained model to the hub. This method is a wrapper around
+<cite>transformers.PreTrainedModel.push_to_hub</cite>. Please refer to the documentation
+of <cite>transformers.PreTrainedModel.push_to_hub</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<cite>list</cite>, <em>optional</em>) – Positional arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Keyword arguments passed along to the underlying model’s
+<cite>push_to_hub</cite> method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.save_pretrained">
+<span class="sig-name descname"><span class="pre">save_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.save_pretrained" title="Link to this definition"></a></dt>
+<dd><p>Save the pretrained model to a directory. This method is a wrapper around
+<cite>transformers.PreTrainedModel.save_pretrained</cite>. Please refer to the documentation
+of <cite>transformers.PreTrainedModel.save_pretrained</cite> for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> (<cite>list</cite>, <em>optional</em>) – Positional arguments passed along to the underlying model’s
+<cite>save_pretrained</cite> method.</p></li>
+<li><p><strong>**kwargs</strong> (<cite>dict</cite>, <em>optional</em>) – Keyword arguments passed along to the underlying model’s
+<cite>save_pretrained</cite> method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.state_dict">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.state_dict" title="Link to this definition"></a></dt>
+<dd><p>Return the state_dict of the pretrained model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.post_init">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.post_init" title="Link to this definition"></a></dt>
+<dd><p>Post initialization method. This method is called after the model is
+instantiated and loaded from a checkpoint. It can be used to perform
+additional operations such as loading the state_dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.add_and_load_reward_modeling_adapter">
+<span class="sig-name descname"><span class="pre">add_and_load_reward_modeling_adapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adapter_model_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reward_model_adapter'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.add_and_load_reward_modeling_adapter" title="Link to this definition"></a></dt>
+<dd><p>Add and load a reward modeling adapter. This method can only be used if the
+model is a <cite>PeftModel</cite> and if you have initialized the model with the <cite>reward_modeling_adapter_id</cite>
+argument, pointing to the id of the reward modeling adapter. The latest needs also to contain the
+score head in order to produce the reward.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.compute_reward_score">
+<span class="sig-name descname"><span class="pre">compute_reward_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ppo_adapter_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper.compute_reward_score" title="Link to this definition"></a></dt>
+<dd><p>Computes the reward score for a given input. The method has first to enable the adapter
+and then compute the reward score. After that the model disables the reward modeling
+adapter and enables the default ppo adapter again.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.create_reference_model">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.</span></span><span class="sig-name descname"><span class="pre">create_reference_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper"><span class="pre">PreTrainedModelWrapper</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_shared_layers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper" title="intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper"><span class="pre">PreTrainedModelWrapper</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/trl_models/modeling_base.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.create_reference_model" title="Link to this definition"></a></dt>
+<dd><p>Creates a static reference copy of a model. Note that model will be in <cite>.eval()</cite> mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<cite>PreTrainedModelWrapper</cite>) – The model to be copied.</p></li>
+<li><p><strong>num_shared_layers</strong> (<cite>int</cite>, <em>optional</em>) – The number of initial layers that are shared between both models and</p></li>
+<li><p><strong>frozen.</strong> (<em>kept</em>) – </p></li>
+<li><p><strong>pattern</strong> (<cite>str</cite>, <em>optional</em>) – The shared layers are selected with a string pattern
+(e.g. “transformer.h.{layer}” for GPT2) and if a custom pattern is necessary it can be passed here.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns</dt><dd><p><cite>PreTrainedModelWrapper</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fdc146950f0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

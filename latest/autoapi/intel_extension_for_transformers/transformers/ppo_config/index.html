@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.ppo_config &mdash; Intel® Extension for Transformers 0.1.dev1+g936c2d2 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.ppo_config</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/intel_extension_for_transformers/transformers/ppo_config/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.ppo_config">
+<span id="intel-extension-for-transformers-transformers-ppo-config"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.ppo_config" title="intel_extension_for_transformers.transformers.ppo_config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.ppo_config</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.ppo_config" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig" title="intel_extension_for_transformers.transformers.ppo_config.PPOConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PPOConfig</span></code></a></p></td>
+<td><p>Configuration class for PPOTrainer</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_config.</span></span><span class="sig-name descname"><span class="pre">PPOConfig</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig" title="Link to this definition"></a></dt>
+<dd><p>Configuration class for PPOTrainer</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.exp_name">
+<span class="sig-name descname"><span class="pre">exp_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.exp_name" title="Link to this definition"></a></dt>
+<dd><p>the name of this experiment (by default is the file name without the extension name)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.seed">
+<span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.seed" title="Link to this definition"></a></dt>
+<dd><p>Seed value for random generations</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.log_with">
+<span class="sig-name descname"><span class="pre">log_with</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">wandb</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tensorboard</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.log_with" title="Link to this definition"></a></dt>
+<dd><p>//huggingface.co/docs/accelerate/usage_guides/tracking
+for more details</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Log with either ‘wandb’ or ‘tensorboard’, check  https</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.task_name">
+<span class="sig-name descname"><span class="pre">task_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.task_name" title="Link to this definition"></a></dt>
+<dd><p>Name of task to use - used only for tracking purposes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.model_name">
+<span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.model_name" title="Link to this definition"></a></dt>
+<dd><p>Name of model to use - used only for tracking purposes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.query_dataset">
+<span class="sig-name descname"><span class="pre">query_dataset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.query_dataset" title="Link to this definition"></a></dt>
+<dd><p>Name of dataset to query - used only for tracking purposes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.reward_model">
+<span class="sig-name descname"><span class="pre">reward_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.reward_model" title="Link to this definition"></a></dt>
+<dd><p>The reward model to use - used only for tracking purposes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.remove_unused_columns">
+<span class="sig-name descname"><span class="pre">remove_unused_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.remove_unused_columns" title="Link to this definition"></a></dt>
+<dd><p>Remove unused columns from the dataset if <cite>datasets.Dataset</cite> is used</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.tracker_kwargs">
+<span class="sig-name descname"><span class="pre">tracker_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">JSONDict</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.tracker_kwargs" title="Link to this definition"></a></dt>
+<dd><p>{“entity”:
+“my_wandb_entity”, “name”: “my_exp_name”}}’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Keyword arguments for the tracker (e.g. python ppo.py –ppo_config.tracker_kwargs=’{“wandb”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.accelerator_kwargs">
+<span class="sig-name descname"><span class="pre">accelerator_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">JSONDict</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.accelerator_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments for the accelerator</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.project_kwargs">
+<span class="sig-name descname"><span class="pre">project_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">JSONDict</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.project_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments for the accelerator project config (e.g. <cite>logging_dir</cite>)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.tracker_project_name">
+<span class="sig-name descname"><span class="pre">tracker_project_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'trl'</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.tracker_project_name" title="Link to this definition"></a></dt>
+<dd><p>Name of project to use for tracking</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.push_to_hub_if_best_kwargs">
+<span class="sig-name descname"><span class="pre">push_to_hub_if_best_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">JSONDict</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.push_to_hub_if_best_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments for pushing model to the hub during training (e.g. repo_id)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.steps">
+<span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">20000</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.steps" title="Link to this definition"></a></dt>
+<dd><p>Number of training steps</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.learning_rate">
+<span class="sig-name descname"><span class="pre">learning_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-05</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.learning_rate" title="Link to this definition"></a></dt>
+<dd><p>Adam learning rate</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.adap_kl_ctrl">
+<span class="sig-name descname"><span class="pre">adap_kl_ctrl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.adap_kl_ctrl" title="Link to this definition"></a></dt>
+<dd><p>Use adaptive KL control, otherwise linear</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.init_kl_coef">
+<span class="sig-name descname"><span class="pre">init_kl_coef</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.init_kl_coef" title="Link to this definition"></a></dt>
+<dd><p>Initial KL penalty coefficient (used for adaptive and linear control)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.kl_penalty">
+<span class="sig-name descname"><span class="pre">kl_penalty</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">kl</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">abs</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">mse</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">full</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'kl'</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.kl_penalty" title="Link to this definition"></a></dt>
+<dd><p>model_logp - ref_logp,  ‘abs’: abs(kl),  ‘mse’: mean squared error mse(kl) and ‘full’:
+the actual kl for all tokens in the distribution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>kl penalty options</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>‘kl’</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.target" title="Link to this definition"></a></dt>
+<dd><p>Target KL value for adaptive KL control</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.horizon">
+<span class="sig-name descname"><span class="pre">horizon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10000</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.horizon" title="Link to this definition"></a></dt>
+<dd><p>Horizon for adaptive KL control</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.gamma">
+<span class="sig-name descname"><span class="pre">gamma</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.gamma" title="Link to this definition"></a></dt>
+<dd><p>Gamma parameter for advantage calculation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.lam">
+<span class="sig-name descname"><span class="pre">lam</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.95</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.lam" title="Link to this definition"></a></dt>
+<dd><p>Lambda parameter for advantage calculation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.cliprange">
+<span class="sig-name descname"><span class="pre">cliprange</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.cliprange" title="Link to this definition"></a></dt>
+<dd><p>Range for clipping in PPO policy gradient loss</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.cliprange_value">
+<span class="sig-name descname"><span class="pre">cliprange_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.cliprange_value" title="Link to this definition"></a></dt>
+<dd><p>Range for clipping values in loss calculation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.vf_coef">
+<span class="sig-name descname"><span class="pre">vf_coef</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.vf_coef" title="Link to this definition"></a></dt>
+<dd><p>Scaling factor for value loss</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.batch_size">
+<span class="sig-name descname"><span class="pre">batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">256</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.batch_size" title="Link to this definition"></a></dt>
+<dd><p>Number of samples per optimisation step</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.mini_batch_size">
+<span class="sig-name descname"><span class="pre">mini_batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.mini_batch_size" title="Link to this definition"></a></dt>
+<dd><p>Number of samples optimized in each mini batch</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.gradient_accumulation_steps">
+<span class="sig-name descname"><span class="pre">gradient_accumulation_steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.gradient_accumulation_steps" title="Link to this definition"></a></dt>
+<dd><p>The number of gradient accumulation steps</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.world_size">
+<span class="sig-name descname"><span class="pre">world_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.world_size" title="Link to this definition"></a></dt>
+<dd><p>The world size for distributed training</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.ppo_epochs">
+<span class="sig-name descname"><span class="pre">ppo_epochs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.ppo_epochs" title="Link to this definition"></a></dt>
+<dd><p>Number of optimisation epochs per batch of samples</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.max_grad_norm">
+<span class="sig-name descname"><span class="pre">max_grad_norm</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.max_grad_norm" title="Link to this definition"></a></dt>
+<dd><p>Maximum gradient norm for gradient clipping</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.optimize_device_cache">
+<span class="sig-name descname"><span class="pre">optimize_device_cache</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.optimize_device_cache" title="Link to this definition"></a></dt>
+<dd><p>Optimize device cache for slightly more memory-efficient training</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.early_stopping">
+<span class="sig-name descname"><span class="pre">early_stopping</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.early_stopping" title="Link to this definition"></a></dt>
+<dd><p>Whether to stop the PPO optimization loop early is the KL too high</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.target_kl">
+<span class="sig-name descname"><span class="pre">target_kl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.target_kl" title="Link to this definition"></a></dt>
+<dd><p>Stop early if we exceed this value by over 50%</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.compare_steps">
+<span class="sig-name descname"><span class="pre">compare_steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.compare_steps" title="Link to this definition"></a></dt>
+<dd><p>Number of steps between comparison of the current reward with the best seen so far</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.ratio_threshold">
+<span class="sig-name descname"><span class="pre">ratio_threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10.0</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.ratio_threshold" title="Link to this definition"></a></dt>
+<dd><p>Skip mini-batches with high PPO ratios that can cause loss spikes</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_score_scaling">
+<span class="sig-name descname"><span class="pre">use_score_scaling</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_score_scaling" title="Link to this definition"></a></dt>
+<dd><p>Use score scaling</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_score_norm">
+<span class="sig-name descname"><span class="pre">use_score_norm</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_score_norm" title="Link to this definition"></a></dt>
+<dd><p>Use score normalization. Only applicable if use_score_scaling is True</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.score_clip">
+<span class="sig-name descname"><span class="pre">score_clip</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.score_clip" title="Link to this definition"></a></dt>
+<dd><p>Score clipping</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.whiten_rewards">
+<span class="sig-name descname"><span class="pre">whiten_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.whiten_rewards" title="Link to this definition"></a></dt>
+<dd><p>Whiten the rewards before compute advantages</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.is_encoder_decoder">
+<span class="sig-name descname"><span class="pre">is_encoder_decoder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.is_encoder_decoder" title="Link to this definition"></a></dt>
+<dd><p>Whether the model is an encoder-decoder model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TO BE FILLED In RUNTIME</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.is_peft_model">
+<span class="sig-name descname"><span class="pre">is_peft_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.is_peft_model" title="Link to this definition"></a></dt>
+<dd><p>Whether the model is a PEFT model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TO BE FILLED In RUNTIME</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.backward_batch_size">
+<span class="sig-name descname"><span class="pre">backward_batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.backward_batch_size" title="Link to this definition"></a></dt>
+<dd><p>Number of samples optimized in an <cite>optimizer.step()</cite> call</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TO BE FILLED In RUNTIME</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.global_backward_batch_size">
+<span class="sig-name descname"><span class="pre">global_backward_batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.global_backward_batch_size" title="Link to this definition"></a></dt>
+<dd><p>the effective <cite>backward_batch_size</cite> across all processes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TO BE FILLED In RUNTIME</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.global_batch_size">
+<span class="sig-name descname"><span class="pre">global_batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tyro.conf.Suppress</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.global_batch_size" title="Link to this definition"></a></dt>
+<dd><p>the effective <cite>batch_size</cite> across all processes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TO BE FILLED In RUNTIME</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_habana">
+<span class="sig-name descname"><span class="pre">use_habana</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.use_habana" title="Link to this definition"></a></dt>
+<dd><p>Use habana. Only applicable if use_habana is True</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.pad_for_acceleration">
+<span class="sig-name descname"><span class="pre">pad_for_acceleration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.pad_for_acceleration" title="Link to this definition"></a></dt>
+<dd><p>Use pad_for_acceleration. Only applicable if pad_for_acceleration is True</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_config.PPOConfig.pad_max_len">
+<span class="sig-name descname"><span class="pre">pad_max_len</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_config.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_config.PPOConfig.pad_max_len" title="Link to this definition"></a></dt>
+<dd><p>Use pad_for_acceleration. Only applicable if pad_for_acceleration is True</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fdc13c19de0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

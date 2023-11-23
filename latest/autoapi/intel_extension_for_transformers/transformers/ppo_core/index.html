@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.ppo_core &mdash; Intel® Extension for Transformers 0.1.dev1+g936c2d2 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.ppo_core</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/intel_extension_for_transformers/transformers/ppo_core/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.ppo_core">
+<span id="intel-extension-for-transformers-transformers-ppo-core"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.ppo_core" title="intel_extension_for_transformers.transformers.ppo_core"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.ppo_core</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.ppo_core" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.LengthSampler" title="intel_extension_for_transformers.transformers.ppo_core.LengthSampler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LengthSampler</span></code></a></p></td>
+<td><p>Samples a length</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.flatten_dict" title="intel_extension_for_transformers.transformers.ppo_core.flatten_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatten_dict</span></code></a>(nested[, sep])</p></td>
+<td><p>Flatten dictionary and concatenate nested keys with separator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.convert_to_scalar" title="intel_extension_for_transformers.transformers.ppo_core.convert_to_scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_to_scalar</span></code></a>(stats)</p></td>
+<td><p>Converts the stats from a flattened dict to single scalar dicts</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.stack_dicts" title="intel_extension_for_transformers.transformers.ppo_core.stack_dicts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack_dicts</span></code></a>(stats_dicts)</p></td>
+<td><p>Stack the values of a dict.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.logprobs_from_logits" title="intel_extension_for_transformers.transformers.ppo_core.logprobs_from_logits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logprobs_from_logits</span></code></a>(logits, labels[, gather])</p></td>
+<td><p>See: <a class="reference external" href="https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591">https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.masked_mean" title="intel_extension_for_transformers.transformers.ppo_core.masked_mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">masked_mean</span></code></a>(values, mask[, axis])</p></td>
+<td><p>Compute mean of tensor with a masked values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.masked_var" title="intel_extension_for_transformers.transformers.ppo_core.masked_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">masked_var</span></code></a>(values, mask[, unbiased])</p></td>
+<td><p>Compute variance of tensor with masked values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.masked_whiten" title="intel_extension_for_transformers.transformers.ppo_core.masked_whiten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">masked_whiten</span></code></a>(values, mask[, shift_mean])</p></td>
+<td><p>Whiten values with masked values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.clip_by_value" title="intel_extension_for_transformers.transformers.ppo_core.clip_by_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clip_by_value</span></code></a>(x, tensor_min, tensor_max)</p></td>
+<td><p>Tensor extenstion to torch.clamp</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.entropy_from_logits" title="intel_extension_for_transformers.transformers.ppo_core.entropy_from_logits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">entropy_from_logits</span></code></a>(logits)</p></td>
+<td><p>Calculate entropy from logits.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.stats_to_np" title="intel_extension_for_transformers.transformers.ppo_core.stats_to_np"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stats_to_np</span></code></a>(stats_dict)</p></td>
+<td><p>Cast all torch.tensors in dict to numpy arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.ppo_core.set_seed" title="intel_extension_for_transformers.transformers.ppo_core.set_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_seed</span></code></a>(seed)</p></td>
+<td><p>Helper function for reproducible behavior to set the seed in <cite>random</cite>, <cite>numpy</cite>, and <cite>torch</cite>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.flatten_dict">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">flatten_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nested</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.flatten_dict" title="Link to this definition"></a></dt>
+<dd><p>Flatten dictionary and concatenate nested keys with separator.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.convert_to_scalar">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">convert_to_scalar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.convert_to_scalar" title="Link to this definition"></a></dt>
+<dd><p>Converts the stats from a flattened dict to single scalar dicts</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.stack_dicts">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">stack_dicts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats_dicts</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.stack_dicts" title="Link to this definition"></a></dt>
+<dd><p>Stack the values of a dict.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.logprobs_from_logits">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">logprobs_from_logits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gather</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.logprobs_from_logits" title="Link to this definition"></a></dt>
+<dd><p>See: <a class="reference external" href="https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591">https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.masked_mean">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">masked_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.masked_mean" title="Link to this definition"></a></dt>
+<dd><p>Compute mean of tensor with a masked values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.masked_var">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">masked_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unbiased</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.masked_var" title="Link to this definition"></a></dt>
+<dd><p>Compute variance of tensor with masked values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.masked_whiten">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">masked_whiten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.masked_whiten" title="Link to this definition"></a></dt>
+<dd><p>Whiten values with masked values.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.clip_by_value">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">clip_by_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_max</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.clip_by_value" title="Link to this definition"></a></dt>
+<dd><p>Tensor extenstion to torch.clamp
+<a class="reference external" href="https://github.com/pytorch/pytorch/issues/2793#issuecomment-428784713">https://github.com/pytorch/pytorch/issues/2793#issuecomment-428784713</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.entropy_from_logits">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">entropy_from_logits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logits</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.entropy_from_logits" title="Link to this definition"></a></dt>
+<dd><p>Calculate entropy from logits.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.stats_to_np">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">stats_to_np</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.stats_to_np" title="Link to this definition"></a></dt>
+<dd><p>Cast all torch.tensors in dict to numpy arrays.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.set_seed">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">set_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.set_seed" title="Link to this definition"></a></dt>
+<dd><p>Helper function for reproducible behavior to set the seed in <cite>random</cite>, <cite>numpy</cite>, and <cite>torch</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seed</strong> (<cite>int</cite>) – The seed to set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.ppo_core.LengthSampler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.ppo_core.</span></span><span class="sig-name descname"><span class="pre">LengthSampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/ppo_core.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.ppo_core.LengthSampler" title="Link to this definition"></a></dt>
+<dd><p>Samples a length</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fdc13c1b340> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+:orphan:
+
+:py:mod:`rl_training`
+=====================
+
+.. py:module:: rl_training
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   rl_training.ScriptArguments
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   rl_training.build_dataset
+
+
+
+.. py:function:: build_dataset(tokenizer, dataset_name)
+
+   Build dataset for training. This builds the dataset from `load_dataset`, one should
+   customize this function to train the model on its own dataset.
+
+   :param dataset_name: The name of the dataset to be loaded.
+   :type dataset_name: `str`
+
+   :returns:     The dataloader for the dataset.
+   :rtype: dataloader (`torch.utils.data.DataLoader`)
+
+
+.. py:class:: ScriptArguments
+
+
+   The name of the Casual LM model we wish to fine with PPO
+
+

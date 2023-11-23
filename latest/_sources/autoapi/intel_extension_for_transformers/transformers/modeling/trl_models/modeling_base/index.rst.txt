@@ -1,0 +1,153 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base`
+=========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.PreTrainedModelWrapper
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.trl_models.modeling_base.create_reference_model
+
+
+
+.. py:class:: PreTrainedModelWrapper(pretrained_model=None, **kwargs)
+
+
+
+
+   A wrapper class around a (`transformers.PreTrainedModel`) to be compatible with the
+   (`~transformers.PreTrained`) class in order to keep some attributes and methods of the
+   (`~transformers.PreTrainedModel`) class.
+
+   .. attribute:: pretrained_model
+
+      (`transformers.PreTrainedModel`)
+      The model to be wrapped.
+
+   .. attribute:: parent_class
+
+      (`transformers.PreTrainedModel`)
+      The parent class of the model to be wrapped.
+
+   .. attribute:: supported_args
+
+      (`list`)
+      The list of arguments that are supported by the wrapper class.
+
+   .. py:method:: from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
+      :classmethod:
+
+      Instantiates a new model from a pretrained model from `transformers`. The
+      pretrained model is loaded using the `from_pretrained` method of the
+      `transformers.PreTrainedModel` class. The arguments that are specific to the
+      `transformers.PreTrainedModel` class are passed along this method and filtered
+      out from the `kwargs` argument.
+
+
+      :param pretrained_model_name_or_path: The path to the pretrained model or its name.
+      :type pretrained_model_name_or_path: `str` or `transformers.PreTrainedModel`
+      :param \*model_args: Additional positional arguments passed along to the underlying model's
+                           `from_pretrained` method.
+      :type \*model_args: `list`, *optional*)
+      :param \*\*kwargs: Additional keyword arguments passed along to the underlying model's
+                         `from_pretrained` method. We also pre-process the kwargs to extract
+                         the arguments that are specific to the `transformers.PreTrainedModel`
+                         class and the arguments that are specific to trl models. The kwargs
+                         also support `prepare_model_for_kbit_training` arguments from
+                         `peft` library.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: push_to_hub(*args, **kwargs)
+      :abstractmethod:
+
+      Push the pretrained model to the hub. This method is a wrapper around
+      `transformers.PreTrainedModel.push_to_hub`. Please refer to the documentation
+      of `transformers.PreTrainedModel.push_to_hub` for more information.
+
+      :param \*args: Positional arguments passed along to the underlying model's
+                     `push_to_hub` method.
+      :type \*args: `list`, *optional*
+      :param \*\*kwargs: Keyword arguments passed along to the underlying model's
+                         `push_to_hub` method.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: save_pretrained(*args, **kwargs)
+
+      Save the pretrained model to a directory. This method is a wrapper around
+      `transformers.PreTrainedModel.save_pretrained`. Please refer to the documentation
+      of `transformers.PreTrainedModel.save_pretrained` for more information.
+
+      :param \*args: Positional arguments passed along to the underlying model's
+                     `save_pretrained` method.
+      :type \*args: `list`, *optional*
+      :param \*\*kwargs: Keyword arguments passed along to the underlying model's
+                         `save_pretrained` method.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: state_dict(*args, **kwargs)
+      :abstractmethod:
+
+      Return the state_dict of the pretrained model.
+
+
+   .. py:method:: post_init(*args, **kwargs)
+      :abstractmethod:
+
+      Post initialization method. This method is called after the model is
+      instantiated and loaded from a checkpoint. It can be used to perform
+      additional operations such as loading the state_dict.
+
+
+   .. py:method:: add_and_load_reward_modeling_adapter(adapter_model_id, adapter_name='reward_model_adapter', token=None)
+
+      Add and load a reward modeling adapter. This method can only be used if the
+      model is a `PeftModel` and if you have initialized the model with the `reward_modeling_adapter_id`
+      argument, pointing to the id of the reward modeling adapter. The latest needs also to contain the
+      score head in order to produce the reward.
+
+
+   .. py:method:: compute_reward_score(input_ids, attention_mask=None, ppo_adapter_name='default', **kwargs)
+
+      Computes the reward score for a given input. The method has first to enable the adapter
+      and then compute the reward score. After that the model disables the reward modeling
+      adapter and enables the default ppo adapter again.
+
+
+
+.. py:function:: create_reference_model(model: PreTrainedModelWrapper, num_shared_layers: int = None, pattern: str = None) -> PreTrainedModelWrapper
+
+   Creates a static reference copy of a model. Note that model will be in `.eval()` mode.
+
+   :param model: The model to be copied.
+   :type model: `PreTrainedModelWrapper`
+   :param num_shared_layers: The number of initial layers that are shared between both models and
+   :type num_shared_layers: `int`, *optional*
+   :param kept frozen.:
+   :param pattern: The shared layers are selected with a string pattern
+                   (e.g. "transformer.h.{layer}" for GPT2) and if a custom pattern is necessary it can be passed here.
+   :type pattern: `str`, *optional*
+
+   Returns
+       `PreTrainedModelWrapper`
+
+

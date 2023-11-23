@@ -1,0 +1,167 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.ValueHead
+   intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForCausalLMWithValueHead
+   intel_extension_for_transformers.transformers.modeling.trl_models.modeling_value_head.AutoModelForSeq2SeqLMWithValueHead
+
+
+
+
+.. py:class:: ValueHead(config, **kwargs)
+
+
+
+
+   The ValueHead class implements a head for GPT2 that returns a scalar for each output token.
+
+
+.. py:class:: AutoModelForCausalLMWithValueHead(pretrained_model, **kwargs)
+
+
+
+
+   An autoregressive model with a value head in addition to the language model head.
+   This class inherits from `~trl.PreTrainedModelWrapper` and wraps a
+   `transformers.PreTrainedModel` class. The wrapper class supports classic functions
+   such as `from_pretrained`, `push_to_hub` and `generate`. To call a method of the wrapped
+   model, simply manipulate the `pretrained_model` attribute of this class.
+
+   Class attributes:
+       - **transformers_parent_class** (`transformers.PreTrainedModel`) -- The parent class of the wrapped model. This
+           should be set to `transformers.AutoModelForCausalLM` for this class.
+       - **lm_head_namings** (`tuple`) -- A tuple of strings that are used to identify the language model head of the
+           wrapped model. This is set to `("lm_head", "embed_out")` for this class but can be changed for other models
+           in the future
+       - **supported_args** (`tuple`) -- A tuple of strings that are used to identify the arguments that are supported
+           by the `ValueHead` class. Currently, the supported args are:
+           - **summary_dropout_prob** (`float`, `optional`, defaults to `None`) -- The dropout probability for the
+               `ValueHead` class.
+           - **v_head_initializer_range** (`float`, `optional`, defaults to `0.2`) -- The initializer range for the
+               `ValueHead` if a specific initialization strategy is selected.
+           - **v_head_init_strategy** (`str`, `optional`, defaults to `None`) -- The initialization strategy for the
+               `ValueHead`. Currently, the supported strategies are:
+               - **`None`** -- Initializes the weights of the `ValueHead` with a random distribution. This is the
+               default strategy.
+               - **"normal"** -- Initializes the weights of the `ValueHead` with a normal distribution.
+
+
+   .. py:method:: forward(input_ids=None, past_key_values=None, attention_mask=None, **kwargs)
+
+      Applies a forward pass to the wrapped model and returns the logits of the value head.
+
+      :param input_ids: Indices of input sequence tokens in the vocabulary.
+      :type input_ids: `torch.LongTensor` of shape `(batch_size, sequence_length)`
+      :param past_key_values: Contains pre-computed hidden-states (key and values in the attention blocks) as computed by the model
+                              (see `past_key_values` input) to speed up sequential decoding.
+      :type past_key_values: `tuple(tuple(torch.FloatTensor))`, `optional`
+      :param attention_mask: Mask to avoid performing attention on padding token indices. Mask values selected in ``[0, 1]``:
+                             - 1 for tokens that are **not masked**,
+                             - 0 for tokens that are **masked**.
+      :type attention_mask: `torch.FloatTensor` of shape `(batch_size, sequence_length)`, `optional`
+      :param kwargs: Additional keyword arguments, that are passed to the wrapped model.
+      :type kwargs: `dict`, `optional`
+
+
+   .. py:method:: generate(*args, **kwargs)
+
+      A simple wrapper around the `generate` method of the wrapped model.
+      Please refer to the [`generate`](https://huggingface.co/docs/transformers/internal/generation_utils)
+      method of the wrapped model for more information about the supported arguments.
+
+      :param \*args: Positional arguments passed to the `generate` method of the wrapped model.
+      :type \*args: `list`, *optional*
+      :param \*\*kwargs: Keyword arguments passed to the `generate` method of the wrapped model.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: state_dict(*args, **kwargs)
+
+      Returns the state dictionary of the model. We add the state dictionary of the value head
+      to the state dictionary of the wrapped model by prepending the key with `v_head.`.
+
+
+   .. py:method:: push_to_hub(*args, **kwargs)
+
+      Push the pretrained model to the hub. This method is a wrapper around
+      `transformers.PreTrainedModel.push_to_hub`. Please refer to the documentation
+      of `transformers.PreTrainedModel.push_to_hub` for more information.
+
+      :param \*args: Positional arguments passed along to the underlying model's
+                     `push_to_hub` method.
+      :type \*args: `list`, *optional*
+      :param \*\*kwargs: Keyword arguments passed along to the underlying model's
+                         `push_to_hub` method.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: post_init(state_dict)
+
+      We add the state dictionary of the value head to the state dictionary of the wrapped model
+      by prepending the key with `v_head.`. This function removes the `v_head.` prefix from the
+      keys of the value head state dictionary.
+
+
+
+.. py:class:: AutoModelForSeq2SeqLMWithValueHead(pretrained_model, **kwargs)
+
+
+
+
+   A seq2seq model with a value head in addition to the language model head.
+   This class inherits from `~trl.PreTrainedModelWrapper` and wraps a
+   `transformers.PreTrainedModel` class. The wrapper class supports classic functions
+   such as `from_pretrained` and `push_to_hub` and also provides some additional
+   functionalities such as `generate`.
+
+   :param pretrained_model: The model to wrap. It should be a causal language model such as GPT2.
+                            or any model mapped inside the `AutoModelForSeq2SeqLM` class.
+   :type pretrained_model: `transformers.PreTrainedModel`
+   :param kwargs: Additional keyword arguments passed along to the `ValueHead` class.
+
+   .. py:method:: post_init(state_dict)
+
+      We add the state dictionary of the value head to the state dictionary of the wrapped model
+      by prepending the key with `v_head.`. This function removes the `v_head.` prefix from the
+      keys of the value head state dictionary.
+
+
+   .. py:method:: state_dict(*args, **kwargs)
+
+      Returns the state dictionary of the model. We add the state dictionary of the value head
+      to the state dictionary of the wrapped model by prepending the key with `v_head.`.
+
+
+   .. py:method:: push_to_hub(*args, **kwargs)
+
+      Push the pretrained model to the hub. This method is a wrapper around
+      `transformers.PreTrainedModel.push_to_hub`. Please refer to the documentation
+      of `transformers.PreTrainedModel.push_to_hub` for more information.
+
+      :param \*args: Positional arguments passed along to the underlying model's
+                     `push_to_hub` method.
+      :type \*args: `list`, *optional*
+      :param \*\*kwargs: Keyword arguments passed along to the underlying model's
+                         `push_to_hub` method.
+      :type \*\*kwargs: `dict`, *optional*
+
+
+   .. py:method:: generate(*args, **kwargs)
+
+      We call `generate` on the wrapped model.
+
+
+
