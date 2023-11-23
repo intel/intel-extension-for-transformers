@@ -49,7 +49,7 @@ struct ne_tensor* qwen_ff(const model_layer& layer, const int batch_size, const 
 
     struct ne_tensor* cur_2 = ne_mul_mat(ctx0, layer.ffn[1], cur);
 
-    // GELU activation
+    // SILU activation
     cur_2 = ne_silu(ctx0, cur_2);
 
     // projection

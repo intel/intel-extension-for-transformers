@@ -110,9 +110,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-
-    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
-    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.special_tokens['<|im_start|>']))
+    fout.write(struct.pack("i", tokenizer.special_tokens['<|endoftext|>']))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
     fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
@@ -176,3 +175,4 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
 if __name__ == '__main__':
     main()
+    

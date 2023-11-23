@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-set(TARGET gptneox)
-add_library_w_warning(${TARGET} gptneox.cpp gptneox_utils.cpp ${MODEL_UTILS_SOURCE})
+set(TARGET mistral)
+add_library_w_warning(${TARGET} mistral.cpp mistral_utils.cpp ${MODEL_UTILS_SOURCE})
 target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(${TARGET} PUBLIC ne_layers jblas::jblas)
