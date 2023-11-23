@@ -199,14 +199,14 @@ def preprocess_function(examples):
         "input_ids_k": [],
         "attention_mask_k": [],
     }
-    for question, response_j, response_k in zip(
-        examples["question"], examples["chatgpt"], examples["llama2-13b-chat"]
+    for system, question, response_j, response_k in zip(
+        examples["system"], examples["question"], examples["chatgpt"], examples["llama2-13b-chat"]
     ):
         tokenized_j = tokenizer(
-            "Question: " + question + "\n\nAnswer: " + response_j, truncation=True
+            system + question + response_j, truncation=True
         )
         tokenized_k = tokenizer(
-            "Question: " + question + "\n\nAnswer: " + response_k, truncation=True
+            system + question + response_k, truncation=True
         )
 
         new_examples["input_ids_j"].append(tokenized_j["input_ids"])

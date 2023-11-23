@@ -5,3 +5,5 @@ datasets
 bitsandbytes
 evaluate
 scikit-learn
+intel-extension-for-transformers
+tyro
