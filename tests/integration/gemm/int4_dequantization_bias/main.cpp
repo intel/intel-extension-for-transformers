@@ -92,7 +92,7 @@ void dequantize_gemm_run(int iter) {
     using data_type_scale = fp16;
     using data_type_acc_in = fp16;
     using data_type_acc = float;
-    using data_type_bias = float;
+    using data_type_bias = fp16;
 
     constexpr size_t size_a = matrix_m * matrix_k;
     constexpr size_t size_b = matrix_k * matrix_n / 2;
@@ -124,7 +124,7 @@ void dequantize_gemm_run(int iter) {
     using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
             sg_tile_n, sg_tile_m>;
     static constexpr uint32_t periodic_sync_interval = 1;
-    static constexpr uint32_t prefetch_distance = 1;
+    static constexpr uint32_t prefetch_distance = 3;
 
     using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
             mem_space::global, DEVICE_MEM_ALIGNMENT / sizeof(data_type_a)>;
@@ -148,20 +148,20 @@ void dequantize_gemm_run(int iter) {
             = xetla::group::compute_policy_bit4_dequantize_xmx<compute_attr,
                     perf_tuning_knob,
                     gpu::xetla::group::quant_type::S4_FULLRANGE,
-                    data_type_scale, dequant_s, gpu_arch::Arc>;
+                    data_type_scale, dequant_s, gpu_arch::Dg2>;
 
     using gemm_t = xetla::group::gemm_t<compute_policy, tile_shape,
             mem_desc_a_t, mem_desc_b_t, mem_desc_scale_t>;
 
     using bias_op_t = gpu::xetla::subgroup::bias_add_op_t<mem_desc_bias_t,
-            gpu::xetla::gpu_arch::Arc>;
+            gpu::xetla::gpu_arch::Dg2>;
     using tile_op_t = gpu::xetla::subgroup::chained_tile_op_t<bias_op_t>;
 
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Arc>,
+            xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Dg2>,
             tile_shape, mem_desc_c_t>;
 
-    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Arc>;
+    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Dg2>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
                     group_swizzle, global_kslicing, local_kslicing>,

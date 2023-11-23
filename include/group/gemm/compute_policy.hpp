@@ -90,7 +90,7 @@ struct compute_policy_unaligned_xmx<compute_attr_, perf_tuning_knob_, arch_tag_,
     static constexpr uint32_t block_size_y_a = 16;
 
     static constexpr uint32_t block_size_x_b
-            = arch_tag == gpu_arch::Arc ? 8 : 16;
+            = arch_tag == gpu_arch::Dg2 ? 8 : 16;
     static constexpr uint32_t block_bytes_y_b = 32;
     static constexpr uint32_t block_size_y_b
             = block_bytes_y_b / sizeof(dtype_mma_b);

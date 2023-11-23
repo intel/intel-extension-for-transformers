@@ -50,7 +50,7 @@ struct load_store_attr_t<msg_type::block_2d, gpu_arch::Xe> {
 };
 
 template <>
-struct load_store_attr_t<msg_type::unaligned_2d, gpu_arch::Arc> {
+struct load_store_attr_t<msg_type::unaligned_2d, gpu_arch::Dg2> {
     /// HW limitation checks https://gfxspecs.intel.com/Predator/Home/Index/55490
     static constexpr uint32_t max_load_height_in_elem = 32;
     static constexpr uint32_t max_load_width_in_bytes = 64;
@@ -80,7 +80,7 @@ struct mma_attr_t<gpu_arch::Xe> {
 };
 
 template <>
-struct mma_attr_t<gpu_arch::Arc> {
+struct mma_attr_t<gpu_arch::Dg2> {
     static constexpr uint32_t mma_m_in_elem = 8;
     static constexpr uint32_t mma_n_in_elem = 8;
     static constexpr uint32_t mma_k_in_bytes = 32;
@@ -99,7 +99,7 @@ struct register_attr_t<grf_num_mode, gpu_arch::Xe> {
 };
 
 template <grf_mode grf_num_mode>
-struct register_attr_t<grf_num_mode, gpu_arch::Arc> {
+struct register_attr_t<grf_num_mode, gpu_arch::Dg2> {
     static constexpr uint32_t acc_reg_in_bytes
             = (grf_num_mode == grf_mode::normal) ? 4 * 32 : 8 * 32;
     static constexpr uint32_t grf_in_bytes
@@ -123,14 +123,14 @@ struct arch_attr_t<gpu_arch::Xe> {
 };
 
 template <>
-struct arch_attr_t<gpu_arch::Arc> {
+struct arch_attr_t<gpu_arch::Dg2> {
     template <msg_type message_type = msg_type::unaligned_2d>
-    using load_store_attr = load_store_attr_t<message_type, gpu_arch::Arc>;
+    using load_store_attr = load_store_attr_t<message_type, gpu_arch::Dg2>;
 
     template <grf_mode grf_num_mode = grf_mode::normal>
-    using register_attr = register_attr_t<grf_num_mode, gpu_arch::Arc>;
+    using register_attr = register_attr_t<grf_num_mode, gpu_arch::Dg2>;
 
-    using mma_attr = mma_attr_t<gpu_arch::Arc>;
+    using mma_attr = mma_attr_t<gpu_arch::Dg2>;
 
     static constexpr uint32_t max_wg_num = 64;
 };

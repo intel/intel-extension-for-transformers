@@ -234,7 +234,7 @@ int main() {
     int ExecSize
             = device.get_info<ext::intel::info::device::gpu_eu_simd_width>();
     if (ExecSize == 8) {
-        basic_gemm_run<gpu_arch::Arc>(queue, 10);
+        basic_gemm_run<gpu_arch::Dg2>(queue, 10);
     } else {
         basic_gemm_run<gpu_arch::Xe>(queue, 10);
     }

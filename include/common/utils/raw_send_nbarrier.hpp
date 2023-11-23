@@ -88,7 +88,7 @@ struct xetla_nbarrier_t {
 };
 
 template <uint8_t num_producers, uint8_t num_consumers>
-struct xetla_nbarrier_t<num_producers, num_consumers, gpu_arch::Arc> {
+struct xetla_nbarrier_t<num_producers, num_consumers, gpu_arch::Dg2> {
     ///
     /// @brief Description of named barrier objection.
     /// Structure is defined in

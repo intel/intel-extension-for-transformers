@@ -675,9 +675,8 @@ private:
             matA_tile_desc_t,
             is_local_a ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
-    //     using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
-    //             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
-    //             wg_size_x, arch_tag>;
+    using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
+            matA_tile_desc_t, wg_size_x, arch_tag>;
 
     //note: plane format, row-major
     //note: 4bit x 2, row-major
@@ -691,8 +690,8 @@ private:
     using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
             matB_tile_desc_t,
             is_local_b ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
-    // using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
-    //     matB_tile_desc_t, wg_size_y, arch_tag>;
+    using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
+            matB_tile_desc_t, wg_size_y, arch_tag>;
     //     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
     //             // Arc only support 1D prefetch
     //             subgroup::tile_desc_t<arch_tag == gpu_arch::Xe
@@ -715,11 +714,10 @@ public:
             (k_stride % (dequant_s) == 0) || (dequant_s % (k_stride) == 0),
             "k_stride should match with dequant_s");
 
-    //num_block_y set to 1
+    // num_block_y set to 1
     static constexpr uint32_t block_size_y_scale
             = (k_stride + dequant_s - 1) / dequant_s;
     static constexpr uint32_t tile_size_y_scale = block_size_y_scale;
-
     static constexpr uint32_t scale_addr_update_freq
             = (k_stride < dequant_s) ? dequant_s / k_stride : 1;
 
@@ -841,7 +839,7 @@ public:
         xetla_fence<memory_kind::untyped_global>();
         static constexpr uint32_t wg_size = wg_size_x * wg_size_y;
         if constexpr (wg_size > 1) {
-            xetla_nbarrier_t<wg_size, wg_size, gpu_arch::Arc> nbarrier;
+            xetla_nbarrier_t<wg_size, wg_size, gpu_arch::Dg2> nbarrier;
             nbarrier.init_nbarrier(
                     nbarrier_id, nbarrier_role::producer_consumer);
             nbarrier.arrive_wait();
@@ -869,17 +867,17 @@ public:
         matA_payload_t matA_payload(args.matA_base_desc);
         matB_payload_t matB_payload(args.matB_base_desc);
         scale_payload_t scale_payload(args.scale_base_desc);
-        // matA_prefetch_payload_t matA_prefetch_payload(
-        //         args.matA_base_desc, sg_idx);
-        // matB_prefetch_payload_t matB_prefetch_payload(
-        //         args.matB_base_desc, sg_idy);
-        // scale_prefetch_payload_t scale_prefetch_payload(
-        //         args.scale_base_desc, 0);
+        matA_prefetch_payload_t matA_prefetch_payload(
+                args.matA_base_desc, sg_idx);
+        matB_prefetch_payload_t matB_prefetch_payload(
+                args.matB_base_desc, sg_idy);
+        scale_prefetch_payload_t scale_prefetch_payload(
+                args.scale_base_desc, 0);
 
-        xetla_nbarrier_t<wg_size_x, wg_size_x, gpu_arch::Arc> nbarrier_a;
+        xetla_nbarrier_t<wg_size_x, wg_size_x, gpu_arch::Dg2> nbarrier_a;
         nbarrier_a.init_nbarrier(
                 sg_idy + nbarrier_base, nbarrier_role::producer_consumer);
-        // xetla_nbarrier_t<wg_size_y, wg_size_y, gpu_arch::Arc> nbarrier_b;
+        // xetla_nbarrier_t<wg_size_y, wg_size_y, gpu_arch::Dg2> nbarrier_b;
         // nbarrier_b.init_nbarrier(sg_idx + barrier_count_y + nbarrier_base,
         //         nbarrier_role::producer_consumer);
 
@@ -888,22 +886,22 @@ public:
         SW_BARRIER();
 #pragma unroll
         for (int i = 0; i < stages; i++) {
-            //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-            //             matA_prefetch_payload);
-            //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-            //             matB_prefetch_payload);
+            subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                    matA_prefetch_payload);
+            subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                    matB_prefetch_payload);
             //     subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
             //             scale_prefetch_payload);
-            //     scale_prefetch_addr_i++;
-            //     matA_prefetch_payload.template update_tdesc<update_dir_a>(
-            //             matA_t::tile_size_x);
-            //     matB_prefetch_payload.template update_tdesc<update_dir_b>(
-            //             matB_t::tile_size_y);
-            //     if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
-            //         scale_prefetch_payload
-            //                 .template update_tdesc<tdesc_update_dir::y_dir>(
-            //                         scale_t::tile_size_y);
-            //     }
+            scale_prefetch_addr_i++;
+            matA_prefetch_payload.template update_tdesc<update_dir_a>(
+                    matA_t::tile_size_x);
+            matB_prefetch_payload.template update_tdesc<update_dir_b>(
+                    matB_t::tile_size_y);
+            if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
+                scale_prefetch_payload
+                        .template update_tdesc<tdesc_update_dir::y_dir>(
+                                scale_t::tile_size_y);
+            }
         }
 
         for (int i = 0; i < args.inner_loop_count; i++) {
@@ -922,10 +920,10 @@ public:
             scale_load_addr_i++;
             SW_BARRIER();
             if constexpr (stages != 0) {
-                // subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-                //         matA_prefetch_payload);
-                // subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
-                //         matB_prefetch_payload);
+                subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                        matA_prefetch_payload);
+                subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
+                        matB_prefetch_payload);
                 // subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
                 //         scale_prefetch_payload);
                 // scale_prefetch_addr_i++;
@@ -940,10 +938,10 @@ public:
                         scale_t::tile_size_y);
             }
             if constexpr (stages != 0) {
-                // matA_prefetch_payload.template update_tdesc<update_dir_a>(
-                //         matA_t::tile_size_x);
-                // matB_prefetch_payload.template update_tdesc<update_dir_b>(
-                //         matB_t::tile_size_y);
+                matA_prefetch_payload.template update_tdesc<update_dir_a>(
+                        matA_t::tile_size_x);
+                matB_prefetch_payload.template update_tdesc<update_dir_b>(
+                        matB_t::tile_size_y);
                 // if ((scale_prefetch_addr_i % scale_addr_update_freq) == 0) {
                 //     scale_prefetch_payload
                 //             .template update_tdesc<tdesc_update_dir::y_dir>(
