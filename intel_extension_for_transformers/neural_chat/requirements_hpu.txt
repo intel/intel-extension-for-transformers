@@ -5,9 +5,7 @@ fschat
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -41,5 +39,6 @@ pymysql
 deepface
 exifread
 einops
+zhconv
 urllib3
 langid

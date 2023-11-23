@@ -1,0 +1,71 @@
+
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DATASET:
+  TRAIN_BATCH_SIZE: 32
+  EVAL_BATCH_SIZE: 32
+  EXP: True
+  EXP_DIM: 64
+  FRAME_LEN: 32
+  COEFF_LEN: 73
+  NUM_CLASSES: 46
+  DEBUG: True
+  NUM_REPEATS: 2
+  T: 40
+  
+
+MODEL:
+  FRAMEWORK: V2
+  AUDIOENCODER:
+    LEAKY_RELU: True
+    NORM: 'IN'
+  DISCRIMINATOR:
+    LEAKY_RELU: False
+    INPUT_CHANNELS: 6
+  CVAE:
+    AUDIO_EMB_IN_SIZE: 512
+    AUDIO_EMB_OUT_SIZE: 128
+    SEQ_LEN: 32
+    LATENT_SIZE: 256
+    ENCODER_LAYER_SIZES: [192, 1024]
+    DECODER_LAYER_SIZES: [1024, 192]
+    
+
+TRAIN:
+  MAX_EPOCH: 300
+  GENERATOR:
+    LR: 2.0e-5
+  DISCRIMINATOR:
+    LR: 1.0e-5
+  LOSS:
+    W_FEAT: 0
+    W_COEFF_EXP: 2
+    W_LM: 1.0e-2
+    W_LM_MOUTH: 0
+    W_REG: 0
+    W_SYNC: 0
+    W_COLOR: 0
+    W_EXPRESSION: 0
+    W_LIPREADING: 0.01
+    W_LIPREADING_VV: 0
+    W_EYE_BLINK: 4
+
+TAG:
+  NAME:  small_dataset
+
+

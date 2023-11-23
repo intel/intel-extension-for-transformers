@@ -23,7 +23,9 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Dict, Union
 from .utility import LazyImport
 from transformers import BitsAndBytesConfig
+
 torch = LazyImport("torch")
+
 
 class WeightOnlyQuantConfig:
     def __init__(
@@ -31,11 +33,11 @@ class WeightOnlyQuantConfig:
         llm_int8_skip_modules=None,
         compute_dtype=None,
         weight_dtype=None,
-        scale_dtype="fp32", # Now only fp32
+        scale_dtype="fp32",  # Now only fp32
         mse_range=False,
         use_double_quant=False,
-        double_quant_dtype="int8", # reserve for double quant
-        double_quant_scale_dtype="fp32", # reserve for double quant
+        double_quant_dtype="int8",  # reserve for double quant
+        double_quant_scale_dtype="fp32",  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
@@ -44,8 +46,13 @@ class WeightOnlyQuantConfig:
         use_cache=False,
         **kwargs,
     ):
-        from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
-        self.llm_int8_skip_modules = llm_int8_skip_modules if llm_int8_skip_modules else []
+        from intel_extension_for_transformers.llm.quantization.utils import (
+            convert_dtype_2_str,
+        )
+
+        self.llm_int8_skip_modules = (
+            llm_int8_skip_modules if llm_int8_skip_modules else []
+        )
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
         self.mse_range = mse_range
@@ -73,23 +80,37 @@ class WeightOnlyQuantConfig:
         else:
             raise ValueError("bit4_compute_dtype must be a string or a torch.dtype")
 
-
     def post_init(self):
         r"""
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+        if self.llm_int8_skip_modules is not None and not isinstance(
+            self.llm_int8_skip_modules, list
+        ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
+        if self.compute_dtype is not None and self.compute_dtype not in [
+            "fp32",
+            "bf16",
+            "int8",
+        ]:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
 
         if self.weight_dtype is None:
-            self.weight_dtype = 'int4_fullrange'
-        elif self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
-            raise ValueError(f"weight_dtype must be a string in "
-                             f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'")
+            self.weight_dtype = "int4_fullrange"
+        elif self.weight_dtype not in [
+            "int8",
+            "int4_fullrange",
+            "int4_clip",
+            "nf4",
+            "fp4_e2m1_bnb",
+            "fp4_e2m1",
+        ]:
+            raise ValueError(
+                f"weight_dtype must be a string in "
+                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'"
+            )
 
         if self.scale_dtype not in ["fp32"]:
             raise ValueError("scale_dtype must be a string in 'fp32'")
@@ -117,24 +138,26 @@ class WeightOnlyQuantConfig:
         Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
         """
 
-        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+        if self.llm_int8_skip_modules is not None and not isinstance(
+            self.llm_int8_skip_modules, list
+        ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
         if self.compute_dtype is None:
             self.compute_dtype = "int8"
-        elif self.compute_dtype not in ['int8', 'bf16', 'fp32']:
+        elif self.compute_dtype not in ["int8", "bf16", "fp32"]:
             raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
-        elif self.weight_dtype not in ['int4', 'int8']:
+        elif self.weight_dtype not in ["int4", "int8"]:
             raise ValueError(f"weight_dtype must be 'int4', 'int8'.")
 
         if self.scale_dtype not in ["fp32", "fp16"]:
             raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
 
-        if self.group_size not in [32, 128]:
-            raise ValueError("group_size must be an integer in [32, 128]")
+        if self.group_size not in [-1, 32, 128]:
+            raise ValueError("group_size must be an integer in [-1, 32, 128]")
 
         if self.scheme not in ["sym", "asym"]:
             raise ValueError("scheme must be 'sym', 'asym'.")
@@ -251,6 +274,7 @@ class WeightOnlyQuantConfig:
 class MixedPrecisionConfig:
     dtype: str = "bfloat16"
 
+
 @dataclass
 class SmoothQuantConfig:
     backend: str = "ipex"
@@ -265,3 +289,9 @@ class SmoothQuantConfig:
     excluded_precisions: list = field(default_factory=list)
     example_inputs: Any = None
     num_beams: int = 1
+    recipes: dict = field(
+        default_factory=lambda: {
+            "smooth_quant": True,
+            "smooth_quant_args": {"alpha": 0.5},
+        }
+    )
