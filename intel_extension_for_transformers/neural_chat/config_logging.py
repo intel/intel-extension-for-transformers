@@ -15,6 +15,7 @@ def configure_logging(log_file="app.log", log_level=logging.INFO):
     - logger: logging.Logger
         The configured logger.
     """
+<<<<<<< HEAD
     logger = logging.getLogger("my_app")
     logger.setLevel(log_level)
 
