@@ -175,15 +175,6 @@ elif args.woq:
         scheme=args.woq_scheme,
         algorithm=args.woq_algo
     ) #default is A32W4G32
-else:
-    from neural_compressor import PostTrainingQuantConfig
-    quantization_config = PostTrainingQuantConfig(
-        backend="ipex" if args.ipex else "default",
-        excluded_precisions=excluded_precisions,
-        op_type_dict=op_type_dict,
-        calib_dataset=calib_dataset,
-        calib_iters=args.calib_iters
-    )
 
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(
@@ -204,7 +195,7 @@ if args.int8 or args.int8_bf16_mixed:
     if args.ipex:
         # TorchScript model don't attribute generate method, the wrapper is provided.
         import intel_extension_for_pytorch as ipex
-        from intel_extension_for_transformers.llm.evaluation?models import TSModelCausalLMForOPTLLM
+        from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForOPTLLM
         user_model = TSModelCausalLMForOPTLLM.from_pretrained(
             args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
         )

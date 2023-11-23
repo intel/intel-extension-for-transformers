@@ -24,7 +24,17 @@ pip install -r requirements.txt
 python run_generation.py \
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
-    --quantize \
+    --sq \
+    --alpha 0.7  \
+    --ipex \
+    --calib_iters 500 \
+    --calib_batch_size 1 \
+    --dataset "mbpp"
+```
+``` bash
+python run_generation.py \
+    --model codellama/CodeLlama-7b-hf \
+    --output_dir "./saved_results" \
     --sq \
     --alpha 0.7  \
     --ipex \
