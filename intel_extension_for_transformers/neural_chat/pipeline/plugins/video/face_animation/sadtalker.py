@@ -21,6 +21,9 @@ import psutil
 import signal
 import sys
 
+from config_logging import configure_logging
+logger = configure_logging()
+
 class SadTalker:
     """Faster Talking Face Animation."""
 
@@ -73,7 +76,7 @@ class SadTalker:
                 f" --checkpoint_dir {self.checkpoint_dir} &\n "
             )
         multi_instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
-        print(multi_instance_cmd)
+        logger.info(multi_instance_cmd)
         p = subprocess.Popen(multi_instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
         try:
             p.communicate()
@@ -81,9 +84,9 @@ class SadTalker:
             os.killpg(os.getpgid(p.pid), signal.SIGKILL)
         (output, err) = p.communicate()
         p_status = p.wait()
-        print(p_status)
-        print(output)
-        print(err)
+        logger.info(p_status)
+        logger.info(output)
+        logger.info(err)
 
     def convert_gpu(self, source_image, driven_audio):
         enhancer_str = "" if not self.enhancer else f"--enhancer {self.enhancer}"
@@ -93,7 +96,7 @@ class SadTalker:
             f" --checkpoint_dir {self.checkpoint_dir} &\n "
         )
         instance_cmd += "wait < <(jobs -p) \nrm -rf logs"
-        print(instance_cmd)
+        logger.info(instance_cmd)
         p = subprocess.Popen(instance_cmd, preexec_fn=os.setsid, shell=True, executable="/bin/bash")  # nosec
         try:
             p.communicate()
@@ -101,6 +104,6 @@ class SadTalker:
             os.killpg(os.getpgid(p.pid), signal.SIGKILL)
         (output, err) = p.communicate()
         p_status = p.wait()
-        print(p_status)
-        print(output)
-        print(err)
+        logger.info(p_status)
+        logger.info(output)
+        logger.info(err)
