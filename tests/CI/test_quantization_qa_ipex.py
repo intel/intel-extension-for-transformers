@@ -9,7 +9,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # example test for question-answering quantization with IPEX only for now
 SRC_DIRS = [
-    os.path.join("../examples/huggingface/pytorch/", dirname)
+    os.path.join("../../examples/huggingface/pytorch/", dirname)
     for dirname in [
         "question-answering/quantization/",
     ]
