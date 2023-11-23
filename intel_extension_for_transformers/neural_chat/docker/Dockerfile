@@ -108,7 +108,7 @@ RUN cd /intel-extension-for-transformers && \
     pip install -r requirements.txt && \
     pip install -v .
 
-COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+RUN cp /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
