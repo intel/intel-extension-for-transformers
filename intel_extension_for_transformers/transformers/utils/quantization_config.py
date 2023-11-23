@@ -42,6 +42,7 @@ class WeightOnlyQuantConfig:
         use_ggml=False,
         not_quant=False,
         use_cache=False,
+        from_gptq=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
@@ -63,6 +64,7 @@ class WeightOnlyQuantConfig:
         self.use_ggml = use_ggml
         self.not_quant = not_quant
         self.use_cache = use_cache
+        self.from_gptq = from_gptq
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"

@@ -91,10 +91,10 @@ class Model {
     generate_count = 0;
   }
 
-  static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps,
-                   void* dstpr, const quant_params_internal params, int nthread, int n, int k);
-  static size_t jblas_quantize(const float* src_w, 
-                   void* dstpr, const quant_params_internal params, int nthread, int n, int k);
+  static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                            const quant_params_internal params, int nthread, int n, int k);
+  static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
+                               int k);
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> dst) {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
@@ -116,6 +116,7 @@ class Model {
     q_params.group_size = 32;
     return Model::jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, 8, src_w.shape(0), src_w.shape(1));
   }
+
  private:
   model_context* ctx = nullptr;
   gpt_params params;
@@ -509,8 +510,8 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   return 0;
 }
 
-size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps,
-                   void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
+size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                          const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
   using namespace ne_jblas;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
@@ -525,12 +526,12 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   packedw.assign(dstbptr);
 
   jblas::utils::aligned_vector<int8_t> tmpq(n * k);
-  std::copy(src_w, src_w + n * k, tmpq.data()); 
+  std::copy(src_w, src_w + n * k, tmpq.data());
 
   int nk_scale = jblas::utils::updiv(k, packedw.mBlockSize);
   auto ssize = (size_t)n * nk_scale;
   jblas::utils::avector<float> Tscales(ssize);
-  std::copy(src_scales, src_scales + ssize, Tscales.data()); 
+  std::copy(src_scales, src_scales + ssize, Tscales.data());
 
   jblas::utils::avector<int8_t> Tzps(packedw.mIsAsym ? ssize : 0);
 
@@ -540,8 +541,8 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   return packedw.mSize;
 }
 
-size_t Model::jblas_quantize(const float* src_w, 
-                   void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
+size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
+                             int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
   using namespace ne_jblas;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
@@ -559,7 +560,6 @@ size_t Model::jblas_quantize(const float* src_w,
   // kernel.unpackTransposeWeight(n, k, &packedw, dstbptr, n);
   return packedw.mSize;
 }
-
 
 #if MODEL_NAME_ID == 1
 

@@ -154,6 +154,7 @@ class _BaseQBitsAutoModelClass:
                     use_ggml=quantization_config.use_ggml,
                     not_quant=quantization_config.not_quant,
                     use_cache=quantization_config.use_cache,
+                    from_gptq=quantization_config.from_gptq,
                 )
                 return model
             else:
