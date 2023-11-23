@@ -122,12 +122,13 @@ class BaseModel(ABC):
                    hf_access_token=kwargs["hf_access_token"],
                    use_llm_runtime=kwargs["use_llm_runtime"])
 
-    def predict_stream(self, query, config=None):
+    def predict_stream(self, query, origin_query="", config=None):
         """
         Predict using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -138,6 +139,9 @@ class BaseModel(ABC):
         config.cpu_jit = self.cpu_jit
         config.use_cache = self.use_cache
         config.ipex_int8 = self.ipex_int8
+
+        my_query = query
+        my_origin_query = origin_query
 
         if is_audio_file(query):
             if not os.path.exists(query):
@@ -169,8 +173,14 @@ class BaseModel(ABC):
                                 return plugin_instance.response_template, link
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
-                        if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query.", link
+                        if plugin_name == "safety_checker":
+                            sign1=plugin_instance.pre_llm_inference_actions(my_query)
+                            if sign1:
+                                return "Your query contains sensitive words, please try another query.", link
+                            if not my_origin_query=="":
+                                sign2=plugin_instance.pre_llm_inference_actions(my_origin_query)
+                                if sign2:
+                                    return "Your query contains sensitive words, please try another query.", link
                         else:
                             if response != None and response != False:
                                 query = response
@@ -196,12 +206,13 @@ class BaseModel(ABC):
 
         return response, link
 
-    def predict(self, query, config=None):
+    def predict(self, query, origin_query="", config=None):
         """
         Predict using a non-streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
         if not config:
@@ -244,7 +255,10 @@ class BaseModel(ABC):
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
-                            return "Your query contains sensitive words, please try another query."
+                            if response:
+                                return "Your query contains sensitive words, please try another query."
+                            elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
+                                return "Your query contains sensitive words, please try another query."
                         else:
                             if response != None and response != False:
                                 query = response
@@ -268,25 +282,27 @@ class BaseModel(ABC):
 
         return response
 
-    def chat_stream(self, query, config=None):
+    def chat_stream(self, query, origin_query="", config=None):
         """
         Chat using a streaming approach.
 
         Args:
             query: The input query for prediction.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for prediction.
         """
-        return self.predict_stream(query=query, config=config)
+        return self.predict_stream(query=query, origin_query=origin_query, config=config)
 
-    def chat(self, query, config=None):
+    def chat(self, query, origin_query="", config=None):
         """
         Chat using a non-streaming approach.
 
         Args:
             query: The input query for conversation.
+            origin_query: The origin Chinese query for safety checker.
             config: Configuration for conversation.
         """
-        return self.predict(query=query, config=config)
+        return self.predict(query=query, origin_query=origin_query, config=config)
 
     def face_animate(self, image_path, audio_path=None, text=None, voice=None) -> str:  # pragma: no cover
         # 1) if there is a driven audio, then image + audio
