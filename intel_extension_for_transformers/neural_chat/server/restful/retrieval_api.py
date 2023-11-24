@@ -23,11 +23,9 @@ from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File, Request, Response, Form
 from ...config import GenerationConfig
 from ...cli.log import logger
-from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
+from ...server.restful.request import RetrievalRequest
 from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
-from ...utils.database.mysqldb import MysqlDb
-from ...utils.record_request import record_request
 from ...plugins import plugins, is_plugin_enabled
 from .photoai_services import check_user_ip
 
@@ -47,41 +45,6 @@ def get_current_beijing_time():
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d-%H:%M:%S")
     return beijing_time
-
-
-async def create_kb(path_prefix, user_id, kb_id, filename, file):
-    # create new upload path dir
-    if os.path.exists(path_prefix):
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
-    # user already created knowledge base
-    else:
-        os.system(f"mkdir {path_prefix}")
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
-    
-    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
-    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
-    os.system(f"mkdir {user_upload_dir}")
-    os.system(f"mkdir {user_persist_dir}")
-    cur_time = get_current_beijing_time()
-    print(f"<create> upload path: {user_upload_dir}")
-    
-    # save file to local path
-    save_file_name = user_upload_dir + '/' + cur_time + '-' + filename
-    with open(save_file_name, 'wb') as fout:
-        content = await file.read()
-        fout.write(content)
-    print(f"<create> file saved to local path: {save_file_name}")
-
-    try:
-        # get retrieval instance and reload db with new knowledge base
-        print("<create> starting to create local db...")
-        instance = plugins['retrieval']["instance"]
-        instance.create(input_path=user_upload_dir, persist_dir=user_persist_dir)
-        print(f"<create> kb created successfully")
-    except Exception as e:
-        logger.info(f"<create> create knowledge base failes! {e}")
-        return "Error occurred while uploading files."
-    return {"knowledge_base_id": kb_id}
 
 
 class RetrievalAPIRouter(APIRouter):

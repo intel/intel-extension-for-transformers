@@ -138,6 +138,8 @@ class BaseModel(ABC):
         config.use_cache = self.use_cache
         config.ipex_int8 = self.ipex_int8
 
+        my_query = query
+
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
@@ -175,7 +177,7 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt:
+        if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 

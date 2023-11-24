@@ -21,10 +21,7 @@ import time
 import torch
 import spacy
 from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
     TextIteratorStreamer,
-    AutoConfig,
 )
 from .utils.utils import (
     enforce_stop_tokens,
@@ -40,49 +37,10 @@ class NamedEntityRecognition():
         Set bf16=True if you want to inference with bf16 model.
     """
 
-    def __init__(self, 
-                 model_path="meta-llama/Llama-2-7b-chat-hf", 
-                 spacy_model="en_core_web_lg", 
-                 bf16: bool=False, 
-                 device="cpu") -> None:
+    def __init__(self, spacy_model="en_core_web_lg") -> None:
         # initialize tokenizer and models
         self.nlp = spacy.load(spacy_model)
-        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-        config.init_device = 'cuda:0' if torch.cuda.is_available() else "cpu"
-        self.device = device
-        self.bf16 = False
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            use_fast=False if (re.search("llama", model_path, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_path, re.IGNORECASE)) else True,
-            trust_remote_code=True
-        )
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            torch_dtype=torch.bfloat16,
-            config=config,
-            device_map="auto",
-            trust_remote_code=True
-        )
-        # make sure ipex is available on current server
-        try:
-            import intel_extension_for_pytorch as intel_ipex
-            self.is_ipex_available = True
-        except ImportError:
-            self.is_ipex_available = False
-        # optimize model with ipex if bf16
-        if bf16 and self.is_ipex_available:
-            self.bf16 = bf16
-            self.model = intel_ipex.optimize(
-                self.model.eval(),
-                dtype=torch.bfloat16,
-                inplace=True,
-                level="O1",
-                auto_kernel_selection=True,
-            )
-            for i in range(3):
-                self.model.generation_config.pad_token_id = self.tokenizer.pad_token_id = i
-        print("[NER info] Spacy and LLM model initialized.")
+        print("[NER info] Spacy model initialized.")
 
 
     def inference(self, 
@@ -156,6 +114,21 @@ class NamedEntityRecognition():
         new_doc = self.nlp(query)
         result = process_entities(query, new_doc, mentioned_time)
         print("[NER info] Inference time consumption: ", time.time() - start_time)
+
+        return result
+    
+
+    def ner_inference(self, response):
+        start_time = time.time()
+        cur_time = get_current_time()
+        print("[NER inference] Current time is:{}".format(cur_time))
+        text = enforce_stop_tokens(response)
+        doc = self.nlp(text)
+        mentioned_time = process_time(text, doc)
+
+        new_doc = self.nlp(response)
+        result = process_entities(response, new_doc, mentioned_time)
+        print("[NER inference] Inference time consumption: ", time.time() - start_time)
 
         return result
 
