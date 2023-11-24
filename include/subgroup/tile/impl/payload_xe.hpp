@@ -319,7 +319,7 @@ template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_,
 struct mem_payload_t<mem_desc_t<dtype_, mem_layout::row_major,
                              mem_space::global, alignment_>,
         tile_desc_, msg_type::atomic_add, arch_tag_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+        std::enable_if_t<(arch_tag_ <= gpu_arch::Xe)>> {
     using mem_desc_t = mem_desc_t<dtype_, mem_layout::row_major,
             mem_space::global, alignment_>;
     using dtype = dtype_;

@@ -61,7 +61,7 @@ public:
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
     static constexpr size_t local_kslicing = 4;
-    static constexpr size_t global_kslicing = 1;
+    static constexpr size_t global_kslicing = 2;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;

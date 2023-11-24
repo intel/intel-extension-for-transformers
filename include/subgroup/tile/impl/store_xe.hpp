@@ -47,7 +47,7 @@ struct check_store_type {
     static constexpr bool is_global_atomic_xe
             = ((payload_t::memory_space == mem_space::global)
                     && (payload_t::message_type == msg_type::atomic_add)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_local_scatter_xe = ((payload_t::memory_space
                                                          == mem_space::local)
@@ -459,14 +459,24 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         : 1;
                 uint64_t address_offset = offset_x * sizeof(dtype)
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
-
-                xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L2, op_kind, payload_t::arch_tag>(
-                        payload.base_pointer + address_offset,
-                        payload.channel_offset,
-                        reg_sub.xetla_select<payload_t::store_elems, 1>(
-                                sub_block_y * block_size_x),
-                        pred_x & pred_y);
+                if constexpr (payload_t::arch_tag >= gpu_arch::Xe) {
+                    xetla_tatomic_store_global<dtype, payload_t::num_channel,
+                            L1, L2, op_kind, payload_t::arch_tag>(
+                            payload.base_pointer + address_offset,
+                            payload.channel_offset,
+                            reg_sub.xetla_select<payload_t::store_elems, 1>(
+                                    sub_block_y * block_size_x),
+                            pred_x & pred_y);
+                } else {
+                    xetla_atomic_global<op_kind, dtype, payload_t::num_channel,
+                            data_size::default_size, L1, L2>(
+                            reinterpret_cast<dtype *>(
+                                    payload.base_pointer + address_offset),
+                            payload.channel_offset,
+                            reg_sub.xetla_select<payload_t::store_elems, 1>(
+                                    sub_block_y * block_size_x),
+                            pred_x & pred_y);
+                }
             }
         }
     }
