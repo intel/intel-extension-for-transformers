@@ -1,6 +1,6 @@
 transformers==4.32.1
 peft
-fschat
+fschat==0.2.32
 num2words
 speechbrain
 paddlepaddle
