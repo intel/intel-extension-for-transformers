@@ -16,15 +16,9 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-<<<<<<< HEAD
-import os, re
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
-from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
-=======
 
 import os, re
-from typing import Dict, List
->>>>>>> 381331c52e7418d10f6fd151c4c2eb505ad28ea3
+from typing import List
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
@@ -152,8 +146,8 @@ class DocumentIndexing:
         if self.retrieval_type == "dense":
             vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
         else:
-            vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                  port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
         return vectordb
             
     def KB_construct(self, input):
