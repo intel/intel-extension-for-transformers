@@ -40,9 +40,9 @@ class WeightOnlyQuantConfig:
         scheme="sym",
         algorithm="RTN",
         use_ggml=False,
-        not_quant=False,
+        use_quant=True,
         use_cache=False,
-        from_gptq=False,
+        use_gptq=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
@@ -62,9 +62,9 @@ class WeightOnlyQuantConfig:
         self.calib_dataloader = kwargs.pop("calib_dataloader", None)
         self.calib_iters = kwargs.pop("calib_iters", 100)
         self.use_ggml = use_ggml
-        self.not_quant = not_quant
+        self.use_quant = use_quant
         self.use_cache = use_cache
-        self.from_gptq = from_gptq
+        self.use_gptq = use_gptq
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"

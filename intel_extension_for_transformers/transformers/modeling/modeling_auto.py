@@ -152,9 +152,9 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
-                    not_quant=quantization_config.not_quant,
+                    use_quant=quantization_config.use_quant,
                     use_cache=quantization_config.use_cache,
-                    from_gptq=quantization_config.from_gptq,
+                    use_gptq=quantization_config.use_gptq,
                 )
                 return model
             else:
