@@ -140,7 +140,7 @@ elif args.sq:
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
                 "smooth_quant": True,
-                "smooth_quant_args": {"alpha": args.alpha},
+                "smooth_quant_args": {"alpha": args.alpha if args.alpha == "auto" else float(args.alpha)},
             }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
