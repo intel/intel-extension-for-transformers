@@ -3,7 +3,7 @@ import unittest
 
 from transformers import AutoTokenizer
 from datasets import load_dataset, Dataset, DatasetDict
-from intel_extension_for_transformers.llm.finetuning.data_utils import preprocess_dataset
+import intel_extension_for_transformers.llm.finetuning.data_utils as data_utils
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
@@ -19,6 +19,7 @@ class TestChatDataset(unittest.TestCase):
             task = "chat"
             max_seq_length = 512
             max_source_length = 256
+            dataset_name = "HuggingFaceH4/ultrachat_200k"
 
         self.test_args = TestArgs()
 
@@ -29,7 +30,7 @@ class TestChatDataset(unittest.TestCase):
 
     def test_process(self):
 
-        raw_datasets, preprocess_fn  = preprocess_dataset(self.sample_datasets, self.tokenizer,
+        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
                 self.test_args, self.test_args)
 
         column_names = list(raw_datasets["train"].features)
@@ -63,7 +64,7 @@ class TestCompletionDataset(unittest.TestCase):
 
     def test_process(self):
 
-        raw_datasets, preprocess_fn  = preprocess_dataset(self.sample_datasets, self.tokenizer,
+        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
                 self.test_args, self.test_args)
 
         column_names = list(raw_datasets["train"].features)
@@ -97,7 +98,7 @@ class TestSlimOrcaDataset(unittest.TestCase):
 
     def test_process(self):
 
-        raw_datasets, preprocess_fn  = preprocess_dataset(self.sample_datasets, self.tokenizer,
+        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
                 self.test_args, self.test_args)
 
         column_names = list(raw_datasets["train"].features)
@@ -131,7 +132,7 @@ class TestSummarizationDataset(unittest.TestCase):
 
     def test_process(self):
 
-        raw_datasets, preprocess_fn  = preprocess_dataset(self.sample_datasets, self.tokenizer,
+        raw_datasets, preprocess_fn  = data_utils.preprocess_dataset(self.sample_datasets, self.tokenizer,
                 self.test_args, self.test_args)
 
         column_names = list(raw_datasets["train"].features)
