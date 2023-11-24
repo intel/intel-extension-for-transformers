@@ -276,7 +276,8 @@ void xetla_linear_base(sycl::queue queue, T *A, int8_t *B,
     case 2048:
       return xetla_linear<T, 2048, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k);
     default:
-      std::cout << "blocksize must be divisible by 16 and in [16, 2048]"
+      std::cout << "blocksize must be divisible by 16 and in [16, 2048], but get "
+                << dequant_s
                 << std::endl;
       exit(0);
   }
@@ -304,7 +305,8 @@ void xetla_linear_bias_base(sycl::queue queue, T *A, int8_t *B,
     case 2048:
       return xetla_linear_bias<T, 2048, 64>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D);
     default:
-      std::cout << "blocksize must be divisible by 16 and in [16, 2048]"
+      std::cout << "blocksize must be divisible by 16 and in [16, 2048], but get "
+                << dequant_s
                 << std::endl;
       exit(0);
   }

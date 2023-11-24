@@ -121,17 +121,6 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
 template <typename T>
 torch::Tensor quantize(T *weight, int k, int n, int blksize,
                        std::string weight_type, std::string cmpt_type, bool trans) {
-  if (k < blksize) {
-    if (initer.verbose)
-      std::cout << "blocksize is smaller than k, take k as blocksize "
-                << std::endl;
-    blksize = k;
-  }
-  if (blksize % 16 != 0) {
-      std::cout << "blocksize must be divisible by 16 "
-                << std::endl;
-      exit(0);
-  }
   auto device_type = c10::DeviceType::XPU;
   c10::impl::VirtualGuardImpl impl(device_type);
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
@@ -173,30 +162,29 @@ static torch::Tensor gbits_quantize(const torch::Tensor &weight, bool transpose,
   int n = transpose ? weight.sizes()[0] : weight.sizes()[1];
   int k = transpose ? weight.sizes()[1] : weight.sizes()[0];
   torch::Tensor output;
+  if (k < block_size) {
+    if (initer.verbose)
+      std::cout << "blocksize is smaller than k, take k as blocksize "
+                << std::endl;
+    block_size = k;
+  }
+  if (block_size % 16 != 0) {
+      std::cout << "blocksize must be divisible by 16 "
+                << std::endl;
+      exit(0);
+  }
+  if (weight.is_meta()) {
+    output = torch::zeros(k * n / 2 + k / block_size * n * sizeof(fp16), torch::kInt8);
+    return output;
+  }
   if (initer.verbose) timer.start();
-  
+
   if (weight.dtype() == torch::kFloat32) {
-      if (weight.is_meta()) {
-        float * tmp = (float *)malloc(n * k * sizeof(float));
-        std::fill(tmp, tmp + n * k, 0.5);
-        output = quantize(tmp, k, n, block_size, weight_type,
-                          compute_type, transpose);
-        free(tmp);
-      } else {
-        output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
-                          compute_type, transpose);
-      }
+    output = quantize(weight.data_ptr<float>(), k, n, block_size, weight_type,
+                      compute_type, transpose);
   } else {
-      if (weight.is_meta()) {
-        c10::Half * tmp = (c10::Half *)malloc(n * k * sizeof(c10::Half));
-        std::fill(tmp, tmp + n * k, 0.5);
-        output = quantize(tmp, k, n, block_size, weight_type,
-                          compute_type, transpose);
-        free(tmp);
-      } else {
-        output = quantize(weight.data_ptr<c10::Half>(), k, n, block_size, weight_type,
-                          compute_type, transpose);
-      }
+    output = quantize(weight.data_ptr<c10::Half>(), k, n, block_size, weight_type,
+                      compute_type, transpose);
   }
 
   if (initer.verbose) {
