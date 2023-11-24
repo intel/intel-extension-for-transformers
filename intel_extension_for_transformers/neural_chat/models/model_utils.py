@@ -336,6 +336,10 @@ def load_model(
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        if not model.config.is_encoder_decoder:
+            tokenizer.padding_side = "left"
+        if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
