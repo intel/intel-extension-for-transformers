@@ -24,7 +24,7 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
-from config_logging import configure_logging
+from .config_logging import configure_logging
 logger = configure_logging()
 
 def build_chatbot(config: PipelineConfig=None):
