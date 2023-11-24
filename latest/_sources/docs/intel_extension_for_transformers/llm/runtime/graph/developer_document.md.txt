@@ -341,7 +341,7 @@ Most of our model examples only support single prompt processing. You need to ad
 +add_library_w_warning(${TARGET} new_model.cpp new_model_utils.cpp ${MODEL_UTILS_SOURCE})
 +target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
 +set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-+target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
++target_link_libraries(${TARGET} PUBLIC ne_layers jblas::jblas)
 ```
  and and new_model to [models_CMakeLists.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt).
  ```diff
