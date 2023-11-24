@@ -19,7 +19,7 @@
 // #define UT_DEBUG 1
 using namespace gpu::xetla;
 //The number of times the kernel is executed
-constexpr int ITER = 1;
+constexpr int ITER = 100;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float, typename data_type_bias = data_type_a>
@@ -61,7 +61,7 @@ public:
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
     static constexpr size_t local_kslicing = 4;
-    static constexpr size_t global_kslicing = 2;
+    static constexpr size_t global_kslicing = 4;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;

@@ -284,8 +284,8 @@ public:
     static cl::sycl::range<3> get_local_range() {
         uint32_t local_range_m = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
         uint32_t local_range_n = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
-        std::cout << "Local range: {" << num_local_kslicing << ", "
-                  << local_range_m << ", " << local_range_n << "} \n";
+        // std::cout << "Local range: {" << num_local_kslicing << ", "
+        //           << local_range_m << ", " << local_range_n << "} \n";
         assert(local_range_m * local_range_n * num_local_kslicing <= 32);
         return cl::sycl::range<3> {
                 num_local_kslicing, local_range_m, local_range_n};
@@ -300,8 +300,8 @@ public:
         uint32_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
         uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
         group_swizzle_t::update_group_range(group_range_m, group_range_n);
-        std::cout << "Group range: {" << num_global_kslicing << ", "
-                  << group_range_m << ", " << group_range_n << "} \n";
+        // std::cout << "Group range: {" << num_global_kslicing << ", "
+        //           << group_range_m << ", " << group_range_n << "} \n";
         return cl::sycl::range<3> {
                 num_global_kslicing, group_range_m, group_range_n};
     };
