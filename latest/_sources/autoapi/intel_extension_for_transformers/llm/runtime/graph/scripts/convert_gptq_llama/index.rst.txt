@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_llama`
+=======================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_llama
+
+

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom &mdash; Intel® Extension for Transformers 0.1.dev1+g8145e63 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptq_bloom/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom">
+<span id="intel-extension-for-transformers-llm-runtime-graph-scripts-convert-gptq-bloom"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.fetch_module" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.fetch_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fetch_module</span></code></a>(model, op_name)</p></td>
+<td><p>Get module with a given op name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.bytes_to_unicode" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.bytes_to_unicode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bytes_to_unicode</span></code></a>()</p></td>
+<td><p>Returns list of utf-8 byte and a corresponding list of unicode strings.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.fetch_module">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.</span></span><span class="sig-name descname"><span class="pre">fetch_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptq_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.fetch_module" title="Link to this definition"></a></dt>
+<dd><p>Get module with a given op name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>object</em>) – the input model.</p></li>
+<li><p><strong>op_name</strong> (<em>str</em>) – name of op.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>module (object).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.bytes_to_unicode">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.</span></span><span class="sig-name descname"><span class="pre">bytes_to_unicode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_gptq_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_gptq_bloom.bytes_to_unicode" title="Link to this definition"></a></dt>
+<dd><p>Returns list of utf-8 byte and a corresponding list of unicode strings.
+The reversible bpe codes work on unicode strings.
+This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
+When you’re at something like a 10B token dataset you end up needing around 5K for decent coverage.
+This is a signficant percentage of your normal, say, 32K bpe vocab.
+To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
+And avoids mapping to whitespace/control characters the bpe code barfs on.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f6011109b10> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
