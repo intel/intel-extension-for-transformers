@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include "dispatcher/include/dispatcher_utils.hpp"
+#include "dispatcher/include/jblas_gemm_dispatcher.hpp"
 #include "dispatcher/include/jblas_weightonly_dispatcher.hpp"
 #include "include/dropout.hpp"
 #include <ATen/core/TensorBody.h>
@@ -97,6 +98,23 @@ static void set_woq_workspace(const torch::Tensor& workspace) {
   woq::set_woq_workspace(const_cast<torch::Tensor*>(&workspace));
 }
 
+static void jblasop_gemm(const torch::Tensor& matA, const torch::Tensor& matB, const torch::Tensor& matC,
+                         bool matB_trans) {
+  TORCH_CHECK(matA.dim() == 2 && matB.dim() == 2 && matC.dim() == 2,
+              "Qbits: only support 2-dim input-tensor in jblas gemm op.");
+  jblas_gemm::jblas_gemm_runtime_ctx ctx;
+  ctx.matA = const_cast<torch::Tensor*>(&matA);
+  ctx.matB = const_cast<torch::Tensor*>(&matB);
+  ctx.matC = const_cast<torch::Tensor*>(&matC);
+  ctx.matB_trans = matB_trans;
+  ctx.m = matA.sizes()[0];
+  ctx.n = matC.sizes()[1];
+  ctx.k = matA.sizes()[1];
+  TORCH_CHECK(matB_trans ? ctx.k == matB.sizes()[1] : ctx.k == matB.sizes()[0],
+              "QBits: input shape mismatch in jblas gemm op.");
+  return jblas_gemm::dispatch_jblas_gemm(&ctx);
+}
+
 static torch::Tensor qbits_dropout_fwd(torch::Tensor& output, double p) { return dropout_fwd(output, p); }
 
 static void qbits_dropout_bwd(torch::Tensor& grad, torch::Tensor& scale) { dropout_bwd(grad, scale); }
@@ -106,6 +124,7 @@ TORCH_LIBRARY(jblasop, m) {
   m.def("woq_linear", &woq_linear);
   m.def("woq_dequantize", &woq_dequantize);
   m.def("set_woq_workspace", &set_woq_workspace);
+  m.def("matmul", &jblasop_gemm);
 }
 
 TORCH_LIBRARY(qbits_customop, m) {
