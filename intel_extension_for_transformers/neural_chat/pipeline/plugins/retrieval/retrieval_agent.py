@@ -48,6 +48,7 @@ class Agent_QA():
         self.response_template = response_template
         self.search_type = search_type
         self.input_path = None
+        
 
         if isinstance(input_path, str):
             if os.path.exists(input_path):
