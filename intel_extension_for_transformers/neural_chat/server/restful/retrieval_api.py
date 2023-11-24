@@ -15,18 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import io
 import os
 import re
 import datetime
+from pathlib import Path
 from datetime import timedelta, timezone
 from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File, Request, Response, Form
 from ...config import GenerationConfig
 from ...cli.log import logger
-from ...server.restful.request import RetrievalRequest
+from ...server.restful.request import RetrievalRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
-from ...plugins import plugins, is_plugin_enabled
+from ...utils.database.mysqldb import MysqlDb
+from ...plugins import plugins
 from .photoai_services import check_user_ip
 
 
@@ -146,25 +150,19 @@ async def retrieval_create(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - create] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - create] "+str(res))
 
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
     path_prefix = RETRIEVAL_FILE_PATH
 
-    # create new upload path dir
-    if os.path.exists(path_prefix):
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
-    # user already created knowledge base
-    else:
-        os.system(f"mkdir {path_prefix}")
-        os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+    cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
+    os.makedirs(path_prefix, exist_ok=True)
+    cur_path.mkdir(parents=True, exist_ok=True)
     
-    user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
-    user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
-    os.system(f"mkdir {user_upload_dir}")
-    os.system(f"mkdir {user_persist_dir}")
+    user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
+    user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
+    user_upload_dir.mkdir(parents=True, exist_ok=True)
+    user_persist_dir.mkdir(parents=True, exist_ok=True)
     cur_time = get_current_beijing_time()
     print(f"[askdoc - create] upload path: {user_upload_dir}")
     
@@ -199,9 +197,6 @@ async def retrieval_append(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - append] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - append] "+str(res))
-
     path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
@@ -234,48 +229,47 @@ async def retrieval_append(request: Request,
 async def retrieval_chat(request: Request):
     chatbot = router.get_chatbot()
     plugins['tts']['enable'] = False
-    res = is_plugin_enabled('tts')
-    print(f"tts plugin enable status: {res}")
     plugins['retrieval']['enable'] = True
-    res = is_plugin_enabled('retrieval')
-    print(f"retrieval plugin enable status: {res}")
 
     user_id = request.client.host
     logger.info(f'[askdoc - chat] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - chat] "+str(res))
 
     # parse parameters
     params = await request.json()
     query = params['query']
+    origin_query = params['translated']
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
     logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
                 stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
+
+    path_prefix = RETRIEVAL_FILE_PATH
+    cur_path = Path(path_prefix) / "default" / "persist_dir"
+    os.makedirs(path_prefix, exist_ok=True)
+    cur_path.mkdir(parents=True, exist_ok=True)
+
     if kb_id == 'default':
         persist_dir = RETRIEVAL_FILE_PATH+"default/persist_dir"
     else:
         persist_dir = RETRIEVAL_FILE_PATH+user_id+'-'+kb_id+'/persist_dir'
     if not os.path.exists(persist_dir):
-        print(f"Can not find persist dir {persist_dir}")
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
     # reload retrieval instance with specific knowledge base
-    print(f"[askdoc - chat] starting to reload local db using {persist_dir}")
-    instance = plugins['retrieval']["instance"]
-    instance.reload_localdb(local_persist_dir = persist_dir)
-    print(f"[askdoc - chat] successfully reload local db.")
+    if kb_id != 'default':
+        print("[askdoc - chat] starting to reload local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.reload_localdb(local_persist_dir = persist_dir)
 
     # non-stream mode
     if not stream:
-        response = chatbot.predict(query=query, config=config)
+        response = chatbot.predict(query=query, origin_query=origin_query, config=config)
         formatted_response = response.replace('\n', '<br/>')
-        print(f"[askdoc - chat] non-stream response: {formatted_response}")
         return formatted_response
     # stream mode
-    generator, link = chatbot.predict_stream(query=query, config=config)
+    generator, link = chatbot.predict_stream(query=query, origin_query=origin_query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
@@ -308,5 +302,77 @@ async def retrieval_chat(request: Request):
                     yield f"data: {formatted_str}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+
+@router.post("/v1/askdoc/feedback")
+def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
+    logger.info(f'[askdoc - feedback] fastrag feedback received.')
+    mysql_db = MysqlDb()
+    mysql_db._set_db("fastrag")
+    question, answer, feedback = request.question, request.answer, request.feedback
+    feedback_str = 'dislike' if int(feedback) else 'like'
+    logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
+                answer: [{answer}], feedback: [{feedback_str}]''')
+    question = question.replace('"', "'")
+    answer = answer.replace('"', "'")
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
+            answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
+    logger.info(f"""[askdoc - feedback] sql: {sql}""")
+    try:
+        with mysql_db.transaction():
+            mysql_db.insert(sql, None)
+    except:
+        raise Exception("""Exception occurred when inserting data into MySQL, 
+                        please check the db session and your syntax.""")
+    else:
+        logger.info('[askdoc - feedback] feedback inserted.')
+        mysql_db._close()
+        return "Succeed"
+
+
+@router.get("/v1/askdoc/downloadFeedback")
+def get_feedback_from_db():
+    mysql_db = MysqlDb()
+    mysql_db._set_db("fastrag")
+    sql = f"SELECT * FROM feedback ;"
+    try:
+        feedback_list = mysql_db.fetch_all(sql)
+
+    except:
+        raise Exception("""Exception occurred when querying data from MySQL, \
+                        please check the db session and your syntax.""")
+    else:
+        mysql_db._close()
+        def data_generator():
+            output = io.StringIO()
+            writer = csv.DictWriter(
+                output, 
+                fieldnames=[
+                    'feedback_id', 
+                    'question', 
+                    'answer', 
+                    'feedback_result', 
+                    'feedback_time']
+            )
+            writer.writeheader()
+            for row in feedback_list:
+                row['feedback_result'] = 'like' if ( row['feedback_result'] == 0 ) else 'dislike'
+                writer.writerow(row)
+                yield output.getvalue()
+                output.seek(0)
+                output.truncate(0)
+
+        cur_time = datetime.datetime.now()
+        cur_time_str = cur_time.strftime("%Y%m%d")
+        return StreamingResponse(
+            data_generator(), 
+            media_type='text/csv', 
+            headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
 
 

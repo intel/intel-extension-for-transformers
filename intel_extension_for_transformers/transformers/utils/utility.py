@@ -17,10 +17,10 @@
 
 """Utils for pytorch framework."""
 
-import importlib
 import os
-from neural_compressor.utils.utility import LazyImport
+from typing import Optional, Tuple
 from neural_compressor.utils import logger
+from neural_compressor.utils.utility import LazyImport
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -75,14 +75,14 @@ def _build_inc_dataloader(dataloader):
             self.dataset = dataloader.dataset
     return INCDataLoader()
 
-def generate_dummy_past_key_values(input_bs, model):
+def generate_dummy_past_key_values(config, input_bs):
     """
         Generate the dummy past_key_values.
     """
     from optimum.utils import NormalizedConfigManager
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        model.config.model_type
-    )(model.config)
+        config.model_type
+    )(config)
     nb_pkv = 2
     num_layers = normalized_config.num_layers
     num_attention_heads = normalized_config.num_attention_heads
@@ -94,61 +94,101 @@ def generate_dummy_past_key_values(input_bs, model):
     if hasattr(normalized_config, "multi_query_group_num"):
         num_key_value_heads = normalized_config.multi_query_group_num
 
-    if model.config.model_type == "bloom":
+    if config.model_type == "bloom":
         pkv = ()
+        for nb_pkv in range(nb_pkv):
+            if nb_pkv % 2 == 0:
+                new_shape = [input_bs * num_key_value_heads, d_k, 0]
+            else:
+                new_shape = [input_bs * num_key_value_heads, 0, d_k]
+            pkv = pkv + (torch.zeros(size=new_shape),)
+            past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
+            return past_key_values
+    elif config.model_type == "qwen":
+        new_shape = [input_bs, 0, num_key_value_heads, d_k]
+    elif config.model_type == "chatglm":
+        new_shape = [0, input_bs, num_key_value_heads, d_k]
+    else:
+        new_shape = [input_bs, num_key_value_heads, 0, d_k]
+    past_key_values = [(
+            torch.zeros(size=new_shape).contiguous(),
+            torch.zeros(size=new_shape).contiguous())
+              for _ in range(num_layers)]
+    return tuple(past_key_values)
+
+def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
+    """
+        Generate the dummy past_key_values.
+    """
+    from optimum.utils import NormalizedConfigManager
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(
+        config.model_type
+    )(config)
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
+    nb_pkv = 2
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
+    if config.model_type == "bloom":
         for nb_pkv in range(nb_pkv):
             if nb_pkv % 2 == 0:
                 new_shape = [input_bs * num_key_value_heads, d_k, 1]
             else:
                 new_shape = [input_bs * num_key_value_heads, 1, d_k]
-            pkv = pkv + (torch.ones(size=new_shape),)
-    elif model.config.model_type == "qwen":
+    elif config.model_type == "qwen":
         new_shape = [input_bs, 1, num_key_value_heads, d_k]
-        dummy_tensor = torch.ones(size=new_shape)
-        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
-    elif model.config.model_type == "chatglm":
+    elif config.model_type == "chatglm":
         new_shape = [1, input_bs, num_key_value_heads, d_k]
-        dummy_tensor = torch.ones(size=new_shape)
-        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
         new_shape = [input_bs, num_key_value_heads, 1, d_k]
-        dummy_tensor = torch.ones(size=new_shape)
-        pkv = tuple(dummy_tensor for _ in range(nb_pkv))
-    past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
-    return past_key_values
 
-def get_example_inputs_for_trace(model, quantization_config=None, return_type="dict"):
+    beam_idx_tmp = torch.zeros(
+                (2048, int(input_bs * num_beams)), dtype=torch.long
+            ).contiguous()
+    past_key_values = [(torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
+            torch.zeros(size=new_shape).contiguous(),
+            torch.zeros(size=new_shape).contiguous(),
+            beam_idx_tmp) for _ in range(num_layers)]
+    return tuple(past_key_values)
+
+
+def get_example_inputs_for_chatglm(model, quantization_config=None, return_type="dict"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
     """
-    if quantization_config and quantization_config.example_inputs is not None:
-        example_inputs = quantization_config.example_inputs
-        input_ids = example_inputs["input_ids"]
+    query = "我该怎么办?"
+    tokenizer = quantization_config.tokenizer
+    if hasattr(tokenizer, "build_chat_inputs"):
+        inputs = tokenizer.build_chat_inputs(query)
+        eos_token_id = [tokenizer.eos_token_id, tokenizer.get_command("<|user|>"),
+                        tokenizer.get_command("<|observation|>")]
+        inputs["eos_token_id"] = eos_token_id
+        input_ids = inputs["input_ids"]
         input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len + 1)
-        attention_mask[:, 0] = 0
-        past_key_values = generate_dummy_past_key_values(input_bs, model)
-        if "past_key_values" not in example_inputs:
-            example_inputs["past_key_values"] = tuple(past_key_values)
-        example_inputs["attention_mask"] = attention_mask
-        if "position_ids" in example_inputs.keys():
-            example_inputs.pop("position_ids")
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
+    elif hasattr(tokenizer, "build_prompt"):
+        prompt = tokenizer.build_prompt(query)
+        inputs = tokenizer([prompt], return_tensors="pt")
+        input_ids = inputs["input_ids"]
+        input_bs, input_len = input_ids.shape
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
     else:
-        input_ids = model.dummy_inputs["input_ids"]
+        inputs = tokenizer([query], return_tensors="pt")
+        input_ids = inputs["input_ids"]
         input_bs, input_len = input_ids.shape
-        past_key_values = generate_dummy_past_key_values(input_bs, model)
-        attention_mask = torch.ones(input_bs, input_len + 1)
-        attention_mask[:, 0] = 0
-        example_inputs = {
-            "input_ids": input_ids,
-            "past_key_values": tuple(past_key_values),
-            "attention_mask": attention_mask,
-        }
-    if return_type == "tuple":
-        example_inputs = (example_inputs["input_ids"], example_inputs["past_key_values"],
-                          example_inputs["attention_mask"])
-
-    # do inference to check example_inputs correct.
-    out = model(**example_inputs) if return_type == "dict" else model(*example_inputs)
+        attention_mask = torch.ones(input_bs, input_len)
+        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
+    example_inputs = {
+        "input_ids": input_ids,
+        "past_key_values": tuple(past_key_values),
+        "attention_mask": attention_mask
+    }
     return example_inputs

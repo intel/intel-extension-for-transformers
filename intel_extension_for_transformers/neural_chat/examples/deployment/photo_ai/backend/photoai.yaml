@@ -23,14 +23,14 @@
 host: 0.0.0.0
 port: 7000
 
-model_name_or_path: "/home/tme/Llama-2-7b-chat-hf"
-device: "cpu"
+model_name_or_path: "./Llama-2-7b-chat-hf"
+device: "audo"
 
-optimization:
-    use_llm_runtime: true
-    optimization_type: "weight_only"
-    compute_dtype: "int8"
-    weight_dtype: "int4"
+# optimization:
+#     use_llm_runtime: true
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4"
 
 asr:
     enable: true
@@ -58,9 +58,9 @@ ner:
 retrieval:
     enable: true
     args:
-        input_path: "/home/tme/photoai_retrieval_docs/default/input_path"
-        persist_dir: "/home/tme/photoai_retrieval_docs/default/persist_dir"
-        response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
+        input_path: "./photoai_retrieval_docs/default/input_path"
+        persist_dir: "./photoai_retrieval_docs/default/persist_dir"
+        response_template: "We cannot find suitable content to answer your query."
         append: False
 
-tasks_list: ['textchat', 'voicechat', 'retrieval', 'photoai']
+tasks_list: ['voicechat', 'retrieval', 'photoai']

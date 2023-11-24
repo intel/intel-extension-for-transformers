@@ -36,7 +36,7 @@ from .voicechat_api import (
     handle_talkingbot_asr as talkingbot_asr,
     create_speaker_embedding as talkingbot_embd
 )
-from ...plugins import plugins, is_plugin_enabled
+from ...plugins import plugins
 from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 
 
@@ -59,11 +59,7 @@ class PhotoAIAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             plugins['tts']['enable'] = True
-            res = is_plugin_enabled('tts')
-            print(f"tts plugin enable status: {res}")
             plugins['retrieval']['enable'] = False
-            res = is_plugin_enabled('retrieval')
-            print(f"retrieval plugin enable status: {res}")
 
             config = GenerationConfig(audio_output_path=audio_output_path)
             result, link = chatbot.chat_stream(query=prompt, config=config)

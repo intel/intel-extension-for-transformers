@@ -2,9 +2,7 @@ transformers>=4.32.0
 fschat
 num2words
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -14,7 +12,6 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -35,5 +32,9 @@ transformers_stream_generator==0.0.4
 spacy
 neural-compressor==2.3.1
 einops
+pymysql
+deepface
+exifread
+zhconv
 urllib3
 langid

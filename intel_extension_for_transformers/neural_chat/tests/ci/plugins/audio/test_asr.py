@@ -19,6 +19,8 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr imp
 import unittest
 import os
 import torch
+from pydub import AudioSegment
+
 
 class TestASR(unittest.TestCase):
     @classmethod
@@ -38,10 +40,13 @@ class TestASR(unittest.TestCase):
         else:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        self.asr_cn = AudioSpeechRecognition("openai/whisper-small", language="zh", device=self.device)
+        self.asr_auto = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
         if self.device == "cpu" and self.is_ipex_available:
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
         else:
             self.asr_bf16 = None
+
 
     def test_audio2text(self):
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
@@ -60,6 +65,35 @@ class TestASR(unittest.TestCase):
         else:
             text = self.asr_bf16.audio2text("../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
+
+    def test_audio2text_chinese(self):
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome_cn.wav"
+        if os.path.exists(audio_path):
+            text = self.asr_cn.audio2text(audio_path)
+        else:
+            text = self.asr_cn.audio2text("../assets/audio/welcome_cn.wav")
+        self.assertEqual(text.lower(), "欢迎使用".lower())
+
+    def test_audio2text_chinese(self):
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome_cn.wav"
+        if os.path.exists(audio_path):
+            text = self.asr_cn.audio2text(audio_path)
+        else:
+            text = self.asr_cn.audio2text("../assets/audio/welcome_cn.wav")
+        self.assertEqual(text.lower(), "欢迎使用".lower())
+
+    def test_audio2text_auto(self):
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
+        cn_audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome_cn.wav"
+        if not os.path.exists(audio_path):
+            audio_path = "../assets/audio/welcome.wav"
+            cn_audio_path = "../assets/audio/welcome_cn.wav"
+        sound1 = AudioSegment.from_file(audio_path, format="wav")
+        sound2 = AudioSegment.from_file(cn_audio_path, format="wav")
+        mixed_audio = sound1 + sound2
+        mixed_audio.export("welcome_mixed.mp3", format="wav")
+        result = self.asr_auto.audio2text("welcome_mixed.mp3")
+        self.assertEqual(result.lower(), "welcome to neural chat 欢迎使用".lower())
 
 if __name__ == "__main__":
     unittest.main()

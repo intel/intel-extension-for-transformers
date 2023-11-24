@@ -10,9 +10,12 @@ on:
       - intel_extension_for_transformers/utils/**
       - intel_extension_for_transformers/llm/evaluation/**
       - intel_extension_for_transformers/llm/quantization/**
+      - intel_extension_for_transformers/llm/runtime/graph/**
+      - intel_extension_for_transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - .github/workflows/script/unitTest/**
+      - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -86,9 +89,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget tensorflow sentencepiece \
-          && pip install --upgrade accelerate"
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |

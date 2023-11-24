@@ -42,3 +42,4 @@ export RETRIEVAL_FILE_PATH="/home/tme/photoai_retrieval_docs"
 export GOOGLE_API_KEY="AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
 
 nohup numactl -l -C 0-51 python -m photoai 2>&1 &
+
