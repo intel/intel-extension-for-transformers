@@ -383,7 +383,7 @@ void stream_k_gemm_run(uint32_t iter) {
             auto gpu_event = queue.submit([&](handler &cgh) {
                 // GPU kernel
                 cgh.parallel_for(
-                        NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        NDRange, [=](nd_item<3> item) KERNEL_MAIN {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;
@@ -420,7 +420,7 @@ void stream_k_gemm_run(uint32_t iter) {
             auto gpu_event = queue.submit([&](handler &cgh) {
                 // GPU kernel
                 cgh.parallel_for(
-                        NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        NDRange, [=](nd_item<3> item) KERNEL_MAIN {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;

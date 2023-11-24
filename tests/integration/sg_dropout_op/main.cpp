@@ -89,7 +89,7 @@ static void dropout_op_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<test>(
-                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                         using dropout_func = dropout_func_t<data_type_x,
                                 data_type_y, data_type_acc, test::wg_n,
                                 test::wg_m, test::sg_n, test::sg_m,

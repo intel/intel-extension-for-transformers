@@ -108,7 +108,7 @@ void softmax_bwd_run() {
             auto e_softmax_bwd = queue.submit([&](sycl::handler &cgh) {
                 cgh.use_kernel_bundle(exeBundle);
                 cgh.parallel_for<Test>(
-                        nd_range, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        nd_range, [=](sycl::nd_item<3> item) KERNEL_MAIN {
                             using softmax_bwd_func
                                     = softmax_bwd_test_func<data_type_in,
                                             data_type_coff_in, data_type_out,

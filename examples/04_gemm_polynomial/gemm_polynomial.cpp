@@ -204,7 +204,7 @@ void gemm_polynomial_run(int iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
-            cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+            cgh.parallel_for(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
                 gemm_op(item, gemm_arg);

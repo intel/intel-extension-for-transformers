@@ -328,7 +328,7 @@ void dequantize_gemm_run(int iter) {
             prof.cpu_start();
             auto e_esimd = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<Test>(
-                        nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;

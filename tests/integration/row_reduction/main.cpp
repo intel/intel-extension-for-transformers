@@ -103,7 +103,7 @@ static void row_reduction_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test>(
-                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                         using row_reduction_func = row_reduction_func_t<
                                 data_type_in, data_type_out, data_type_acc,
                                 data_type_x, data_type_w, data_type_d, wg_n,

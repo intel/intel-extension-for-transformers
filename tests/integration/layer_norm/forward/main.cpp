@@ -134,7 +134,7 @@ void ln_fwd_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<
-                    test>(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                 constexpr bool store_for_bwd = true;
                 using ln_fwd_func = ln_fwd_func_t<data_type_x, data_type_y,
                         data_type_weight, data_type_acc, test::wg_n, test::wg_m,

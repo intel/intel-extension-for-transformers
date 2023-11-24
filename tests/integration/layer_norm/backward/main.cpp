@@ -182,7 +182,7 @@ void ln_bwd_run() {
     try {
         auto e_esimd_bwd0 = queue.submit([&](handler &cgh) {
             cgh.parallel_for<test>(
-                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                         using ln_bwd_func = ln_bwd_func_t<data_type_y,
                                 data_type_x, data_type_weight, data_type_acc,
                                 test::wg_n, test::wg_m, test::sg_n, test::sg_m,
@@ -210,7 +210,7 @@ void ln_bwd_run() {
 
         auto e_esimd_bwd1 = queue.submit([&](handler &cgh) {
             cgh.parallel_for(
-                    final_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    final_range, [=](nd_item<3> item) KERNEL_MAIN {
                         using ln_bwd_final_func = ln_bwd_final_func_t<
                                 data_type_x, data_type_weight, data_type_acc,
                                 final_wg_n, final_wg_m, final_sg_n, final_sg_m>;

@@ -53,7 +53,7 @@ static void vadd_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
-                    nd_range, [=](nd_item<1> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<1> item) KERNEL_MAIN {
                         vector_add_func<data_type, VL>(&item, A, B, C);
                     });
         });

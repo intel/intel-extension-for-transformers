@@ -107,7 +107,7 @@ static void igemm_quantize_run(int iter = 100) {
             prof.cpu_start();
             auto e_esimd = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<
-                        Test>(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                     using igemm_quantize_functor
                             = igemm_quantize_func<data_type_a, data_type_b,
                                     data_type_c, data_type_param, wg_tile_m,

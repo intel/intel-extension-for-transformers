@@ -30,7 +30,7 @@ And then this GEMM can be executed inside `parallel_for`.
 ```c++
 auto gpu_event = queue.submit([&](handler &cgh) {
     // GPU kernel
-    cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+    cgh.parallel_for(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
         
         // allocate slm and nbarrier resource
         slm_barrier_init<gemm_op_t>();

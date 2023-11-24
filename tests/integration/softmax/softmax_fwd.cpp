@@ -94,7 +94,7 @@ void softmax_fwd_run() {
             auto e_softmax_fwd = queue.submit([&](handler &cgh) {
                 cgh.use_kernel_bundle(exeBundle);
                 cgh.parallel_for<Test>(
-                        nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                             using softmax_fwd_func
                                     = softmax_fwd_test_func<data_type_in,
                                             data_type_out, data_type_acc, wg_n,

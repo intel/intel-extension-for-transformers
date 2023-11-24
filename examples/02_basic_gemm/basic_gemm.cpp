@@ -100,7 +100,7 @@ void basic_gemm_run(uint32_t iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
-            cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+            cgh.parallel_for(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                 using namespace gpu::xetla;
                 using namespace gpu::xetla::group;
                 using namespace gpu::xetla::kernel;

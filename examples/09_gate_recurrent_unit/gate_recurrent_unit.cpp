@@ -354,7 +354,7 @@ void gru_run(uint32_t iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             cgh.parallel_for<gru_config>(
-                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                         using xcoder_gru_op = kernel_xcoder_gru_fusion<
                                 typename gru_config::dtype_in,
                                 typename gru_config::dtype_acc,
