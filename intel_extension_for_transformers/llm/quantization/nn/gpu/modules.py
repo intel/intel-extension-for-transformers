@@ -100,18 +100,20 @@ class QuantizedLinearGPU(torch.nn.Linear):
         bias = torch.zeros(0) if self.bias is None else self.bias.data
         gbits.linear(
             x.view(m, shape[-1]), self.weight.data, bias, out,
-            self.out_features, self.bias is not None, self.compute_dtype, self.weight_dtype)
+            self.out_features, self.bias is not None, self.compute_dtype, self.weight_dtype, self.blocksize)
         shape[-1] = self.out_features
         out = out.view(shape)
-
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
-        weight = gbits.quantize(
-            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype
-        )
-        weight.resize_(shape)
+        if weight_data.is_meta:
+            weight = torch.ones(shape, dtype=torch.int8).to(self.device)
+        else:
+            weight = gbits.quantize(
+                weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype
+            )
+            weight.resize_(shape)
         self.weight = ParamsGBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype

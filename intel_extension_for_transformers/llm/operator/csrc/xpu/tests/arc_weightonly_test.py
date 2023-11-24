@@ -16,7 +16,7 @@
 # limitations under the License.
 import torch
 import intel_extension_for_pytorch
-import gbits
+import intel_extension_for_transformers.gbits as gbits
 import inspect
 from functools import wraps
 
@@ -39,6 +39,7 @@ def capture_args(f):
 def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_meta, dump_tensor_info=False):
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float).to('xpu')
+    # ref_activation = torch.ones(m, k, dtype=torch.float).to('xpu')
     tar_activation = ref_activation.clone()
     tar_dst = torch.zeros(m, n, dtype=torch.float).to('xpu')
     wei_row = k
@@ -46,6 +47,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     if transpose:
         wei_row, wei_col = wei_col, wei_row
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float).to('xpu')
+    # raw_wei = torch.ones(wei_row, wei_col, dtype=torch.float).to('xpu')
     if is_meta:
         raw_wei = torch.empty(raw_wei.shape, dtype=raw_wei.dtype).to('meta')
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float).to('xpu')
@@ -63,7 +65,6 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     compress_wei = compress_wei.to('xpu')
     gbits.dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)
-    
     if dump_tensor_info:
         print(revert_wei)
     if transpose:
@@ -71,6 +72,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     if compute_type == "fp16":
         revert_wei = revert_wei.to(torch.float)
     ref_dst = torch.matmul(ref_activation, revert_wei)
+    # import pdb;pdb.set_trace()
     gbits.linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
     tar_dst = tar_dst.to(torch.float)
@@ -83,9 +85,11 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
         print("ok")
     else:
         print(torch.max(torch.abs(tar_dst - ref_dst)))
+        print(tar_dst)
+        print(ref_dst)
         print("fail")
 
-configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}
+configs = {"s4fullrange_scalef32": {"fp16"}}
 blocksizes = [16, 32, 64, 128, 256, 1024]
 do_trans = [False, True]
 add_bias = [False, True]

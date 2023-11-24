@@ -90,55 +90,23 @@ public:
       free(_scale, context);
   }
 
-  CompressWei4Bit(void *buf, sycl::queue &queue) {
-    if (buf != nullptr) {
-      auto device = queue.get_info<sycl::info::queue::device>();
-      bool isDevicePointer = sycl::get_pointer_type(buf, context) == sycl::usm::alloc::device;
-      if (isDevicePointer) {
-        size_t offset = deserialize_field(buf, queue);
-        _wei = (void *)((char *)buf + offset);
-        _scale = (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t));
-      } else {
-        free_dev_mem = true;
-        _wei = (void *)aligned_alloc_device(
-          DEVICE_MEM_ALIGNMENT, get_4bit_wei_size() * sizeof(int8_t), device, context);
-        _scale = (void *)aligned_alloc_device(
-          DEVICE_MEM_ALIGNMENT, get_scale_size() * sizeof(fp16), device, context);
-        size_t offset = deserialize_field(buf);
-        queue.memcpy(_wei, (void *)((char *)buf + offset), get_4bit_wei_size() * sizeof(int8_t)).wait();
-        queue.memcpy(_scale, (void *)((char *)buf + offset + get_4bit_wei_size() * sizeof(int8_t)), get_scale_size() * sizeof(fp16)).wait();
-      }
+  CompressWei4Bit(void *buf, int k, int n, int blk) {
+      _N = n;
+      _K = k;
+      _blksize = blk;
+      if (buf != nullptr) {
+          _wei = buf;
+          _scale = (void *)((char *)buf + get_4bit_wei_size());
     }
   }
 
   void serialize(void *buf) {
-    size_t offset = 0;
-    memcpy((char *)buf + offset, &_N, sizeof(_N));
-    offset += sizeof(_N);
-    memcpy((char *)buf + offset, &_K, sizeof(_K));
-    offset += sizeof(_K);
-    memcpy((char *)buf + offset, &_blksize, sizeof(_blksize));
-    offset += sizeof(_blksize);
-    memcpy((char *)buf + offset, &_sym, sizeof(_sym));
-    offset += sizeof(_sym);
-    offset = (offset / 64 + 1) * 64;
-    memcpy((char *)buf + offset, _write_buf, get_buf_size());
+    memcpy((char *)buf, _write_buf, get_buf_size());
   }
 
   void deserialize(void *buf) {
-    size_t offset = 0;
-    memcpy(&_N, (char *)buf + offset, sizeof(_N));
-    offset += sizeof(_N);
-    memcpy(&_K, (char *)buf + offset, sizeof(_K));
-    offset += sizeof(_K);
-    memcpy(&_blksize, (char *)buf + offset, sizeof(_blksize));
-    offset += sizeof(_blksize);
-    memcpy(&_sym, (char *)buf + offset, sizeof(_sym));
-    offset += sizeof(_sym);
-    memcpy(_write_buf, (char *)buf + offset, get_buf_size());
+    memcpy(_write_buf, (char *)buf, get_buf_size());
   }
-
-  size_t get_serialize_size() { return get_meta_data_size() + get_buf_size(); }
 
   void *get_4bit_wei_ptr() {
     return _write_buf;
@@ -159,38 +127,11 @@ public:
   int _N, _K, _blksize;
 
 private:
-  size_t deserialize_field(void *buf) {
-    size_t offset = 0;
-    memcpy(&_N, (char *)buf + offset, sizeof(_N));
-    offset += sizeof(_N);
-    memcpy(&_K, (char *)buf + offset, sizeof(_K));
-    offset += sizeof(_K);
-    memcpy(&_blksize, (char *)buf + offset, sizeof(_blksize));
-    offset += sizeof(_blksize);
-    memcpy(&_sym, (char *)buf + offset, sizeof(_sym));
-    offset += sizeof(_sym);
-    return (offset / 64 + 1) * 64;
-  }
-    size_t deserialize_field(void *buf, sycl::queue &queue) {
-    size_t offset = 0;
-    queue.memcpy((void *)&_N, (void *)((char *)buf + offset), sizeof(_N)).wait();
-    offset += sizeof(_N);
-    queue.memcpy((void *)&_K, (void *)((char *)buf + offset), sizeof(_K)).wait();
-    offset += sizeof(_K);
-    queue.memcpy((void *)&_blksize, (void *)((char *)buf + offset), sizeof(_blksize)).wait();
-    offset += sizeof(_blksize);
-    queue.memcpy((void *)&_sym, (void *)((char *)buf + offset), sizeof(_sym)).wait();
-    offset += sizeof(_sym);
-    return (offset / 64 + 1) * 64;
-  }
   size_t get_4bit_wei_size() { return _N * _K / 2; }
   size_t get_scale_size() { return _K / _blksize * _N * sizeof(fp16); }
   size_t get_zp_size() { return 0; }
   size_t get_buf_size() {
     return get_4bit_wei_size() + get_scale_size() + get_zp_size();
-  }
-  size_t get_meta_data_size() {
-    return ((sizeof(_N) + sizeof(_K) + sizeof(_blksize) + sizeof(_sym)) / 64 + 1) * 64;
   }
   bool _sym;
   char *_write_buf = nullptr;

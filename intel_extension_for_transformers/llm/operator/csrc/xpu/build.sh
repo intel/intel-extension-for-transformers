@@ -13,6 +13,8 @@
 ##  limitations under the License.
 
 rm -rf build
+rm -r dist gbits.egg-info
+pip uninstall gbits
 mkdir build
 cd build
 cmake ..

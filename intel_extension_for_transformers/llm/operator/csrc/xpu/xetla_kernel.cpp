@@ -68,7 +68,7 @@ struct linear_param {
 };
 
 template <typename T, int dequant_s, int sg_tile_k>
-void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
+void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C,
                   uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k) {
   using data_type_a = T;
   using data_type_c = T;
@@ -126,9 +126,9 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   // set up gemm arguments
   typename gemm_op_t::arguments_t gemm_arg(
       p.matrix_m, p.matrix_k, p.matrix_n, static_cast<data_type_a *>(A),
-      p.matrix_k, static_cast<data_type_b *>(B->get_4bit_wei_ptr_device()),
+      p.matrix_k, static_cast<data_type_b *>((void *)B),
       p.matrix_n, static_cast<data_type_c *>(C),
-      p.matrix_n, static_cast<data_type_scale *>(B->get_scale_ptr_device()),
+      p.matrix_n, static_cast<data_type_scale *>((void *)(B + matrix_k * matrix_n / 2)),
       p.matrix_n, Acc_d, Cnt_d);
   cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
   if (!gemm_op_t::can_implement(gemm_arg)) {
@@ -153,7 +153,7 @@ void xetla_linear(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
 }
 
 template <typename T, int dequant_s, int sg_tile_k>
-void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
+void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C,
                   uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                   T *D) {
   using data_type_a = T;
@@ -230,9 +230,9 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
   // set up gemm arguments
   typename gemm_op_t::arguments_t gemm_arg(
       p.matrix_m, p.matrix_k, p.matrix_n, static_cast<data_type_a *>(A),
-      p.matrix_k, static_cast<data_type_b *>(B->get_4bit_wei_ptr_device()),
+      p.matrix_k, static_cast<data_type_b *>((void *)B),
       p.matrix_n, static_cast<data_type_c *>(C),
-      p.matrix_n, static_cast<data_type_scale *>(B->get_scale_ptr_device()),
+      p.matrix_n, static_cast<data_type_scale *>((void *)(B + matrix_k * matrix_n / 2)),
       p.matrix_n, Acc_d, Cnt_d, ecpilogue_args);
   cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
   if (!gemm_op_t::can_implement(gemm_arg)) {
@@ -257,7 +257,7 @@ void xetla_linear_bias(sycl::queue queue, T *A, CompressWei4Bit *B, T *C,
 }
 
 template <typename T>
-void xetla_linear_base(sycl::queue queue, T *A, CompressWei4Bit *B,
+void xetla_linear_base(sycl::queue queue, T *A, int8_t *B,
                        T *C, uint32_t matrix_m, uint32_t matrix_n,
                        uint32_t matrix_k, int dequant_s) {
   switch (dequant_s) {
@@ -285,7 +285,7 @@ void xetla_linear_base(sycl::queue queue, T *A, CompressWei4Bit *B,
 }
 
 template <typename T>
-void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
+void xetla_linear_bias_base(sycl::queue queue, T *A, int8_t *B,
                             T *C, uint32_t matrix_m, uint32_t matrix_n,
                             uint32_t matrix_k, int dequant_s, T *D) {
   switch (dequant_s) {
@@ -312,7 +312,7 @@ void xetla_linear_bias_base(sycl::queue queue, T *A, CompressWei4Bit *B,
   }
 }
 
-void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
+void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                             int dequant_s, fp16 *bias) {
   return xetla_linear_bias_base<fp16>(queue, A, B, C, matrix_m, matrix_n, matrix_k,
@@ -326,7 +326,7 @@ void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16
 //                                 dequant_s, bias);
 // }
 
-void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
+void xetla_linear_fp16(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                        int dequant_s) {
   return xetla_linear_base<fp16>(queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s);

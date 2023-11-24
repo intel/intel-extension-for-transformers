@@ -22,7 +22,7 @@
 #define CONSTANT
 #endif
 
-void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
+void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                             int dequant_s, fp16 *bias);
 
@@ -30,7 +30,7 @@ void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16
 //                             float *C, uint32_t matrix_m, uint32_t matrix_n,
 //                             uint32_t matrix_k, int dequant_s, float *bias);
 
-void xetla_linear_fp16(sycl::queue queue, fp16 *A, CompressWei4Bit *B, fp16 *C,
+void xetla_linear_fp16(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
                        int dequant_s);
 
@@ -42,7 +42,7 @@ static void gbits_linear(const torch::Tensor &activation,
                          const torch::Tensor weight, const torch::Tensor &bias,
                          torch::Tensor &output, int64_t ldo, bool with_bias,
                          const std::string &compute_type,
-                         const std::string &weight_type) {
+                         const std::string &weight_type, int blksize) {
   // Turn on the profiling property to facilitate subsequent profiling
   sycl::property_list properties{};
 
@@ -50,13 +50,9 @@ static void gbits_linear(const torch::Tensor &activation,
   c10::impl::VirtualGuardImpl impl(device_type);
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
   auto queue = xpu::get_queue_from_stream(c10_stream);
-
   uint32_t matrix_m = activation.sizes()[0];
   uint32_t matrix_n = ldo;
   uint32_t matrix_k = activation.sizes()[1];
-
-  torch::Tensor revert_weight;
-  CompressWei4Bit obj(weight.data_ptr<int8_t>(), queue);
   if (initer.verbose) timer.start();
   if (activation.dtype() == torch::kFloat32) {
     // auto *A = activation.data_ptr<float>();
@@ -74,11 +70,11 @@ static void gbits_linear(const torch::Tensor &activation,
     auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
     if (with_bias) {
       auto *D = reinterpret_cast<fp16 *>(bias.data_ptr<at::Half>());
-      xetla_linear_fp16_bias(queue, A, &obj, C, matrix_m, matrix_n,
-                             matrix_k, obj._blksize, D);
+      xetla_linear_fp16_bias(queue, A, weight.data_ptr<int8_t>(), C, matrix_m, matrix_n,
+                             matrix_k, blksize, D);
     } else {
-      xetla_linear_fp16(queue, A, &obj, C, matrix_m, matrix_n,
-                        matrix_k, obj._blksize);
+      xetla_linear_fp16(queue, A, weight.data_ptr<int8_t>(), C, matrix_m, matrix_n,
+                        matrix_k, blksize);
     }
   }
   if (initer.verbose) {
@@ -92,7 +88,7 @@ static void gbits_linear(const torch::Tensor &activation,
 static void gbits_dequantize(const torch::Tensor compressed_weight,
                              torch::Tensor &dequantize_weight, bool transpose,
                              const std::string &compute_type,
-                             const std::string &weight_type) {
+                             const std::string &weight_type, int blk) {
   auto device_type = c10::DeviceType::XPU;
   c10::impl::VirtualGuardImpl impl(device_type);
   c10::Stream c10_stream = impl.getStream(c10::Device(device_type));
@@ -104,7 +100,9 @@ static void gbits_dequantize(const torch::Tensor compressed_weight,
     std::cout << "gbits_dequantize requires the dequantized weight on xpu" << std::endl;
     exit(0);
   }
-  CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>(), q);
+  int n = transpose ? dequantize_weight.sizes()[0] : dequantize_weight.sizes()[1];
+  int k = transpose ? dequantize_weight.sizes()[1] : dequantize_weight.sizes()[0];
+  CompressWei4Bit obj(compressed_weight.data_ptr<int8_t>(), k, n, blk);
   if (initer.verbose) timer.start();
   if (dequantize_weight.dtype() == torch::kFloat32)
     gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose,
@@ -149,7 +147,7 @@ torch::Tensor quantize(T *weight, int k, int n, int blksize,
   }
   CompressWei4Bit compress_wei(k, n, blksize);
   torch::Tensor ret =
-      torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
+      torch::zeros(compress_wei.get_buf_size(), torch::kInt8);
   if (weight_type == "s4fullrange_scalef32") {
     std::vector<int8_t> s8quant_tmp(k * n);
     c10::Half *scale = reinterpret_cast<c10::Half *>(compress_wei.get_scale_ptr());
