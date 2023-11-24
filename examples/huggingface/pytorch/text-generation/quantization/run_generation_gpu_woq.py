@@ -49,7 +49,7 @@ parser.add_argument("--woq_algo", default="RTN", choices=['RTN'],
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int8", 
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
-parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument("--woq_group_size", type=int, default=64)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="cpu")
@@ -86,7 +86,7 @@ else:
 
 quantization_config = None
 if args.woq:
-    quantization_config = WeightOnlyQuantConfig(compute_dtype=args.compute_dtype, weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
+    quantization_config = WeightOnlyQuantConfig(compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype, group_size=args.woq_group_size) #default is A32W4G32
 
 # get model
 if quantization_config is not None:
@@ -129,6 +129,7 @@ if args.benchmark:
 
     total_latency = 0
     first_token_latency = 0
+    gen_texts = []
     for j in range(args.max_new_tokens):
         total_time = 0.0
         with torch.inference_mode(), torch.no_grad():
@@ -145,9 +146,9 @@ if args.benchmark:
                 toc = time.time()
                 gen_id = torch.argmax(out[0][:, -1:, :], axis = -1).to("cpu")
                 gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
-                print(gen_text, flush=True)
                 if i >= num_warmup:
                     total_time += toc - tic
+            gen_texts.extend(gen_text)
         latency = total_time / (num_iter - num_warmup) / args.batch_size
         throughput = (num_iter - num_warmup) / total_time
         if j == 0:
@@ -161,6 +162,7 @@ if args.benchmark:
         attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1)).to(args.device)
         total_latency += latency
 
+    print(prompt[0] + "".join(gen_texts))
     print("first token inference latency: %.5f sec." % first_token_latency)
     next_token_latency = (total_latency - first_token_latency) / (args.max_new_tokens - 1)
     print("next token inference latency: %.5f sec." % next_token_latency)
