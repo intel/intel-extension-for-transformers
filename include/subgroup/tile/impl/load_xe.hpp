@@ -453,7 +453,6 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                 + (offset_y + 0) * payload.pitch_in_bytes;
                 if (payload.base_y + offset_y + sub_block_y + num_channel
                         > payload.height_in_elems) {
-
                     xetla_mask<num_channel> pred_y
                             = xetla_vector_gen<uint32_t, num_channel>(0, 1)
                             < (payload.height_in_elems % num_channel);
