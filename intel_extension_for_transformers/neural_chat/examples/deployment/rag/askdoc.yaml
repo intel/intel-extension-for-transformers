@@ -23,8 +23,8 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "/home/tme/Llama-2-7b-chat-hf"
-device: "cpu"
+model_name_or_path: "./Llama-2-7b-chat-hf"
+device: "auto"
 
 retrieval:
     enable: true

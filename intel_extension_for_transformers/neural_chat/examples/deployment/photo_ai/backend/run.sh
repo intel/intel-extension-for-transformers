@@ -24,7 +24,7 @@ export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 
 # OMP
-export OMP_NUM_THREADS=52
+export OMP_NUM_THREADS=56
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
 # tc malloc
@@ -34,12 +34,6 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 export MYSQL_PASSWORD="root"
 export MYSQL_HOST="127.0.0.1"
 export MYSQL_DB="ai_photos"
-export MYSQL_PORT=3306
-export IMAGE_SERVER_IP="198.175.88.26"
-export IMAGE2IMAGE_IP="54.87.46.229"
-export IMAGE_ROOT_PATH="/home/nfs_images"
-export RETRIEVAL_FILE_PATH="/home/tme/photoai_retrieval_docs"
-export GOOGLE_API_KEY="AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
 
-nohup numactl -l -C 0-51 python -m photoai 2>&1 &
+nohup numactl -l -C 0-55 python -m photoai 2>&1 &
 

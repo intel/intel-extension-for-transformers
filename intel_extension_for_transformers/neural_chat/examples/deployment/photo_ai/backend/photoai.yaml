@@ -24,7 +24,7 @@ host: 0.0.0.0
 port: 7000
 
 model_name_or_path: "./Llama-2-7b-chat-hf"
-device: "audo"
+device: "auto"
 
 # optimization:
 #     use_llm_runtime: true
@@ -45,13 +45,13 @@ tts:
         device: "cpu"
         voice: "default"
         stream_mode: true
-        output_audio_path: "/home/tme/itrex_photoai_backend/intel_extension_for_transformers/neural_chat/examples/deployment/photo_ai/backend/output_audio/tmp_audio"
+        output_audio_path: "./output_audio"
 
 ner:
     enable: true
     args:
         device: "cpu"
-        model_path: "/home/tme/Llama-2-7b-chat-hf"
+        model_path: "./Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         bf16: true
 
