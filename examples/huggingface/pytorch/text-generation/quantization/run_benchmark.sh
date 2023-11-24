@@ -112,7 +112,6 @@ function run_benchmark {
 	pip install transformers==4.31.0
         model_name_or_path="decapoda-research/llama-13b-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
-	pip install transformers==4.31.0
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"

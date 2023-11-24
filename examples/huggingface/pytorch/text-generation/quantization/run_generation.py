@@ -133,6 +133,10 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
+    if re.search("dolly", args.model):
+        ipex_opt_llm = False
+    else:
+        ipex_opt_llm = None
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
                 "smooth_quant": True,
@@ -144,6 +148,7 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        ipex_opt_llm=ipex_opt_llm
         )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
