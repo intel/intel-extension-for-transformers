@@ -84,10 +84,6 @@ public:
   virtual ~CompressWei4Bit() {
     if (_write_buf != nullptr)
       free(_write_buf);
-    if (_wei != nullptr && free_dev_mem)
-      free(_wei, context);
-    if (_scale != nullptr && free_dev_mem)
-      free(_scale, context);
   }
 
   CompressWei4Bit(void *buf, int k, int n, int blk) {
@@ -137,6 +133,4 @@ private:
   char *_write_buf = nullptr;
   void *_wei = nullptr;
   void *_scale = nullptr;
-  const sycl::context context;
-  bool free_dev_mem = false;
 };

@@ -113,7 +113,6 @@ class QuantizedLinearGPU(torch.nn.Linear):
             weight = gbits.quantize(
                 weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype
             )
-            weight.resize_(shape)
         self.weight = ParamsGBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype

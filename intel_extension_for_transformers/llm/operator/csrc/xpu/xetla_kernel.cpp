@@ -137,7 +137,6 @@ void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C,
     exit(0);
   }
 
-  size_t ops = 2 * p.matrix_m * p.matrix_n * p.matrix_k;
   auto e_esimd = queue.submit([&](sycl::handler &cgh) {
     cgh.parallel_for(nd_range, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // allocate slm and nbarrier resource
@@ -241,7 +240,6 @@ void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C,
     exit(0);
   }
 
-  size_t ops = 2 * p.matrix_m * p.matrix_n * p.matrix_k;
   auto e_esimd = queue.submit([&](sycl::handler &cgh) {
     cgh.parallel_for(nd_range, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       // allocate slm and nbarrier resource
