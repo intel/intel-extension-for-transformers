@@ -395,7 +395,13 @@ def load_model(
             ) and ipex_int8
         ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
-            import intel_extension_for_pytorch
+            try:
+                import intel_extension_for_pytorch as ipex
+            except ImportError:
+                warnings.warn(
+                    "Please install Intel Extension for PyTorch to accelerate the model inference."
+                )
+            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             from optimum.intel.generation.modeling import TSModelForCausalLM
             model = TSModelForCausalLM.from_pretrained(
                     model_name,
@@ -409,7 +415,13 @@ def load_model(
             ) and ipex_int8
     ):  
         with smart_context_manager(use_deepspeed=use_deepspeed):
-            import intel_extension_for_pytorch as ipex
+            try:
+                import intel_extension_for_pytorch as ipex
+            except ImportError:
+                warnings.warn(
+                    "Please install Intel Extension for PyTorch to accelerate the model inference."
+                )
+            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             torch._C._jit_set_texpr_fuser_enabled(False)
             qconfig = ipex.quantization.default_static_qconfig_mapping
             with ipex.OnDevice(dtype=torch.float, device="meta"):
