@@ -19,8 +19,9 @@ import torch
 from pathlib import Path
 import numpy as np
 import struct
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
-                    Union)
+import json
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
 GGML_QK8_0 = 32
@@ -29,6 +30,9 @@ GGML_QK4_1 = 32
 GGML_QK5_0 = 32
 GGML_QK5_1 = 32
 
+GGML_QK4_0_TYPE = 2
+GGML_QK4_1_TYPE = 3
+GGML_QJBLAS_TYPE = 13
 
 def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     # equivalent to ggml_quantize_q4_0 in ggml.c
@@ -44,6 +48,20 @@ def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     tensor = torch.cat((scale.half().view(torch.int8), tensor), dim=-1)
     return tensor
 
+def quantize_q4_1(tensor: torch.Tensor) -> torch.CharTensor:
+    # equivalent to ggml_quantize_q4_1 in ggml.c
+    assert tensor.shape[1] % GGML_QK4_1 == 0
+    tensor = tensor.view(-1, GGML_QK4_1)
+    min_vals = tensor.min(dim=-1, keepdim=True).values
+    max_vals = tensor.max(dim=-1, keepdim=True).values
+    scale = (max_vals - min_vals) / ((1 << 4) - 1)
+    tensor = ((tensor - min_vals) / scale).round().clamp(min=0, max=15).char()
+    # compress two int4 weights into an int8
+    tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
+    # add scale & min into each block
+    import pdb; pdb.set_trace()
+    tensor = torch.cat((scale.half().view(torch.int8), min_vals.half().view(torch.int8), tensor), dim=-1)
+    return tensor
 
 class SentencePieceVocab:
     def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
@@ -151,3 +169,74 @@ def qzeros_to_zeros(qzeros, bits=4):
         i += 32 // bits
         col += 1
     return zeros
+
+
+def unpack_weight(qweight, scales, qzeros, q_config):
+    group_size = q_config['group_size']
+    bits = q_config['bits']
+    wf = torch.tensor([[ 0,  4,  8, 12, 16, 20, 24, 28]], dtype=torch.int32)
+    zeros = torch.bitwise_right_shift(torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
+        
+    zeros = zeros + 1
+    # zeros = zeros.reshape(-1, 1, zeros.shape[1] * zeros.shape[2])
+    zeros = zeros.reshape(scales.shape)
+
+    # scales = scales
+    # scales = scales.reshape(-1, 1, scales.shape[-1])
+        
+    weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(weight,(2 ** bits) - 1, out=weight)
+    # int_weight = weight.reshape(-1, group_size, weight.shape[2])
+
+    return weight, scales, zeros
+
+def write_header(fout, shape, dst_name, ftype_cur):
+    sname = dst_name.encode('utf-8')
+    fout.write(struct.pack("iii", len(shape), len(sname), ftype_cur))
+    fout.write(struct.pack("i" * len(shape), *shape[::-1]))
+    fout.write(sname)
+    fout.seek((fout.tell() + 31) & -32)
+
+
+def find_quantized_model_file(model_path):
+    model_path = Path(model_path)
+    for ext in ['.safetensors', '.pt']:
+        found = list(model_path.glob(f"*{ext}"))
+        if len(found) > 0:
+            if len(found) != 1:
+                warnings.warn(f'Detected {len(found)} {ext} model, use the first one {found[0]}.')
+            print(f"Detected model file {found[0]}")
+            return str(found[0])
+
+def load_gptq_model(model_path):
+    input_path = find_quantized_model_file(model_path)
+    model = None
+    if input_path.endswith('pt'):
+        model = torch.load(input_path, map_location="cpu")
+    elif input_path.endswith('safetensors'):
+        from safetensors.torch import load_file
+        model = load_file(input_path)
+    else:
+        print("unknown input model path, only support .safetensors or .pt file.")
+    
+    with open(model_path + '/quantize_config.json', "r", encoding="utf-8") as f:
+        quantize_config = json.load(f)
+    return model, quantize_config
+
+
+def convert_fp32_tensor(src_name, dst_name, model, fout):
+    v = model[src_name]
+    shape = v.shape
+    # print("Processing non-Q4 variable: " + src_name +
+    #       " with shape: ", shape, " and type: ", v.dtype)
+    v = v.to(torch.float32)
+
+    ftype_cur = {torch.float16: 1, torch.float32: 0}[v.dtype]
+
+    # header
+    write_header(fout, shape, dst_name, ftype_cur)
+
+    # data
+    v.numpy().tofile(fout)
+    print(f"converting {dst_name} float tensor")
