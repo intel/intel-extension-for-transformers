@@ -1,7 +1,7 @@
 transformers>=4.32.0
 scikit-learn
 peft
-fschat
+fschat==0.2.32
 num2words
 speechbrain
 paddlepaddle
