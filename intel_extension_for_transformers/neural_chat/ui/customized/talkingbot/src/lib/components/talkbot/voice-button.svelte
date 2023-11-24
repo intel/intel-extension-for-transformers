@@ -46,6 +46,8 @@
 						dispatch('start')
 						const blob = new Blob(chunks, { type: "audio/mp3; codecs=opus" });
 						const res = await chatResponse.fetchAudioText(blob);
+						console.log('res', res);
+						
 						audioSrc = window.URL.createObjectURL(blob);
 						
 						chatMessages = [...chatMessages, {
