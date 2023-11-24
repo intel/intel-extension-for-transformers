@@ -78,6 +78,7 @@ function run_benchmark {
 
 
     if [ "${topology}" = "gpt_j" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
@@ -85,11 +86,18 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+	model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "opt_1.3b" ]; then
+        pip install transformers==4.31.0
         model_name_or_path="facebook/opt-1.3b"
     elif [ "${topology}" = "opt_2.7b" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="facebook/opt-2.7b"
     elif [ "${topology}" = "opt_6.7b" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="facebook/opt-6.7b"
     elif [ "${topology}" = "bloom_7b1" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/bloom-7b1"
@@ -98,10 +106,13 @@ function run_benchmark {
     elif [ "${topology}" = "bloomz-3b" ]; then
         model_name_or_path="bigscience/bloomz-3b"
     elif [ "${topology}" = "llama_7b" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
     elif [ "${topology}" = "llama_13b" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="decapoda-research/llama-13b-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
+	pip install transformers==4.31.0
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"
