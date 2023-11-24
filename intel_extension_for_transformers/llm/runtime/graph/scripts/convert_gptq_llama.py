@@ -29,7 +29,7 @@ def permute_func(weights, n_head: int, n_head_kv: int):
                 .swapaxes(1, 2)
                 .reshape(weights.shape))
 
-def recover_weight(qweight, scales, qzeros, permute=False, group_size=128, bits=4):
+def unpack_weight(qweight, scales, qzeros, permute=False, group_size=128, bits=4):
     wf = torch.tensor([[ 0,  4,  8, 12, 16, 20, 24, 28]], dtype=torch.int32)
     zeros = torch.bitwise_right_shift(torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
@@ -42,26 +42,12 @@ def recover_weight(qweight, scales, qzeros, permute=False, group_size=128, bits=
         
     weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(weight,(2 ** bits) - 1, out=weight)
-    weight = weight.reshape(-1, group_size, weight.shape[2])
+    int_weight = weight.reshape(-1, group_size, weight.shape[2])
 
-    if permute:
-        out1 = permute_func(weight.view(-1,weight.shape[-1]).t(), 32, 32)
-    else:
-        out1 = weight.view(-1,weight.shape[-1]).t()
-    tensor = out1.reshape(-1, 32) #+ 8
-    tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
-
-    if permute:
-        out2 = permute_func(scales.view(-1,scales.shape[-1]).t(), 32, 32)
-    else:
-        out2 = scales.view(-1,scales.shape[-1]).t()
-    gptq_scale = out2.reshape(-1,1)
-    gptq_scale = torch.cat([gptq_scale,gptq_scale,gptq_scale,gptq_scale], dim=1).view(-1,1)
-    pack_tensor = torch.cat((gptq_scale.half().view(torch.int8), tensor), dim=-1)
-
-    weight = (scales * (weight - zeros))
-    weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
-    return weight.t(), pack_tensor
+    return int_weight, scales, zeros
+    # weight = (scales * (weight - zeros))
+    # weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
+    # return weight.t(), pack_tensor
 
 def write_header(fout, shape, dst_name, ftype_cur):
     sname = dst_name.encode('utf-8')
@@ -93,13 +79,81 @@ def convert_q4_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permut
     g_idx = model[f"{src_name}.g_idx"]
     qweight = model[f"{src_name}.qweight"]
 
-    weight, pack = recover_weight(qweight, scales, qzeros, permute)
-    
-    shape = weight.shape
-    # weight = weight.to(torch.float32)
+    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
+    # import pdb; pdb.set_trace()
+    shape = int_weight.view(-1, int_weight.shape[-1]).t().shape
     write_header(fout, shape, dst_name, 2)
-    pack.numpy().tofile(fout)
+
+    int_weight = int_weight.view(-1,int_weight.shape[-1]).t()
+    gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1]).t()
+    gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1]).t()
+    if permute:
+        int_weight = permute_func(int_weight, 32, 32).contiguous()
+        gptq_scales = permute_func(gptq_scales, 32, 32).contiguous()
+        gptq_zeros = permute_func(gptq_zeros, 32, 32).contiguous()
+
+    tensor = int_weight.reshape(-1, 32) #+ 8
+    tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
+    gptq_scale = gptq_scales.reshape(-1,1)
+    gptq_scale = torch.cat([gptq_scale,gptq_scale,gptq_scale,gptq_scale], dim=1).view(-1,1)
+    pack_tensor = torch.cat((gptq_scale.half().view(torch.int8), tensor), dim=-1)
+    pack_tensor.numpy().tofile(fout)
     print(f"converting {dst_name} qauntized tensor to ggml q4 block")
+
+def convert_q4_f32_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
+    qzeros = model[f"{src_name}.qzeros"]
+    zeros = qzeros_to_zeros(qzeros)
+    scales = model[f"{src_name}.scales"]
+    g_idx = model[f"{src_name}.g_idx"]
+    qweight = model[f"{src_name}.qweight"]
+
+    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
+    weight = (gptq_scales * (int_weight - gptq_zeros))
+    weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
+    weight = weight.t()
+    # import pdb; pdb.set_trace()
+    weight = weight.float()
+    if permute:
+        weight = permute_func(weight, 32, 32).contiguous()
+
+    shape = weight.shape
+    write_header(fout, shape, dst_name, 0)
+    weight.numpy().tofile(fout)
+    print(f"converting {dst_name} qauntized tensor to fp32 tensor")
+
+def convert_q4_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
+    import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
+    qzeros = model[f"{src_name}.qzeros"]
+    zeros = qzeros_to_zeros(qzeros)
+    scales = model[f"{src_name}.scales"]
+    g_idx = model[f"{src_name}.g_idx"]
+    qweight = model[f"{src_name}.qweight"] # k*n  pytorch activation m*k linear weight is n * k ->m*n
+    # import pdb; pdb.set_trace()
+    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
+    
+    int_weight = int_weight.view(-1,int_weight.shape[-1])#.t() -> n*k
+    gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1])#.t()
+    gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])#.t()
+    
+    if permute:
+        int_weight = permute_func(int_weight.t().contiguous(), 32, 32).t().contiguous()
+        gptq_scales = permute_func(gptq_scales.t().contiguous(), 32, 32).t().contiguous()
+        gptq_zeros = permute_func(gptq_zeros.t().contiguous(), 32, 32).t().contiguous()
+
+    shape = int_weight.shape
+    write_header(fout, shape[::-1], dst_name, 13)
+
+    dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*2), dtype=np.int8)
+    # import pdb; pdb.set_trace() #np.left_shift(int_weight, 4)
+    int_weight = int_weight - 8
+    int_weight = int_weight * 16
+    gptq_scales = gptq_scales / 16
+    byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.numpy(), gptq_zeros.numpy(), dst)
+    dst = dst.flatten()
+    dst = dst[:byte_size]
+    dst.tofile(fout)
+    print(f"converting {dst_name} qauntized tensor to jblas q4 block")
+
 
 def find_quantized_model_file(model_path):
     model_path = Path(model_path)
@@ -195,19 +249,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
 
     for i in range(n_layer):
-        convert_q4_tensor(f"model.layers.{i}.self_attn.q_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
                     f"layers.{i}.attention.wq.weight", list_vars, f, n_head, n_head, permute=True)
-        convert_q4_tensor(f"model.layers.{i}.self_attn.k_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.k_proj",
                     f"layers.{i}.attention.wk.weight", list_vars, f, n_head, n_head_kv, permute=True)
-        convert_q4_tensor(f"model.layers.{i}.self_attn.v_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.v_proj",
                     f"layers.{i}.attention.wv.weight", list_vars, f, n_head)
-        convert_q4_tensor(f"model.layers.{i}.self_attn.o_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.o_proj",
                     f"layers.{i}.attention.wo.weight", list_vars, f, n_head)
-        convert_q4_tensor(f"model.layers.{i}.mlp.gate_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.gate_proj",
                     f"layers.{i}.feed_forward.w1.weight", list_vars, f, n_head)
-        convert_q4_tensor(f"model.layers.{i}.mlp.down_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.down_proj",
                     f"layers.{i}.feed_forward.w2.weight", list_vars, f, n_head)
-        convert_q4_tensor(f"model.layers.{i}.mlp.up_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.up_proj",
                     f"layers.{i}.feed_forward.w3.weight", list_vars, f, n_head)
 
         convert_fp32_tensor(f"model.layers.{i}.input_layernorm.weight",

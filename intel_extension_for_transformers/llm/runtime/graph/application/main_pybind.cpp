@@ -95,17 +95,19 @@ class Model {
                             const quant_params_internal params, int nthread, int n, int k);
   static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
                                int k);
-  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> dst) {
+  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros, py::array_t<int8_t> dst) {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
+    int8_t* zeros_ptr = src_zeros.mutable_data();
     int8_t* dst_ptr = dst.mutable_data();
 
     quant_params_internal q_params;
     q_params.bits = quant_bits::q4;
     q_params.scale_dtype = quant_sdtype::fp32;
     q_params.compute_dtype = quant_comp::int8;
+    q_params.alg = quant_alg::sym;
     q_params.group_size = 128;
-    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 1, src_w.shape(0), src_w.shape(1));
+    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 1, src_w.shape(1), src_w.shape(0));
   }
 
   static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst) {
@@ -518,7 +520,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   auto dstbptr = (int8_t*)dstpr;
   cd->setThreads(nthread);
   // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>; // fullrange
   static Kernel kernel;
   auto packedw = kernel.createStorage(n, k, params.group_size);
 
@@ -534,7 +536,10 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   std::copy(src_scales, src_scales + ssize, Tscales.data());
 
   jblas::utils::avector<int8_t> Tzps(packedw.mIsAsym ? ssize : 0);
+  if (packedw.mIsAsym)
+    std::copy(src_zps, src_zps + ssize, Tzps.data());
 
+  printf("n: %d, k: %d\n", n, k);
   kernel.packQWeight(n, k, tmpq.data(), n, Tscales.data(), Tzps.data(), &packedw);
 
   // kernel.unpackWeight(n, k, &packedw, dstbptr, n);
