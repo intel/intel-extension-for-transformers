@@ -11,7 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
-* [2023/11] Demonstrated up to 3x using **Assisted Generation** (also called Speculative Decoding) from Hugging Face with Intel optimizations! Check out [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/assisted_generation/README.md).
+* [2023/11] Demonstrated up to 3x LLM inference speedup using **Assisted Generation** (also called Speculative Decoding) from Hugging Face with Intel optimizations! Check out [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/assisted_generation/README.md).
 * [2023/11] Supported **LLM QLoRA on CPU**, first time enabling LLM fine-tuning on client CPUs (see [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md)).
 * [2023/11] Refreshed **top-1 7B-sized LLM** by releasing [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
 * [2023/11] Released [**NeuralChat-v3**](https://huggingface.co/Intel/neural-chat-7b-v3), new **top-1 7B-sized LLM** available on Hugging Face. The model is fine-tuned on Habana Gaudi2 with supervised fine-tuning and direct preference optimization. Check out the [blog](https://medium.com/@NeuralCompressor/the-practice-of-supervised-finetuning-and-direct-preference-optimization-on-habana-gaudi2-a1197d8a3cd3).
