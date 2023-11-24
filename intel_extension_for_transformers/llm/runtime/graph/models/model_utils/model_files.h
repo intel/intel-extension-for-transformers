@@ -621,136 +621,17 @@ struct model_model_loader {
     }
   }
 
-  size_t jblas_split_weight(void** src, void** dst, size_t n, size_t k, size_t n_rank, size_t k_rank) {
-    size_t size = 0;
-    auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*src);
-    // TODO adapt NTILE and KTILE from CoreType
-    int NTILE = 48;
-    int KTILE = 4;
-    int world_size_n = static_cast<int>(src_tmp->mNPad / n);
-    int world_size_k = static_cast<int>(src_tmp->mKPad / k);
-    auto dNpad = src_tmp->mNPad / world_size_n;
-    auto dKpad = src_tmp->mKPad / world_size_k;
-    // dst NPad and KPad should be mod by NTILE and KTILE
-    assert(dNpad % NTILE == 0);
-    assert(dKpad % KTILE == 0);
-    if (src_tmp != nullptr) {
-      if (src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS4ClipScaleFp32) ||
-          src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-        auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp);
-        ne_jblas::SS4Fp32 dst_w(src_w->mCoreType);
-        size = dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
-        dst_w.mPrologueID = src_tmp->mPrologueID;
-        dst_w.assign((int8_t*)(*dst));
-        // take the weight out and split
-        size_t n_block = src_w->mNPad / NTILE / world_size_n;
-        size_t d_n_id = 0;
-        for (size_t i = n_rank * n_block; i < n_block * (n_rank + 1); ++i) {
-          size_t s_n_offset = i * src_w->mKPad * NTILE / 2;
-          size_t s_k_offset = k_rank * dst_w.mKPad * NTILE / 2;
-          auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
-          auto d_off_ptr = dst_w.WPtr() + d_n_id * dst_w.mKPad * NTILE / 2;
-          auto off_size = dst_w.mKPad * NTILE / 2;
-          memcpy(d_off_ptr, s_off_ptr, off_size);
-          d_n_id += 1;
-        }
-        // take the scale out and split
-        d_n_id = 0;
-        size_t s_kblks = src_w->mCSize / src_w->mCStep / world_size_k;
-        size_t s_nblks = src_w->mCStep / world_size_n;
-        for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-          size_t s_k_offset = i * src_w->mCStep;
-          size_t s_n_offset = n_rank * s_nblks;
-          auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
-          auto d_off_ptr = (float*)dst_w.mSPtr + d_n_id * dst_w.mCStep;
-          memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-          d_n_id += 1;
-        }
-        // take the zp out and split
-        if (src_w->mIsAsym) {
-          d_n_id = 0;
-          for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-            size_t s_k_offset = i * src_w->mCStep;
-            size_t s_n_offset = n_rank * s_nblks;
-            auto s_off_ptr = (float*)src_w->mZPtr + s_n_offset + s_k_offset;
-            auto d_off_ptr = (float*)dst_w.mZPtr + d_n_id * dst_w.mCStep;
-            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-            d_n_id += 1;
-          }
-        }
-        // take the reduce out and split
-        if (src_w->mHasReduce) {
-          d_n_id = 0;
-          for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-            size_t s_k_offset = i * src_w->mCStep;
-            size_t s_n_offset = n_rank * s_nblks;
-            auto s_off_ptr = (float*)src_w->mRPtr + s_n_offset + s_k_offset;
-            auto d_off_ptr = (float*)dst_w.mRPtr + d_n_id * dst_w.mCStep;
-            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-            d_n_id += 1;
-          }
-        }
-      } else if (src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32) ||
-                 src_tmp->mPrologueID == int(ne_jblas::WeightCompType::WeightS8ScaleFp32PerChannelN)) {
-        auto src_w = dynamic_cast<ne_jblas::SS8Fp32*>(src_tmp);
-        ne_jblas::SS8Fp32 dst_w(src_w->mCoreType);
-        size = dst_w.resize(dNpad, dKpad, src_w->mBlockSize, src_w->mIsAsym);
-        dst_w.mPrologueID = src_tmp->mPrologueID;
-        dst_w.assign((int8_t*)(*dst));
-        // take the weight out and split
-        size_t n_block = src_w->mNPad / NTILE / world_size_n;
-        size_t d_n_id = 0;
-        for (size_t i = n_rank * n_block; i < n_block * (n_rank + 1); ++i) {
-          size_t s_n_offset = i * src_w->mKPad * NTILE;
-          size_t s_k_offset = k_rank * dst_w.mKPad * NTILE;
-          auto s_off_ptr = src_w->WPtr() + s_n_offset + s_k_offset;
-          auto d_off_ptr = dst_w.WPtr() + d_n_id * dst_w.mKPad * NTILE;
-          auto off_size = dst_w.mKPad * NTILE;
-          memcpy(d_off_ptr, s_off_ptr, off_size);
-          d_n_id += 1;
-        }
-        // take the scale out and split
-        d_n_id = 0;
-        size_t s_kblks = src_w->mCSize / src_w->mCStep / world_size_k;
-        size_t s_nblks = src_w->mCStep / world_size_n;
-        for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-          size_t s_k_offset = i * src_w->mCStep;
-          size_t s_n_offset = n_rank * s_nblks;
-          auto s_off_ptr = (float*)src_w->mSPtr + s_n_offset + s_k_offset;
-          auto d_off_ptr = (float*)dst_w.mSPtr + d_n_id * dst_w.mCStep;
-          memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-          d_n_id += 1;
-        }
-        // take the zp out and split
-        if (src_w->mIsAsym) {
-          d_n_id = 0;
-          for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-            size_t s_k_offset = i * src_w->mCStep;
-            size_t s_n_offset = n_rank * s_nblks;
-            auto s_off_ptr = (float*)src_w->mZPtr + s_n_offset + s_k_offset;
-            auto d_off_ptr = (float*)dst_w.mZPtr + d_n_id * dst_w.mCStep;
-            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-            d_n_id += 1;
-          }
-        }
-        // take the reduce out and split
-        if (src_w->mHasReduce) {
-          d_n_id = 0;
-          for (size_t i = k_rank * s_kblks; i < (k_rank + 1) * s_kblks; ++i) {
-            size_t s_k_offset = i * src_w->mCStep;
-            size_t s_n_offset = n_rank * s_nblks;
-            auto s_off_ptr = (float*)src_w->mRPtr + s_n_offset + s_k_offset;
-            auto d_off_ptr = (float*)dst_w.mRPtr + d_n_id * dst_w.mCStep;
-            memcpy(d_off_ptr, s_off_ptr, dst_w.mCStep * sizeof(float));
-            d_n_id += 1;
-          }
-        }
-      }
+  void jblas_split_weight(void** src, void** dst, size_t src_n, size_t src_k, size_t dst_n, size_t dst_k, size_t n_rank,
+                          size_t k_rank) {
+    auto src_fp32 = (float*)malloc(src_n * src_k * sizeof(float));
+    if (src_fp32 == nullptr) {
+      assert(0);
     }
-    // auto dst_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*dst);
-    // assert(dst_tmp != nullptr);
-    // assert(src_tmp->mPrologueID == dst_tmp->mPrologueID);
-    return size;
+    jblas_unpackweight_fp32(*src, src_n, src_k, src_fp32, src_n);
+    // layout will be K * N in the buffer
+    auto dst_fp32 = src_fp32 + k_rank * dst_k * src_n + n_rank * dst_n;
+    jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, src_n, *src);
+    free(src_fp32);
   }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
@@ -798,15 +679,13 @@ struct model_model_loader {
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
-      // auto src_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(tmp_buf.addr);
-      // auto src_w = dynamic_cast<ne_jblas::SS4Fp32*>(src_tmp);
-      // auto s_ptr = src_w->WPtr();
       if (lt.type == NE_TYPE_JBLAS) {
         tmp_buf.resize(shard.size);
         file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), lt.rank, 0);
+        jblas_split_weight(&src_data, &dst_data, lt.world_size * num_rows, lt.ne.at(0), num_rows, lt.ne.at(0), lt.rank,
+                           0);
       } else {
         // only copy part of weight form the tmp_buf of origin file
         tmp_buf.resize(lt.size * lt.world_size);
@@ -821,14 +700,14 @@ struct model_model_loader {
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
-
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
       if (lt.type == NE_TYPE_JBLAS) {
         tmp_buf.resize(shard.size);
         file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.ne.at(0), 0, lt.rank);
+        jblas_split_weight(&src_data, &dst_data, num_rows, lt.world_size * lt.ne.at(0), num_rows, lt.ne.at(0), 0,
+                           lt.rank);
       } else {
         tmp_buf.resize(lt.size * lt.world_size);
         file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
