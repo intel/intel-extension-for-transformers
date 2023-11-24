@@ -27,6 +27,36 @@ def permute_func(weights, n_head: int, n_head_kv: int):
                 .swapaxes(1, 2)
                 .reshape(weights.shape))
 
+def quantize_ggml_tensor(src_name, dst_name, model, fout, n_head, n_head_kv=0, permute=False):
+    v = model[src_name + ".weight"]
+    shape = v.shape
+    v = v.to(torch.float32)
+    if permute:
+        v = permute_func(v, n_head, n_head_kv).contiguous()
+    # header
+    ftype_cur = GGML_QK4_1_TYPE
+    write_header(fout, shape, dst_name, ftype_cur)
+
+    tensor = quantize_q4_1(v)
+    tensor.numpy().tofile(fout)
+    print(f"converting {dst_name} float tensor to ggml q4")
+
+def convert_fp32_tensor_v2(src_name, dst_name, model, fout, n_head, n_head_kv=0, permute=False):
+    v = model[src_name + ".weight"]
+    shape = v.shape
+    # print("Processing non-Q4 variable: " + src_name +
+    #       " with shape: ", shape, " and type: ", v.dtype)
+    v = v.to(torch.float32)
+    if permute:
+        v = permute_func(v, n_head, n_head_kv).contiguous()
+    ftype_cur = {torch.float16: 1, torch.float32: 0}[v.dtype]
+
+    # header
+    write_header(fout, shape, dst_name, ftype_cur)
+
+    # data
+    v.numpy().tofile(fout)
+    print(f"converting {dst_name} float tensor")
 
 def convert_q4_tensor(src_name, dst_name, model, fout, q_config, n_head, n_head_kv=0, permute=False):
     qzeros = model[f"{src_name}.qzeros"]
@@ -55,22 +85,11 @@ def convert_q4_tensor(src_name, dst_name, model, fout, q_config, n_head, n_head_
     pack_tensor.numpy().tofile(fout)
     print(f"converting {dst_name} qauntized tensor to ggml q4 block")
 
-def convert_q4_f32_tensor(src_name, dst_name, model, fout, q_config, n_head, n_head_kv=0, permute=False):
-    qzeros = model[f"{src_name}.qzeros"]
-    zeros = qzeros_to_zeros(qzeros)
-    scales = model[f"{src_name}.scales"]
-    g_idx = model[f"{src_name}.g_idx"]
-    qweight = model[f"{src_name}.qweight"]
-
-    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
-    weight = (gptq_scales * (int_weight - gptq_zeros))
-    weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
-    weight = weight.t()
+def quantize_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head_kv=0, permute=False):
+    weight = model[f"{src_name}.weight"]
     weight = weight.float()
     if permute:
-        weight = weight.t()
         weight = permute_func(weight, n_head, n_head_kv).contiguous()
-        weight = weight.t()
 
     shape = weight.shape
     write_header(fout, shape, dst_name, 13)
@@ -80,13 +99,11 @@ def convert_q4_f32_tensor(src_name, dst_name, model, fout, q_config, n_head, n_h
     dst = np.zeros((weight.shape[0], weight.shape[1]*4), dtype=np.int8)
     # import pdb; pdb.set_trace()
     byte_size = cpp_model.Model.np_jblas_quantize(weight.numpy(), dst,
-                                               weight_dtype="int4" if q_config['bits'] == 4 else "int8",
-                                               group_size=q_config['group_size'],
-                                               alg="sym" if q_config['sym'] else "asym",
+                                               weight_dtype="int4", 
                                                compute_dtype="int8")
     dst.flatten()[:byte_size].tofile(fout)
 
-    print(f"converting {dst_name} qauntized tensor to fp32 tensor")
+    print(f"converting {dst_name} qauntized tensor to jblas tensor")
 
 def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n_head_kv=0, permute=False):
     import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
@@ -133,7 +150,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     out_path = args.outfile.as_posix()
     model_path = args.model.as_posix()
 
-    model, quantize_config = load_gptq_model(model_path)
+    # model, quantize_config = load_gptq_model(model_path)
+    from transformers import AutoModelForCausalLM, TextStreamer
+    model = AutoModelForCausalLM.from_pretrained(model_path).state_dict()
     f = open(out_path, "wb")
     
     # 1. write hparams
@@ -141,7 +160,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     layer_re = r'model\.layers\.([0-9]+)'
     n_layer = 1 + max(int(re.match(layer_re, name).group(1)) for name in model
                         if re.match(layer_re, name))
-    ffn_hidden_size = model['model.layers.0.mlp.up_proj.qweight'].shape[1]
+    # import pdb; pdb.set_trace()
+    ffn_hidden_size = model['model.layers.0.mlp.up_proj.weight'].shape[0]
 
     # hardcoded:
     n_mult = 256
@@ -196,20 +216,21 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
 
     for i in range(n_layer):
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
-                    f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head, permute=True)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.k_proj",
-                    f"layers.{i}.attention.wk.weight", list_vars, f, quantize_config, n_head, n_head_kv, permute=True)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.v_proj",
-                    f"layers.{i}.attention.wv.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.o_proj",
-                    f"layers.{i}.attention.wo.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.gate_proj",
-                    f"layers.{i}.feed_forward.w1.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.down_proj",
-                    f"layers.{i}.feed_forward.w2.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.up_proj",
-                    f"layers.{i}.feed_forward.w3.weight", list_vars, f, quantize_config, n_head)
+        # import pdb; pdb.set_trace()
+        quantize_ggml_tensor(f"model.layers.{i}.self_attn.q_proj",
+                    f"layers.{i}.attention.wq.weight", list_vars, f, n_head, n_head, permute=True)
+        quantize_ggml_tensor(f"model.layers.{i}.self_attn.k_proj",
+                    f"layers.{i}.attention.wk.weight", list_vars, f, n_head, n_head_kv, permute=True)
+        quantize_ggml_tensor(f"model.layers.{i}.self_attn.v_proj",
+                    f"layers.{i}.attention.wv.weight", list_vars, f, n_head)
+        quantize_ggml_tensor(f"model.layers.{i}.self_attn.o_proj",
+                    f"layers.{i}.attention.wo.weight", list_vars, f, n_head)
+        quantize_ggml_tensor(f"model.layers.{i}.mlp.gate_proj",
+                    f"layers.{i}.feed_forward.w1.weight", list_vars, f, n_head)
+        quantize_ggml_tensor(f"model.layers.{i}.mlp.down_proj",
+                    f"layers.{i}.feed_forward.w2.weight", list_vars, f, n_head)
+        quantize_ggml_tensor(f"model.layers.{i}.mlp.up_proj",
+                    f"layers.{i}.feed_forward.w3.weight", list_vars, f, n_head)
 
         convert_fp32_tensor(f"model.layers.{i}.input_layernorm.weight",
                         f"layers.{i}.attention_norm.weight", list_vars, f)

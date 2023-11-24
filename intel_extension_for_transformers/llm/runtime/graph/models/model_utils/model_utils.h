@@ -83,7 +83,8 @@ MODEL_API void model_free(struct model_context* ctx);
 // param - from args
 // quant_layer - depends on each model's config
 MODEL_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
-
+size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
+                      size_t k);
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for
 // the layers modified by the adapter. Can be NULL to use the current loaded

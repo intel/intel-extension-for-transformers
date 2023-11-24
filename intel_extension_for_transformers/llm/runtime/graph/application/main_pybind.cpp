@@ -37,6 +37,8 @@
 #include <pybind11/numpy.h>
 #include "common.h"
 #include "core/layers/jblas_common.hpp"
+#include "core/layers/jblas_gemm.h"
+#include "jblas/jit_blas_parallel.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_types.h"
@@ -93,8 +95,6 @@ class Model {
 
   static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
                             const quant_params_internal params, int nthread, int n, int k);
-  static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
-                               int k);
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros,
                                py::array_t<int8_t> dst, const std::string& weight_dtype, const std::string& alg,
                                int group_size, const std::string& scale_dtype, const std::string& compute_dtype,
@@ -123,7 +123,7 @@ class Model {
     q_params.compute_dtype = parse_compute_type(compute_dtype, /*ggml_arg=*/0);
     q_params.alg = parse_alg(alg);
     q_params.group_size = group_size;
-    return Model::jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, threads, src_w.shape(1), src_w.shape(0));
+    return jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, threads, src_w.shape(0), src_w.shape(1));
   }
 
  private:
@@ -520,72 +520,51 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
 }
 
 size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                          const quant_params_internal params, int nthread, int N, int K) {
+                          const quant_params_internal params, int nthread, int n, int k) {
   
-  auto constexpr ISA = jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::ISA;
-  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<ISA, jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize,
-                                              jblas::prologue_b::gemm::WeightKBlockNInteger,
-                                              jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
-  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>;
-  Launcher launcher;
-  int blocksize = params.group_size;
-  bool isAsym = params.alg == quant_alg::asym;
-  int kblks = jblas::utils::updiv(K, blocksize);
-  using WType = typename Launcher::PrologueB::StorageWeight;
-  WType packedW =
-      launcher.mProB.createStorage(N, K, blocksize, JBLAS_DTYPE::S4_CLIP, jblas::utils::jblas_dtype<float>, jblas::utils::jblas_dtype<float>, isAsym);
-  
+  auto ctype = quant2ne_comp_type(params.compute_dtype);
   auto dstbptr = (int8_t*)dstpr;
-  packedW.assign(dstbptr);
-
-  auto tmpq = jblas::utils::amalloc<int8_t>(static_cast<size_t>(N) * K);
-  std::copy(src_w, src_w + N * K, tmpq);
-  int nk_scale = jblas::utils::updiv(K, params.group_size);
-  auto ssize = static_cast<size_t>(N) * nk_scale;
-  auto Tscales = jblas::utils::amalloc<float>(ssize);
-  std::copy(src_scales, src_scales + ssize, Tscales);
-  auto Tzps = jblas::utils::amalloc<int8_t>(packedW.IsAsym() ? ssize : 0);
-  if (packedW.IsAsym())
-    std::copy(src_zps, src_zps + ssize, Tzps);
-
-  static jblas::parallel::StdThreading DefaultThreading(4);
-  launcher.mProB.packQWeight(N, K, tmpq, N, Tscales, Tzps, &packedW, &DefaultThreading);
-  
-  jblas::utils::afree(tmpq);
-  jblas::utils::afree(Tscales);
-  jblas::utils::afree(Tzps);
-  return packedW.mSize;
+  jblas::parallel::OMPThreading threading(nthread);
+  JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
+  if (params.bits == quant_bits::q8) {
+    quant_type = JBLAS_DTYPE::S8;
+  }
+  if (params.bits == quant_bits::fp4) {
+    quant_type = JBLAS_DTYPE::F4_E2M1;
+  }
+  if (params.bits == quant_bits::nf4) {
+    quant_type = JBLAS_DTYPE::F4_NF4;
+  }
+  auto dtype_type = static_cast<JBLAS_DTYPE>(
+      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+  if (dtype_type == JBLAS_DTYPE::TypeFloat) {
+    if (params.alg == quant_alg::asym) {
+      printf("Invalid alg for float quant types, will be igonred\n");
+    }
+    if (params.compute_dtype == quant_comp::int8) {
+      printf("Compute Int8 is not supported by float quant types, will be igonred\n");
+    }
+  }
+  JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
+  if (params.scale_dtype == quant_sdtype::fp32) {
+    scale_type = JBLAS_DTYPE::F32;
+  }
+  if (params.scale_dtype == quant_sdtype::fp16) {
+    printf("Current not support float16 scale, reset to bf16\n");
+  }
+  auto gsize = params.group_size == -1 ? k : params.group_size;
+  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype);
+  if (size) {
+    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type, params.alg == quant_alg::asym,
+                                  ctype, &threading)) {
+      printf("Failed to quant this weight\n");
+      return 0;
+    }
+    return size;
+  }
+  return 0;
 }
-size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int N,
-                             int K) {
-  
-  auto constexpr ISA = jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::ISA;
-  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<ISA, jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize,
-                                              jblas::prologue_b::gemm::WeightKBlockNInteger,
-                                              jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
-  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>;
-  Launcher launcher;
-  int blocksize = params.group_size;
-  bool isAsym = params.alg == quant_alg::asym;
-  int kblks = jblas::utils::updiv(K, blocksize);
-  using WType = typename Launcher::PrologueB::StorageWeight;
-  WType packedW =
-      launcher.mProB.createStorage(N, K, blocksize, JBLAS_DTYPE::S4_CLIP, jblas::utils::jblas_dtype<float>, jblas::utils::jblas_dtype<float>, isAsym);
-  
-  auto dstbptr = (int8_t*)dstpr;
-  packedW.assign(dstbptr);
 
-  auto tmpq = jblas::utils::amalloc<float>(static_cast<size_t>(N) * K);
-  std::copy(src_w, src_w + N * K, tmpq);
-
-  static jblas::parallel::StdThreading DefaultThreading(4);
-  launcher.mProB.packWeight(N, K, tmpq, N, &packedW, &DefaultThreading);
-  
-  jblas::utils::afree(tmpq);
-  return packedW.mSize;
-}
 
 #if MODEL_NAME_ID == 1
 
