@@ -307,9 +307,14 @@ class TestQuantization(unittest.TestCase):
         dummy_input = fp32_model.dummy_inputs["input_ids"]
 
         # smooth-quant
+        recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": 0.5},
+                    }
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                    calib_iters=5
+                                    calib_iters=5,
+                                    recipes=recipes
                                 )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=sq_config,

@@ -200,6 +200,7 @@ async def retrieval_chat(request: Request):
     # parse parameters
     params = await request.json()
     query = params['query']
+    origin_query = params['translated']
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
@@ -227,11 +228,11 @@ async def retrieval_chat(request: Request):
 
     # non-stream mode
     if not stream:
-        response = chatbot.predict(query=query, config=config)
+        response = chatbot.predict(query=query, origin_query=origin_query, config=config)
         formatted_response = response.replace('\n', '<br/>')
         return formatted_response
     # stream mode
-    generator, link = chatbot.predict_stream(query=query, config=config)
+    generator, link = chatbot.predict_stream(query=query, origin_query=origin_query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
