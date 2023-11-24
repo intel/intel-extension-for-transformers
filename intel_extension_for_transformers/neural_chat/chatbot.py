@@ -17,7 +17,6 @@
 """Neural Chat Chatbot API."""
 
 import os
-from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
@@ -144,6 +143,7 @@ def finetune_model(config: BaseFinetuningConfig):
     """
 
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
+    from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
     finetuning.finetune()
 
