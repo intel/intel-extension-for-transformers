@@ -95,15 +95,14 @@ def generate_dummy_past_key_values(config, input_bs):
         num_key_value_heads = normalized_config.multi_query_group_num
 
     if config.model_type == "bloom":
-        pkv = ()
-        for nb_pkv in range(nb_pkv):
-            if nb_pkv % 2 == 0:
-                new_shape = [input_bs * num_key_value_heads, d_k, 0]
-            else:
-                new_shape = [input_bs * num_key_value_heads, 0, d_k]
-            pkv = pkv + (torch.zeros(size=new_shape),)
-            past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
-            return past_key_values
+        shape_key = (input_bs * num_attention_heads, d_k, 0)
+        shape_value = (input_bs * num_attention_heads, 0, d_k)
+        key = torch.empty(size=shape_key)
+        value = torch.empty(size=shape_value)
+        past_key_values = tuple(
+            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv)) for _ in range(num_layers)
+        )
+        return past_key_values
     elif config.model_type == "qwen":
         new_shape = [input_bs, 0, num_key_value_heads, d_k]
     elif config.model_type == "chatglm":
