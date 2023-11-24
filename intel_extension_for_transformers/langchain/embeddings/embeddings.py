@@ -19,9 +19,9 @@ import logging
 from typing import Any, Dict, List, Optional
 from .optimized_instructor_embedding import OptimizedInstructior
 from .optimized_sentence_transformers import OptimizedSentenceTransformer
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
-from langchain_core.embeddings import Embeddings
-from langchain_core.pydantic_v1 import BaseModel, Extra, Field
+langchain_core = LazyImport("langchain_core")
 
 DEFAULT_MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"
 DEFAULT_INSTRUCT_MODEL = "hkunlp/instructor-large"
@@ -38,7 +38,7 @@ DEFAULT_QUERY_BGE_INSTRUCTION_ZH = "为这个句子生成表示以用于检索�
 logger = logging.getLogger(__name__)
 
 
-class HuggingFaceEmbeddings(BaseModel, Embeddings):
+class HuggingFaceEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core.embeddings.Embeddings):
     """HuggingFace sentence_transformers embedding models.
 
     To use, you should have the ``sentence_transformers`` python package installed.
@@ -64,9 +64,9 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
     cache_folder: Optional[str] = None
     """Path to store models. 
     Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
-    encode_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass when calling the `encode` method of the model."""
     multi_process: bool = False
     """Run encode() on multiple GPUs."""
@@ -90,7 +90,7 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
+        extra = langchain_core.pydantic_v1.Extra.forbid
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model.
@@ -113,7 +113,7 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
 
         return embeddings.tolist()
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> List[float]: 
         """Compute query embeddings using a HuggingFace transformer model.
 
         Args:
@@ -125,7 +125,7 @@ class HuggingFaceEmbeddings(BaseModel, Embeddings):
         return self.embed_documents([text])[0]
 
 
-class HuggingFaceBgeEmbeddings(BaseModel, Embeddings):
+class HuggingFaceBgeEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core.embeddings.Embeddings):
     """HuggingFace BGE sentence_transformers embedding models.
 
     To use, you should have the ``sentence_transformers`` python package installed.
@@ -151,9 +151,9 @@ class HuggingFaceBgeEmbeddings(BaseModel, Embeddings):
     cache_folder: Optional[str] = None
     """Path to store models.
     Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
-    encode_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass when calling the `encode` method of the model."""
     query_instruction: str = DEFAULT_QUERY_BGE_INSTRUCTION_EN
     """Instruction to use for embedding query."""
@@ -179,7 +179,7 @@ class HuggingFaceBgeEmbeddings(BaseModel, Embeddings):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
+        extra = langchain_core.pydantic_v1.Extra.forbid
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model.
@@ -209,7 +209,7 @@ class HuggingFaceBgeEmbeddings(BaseModel, Embeddings):
         )
         return embedding.tolist()
 
-class HuggingFaceInstructEmbeddings(BaseModel, Embeddings):
+class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langchain_core.embeddings.Embeddings):
     """Wrapper around sentence_transformers embedding models.
 
     To use, you should have the ``sentence_transformers``
@@ -236,9 +236,9 @@ class HuggingFaceInstructEmbeddings(BaseModel, Embeddings):
     cache_folder: Optional[str] = None
     """Path to store models. 
     Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable."""
-    model_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    model_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass to the model."""
-    encode_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    encode_kwargs: Dict[str, Any] = langchain_core.pydantic_v1.Field(default_factory=dict)
     """Keyword arguments to pass when calling the `encode` method of the model."""
     embed_instruction: str = DEFAULT_EMBED_INSTRUCTION
     """Instruction to use for embedding documents."""
@@ -276,7 +276,7 @@ class HuggingFaceInstructEmbeddings(BaseModel, Embeddings):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
+        extra = langchain_core.pydantic_v1.Extra.forbid
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace instruct model.

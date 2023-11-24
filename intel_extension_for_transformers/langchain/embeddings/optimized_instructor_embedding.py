@@ -19,16 +19,18 @@ import os
 import json
 import logging
 from collections import OrderedDict
-from InstructorEmbedding import INSTRUCTOR, INSTRUCTOR_Transformer, INSTRUCTOR_Pooling, import_from_string
 from intel_extension_for_transformers.transformers import OptimizedModel
-from sentence_transformers import models
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from transformers import T5Config, MT5Config
 
 from .optimized_sentence_transformers import OptimzedTransformer
 
+sentence_transformers = LazyImport("sentence_transformers")
+InstructorEmbedding = LazyImport("InstructorEmbedding")
+
 logger = logging.getLogger(__name__)
 
-class OptimizedInstructiorTransformer(INSTRUCTOR_Transformer):
+class OptimizedInstructiorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer):
     def __init__(self, *args, **kwargs):
         """Initialize the OptimizedInstructiorTransformer."""
         super().__init__(*args, **kwargs)
@@ -60,17 +62,17 @@ class OptimizedInstructiorTransformer(INSTRUCTOR_Transformer):
                                                              cache_dir=cache_dir, 
                                                              **model_args)
 
-class OptimizedInstructior(INSTRUCTOR):
+class OptimizedInstructior(InstructorEmbedding.INSTRUCTOR):
     def __init__(self, *args, **kwargs):
         """Initialize the OptimizedInstructior."""
         super().__init__(*args, **kwargs)
 
-    def _load_auto_model(self, model_name_or_path):
+    def _load_auto_model(self, model_name_or_path): # pragma: no cover
         """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(model_name_or_path)
-        pooling_model = models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
+        pooling_model = sentence_transformers.models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
     
     def _load_sbert_model(self, model_path):
@@ -101,9 +103,9 @@ class OptimizedInstructior(INSTRUCTOR):
                 logger.info('load Optimized InstructiorTransformer')
                 module_class = OptimizedInstructiorTransformer
             elif module_config['idx']==1:
-                module_class = INSTRUCTOR_Pooling
+                module_class = InstructorEmbedding.INSTRUCTOR_Pooling
             else:
-                module_class = import_from_string(module_config['type'])
+                module_class = InstructorEmbedding.import_from_string(module_config['type'])
             module = module_class.load(os.path.join(model_path, module_config['path']))
             modules[module_config['name']] = module
 

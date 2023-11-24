@@ -20,11 +20,3 @@ from .embeddings import (
     HuggingFaceBgeEmbeddings,
     HuggingFaceInstructEmbeddings
 )
-from .optimized_sentence_transformers import (
-    OptimzedTransformer, 
-    OptimizedSentenceTransformer
-)
-from .optimized_instructor_embedding import (
-    OptimizedInstructiorTransformer,
-    OptimizedInstructior
-)
