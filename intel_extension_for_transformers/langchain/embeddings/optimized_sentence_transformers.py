@@ -140,7 +140,10 @@ class OptimzedTransformer(models.Transformer):
         elif isinstance(config, MT5Config):
             self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, config=config, cache_dir=cache_dir, **model_args)
+            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, 
+                                                             config=config, 
+                                                             cache_dir=cache_dir, 
+                                                             **model_args)
     
     @staticmethod
     def load(input_path: str):
@@ -186,7 +189,10 @@ class OptimizedSentenceTransformer(SentenceTransformer):
         pooling_model = models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
     
-    def save(self, path: str, model_name: Optional[str] = None, create_model_card: bool = True, train_datasets: Optional[List[str]] = None):
+    def save(self, path: str, 
+             model_name: Optional[str] = None, 
+             create_model_card: bool = True, 
+             train_datasets: Optional[List[str]] = None):
         """
         Saves all elements for this seq. sentence embedder into different sub-folders
         :param path: Path on disc

@@ -55,7 +55,10 @@ class OptimizedInstructiorTransformer(INSTRUCTOR_Transformer):
         elif isinstance(config, MT5Config):
             self._load_mt5_model(model_name_or_path, config, cache_dir, **model_args)
         else:
-            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, config=config, cache_dir=cache_dir, **model_args)
+            self.auto_model = OptimizedModel.from_pretrained(model_name_or_path, 
+                                                             config=config, 
+                                                             cache_dir=cache_dir, 
+                                                             **model_args)
 
 class OptimizedInstructior(INSTRUCTOR):
     def __init__(self, *args, **kwargs):
