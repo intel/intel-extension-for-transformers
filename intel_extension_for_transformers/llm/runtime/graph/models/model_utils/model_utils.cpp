@@ -1175,6 +1175,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     ctx->beam_search = true;
     ctx->beam_size = params.beam_size;
     ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  } else {
+    ctx->kv_n_ctx_block = ctx->batch_size;
   }
   const model_archs arch = params.arch;
 

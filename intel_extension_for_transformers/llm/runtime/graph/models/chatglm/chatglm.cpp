@@ -45,8 +45,6 @@
 //   - n_threads: number of threads to use
 //
 
-static int flag = 0;
-static int first_tokens_size = 0;
 static bool chatglm_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
                                         const int n_threads) {
   const int64_t t_start_us = ne_time_us();
@@ -66,6 +64,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
     n_padding.push_back((inputs + i)->n_padding);
     if (no_padding && (inputs + i)->n_padding != 0) no_padding = false;
   }
+  const int first_tokens_size = inputs->n_prompt_tokens;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -78,11 +77,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;
   const int n_keep = lctx.n_keep;
-
-  if (flag == 0) {
-    first_tokens_size = N;
-    flag++;
-  }
 
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
@@ -141,13 +135,15 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
                      cur->nb[1] * N, 0);  // [qlen * bs, 3 * hidden]
 
       ne_set_name(query_layer, "query_layer");
-      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);
+      query_layer =
+          ne_rope_with_padding_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size, n_padding.data());
       query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [bs, heads, qlen, head_size]
 
       ne_tensor* key_layer =
           ne_view_4d(ctx0, cur, head_size, num_attention_heads, qlen, batch_size, 3 * head_size * ne_element_size(cur),
-                     cur->nb[1], cur->nb[1] * qlen, head_size * ne_element_size(cur));
-      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 4, first_tokens_size);  // [qlen, heads, head_size]
+                     cur->nb[1], cur->nb[1] * qlen, head_size * ne_element_size(cur));  // [bs, qlen, heads, head_size]
+      key_layer =
+          ne_rope_with_padding_inplace(ctx0, key_layer, n_past, rope_dim, 4, first_tokens_size, n_padding.data());
 
       ne_tensor* value_layer = ne_view_4d(ctx0, cur, head_size, num_attention_heads, qlen, batch_size,
                                           3 * head_size * ne_element_size(cur), cur->nb[1], cur->nb[1] * qlen,

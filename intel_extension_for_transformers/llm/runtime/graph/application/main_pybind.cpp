@@ -127,6 +127,7 @@ class Model {
   bool token_eos = false;
   long int generate_count = 0;
   std::vector<uint32_t> padding_count;
+  uint32_t n_prompt_tokens = 0;
 
   std::vector<std::vector<model_token>> beam_generate(const std::vector<std::vector<model_token>>& input_ids);
   std::vector<model_token> post_process(const float* logits);
@@ -209,6 +210,7 @@ void Model::reinit() {
   ctx->t_sample_us = 0;
   generate_count = 0;
   padding_count.clear();
+  n_prompt_tokens = 0;
 }
 
 bool Model::check_input_and_count_padding(const std::vector<std::vector<model_token>>& input_ids) {
@@ -220,6 +222,7 @@ bool Model::check_input_and_count_padding(const std::vector<std::vector<model_to
     return true;
   } else if (input_ids.size() == 1) {
     padding_count = {0};
+    n_prompt_tokens = input_ids[0].size();
     return true;
   } else {  // multi-batch inputs (first token)
     MODEL_ASSERT(input_ids.size() == ctx->batch_size);
@@ -240,6 +243,8 @@ bool Model::check_input_and_count_padding(const std::vector<std::vector<model_to
       if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
       padding_count.push_back(std::distance(input_ids[bs].begin(), iter));
     }
+    // shoule be same in static batching inference
+    n_prompt_tokens = input_ids[0].size();
     return true;
   }
 }
@@ -309,7 +314,7 @@ const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_t
     inputs.push_back({
         /*.tokens              =*/curr_input_ids[bs].data(),
         /*.n_tokens           =*/(uint32_t)curr_input_ids[bs].size(),
-        /*.n_prompt_tokens    =*/0,
+        /*.n_prompt_tokens    =*/n_prompt_tokens,
         /*.n_past             =*/(uint32_t)n_past,
         /*.n_total            =*/(uint32_t)n_total,
         /*.request_idx        =*/bs,

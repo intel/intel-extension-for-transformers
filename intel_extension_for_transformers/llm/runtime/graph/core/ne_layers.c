@@ -2967,8 +2967,10 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 // ne_rope
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                               int prompt_size, bool inplace, int n_keep, struct ne_tensor* cossin) {
+                               int prompt_size, bool inplace, int n_keep, struct ne_tensor* cossin, int* n_padding,
+                               bool padding_left) {
   NE_ASSERT(n_past >= 0 || n_keep >= 0);
+  NE_ASSERT(padding_left);
   bool is_node = false;
 
   if (!inplace && a->grad) {
@@ -2979,13 +2981,22 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5, NE_SIZE_CALC);
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5 + bs, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
   ((int32_t*)b->data)[3] = prompt_size;
   ((int32_t*)b->data)[4] = n_keep;  // set to non-negative value to enable shift mode
+  // store n_padding (chatglm position ids)
+  for (int i = 0; i < bs; ++i) {
+    if (n_padding == NULL) {
+      ((int32_t*)b->data)[5 + i] = 0;
+    } else {
+      ((int32_t*)b->data)[5 + i] = *(n_padding + i);
+    }
+  }
 
   ne_scratch_load(ctx);
 
@@ -3000,17 +3011,17 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
 struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                           int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, NULL, true);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                                   int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL);
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, NULL, true);
 }
 
 struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims, int mode,
                                         int prompt_size, int n_keep, struct ne_tensor* cossin) {
-  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin);
+  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin, NULL, true);
 }
 
 // ne_rope_back
@@ -3043,6 +3054,16 @@ struct ne_tensor* ne_rope_back(struct ne_context* ctx, struct ne_tensor* a, int 
   result->src1 = b;
 
   return result;
+}
+
+struct ne_tensor* ne_rope_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
+                                       int prompt_size, int* n_padding) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, n_padding, true);
+}
+
+struct ne_tensor* ne_rope_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims,
+                                               int mode, int prompt_size, int* n_padding) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, n_padding, true);
 }
 
 // ne_alibi
@@ -7835,8 +7856,9 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
   }
+  const int bs = src0->ne[3];
   NE_ASSERT(src1->type == NE_TYPE_I32);
-  NE_ASSERT(ne_nelements(src1) == 5);  // 5 params
+  NE_ASSERT(ne_nelements(src1) == 5 + bs);  // 5 + bs params
 
   static const float freq_base = 10000.0f;
   static const float freq_scale = 1.0f;
@@ -7879,6 +7901,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   const bool is_shift = n_keep >= 0;
   NE_ASSERT(("RoPE shift not supported!", !is_shift));
 
+  NE_ASSERT(ne3 == bs);
   for (int64_t i3 = 0; i3 < ne3; i3++) {
     for (int64_t i2 = (skip ? n_past : 0); i2 < ne2; i2++) {
       const int64_t p = skip ? i2 : n_past + i2;
@@ -7890,7 +7913,9 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
         // only for glm when mode == 4
         if (is_glm) {
-          theta = MIN(p, prompt_size - 2);
+          const int64_t n_padding = ((int32_t*)src1->data)[5 + i3];
+          // position ids
+          theta = MIN(MAX(p - n_padding, 0), prompt_size - 2 - n_padding);
           float block_theta = MAX(p - (prompt_size - 2), 0);
           for (int64_t i0 = 0; i0 < ne0 / 4; i0++) {
             const float cos_theta = cosf(theta);
