@@ -210,7 +210,7 @@ if __name__ == "__main__":
         batch_size=script_args.batch_size,
         mini_batch_size=script_args.mini_batch_size,
         gradient_accumulation_steps=script_args.gradient_accumulation_steps,
-        optimize_device_cache=True,
+        optimize_device_cache=False,
         early_stopping=script_args.early_stopping,
         target_kl=script_args.target_kl,
         ppo_epochs=script_args.ppo_epochs,

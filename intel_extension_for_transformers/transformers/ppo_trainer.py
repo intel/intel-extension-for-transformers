@@ -78,7 +78,10 @@ def get_global_statistics(
     Computes element-wise mean and variance of the tensor across processes. Reference:
     https://github.com/OpenLMLab/MOSS-RLHF/blob/40b91eb2f2b71b16919addede0341d2bef70825d/utils.py#L57C1-L73C75
     """
-    xs = xs.to(accelerator.device)
+    if accelerator.device.type != "hpu":
+        xs = xs.to(accelerator.device)
+    else:
+        xs = xs.to("hpu")
     sum_and_count = torch.tensor(
         [xs.sum(), (xs.numel() if mask is None else mask.sum())], device=xs.device
     )
@@ -517,6 +520,8 @@ class PPOTrainer(PyTorchModelHubMixin):
             self.current_device = self.accelerator.device
         else:
             self.current_device = torch.device("cuda:0")
+        if self.accelerator.device.type == "hpu":
+            self.current_device = torch.device("hpu:0")
 
         PPODecorators.optimize_device_cache = self.config.optimize_device_cache
 
@@ -1161,7 +1166,7 @@ class PPOTrainer(PyTorchModelHubMixin):
 
         for k, v in stats.items():
             if isinstance(v, torch.Tensor):
-                dist.all_reduce(v.to(self.accelerator.device), dist.ReduceOp.SUM)
+                dist.all_reduce(v.to(self.current_device), dist.ReduceOp.SUM)
                 v /= self.accelerator.num_processes
             stats[k] = v
         return stats
