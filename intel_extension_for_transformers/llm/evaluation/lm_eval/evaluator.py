@@ -164,8 +164,8 @@ def evaluate(model,
         limit=limit,
         bootstrap_iters=bootstrap_iters,
         decontamination_ngrams_path=decontamination_ngrams_path,
-        write_out=write_out,
-        output_base_path=output_base_path
+        # write_out=write_out,
+        # output_base_path=output_base_path
     )
 
     print(make_table(results))

@@ -31,6 +31,13 @@ from transformers import BatchEncoding
 from lm_eval import utils
 from lm_eval.base import BaseLM
 
+from intel_extension_for_transformers.transformers.utils.utility import (
+    logger,
+    LazyImport,
+    generate_dummy_past_key_values,
+    get_example_inputs_for_trace,
+)
+
 TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
 
 _DeviceMapping = NewType("DeviceMapping", Mapping[str, Union[int, str, torch.device]])
@@ -681,8 +688,14 @@ class AutoCausalLM(HuggingFaceAutoLM):
             input_bs, input_len = inputs.shape
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
-        output = self.model(inputs) if self.model_format != "onnx" else \
-                self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
+        if 'falcon' in self.model.config.model_type:
+            attention_mask = torch.ones(inputs.shape[0], inputs.shape[1]+1)
+            attention_mask[:,0] = 0
+            past_key_values = generate_dummy_past_key_values(self.batch_size, self.model)
+            output = self.model(inputs, attention_mask, past_key_values)
+        else:
+            output = self.model(inputs) if self.model_format != "onnx" else \
+                    self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):
             return output[0]
         return output["logits"]
