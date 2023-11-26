@@ -3,9 +3,7 @@ import os
 import shutil
 import torch
 import unittest
-from intel_extension_for_transformers.optimization.modeling import (
-    INCModelForSeq2SeqLM,
-)
+from intel_extension_for_transformers.transformers.modeling.modeling_seq2seq import INCModelForSeq2SeqLM
 from neural_compressor import PostTrainingQuantConfig, quantization
 from optimum.intel.neural_compressor import INCConfig
 from optimum.exporters import TasksManager
@@ -22,10 +20,10 @@ MODEL_NAME = "t5-small"
 
 def get_seq2seq_example_inputs(model):
     onnx_config_class = TasksManager.get_exporter_config_constructor(model_type=model.config.model_type, exporter="onnx", task="text2text-generation")
-    onnx_config = onnx_config_class(model.config, use_past=model.config.use_cache)
+    onnx_config = onnx_config_class(model.config, use_past=model.config.use_cache, use_past_in_inputs=model.config.use_cache)
     encoder_onnx_config = onnx_config.with_behavior("encoder")
     decoder_onnx_config = onnx_config.with_behavior("decoder", use_past=False)
-    decoder_with_past_onnx_config = onnx_config.with_behavior("decoder", use_past=True)
+    decoder_with_past_onnx_config = onnx_config.with_behavior("decoder", use_past=True, use_past_in_inputs=model.config.use_cache)
     encoder_dummy_inputs = encoder_onnx_config.generate_dummy_inputs(framework="pt")
     decoder_dummy_inputs = decoder_onnx_config.generate_dummy_inputs(framework="pt")
     decoder_dummy_inputs["encoder_outputs"] = tuple(decoder_dummy_inputs["encoder_outputs"][0:1])
