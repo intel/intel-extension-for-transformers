@@ -74,7 +74,7 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
-RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH")+'/'
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
 
 
 @router.post("/v1/aiphotos/askdoc/upload_link")
