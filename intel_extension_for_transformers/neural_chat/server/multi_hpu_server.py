@@ -47,6 +47,24 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-bm", "--base_model_path", type=str, default="")
     parser.add_argument("-pm", "--peft_model_path", type=str, default="")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Server host ip address",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=80,
+        help="Server port number",
+    )
+    parser.add_argument(
+        "--api_list",
+        type=list,
+        default=None,
+        help="Restful API support list",
+    )
     # Add arguments for temperature, top_p, top_k and repetition_penalty
     parser.add_argument(
         "--temperature",
