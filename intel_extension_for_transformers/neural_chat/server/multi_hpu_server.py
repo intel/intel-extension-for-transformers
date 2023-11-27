@@ -61,7 +61,8 @@ def parse_args():
     )
     parser.add_argument(
         "--api_list",
-        type=list,
+        type=str,
+        nargs='+',
         default=None,
         help="Restful API support list",
     )
@@ -276,13 +277,14 @@ def main():
     print("\n"*3)
 
     # init api
-    api_router = setup_router(args.api_list, chatbot)
-    app.include_router(api_router)
+    if args.local_rank in [-1, 0]:
+        api_router = setup_router(args.api_list, chatbot)
+        app.include_router(api_router)
 
-    try:
-        uvicorn.run(app, host=args.host, port=args.port)
-    except Exception as e:
-        print(f"Error starting uvicorn: {str(e)}")
+        try:
+            uvicorn.run(app, host=args.host, port=args.port)
+        except Exception as e:
+            print(f"Error starting uvicorn: {str(e)}")
 
     # for idx, instruction in enumerate(args.instructions):
     #     set_seed(args.seed)

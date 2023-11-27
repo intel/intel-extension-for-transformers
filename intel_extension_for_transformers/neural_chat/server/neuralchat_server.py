@@ -198,7 +198,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         config = get_config(config_file)
         if self.init(config):
             logging.basicConfig(filename=log_file, level=logging.INFO)
-            try:
-                uvicorn.run(app, host=config.host, port=config.port)
-            except Exception as e:
-                print(f"Error starting uvicorn: {str(e)}")
+            use_deepspeed = config.get("use_deepspeed", False)
+            if not use_deepspeed:
+                try:
+                    uvicorn.run(app, host=config.host, port=config.port)
+                except Exception as e:
+                    print(f"Error starting uvicorn: {str(e)}")
