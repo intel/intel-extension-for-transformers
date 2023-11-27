@@ -569,9 +569,6 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
     }
   }
   return JblasSuccess;
-
-  assert(0);
-  return JblasNotSupport;
 }
 
 template <bool _IS_SYM, typename _ST, typename _DST_T>
