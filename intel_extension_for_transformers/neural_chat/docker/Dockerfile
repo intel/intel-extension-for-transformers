@@ -33,6 +33,8 @@ ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
+ARG SSHD_PORT=22
+ENV SSHD_PORT ${SSHD_PORT}
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
@@ -54,7 +56,7 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && \
     pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
@@ -69,8 +71,11 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
         && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
-        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-EXPOSE 22
+        && echo "Port "$SSHD_PORT"" >> /etc/ssh/sshd_config \
+        && echo "Host *" >> /etc/ssh/ssh_config \
+        && echo "  Port "$SSHD_PORT"" >> /etc/ssh/ssh_config \
+        && echo "  StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+EXPOSE ${SSHD_PORT}
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
@@ -103,8 +108,6 @@ RUN cd /intel-extension-for-transformers && \
     pip install -r requirements.txt && \
     pip install -v .
 
-COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
-
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
@@ -114,7 +117,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.12 origin/1.12.0 && \
-    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    git apply /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e .
 
 # Install dependency

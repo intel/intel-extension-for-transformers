@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import io
 import os
 import re
@@ -31,6 +32,7 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
+from .photoai_services import check_user_ip
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -72,6 +74,7 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
 
 
 @router.post("/v1/aiphotos/askdoc/upload_link")
@@ -79,28 +82,60 @@ async def retrieval_upload_link(request: Request):
     global plugins
     params = await request.json()
     link_list = params['link_list']
-    knowledge_base_id = params['knowledge_base_id']
 
     user_id = request.client.host
-    logger.info(f'[askdoc - create] user id is: {user_id}')
+    logger.info(f'[askdoc - upload_link] user id is: {user_id}')
+    res = check_user_ip(user_id)
+    logger.info("[askdoc - upload_link] "+str(res))
 
-    persist_path = f"./photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id + '/persist_dir'
-    cur_path = Path(persist_path)
-    cur_path.mkdir(parents=True, exist_ok=True)
-    if not os.path.exists(persist_path):
-        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
-            Please check kb_id and save path again."
+    # append link into existed kb
+    if 'knowledge_base_id' in params.keys():
+        print(f"[askdoc - upload_link] append")
+        knowledge_base_id = params['knowledge_base_id']
+        persist_path = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id + '/persist_dir'
+        if not os.path.exists(persist_path):
+            return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+                Please check kb_id and save path again."
 
-    try:
-        print("[askdoc - upload_link] starting to append local db...")
-        instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=link_list, persist_path=persist_path)
-        print(f"[askdoc - upload_link] kb appended successfully")
-    except Exception as e:
-        logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
-        return Response(content="Error occurred while uploading links.", status_code=500)
-    return "Succeed"
+        try:
+            print("[askdoc - upload_link] starting to append local db...")
+            instance = plugins['retrieval']["instance"]
+            instance.append_localdb(append_path=link_list, persist_path=persist_path)
+            print(f"[askdoc - upload_link] kb appended successfully")
+        except Exception as e:
+            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            return Response(content="Error occurred while uploading links.", status_code=500)
+        return {"Succeed"}
+    
+    # create new kb with link
+    else:
+        print(f"[askdoc - upload_link] create")
+        import uuid
+        kb_id = f"kb_{str(uuid.uuid1())[:8]}"
+        path_prefix = RETRIEVAL_FILE_PATH
 
+        # create new upload path dir
+        cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
+        os.makedirs(path_prefix, exist_ok=True)
+        cur_path.mkdir(parents=True, exist_ok=True)
+        
+        user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
+        user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
+        user_upload_dir.mkdir(parents=True, exist_ok=True)
+        user_persist_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[askdoc - upload_link] upload path: {user_upload_dir}")
+        
+        try:
+            # get retrieval instance and reload db with new knowledge base
+            print("[askdoc - upload_link] starting to create local db...")
+            instance = plugins['retrieval']["instance"]
+            instance.create(input_path=link_list, persist_dir=user_persist_dir)
+            print(f"[askdoc - upload_link] kb created successfully")
+        except Exception as e:
+            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            return "Error occurred while uploading files."
+        return {"knowledge_base_id": kb_id}
+        
 
 @router.post("/v1/aiphotos/askdoc/create")
 async def retrieval_create(request: Request,
@@ -116,7 +151,8 @@ async def retrieval_create(request: Request,
 
     import uuid
     kb_id = f"kb_{str(uuid.uuid1())[:8]}"
-    path_prefix = "./photoai_retrieval_docs/"
+    path_prefix = RETRIEVAL_FILE_PATH
+
     cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
     os.makedirs(path_prefix, exist_ok=True)
     cur_path.mkdir(parents=True, exist_ok=True)
@@ -159,8 +195,7 @@ async def retrieval_append(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - append] user id is: {user_id}')
-
-    path_prefix = f"./photoai_retrieval_docs/"+user_id+'-'+knowledge_base_id
+    path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
@@ -200,6 +235,7 @@ async def retrieval_chat(request: Request):
     # parse parameters
     params = await request.json()
     query = params['query']
+    origin_query = params['translated']
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
@@ -207,15 +243,15 @@ async def retrieval_chat(request: Request):
                 stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
 
-    path_prefix = "./photoai_retrieval_docs/"
+    path_prefix = RETRIEVAL_FILE_PATH
     cur_path = Path(path_prefix) / "default" / "persist_dir"
     os.makedirs(path_prefix, exist_ok=True)
     cur_path.mkdir(parents=True, exist_ok=True)
 
     if kb_id == 'default':
-        persist_dir = "./photoai_retrieval_docs/default/persist_dir"
+        persist_dir = RETRIEVAL_FILE_PATH+"default/persist_dir"
     else:
-        persist_dir = f"./photoai_retrieval_docs/"+user_id+'-'+kb_id+'/persist_dir'
+        persist_dir = RETRIEVAL_FILE_PATH+user_id+'-'+kb_id+'/persist_dir'
     if not os.path.exists(persist_dir):
         return f"Knowledge base id [{kb_id}] does not exist, please check again."
 
@@ -227,11 +263,11 @@ async def retrieval_chat(request: Request):
 
     # non-stream mode
     if not stream:
-        response = chatbot.predict(query=query, config=config)
+        response = chatbot.predict(query=query, origin_query=origin_query, config=config)
         formatted_response = response.replace('\n', '<br/>')
         return formatted_response
     # stream mode
-    generator, link = chatbot.predict_stream(query=query, config=config)
+    generator, link = chatbot.predict_stream(query=query, origin_query=origin_query, config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
@@ -336,4 +372,5 @@ def get_feedback_from_db():
             data_generator(), 
             media_type='text/csv', 
             headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
+
 

@@ -6,3 +6,4 @@ setuptools_scm[toml]>=6.2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
 accelerate
+optimum-intel
