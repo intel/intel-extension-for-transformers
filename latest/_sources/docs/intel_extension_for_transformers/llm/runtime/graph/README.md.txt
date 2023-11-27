@@ -80,6 +80,23 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
+To directly load a GPTQ model, here is the sample code:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ model to local path
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(from_gptq=True, use_cache=True)
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+```
+
 To enable [StreamingLLM for infinite inference](./docs/infinite_inference.html), here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
