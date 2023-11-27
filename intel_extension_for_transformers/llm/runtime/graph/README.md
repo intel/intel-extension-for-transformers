@@ -85,7 +85,8 @@ To directly load a GPTQ model, here is the sample code:
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "TheBloke/Llama-2-7B-Chat-GPTQ"  # or local path to model
+# Download Hugging Face GPTQ model to local path
+model_name = "PATH_TO_MODEL"  # local path to model
 woq_config = WeightOnlyQuantConfig(from_gptq=True, use_cache=True)
 prompt = "Once upon a time, a little girl"
 
