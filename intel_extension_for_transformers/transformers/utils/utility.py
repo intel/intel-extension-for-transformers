@@ -95,9 +95,6 @@ def generate_dummy_past_key_values(input_bs, model):
         num_key_value_heads = normalized_config.multi_query_group_num
     elif hasattr(normalized_config, "num_kv_heads"):
         num_key_value_heads = normalized_config.num_kv_heads
-        
-
-    
 
     if model.config.model_type == "bloom":
         pkv = ()
