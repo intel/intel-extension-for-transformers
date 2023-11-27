@@ -181,54 +181,44 @@ void ln_bwd_run() {
 
     try {
         auto e_esimd_bwd0 = queue.submit([&](handler &cgh) {
-            cgh.parallel_for<test>(
-                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
-                        using ln_bwd_func = ln_bwd_func_t<data_type_y,
-                                data_type_x, data_type_weight, data_type_acc,
-                                test::wg_n, test::wg_m, test::sg_n, test::sg_m,
-                                test::wg_num_m, test::wg_num_n,
-                                test::ln_fused_op_kind>;
+            cgh.parallel_for<test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
+                using ln_bwd_func = ln_bwd_func_t<data_type_y, data_type_x,
+                        data_type_weight, data_type_acc, test::wg_n, test::wg_m,
+                        test::sg_n, test::sg_m, test::wg_num_m, test::wg_num_n,
+                        test::ln_fused_op_kind>;
 
-                        constexpr uint32_t slm_size = ln_bwd_func::slm_size;
-                        constexpr uint32_t barrier_count
-                                = ln_bwd_func::barrier_count;
-                        if constexpr (barrier_count != 0) {
-                            xetla_nbarrier_init<barrier_count>();
-                        }
-                        if constexpr (slm_size != 0) {
-                            xetla_local_init<slm_size>();
-                        }
+                constexpr uint32_t slm_size = ln_bwd_func::slm_size;
+                constexpr uint32_t barrier_count = ln_bwd_func::barrier_count;
+                if constexpr (barrier_count != 0) {
+                    xetla_nbarrier_init<barrier_count>();
+                }
+                if constexpr (slm_size != 0) { xetla_local_init<slm_size>(); }
 
-                        ln_bwd_func::call(item, dy_in, x_in, gamma_in, matrix_m,
-                                matrix_n, matrix_n, buffer_rs, buffer_mu,
-                                dx_out, dgamma_acc, dbeta_acc, buffer_mask,
-                                dx_resAdd_out, dbias_acc, matrix_n,
-                                drop_out_scale_inv, drop_out_prob, grad_in);
-                    });
+                ln_bwd_func::call(item, dy_in, x_in, gamma_in, matrix_m,
+                        matrix_n, matrix_n, buffer_rs, buffer_mu, dx_out,
+                        dgamma_acc, dbeta_acc, buffer_mask, dx_resAdd_out,
+                        dbias_acc, matrix_n, drop_out_scale_inv, drop_out_prob,
+                        grad_in);
+            });
         });
         e_esimd_bwd0.wait();
 
         auto e_esimd_bwd1 = queue.submit([&](handler &cgh) {
-            cgh.parallel_for(
-                    final_range, [=](nd_item<3> item) KERNEL_MAIN {
-                        using ln_bwd_final_func = ln_bwd_final_func_t<
-                                data_type_x, data_type_weight, data_type_acc,
-                                final_wg_n, final_wg_m, final_sg_n, final_sg_m>;
-                        constexpr uint32_t slm_size
-                                = ln_bwd_final_func::slm_size;
-                        constexpr uint32_t barrier_count
-                                = ln_bwd_final_func::barrier_count;
-                        if constexpr (slm_size != 0) {
-                            xetla_local_init<slm_size>();
-                        }
-                        if constexpr (barrier_count != 0) {
-                            xetla_nbarrier_init<barrier_count>();
-                        }
+            cgh.parallel_for(final_range, [=](nd_item<3> item) KERNEL_MAIN {
+                using ln_bwd_final_func = ln_bwd_final_func_t<data_type_x,
+                        data_type_weight, data_type_acc, final_wg_n, final_wg_m,
+                        final_sg_n, final_sg_m>;
+                constexpr uint32_t slm_size = ln_bwd_final_func::slm_size;
+                constexpr uint32_t barrier_count
+                        = ln_bwd_final_func::barrier_count;
+                if constexpr (slm_size != 0) { xetla_local_init<slm_size>(); }
+                if constexpr (barrier_count != 0) {
+                    xetla_nbarrier_init<barrier_count>();
+                }
 
-                        ln_bwd_final_func::call(item, dgamma_acc, dbeta_acc,
-                                dgamma, dbeta, final_mat_m, final_mat_n,
-                                dbias_acc, dbias);
-                    });
+                ln_bwd_final_func::call(item, dgamma_acc, dbeta_acc, dgamma,
+                        dbeta, final_mat_m, final_mat_n, dbias_acc, dbias);
+            });
         });
         e_esimd_bwd1.wait();
     } catch (cl::sycl::exception const &e) {

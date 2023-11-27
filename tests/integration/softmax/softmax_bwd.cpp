@@ -107,25 +107,21 @@ void softmax_bwd_run() {
 
             auto e_softmax_bwd = queue.submit([&](sycl::handler &cgh) {
                 cgh.use_kernel_bundle(exeBundle);
-                cgh.parallel_for<Test>(
-                        nd_range, [=](sycl::nd_item<3> item) KERNEL_MAIN {
-                            using softmax_bwd_func
-                                    = softmax_bwd_test_func<data_type_in,
-                                            data_type_coff_in, data_type_out,
-                                            data_type_acc, wg_n, wg_m, sg_n,
-                                            sg_m>;
-                            constexpr uint32_t barrier_count
-                                    = softmax_bwd_func::barrier_count;
-                            constexpr uint32_t slm_size
-                                    = softmax_bwd_func::slm_size;
+                cgh.parallel_for<
+                        Test>(nd_range, [=](sycl::nd_item<3> item) KERNEL_MAIN {
+                    using softmax_bwd_func = softmax_bwd_test_func<data_type_in,
+                            data_type_coff_in, data_type_out, data_type_acc,
+                            wg_n, wg_m, sg_n, sg_m>;
+                    constexpr uint32_t barrier_count
+                            = softmax_bwd_func::barrier_count;
+                    constexpr uint32_t slm_size = softmax_bwd_func::slm_size;
 
-                            xetla_nbarrier_init<barrier_count>();
-                            xetla_local_init<slm_size>();
+                    xetla_nbarrier_init<barrier_count>();
+                    xetla_local_init<slm_size>();
 
-                            softmax_bwd_func::run(item, buffer_in,
-                                    buffer_coff_in, buffer_out, mat_m, mat_n,
-                                    mat_n, sqrt_dk_inv);
-                        });
+                    softmax_bwd_func::run(item, buffer_in, buffer_coff_in,
+                            buffer_out, mat_m, mat_n, mat_n, sqrt_dk_inv);
+                });
             });
             e_softmax_bwd.wait();
 

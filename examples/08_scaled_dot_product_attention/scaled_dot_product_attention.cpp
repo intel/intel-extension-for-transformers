@@ -240,8 +240,8 @@ void sdp_fwd_run(uint32_t iter) {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
             auto gpu_event = queue.submit([&](handler &cgh) {
-                cgh.parallel_for<class
-                        Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
+                cgh.parallel_for<
+                        class Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                     using namespace gpu::xetla;
                     using namespace gpu::xetla::group;
                     using namespace gpu::xetla::kernel;

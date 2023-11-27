@@ -102,28 +102,23 @@ static void row_reduction_run() {
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
-            cgh.parallel_for<Test>(
-                    nd_range, [=](nd_item<3> item) KERNEL_MAIN {
-                        using row_reduction_func = row_reduction_func_t<
-                                data_type_in, data_type_out, data_type_acc,
-                                data_type_x, data_type_w, data_type_d, wg_n,
-                                wg_m, sg_n, sg_m, is_dynamic, fused_op_kind>;
-                        constexpr uint32_t slm_size
-                                = row_reduction_func::slm_size;
-                        constexpr uint32_t barrier_count
-                                = row_reduction_func::barrier_count;
-                        if constexpr (slm_size != 0) {
-                            xetla_local_init<slm_size>();
-                        }
-                        if constexpr (barrier_count != 0) {
-                            __ESIMD_ENS::named_barrier_init<barrier_count>();
-                        }
+            cgh.parallel_for<Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
+                using row_reduction_func = row_reduction_func_t<data_type_in,
+                        data_type_out, data_type_acc, data_type_x, data_type_w,
+                        data_type_d, wg_n, wg_m, sg_n, sg_m, is_dynamic,
+                        fused_op_kind>;
+                constexpr uint32_t slm_size = row_reduction_func::slm_size;
+                constexpr uint32_t barrier_count
+                        = row_reduction_func::barrier_count;
+                if constexpr (slm_size != 0) { xetla_local_init<slm_size>(); }
+                if constexpr (barrier_count != 0) {
+                    __ESIMD_ENS::named_barrier_init<barrier_count>();
+                }
 
-                        row_reduction_func::call(item, buffer_in, buffer_out,
-                                matrix_m, matrix_n, buffer_w, buffer_x,
-                                buffer_d, buffer_mask, drop_out_prob,
-                                drop_out_scale);
-                    });
+                row_reduction_func::call(item, buffer_in, buffer_out, matrix_m,
+                        matrix_n, buffer_w, buffer_x, buffer_d, buffer_mask,
+                        drop_out_prob, drop_out_scale);
+            });
         });
         e_esimd.wait();
     } catch (cl::sycl::exception const &e) {

@@ -96,8 +96,7 @@ static void data_transformer_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.use_kernel_bundle(exeBundle);
-            cgh.parallel_for<
-                    Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
+            cgh.parallel_for<Test>(nd_range, [=](nd_item<3> item) KERNEL_MAIN {
                 using data_transformer_attr
                         = gpu::xetla::kernel::data_transformer_attr_t<wg_tile_n,
                                 wg_tile_m, sg_tile_n, sg_tile_m>;
