@@ -101,57 +101,101 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
+        plugin_as_service = config.get("plugin_as_service", False)
 
-        # Update plugins based on YAML configuration
-        for plugin_name, plugin_config in plugins.items():
-            yaml_config = config.get(plugin_name, {})
-            if yaml_config.get("enable"):
-                plugin_config["enable"] = True
-                plugin_config["args"] = yaml_config.get("args", {})
+        # plugin as service
+        if plugin_as_service:
+            # register plugin instances
+            for plugin_name, plugin_config in plugins.items():
+                yaml_config = config.get(plugin_name, {})
+                if yaml_config.get("enable"):
+                    plugin_config["enable"] = True
+                    plugin_config["args"] = yaml_config.get("args", {})
+                    if plugin_name == "tts":
+                        from ..pipeline.plugins.audio.tts import TextToSpeech
+                        plugins[plugin_name]['class'] = TextToSpeech
+                    elif plugin_name == "tts_chinese":
+                        from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+                        plugins[plugin_name]['class'] = ChineseTextToSpeech
+                    elif plugin_name == "asr":
+                        from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
+                        plugins[plugin_name]['class'] = AudioSpeechRecognition
+                    elif plugin_name == "retrieval":
+                        from ..pipeline.plugins.retrieval.retrieval_agent import Agent_QA
+                        plugins[plugin_name]['class'] = Agent_QA
+                    elif plugin_name == "cache":
+                        from ..pipeline.plugins.caching.cache import ChatCache
+                        plugins[plugin_name]['class'] = ChatCache
+                    elif plugin_name == "safety_checker":
+                        from ..pipeline.plugins.security.safety_checker import SafetyChecker
+                        plugins[plugin_name]['class'] = SafetyChecker
+                    elif plugin_name == "ner":
+                        from ..pipeline.plugins.ner.ner import NamedEntityRecognition
+                        plugins[plugin_name]['class'] = NamedEntityRecognition
+                    elif plugin_name == "ner_int":
+                        from ..pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
+                        plugins[plugin_name]['class'] = NamedEntityRecognitionINT
+                    elif plugin_name == "face_animation": # pragma: no cover
+                        from ..pipeline.plugins.video.face_animation.sadtalker import SadTalker
+                        plugins[plugin_name]['class'] = SadTalker
+                    else: # pragma: no cover
+                        raise ValueError("NeuralChat Error: Unsupported plugin")
+                    print(f"create {plugin_name} plugin instance...")
+                    print(f"plugin parameters: ", plugin_config["args"])
+                    plugin_config['instance'] = plugins[plugin_name]['class'](plugin_config['args'])
 
-        loading_config = None
-        optimization_config = None
-        yaml_config = config.get("optimization", {})
-        ipex_int8 = yaml_config.get("ipex_int8", False)
-        use_llm_runtime = yaml_config.get("use_llm_runtime", {})
-        optimization_type = yaml_config.get("optimization_type", {})
-        compute_dtype = yaml_config.get("compute_dtype", {})
-        weight_dtype = yaml_config.get("weight_dtype", {})
-        mix_precision_dtype = yaml_config.get("mix_precision_dtype", {})
-        load_in_4bit = yaml_config.get("load_in_4bit", {})
-        bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
-        bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
-        bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
-        loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
-                                            peft_path=peft_model_path)
-        from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
-        if optimization_type == "weight_only":
-            optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
-        elif optimization_type == "mix_precision":
-            optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
-        elif optimization_type == "bits_and_bytes":
-            optimization_config = BitsAndBytesConfig(load_in_4bit=load_in_4bit,
-                                                     bnb_4bit_quant_type=bnb_4bit_quant_type,
-                                                     bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
-                                                     bnb_4bit_compute_dtype=bnb_4bit_compute_dtype)
+        # chatbot as service
+        else:
+            # Update plugins based on YAML configuration
+            for plugin_name, plugin_config in plugins.items():
+                yaml_config = config.get(plugin_name, {})
+                if yaml_config.get("enable"):
+                    plugin_config["enable"] = True
+                    plugin_config["args"] = yaml_config.get("args", {})
+            
+            loading_config = None
+            optimization_config = None
+            yaml_config = config.get("optimization", {})
+            ipex_int8 = yaml_config.get("ipex_int8", False)
+            use_llm_runtime = yaml_config.get("use_llm_runtime", {})
+            optimization_type = yaml_config.get("optimization_type", {})
+            compute_dtype = yaml_config.get("compute_dtype", {})
+            weight_dtype = yaml_config.get("weight_dtype", {})
+            mix_precision_dtype = yaml_config.get("mix_precision_dtype", {})
+            load_in_4bit = yaml_config.get("load_in_4bit", {})
+            bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
+            bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
+            bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
+            loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
+                                                peft_path=peft_model_path)
+            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+            if optimization_type == "weight_only":
+                optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
+            elif optimization_type == "mix_precision":
+                optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
+            elif optimization_type == "bits_and_bytes":
+                optimization_config = BitsAndBytesConfig(load_in_4bit=load_in_4bit,
+                                                        bnb_4bit_quant_type=bnb_4bit_quant_type,
+                                                        bnb_4bit_use_double_quant=bnb_4bit_use_double_quant,
+                                                        bnb_4bit_compute_dtype=bnb_4bit_compute_dtype)
 
-        # Create a dictionary of parameters for PipelineConfig
-        params = {
-            "model_name_or_path": model_name_or_path,
-            "tokenizer_name_or_path": tokenizer_name_or_path,
-            "device": device,
-            "plugins": plugins,
-            "loading_config": loading_config,
-            "optimization_config": optimization_config
-        }
+            # Create a dictionary of parameters for PipelineConfig
+            params = {
+                "model_name_or_path": model_name_or_path,
+                "tokenizer_name_or_path": tokenizer_name_or_path,
+                "device": device,
+                "plugins": plugins,
+                "loading_config": loading_config,
+                "optimization_config": optimization_config
+            }
 
-        pipeline_config = PipelineConfig(**params)
-        self.chatbot = build_chatbot(pipeline_config)
-        # init api
-        api_list = list(task for task in config.tasks_list)
-        api_router = setup_router(api_list, self.chatbot)
-        app.include_router(api_router)
-        return True
+            pipeline_config = PipelineConfig(**params)
+            self.chatbot = build_chatbot(pipeline_config)
+            # init api
+            api_list = list(task for task in config.tasks_list)
+            api_router = setup_router(api_list, self.chatbot)
+            app.include_router(api_router)
+            return True
 
 
     def execute(self, argv: List[str]) -> bool:
