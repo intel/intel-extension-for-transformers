@@ -31,6 +31,7 @@ template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T, JBLAS_ISA>
 class LauncherBase {
  public:
   using GemmCore = _GemmCore_T;
+  static constexpr JBLAS_ISA ISA = _RT_ISA_T;
   using PrologueA = _PrologueA_T<GemmCore, _RT_ISA_T>;
   using PrologueB = _PrologueB_T<GemmCore, _RT_ISA_T>;
   using Epilogue = _Epilogue_T<_RT_ISA_T>;
@@ -121,6 +122,7 @@ template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T, JBLAS_ISA>
 class LauncherKBlock {
  public:
   using GemmCore = _GemmCore_T;
+  static constexpr JBLAS_ISA ISA = _RT_ISA_T;
   using PrologueA = _PrologueA_T<GemmCore, _RT_ISA_T>;
   using PrologueB = _PrologueB_T<GemmCore, _RT_ISA_T>;
   using Epilogue = _Epilogue_T<_RT_ISA_T>;
@@ -281,6 +283,7 @@ template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T, JBLAS_ISA>
 class LauncherIntKBlock {
  public:
   using GemmCore = _GemmCore_T;
+  static constexpr JBLAS_ISA ISA = _RT_ISA_T;
   using PrologueA = _PrologueA_T<GemmCore, _RT_ISA_T>;
   using PrologueB = _PrologueB_T<GemmCore, _RT_ISA_T>;
   using Epilogue = _Epilogue_T<_RT_ISA_T>;
@@ -415,7 +418,6 @@ class LauncherIntKBlock {
     reduceB = utils::cpu_pointer_align(reduceB);
     auto tmp_ = reinterpret_cast<int8_t*>(reduceB + _config.block[1] * tmp_ldsa);
     tmp_ = utils::cpu_pointer_align(tmp_);
-
   }
 };
 }  // namespace gemm

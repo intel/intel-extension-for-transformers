@@ -27,6 +27,7 @@ Abstract:
 #include "data_types.h"
 #include "jblas/jit_blas.h"
 
+
 struct JBLAS_GEMM_DATA_PACKED_PARAMS {
   const float* A = nullptr; /**< address of A (float32 matrix)*/
   const void* B = nullptr;  /**< address of B (packed nbits blob)*/
