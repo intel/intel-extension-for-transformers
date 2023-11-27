@@ -193,6 +193,48 @@ inline int8_t get_s8(int8_t v) {
 }
 
 template <JBLAS_DTYPE S4_T>
+inline void convert_s4_s8_8(int8_t* dstptr, int8_t* srcptr) {
+  auto src32 = *reinterpret_cast<uint32_t*>(srcptr);
+  auto tmp = static_cast<int8_t>(src32 & 0xf) << 4;
+  dstptr[0] = tmp;
+  tmp = static_cast<int8_t>(src32 & 0xf0);
+  dstptr[1] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf00) >> 4);
+  dstptr[2] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf000) >> 8);
+  dstptr[3] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf0000) >> 12);
+  dstptr[4] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf00000) >> 16);
+  dstptr[5] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf000000) >> 20);
+  dstptr[6] = tmp;
+  tmp = static_cast<int8_t>((src32 & 0xf0000000) >> 24);
+  dstptr[7] = tmp;
+}
+
+template <>
+inline void convert_s4_s8_8<JBLAS_DTYPE::S4_FULLRANGE>(int8_t* dstptr, int8_t* srcptr) {
+  auto src32 = *reinterpret_cast<uint32_t*>(srcptr);
+  auto tmp = static_cast<int8_t>(src32 & 0xf);
+  dstptr[0] = tmp - 8;
+  tmp = static_cast<int8_t>(src32 & 0xf0) >> 4;
+  dstptr[1] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf00) >> 8);
+  dstptr[2] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf000) >> 12);
+  dstptr[3] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf0000) >> 16);
+  dstptr[4] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf00000) >> 20);
+  dstptr[5] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf000000) >> 24);
+  dstptr[6] = tmp - 8;
+  tmp = static_cast<int8_t>((src32 & 0xf0000000) >> 28);
+  dstptr[7] = tmp - 8;
+}
+
+template <JBLAS_DTYPE S4_T>
 inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst) {
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j += 2) {

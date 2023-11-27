@@ -39,16 +39,19 @@ class ActivationBase {
 
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
-    auto aptr = const_cast<AType*>(_param.A);
-    if (k_size % _GemmCore_T::KTILE == 0 && m_size >= _GemmCore_T::MTILE) {
-      *dstptr = aptr + m_offset * _param.lda + k_offset;
+    auto aptr = const_cast<AType*>(_param.A) + m_offset * _param.lda + k_offset;
+    auto alignedptr = utils::cpu_pointer_align(aptr);
+    bool use_rawptr = k_size % _GemmCore_T::KTILE == 0 && m_size >= _GemmCore_T::MTILE;
+    use_rawptr = use_rawptr && (alignedptr == aptr);
+    if (use_rawptr) {
+      *dstptr = aptr;
       *dststep = _param.lda;
       return JblasSuccess;
     } else {
       auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
       *dststep = k_pad;
-      return kernel::wrapper::Memcpy2D::forward<JblasNoSIMD, AType, AType>(aptr + m_offset * _param.lda + k_offset,
-                                                                           *dstptr, m_size, k_size, _param.lda, k_pad);
+      return kernel::wrapper::Memcpy2D::forward<JblasNoSIMD, AType, AType>(aptr, *dstptr, m_size, k_size, _param.lda,
+                                                                           k_pad);
     }
   }
 };
@@ -166,9 +169,9 @@ class ActivationKBlockQuantize {
                    int k_offset, void* tmpcache, size_t cachesize) {
     auto quan = _param.quan;
     auto aptr = quan->template ZPtr<AType>();
-    if (aptr == nullptr) { // optional
+    if (aptr == nullptr) {  // optional
       *dstptr = nullptr;
-	  return JblasSuccess;
+      return JblasSuccess;
     }
     int kele = utils::updiv(k_size, quan->kblock);
     *dststep = kele;
@@ -211,7 +214,11 @@ class ActivationKBlockBase : public ActivationBase<_GemmCore_T, ISA_T> {
   using AType = typename _GemmCore_T::AType;
   using SType = storage::gemm::StorageReduce;
   using SRCType = SRC_T;
-  using Param = typename ActivationBase<_GemmCore_T, ISA_T>::Param;
+  struct Param {
+    const AType* A;
+    int lda;
+    SType* reduce;
+  };
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
@@ -221,7 +228,8 @@ class ActivationKBlockBase : public ActivationBase<_GemmCore_T, ISA_T> {
     return tmp;
   }
 
-  void run(const Param& _param, SType* stor, int m, int k, ThreadProblem& thdp) {
+  void run(const Param& _param, ThreadProblem& thdp) {
+    auto stor = _param.reduce;
     if (thdp.valid) {
       // min max
       auto srcptr = const_cast<SRC_T*>(_param.A) + thdp.loc[0] * _param.lda + thdp.loc[1];
@@ -233,13 +241,42 @@ class ActivationKBlockBase : public ActivationBase<_GemmCore_T, ISA_T> {
     }
   }
 
-  JBLAS_CODE reduce(const Param& _param, SType* stor, int m, int k, jblas::parallel::IThreading* threading) {
-    auto paral = Parallel({threading->num_threads(), m, k, 1, stor->kblock});
+  JBLAS_CODE reduce(const Param& _param, int m, int k, int kblock, jblas::parallel::IThreading* threading) {
+    auto paral = Parallel({threading->num_threads(), m, k, 1, kblock});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp{tidx};
       paral.getIndex(thdp);
-      if (thdp.valid) run(_param, stor, m, k, thdp);
+      if (thdp.valid) run(_param, thdp);
     });
+    return JblasSuccess;
+  }
+
+  JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
+                           int k_offset, void* tmpcache, size_t cachesize) {
+    auto aptr = const_cast<AType*>(_param.A) + m_offset * _param.lda + k_offset;
+    auto alignedptr = utils::cpu_pointer_align(aptr);
+    bool use_rawptr = k_size % _GemmCore_T::KTILE == 0 && m_size >= _GemmCore_T::MTILE;
+    use_rawptr = use_rawptr && (alignedptr == aptr);
+    if (use_rawptr) {
+      *dstptr = aptr;
+      *dststep = _param.lda;
+      return JblasSuccess;
+    } else {
+      auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
+      *dststep = k_pad;
+      return kernel::wrapper::Memcpy2D::forward<JblasNoSIMD, AType, AType>(aptr, *dstptr, m_size, k_size, _param.lda,
+                                                                           k_pad);
+    }
+  }
+
+  JBLAS_CODE getReduce(float** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
+                       int k_offset, void* tmpcache, size_t cachesize) {
+    auto reduce = _param.reduce;
+    auto aptr = reduce->template get<float>();
+    int kele = utils::updiv(k_size, reduce->kblock);
+    *dststep = kele;
+    kernel::ref::memcpy2d(aptr + m_offset * reduce->lda + k_offset / reduce->kblock, *dstptr, m_size,
+                          kele * sizeof(float), reduce->lda * sizeof(float), kele * sizeof(float));
     return JblasSuccess;
   }
 };
