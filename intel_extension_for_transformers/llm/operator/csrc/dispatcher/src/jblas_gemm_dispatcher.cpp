@@ -75,10 +75,8 @@ void dispatch_jblas_gemm(jblas_gemm_runtime_ctx* ctx) {
                      jblas::epilogue::gemm::AccumulatorWriteBackFp32Bf16, jblas::utils::bf16>(ctx);
     }
   }
-  TORCH_CHECK(false,
-              "QBits: unsupported config in gemm op, data_type:" + dispatcher_utils::get_torch_dt_name(ctx->matA) +
-                  ", AVX2:" + std::to_string(dispatcher_utils::check_avx2()) +
-                  ", AVX512F:" + std::to_string(dispatcher_utils::check_avx512f()) +
-                  ", AMX_BF16:" + std::to_string(dispatcher_utils::check_amx()));
+  TORCH_CHECK(false, "QBits: unsupported config in gemm op, data_type:", dispatcher_utils::get_torch_dt_name(ctx->matA),
+              ", AVX2:", dispatcher_utils::check_avx2(), ", AVX512F:", dispatcher_utils::check_avx512f(),
+              ", AMX_BF16:", dispatcher_utils::check_amx());
 }
 }  // namespace jblas_gemm
