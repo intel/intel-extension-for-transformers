@@ -58,7 +58,7 @@ class ActivationBase {
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
-class ActivationConverter {
+class ActivationConverter : public ActivationBase<_GemmCore_T, ISA_T> {
  public:
   using AType = typename _GemmCore_T::AType;
   using SRCType = SRC_T;
@@ -85,6 +85,9 @@ class ActivationConverter {
       return kernel::wrapper::Memcpy2DBf16CvtFp32::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
                                                                   m_size, k_size, _param.lda * sizeof(SRC_T),
                                                                   k_pad * sizeof(AType), true);
+    } else if constexpr (std::is_same_v<AType, SRC_T>) {
+      return ActivationBase<_GemmCore_T, ISA_T>::getActivation(dstptr, dststep, {_param.A, _param.lda}, m_size, k_size,
+                                                               m_offset, k_offset, tmpcache, cachesize);
     } else {
       assert(0);
     }
