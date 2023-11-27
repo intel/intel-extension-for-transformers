@@ -322,6 +322,7 @@ def load_model(
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
+    
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
@@ -330,11 +331,12 @@ def load_model(
         trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
             re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
+
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
-
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
+    
+    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         if not model.config.is_encoder_decoder:
@@ -345,10 +347,11 @@ def load_model(
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
         return
-
+    
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
+
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
@@ -477,6 +480,15 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
+    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
+        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        model = optimize_model(model, optimization_config, use_llm_runtime)
+
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
+
     if device == "hpu":
         if peft_path:
             from peft import PeftModel
@@ -506,9 +518,16 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            if torch_dtype == torch.bfloat16 and not ipex_int8:
-                import intel_extension_for_pytorch as intel_ipex
-
+            import intel_extension_for_pytorch as intel_ipex
+            if re.search("llama", model_name, re.IGNORECASE):
+                qconfig = None if ipex_int8==False else intel_ipex.quantization.get_weight_only_quant_qconfig_mapping(weight_dtype=torch.quint4x2, lowp_mode=intel_ipex.quantization.WoqLowpMode.BF16)
+                model = intel_ipex.optimize_transformers(model.eval(),
+                                                         dtype=torch_dtype,
+                                                         inplace=True,
+                                                         quantization_config=qconfig,
+                                                         deployment_mode=cpu_jit
+                                                        )
+            elif torch_dtype == torch.bfloat16 and not ipex_int8:
                 model = intel_ipex.optimize(
                     model.eval(),
                     dtype=torch_dtype,
@@ -768,7 +787,7 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                    output_token_len = len(output_token[0]) if is_llm_runtime_model(model) else \
                                       output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
@@ -852,6 +871,7 @@ def predict_stream(**params):
         if output_token_len != 1
         else 0
     )
+    
     if return_stats:
         stats = {
             "input_token_len": str(input_token_len),
