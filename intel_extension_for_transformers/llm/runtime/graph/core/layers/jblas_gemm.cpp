@@ -1,8 +1,18 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 /*++
-
-Copyright (c) Microsoft Corporation. All rights reserved.
-
-Licensed under the MIT License.
 
 Module Name:
 
@@ -10,7 +20,7 @@ Module Name:
 
 Abstract:
 
-    Currently only support Q4 gemm.
+    C APIs of BesTLA GEMMs.
 --*/
 
 #include "jblas_gemm.h"
@@ -20,9 +30,9 @@ Abstract:
 using namespace jblas;
 
 template <class GemmCore_T>
-void JblasQ4GemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
-                        jblas::storage::gemm::StorageWeightKBlockS4* B, float* C, const int ldc, int8_t* WorkSpace,
-                        jblas::parallel::IThreading* th) {
+void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
+                      jblas::storage::gemm::StorageWeightKBlockS4* B, float* C, const int ldc, int8_t* WorkSpace,
+                      jblas::parallel::IThreading* th) {
   if (M <= 32) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher = tLauncher_Fp32_S4_F32F32<GemmCore_T>;
@@ -35,7 +45,7 @@ void JblasQ4GemmCompF32(const int M, const int N, const int K, const float* A, c
         B->template SPtr<int8_t>(),    B->mScaT,   B->mCStep, B->template ZPtr<int8_t>(),
         reduceA.template get<float>(), reduceA.lda};
 
-      typename Launcher::Param args{M, N, K, B->mBlockSize, {A, K, &reduceA}, {B}, blkargs, {C, N}};
+    typename Launcher::Param args{M, N, K, B->mBlockSize, {A, K, &reduceA}, {B}, blkargs, {C, N}};
     if (B->mIsAsym) {
       jblas::parallel::GemmKBlockRunWithA<Parallel>(kernel, args, th);
     } else {
@@ -55,9 +65,9 @@ void JblasQ4GemmCompF32(const int M, const int N, const int K, const float* A, c
 }
 
 template <class GemmCore_T>
-void JblasQ4GemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
-                         jblas::storage::gemm::StorageWeightKBlockS4* B, float* C, const int ldc, int8_t* WorkSpace,
-                         jblas::parallel::IThreading* th) {
+void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
+                       jblas::storage::gemm::StorageWeightKBlockS4* B, float* C, const int ldc, int8_t* WorkSpace,
+                       jblas::parallel::IThreading* th) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
   using Launcher = tLauncher_Int8_S4_F32F32<GemmCore_T>;
 
@@ -94,43 +104,43 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
                                                          jblas::gemm::CoreAttr::COMP_SHIFT);
         if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
           if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-            JblasQ4GemmCompF32<tAVX512F>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                         (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                         DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompF32<tAVX512F>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                       (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                       DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
           if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-            JblasQ4GemmCompF32<tAVX2>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                      (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                      DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompF32<tAVX2>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                    (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                    DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
         }
         if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
           if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
-            JblasQ4GemmCompInt8<tAMX_INT8_US>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                              (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                              DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompInt8<tAMX_INT8_US>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                            (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                            DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
           if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-            JblasQ4GemmCompInt8<tAVX512_VNNI>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                              (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                              DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompInt8<tAVX512_VNNI>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                            (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                            DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
           if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-            JblasQ4GemmCompInt8<tAVX_VNNI>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                           (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                           DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompInt8<tAVX_VNNI>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                         (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                         DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
         }
         if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
           if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-            JblasQ4GemmCompInt8<tAMX_INT8_SS>(M, N, K, DataParams[i].A, DataParams[i].lda,
-                                              (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
-                                              DataParams[i].ldc, WorkSpace, pth);
+            JblasGemmCompInt8<tAMX_INT8_SS>(M, N, K, DataParams[i].A, DataParams[i].lda,
+                                            (jblas::storage::gemm::StorageWeightKBlockS4*)ptr, DataParams[i].C,
+                                            DataParams[i].ldc, WorkSpace, pth);
             goto __END;
           }
         }
@@ -146,37 +156,45 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
 }
 
 template <typename T>
-static size_t JblasQ4BuSize(int block_size, size_t N, size_t K, bool isAsym) {
+static size_t JblasBuSize(int block_size, size_t N, size_t K, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
+                          bool isAsym) {
   static T launcher;
-  auto stor =
-      launcher.mProB.createStorage(N, K, block_size, JBLAS_DTYPE::S4_CLIP, JBLAS_DTYPE::F32, JBLAS_DTYPE::BF16, isAsym);
-  // TODO(Yu) support more S4 quant type, scale dtype
+  auto stor = launcher.mProB.createStorage(N, K, block_size, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, isAsym);
+  // Reduce dtype set to bf16
   return stor.mSize;
 }
-
-size_t JblasQ4GemmPackBSize(size_t N, size_t K, size_t BlkSize, bool isAsym, ne_comp_type CompType) {
+template <template <class, JBLAS_ISA> class Wei_T>
+static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
+                                      bool isAsym, ne_comp_type CompType) {
   GetCPUDevice();
   // from low precision to high precision
   switch (CompType) {
     case NE_COMP_INT8:
       if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS::KTILE == 0) {
-        return JblasQ4BuSize<tLauncher_Int8_S4_F32F32<tAMX_INT8_SS>>(int(BlkSize), N, K, isAsym);
+        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
+                                                                       isAsym);
       }
       if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI::KTILE == 0) {
-        return JblasQ4BuSize<tLauncher_Int8_S4_F32F32<tAVX512_VNNI>>(int(BlkSize), N, K, isAsym);
+        return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
+                                                                       isAsym);
       }
       if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI::KTILE == 0) {
-        return JblasQ4BuSize<tLauncher_Int8_S4_F32F32<tAVX_VNNI>>(int(BlkSize), N, K, isAsym);
+        return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
+      if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
+        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        return true;
+      }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        return JblasQ4BuSize<tLauncher_Int8_S4_F32F32<tAVX512F>>(int(BlkSize), N, K, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX512F>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        return JblasQ4BuSize<tLauncher_Int8_S4_F32F32<tAVX2>>(int(BlkSize), N, K, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX2>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
       }
       break;
     default:
@@ -185,52 +203,76 @@ size_t JblasQ4GemmPackBSize(size_t N, size_t K, size_t BlkSize, bool isAsym, ne_
   return 0;
 }
 
-template <typename T>
-void JblaNBitsGemmPackB(void* PackedBuf, int BlkSize, const uint8_t* QData, const float* Scale, const uint8_t* Zp,
-                        int N, int K, bool IsAsym, bool lastCall, int ldb, void* ThreadPool) {
-  static T JblasKernel;
-  auto stor =
-      JblasKernel.mProB.createStorage(N, K, BlkSize, JBLAS_DTYPE::S4_CLIP, JBLAS_DTYPE::F32, JBLAS_DTYPE::BF16, IsAsym);
-  stor.assign((int8_t*)PackedBuf);
-  auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
-  JblasKernel.mProB.packNbitsWeight(N, K, IsAsym, QData, ldb, Scale, Zp, &stor, pth);
-  if (lastCall) {
-    JblasKernel.mProB.reduceWeight(&stor, pth);
+size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
+                          bool isAsym, ne_comp_type CompType) {
+  switch (QuantType) {
+    case JBLAS_DTYPE::S4_CLIP:
+    case JBLAS_DTYPE::S4_FULLRANGE:
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockS4>(N, K, BlkSize, QuantType, ScaleDtype,
+                                                                              isAsym, CompType);
+    case JBLAS_DTYPE::S8:
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockS8>(N, K, BlkSize, QuantType, ScaleDtype,
+                                                                              isAsym, CompType);
+    case JBLAS_DTYPE::F4_BNB:
+    case JBLAS_DTYPE::F4_E2M1:
+    case JBLAS_DTYPE::F4_NF4:
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF4>(N, K, BlkSize, QuantType, ScaleDtype,
+                                                                              isAsym, CompType);
+    default:
+      return 0;
   }
+  return 0;
 }
 
-bool JblasQ4GemmPackB(void* PackedBuf, const uint8_t* QData, const float* Scale, const uint8_t* Zp, size_t N, size_t K,
-                      size_t ldb, size_t BlkSize, bool isAsym, bool lastCall, ne_comp_type CompType, void* ThreadPool) {
+template <typename T>
+void JblaGemmQuantPackBTrans(void* PackedBuf, int BlkSize, const float* FpData, int N, int K, JBLAS_DTYPE QuantType,
+                             JBLAS_DTYPE ScaleDtype, bool IsAsym, int ldb, void* ThreadPool) {
+  static T JblasKernel;
+  auto stor = JblasKernel.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, IsAsym);
+  stor.assign((int8_t*)PackedBuf);
+  auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
+  JblasKernel.mProB.packWeight(N, K, IsAsym, QData, ldb, Scale, Zp, &stor, pth);
+}
+
+template <template <class, JBLAS_ISA> class Wei_T>
+static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb,
+                                          size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
+                                          ne_comp_type CompType, void* ThreadPool) {
   GetCPUDevice();
   switch (CompType) {
     case NE_COMP_INT8:
       if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS::KTILE == 0) {
-        JblaNBitsGemmPackB<tLauncher_Int8_S4_F32F32<tAMX_INT8_SS>>(PackedBuf, int(BlkSize), QData, Scale, Zp, int(N),
-                                                                   int(K), isAsym, lastCall, int(ldb), ThreadPool);
+        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAMX_INT8_SS, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
         return true;
       }
       if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI::KTILE == 0) {
-        JblaNBitsGemmPackB<tLauncher_Int8_S4_F32F32<tAVX512_VNNI>>(PackedBuf, int(BlkSize), QData, Scale, Zp, int(N),
-                                                                   int(K), isAsym, lastCall, int(ldb), ThreadPool);
+        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX512_VNNI, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
         return true;
       }
       if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI::KTILE == 0) {
-        JblaNBitsGemmPackB<tLauncher_Int8_S4_F32F32<tAVX_VNNI>>(PackedBuf, int(BlkSize), QData, Scale, Zp, int(N),
-                                                                int(K), isAsym, lastCall, int(ldb), ThreadPool);
+        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX_VNNI, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
         return true;
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
+      if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
+        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        return true;
+      }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        JblaNBitsGemmPackB<tLauncher_Fp32_S4_F32F32<tAVX512F>>(PackedBuf, int(BlkSize), QData, Scale, Zp, int(N),
-                                                               int(K), isAsym, lastCall, int(ldb), ThreadPool);
+        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(
+            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
         return true;
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        JblaNBitsGemmPackB<tLauncher_Fp32_S4_F32F32<tAVX2>>(PackedBuf, int(BlkSize), QData, Scale, Zp, int(N), int(K),
-                                                            isAsym, lastCall, int(ldb), ThreadPool);
+        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
+                                                                   QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
         return true;
       }
     default:
@@ -239,16 +281,39 @@ bool JblasQ4GemmPackB(void* PackedBuf, const uint8_t* QData, const float* Scale,
   return false;
 }
 
-bool JblasQ4GemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, size_t ldb, void* ThreadPool) {
+template <template <class, JBLAS_ISA> class Wei_T>
+bool JblasGemmQuantPackBTrans(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb, size_t BlkSize,
+                              JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym, ne_comp_type CompType,
+                              void* ThreadPool) {
+  switch (QuantType) {
+    case JBLAS_DTYPE::S4_CLIP:
+    case JBLAS_DTYPE::S4_FULLRANGE:
+      return JblasGemmQuantPackBTransLocal<jblas::prologue_b::gemm::WeightKBlockS4>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+    case JBLAS_DTYPE::S8:
+      return JblasGemmQuantPackBTransLocal<jblas::prologue_b::gemm::WeightKBlockS8>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+    case JBLAS_DTYPE::F4_BNB:
+    case JBLAS_DTYPE::F4_E2M1:
+    case JBLAS_DTYPE::F4_NF4:
+      return JblasGemmQuantPackBTransLocal<jblas::prologue_b::gemm::WeightKBlockF4>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+    default:
+      return 0;
+  }
+  return 0;
+}
+
+bool JblasGemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, size_t ldb, void* ThreadPool) {
   auto ptr = jblas::storage::gemm::PackedWeightParser::deserialBuffer(const_cast<void*>(PackedBuf));
   auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
   GetCPUDevice();
   if (ptr) {
+    auto NTile = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::NTILE_MASK,
+                                                     jblas::gemm::CoreAttr::NTILE_SHIFT);
+    auto CType = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
+                                                     jblas::gemm::CoreAttr::COMP_SHIFT);
     if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS4) {
-      auto NTile = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::NTILE_MASK,
-                                                       jblas::gemm::CoreAttr::NTILE_SHIFT);
-      auto CType = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
-                                                       jblas::gemm::CoreAttr::COMP_SHIFT);
       if (CType == uint32_t(jblas::gemm::CompType::COMP_FP32)) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           static jblas::prologue_b::gemm::WeightKBlockS4<tAVX512F, tAVX512F::ISA> proB;
@@ -281,6 +346,79 @@ bool JblasQ4GemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K
       if (CType == uint32_t(jblas::gemm::CompType::COMP_INT8_SS_INT32)) {
         if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
           static jblas::prologue_b::gemm::WeightKBlockS4<tAMX_INT8_SS, tAMX_INT8_SS::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_BF16_FP32)) {
+        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          static jblas::prologue_b::gemm::WeightKBlockS4<tAMX_BF16, tAMX_BF16::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+    }
+    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS8) {
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_FP32)) {
+        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAVX512F, tAVX512F::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+        if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAVX2, tAVX2::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_INT8_US_INT32)) {
+        if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAMX_INT8_US, tAMX_INT8_US::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+        if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAVX512_VNNI, tAVX512_VNNI::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+        if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAVX_VNNI, tAVX_VNNI::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_INT8_SS_INT32)) {
+        if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAMX_INT8_SS, tAMX_INT8_SS::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_BF16_FP32)) {
+        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          static jblas::prologue_b::gemm::WeightKBlockS8<tAMX_BF16, tAMX_BF16::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+    }
+    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_FP32)) {
+        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+          static jblas::prologue_b::gemm::WeightKBlockF4<tAVX512F, tAVX512F::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+        if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+          static jblas::prologue_b::gemm::WeightKBlockF4<tAVX2, tAVX2::ISA> proB;
+          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          goto __END;
+        }
+      }
+      if (CType == uint32_t(jblas::gemm::CompType::COMP_BF16_FP32)) {
+        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          static jblas::prologue_b::gemm::WeightKBlockF4<tAMX_BF16, tAMX_BF16::ISA> proB;
           proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
           goto __END;
         }
