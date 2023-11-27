@@ -30,9 +30,9 @@ InstructorEmbedding = LazyImport("InstructorEmbedding")
 
 logger = logging.getLogger(__name__)
 
-class OptimizedInstructiorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer):
+class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer):
     def __init__(self, *args, **kwargs):
-        """Initialize the OptimizedInstructiorTransformer."""
+        """Initialize the OptimizedInstructorTransformer."""
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -48,7 +48,7 @@ class OptimizedInstructiorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer
 
         with open(sbert_config_path) as fIn:
             config = json.load(fIn)
-        return OptimizedInstructiorTransformer(model_name_or_path=input_path, **config)
+        return OptimizedInstructorTransformer(model_name_or_path=input_path, **config)
     
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
         """Loads the transformer model"""
@@ -62,9 +62,9 @@ class OptimizedInstructiorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer
                                                              cache_dir=cache_dir, 
                                                              **model_args)
 
-class OptimizedInstructior(InstructorEmbedding.INSTRUCTOR):
+class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
     def __init__(self, *args, **kwargs):
-        """Initialize the OptimizedInstructior."""
+        """Initialize the OptimizedInstructor."""
         super().__init__(*args, **kwargs)
 
     def _load_auto_model(self, model_name_or_path): # pragma: no cover
@@ -100,8 +100,8 @@ class OptimizedInstructior(InstructorEmbedding.INSTRUCTOR):
         modules = OrderedDict()
         for module_config in modules_config:
             if module_config['idx']==0:
-                logger.info('load Optimized InstructiorTransformer')
-                module_class = OptimizedInstructiorTransformer
+                logger.info('load Optimized InstructorTransformer')
+                module_class = OptimizedInstructorTransformer
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
             else:
