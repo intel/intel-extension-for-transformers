@@ -1,5 +1,5 @@
 transformers>=4.32.0
-fschat
+fschat==0.2.32
 num2words
 paddlepaddle
 paddlespeech
@@ -10,6 +10,7 @@ pydub
 python-multipart
 PyPDF2
 langchain
+langchain_core
 python-docx
 scikit-learn
 librosa

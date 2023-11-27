@@ -1561,7 +1561,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   // printf("n_head_kv=%s,multi_query_group_num=%s",model_hparams.n_head_kv,model_hparams.multi_query_group_num);
   NE_ASSERT(("Can not set n_head_kv and multi_query_group_num at the same time",
              model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0 ||
-                 model_hparams.n_head_kv != model_hparams.multi_query_group_num));
+                 model_hparams.n_head_kv == model_hparams.multi_query_group_num));
   attn_shape_t attn_shape = {
       /* .batch_size = */ lparams.batch_size * lparams.beam_size,
       /* .head_num = */ static_cast<int>(model_hparams.n_head),
@@ -2080,14 +2080,54 @@ static void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq
   }
 }
 
+static void jblas_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                         const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
+  const auto& kv_self = ctx->model.kv_self;
+  const auto& hparams = ctx->model.hparams;
+  const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
+  const int head_size = hparams.n_embd / hparams.n_head;
+  const int n_ctx = ctx->n_ctx;
+  const auto kv_n_ctx_block = ctx->kv_n_ctx_block;
+  NE_ASSERT(("Invalid end position!", n_ctx >= p1));
+  kv_cache_info_t kv_cache_info;
+  kv_shape_t kv_shape{
+      /* .head_num = */ static_cast<uint32_t>(heads_kv),
+      /* .head_size = */ static_cast<uint32_t>(head_size),
+      /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
+  };
+  jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
+  const auto k_bytes = kv_cache_info.k_bytes;
+  const auto v_bytes = kv_cache_info.v_bytes;
+
+  jblas_fusion_attn_fp32_batch_cpy_kv_args_t seq_cpy_param{
+      /* .src = */ nullptr,
+      /* .dst = */ nullptr,
+      /* .heads_kv = */ heads_kv,
+      /* .head_size = */ head_size,
+      /* .seq_off = */ p0,
+      /* .seq_size = */ p1 - p0,
+      /* .seq_max = */ n_ctx,
+      /* .no_zeroing = */ false,
+  };
+  for (int il = 0; il < ctx->model.layers.size(); ++il) {
+    const auto k_data = reinterpret_cast<char*>(kv_self.k->data) + il * kv_n_ctx_block * k_bytes;
+    seq_cpy_param.src = k_data + seq_id_src * k_bytes;
+    seq_cpy_param.dst = k_data + seq_id_dst * k_bytes;
+    jblas_fusion_attn_fp32_batch_cpy_k(&seq_cpy_param);
+
+    const auto v_data = reinterpret_cast<char*>(kv_self.v->data) + il * kv_n_ctx_block * v_bytes;
+    seq_cpy_param.src = v_data + seq_id_src * v_bytes;
+    seq_cpy_param.dst = v_data + seq_id_dst * v_bytes;
+    jblas_fusion_attn_fp32_batch_cpy_v(&seq_cpy_param);
+  }
+}
+
 void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src, const model_seq_id& seq_id_dst,
                             const model_pos& p0, const model_pos& p1) {
-  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
+  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS)
     ne_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
-  } else {
-    return;
-    // jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
-  }
+  else
+    jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
 }
 
 static ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
@@ -2270,10 +2310,7 @@ void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
   // TODO beam search unsupport shift kv cache when prompt + new_tokens > nctx
-  if (ctx->model.kv_self.has_shift) {
-    fprintf(stderr, "%s: error: unimplement shifted kv cache update\n", __func__);
-    return;
-  }
+  NE_ASSERT(("error: unimplement shifted kv cache update\n", !ctx->model.kv_self.has_shift));
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("start to update kv cache for next step...\n");
 #endif

@@ -1,6 +1,6 @@
 transformers >= 4.34.1
 peft
-fschat
+fschat==0.2.32
 intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
@@ -13,6 +13,7 @@ pydub
 python-multipart
 PyPDF2
 langchain
+langchain_core
 python-docx
 scikit-learn
 librosa

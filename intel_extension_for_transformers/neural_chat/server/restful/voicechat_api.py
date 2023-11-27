@@ -69,7 +69,7 @@ class VoiceChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
         try:
             spk_embedding = chatbot.tts.create_speaker_embedding(spk_id)
-            torch.save(spk_embedding, f'speaker_embeddings/spk_embed_{spk_id}.pt')
+            torch.save(spk_embedding, f'../../../../speaker_embeddings/spk_embed_{spk_id}.pt')
         except Exception as e:
             logger.info(f"create spk embedding failes! {e}")
             return {"create_spk": "fail"}
@@ -116,7 +116,7 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     file_name = file.filename
     # generate a unique id
     import uuid
-    spk_id = f"spk_{uuid.uuid1()}"
+    spk_id = f"spk_{str(uuid.uuid1())[:8]}"
     with open(f"tmp_spk_{file_name}", 'wb') as fout:
         content = await file.read()
         fout.write(content)
