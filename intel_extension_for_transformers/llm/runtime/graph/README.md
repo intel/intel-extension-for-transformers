@@ -110,7 +110,7 @@ Argument description of WeightOnlyQuantConfig:
 | group_size        | Int         | Group size: Int (default: 32)                                                           |
 | scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
-| not_quant         | Bool        | Determine whether or not the model will be quantized. (default: False)                  |
+| use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 | use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |
 
 Argument description of generate function:
