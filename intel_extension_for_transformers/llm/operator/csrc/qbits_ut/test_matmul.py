@@ -27,6 +27,7 @@ from ut_utils import *
 def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     torch.manual_seed(0)
     activation = torch.rand(m, k, dtype=torch.float)
+    activation_cp = activation.clone()
     if dt == "bf16":
         activation = activation.to(torch.bfloat16)
     wei_row = k
@@ -34,15 +35,17 @@ def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     if trans_matB:
         wei_row, wei_col = wei_col, wei_row
     wei = torch.rand(wei_row, wei_col, dtype=torch.float)
+    cp_wei = wei.clone()
     if dump_tensor_info:
         print(wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
     if dt == "bf16":
         tar_dst = tar_dst.to(torch.bfloat16)
+        wei = wei.to(torch.bfloat16)
     torch.ops.jblasop.matmul(activation, wei, tar_dst, trans_matB)
     if trans_matB:
-        wei = torch.transpose(wei, 0, 1)
-    ref_dst = torch.matmul(activation, wei)
+        cp_wei = torch.transpose(cp_wei, 0, 1)
+    ref_dst = torch.matmul(activation_cp, cp_wei)
     if dt == "bf16":
         tar_dst = tar_dst.to(torch.float)
     if dump_tensor_info:
