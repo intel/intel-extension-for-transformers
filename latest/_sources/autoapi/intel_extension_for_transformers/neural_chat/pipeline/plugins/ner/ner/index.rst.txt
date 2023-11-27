@@ -19,7 +19,7 @@ Classes
 
 
 
-.. py:class:: NamedEntityRecognition(model_path='meta-llama/Llama-2-7b-chat-hf', spacy_model='en_core_web_lg', bf16: bool = False, device='cpu')
+.. py:class:: NamedEntityRecognition(spacy_model='en_core_web_lg')
 
 
    NER class to inference with fp32 or bf16 llm models
