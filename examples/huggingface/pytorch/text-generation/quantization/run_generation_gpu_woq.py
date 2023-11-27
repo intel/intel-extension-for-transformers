@@ -34,7 +34,7 @@ parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
-parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
+parser.add_argument("--num_warmup", default=0, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
 parser.add_argument("--batch_size", default=56, type=int,
@@ -162,7 +162,7 @@ if args.benchmark:
         attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1)).to(args.device)
         total_latency += latency
 
-    print(prompt[0] + "".join(gen_texts))
+    print(prompt[0] + ":\n" + "".join(gen_texts))
     print("first token inference latency: %.5f sec." % first_token_latency)
     next_token_latency = (total_latency - first_token_latency) / (args.max_new_tokens - 1)
     print("next token inference latency: %.5f sec." % next_token_latency)

@@ -96,7 +96,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
-        out = torch.zeros(m, self.out_features, dtype=x.dtype).to(self.device)
+        out = torch.empty(m, self.out_features, dtype=x.dtype, device=self.device)
         bias = torch.zeros(0) if self.bias is None else self.bias.data
         gbits.linear(
             x.view(m, shape[-1]), self.weight.data, bias, out,
