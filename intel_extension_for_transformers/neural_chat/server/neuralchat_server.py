@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import argparse
+import subprocess
 import sys
 from typing import List
 
@@ -98,6 +99,11 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             bool:
         """
         device = config.get("device", "auto")
+        host = config.get("host", "0.0.0.0")
+        port = config.get("port", "80")
+        use_deepspeed = config.get("use_deepspeed", False)
+        if use_deepspeed:
+            world_size = config.get("world_size", 1)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
@@ -123,7 +129,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         bnb_4bit_use_double_quant = yaml_config.get("bnb_4bit_use_double_quant", {})
         bnb_4bit_compute_dtype = yaml_config.get("bnb_4bit_compute_dtype", {})
         loading_config = LoadingModelConfig(ipex_int8=ipex_int8, use_llm_runtime=use_llm_runtime,
-                                            peft_path=peft_model_path)
+                                            peft_path=peft_model_path, use_deepspeed=use_deepspeed,
+                                            world_size=world_size)
         from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
         if optimization_type == "weight_only":
             optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
@@ -144,13 +151,32 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             "loading_config": loading_config,
             "optimization_config": optimization_config
         }
-
-        pipeline_config = PipelineConfig(**params)
-        self.chatbot = build_chatbot(pipeline_config)
-        # init api
         api_list = list(task for task in config.tasks_list)
-        api_router = setup_router(api_list, self.chatbot)
-        app.include_router(api_router)
+        if use_deepspeed:
+            if device == "hpu":
+                launch_str = f"deepspeed --num_nodes 1 --num_gpus {world_size} --no_local_rank \
+                    {sys.executable} -m intel_extension_for_transformers.neural_chat.server.multi_hpu_server"
+                command_list = f"{launch_str} --habana --use_hpu_graphs --use_kv_cache --task chat \
+                     --base_model_path {model_name_or_path} --host {host} --port {port} --api_list {api_list}"
+                try:
+                    print(f"{self.__class__.__name__} init(): command = {command_list}")
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    with subprocess.Popen(command_list, shell=True, executable="/bin/bash") as proc:
+                        proc.wait()
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        if proc.returncode != 0:
+                            logger.error(f"{command_list} exited with status = {proc.returncode}")
+                            return proc.returncode
+                except Exception as exc:
+                    raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
+        else:
+            pipeline_config = PipelineConfig(**params)
+            self.chatbot = build_chatbot(pipeline_config)
+            # init api
+            api_router = setup_router(api_list, self.chatbot)
+            app.include_router(api_router)
         return True
 
 

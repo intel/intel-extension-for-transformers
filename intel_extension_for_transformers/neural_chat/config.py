@@ -405,6 +405,7 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    world_size: int = 1
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
