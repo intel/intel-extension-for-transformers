@@ -323,8 +323,10 @@ void stream_k_gemm_relu_biasadd_run(uint32_t iter) {
             ::gemm;
 
     // [ReLuBias] Chain multiple elementwise op in chained_tile_op_t<>: relu_op_t, bias_add_op_t
+    using mem_desc_bias_t = xetla::mem_desc_t<data_type_bias,
+            mem_layout::row_major, mem_space::global>;
     using bias_op_t
-            = xetla::subgroup::bias_add_op_t<data_type_bias, gpu_arch::Xe>;
+            = xetla::subgroup::bias_add_op_t<mem_desc_bias_t, gpu_arch::Xe>;
     using tile_op_t = xetla::subgroup::chained_tile_op_t<
             xetla::subgroup::relu_op_t, // apply elementwise ReLU
             bias_op_t // apply elementwise BiasAdd

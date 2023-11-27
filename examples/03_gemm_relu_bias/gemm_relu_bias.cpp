@@ -124,7 +124,11 @@ void gemm_relu_bias_run(uint32_t iter) {
     constexpr uint32_t wg_tile_n = 256;
 
     // [ReLuBias] Chain multiple elementwise op in chained_tile_op_t<>: relu_op_t, bias_add_op_t
-    using bias_op_t = xetla::subgroup::bias_add_op_t<float, gpu_arch::Xe>;
+    using mem_desc_bias_t = xetla::mem_desc_t<float, mem_layout::row_major,
+            mem_space::global>;
+
+    using bias_op_t
+            = xetla::subgroup::bias_add_op_t<mem_desc_bias_t, gpu_arch::Xe>;
     using tile_op_t = xetla::subgroup::chained_tile_op_t<
             xetla::subgroup::relu_op_t, // apply elementwise ReLU
             bias_op_t // apply elementwise BiasAdd

@@ -53,13 +53,13 @@ public:
     static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
-    static constexpr size_t local_kslicing = 1;
+    static constexpr size_t local_kslicing = 2;
     static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = float;
+    using data_type_a = fp16;
     using data_type_b = int4x2;
-    using data_type_c = float;
+    using data_type_c = fp16;
 };
 
 class output_proj {
@@ -203,7 +203,7 @@ void dequantize_gemm_run(int iter) {
     using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
             sg_tile_n, sg_tile_m>;
     static constexpr uint32_t periodic_sync_interval = 1;
-    static constexpr uint32_t prefetch_distance = 0;
+    static constexpr uint32_t prefetch_distance = 3;
 
     using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
             mem_space::global>;
@@ -216,20 +216,17 @@ void dequantize_gemm_run(int iter) {
             data_type_acc_in, data_type_acc>;
     using perf_tuning_knob = xetla::group::perf_tuning_knob_t<sg_tile_k,
             prefetch_distance, periodic_sync_interval>;
-
     using compute_policy
-            = xetla::group::compute_policy_bit4_dequantize_xmx<compute_attr,
-                    perf_tuning_knob,
-                    gpu::xetla::group::quant_type::S4_FULLRANGE,
-                    data_type_scale, dequant_s, gpu_arch::Arc>;
-
+            = xetla::group::compute_policy_int4_dequantize_xmx<compute_attr,
+                    perf_tuning_knob, data_type_scale, data_type_zero_pt,
+                    dequant_s, gpu_arch::Xe>;
     using gemm_t = xetla::group::gemm_t<compute_policy, tile_shape,
             mem_desc_a_t, mem_desc_b_t>;
 
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_unaligned<gpu_arch::Arc>, tile_shape,
+            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_c_t>;
-    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Arc>;
+    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
                     group_swizzle, global_kslicing, local_kslicing>,
@@ -286,7 +283,7 @@ void dequantize_gemm_run(int iter) {
         scale_h[i] = random_float();
     }
     for (unsigned i = 0; i < size_zero_pt; ++i) {
-        zero_pt_h[i] = 0.f;
+        zero_pt_h[i] = uint8_t(random_uint8());
     }
     for (unsigned i = 0; i < size_c; ++i) {
         C_h[i] = 0;
@@ -314,8 +311,8 @@ void dequantize_gemm_run(int iter) {
 
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A_d,
-            matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n, Acc_d,
-            Cnt_d);
+            matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n,
+            zero_pt_d, matrix_n, Acc_d, Cnt_d);
 
     cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
     if (!gemm_op_t::can_implement(gemm_arg)) {
@@ -360,12 +357,14 @@ void dequantize_gemm_run(int iter) {
             for (int ii = 0; ii < dequant_s; ii++) {
                 uint8_t data_in = B_h[start_in + ii * matrix_n / 2];
                 uint8_t data_zero_pt = zero_pt_h[start_zero_pt];
-                int8_t data_0 = int8_t(data_in & 0x0f) - 8;
-                int8_t data_1 = int8_t(data_in >> 4) - 8;
+                int8_t data_0 = int8_t(data_in & 0x0f);
+                int8_t data_1 = int8_t(data_in >> 4);
+                int8_t zero_pt_0 = int8_t((data_zero_pt & 0x0f) + 1);
+                int8_t zero_pt_1 = int8_t((data_zero_pt >> 4) + 1);
                 dequantize_b[start_out + ii * matrix_n]
-                        = fp16(data_0) * scale_h[start_scale];
+                        = fp16(data_0 - zero_pt_0) * scale_h[start_scale];
                 dequantize_b[start_out + ii * matrix_n + 1]
-                        = fp16(data_1) * scale_h[start_scale + 1];
+                        = fp16(data_1 - zero_pt_1) * scale_h[start_scale + 1];
             }
         }
     }
@@ -400,8 +399,7 @@ TYPED_TEST_P(dequantize_gemm_test, esimd) {
 }
 
 REGISTER_TYPED_TEST_SUITE_P(dequantize_gemm_test, esimd);
-// using tests = ::testing::Types<qkv, output_proj, ffn1, ffn2, last>;
-using tests = ::testing::Types<qkv>; //, output_proj, ffn1, ffn2, last>;
+using tests = ::testing::Types<qkv, output_proj, ffn1, ffn2, last>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(
         dequantize_gemm_test_suite, dequantize_gemm_test, tests);

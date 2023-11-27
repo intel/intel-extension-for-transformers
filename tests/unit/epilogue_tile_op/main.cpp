@@ -67,8 +67,9 @@ TEST(tile_elemwise_op_bias_add, esimd) {
             tile_elemwise_bias_add_validate<float>, _1, _2, _3, 128, 16, 24);
     kernel_run<float,
             tile_elemwise_op_func<float, 128, 64, 128, 16, 24, 16, 16,
-                    bias_add_op_t<float, gpu_arch::Xe>>>(
-            nd_range, result_validate);
+                    bias_add_op_t<mem_desc_t<float, mem_layout::row_major,
+                                          mem_space::global>,
+                            gpu_arch::Xe>>>(nd_range, result_validate);
 }
 
 TEST(tile_elemwise_op_res_add, esimd) {
