@@ -17,7 +17,7 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-from .optimized_instructor_embedding import OptimizedInstructior
+from .optimized_instructor_embedding import OptimizedInstructor
 from .optimized_sentence_transformers import OptimizedSentenceTransformer
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
@@ -269,7 +269,7 @@ class HuggingFaceInstructEmbeddings(langchain_core.pydantic_v1.BaseModel, langch
                 "Please install it with `pip install InstructorEmbedding`."
             ) from exc
         
-        self.client = OptimizedInstructior(
+        self.client = OptimizedInstructor(
             self.model_name, cache_folder=self.cache_folder, **self.model_kwargs
         )
 
