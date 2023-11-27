@@ -44,7 +44,7 @@ class TextToSpeech():
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu",
-                 reduce_noise=True):
+                 reduce_noise=False):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.device = device

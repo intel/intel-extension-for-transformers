@@ -133,13 +133,22 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
+    if re.search("dolly", args.model):
+        ipex_opt_llm = False
+    else:
+        ipex_opt_llm = None
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    recipes = {
+                "smooth_quant": True,
+                "smooth_quant_args": {"alpha": args.alpha if args.alpha == "auto" else float(args.alpha)},
+            }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        ipex_opt_llm=ipex_opt_llm
         )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32) #default is A32W4G32
@@ -184,9 +193,9 @@ elif not args.int8 and not args.int8_bf16_mixed:
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
-    if config.model_type in ["gptj", "opt", "llama"]:
+    if config.model_type in ["gptj", "opt", "llama", "gpt_neox"] and not re.search("dolly", args.model):
         if args.accuracy:
-            from intel_extension_for_transformers.transformers.utils.utility import TSModelCausalLMForOPTLLM
+            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForOPTLLM
             user_model = TSModelCausalLMForOPTLLM.from_pretrained(
                 args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
             )

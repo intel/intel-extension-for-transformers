@@ -1,5 +1,5 @@
 transformers>=4.32.0
-fschat
+fschat==0.2.32
 num2words
 paddlepaddle
 paddlespeech
@@ -32,6 +32,9 @@ transformers_stream_generator==0.0.4
 spacy
 neural-compressor==2.3.1
 einops
+pymysql
+deepface
+exifread
 zhconv
 urllib3
 langid

@@ -18,7 +18,7 @@
 
 
 import os, re
-from typing import Dict, List
+from typing import List
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
@@ -43,9 +43,10 @@ class DocumentIndexing:
         self.document_store = document_store
         self.process = process
         self.persist_dir = persist_dir
+        self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
-        
+
         try:
             if "instruct" in embedding_model:
                 self.embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
@@ -63,8 +64,7 @@ class DocumentIndexing:
                 )
         except Exception as e:
             logging.info("Please selet a proper embedding model")
-            
-        
+           
         
     def parse_document(self, input):
         """
@@ -77,6 +77,7 @@ class DocumentIndexing:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
                 chuck = [[content.strip(),input]]
+        
         elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv"):
             chuck = laod_structured_data(input, self.process, self.max_length)
         elif re.match(r'^https?:/{2}\w.+$', input):
@@ -122,7 +123,7 @@ class DocumentIndexing:
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck
-                elif filename.endswith("jsonl") or filename.endswith("xlsx") or input.endswith("csv"):
+                elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
@@ -131,7 +132,8 @@ class DocumentIndexing:
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
+            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
             vectordb=None
             logging.info("Will be removed in another PR")
@@ -182,7 +184,7 @@ class DocumentIndexing:
             logging.info("Will be removed in another PR")
 
 
-    def KB_append(self, input):  ### inmemory documentstore please use KB construct
+    def KB_append(self, input, persist_path=None):  ### inmemory documentstore please use KB construct
         if isinstance(input, str):
             if os.path.isfile(input):
                 data_collection = self.parse_document(input)
@@ -207,8 +209,10 @@ class DocumentIndexing:
                 new_doc = Document(page_content=data, metadata=metadata)
                 documents.append(new_doc)
             assert documents != [], "The given file/files cannot be loaded."
+            if persist_path is None:
+                persist_path = self.persist_dir
             vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
-                                             persist_directory=self.persist_dir)
+                                             persist_directory=persist_path)
             vectordb.persist()
             logging.info("The local knowledge base has been successfully built!")
             return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)

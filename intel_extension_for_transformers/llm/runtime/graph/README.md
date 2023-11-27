@@ -38,6 +38,8 @@ LLM Runtime supports the following models:
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |  Latest |
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |  Latest |
 |[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | 4.34.0 or newer |
+|[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |  Latest |
+
 
 ### Code Generation
 | Model Name | INT8 | INT4 | Transformer Version |
@@ -106,9 +108,9 @@ Argument description of WeightOnlyQuantConfig:
 | weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
 | alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
 | group_size        | Int         | Group size: Int (default: 32)                                                           |
-| scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
-| not_quant         | Bool        | Determine whether or not the model will be quantized. (default: False)                  |
+| use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 | use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |
 
 Argument description of generate function:
@@ -123,7 +125,8 @@ Argument description of generate function:
 | batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
 | ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
 | seed              | Int         | NG seed (default: -1, use random seed for < 0)                                          |
-| threads           | Int         | Number of threads to use during computation (default: 8)                                |
+| threads           | Int         | Number of threads to use during computation (default: min(available_core_num, OMP_NUM_THREADS))                                       |
+| memory_dtype      | str         | Data type of the KV memory; one of f16, f32, auto (enables Fused Attention when possible otherwise fallback to f16) (default: auto)   |
 | repetition_penalty| Float       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 | num_beams         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 | do_sample         | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
@@ -136,6 +139,7 @@ Argument description of generate function:
 | max_new_tokens    | Int         | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 | streamer          | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 | stopping_criteria | Class       | Please refer to [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
+| pad_token         | Int         | pad_token_id of [Transformer's generate](https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation) |
 
 ### 3. Multi-Round Chat
 

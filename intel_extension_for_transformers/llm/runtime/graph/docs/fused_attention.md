@@ -58,6 +58,11 @@ Fused attention is designed to be able to easily support various models:
     </tr>
     <tr>
       <td>
+[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14B](https://huggingface.co/Qwen/Qwen-14B-Chat)</td>
+      <td align="center">MHA ✅</td>
+    </tr>
+    <tr>
+      <td>
 [MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)</td>
       <td align="center">MHA with [ALiBi](https://arxiv.org/abs/2108.12409) ✅</td>
     </tr>

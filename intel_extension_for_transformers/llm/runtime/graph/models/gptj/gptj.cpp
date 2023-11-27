@@ -230,17 +230,18 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
                                 n_past * ne_element_size(kv_self.k)));
         } else {
           // batch K
-          Kcur_bs[i] = ne_permute(ctx0,
-                                  ne_view_4d(ctx0, Kcur, head_size, n_head, N, 1, ne_element_size(Kcur) * head_size,
-                                             ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
-                                             i * ne_element_size(Kcur) * n_embd * N),
-                                  0, 2, 1, 3);
-          k_bs[i] =
-              ne_view_4d(ctx0, kv_self.k, head_size, N, n_head, 1, ne_element_size(kv_self.k) * head_size,
-                         ne_element_size(kv_self.k) * head_size * n_ctx, ne_element_size(kv_self.k) * n_embd * n_ctx,
-                         ((il * n_ctx) * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block +
-                          block_idx * n_ctx * n_embd * ne_element_size(kv_self.k) +
-                          head_size * n_past * ne_element_size(kv_self.k)));
+          Kcur_bs[i] = ne_permute(
+              ctx0,
+              ne_view_4d(ctx0, Kcur, head_size, n_head, N, 1, ne_element_size(Kcur) * head_size,
+                         ne_element_size(Kcur) * head_size * n_head, ne_element_size(Kcur) * head_size * n_head * N,
+                         i * ne_element_size(Kcur) * head_size * n_head * N),
+              0, 2, 1, 3);
+          k_bs[i] = ne_view_4d(ctx0, kv_self.k, head_size, N, n_head, 1, ne_element_size(kv_self.k) * head_size,
+                               ne_element_size(kv_self.k) * head_size * n_ctx,
+                               ne_element_size(kv_self.k) * head_size * n_head * n_ctx,
+                               ((il * n_ctx) * ne_element_size(kv_self.k) * head_size * n_head * kv_n_ctx_block +
+                                block_idx * n_ctx * head_size * n_head * ne_element_size(kv_self.k) +
+                                head_size * n_past * ne_element_size(kv_self.k)));
 
           // batch V
           Vcur_bs[i] = ne_permute(
@@ -432,15 +433,15 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 
       struct ne_tensor* FFN_out = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
       ne_set_name(FFN_out, "FFN_out");
-
-#ifdef NE_TP_MODEL
-      // if tp model then all reduce as the weight has been split
-      if (enable_tp) {
-        FFN_out = ne_all_reduce(ctx0, FFN_out);
-      }
-#endif
+      // NOTICE: when TP, only master node add this bias
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), FFN_out);
     }
+#ifdef NE_TP_MODEL
+    // if tp model then all reduce as the weight has been split
+    if (enable_tp) {
+      cur = ne_all_reduce(ctx0, cur);
+    }
+#endif
     cur = ne_add(ctx0, cur, inpFF);
     // if (il == 20) {
     //   cur = ne_dump_tensor(ctx0, cur);
