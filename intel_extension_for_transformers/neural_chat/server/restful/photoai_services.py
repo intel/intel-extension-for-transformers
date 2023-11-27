@@ -33,7 +33,7 @@ from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
-IMAGE_ROOT_PATH = "/home/nfs_images"
+IMAGE_ROOT_PATH = os.getenv("IMAGE_ROOT_PATH")
 
 
 def check_user_ip(user_ip: str) -> bool:
@@ -716,7 +716,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
 
 
 def delete_user_infos(user_id: str):
-    logger.info(f'[delete user] start query from ner results')
+    logger.info(f'[delete user] start delete user info')
 
     try:
         mysql_db = MysqlDb()

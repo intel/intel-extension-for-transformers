@@ -156,7 +156,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   params.beam_size = num_beams;
   params.do_sample = do_sample;
   params.batch_size = batch_size;
-  params.beam_search = (num_beams > 1 && !do_sample) ? true : false;
+  params.beam_search = (num_beams > 1 && !do_sample);
   params.top_k = top_k;
   params.top_p = top_p;
   params.temp = temperature;
@@ -171,7 +171,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
     params.memory_type = KV_MEM_TYPE_AUTO;
   else
     fprintf(stderr, "Unexpected memory dtype!");
-  if (params.beam_search) params.memory_type = KV_MEM_TYPE_F16;  // TODO(Yi): NO MHA IN BEAM SEARCH
+  if (batch_size > 1) params.memory_type = KV_MEM_TYPE_F16;  // TODO(Yi): NO MHA IN MULTI-BATCH
 
   printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
          params.top_p);

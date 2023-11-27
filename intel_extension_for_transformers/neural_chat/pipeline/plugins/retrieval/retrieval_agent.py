@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from typing import Dict, List
+from typing import List
 from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
@@ -119,7 +119,7 @@ class Agent_QA():
 
 
     def append_localdb(self, append_path, persist_path):
-        self.db = self.doc_parser.KB_append(append_path)
+        self.db = self.doc_parser.KB_append(append_path, persist_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
                            search_type=self.search_type, search_kwargs=self.search_kwargs)
 
