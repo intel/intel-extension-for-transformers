@@ -25,7 +25,9 @@ import sys
 import time
 import json
 import warnings
+from itertools import chain
 from functools import partial
+from optimum.exporters.tasks import TasksManager
 from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
@@ -84,6 +86,7 @@ from .dynamic.drop_and_restore_utils import (
 from .dynamic.evolution import (
     Evolution, approx_ratio, inverse, store2str
 )
+from .utils.utility_export import get_onnx_configs
 
 from torch.nn import KLDivLoss
 import torch.nn.functional as F
@@ -2054,7 +2057,7 @@ class BaseTrainer():
         self._remove_label(input)
 
         # convert to a dict
-        input = dict(input.items())       
+        input = dict(input.items())   
 
         if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
             input.pop('token_type_ids')
@@ -2062,12 +2065,30 @@ class BaseTrainer():
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
 
+        # set input and output names
+        input_names=list(input.keys())
+        output_names=None
+
+        model_name_or_path = model.config._name_or_path
+        task = TasksManager.infer_task_from_model(model_name_or_path)
+        try:
+            # try to get export config
+            onnx_config = get_onnx_configs(model=model, task=task)
+            inputs = onnx_config.ordered_inputs(model)
+            input_names = list(inputs.keys())
+            output_names = list(onnx_config.outputs.keys())
+            axes_dict = dict(chain(inputs.items(), onnx_config.outputs.items()))
+        except:
+            # skip and use export config collected from dataloader
+            pass
+
         torch.onnx.export(
             model,
             (input, ),
             onnx_save_path,
             opset_version=opset_version,
-            input_names=list(input.keys()),
+            input_names=input_names,
+            output_names=output_names,
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )
