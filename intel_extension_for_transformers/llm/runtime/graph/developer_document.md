@@ -53,6 +53,7 @@ print(pt_ans)
 
 # itrex infer
 model = Model()
+model.tokenizer = tokenizer
 model.init_from_bin("polyglot", "ne-f32.bin", do_sample=False, max_new_tokens=128)
 outputs = model.generate(inputs, do_sample=False, max_new_tokens=128)
 ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
