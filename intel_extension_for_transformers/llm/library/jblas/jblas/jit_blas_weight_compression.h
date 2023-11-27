@@ -181,7 +181,7 @@ class WeightS8ScaleFp32 {
     auto Tscales = utils::amalloc<float>(ssize);
     auto Tzps = utils::amalloc<int8_t>(ptr->mIsAsym ? ssize : 0);
     quantizeWeight(N, K, B, ldb, ptr->mBlockSize, tmpq, Tscales, Tzps);
-    packQWeight(N, K, tmpq, ldb, Tscales, Tzps, stor);
+    packQWeight(N, K, tmpq, N, Tscales, Tzps, stor);
     utils::afree(tmpq);
     utils::afree(Tscales);
     utils::afree(Tzps);
