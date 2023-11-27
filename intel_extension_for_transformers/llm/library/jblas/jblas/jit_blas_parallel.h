@@ -502,7 +502,7 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
       this->mBlock[2] = mKBlock;
       auto maxN = getMaxN(startK);
       this->mBlock[1] = static_cast<int>(maxN);
-      maxN = std::min(this->mBlock[1], this->mThdSize[1]);
+      this->mBlock[1] = std::min(this->mBlock[1], this->mThdSize[1]);
       this->mBlock[1] = utils::padto_le(this->mBlock[1], this->mStep[1]);
       return;
     }
@@ -582,6 +582,16 @@ class StdThreading : public IThreading {
 
  private:
   std::vector<std::thread> thdset;
+};
+
+class SingleThread : public IThreading {
+ public:
+  SingleThread() : IThreading(1) {}
+  void parallel_for(const thread_func& func) override { func(0); }
+
+  virtual void set_threads(int nthreads) override { (void)(nthreads); }
+
+  virtual inline void sync() override {}
 };
 
 template <class Parallel_T, class Launch_T>

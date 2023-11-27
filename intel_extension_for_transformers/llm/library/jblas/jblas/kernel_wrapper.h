@@ -365,15 +365,30 @@ class DecompressKBlockS4Fp {
     if constexpr (utils::isa_base<ISA_T>::avx2 && std::is_same_v<_SCA_T, float> && std::is_same_v<_DST_T, float> &&
                   _PACK_ROW == 1) {
       if (zero_points == nullptr) {
-        ret = avx2::decompress_kblock_bit4_packrow1<true>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
-                                                          k_offset, kblock, NPad, &avx2::dequant_s8_N_avx2<48, true>,
-                                                          &avx2::convert_s4_s8_16_sse<S4_T>,
-                                                          reinterpret_cast<int8_t*>(tmp), tmpsize);
+        if (col == 24) {
+          ret = avx2::decompress_kblock_bit4_packrow1<true, 24>(
+              srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
+              &avx2::dequant_s8_N_avx2<24, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              reinterpret_cast<int8_t*>(tmp), tmpsize);
+        } else if (col == 48) {
+          ret = avx2::decompress_kblock_bit4_packrow1<true, 48>(
+              srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
+              &avx2::dequant_s8_N_avx2<48, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              reinterpret_cast<int8_t*>(tmp), tmpsize);
+        }
+
       } else {
-        ret = avx2::decompress_kblock_bit4_packrow1<false>(
-            srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
-            &avx2::dequant_s8_N_avx2<48, false>, &avx2::convert_s4_s8_16_sse<S4_T>, reinterpret_cast<int8_t*>(tmp),
-            tmpsize);
+        if (col == 24) {
+          ret = avx2::decompress_kblock_bit4_packrow1<false, 24>(
+              srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
+              &avx2::dequant_s8_N_avx2<24, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              reinterpret_cast<int8_t*>(tmp), tmpsize);
+        } else if (col == 48) {
+          ret = avx2::decompress_kblock_bit4_packrow1<false, 48>(
+              srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
+              &avx2::dequant_s8_N_avx2<48, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              reinterpret_cast<int8_t*>(tmp), tmpsize);
+        }
       }
 
       if (ret == JblasSuccess) return ret;

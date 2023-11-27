@@ -484,89 +484,93 @@ inline JBLAS_CODE decompress_kblock_f4_fp_noscale(utils::f4x2* srcptr, DST_T* ds
   return JblasSuccess;
 }
 
-template <bool _IS_SYM, typename _ST, typename _DST_T>
-static inline JBLAS_CODE decompress_kblock_bit4_packrow1(utils::bit4x2* srcptr, _DST_T* dstptr, int row, int col,
-                                                         int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
-                                                         int k_offset, int kblock, int NPad,
-                                                         void (*dequantize)(_DST_T*, int8_t*, __m256*, __m256i*),
-                                                         void (*pad_bit4)(int8_t*, int8_t*), int8_t* tmpbuf,
-                                                         size_t tmpsize) {
+template <bool _IS_SYM, int _NCOL, typename _ST, typename _DST_T>
+static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
+    utils::bit4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
+    int k_offset, int kblock, int NPad, void (*dequantize)(_DST_T*, int8_t*, __m256*, __m256i*),
+    void (*pad_bit4_16)(int8_t*, int8_t*), void (*pad_bit4_8)(int8_t*, int8_t*), int8_t* tmpbuf, size_t tmpsize) {
   uint32_t mask = 0xf0f0f0f0;
   auto vmask = _mm256_set1_epi32(*reinterpret_cast<int*>(&mask));
-  if (col == 48) {
-    __m256 vscales[6];
-    __m256i vzps[6];
-    int constexpr UnrollRow = 4;
-    int constexpr Loop16 = 48 * UnrollRow / 16;
-    assert(tmpsize >= (48 * UnrollRow));
-    int row0 = kblock - k_offset % kblock;
-    row0 = row0 == kblock ? 0 : row0;
-    row0 = row0 > row ? row : row0;
-    int row1 = row - row0;
-    int irow = 0;
-    if (row0) {
-      int rowpad4 = utils::padto_le(row0, UnrollRow);
-      for (int iv = 0; iv < 6; iv++) {
-        vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
-        if constexpr (!_IS_SYM) {
-          auto tmp =
-              _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
-          vzps[iv] = _mm256_cvtepi8_epi32(tmp);
-        }
+  int constexpr NReg = _NCOL / 8;
+  assert(col == _NCOL);
+  assert(ld_src == _NCOL);
+  assert(ld_dst == _NCOL);
+  __m256 vscales[NReg];
+  __m256i vzps[NReg];
+  int constexpr UnrollRow = 4;
+  assert(kblock % UnrollRow == 0);
+  int constexpr Loop16 = _NCOL * UnrollRow / 16;
+  assert(tmpsize >= (_NCOL * UnrollRow));
+  int row0 = kblock - k_offset % kblock;
+  row0 = row0 == kblock ? 0 : row0;
+  row0 = row0 > row ? row : row0;
+  int row1 = row - row0;
+  int irow = 0;
+  if (row0) {
+    int rowpad4 = utils::padto_le(row0, UnrollRow);
+    for (int iv = 0; iv < NReg; iv++) {
+      vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
+      if constexpr (!_IS_SYM) {
+        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        vzps[iv] = _mm256_cvtepi8_epi32(tmp);
       }
-      for (; irow < rowpad4; irow += UnrollRow) {
-        for (int iter16 = 0; iter16 < Loop16; iter16++)
-          pad_bit4(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
-        for (int iterr = 0; iterr < UnrollRow; iterr++)
-          dequantize(dstptr + (irow + iterr) * ld_dst, tmpbuf + iterr * 48, vscales, vzps);
-      }
-      for (; irow < row0; irow++) {
+    }
+    for (; irow < rowpad4; irow += UnrollRow) {
+      for (int iter16 = 0; iter16 < Loop16; iter16++)
+        pad_bit4_16(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
+      for (int iterr = 0; iterr < UnrollRow; iterr++)
+        dequantize(dstptr + (irow + iterr) * ld_dst, tmpbuf + iterr * _NCOL, vscales, vzps);
+    }
+    for (; irow < row0; irow++) {
+      if constexpr (_NCOL == 24) {
+        pad_bit4_16(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2));
+        pad_bit4_8(tmpbuf + 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8));
+      } else {
         for (int iter16 = 0; iter16 < 3; iter16++)
-          pad_bit4(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
-        dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
+          pad_bit4_16(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
       }
+      dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
     }
-
-    int row1_blk = utils::padto_le(row1, kblock) + row0;
-    assert(kblock % UnrollRow == 0);
-    assert(ld_src == 48);
-    assert(ld_dst == 48);
-
-    for (; irow < row1_blk; irow += kblock) {
-      for (int iv = 0; iv < 6; iv++) {
-        vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
-        if constexpr (!_IS_SYM) {
-          auto tmp =
-              _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
-          vzps[iv] = _mm256_cvtepi8_epi32(tmp);
-        }
-      }
-      for (int irr = 0; irr < kblock; irr += UnrollRow) {
-        for (int iter16 = 0; iter16 < Loop16; iter16++)
-          pad_bit4(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + (irow + irr) * ld_src / 2 + 8 * iter16));
-        for (int iterr = 0; iterr < UnrollRow; iterr++)
-          dequantize(dstptr + (irow + irr + iterr) * ld_src, tmpbuf + iterr * 48, vscales, vzps);
-      }
-    }
-    if (irow < row) {
-      for (int iv = 0; iv < 6; iv++) {
-        vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
-        if constexpr (!_IS_SYM) {
-          auto tmp =
-              _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
-          vzps[iv] = _mm256_cvtepi8_epi32(tmp);
-        }
-      }
-      for (; irow < row; irow++) {
-        for (int iter16 = 0; iter16 < 3; iter16++)
-          pad_bit4(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
-        dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
-      }
-    }
-    return JblasSuccess;
-  } else {
-    assert(0);
   }
+
+  int row1_blk = utils::padto_le(row1, kblock) + row0;
+  for (; irow < row1_blk; irow += kblock) {
+    for (int iv = 0; iv < NReg; iv++) {
+      vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
+      if constexpr (!_IS_SYM) {
+        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        vzps[iv] = _mm256_cvtepi8_epi32(tmp);
+      }
+    }
+    for (int irr = 0; irr < kblock; irr += UnrollRow) {
+      for (int iter16 = 0; iter16 < Loop16; iter16++)
+        pad_bit4_16(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + (irow + irr) * ld_src / 2 + 8 * iter16));
+      for (int iterr = 0; iterr < UnrollRow; iterr++)
+        dequantize(dstptr + (irow + irr + iterr) * ld_src, tmpbuf + iterr * _NCOL, vscales, vzps);
+    }
+  }
+  if (irow < row) {
+    for (int iv = 0; iv < NReg; iv++) {
+      vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
+      if constexpr (!_IS_SYM) {
+        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        vzps[iv] = _mm256_cvtepi8_epi32(tmp);
+      }
+    }
+    for (; irow < row; irow++) {
+      if constexpr (_NCOL == 24) {
+        pad_bit4_16(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2));
+        pad_bit4_8(tmpbuf + 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8));
+      } else {
+        for (int iter16 = 0; iter16 < 3; iter16++)
+          pad_bit4_16(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
+      }
+      dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
+    }
+  }
+  return JblasSuccess;
+
+  assert(0);
   return JblasNotSupport;
 }
 
@@ -585,9 +589,16 @@ static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* ds
                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad,
                                                  int8_t* tmp, size_t tmpsize) {
   if constexpr (_PACK_ROW == 1) {
-    return decompress_kblock_bit4_packrow1<true, _ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
-                                                              k_offset, kblock, NPad, &dequant_f4_N<48, _DST_T, _F4_T>,
-                                                              fp4_pad_4bit, tmp, tmpsize);
+    if (col == 24) {
+      return decompress_kblock_bit4_packrow1<true, 24, _ST, _DST_T>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset, kblock, NPad,
+          &dequant_f4_N<24, _DST_T, _F4_T>, fp4_pad_4bit, &ref::convert_s4_s8_8<_F4_T>, tmp, tmpsize);
+    }
+    if (col == 48) {
+      return decompress_kblock_bit4_packrow1<true, 48, _ST, _DST_T>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset, kblock, NPad,
+          &dequant_f4_N<48, _DST_T, _F4_T>, fp4_pad_4bit, &ref::convert_s4_s8_8<_F4_T>, tmp, tmpsize);
+    }
   } else if constexpr (_PACK_ROW == 2) {
     return decompress_kblock_bit4_packrow2<true, _ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
                                                               k_offset, kblock, NPad, &dequant_f4_N<64, _DST_T, _F4_T>,
