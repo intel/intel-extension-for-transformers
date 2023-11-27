@@ -22,8 +22,8 @@ from ut_utils import *
 @pytest.mark.parametrize("m", (256, ))
 @pytest.mark.parametrize("n", (512,))
 @pytest.mark.parametrize("k", (1024,))
-@pytest.mark.parametrize("trans_matB", (True,False))
-@pytest.mark.parametrize("dt", ("fp32",))
+@pytest.mark.parametrize("trans_matB", (True, False))
+@pytest.mark.parametrize("dt", ("fp32", "bf16"))
 def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     torch.manual_seed(0)
     activation = torch.rand(m, k, dtype=torch.float)
@@ -39,7 +39,7 @@ def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     tar_dst = torch.zeros(m, n, dtype=torch.float)
     if dt == "bf16":
         tar_dst = tar_dst.to(torch.bfloat16)
-    torch.ops.jblasop.matmul(activation, wei,tar_dst, trans_matB)
+    torch.ops.jblasop.matmul(activation, wei, tar_dst, trans_matB)
     if trans_matB:
         wei = torch.transpose(wei, 0, 1)
     ref_dst = torch.matmul(activation, wei)
