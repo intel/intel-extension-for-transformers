@@ -93,7 +93,40 @@ class TestChatbotBuilder(unittest.TestCase):
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
-        print("response: ", response)
+        self.assertIsNotNone(response)
+
+        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceEmbeddings
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        plugins.retrieval.args["embedding_model"] = "thenlper/gte-base"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
+
+        # # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceEmbeddings
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        plugins.retrieval.args["embedding_model"] = "Intel/bge-base-en-v1.5-sts-int8-static"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
+
+        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceInstructEmbeddings
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        plugins.retrieval.args["embedding_model"] = "hkunlp/instructor-large"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
 
 if __name__ == '__main__':
     unittest.main()
