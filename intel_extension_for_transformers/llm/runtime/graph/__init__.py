@@ -84,7 +84,7 @@ class Model:
         # check cache and quantization
         if use_quant:
             if quant_kwargs['weight_dtype'] == "int8" and quant_kwargs['compute_dtype'] == "bf16":
-                raise ValueError("Error: This combination (weight_dtype = int8, compute_dtype=bf16)"
+                raise ValueError("Error: This combination (weight_dtype=int8, compute_dtype=bf16)"
                                  " is not currently supported. Please use other combinations.")
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
