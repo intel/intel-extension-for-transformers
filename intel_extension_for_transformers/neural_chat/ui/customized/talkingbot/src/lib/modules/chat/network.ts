@@ -42,7 +42,7 @@ async function fetchAudioText(file) {
 		return await response.json();
 	} catch (error) {
 		console.error('network error: ', error);
-		return undefined
+		return error;
 	}
 }
 

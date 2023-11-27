@@ -108,8 +108,6 @@ RUN cd /intel-extension-for-transformers && \
     pip install -r requirements.txt && \
     pip install -v .
 
-COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
-
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
@@ -119,7 +117,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.12 origin/1.12.0 && \
-    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    git apply /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e .
 
 # Install dependency

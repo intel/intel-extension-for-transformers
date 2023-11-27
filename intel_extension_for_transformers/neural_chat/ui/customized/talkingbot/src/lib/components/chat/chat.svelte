@@ -44,9 +44,14 @@
 		// console.log('res ---', res);
 		const eventSource = await chatResponse.fetchAudioStream(text, voice, knowledge)
 
+		eventSource.addEventListener('error', function(event) {
+			loading = false;
+			window.confirm('An error occurred. Loading has been stopped.');
+
+			return;
+		});
 		// may get out of order
 		eventSource.addEventListener("message", async (e) => {
-			loading = false;
 			let currentMsg = e.data;
 			if (currentMsg.startsWith("b'")) {
 				const audioUrl = "data:audio/wav;base64," + currentMsg.slice(2, -1)
@@ -58,15 +63,17 @@
 				}
 				scrollToBottom(scrollToDiv);
 			} else if (currentMsg === '[DONE]') {
-				setTimeout(() => {}, 0);
-				let content = chatMessages[chatMessages.length - 1].content as string[]
-				let text = ''
-				for (let url of content) {
-					const blob = await fetch(url).then(r => r.blob());
-					text += (await chatResponse.fetchAudioText(blob)).asr_result + '. '
-				}
-				chatMessages[chatMessages.length - 1].content = [...content, 'done']
-				chatMessages[chatMessages.length - 1].text = text
+				loading = false;
+				setTimeout(async () => {
+					let content = chatMessages[chatMessages.length - 1].content as string[]
+					let text = ''
+					for (let url of content) {
+						const blob = await fetch(url).then(r => r.blob());
+						text += (await chatResponse.fetchAudioText(blob)).asr_result + '. '
+					}
+					chatMessages[chatMessages.length - 1].content = [...content, 'done']
+					chatMessages[chatMessages.length - 1].text = text
+				}, 1000);
 			}
 		});
 
@@ -127,8 +134,15 @@
 		{/if}
 
 		<!-- Input -->
+		{#if loading}
+			<div class="flex flex-col items-center">
+			</div>
+		{:else}
 		<div class="flex flex-col items-center">
-			<VoiceButton bind:chatMessages on:done={() => {handleSubmit()}} on:start={() => {loading = true}}/>
+			<VoiceButton bind:chatMessages on:done={() => {
+				handleSubmit()}} on:start={() => {loading = true}}/>
 		</div>
+		{/if}
+		
 	</div>
 </div>
