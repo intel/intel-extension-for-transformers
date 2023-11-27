@@ -286,7 +286,7 @@ void dequantize_gemm_run(int iter) {
         FAIL();
     }
 
-    size_t ops = 2 * matrix_m * matrix_n * matrix_k;
+    size_t ops = 2 * matrix_m * matrix_n * matrix_k + matrix_m * matrix_n;
     profiling_helper prof("dequantize_gemm", ops, "gflops");
     try {
         for (int i = 0; i < iter; i++) {
