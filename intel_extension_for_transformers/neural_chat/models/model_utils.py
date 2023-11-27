@@ -516,7 +516,9 @@ def load_model(
         if device == "cpu":
             import intel_extension_for_pytorch as intel_ipex
             if re.search("llama", model_name, re.IGNORECASE):
-                qconfig = None if ipex_int8==False else intel_ipex.quantization.get_weight_only_quant_qconfig_mapping(weight_dtype=torch.quint4x2, lowp_mode=intel_ipex.quantization.WoqLowpMode.BF16)
+                qconfig = None if ipex_int8 == False else intel_ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                    weight_dtype=torch.quint4x2, lowp_mode=intel_ipex.quantization.WoqLowpMode.BF16
+                )
                 model = intel_ipex.optimize_transformers(model.eval(),
                                                          dtype=torch_dtype,
                                                          inplace=True,
