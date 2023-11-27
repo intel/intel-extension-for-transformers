@@ -1,0 +1,255 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.langchain.embeddings.embeddings`
+==========================================================================
+
+.. py:module:: intel_extension_for_transformers.langchain.embeddings.embeddings
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings
+   intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings
+   intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings
+
+
+
+
+.. py:class:: HuggingFaceEmbeddings(**kwargs: Any)
+
+
+
+
+   HuggingFace sentence_transformers embedding models.
+
+   To use, you should have the ``sentence_transformers`` python package installed.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings
+
+       model_name = "sentence-transformers/all-mpnet-base-v2"
+       model_kwargs = {'device': 'cpu'}
+       encode_kwargs = {'normalize_embeddings': False}
+       hf = HuggingFaceEmbeddings(
+           model_name=model_name,
+           model_kwargs=model_kwargs,
+           encode_kwargs=encode_kwargs
+       )
+
+   .. py:class:: Config
+
+
+      Configuration for this pydantic object.
+
+
+   .. py:attribute:: model_name
+      :type: str
+
+      Model name to use.
+
+   .. py:attribute:: cache_folder
+      :type: Optional[str]
+
+      Path to store models.
+      Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+
+   .. py:attribute:: model_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass to the model.
+
+   .. py:attribute:: encode_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass when calling the `encode` method of the model.
+
+   .. py:attribute:: multi_process
+      :type: bool
+      :value: False
+
+      Run encode() on multiple GPUs.
+
+   .. py:method:: embed_documents(texts: List[str]) -> List[List[float]]
+
+      Compute doc embeddings using a HuggingFace transformer model.
+
+      :param texts: The list of texts to embed.
+
+      :returns: List of embeddings, one for each text.
+
+
+   .. py:method:: embed_query(text: str) -> List[float]
+
+      Compute query embeddings using a HuggingFace transformer model.
+
+      :param text: The text to embed.
+
+      :returns: Embeddings for the text.
+
+
+
+.. py:class:: HuggingFaceBgeEmbeddings(**kwargs: Any)
+
+
+
+
+   HuggingFace BGE sentence_transformers embedding models.
+
+   To use, you should have the ``sentence_transformers`` python package installed.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from intel_extension_for_transformers.langchain.embeddings import HuggingFaceBgeEmbeddings
+
+       model_name = "BAAI/bge-large-en"
+       model_kwargs = {'device': 'cpu'}
+       encode_kwargs = {'normalize_embeddings': True}
+       hf = HuggingFaceBgeEmbeddings(
+           model_name=model_name,
+           model_kwargs=model_kwargs,
+           encode_kwargs=encode_kwargs
+       )
+
+   .. py:class:: Config
+
+
+      Configuration for this pydantic object.
+
+
+   .. py:attribute:: model_name
+      :type: str
+
+      Model name to use.
+
+   .. py:attribute:: cache_folder
+      :type: Optional[str]
+
+      Path to store models.
+      Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+
+   .. py:attribute:: model_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass to the model.
+
+   .. py:attribute:: encode_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass when calling the `encode` method of the model.
+
+   .. py:attribute:: query_instruction
+      :type: str
+
+      Instruction to use for embedding query.
+
+   .. py:method:: embed_documents(texts: List[str]) -> List[List[float]]
+
+      Compute doc embeddings using a HuggingFace transformer model.
+
+      :param texts: The list of texts to embed.
+
+      :returns: List of embeddings, one for each text.
+
+
+   .. py:method:: embed_query(text: str) -> List[float]
+
+      Compute query embeddings using a HuggingFace transformer model.
+
+      :param text: The text to embed.
+
+      :returns: Embeddings for the text.
+
+
+
+.. py:class:: HuggingFaceInstructEmbeddings(**kwargs: Any)
+
+
+
+
+   Wrapper around sentence_transformers embedding models.
+
+   To use, you should have the ``sentence_transformers``
+   and ``InstructorEmbedding`` python packages installed.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from intel_extension_for_transformers.langchain.embeddings import HuggingFaceInstructEmbeddings
+
+       model_name = "hkunlp/instructor-large"
+       model_kwargs = {'device': 'cpu'}
+       encode_kwargs = {'normalize_embeddings': True}
+       hf = HuggingFaceInstructEmbeddings(
+           model_name=model_name,
+           model_kwargs=model_kwargs,
+           encode_kwargs=encode_kwargs
+       )
+
+   .. py:class:: Config
+
+
+      Configuration for this pydantic object.
+
+
+   .. py:attribute:: model_name
+      :type: str
+
+      Model name to use.
+
+   .. py:attribute:: cache_folder
+      :type: Optional[str]
+
+      Path to store models.
+      Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.
+
+   .. py:attribute:: model_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass to the model.
+
+   .. py:attribute:: encode_kwargs
+      :type: Dict[str, Any]
+
+      Keyword arguments to pass when calling the `encode` method of the model.
+
+   .. py:attribute:: embed_instruction
+      :type: str
+
+      Instruction to use for embedding documents.
+
+   .. py:attribute:: query_instruction
+      :type: str
+
+      Instruction to use for embedding query.
+
+   .. py:method:: embed_documents(texts: List[str]) -> List[List[float]]
+
+      Compute doc embeddings using a HuggingFace instruct model.
+
+      :param texts: The list of texts to embed.
+
+      :returns: List of embeddings, one for each text.
+
+
+   .. py:method:: embed_query(text: str) -> List[float]
+
+      Compute query embeddings using a HuggingFace instruct model.
+
+      :param text: The text to embed.
+
+      :returns: Embeddings for the text.
+
+
+

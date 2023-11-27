@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.langchain.embeddings.embeddings &mdash; Intel® Extension for Transformers 0.1.dev1+g80a779b documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.langchain.embeddings.embeddings</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/autoapi/intel_extension_for_transformers/langchain/embeddings/embeddings/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.langchain.embeddings.embeddings">
+<span id="intel-extension-for-transformers-langchain-embeddings-embeddings"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.langchain.embeddings.embeddings" title="intel_extension_for_transformers.langchain.embeddings.embeddings"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.langchain.embeddings.embeddings</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.langchain.embeddings.embeddings" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings" title="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HuggingFaceEmbeddings</span></code></a></p></td>
+<td><p>HuggingFace sentence_transformers embedding models.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings" title="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HuggingFaceBgeEmbeddings</span></code></a></p></td>
+<td><p>HuggingFace BGE sentence_transformers embedding models.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings" title="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HuggingFaceInstructEmbeddings</span></code></a></p></td>
+<td><p>Wrapper around sentence_transformers embedding models.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.langchain.embeddings.embeddings.</span></span><span class="sig-name descname"><span class="pre">HuggingFaceEmbeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings" title="Link to this definition"></a></dt>
+<dd><p>HuggingFace sentence_transformers embedding models.</p>
+<p>To use, you should have the <code class="docutils literal notranslate"><span class="pre">sentence_transformers</span></code> python package installed.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.embeddings</span> <span class="kn">import</span> <span class="n">HuggingFaceEmbeddings</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;sentence-transformers/all-mpnet-base-v2&quot;</span>
+<span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">}</span>
+<span class="n">encode_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;normalize_embeddings&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+<span class="n">hf</span> <span class="o">=</span> <span class="n">HuggingFaceEmbeddings</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_kwargs</span><span class="p">,</span>
+    <span class="n">encode_kwargs</span><span class="o">=</span><span class="n">encode_kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.Config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for this pydantic object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.model_name">
+<span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.model_name" title="Link to this definition"></a></dt>
+<dd><p>Model name to use.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.cache_folder">
+<span class="sig-name descname"><span class="pre">cache_folder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.cache_folder" title="Link to this definition"></a></dt>
+<dd><p>Path to store models.
+Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.model_kwargs">
+<span class="sig-name descname"><span class="pre">model_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.model_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass to the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.encode_kwargs">
+<span class="sig-name descname"><span class="pre">encode_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.encode_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass when calling the <cite>encode</cite> method of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.multi_process">
+<span class="sig-name descname"><span class="pre">multi_process</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.multi_process" title="Link to this definition"></a></dt>
+<dd><p>Run encode() on multiple GPUs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.embed_documents">
+<span class="sig-name descname"><span class="pre">embed_documents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.embed_documents" title="Link to this definition"></a></dt>
+<dd><p>Compute doc embeddings using a HuggingFace transformer model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>texts</strong> – The list of texts to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of embeddings, one for each text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.embed_query">
+<span class="sig-name descname"><span class="pre">embed_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceEmbeddings.embed_query" title="Link to this definition"></a></dt>
+<dd><p>Compute query embeddings using a HuggingFace transformer model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> – The text to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Embeddings for the text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.langchain.embeddings.embeddings.</span></span><span class="sig-name descname"><span class="pre">HuggingFaceBgeEmbeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings" title="Link to this definition"></a></dt>
+<dd><p>HuggingFace BGE sentence_transformers embedding models.</p>
+<p>To use, you should have the <code class="docutils literal notranslate"><span class="pre">sentence_transformers</span></code> python package installed.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.embeddings</span> <span class="kn">import</span> <span class="n">HuggingFaceBgeEmbeddings</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;BAAI/bge-large-en&quot;</span>
+<span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">}</span>
+<span class="n">encode_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;normalize_embeddings&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<span class="n">hf</span> <span class="o">=</span> <span class="n">HuggingFaceBgeEmbeddings</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_kwargs</span><span class="p">,</span>
+    <span class="n">encode_kwargs</span><span class="o">=</span><span class="n">encode_kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.Config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for this pydantic object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.model_name">
+<span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.model_name" title="Link to this definition"></a></dt>
+<dd><p>Model name to use.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.cache_folder">
+<span class="sig-name descname"><span class="pre">cache_folder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.cache_folder" title="Link to this definition"></a></dt>
+<dd><p>Path to store models.
+Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.model_kwargs">
+<span class="sig-name descname"><span class="pre">model_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.model_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass to the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.encode_kwargs">
+<span class="sig-name descname"><span class="pre">encode_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.encode_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass when calling the <cite>encode</cite> method of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.query_instruction">
+<span class="sig-name descname"><span class="pre">query_instruction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.query_instruction" title="Link to this definition"></a></dt>
+<dd><p>Instruction to use for embedding query.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.embed_documents">
+<span class="sig-name descname"><span class="pre">embed_documents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.embed_documents" title="Link to this definition"></a></dt>
+<dd><p>Compute doc embeddings using a HuggingFace transformer model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>texts</strong> – The list of texts to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of embeddings, one for each text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.embed_query">
+<span class="sig-name descname"><span class="pre">embed_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceBgeEmbeddings.embed_query" title="Link to this definition"></a></dt>
+<dd><p>Compute query embeddings using a HuggingFace transformer model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> – The text to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Embeddings for the text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.langchain.embeddings.embeddings.</span></span><span class="sig-name descname"><span class="pre">HuggingFaceInstructEmbeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings" title="Link to this definition"></a></dt>
+<dd><p>Wrapper around sentence_transformers embedding models.</p>
+<p>To use, you should have the <code class="docutils literal notranslate"><span class="pre">sentence_transformers</span></code>
+and <code class="docutils literal notranslate"><span class="pre">InstructorEmbedding</span></code> python packages installed.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.langchain.embeddings</span> <span class="kn">import</span> <span class="n">HuggingFaceInstructEmbeddings</span>
+
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;hkunlp/instructor-large&quot;</span>
+<span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">}</span>
+<span class="n">encode_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;normalize_embeddings&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<span class="n">hf</span> <span class="o">=</span> <span class="n">HuggingFaceInstructEmbeddings</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+    <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_kwargs</span><span class="p">,</span>
+    <span class="n">encode_kwargs</span><span class="o">=</span><span class="n">encode_kwargs</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.Config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for this pydantic object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.model_name">
+<span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.model_name" title="Link to this definition"></a></dt>
+<dd><p>Model name to use.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.cache_folder">
+<span class="sig-name descname"><span class="pre">cache_folder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.cache_folder" title="Link to this definition"></a></dt>
+<dd><p>Path to store models.
+Can be also set by SENTENCE_TRANSFORMERS_HOME environment variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.model_kwargs">
+<span class="sig-name descname"><span class="pre">model_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.model_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass to the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.encode_kwargs">
+<span class="sig-name descname"><span class="pre">encode_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.encode_kwargs" title="Link to this definition"></a></dt>
+<dd><p>Keyword arguments to pass when calling the <cite>encode</cite> method of the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_instruction">
+<span class="sig-name descname"><span class="pre">embed_instruction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_instruction" title="Link to this definition"></a></dt>
+<dd><p>Instruction to use for embedding documents.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.query_instruction">
+<span class="sig-name descname"><span class="pre">query_instruction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.query_instruction" title="Link to this definition"></a></dt>
+<dd><p>Instruction to use for embedding query.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_documents">
+<span class="sig-name descname"><span class="pre">embed_documents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_documents" title="Link to this definition"></a></dt>
+<dd><p>Compute doc embeddings using a HuggingFace instruct model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>texts</strong> – The list of texts to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of embeddings, one for each text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_query">
+<span class="sig-name descname"><span class="pre">embed_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/langchain/embeddings/embeddings.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.langchain.embeddings.embeddings.HuggingFaceInstructEmbeddings.embed_query" title="Link to this definition"></a></dt>
+<dd><p>Compute query embeddings using a HuggingFace instruct model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> – The text to embed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Embeddings for the text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7effb24b29e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
