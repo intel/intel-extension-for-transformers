@@ -25,7 +25,12 @@ import re, os
 from threading import Thread
 import contextlib
 from huggingface_hub import snapshot_download
-from config_logging import configure_logging
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 from typing import List
 from transformers import (
     GenerationConfig,
@@ -45,7 +50,6 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
-logger = configure_logging()
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
 
@@ -80,7 +84,7 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
         # Checks if online or not
         if is_offline_mode():
             if local_rank == 0:
-                logger.info("Offline mode: forcing local_files_only=True")
+                logging.info("Offline mode: forcing local_files_only=True")
 
         # Only download PyTorch weights by default
         allow_patterns = ["*.bin"]
@@ -205,7 +209,7 @@ def max_input_len(input_text_length):
     elif input_text_length <= 2048:
         return 2048
     else:
-        logger.info("Max support length is 4096")
+        logging.info("Max support length is 4096")
         return 4096
 
 
@@ -228,7 +232,7 @@ def import_deepspeed():
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
-    logger.info("DeepSpeed is enabled.")
+    logging.info("DeepSpeed is enabled.")
 
 
 def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
@@ -283,7 +287,7 @@ def load_model(
     Raises:
         ValueError: If the model is not supported, ValueError is raised.
     """
-    logger.info("Loading model {}".format(model_name))
+    logging.info("Loading model {}".format(model_name))
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
@@ -306,7 +310,7 @@ def load_model(
         if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
             bitsandbytes_quant_config = optimization_config
         else:
-            logger.warning(
+            logging.warning(
                 "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
                 + " library is available, ignoring bitsandbytes config now."
             )
@@ -318,7 +322,7 @@ def load_model(
     elif dtype == "float32":
         torch_dtype = torch.float32
     else:
-        logger.warning(f"Unsupported dtype {dtype}, using float32 now.")
+        logging.warning(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
@@ -339,11 +343,11 @@ def load_model(
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
-        logger.info("Optimized Model loaded.")
+        logging.info("Optimized Model loaded.")
         return
 
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        logger.warning("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
+        logging.warning("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
@@ -511,7 +515,7 @@ def load_model(
                 model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    logger.info("Model loaded.")
+    logging.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}

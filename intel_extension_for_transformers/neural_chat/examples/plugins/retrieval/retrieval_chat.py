@@ -18,9 +18,12 @@
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.plugins import plugins
-from config_logging import configure_logging
-
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 def main():
     plugins.retrieval.enable = True
@@ -29,7 +32,7 @@ def main():
     chatbot = build_chatbot(pipeline_args)
 
     response = chatbot.predict(query="What is IDM 2.0?")
-    logger.info(response)
+    logging.info(response)
 
 if __name__ == "__main__":
     main()

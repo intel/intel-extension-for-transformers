@@ -25,8 +25,12 @@ from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbed
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
-from config_logging import configure_logging
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
@@ -58,7 +62,7 @@ class DocumentIndexing:
                     encode_kwargs={"normalize_embeddings": True},
                 )
         except Exception as e:
-            logger.info("Please selet a proper embedding model")
+            logging.info("Please selet a proper embedding model")
             
         
         
@@ -78,7 +82,7 @@ class DocumentIndexing:
         elif re.match(r'^https?:/{2}\w.+$', input):
             chuck = load_html_data(input)
         else:
-            logger.info("This file is ignored. Will support this file format soon.")
+            logging.info("This file is ignored. Will support this file format soon.")
         return chuck
 
 
@@ -98,7 +102,7 @@ class DocumentIndexing:
                     chuck = [[content.strip(), link]]
                 chucks += chuck
             else:
-                logger.info("The given link/str %s cannot be parsed.", link)
+                logging.info("The given link/str %s cannot be parsed.", link)
 
         return chucks
 
@@ -122,7 +126,7 @@ class DocumentIndexing:
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
-                    logger.info("This file %s is ignored. Will support this file format soon.", filename)
+                    logging.info("This file %s is ignored. Will support this file format soon.", filename)
         return paragraphs
     
     def load(self, input):
@@ -130,7 +134,7 @@ class DocumentIndexing:
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         else:
             vectordb=None
-            logger.info("Will be removed in another PR")
+            logging.info("Will be removed in another PR")
         return vectordb
 
     def reload(self, local_path):
@@ -138,7 +142,7 @@ class DocumentIndexing:
             vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
         else:
             vectordb=None
-            logger.info("Will be removed in another PR")
+            logging.info("Will be removed in another PR")
         return vectordb
             
     def KB_construct(self, input):
@@ -151,14 +155,14 @@ class DocumentIndexing:
             elif os.path.isdir(input):
                 data_collection = self.batch_parse_document(input)
             else:
-                logger.info("Please check your upload file and try again!")
+                logging.info("Please check your upload file and try again!")
         elif isinstance(input, List):
             try:
                 data_collection = self.parse_html(input)
             except:
-                logger.info("The given link/str is unavailable. Please try another one!")
+                logging.info("The given link/str is unavailable. Please try another one!")
         else:
-            logger.error("The input path is invalid!")
+            logging.error("The input path is invalid!")
 
         if self.retrieval_type == "dense":
             documents = []
@@ -172,10 +176,10 @@ class DocumentIndexing:
             vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
                                              persist_directory=self.persist_dir)
             vectordb.persist()
-            logger.info("The local knowledge base has been successfully built!")
+            logging.info("The local knowledge base has been successfully built!")
             return vectordb
         elif self.retrieval_type == "sparse":
-            logger.info("Will be removed in another PR")
+            logging.info("Will be removed in another PR")
 
 
     def KB_append(self, input):  ### inmemory documentstore please use KB construct
@@ -185,14 +189,14 @@ class DocumentIndexing:
             elif os.path.isdir(input):
                 data_collection = self.batch_parse_document(input)
             else:
-                logger.info("Please check your upload file and try again!")
+                logging.info("Please check your upload file and try again!")
         elif isinstance(input, List):
             try:
                 data_collection = self.parse_html(input)
             except:
-                logger.info("The given link/str is unavailable. Please try another one!")
+                logging.info("The given link/str is unavailable. Please try another one!")
         else:
-            logger.error("The input format is invalid!")
+            logging.error("The input format is invalid!")
 
         if self.retrieval_type == "dense":
             documents = []
@@ -206,7 +210,7 @@ class DocumentIndexing:
             vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
                                              persist_directory=self.persist_dir)
             vectordb.persist()
-            logger.info("The local knowledge base has been successfully built!")
+            logging.info("The local knowledge base has been successfully built!")
             return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         elif self.retrieval_type == "sparse":
-            logger.error("Will be removed in another PR.")
+            logging.error("Will be removed in another PR.")

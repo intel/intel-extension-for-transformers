@@ -23,9 +23,12 @@ import wave
 import webrtcvad
 import os
 import argparse
-from config_logging import configure_logging
-
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 def read_wave(path):
     """Reads a .wav file.
@@ -172,7 +175,7 @@ def main(args):
     for filename in path_list:
         filename_suffix = os.path.splitext(filename)[1]
         if filename_suffix == '.wav':
-            logger.info("processing %s", filename)
+            logging.info("processing %s", filename)
             audio, sample_rate = read_wave(os.path.join(input_dir, filename))
             vad = webrtcvad.Vad(int(args.ag))
             frames = frame_generator(30, audio, sample_rate)
@@ -180,10 +183,10 @@ def main(args):
             segments = vad_collector(sample_rate, 30, 300, vad, frames)
             for i, segment in enumerate(segments):
                 path = os.path.join(input_dir, args.out_path, os.path.splitext(filename)[0] + '_%002d.wav' % (i,))
-                logger.info('Writing %s', path)
+                logging.info('Writing %s', path)
                 write_wave(path, segment, sample_rate)
         else:
-            logger.info("unsupported file")
+            logging.info("unsupported file")
 
 
 if __name__ == '__main__':
@@ -197,6 +200,6 @@ if __name__ == '__main__':
 
     is_exist = os.path.exists(args.in_path)
     if not is_exist:
-        logger.info("path not existed!")
+        logging.info("path not existed!")
     else:
         main(args)     

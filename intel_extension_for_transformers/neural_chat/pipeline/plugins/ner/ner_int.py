@@ -17,7 +17,6 @@
 
 import time
 import spacy
-from config_logging import configure_logging
 from transformers import AutoTokenizer, TextIteratorStreamer
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM, 
@@ -29,8 +28,12 @@ from .utils.utils import (
 )
 from .utils.process_text import process_time, process_entities
 from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
-
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
 class NamedEntityRecognitionINT():
@@ -52,19 +55,19 @@ class NamedEntityRecognitionINT():
         self.model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                           quantization_config=config, 
                                                           trust_remote_code=True)
-        logger.info("[NER info] Spacy and LLM model initialized.")
+        logging.info("[NER info] Spacy and LLM model initialized.")
 
 
     def inference(self, query: str, prompt: str=None, threads: int=52, max_new_tokens: int=32, seed: int=1234):
         start_time = time.time()
         cur_time = get_current_time()
-        logger.info("[NER info] Current time is: %s", cur_time)
+        logging.info("[NER info] Current time is: %s", cur_time)
         if not prompt:
             pt = PromptTemplate("ner")
             pt.append_message(pt.conv.roles[0], cur_time)
             pt.append_message(pt.conv.roles[1], query)
             prompt = pt.get_prompt()
-        logger.info("[NER info] Prompt is: %s", prompt)
+        logging.info("[NER info] Prompt is: %s", prompt)
         inputs = self.tokenizer(prompt, return_tensors="pt").input_ids
         streamer = TextIteratorStreamer(self.tokenizer)
 
@@ -84,6 +87,6 @@ class NamedEntityRecognitionINT():
 
         new_doc = self.nlp(query)
         result = process_entities(query, new_doc, mentioned_time)
-        logger.info("[NER info] Inference time consumption: %s", time.time() - start_time)
+        logging.info("[NER info] Inference time consumption: %s", time.time() - start_time)
 
         return result

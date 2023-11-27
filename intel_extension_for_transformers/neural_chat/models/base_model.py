@@ -24,9 +24,12 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
-from config_logging import configure_logging
-
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
 def construct_parameters(query, model_name, device, config):
@@ -162,7 +165,7 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                logger.info("Get response: %s from cache", response)
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
@@ -236,7 +239,7 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                logger.info("Get response: %s from cache", response)
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue

@@ -26,7 +26,7 @@ from ..config import ModelArguments, DataArguments, FinetuningArguments
 from ..plugins import plugins
 from transformers import TrainingArguments
 from ..chatbot import build_chatbot, finetune_model
-from config_logging import configure_logging
+from ..config_logging import configure_logging
 logger = configure_logging()
 
 __all__ = ['BaseCommand', 'HelpCommand', 'TextVoiceChatExecutor', 'FinetuingExecutor']

@@ -19,11 +19,12 @@
 
 # from .retrieval_bm25 import SparseBM25Retriever
 from .retrieval_chroma import ChromaRetriever
-from config_logging import configure_logging
-
-
-logger = configure_logging()
-
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 class Retriever():
     """The wrapper for sparse retriever and dense retriever."""
 
@@ -39,7 +40,7 @@ class Retriever():
         else:
             # self.retriever = SparseBM25Retriever(document_store=document_store, top_k=top_k)
             ### Will be removed in another PR
-            logger.info("This vector database will be removed in another PR.")
+            logging.info("This vector database will be removed in another PR.")
     def get_context(self, query):
         context, links = self.retriever.query_the_database(query)
         return context, links

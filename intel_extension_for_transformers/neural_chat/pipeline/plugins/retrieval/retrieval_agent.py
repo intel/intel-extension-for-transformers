@@ -22,10 +22,12 @@ from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
-from config_logging import configure_logging
-
-
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
@@ -62,7 +64,7 @@ class Agent_QA():
                                 + '/assets/docs/'
             elif os.path.exists(os.path.join(asset_path, 'docs/')):
                 self.input_path = os.path.join(asset_path, 'docs/')
-            logger.info("The given file path is unavailable, please check and try again!")
+            logging.info("The given file path is unavailable, please check and try again!")
         elif isinstance(input_path, List):
             self.input_path = input_path
 
@@ -75,7 +77,7 @@ class Agent_QA():
                                                index_name = index_name)
             self.db = self.doc_parser.KB_construct(self.input_path)
         else:
-            logger.info("Make sure the current persist path is new!")
+            logging.info("Make sure the current persist path is new!")
             if os.path.exists(persist_dir):
                 if bool(os.listdir(persist_dir)):
                     self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
@@ -135,10 +137,10 @@ class Agent_QA():
         if self.retriever and self.search_type == "similarity_score_threshold":
             context, links = self.retriever.get_context(query)
         if 'qa' not in intent.lower() and context == '':
-            logger.info("Chat with AI Agent.")
+            logging.info("Chat with AI Agent.")
             prompt = generate_prompt(query)
         else:
-            logger.info("Chat with QA agent.")
+            logging.info("Chat with QA agent.")
             if self.retriever:
                 context, links = self.retriever.get_context(query)
                 if len(context) == 0:
