@@ -79,7 +79,6 @@ enum model_archs {
   MODEL_CHATGLM2,
   MODEL_CHATGLM,
   MODEL_QWEN
-
 };
 
 static const size_t MB = 1024 * 1024;
