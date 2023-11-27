@@ -20,8 +20,12 @@ import torch
 from time import strftime
 import os, sys, time
 from argparse import ArgumentParser
-from config_logging import configure_logging
-logger = configure_logging()
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
     src.utils.preprocess import CropAndExtract
@@ -63,33 +67,33 @@ def main(args):
     start_time = time.time()
     audio_to_coeff = Audio2Coeff(sadtalker_paths, device)
     end_time = time.time()
-    logger.info("[***1/6***]: Audio2Coeff takes: %s sec", end_time - start_time)
+    logging.info("[***1/6***]: Audio2Coeff takes: %s sec", end_time - start_time)
     start_time = end_time
     animate_from_coeff = AnimateFromCoeff(sadtalker_paths, device, args.bf16)
     end_time = time.time()
-    logger.info("[***2/6***]: AnimateFromCoeff takes: %s sec", end_time - start_time)
+    logging.info("[***2/6***]: AnimateFromCoeff takes: %s sec", end_time - start_time)
     start_time = end_time
     # crop image and extract 3dmm from image
     first_frame_dir = os.path.join(save_dir, "first_frame_dir")
     os.makedirs(first_frame_dir, exist_ok=True)
-    logger.info("3DMM Extraction for source image")
+    logging.info("3DMM Extraction for source image")
 
     first_coeff_path, crop_pic_path, crop_info = preprocess_model.generate(
         pic_path, first_frame_dir, args.preprocess, source_image_flag=True, pic_size=args.size
     )
     end_time = time.time()
-    logger.info("[***3/6***]: preprocess_model.generate takes: %s sec", end_time - start_time)
+    logging.info("[***3/6***]: preprocess_model.generate takes: %s sec", end_time - start_time)
     start_time = end_time
 
     if first_coeff_path is None:
-        logger.info("Can't get the coeffs of the input")
+        logging.info("Can't get the coeffs of the input")
         return
 
     # audio2coeff
     batch = get_data(first_coeff_path, audio_path, device, still=args.still)
     coeff_path = audio_to_coeff.generate(batch, save_dir, pose_style)
     end_time = time.time()
-    logger.info("[***4/6***]: audio_to_coeff takes: %s sec", end_time - start_time)
+    logging.info("[***4/6***]: audio_to_coeff takes: %s sec", end_time - start_time)
     start_time = end_time
 
     # coeff2video
@@ -133,7 +137,7 @@ def main(args):
             try:
                 data[pkey] = torch.load(pt_path)
             except:
-                logger.info("reload...")
+                logging.info("reload...")
                 time.sleep(1)
                 data[pkey] = torch.load(pt_path)
         while os.path.exists("workspace/meta.json") == False:
@@ -164,13 +168,13 @@ def main(args):
     shutil.rmtree("workspace", ignore_errors=True)
     shutil.move(result, args.output_video_path)
 
-    logger.info("The generated video is named: %s", args.output_video_path)
+    logging.info("The generated video is named: %s", args.output_video_path)
 
     if not args.verbose:
         # print(save_dir)
         # shutil.rmtree(save_dir)
         shutil.rmtree(args.result_dir, ignore_errors=True)
-    logger.info("Face animation done: %s sec", datetime.timestamp(datetime.now()) - all_start_timestamp)
+    logging.info("Face animation done: %s sec", datetime.timestamp(datetime.now()) - all_start_timestamp)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
