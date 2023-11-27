@@ -103,21 +103,21 @@ struct tile_load_store_unaligned_2d_func {
         using matC_t = tile_t<dtype, tile_desc_c>;
 
         using payload_load_t = mem_payload_t<
-                mem_desc_t<dtype, a_mem_layout, mem_space::global, 64>,
+                mem_desc_t<dtype, a_mem_layout, mem_space::global, 1>,
                 tile_desc_a, msg_type::unaligned_2d, arch_tag>;
         using prefetch_payload_t = prefetch_payload_t<
-                mem_desc_t<dtype, a_mem_layout, mem_space::global, 64>,
+                mem_desc_t<dtype, a_mem_layout, mem_space::global, 1>,
                 tile_desc_a, 1, arch_tag>;
         using payload_store_t = mem_payload_t<
-                mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 64>,
+                mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 1>,
                 tile_desc_c, msg_type::unaligned_2d, arch_tag>;
 
         matA_t matA;
         matC_t matC;
 
-        mem_desc_t<dtype, a_mem_layout, mem_space::global, 64> mem_desc_a(
+        mem_desc_t<dtype, a_mem_layout, mem_space::global, 1> mem_desc_a(
                 {a}, {dst_swidth, dst_sheight, src_spitch}, {0, 0});
-        mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 64>
+        mem_desc_t<dtype, mem_layout::row_major, mem_space::global, 1>
                 mem_desc_c({c},
                         {dst_swidth * ele_per_dw, dst_sheight / ele_per_dw,
                                 dst_spitch * ele_per_dw},
@@ -126,10 +126,15 @@ struct tile_load_store_unaligned_2d_func {
         payload_load_t payload_load(mem_desc_a);
         prefetch_payload_t payload_prefetch(mem_desc_a);
         payload_store_t payload_store(mem_desc_c);
-        // tile_prefetch(payload_prefetch);
+        tile_prefetch(payload_prefetch);
         tile_load(matA, payload_load);
+        static const char vec_a[] = "after load %f %f %f %f\n";
+        // sycl::ext::oneapi::experimental::printf(vec_a, (matA.reg[0]), (matA.reg[1]), (matA.reg[2]), (matA.reg[3]));
+        // sycl::ext::oneapi::experimental::printf(vec_a, (matA.reg[16]), (matA.reg[17]), (matA.reg[18]), (matA.reg[19]));
         matC.reg = matA.reg;
         tile_store(matC, payload_store);
+        static const char vec_b[] = "%d %d %d %d\n";
+        // sycl::ext::oneapi::experimental::printf(vec_b, (matC.reg[0]), (matC.reg[1]), (matC.reg[2]), (matC.reg[3]));
     }
 };
 

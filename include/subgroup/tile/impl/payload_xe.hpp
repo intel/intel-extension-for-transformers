@@ -1500,6 +1500,7 @@ struct prefetch_payload_t<
             block_size_y_, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
+    static constexpr msg_type message_type = msg_type::block_2d;
     static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
@@ -1511,9 +1512,8 @@ private:
     static constexpr uint32_t mem_tile_size_h
             = is_col_major ? tile_size_x : tile_size_y;
 
-    static constexpr msg_type type = msg_type::block_2d;
-    using load_store_attr =
-            typename arch_attr_t<arch_tag>::template load_store_attr<type>;
+    using load_store_attr = typename arch_attr_t<
+            arch_tag>::template load_store_attr<message_type>;
     static constexpr uint32_t special_prefetch_width
             = load_store_attr::special_prefetch_width_in_bytes / sizeof(dtype);
     static constexpr uint32_t normal_prefetch_width
@@ -1668,6 +1668,7 @@ struct prefetch_payload_t<
             = tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
+    static constexpr msg_type message_type = msg_type::block_2d;
     static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
