@@ -153,10 +153,7 @@ public:
         reduce_id = update_reduce_counter(mem_desc_cnt);
         if (reduce_id == (num_group_reduction - 1)) {
             using matAcc_payload_t = subgroup::mem_payload_t<mem_desc_acc_t,
-                    matAcc_tile_desc_t,
-                    arch_tag >= gpu_arch::Xe ? msg_type::block_2d
-                                             : msg_type::unaligned_2d,
-                    arch_tag>;
+                    matAcc_tile_desc_t, msg_type::block_2d, arch_tag>;
             matAcc_payload_t matAcc_payload(mem_desc_acc);
             subgroup::tile_load(matAcc, matAcc_payload);
             clean_reduce_counter(mem_desc_cnt);

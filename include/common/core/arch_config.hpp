@@ -50,7 +50,7 @@ struct load_store_attr_t<msg_type::block_2d, gpu_arch::Xe> {
 };
 
 template <>
-struct load_store_attr_t<msg_type::unaligned_2d, gpu_arch::Dg2> {
+struct load_store_attr_t<msg_type::block_2d, gpu_arch::Dg2> {
     /// HW limitation checks https://gfxspecs.intel.com/Predator/Home/Index/55490
     static constexpr uint32_t max_load_height_in_elem = 32;
     static constexpr uint32_t max_load_width_in_bytes = 64;
@@ -124,7 +124,7 @@ struct arch_attr_t<gpu_arch::Xe> {
 
 template <>
 struct arch_attr_t<gpu_arch::Dg2> {
-    template <msg_type message_type = msg_type::unaligned_2d>
+    template <msg_type message_type = msg_type::block_2d>
     using load_store_attr = load_store_attr_t<message_type, gpu_arch::Dg2>;
 
     template <grf_mode grf_num_mode = grf_mode::normal>

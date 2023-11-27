@@ -455,17 +455,13 @@ private:
 } // namespace core
 
 namespace subgroup {
-template <gpu_arch arch, typename dtype, typename mem_dtype>
-struct check_load {};
-template <gpu_arch arch, typename dtype, typename mem_dtype = uint32_t>
-struct check_store {};
 
-template <typename dtype, typename mem_dtype>
-struct check_load<gpu_arch::Xe, dtype, mem_dtype> {
+template <gpu_arch arch, typename dtype, typename mem_dtype>
+struct check_load {
     template <bool mem_transform, size_t block_size_x>
     struct global_2d {
         using load_store_attr = typename arch_attr_t<
-                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+                arch>::template load_store_attr<msg_type::block_2d>;
         static constexpr int32_t max_vnni_block_width
                 = load_store_attr::max_vnni_load_width_in_elems;
         static_assert(!mem_transform || block_size_x <= max_vnni_block_width,
@@ -484,7 +480,7 @@ struct check_load<gpu_arch::Xe, dtype, mem_dtype> {
     template <bool mem_transform, size_t block_size_x>
     struct unaligned_2d {
         using load_store_attr = typename arch_attr_t<
-                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+                arch>::template load_store_attr<msg_type::block_2d>;
         static constexpr int32_t max_vnni_block_width
                 = load_store_attr::max_vnni_load_width_in_elems;
         static_assert(!mem_transform || block_size_x <= max_vnni_block_width,
@@ -523,12 +519,12 @@ struct check_load<gpu_arch::Xe, dtype, mem_dtype> {
     };
 };
 
-template <typename dtype, typename mem_dtype>
-struct check_store<gpu_arch::Xe, dtype, mem_dtype> {
+template <gpu_arch arch, typename dtype, typename mem_dtype = uint32_t>
+struct check_store {
     template <size_t block_size_x>
     struct global_2d {
         using load_store_attr = typename arch_attr_t<
-                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+                arch>::template load_store_attr<msg_type::block_2d>;
 
         static constexpr int32_t max_block_width
                 = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
@@ -544,7 +540,7 @@ struct check_store<gpu_arch::Xe, dtype, mem_dtype> {
     template <size_t block_size_x>
     struct unaligned_2d {
         using load_store_attr = typename arch_attr_t<
-                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+                arch>::template load_store_attr<msg_type::block_2d>;
 
         static constexpr int32_t max_block_width
                 = load_store_attr::max_load_width_in_bytes / sizeof(dtype);

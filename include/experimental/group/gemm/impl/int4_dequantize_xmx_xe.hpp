@@ -668,12 +668,9 @@ private:
     using matA_tile_desc_t = subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a,
             block_size_x_a, block_size_y_a, reg_layout_a>;
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
-    //     using matA_payload_t = subgroup::mem_payload_t<mem_desc_a_t,
-    //             matA_tile_desc_t,
-    //             subgroup::msg_type_v<matA_tile_desc_t, mem_space_a>, arch_tag>;
     using matA_payload_t = subgroup::mem_payload_t<mem_desc_a_t,
             matA_tile_desc_t,
-            is_local_a ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
+            subgroup::msg_type_v<matA_tile_desc_t, mem_space_a>, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
     using matA_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_a_t,
             matA_tile_desc_t, wg_size_x, arch_tag>;
@@ -684,12 +681,10 @@ private:
             tile_size_y_b, block_size_x_b / pack_ratio, block_size_y_b,
             reg_layout::tiled>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
-    //     using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
-    //             matB_tile_desc_t,
-    //             subgroup::msg_type_v<matB_tile_desc_t, mem_space_b>, arch_tag>;
     using matB_payload_t = subgroup::mem_payload_t<mem_desc_b_t,
             matB_tile_desc_t,
-            is_local_b ? msg_type::scatter : msg_type::unaligned_2d, arch_tag>;
+            subgroup::msg_type_v<matB_tile_desc_t, mem_space_b>, arch_tag>;
+
     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
             matB_tile_desc_t, wg_size_y, arch_tag>;
     //     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
@@ -733,12 +728,10 @@ private:
             = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_scale,
                     block_size_x_b, block_size_y_scale, reg_layout::tiled>;
     using scale_t = subgroup::tile_t<dtype_scale, scale_tile_desc_t>;
-    // using scale_payload_t
-    //     = subgroup::mem_payload_t<mem_desc_scale_t, scale_tile_desc_t,
-    //             subgroup::msg_type_v<scale_tile_desc_t, mem_space::global>,
-    //             arch_tag>;
-    using scale_payload_t = subgroup::mem_payload_t<mem_desc_scale_t,
-            scale_tile_desc_t, msg_type::unaligned_2d, arch_tag>;
+    using scale_payload_t
+            = subgroup::mem_payload_t<mem_desc_scale_t, scale_tile_desc_t,
+                    subgroup::msg_type_v<scale_tile_desc_t, mem_space::global>,
+                    arch_tag>;
 
     using scale_prefetch_payload_t
             = subgroup::prefetch_payload_t<mem_desc_scale_t, scale_tile_desc_t,

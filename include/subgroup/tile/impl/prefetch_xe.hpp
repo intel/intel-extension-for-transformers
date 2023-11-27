@@ -27,10 +27,10 @@ namespace gpu::xetla::subgroup {
 namespace detail {
 template <typename payload_t>
 struct check_prefetch_type {
-    static constexpr bool is_global_2d_xe
+    static constexpr bool is_global_block_2d_xe
             = ((payload_t::memory_space == mem_space::global)
                     && (payload_t::tile_desc::tile_size_y != 1)
-                    && (payload_t::arch_tag == gpu_arch::Xe)
+                    && (payload_t::arch_tag <= gpu_arch::Xe)
                     && (payload_t::message_type == msg_type::block_2d));
 
     static constexpr bool is_global_block_1d_xe
@@ -41,7 +41,7 @@ struct check_prefetch_type {
     static constexpr bool is_global_unaligned_2d_xe
             = ((payload_t::memory_space == mem_space::global)
                     && (payload_t::tile_desc::tile_size_y != 1)
-                    && (payload_t::arch_tag <= gpu_arch::Xe)
+                    && (payload_t::arch_tag -= gpu_arch::Xe)
                     && (payload_t::message_type == msg_type::unaligned_2d));
 
     static constexpr bool is_local_xe
@@ -62,7 +62,8 @@ struct check_prefetch_type {
 template <cache_hint L1 = cache_hint::cached,
         cache_hint L2 = cache_hint::cached, typename payload_t>
 __XETLA_API typename std::enable_if_t<
-        detail::check_prefetch_type<payload_t>::is_global_2d_xe>
+        detail::check_prefetch_type<payload_t>::is_global_block_2d_xe
+        && payload_t::arch_tag == gpu_arch::Xe>
 tile_prefetch(payload_t &payload) {
     using dtype = typename payload_t::dtype;
     static constexpr uint32_t num_tdesc = payload_t::num_tdesc;
@@ -87,7 +88,8 @@ tile_prefetch(payload_t &payload) {
 template <cache_hint L1 = cache_hint::cached,
         cache_hint L2 = cache_hint::cached, typename payload_t>
 __XETLA_API typename std::enable_if_t<
-        detail::check_prefetch_type<payload_t>::is_global_unaligned_2d_xe>
+        detail::check_prefetch_type<payload_t>::is_global_block_2d_xe
+        && payload_t::arch_tag == gpu_arch::Dg2>
 tile_prefetch(payload_t &payload) {
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;

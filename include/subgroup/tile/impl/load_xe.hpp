@@ -28,10 +28,10 @@ namespace gpu::xetla::subgroup {
 namespace detail {
 template <typename tile_t, typename payload_t>
 struct check_load_type {
-    static constexpr bool is_global_2d_xe
+    static constexpr bool is_global_block_2d
             = (payload_t::memory_space == mem_space::global
                     && (payload_t::message_type == msg_type::block_2d)
-                    && (payload_t::arch_tag == gpu_arch::Xe));
+                    && (payload_t::arch_tag <= gpu_arch::Xe));
 
     static constexpr bool is_global_block_1d_xe
             = ((payload_t::memory_space == mem_space::global)
@@ -72,7 +72,8 @@ struct check_load_type {
 template <cache_hint L1 = cache_hint::cached,
         cache_hint L2 = cache_hint::cached, typename tile_t, typename payload_t>
 __XETLA_API typename std::enable_if_t<
-        detail::check_load_type<tile_t, payload_t>::is_global_2d_xe>
+        detail::check_load_type<tile_t, payload_t>::is_global_block_2d
+        && payload_t::arch_tag == gpu_arch::Xe>
 tile_load(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using load_dtype = typename payload_t::mem_dtype;
@@ -420,15 +421,16 @@ template <cache_hint L1 = cache_hint::cached,
         cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t,
         typename oob_check_tag = global_atomic_oob_check_on_tag>
 __XETLA_API typename std::enable_if_t<
-        detail::check_load_type<tile_t, payload_t>::is_global_unaligned_2d_xe>
+        detail::check_load_type<tile_t, payload_t>::is_global_block_2d
+        && payload_t::arch_tag == gpu_arch::Dg2>
 tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     constexpr bool oob_check = std::is_same<oob_check_tag,
             global_atomic_oob_check_on_tag>::value;
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
-    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
-            load_dtype>::template unaligned_2d<payload_t::mem_transform,
+    using check_load = typename subgroup::check_load<gpu_arch::Dg2, dtype,
+            load_dtype>::template global_2d<payload_t::mem_transform,
             tile_desc::block_size_x>;
     constexpr uint32_t num_channel = payload_t::num_channel;
     constexpr uint32_t load_elems = num_channel * payload_t::simd_exec_size;
@@ -489,6 +491,136 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                             .xetla_format<load_dtype>()
                             = reg_tmp;
                 }
+            }
+        }
+    }
+
+    if constexpr (payload_t::mem_transform) {
+        SW_BARRIER();
+        vnni_convert(tile);
+    }
+}
+
+/// @brief This function loads data from unaligned-2D memory surface.
+/// Loads an array of rectangular regions (X,Y)..(X+W,Y+H) from memory into registers.
+/// Each block will be loaded serially by its corresponding payload.
+/// @tparam tile_t Is the tile_t struct contains registers.
+/// These registers will be the destination of load operation.
+/// @tparam payload_t Is the mem_payload_t struct describing the memory information.
+/// Payload indicates the source of load operation.
+/// @tparam L1 Is the cache hint for L1 cache.
+/// @tparam L3 Is the cache hint for L3 cache.
+/// @param tile Is the tile object with type tile_t, holds the return data of the loads.
+/// @param payload Is the payload object with type payload_t. Contains all the information for loads.
+/// @return No return, update in place.
+template <cache_hint L1 = cache_hint::cached,
+        cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t,
+        typename oob_check_tag = global_atomic_oob_check_on_tag>
+__XETLA_API typename std::enable_if_t<
+        detail::check_load_type<tile_t, payload_t>::is_global_unaligned_2d_xe>
+tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
+    constexpr bool oob_check = std::is_same<oob_check_tag,
+            global_atomic_oob_check_on_tag>::value;
+    using dtype = typename payload_t::dtype;
+    using tile_desc = typename payload_t::tile_desc;
+    using load_dtype = typename payload_t::mem_dtype;
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
+            load_dtype>::template unaligned_2d<payload_t::mem_transform,
+            tile_desc::block_size_x>;
+    constexpr uint32_t num_channel_y = payload_t::num_channel_y;
+    constexpr uint32_t load_elems = num_channel_y * payload_t::num_channel_x;
+    constexpr uint32_t scale_factor = payload_t::scale_factor;
+
+#pragma unroll
+    for (int i = 0; i < tile_desc::tile_size_y / tile_desc::block_size_y; i++) {
+        uint32_t offset_y = i * tile_desc::block_size_y;
+#pragma unroll
+        for (int j = 0; j < tile_desc::num_block_x; j++) {
+            uint32_t offset_x = j * tile_desc::block_size_x;
+            auto reg_sub = tile.reg.xetla_select<tile_desc::block_elems, 1>(
+                    (i * tile_desc::num_block_x + j) * tile_desc::block_elems);
+            xetla_mask<load_elems> pred_x = oob_check
+                    ? payload.step_x + payload.base_x + offset_x
+                            < payload.width_in_elems
+                    : 1;
+#pragma unroll
+            for (int sub_block_y = 0; sub_block_y < tile_desc::block_size_y;
+                    sub_block_y += num_channel_y) {
+                xetla_vector<load_dtype, load_elems> reg_tmp;
+                xetla_mask<load_elems> pred_y = oob_check
+                        ? payload.step_y + payload.base_y + offset_y
+                                        + sub_block_y
+                                < payload.height_in_elems
+                        : 1;
+
+                uint32_t address_offset = payload_t::trans
+                        ? offset_x * payload.pitch_in_bytes
+                                + (offset_y + sub_block_y) * sizeof(dtype)
+                        : offset_x * sizeof(dtype)
+                                + (offset_y + sub_block_y)
+                                        * payload.pitch_in_bytes;
+
+                reg_tmp = xetla_load_global<load_dtype, 1,
+                        data_size::default_size, L1, L3, load_elems>(
+                        payload.base_ptr,
+                        payload.channel_offset + payload.base_offset
+                                + address_offset,
+                        pred_x && pred_y);
+                reg_tmp.xetla_merge(reg_tmp, 0, pred_x && pred_y);
+
+                reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                               sub_block_y * tile_desc::block_size_x)
+                        .xetla_format<load_dtype>()
+                        = reg_tmp;
+            }
+        }
+    }
+    //process the tail
+    if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;
+        constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
+        constexpr uint32_t remain_block_elems
+                = remained_size_y * tile_desc::block_size_x;
+#pragma unroll
+        for (int j = 0; j < tile_desc::num_block_x; j++) {
+            uint32_t offset_x = j * tile_desc::block_size_x;
+            auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
+                    processed_elems + j * remain_block_elems);
+            xetla_mask<load_elems> pred_x = oob_check
+                    ? payload.step_x + payload.base_x + offset_x
+                            < payload.width_in_elems
+                    : 1;
+#pragma unroll
+            for (int sub_block_y = 0; sub_block_y < remained_size_y;
+                    sub_block_y += num_channel_y) {
+                xetla_vector<load_dtype, load_elems> reg_tmp;
+                xetla_mask<load_elems> pred_y = oob_check
+                        ? payload.step_y + payload.base_y + offset_y
+                                        + sub_block_y
+                                < payload.height_in_elems
+                        : 1;
+
+                uint32_t address_offset = payload_t::trans
+                        ? offset_x * payload.pitch_in_bytes
+                                + (offset_y + sub_block_y) * sizeof(dtype)
+                        : offset_x * sizeof(dtype)
+                                + (offset_y + sub_block_y)
+                                        * payload.pitch_in_bytes;
+
+                reg_tmp = xetla_load_global<load_dtype, 1,
+                        data_size::default_size, L1, L3, load_elems>(
+                        payload.base_ptr,
+                        payload.channel_offset + payload.base_offset
+                                + address_offset,
+                        pred_x && pred_y);
+
+                reg_tmp.xetla_merge(reg_tmp, 0, pred_x && pred_y);
+
+                reg_sub.xetla_select<load_elems * scale_factor, 1>(
+                               sub_block_y * tile_desc::block_size_x)
+                        .xetla_format<load_dtype>()
+                        = reg_tmp;
             }
         }
     }

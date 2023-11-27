@@ -99,7 +99,7 @@ private:
 
 public:
     static constexpr msg_type msg_type_c
-            = (mem_space_c == mem_space::global ? msg_type::unaligned_2d
+            = (mem_space_c == mem_space::global ? msg_type::block_2d
                                                 : msg_type::scatter);
 
     /// @brief Default epilogue.
