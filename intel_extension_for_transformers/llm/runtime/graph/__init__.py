@@ -82,6 +82,10 @@ class Model:
         self.__import_package(model_type)
 
         # check cache and quantization
+        if use_quant:
+            if quant_kwargs['weight_dtype'] == "int8" and quant_kwargs['compute_dtype'] == "bf16":
+                raise ValueError("Error: This combination (weight_dtype = int8, compute_dtype=bf16)"
+                                 " is not currently supported. Please use other combinations.")
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
         fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
