@@ -30,7 +30,6 @@ template <typename tile_t, typename payload_t>
 struct check_store_type {
     static constexpr bool is_global_block_2d
             = (payload_t::memory_space == mem_space::global
-                    && (tile_t::tile_size_y != 1) && (tile_t::block_size_y != 1)
                     && (payload_t::message_type == msg_type::block_2d)
                     && (payload_t::arch_tag <= gpu_arch::Xe));
 
@@ -460,6 +459,7 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                              1>(sub_block_y
                                              * tile_desc::block_size_x)
                                       .xetla_format<store_dtype>();
+#pragma unroll
                     for (int iii = 0; iii < payload_t::num_channel; iii++) {
                         reg_tmp.xetla_select<payload_t::simd_exec_size,
                                 payload_t::num_channel>(iii)
@@ -499,6 +499,8 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                             (payload.base_offset + address_offset
                                     + payload.channel_offset),
                             reg_tmp);
+                } else {
+                    break;
                 }
             }
         }

@@ -453,26 +453,23 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                 + (offset_y + 0) * sizeof(dtype)
                         : offset_x * sizeof(dtype)
                                 + (offset_y + 0) * payload.pitch_in_bytes;
-                if (payload.base_y + offset_y + sub_block_y + num_channel
-                        > payload.height_in_elems) {
-                    xetla_mask<num_channel> pred_y
-                            = xetla_vector_gen<uint32_t, num_channel>(0, 1)
-                            < (payload.height_in_elems % num_channel);
-                    reg_tmp = xetla_load_global<load_dtype,
-                            payload_t::simd_exec_size, data_size::default_size,
-                            L1, L3, payload_t::num_channel>(payload.base_ptr,
-                            payload.channel_offset + payload.base_offset
-                                    + address_offset,
-                            pred_y);
-                } else {
-                    reg_tmp = xetla_load_global<load_dtype,
-                            payload_t::simd_exec_size, data_size::default_size,
-                            L1, L3, payload_t::num_channel>(payload.base_ptr,
-                            payload.channel_offset + payload.base_offset
-                                    + address_offset);
-                }
+
+                xetla_mask<num_channel> pred_y
+                        = payload.base_y + offset_y + sub_block_y + num_channel
+                                > payload.height_in_elems
+                        ? (xetla_vector_gen<uint32_t, num_channel>(0, 1)
+                                < (payload.height_in_elems % num_channel))
+                        : 1;
+
+                reg_tmp = xetla_load_global<load_dtype,
+                        payload_t::simd_exec_size, data_size::default_size, L1,
+                        L3, payload_t::num_channel>(payload.base_ptr,
+                        payload.channel_offset + payload.base_offset
+                                + address_offset,
+                        pred_y);
                 if constexpr (payload_t::simd_exec_size > 1) {
                     xetla_vector<load_dtype, load_elems> reg_tmp_trans;
+#pragma unroll
                     for (int iii = 0; iii < payload_t::num_channel; iii++) {
                         reg_tmp_trans
                                 .xetla_select<payload_t::simd_exec_size, 1>(

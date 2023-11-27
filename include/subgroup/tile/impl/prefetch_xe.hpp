@@ -112,12 +112,19 @@ tile_prefetch(payload_t &payload) {
                         : offset_x * sizeof(dtype)
                                 + (offset_y + sub_block_y)
                                         * payload.pitch_in_bytes;
+                xetla_mask<num_channel> pred_y
+                        = payload.base_y + offset_y + sub_block_y + num_channel
+                                > payload.height_in_elems
+                        ? (xetla_vector_gen<uint32_t, num_channel>(0, 1)
+                                < (payload.height_in_elems % num_channel))
+                        : 1;
 
-                xetla_prefetch_global<prefetch_dtype, 1,
+                xetla_prefetch_global<prefetch_dtype, payload_t::simd_exec_size,
                         data_size::default_size, L1, L2,
                         payload_t::num_channel>(payload.base_ptr,
                         payload.channel_offset + payload.base_offset
-                                + address_offset);
+                                + address_offset,
+                        pred_y);
             }
         }
     }
