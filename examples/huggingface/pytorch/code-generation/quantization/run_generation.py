@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, PretrainedConfig, AutoConfig
 import transformers
 from optimum.utils import NormalizedConfigManager
+from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
@@ -26,7 +27,7 @@ from intel_extension_for_transformers.transformers import (
 
 parser = argparse.ArgumentParser()
 
-# Main config
+# ============Main configs============
 parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
@@ -40,12 +41,8 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--ipex", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument(
-    "--pad_max_length", default=512, type=int, help="Pad input ids to max length."
-)
 parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
 parser.add_argument("--calib_batch_size", default=1, type=int, help="calibration batch size.")
 parser.add_argument("--int8", action="store_true")
@@ -54,18 +51,20 @@ parser.add_argument(
     action="store_true",
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
+parser.add_argument("--quantized_model_path", default="./saved_results/best_model.pt",
+                    help="path to quantized pt file")
+# ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 parser.add_argument("--prompt_size", default=32, type=int, help="generate dummy input_ids size")
+# ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=1, type=int,
+parser.add_argument("--batch_size", default=56, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", default="humaneval", type=str, \
-                    help="tasks list for accuracy validation")
-# WeightOnlyQuant config
+# ============WeightOnlyQuant configs============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
                     help="Weight-only parameter.")
@@ -73,13 +72,11 @@ parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
-parser.add_argument("--woq_enable_mse_search", action="store_true")
-parser.add_argument("--woq_enable_full_range", action="store_true")
-# Harness config
+# ============Harness configs============
+parser.add_argument("--tasks", default=None, help="Evaluation tasks", choices=["mbpp", "humaneval"])
 parser.add_argument("--n_samples", default=200, type=int)
 parser.add_argument("--limit", default=None, type=int, help="Limit number of samples to eval")
 parser.add_argument("--allow_code_execution", action="store_true")
-#parser.add_argument("--precision", default="fp32")
 parser.add_argument("--prefix", default="")
 parser.add_argument("--generation_only", action="store_true")
 parser.add_argument("--postprocess", action="store_false")
@@ -90,7 +87,7 @@ parser.add_argument("--save_generations_path", default="generations.json")
 parser.add_argument("--load_generations_path", default=None)
 parser.add_argument("--metric_output_path", default="evaluation_results.json")
 parser.add_argument("--seed", default=0, type=int)
-# Generation config
+# ============Generation config============
 parser.add_argument("--max_length_generation", default=512, type=int)
 parser.add_argument("--temperature", default=0.8, type=float)
 parser.add_argument("--top_p", default=0.8, type=float)
@@ -111,18 +108,9 @@ parser.add_argument(
 )   
 args = parser.parse_args()
 
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-user_model = AutoModelForCausalLM.from_pretrained(
-    args.model,
-    torchscript=True
-    if args.ipex
-    else False,  # torchscript will force `return_dict=False` to avoid jit errors
-)
+
 tokenizer = AutoTokenizer.from_pretrained(
     args.model,
-    # revision=args.revision,
-    # trust_remote_code=args.trust_remote_code,
-    # use_auth_token=args.use_auth_token,
     truncation_side="left",
     padding_side="right",
 )
@@ -144,25 +132,22 @@ if not tokenizer.eos_token:
 
 tokenizer.pad_token = tokenizer.eos_token
 
-# to channels last
-user_model = user_model.to(memory_format=torch.channels_last)
-user_model.eval()
-
-if args.ipex:
-    import intel_extension_for_pytorch as ipex
-    from optimum.intel.generation.modeling import TSModelForCausalLM
 
 calib_dataset = args.dataset
 op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-        }
+                }
+recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": {"alpha": args.alpha if args.alpha == "auto" else float(args.alpha)},
+            }
 excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
 quantization_config = None
 # sq/woq config setting
 if args.sq:
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
+        recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         calib_dataset=calib_dataset,
@@ -176,6 +161,7 @@ elif args.woq:
         algorithm=args.woq_algo
     ) #default is A32W4G32
 
+
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -188,34 +174,51 @@ if quantization_config is not None:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
 
-# Generation
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
 if args.int8 or args.int8_bf16_mixed:
-    if args.ipex:
-        # TorchScript model don't attribute generate method, the wrapper is provided.
-        import intel_extension_for_pytorch as ipex
-        from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForOPTLLM
-        user_model = TSModelCausalLMForOPTLLM.from_pretrained(
+    # TorchScript model don't attribute generate method, the wrapper is provided.
+    import intel_extension_for_pytorch as ipex
+    if config.model_type == "llama":
+        if args.accuracy:
+            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForOPTLLM
+            user_model = TSModelCausalLMForOPTLLM.from_pretrained(
+                args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
+            )
+        else:
+            torch._C._jit_set_texpr_fuser_enabled(False)
+            qconfig = ipex.quantization.default_static_qconfig_mapping
+            user_model = AutoModelForCausalLM.from_pretrained(args.model, use_llm_runtime=False)
+            user_model = ipex.optimize_transformers(
+                user_model.eval(),
+                dtype=torch.float,
+                inplace=True,
+                quantization_config=qconfig,
+                deployment_mode=False,
+            )
+            if not hasattr(user_model, "trace_graph"):
+                print("load_quantized_model")
+                self_jit = torch.jit.load(args.quantized_model_path)
+                self_jit = torch.jit.freeze(self_jit.eval())
+                ipex._set_optimized_model_for_generation(user_model, optimized_model=self_jit)            
+    else:
+        user_model = TSModelForCausalLM.from_pretrained(
             args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
         )
-        print("Load torchscript int8 model successfully.")
-    else:
-        from neural_compressor.utils.pytorch import load
-        user_model = load(args.output_dir, user_model)
-        print("Load int8 model successfully.")
-    
-if args.benchmark:
-    print("---- Prompt size:", args.prompt_size)
 
+
+if args.benchmark:
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
             user_model.config.model_type
         )(user_model.config)
-
     num_layers = normalized_config.num_layers
     num_attention_heads = normalized_config.num_attention_heads
     hidden_size = normalized_config.hidden_size
     d_k = hidden_size // num_attention_heads
+    num_beams = 1
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
 
     num_iter = args.iters
     num_warmup = args.num_warmup
@@ -228,22 +231,33 @@ if args.benchmark:
             for i in range(num_iter):
                 tic = time.time()
                 if j==0:
-                    #input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-                    input_ids = torch.randint(1, tokenizer.vocab_size, size = (args.batch_size , args.prompt_size))
-                    attention_mask = torch.ones(input_ids.shape)
-                    new_shape = [input_ids.shape[0], 0, d_k*2]
-                    dummy_tensor = torch.ones(size=new_shape)
-                    past_key_values = tuple([dummy_tensor] * num_layers)
-
+                    input_ids = torch.randint(1, tokenizer.vocab_size, size = (args.batch_size, args.prompt_size))
+                    input_bs, input_len = input_ids.shape
+                    attention_mask = torch.ones(input_bs, input_len)
+                    position_ids = torch.arange(input_len).unsqueeze(0).expand(input_bs, -1)
+                    if user_model.config.model_type == "gpt_bigcode":
+                        new_shape = [input_bs, 0, d_k*2]
+                        dummy_tensor = torch.zeros(size=new_shape)
+                        past_key_values = tuple([dummy_tensor] * num_layers)
+                    else:
+                        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+                        beam_idx_tmp = torch.zeros(
+                                    (2048, int(input_bs * num_beams)), dtype=torch.long
+                                ).contiguous()
+                        past_key_values = [(torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
+                                torch.zeros(size=new_shape).contiguous(),
+                                torch.zeros(size=new_shape).contiguous(),
+                                beam_idx_tmp) for _ in range(num_layers)]
+                        past_key_values = tuple(past_key_values)
+              
                 inp = {"input_ids": input_ids,
                         "past_key_values": past_key_values,
-                        "attention_mask": attention_mask}
-
+                        "attention_mask": attention_mask,
+                        "position_ids": position_ids}
                 out = user_model(**inp)
                 gen_id = torch.argmax(out[0][:, -1:, :], axis = -1)
                 gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
                 toc = time.time()
-                #print(gen_text, flush=True)
                 if i >= num_warmup:
                     total_time += toc - tic
 
@@ -257,13 +271,14 @@ if args.benchmark:
         input_ids = gen_id
         past_key_values = out[1]
         attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1))
+        position_ids = torch.tensor([[len(inp["position_ids"])]])
         total_latency += latency
 
     average_latency = total_latency / args.max_new_tokens
     print("Average inference latency: %.5f sec." % latency)
     average_throughput = args.max_new_tokens / total_latency
     print("Average throughput: {} samples/sec".format(throughput))
-
+                
 
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
@@ -274,5 +289,4 @@ if args.accuracy:
         batch_size=args.batch_size,
         args=args,
     )
-
     print(results)
