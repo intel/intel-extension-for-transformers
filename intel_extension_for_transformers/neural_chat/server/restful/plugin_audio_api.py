@@ -21,12 +21,11 @@ from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile
 from pydub import AudioSegment
-from ...config import GenerationConfig
 from ...plugins import plugins, get_plugin_instance
 import base64
 import torch
 
-class VoiceChatAPIRouter(APIRouter):
+class AudioPluginAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
@@ -66,10 +65,10 @@ class VoiceChatAPIRouter(APIRouter):
         return {"create_spk": "success"}
 
 
-router = VoiceChatAPIRouter()
+router = AudioPluginAPIRouter()
 
 
-@router.post("/v1/plugin/audio/asr")
+@router.post("/plugin/audio/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
     file_name = file.filename
     logger.info(f'Received file: {file_name}')
@@ -85,7 +84,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     return {"asr_result": asr_result}
 
 
-@router.post("/v1/plugin/audio/tts")
+@router.post("/plugin/audio/tts")
 async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
@@ -98,7 +97,7 @@ async def talkingbot(request: Request):
     return await router.handle_voice_tts_request(text, voice, audio_output_path)
 
 
-@router.post("/v1/plugin/audio/create_embedding")
+@router.post("/plugin/audio/create_embedding")
 async def create_speaker_embedding(file: UploadFile = File(...)):
     print(dir(file))
     file_name = file.filename
