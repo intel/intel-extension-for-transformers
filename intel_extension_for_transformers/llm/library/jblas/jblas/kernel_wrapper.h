@@ -381,12 +381,12 @@ class DecompressKBlockS4Fp {
         if (col == 24) {
           ret = avx2::decompress_kblock_bit4_packrow1<false, 24>(
               srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
-              &avx2::dequant_s8_N_avx2<24, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              &avx2::dequant_s8_N_avx2<24, false>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
               reinterpret_cast<int8_t*>(tmp), tmpsize);
         } else if (col == 48) {
           ret = avx2::decompress_kblock_bit4_packrow1<false, 48>(
               srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
-              &avx2::dequant_s8_N_avx2<48, true>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
+              &avx2::dequant_s8_N_avx2<48, false>, &avx2::convert_s4_s8_16_sse<S4_T>, &ref::convert_s4_s8_8<S4_T>,
               reinterpret_cast<int8_t*>(tmp), tmpsize);
         }
       }

@@ -633,8 +633,7 @@ void GemmKBlockRun(Launch_T& launcher, const typename Launch_T::Param& args, par
 }
 
 template <class Parallel_T, class Launch_T>
-void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args,
-                        const typename Launch_T::AParam& Aargs, parallel::IThreading* th) {
+void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
   using AParall = typename Launch_T::PrologueA::Parallel;
@@ -643,7 +642,7 @@ void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args
     typename AParall::ThreadProblem thdpA{tidx};
     apara.getIndex(thdpA);
     if (thdpA.valid) {
-      launcher.mProA.run(Aargs, thdpA);
+      launcher.mProA.run(args.paramA, thdpA);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp{tidx};
