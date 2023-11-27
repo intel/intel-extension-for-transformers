@@ -744,12 +744,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  model_archs mt = model_name_to_arch::init().find(params.model_name);
-  if (mt == MODEL_UNKNOWN) {
-    fprintf(stderr, "error, please set model_name \n");
-    exit(0);
-  }
-
   if (params.fname_inp.empty()) {
     fprintf(stderr, "error: no input files specified\n");
     whisper_print_usage(argc, argv, params);
