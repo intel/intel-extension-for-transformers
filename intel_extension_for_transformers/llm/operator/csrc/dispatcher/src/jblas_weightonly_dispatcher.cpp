@@ -153,8 +153,7 @@ void parse_paramA(woq_config_param* p, woq_runtime_ctx* ctx) {
     void* tmpbuf = NULL;
     auto get_workspace = [&] {
       if (workspace != NULL) {
-        TORCH_CHECK(workspace_size >= need_size,
-                    "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
+        TORCH_CHECK(workspace_size >= need_size, "Qbits: workspace size should large than ", need_size, " bytes");
         return workspace;
       } else {
         tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
@@ -278,7 +277,7 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
       return parse_weight<TASK, jblas::gemm::ICoreRowNAvxvnniKBlock<48, 2>>(p, ctx);
     }
     TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type, blocksize:", ctx->blocksize,
-                ", ISA support vnni:", 0);
+                ", ISA support vnni:", dispatcher_utils::check_avx_vnni());
   }
   if (p->compute_type == "fp32") {
     if (dispatcher_utils::check_avx512f()) {
@@ -295,8 +294,8 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
     }
     TORCH_CHECK(false, "Qbits: device ISA must support AMX-BF16 when compute_type==bf16");
   }
-  TORCH_CHECK(false, "Qbits: unsupported jblas_config, compute_type==" + p->compute_type +
-                         " weight_type==" + p->weight_type + " blocksize==" + std::to_string(ctx->blocksize));
+  TORCH_CHECK(false, "Qbits: unsupported jblas_config, compute_type:", p->compute_type,
+              ", weight_type:", p->weight_type + ", blocksize:", ctx->blocksize);
 }
 
 template <WOQ_TASK TASK>
@@ -333,12 +332,10 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
       return parse_weight<TASK, jblas::gemm::HCoreRowNAmxbf16<64, 16>>(p, ctx);
     }
   }
-  TORCH_CHECK(false, "Qbits: parse packweight fail, NTile:" + std::to_string(NTile) +
-                         ", CType:" + std::to_string(CType) + ", AMX:" + std::to_string(dispatcher_utils::check_amx()) +
-                         ", AVX512_VNNI:" + std::to_string(dispatcher_utils::check_avx512_vnni()) +
-                         ", AVX_VNNI:" + std::to_string(dispatcher_utils::check_avx_vnni()) +
-                         ", AVX512F:" + std::to_string(dispatcher_utils::check_avx512f()) +
-                         ", AVX2:" + std::to_string(dispatcher_utils::check_avx2()));
+  TORCH_CHECK(false, "Qbits: parse packweight fail, NTile:", NTile, ", CType:", CType,
+              ", AMX:", dispatcher_utils::check_amx(), ", AVX512_VNNI:", dispatcher_utils::check_avx512_vnni(),
+              ", AVX_VNNI:", dispatcher_utils::check_avx_vnni(), ", AVX512F:", dispatcher_utils::check_avx512f(),
+              ", AVX2:", dispatcher_utils::check_avx2());
 }
 
 template <WOQ_TASK TASK>
