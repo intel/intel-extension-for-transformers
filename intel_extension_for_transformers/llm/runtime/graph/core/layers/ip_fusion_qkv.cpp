@@ -24,130 +24,10 @@ unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, in
   return s;
 }
 
-namespace {
-namespace transformer {
-namespace avx512_vnni {
-static JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
-using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<DefaultISA,
-                                                    jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
-                                                    jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-                                                    jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
-                                                    jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS4Fp32KBlockNext = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
-        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
-        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-}  // namespace avx512_vnni
-namespace avx_vnni {
-static JBLAS_ISA constexpr DefaultISA = JblasAVX_VNNI;
-using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<DefaultISA,
-                                                    jblas::gemm::kblock::GemmCore_Row_NN_1x48_AVX_VNNI_KBLOCK,
-                                                    jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-                                                    jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
-                                                    jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_1x48_AVX_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
-        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
-        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-}  // namespace avx_vnni
-namespace amx_int8 {
-static JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
-using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
-        jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
-        jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8, jblas::prologue::gemm::ActivationFp32SymS8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
-        jblas::epilogue::gemm::DequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8, jblas::prologue::gemm::ActivationFp32SymS8Quantize,
-        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
-        jblas::epilogue::gemm::DequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemm>;
-}  // namespace amx_int8
-}  // namespace transformer
-}  // namespace
-
 bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int _m, int _n, int _k) {
-  auto wqtmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wqptr);
-  auto wktmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wkptr);
-  auto wvtmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wvptr);
-  bool support = false;
-  if (wqtmp != nullptr && wktmp != nullptr && wvtmp != nullptr) {
-    prologue::gemm::WeightBase* tmps[3] = {wqtmp, wktmp, wvtmp};
-    auto sameKernel = samePackedWeight(tmps, 3);
-    if (sameKernel) {
-      if (wqtmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-          wqtmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-        constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
-        support = contains(wqtmp->mCoreType, GcCompInt8KBlockSet, EleNum);
-        support &= hasISA(GcCompInt8KBlockSet, EleNum);
-      } else if (wqtmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                 wqtmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-        support = contains(wqtmp->mCoreType, GcCompInt8Set, EleNum);
-        support &= hasISA(GcCompInt8Set, EleNum);
-      }
-    }
-  }
-  safe_delete(wqtmp);
-  safe_delete(wktmp);
-  safe_delete(wvtmp);
-  return support;
+  return false;
 }
-
+#if 0
 JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4Fp32* wkptr, SS4Fp32* wvptr,
                                           float* output, int _m, int _n, int _k, int lda, int ldo, void* workspace) {
   GetCPUDevice();
@@ -415,3 +295,7 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
   safe_delete(wktmp);
   safe_delete(wvtmp);
 }
+#endif
+// f32f32: activation & output dtype
+void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
+                                     int _n, int _k, int lda, int ldo, void* workspace) {}

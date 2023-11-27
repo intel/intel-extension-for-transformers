@@ -31,4 +31,23 @@ using tAMX_BF16 = jblas::gemm::HCoreRowNAmxbf16<64, 16>;
 using tAVX512_FP16 = jblas::gemm::HCoreRowNAvx512fp16<96, 8>;
 using tAMX_INT8_US = jblas::gemm::ICoreRowNAmxint8<64, 16>;
 using tAMX_INT8_SS = jblas::gemm::ICoreRowNAmxint8SS<64, 16>;
+
+template <class GC_T, JBLAS_ISA ISA_T>
+using tWeiS8 = jblas::prologue_b::gemm::WeightKBlockS8<GC_T, ISA_T>;
+template <class GC_T, JBLAS_ISA ISA_T>
+using tWeiS4 = jblas::prologue_b::gemm::WeightKBlockS4<GC_T, ISA_T>;
+template <class GC_T, JBLAS_ISA ISA_T>
+using tWeiF4 = jblas::prologue_b::gemm::WeightKBlockF4<GC_T, ISA_T>;
+
+template <class GC_T, JBLAS_ISA ISA_T>
+using tActKBaseF32 = jblas::prologue_a::gemm::ActivationKBlockBaseF32<GC_T,ISA_T>;
+
+
+constexpr uint32_t Fp32Cores[] = {tAVX2::ID, tAVX512F::ID};
+constexpr uint32_t Bf16Cores[] = {tAMX_BF16::ID};
+constexpr uint32_t Fp16Cores[] = {tAVX512_FP16::ID};
+constexpr uint32_t Int8Cores[] = {tAVX_VNNI::ID, tAVX512F::ID, tAVX512_VNNI::ID, tAMX_INT8_US::ID, tAMX_INT8_SS::ID};
+constexpr uint32_t AllCores[] = {tAVX2::ID,     tAVX512F::ID,     tAMX_BF16::ID,    tAVX512_FP16::ID,
+                                 tAVX_VNNI::ID, tAVX512_VNNI::ID, tAMX_INT8_US::ID, tAMX_INT8_SS::ID};
+
 }  // namespace jblas
