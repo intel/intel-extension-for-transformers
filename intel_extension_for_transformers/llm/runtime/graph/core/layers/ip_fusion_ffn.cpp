@@ -27,39 +27,9 @@ unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, 
 }
 
 bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int seq, int fin, int fmid, int fout) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
-  auto w3tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w3ptr);
-  bool support = false;
-  if (w1tmp != nullptr && w2tmp != nullptr && w3tmp != nullptr) {
-    prologue::gemm::WeightBase* tmps[3] = {w1tmp, w2tmp, w3tmp};
-    auto sameKernel = samePackedWeight(tmps, 3);
-    if (sameKernel) {
-      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-        constexpr jblas::gemm::GemmCoreType cores[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
-                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-                                                       jblas::gemm::GemmCoreType::AVX512F_8x48,
-                                                       jblas::gemm::GemmCoreType::AMX_BF16_16x48,
-                                                       jblas::gemm::GemmCoreType::AVX2_2X48,
-                                                       jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK};
-        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-        support = contains(w1tmp->mCoreType, cores, EleNum);
-        support &= hasISA(cores, EleNum);
-      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-        support &= hasISA(GcCompInt8Set, EleNum);
-      }
-    }
-  }
-  safe_delete(w1tmp);
-  safe_delete(w2tmp);
-  safe_delete(w3tmp);
-  return support;
+  return false;
 }
-
+#if 0
 JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp32* w1ptr, SS4Fp32* w2ptr,
                                                        SS4Fp32* w3ptr, float* tmp1, float* tmp2, float* output, int seq,
                                                        int fin, int fmid, int fout, void* workspace) {
@@ -494,32 +464,16 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
   safe_delete(w2tmp);
   safe_delete(w3tmp);
 }
+#endif
+void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1,
+                                          float* tmp2, float* output, int seq, int fin, int fmid, int fout,
+                                          void* workspace) {}
 
 bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
-  bool support = false;
-  if (w1tmp != nullptr && w2tmp != nullptr) {
-    prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
-    auto sameKernel = samePackedWeight(tmps, 2);
-    if (sameKernel) {
-      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-        constexpr jblas::gemm::GemmCoreType cores[] = {
-            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
-            jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK};
-        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-        support = contains(w1tmp->mCoreType, cores, EleNum);
-        support &= hasISA(cores, EleNum);
-      }
-    }
-  }
-  safe_delete(w1tmp);
-  safe_delete(w2tmp);
-  return support;
+  return false;
 }
 
+#if 0
 JBLAS_CODE jblas_fusion_FFN_GeLu_s4fp32_f32f32_forward(float* activation, SS4Fp32* w1tmp, SS4Fp32* w2tmp, float* tmp1,
                                                        float* output, int seq, int fin, int fmid, int fout,
                                                        void* workspace) {
@@ -654,39 +608,15 @@ void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* 
   safe_delete(w1tmp);
   safe_delete(w2tmp);
 }
+#endif
+void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
+                                          int seq, int fin, int fmid, int fout, void* workspace) {}
 
 bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
-  bool support = false;
-  if (w1tmp != nullptr && w2tmp != nullptr) {
-    prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
-    auto sameKernel = samePackedWeight(tmps, 2);
-    if (sameKernel) {
-      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-        constexpr jblas::gemm::GemmCoreType cores[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
-                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-                                                       jblas::gemm::GemmCoreType::AVX512F_8x48,
-                                                       jblas::gemm::GemmCoreType::AMX_BF16_16x48,
-                                                       jblas::gemm::GemmCoreType::AVX2_2X48,
-                                                       jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK};
-        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-        support = contains(w1tmp->mCoreType, cores, EleNum);
-        support &= hasISA(cores, EleNum);
-      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-        support &= hasISA(GcCompInt8Set, EleNum);
-      }
-    }
-  }
-  safe_delete(w1tmp);
-  safe_delete(w2tmp);
-  return support;
+  return false;
 }
 
+#if 0
 JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS4Fp32* w1tmp, SS4Fp32* w2tmp,
                                                            float* b1ptr, float* b2ptr, float* tmp1, float* output,
                                                            int seq, int fin, int fmid, int fout, bool broadcast_bias,
@@ -1174,3 +1104,7 @@ void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, vo
   safe_delete(w1tmp);
   safe_delete(w2tmp);
 }
+#endif
+void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
+                                              float* tmp1, float* output, int seq, int fin, int fmid, int fout,
+                                              bool broadcast_bias, void* workspace) {}

@@ -13,14 +13,15 @@
 //  limitations under the License.
 #pragma once
 #include <immintrin.h>
+
 #include <cassert>
 
 #include "jit_blas.h"
-#include "jit_blas_gemm.h"
-#include "jit_blas_utils.h"
-#include "jit_blas_storage.h"
 #include "jit_blas_device.h"
+#include "jit_blas_gemm.h"
 #include "jit_blas_parallel.h"
+#include "jit_blas_storage.h"
+#include "jit_blas_utils.h"
 #include "kernel_wrapper.h"
 
 namespace jblas {
@@ -209,13 +210,13 @@ template <class _GemmCore_T, JBLAS_ISA ISA_T>
 using ActivationBf16KBlockQuantize = ActivationKBlockQuantize<_GemmCore_T, ISA_T, utils::bf16>;
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
-class ActivationKBlockBase : public ActivationBase<_GemmCore_T, ISA_T> {
+class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_T> {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = storage::gemm::StorageReduce;
   using SRCType = SRC_T;
   struct Param {
-    const AType* A;
+    const SRCType* A;
     int lda;
     SType* reduce;
   };
@@ -253,20 +254,8 @@ class ActivationKBlockBase : public ActivationBase<_GemmCore_T, ISA_T> {
 
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
-    auto aptr = const_cast<AType*>(_param.A) + m_offset * _param.lda + k_offset;
-    auto alignedptr = utils::cpu_pointer_align(aptr);
-    bool use_rawptr = k_size % _GemmCore_T::KTILE == 0 && m_size >= _GemmCore_T::MTILE;
-    use_rawptr = use_rawptr && (alignedptr == aptr);
-    if (use_rawptr) {
-      *dstptr = aptr;
-      *dststep = _param.lda;
-      return JblasSuccess;
-    } else {
-      auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
-      *dststep = k_pad;
-      return kernel::wrapper::Memcpy2D::forward<JblasNoSIMD, AType, AType>(aptr, *dstptr, m_size, k_size, _param.lda,
-                                                                           k_pad);
-    }
+    return ActivationConverter<_GemmCore_T, ISA_T, SRC_T>::getActivation(
+        dstptr, dststep, {_param.A, _param.lda}, m_size, k_size, m_offset, k_offset, tmpcache, cachesize);
   }
 
   JBLAS_CODE getReduce(float** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
