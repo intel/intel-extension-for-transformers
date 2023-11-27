@@ -84,5 +84,5 @@
 	url = https://github.com/pybind/pybind11.git
 [submodule "intel_extension_for_transformers/llm/library/xetla"]
 	path = intel_extension_for_transformers/llm/library/xetla
-	url = https://github.com/sunjiweiswift/xetla.git
+	url = https://github.com/intel/neural-speed.git
 	branch = Arc
