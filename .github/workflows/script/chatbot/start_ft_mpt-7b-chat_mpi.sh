@@ -1,4 +1,4 @@
-cd /root/chatbot
+cd /intel-extension-for-transformers
 hname=$(hostname -s)
 python3 workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path mosaicml/mpt-7b-chat \

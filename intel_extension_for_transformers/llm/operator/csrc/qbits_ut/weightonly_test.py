@@ -14,26 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import torch
-import inspect
-from functools import wraps
-torch.ops.load_library("../build/libqbits.so")
 
-
-def capture_args(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        sig = inspect.signature(f)
-        bound_args = sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arg_strs = []
-        for name, value in bound_args.arguments.items():
-            arg_strs.append(f'{name}={value}')
-        result = ', '.join(arg_strs)
-        print(result)
-        return f(*args, **kwargs)
-    return wrapper
-
+from ut_utils import *
 
 @capture_args
 def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=False):

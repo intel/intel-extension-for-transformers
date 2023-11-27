@@ -25,20 +25,20 @@ jobs:
 
       - name: Build Docker Image
         run:
-          docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         id: master_container
         run: |
           cid=$(docker ps -q --filter "name=chatbotfinetune-hpu-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
+          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
 
       - name: Run Finetuning
         run: |
-          cmd="python3 /root/chatbot/workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
+          cmd="python3 /intel-extension-for-transformers/workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
             --model_name_or_path mosaicml/mpt-7b-chat \
-            --train_file /root/chatbot/.github/workflows/sample_data/alpaca_data_sample_45.json \
+            --train_file /intel-extension-for-transformers/.github/workflows/sample_data/alpaca_data_sample_45.json \
             --bf16 True \
             --output_dir ./mpt_peft_finetuned_model \
             --num_train_epochs 3 \

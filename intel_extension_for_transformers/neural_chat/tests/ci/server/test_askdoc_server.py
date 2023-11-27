@@ -31,8 +31,8 @@ class UnitTest(unittest.TestCase):
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
         else:
-            command = 'neuralchat_server start \
-                        --config_file "./askdoc.yaml" \
+            command = 'sed -i "s|askdoc|ci/server/askdoc|g" ./ci/server/askdoc.yaml && neuralchat_server start \
+                        --config_file "./ci/server/askdoc.yaml" \
                         --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,
@@ -42,17 +42,23 @@ class UnitTest(unittest.TestCase):
             print("Error while executing command:", e)
 
     def tearDown(self) -> None:
+        # kill server process
+        if self.server_process:
+            self.server_process.terminate()
+            self.server_process.wait()
+
+        # delete created resources
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
         request = {
             "query": "What is Intel oneAPI Compiler?",
-            "domain": "test",
-            "blob": "",
-            "filename": ""
+            "knowledge_base_id": "default",
+            "stream": False,
+            "max_new_tokens": 256
         }
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)

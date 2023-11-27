@@ -16,14 +16,13 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-import os
-from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
+import os, re
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
     HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
-from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
+from .html_parser import load_html_data
 
 
 class DocumentIndexing:
@@ -76,6 +75,27 @@ class DocumentIndexing:
         else:
             print("This file is ignored. Will support this file format soon.")
         return chuck
+    
+
+    def parse_html(self, input):
+        """
+        Parse the uploaded file.
+        """
+        chucks = []
+        for link in input:
+            if re.match(r'^https?:/{2}\w.+$', link):
+                content = load_html_data(link)
+                if content == None:
+                    continue
+                if self.process:
+                    chuck = get_chuck_data(content, self.max_length, link)
+                else:
+                    chuck = [[content.strip(), link]]
+                chucks += chuck
+            else:
+                print("The given link/str {} cannot be parsed.".format(link))
+
+        return chucks
 
 
     def batch_parse_document(self, input):
@@ -104,11 +124,23 @@ class DocumentIndexing:
         if self.retrieval_type=="dense":
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
         else:
-            if self.document_store == "inmemory":
-                vectordb = self.KB_construct(input)
-            else:
-                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                      port=9200, search_fields=["content", "title"])
+            # if self.document_store == "inmemory":
+            #     vectordb = self.KB_construct(input)
+            # else:
+            #     vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                           port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
+        return vectordb
+    
+    def reload(self, local_path):
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            # vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                       port=9200, search_fields=["content", "title"])
+            vectordb=None
+            print("will be removed in another PR")
         return vectordb
             
     def KB_construct(self, input):
@@ -140,32 +172,33 @@ class DocumentIndexing:
             else:
                 print("There might be some errors, please wait and try again!")
         else:
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
-                if self.document_store == "inmemory":
-                    document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
-                elif self.document_store == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                                port=9200, search_fields=["content", "title"])
-
-                documents = []
-                for data, meta in data_collection:
-                    metadata = {"source": meta}
-                    if len(data) < 5:
-                        continue
-                    new_doc = SDocument(content=data, meta=metadata)
-                    documents.append(new_doc)
-                assert documents != [], "The given file/files cannot be loaded."
-                document_store.write_documents(documents)
-                print("The local knowledge base has been successfully built!")
-                return document_store
-            else:
-                print("There might be some errors, please wait and try again!")
+            # if os.path.exists(input):
+            #     if os.path.isfile(input):
+            #         data_collection = self.parse_document(input)
+            #     elif os.path.isdir(input):
+            #         data_collection = self.batch_parse_document(input)
+            #     else:
+            #         print("Please check your upload file and try again!")
+            #     if self.document_store == "inmemory":
+            #         document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
+            #     elif self.document_store == "Elasticsearch":
+            #         document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                                     port=9200, search_fields=["content", "title"])
+            # 
+            #     documents = []
+            #     for data, meta in data_collection:
+            #         metadata = {"source": meta}
+            #         if len(data) < 5:
+            #             continue
+            #         new_doc = SDocument(content=data, meta=metadata)
+            #         documents.append(new_doc)
+            #     assert documents != [], "The given file/files cannot be loaded."
+            #     document_store.write_documents(documents)
+            #     print("The local knowledge base has been successfully built!")
+            #     return document_store
+            # else:
+            #     print("There might be some errors, please wait and try again!")
+            print("Will be removed in another PR")
 
 
     def KB_append(self, input):  ### inmemory documentstore please use KB construct
@@ -195,30 +228,31 @@ class DocumentIndexing:
             else:
                 print("There might be some errors, please wait and try again!")
         else:
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
-
-                if self.document_store == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                                port=9200, search_fields=["content", "title"])
-                    documents = []
-                    for data, meta in data_collection:
-                        metadata = {"source": meta}
-                        if len(data) < 5:
-                            continue
-                        new_doc = SDocument(content=data, meta=metadata)
-                        documents.append(new_doc)
-                    assert documents != [], "The given file/files cannot be loaded."
-                    document_store.write_documents(documents)
-                    print("The local knowledge base has been successfully built!")
-                    return ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                              port=9200, search_fields=["content", "title"])
-                else:
-                    print("Unsupported document store type, please change to Elasticsearch!")
-            else:
-                print("There might be some errors, please wait and try again!")
+            # if os.path.exists(input):
+            #     if os.path.isfile(input):
+            #         data_collection = self.parse_document(input)
+            #     elif os.path.isdir(input):
+            #         data_collection = self.batch_parse_document(input)
+            #     else:
+            #         print("Please check your upload file and try again!")
+            # 
+            #     if self.document_store == "Elasticsearch":
+            #         document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                                     port=9200, search_fields=["content", "title"])
+            #         documents = []
+            #         for data, meta in data_collection:
+            #             metadata = {"source": meta}
+            #             if len(data) < 5:
+            #                 continue
+            #             new_doc = SDocument(content=data, meta=metadata)
+            #             documents.append(new_doc)
+            #         assert documents != [], "The given file/files cannot be loaded."
+            #         document_store.write_documents(documents)
+            #         print("The local knowledge base has been successfully built!")
+            #         return ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+            #                                                   port=9200, search_fields=["content", "title"])
+            #     else:
+            #         print("Unsupported document store type, please change to Elasticsearch!")
+            # else:
+            #     print("There might be some errors, please wait and try again!")
+            print("Will be removed in another PR.")
