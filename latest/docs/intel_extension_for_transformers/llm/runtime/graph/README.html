@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g8188e6a documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gae95a29 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -202,7 +202,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 | weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
 | alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
 | group_size        | Int         | Group size: Int (default: 32)                                                           |
-| scale_dtype       | String      | Data type of scales: fp32/bf16 (dafault fp32)                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
 | use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 | use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |</p>
@@ -218,7 +218,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 | batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
 | ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
 | seed              | Int         | NG seed (default: -1, use random seed for &lt; 0)                                          |
-| threads           | Int         | Number of threads to use during computation (default: 8)                                |
+| threads           | Int         | Number of threads to use during computation (default: min(available_core_num, OMP_NUM_THREADS))                                       |
+| memory_dtype      | str         | Data type of the KV memory; one of f16, f32, auto (enables Fused Attention when possible otherwise fallback to f16) (default: auto)   |
 | repetition_penalty| Float       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
 | num_beams         | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
 | do_sample         | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
@@ -230,7 +231,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 | early_stopping    | Bool        | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
 | max_new_tokens    | Int         | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
 | streamer          | Class       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
-| stopping_criteria | Class       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |</p>
+| stopping_criteria | Class       | Please refer to <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |
+| pad_token         | Int         | pad_token_id of <a class="reference external" href="https://huggingface.co/docs/transformers/v4.35.0/en/main_classes/text_generation#generation">Transformer’s generate</a> |</p>
 </section>
 <section id="multi-round-chat">
 <h3>3. Multi-Round Chat<a class="headerlink" href="#multi-round-chat" title="Link to this heading"></a></h3>
@@ -481,7 +483,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f2ec5a526e0> 
+   <jinja2.runtime.BlockReference object at 0x7f4cc21878b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
