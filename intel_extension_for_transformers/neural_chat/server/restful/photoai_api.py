@@ -408,11 +408,8 @@ async def handle_ai_photos_chat_to_image(request: Request):
     pt.append_message(pt.conv.roles[0], cur_time)
     pt.append_message(pt.conv.roles[1], query)
     prompt = pt.get_prompt()
-    logger.info(f'<chatWithImage> LLM inference prompt: {prompt}')
     response = chatbot.predict(query=prompt)
-    logger.info(f'<chatWithImage> LLM inference origin result: {response}')
     response = response.split("[/INST]")[-1]
-    logger.info(f'<chatWithImage> processed result: {response}')
 
     try:
         ner_obj = plugins['ner']["instance"]
