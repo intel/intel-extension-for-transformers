@@ -86,7 +86,6 @@ from .dynamic.drop_and_restore_utils import (
 from .dynamic.evolution import (
     Evolution, approx_ratio, inverse, store2str
 )
-from .utils.utility_export import get_onnx_configs
 
 from torch.nn import KLDivLoss
 import torch.nn.functional as F
@@ -2073,13 +2072,16 @@ class BaseTrainer():
         task = TasksManager.infer_task_from_model(model_name_or_path)
         try:
             # try to get export config
-            onnx_config = get_onnx_configs(model=model, task=task)
+            onnx_config_constructor = TasksManager.get_exporter_config_constructor(
+                model=model, exporter="onnx", task=task
+            )
+            onnx_config = onnx_config_constructor(model.config)
             inputs = onnx_config.ordered_inputs(model)
             input_names = list(inputs.keys())
             output_names = list(onnx_config.outputs.keys())
             axes_dict = dict(chain(inputs.items(), onnx_config.outputs.items()))
         except:
-            # skip and use export config collected from dataloader
+            # skip and use settings collected from dataloader
             pass
 
         torch.onnx.export(
