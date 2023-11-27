@@ -322,7 +322,6 @@ def load_model(
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
-    
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
@@ -331,11 +330,9 @@ def load_model(
         trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
             re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
-    
     if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
@@ -488,7 +485,6 @@ def load_model(
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
         return
-
     if device == "hpu":
         if peft_path:
             from peft import PeftModel
@@ -871,7 +867,6 @@ def predict_stream(**params):
         if output_token_len != 1
         else 0
     )
-    
     if return_stats:
         stats = {
             "input_token_len": str(input_token_len),
