@@ -33,6 +33,8 @@ using tAMX_INT8_US = jblas::gemm::ICoreRowNAmxint8<64, 16>;
 using tAMX_INT8_SS = jblas::gemm::ICoreRowNAmxint8SS<64, 16>;
 
 template <class GC_T, JBLAS_ISA ISA_T>
+using tWeiNInt = jblas::prologue_b::gemm::WeightKBlockNInteger<GC_T, ISA_T>;
+template <class GC_T, JBLAS_ISA ISA_T>
 using tWeiS8 = jblas::prologue_b::gemm::WeightKBlockS8<GC_T, ISA_T>;
 template <class GC_T, JBLAS_ISA ISA_T>
 using tWeiS4 = jblas::prologue_b::gemm::WeightKBlockS4<GC_T, ISA_T>;
@@ -40,8 +42,7 @@ template <class GC_T, JBLAS_ISA ISA_T>
 using tWeiF4 = jblas::prologue_b::gemm::WeightKBlockF4<GC_T, ISA_T>;
 
 template <class GC_T, JBLAS_ISA ISA_T>
-using tActKBaseF32 = jblas::prologue_a::gemm::ActivationKBlockBaseF32<GC_T,ISA_T>;
-
+using tActKBaseF32 = jblas::prologue_a::gemm::ActivationKBlockBaseF32<GC_T, ISA_T>;
 
 constexpr uint32_t Fp32Cores[] = {tAVX2::ID, tAVX512F::ID};
 constexpr uint32_t Bf16Cores[] = {tAMX_BF16::ID};
