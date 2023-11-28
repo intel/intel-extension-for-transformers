@@ -50,14 +50,15 @@ class UnitTest(unittest.TestCase):
 
     def test_plugin_as_service(self):
         url = 'http://127.0.0.1:7777/plugin/audio/asr'
-        file_path = Path("./Hello.m4a")
+        file_path = Path("/intel-extension-for-transformers/intel_extension_for_transformers \
+                         /neural_chat/assets/audio/welcome.wav")
         
         if file_path.is_file():
             with file_path.open("rb") as file:
                 response = requests.post(url, files={"file": file})
             print(response.text)
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.text.lower(), "hello")
+            self.assertEqual(response.text.lower(), "welcome to neuralchat")
         else:
             print(f"No such file: {file_path}")
 
