@@ -107,11 +107,7 @@ bool jblas_fusion_add_f32f32_support(void* weiptr, int _m, int _n, int _k) {
   bool support = false;
   auto wtmp = jblas::storage::gemm::PackedWeightParser::deserialBuffer(weiptr);
   if (wtmp) {
-    if (wtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS4) {
-      constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
-      support = contains(wtmp->mCoreId, AllCores, EleNum);
-      support &= hasISA(AllCores, EleNum);
-    } else if (wtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS8) {
+    if (wtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
       constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
       support = contains(wtmp->mCoreId, AllCores, EleNum);
       support &= hasISA(AllCores, EleNum);
@@ -137,91 +133,46 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
                                                      jblas::gemm::CoreAttr::NTILE_SHIFT);
     auto CType = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
                                                      jblas::gemm::CoreAttr::COMP_SHIFT);
-    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS4) {
+    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
       if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          ip_add::JblasGemmCompF32<tAVX512F, tWeiS4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                    broadcast_bias, workspace, pth);
           goto __END;
         }
         if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          ip_add::JblasGemmCompF32<tAVX2, tWeiS4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                 broadcast_bias, workspace, pth);
           goto __END;
         }
       }
       if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ip_add::JblasGemmCompF32<tAMX_BF16, tWeiS4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                     broadcast_bias, workspace, pth);
           goto __END;
         }
       }
       if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
         if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
-          ip_add::JblasGemmCompInt8<tAMX_INT8_US, tWeiS4>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompInt8<tAMX_INT8_US, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                           broadcast_bias, workspace, pth);
           goto __END;
         }
         if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiS4>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                           broadcast_bias, workspace, pth);
           goto __END;
         }
         if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX_VNNI, tWeiS4>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                        broadcast_bias, workspace, pth);
           goto __END;
         }
       }
       if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
         if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-          ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiS4>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                          broadcast_bias, workspace, pth);
-          goto __END;
-        }
-      }
-    }
-    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockS8) {
-      if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
-        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          ip_add::JblasGemmCompF32<tAVX512F, tWeiS8, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                                   broadcast_bias, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          ip_add::JblasGemmCompF32<tAVX2, tWeiS8, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                                broadcast_bias, workspace, pth);
-          goto __END;
-        }
-      }
-      if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
-        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ip_add::JblasGemmCompF32<tAMX_BF16, tWeiS8, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                                    broadcast_bias, workspace, pth);
-          goto __END;
-        }
-      }
-      if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
-        if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
-          ip_add::JblasGemmCompInt8<tAMX_INT8_US, tWeiS8>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                          broadcast_bias, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiS8>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                          broadcast_bias, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX_VNNI, tWeiS8>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                       broadcast_bias, workspace, pth);
-          goto __END;
-        }
-      }
-      if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
-        if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-          ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiS8>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+          ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                           broadcast_bias, workspace, pth);
           goto __END;
         }
