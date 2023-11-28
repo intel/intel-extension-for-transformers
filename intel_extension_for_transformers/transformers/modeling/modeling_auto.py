@@ -262,7 +262,8 @@ class _BaseQBitsAutoModelClass:
 
                 calib_dataset = quantization_config.calib_dataset
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, split="train")
+                calib_dataset = load_dataset(calib_dataset, 
+                                            split="test" if calib_dataset in ["mbpp", "openai_humaneval"] else "train")
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
