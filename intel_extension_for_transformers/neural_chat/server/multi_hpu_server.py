@@ -17,13 +17,22 @@
 
 import argparse
 import os
-import time
+import json, types
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, LoadingModelConfig
 )
 
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionResponse
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import check_completion_request
+from intel_extension_for_transformers.neural_chat.cli.log import logger
+
+import uvicorn
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+app = FastAPI(title="NeuralChat Gaudi Serving Process", description="Serving", version="0.0.1")
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -174,116 +183,139 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def main():
-    args = parse_args()
-    base_model_path = args.base_model_path
+args = parse_args()
+base_model_path = args.base_model_path
 
-    # Check the validity of the arguments
-    if not 0 < args.temperature <= 1.0:
-        raise ValueError("Temperature must be between 0 and 1.")
-    if not 0 <= args.top_p <= 1.0:
-        raise ValueError("Top-p must be between 0 and 1.")
-    if not 0 <= args.top_k <= 200:
-        raise ValueError("Top-k must be between 0 and 200.")
-    if not 1.0 <= args.repetition_penalty <= 2.0:
-        raise ValueError("Repetition penalty must be between 1 and 2.")
-    if not 0 <= args.num_beams <= 8:
-        raise ValueError("Number of beams must be between 0 and 8.")
-    if not 32 <= args.max_new_tokens <= 1024:
-        raise ValueError(
-            "The maximum number of new tokens must be between 32 and 1024."
-        )
-
-    # User can use DeepSpeed to speedup the inference On Habana Gaudi processors.
-    # If the DeepSpeed launcher is used, the env variable _ will be equal to /usr/local/bin/deepspeed
-    # For multi node, the value of the env variable WORLD_SIZE should be larger than 8
-    use_deepspeed = (
-        "deepspeed" in os.environ["_"]
-        or ("WORLD_SIZE" in os.environ and int(os.environ["WORLD_SIZE"]) > 8)
-        and args.habana
+# Check the validity of the arguments
+if not 0 < args.temperature <= 1.0:
+    raise ValueError("Temperature must be between 0 and 1.")
+if not 0 <= args.top_p <= 1.0:
+    raise ValueError("Top-p must be between 0 and 1.")
+if not 0 <= args.top_k <= 200:
+    raise ValueError("Top-k must be between 0 and 200.")
+if not 1.0 <= args.repetition_penalty <= 2.0:
+    raise ValueError("Repetition penalty must be between 1 and 2.")
+if not 0 <= args.num_beams <= 8:
+    raise ValueError("Number of beams must be between 0 and 8.")
+if not 32 <= args.max_new_tokens <= 1024:
+    raise ValueError(
+        "The maximum number of new tokens must be between 32 and 1024."
     )
 
-    if args.habana:
-        # Set seed before initializing model.
-        from optimum.habana.utils import set_seed
+# User can use DeepSpeed to speedup the inference On Habana Gaudi processors.
+# If the DeepSpeed launcher is used, the env variable _ will be equal to /usr/local/bin/deepspeed
+# For multi node, the value of the env variable WORLD_SIZE should be larger than 8
+use_deepspeed = (
+    "deepspeed" in os.environ["_"]
+    or ("WORLD_SIZE" in os.environ and int(os.environ["WORLD_SIZE"]) > 8)
+    and args.habana
+)
 
-        set_seed(args.seed)
-    else:
-        from transformers import set_seed
+if args.habana:
+    # Set seed before initializing model.
+    from optimum.habana.utils import set_seed
 
-        set_seed(args.seed)
+    set_seed(args.seed)
+else:
+    from transformers import set_seed
 
-    config = PipelineConfig(
-        model_name_or_path=base_model_path,
-        tokenizer_name_or_path=args.tokenizer_name,
-        hf_access_token=args.hf_access_token,
-        device="hpu" if args.habana else "auto",
-        loading_config=LoadingModelConfig(
-            use_hpu_graphs=args.use_hpu_graphs,
-            cpu_jit=args.jit,
-            ipex_int8=args.ipex_int8,
-            use_cache=args.use_kv_cache,
-            peft_path=args.peft_model_path,
-            use_deepspeed=True if use_deepspeed and args.habana else False,
-        ),
-        optimization_config=MixedPrecisionConfig(dtype=args.dtype)
-    )
-    chatbot = build_chatbot(config)
-    gen_config = GenerationConfig(
-        device="hpu" if args.habana else "auto",
-        task=args.task,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        top_k=args.top_k,
-        repetition_penalty=args.repetition_penalty,
-        num_beams=args.num_beams,
-        max_new_tokens=args.max_new_tokens,
-        do_sample=args.temperature > 0.0,
+    set_seed(args.seed)
+
+config = PipelineConfig(
+    model_name_or_path=base_model_path,
+    tokenizer_name_or_path=args.tokenizer_name,
+    hf_access_token=args.hf_access_token,
+    device="hpu" if args.habana else "auto",
+    loading_config=LoadingModelConfig(
         use_hpu_graphs=args.use_hpu_graphs,
+        cpu_jit=args.jit,
+        ipex_int8=args.ipex_int8,
         use_cache=args.use_kv_cache,
-        num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
-    )
+        peft_path=args.peft_model_path,
+        use_deepspeed=True if use_deepspeed and args.habana else False,
+    ),
+    optimization_config=MixedPrecisionConfig(dtype=args.dtype)
+)
+chatbot = build_chatbot(config)
+gen_config = GenerationConfig(
+    device="hpu" if args.habana else "auto",
+    task=args.task,
+    temperature=args.temperature,
+    top_p=args.top_p,
+    top_k=args.top_k,
+    repetition_penalty=args.repetition_penalty,
+    num_beams=args.num_beams,
+    max_new_tokens=args.max_new_tokens,
+    do_sample=args.temperature > 0.0,
+    use_hpu_graphs=args.use_hpu_graphs,
+    use_cache=args.use_kv_cache,
+    num_return_sequences=args.num_return_sequences,
+    ipex_int8=args.ipex_int8
+)
 
-    if args.habana:
-        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+if args.habana:
+    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+    world_size, rank, args.local_rank = initialize_distributed_hpu()
 
-        world_size, rank, args.local_rank = initialize_distributed_hpu()
-    if args.habana and rank in [-1, 0]:
-        print(f"Args: {args}")
-        print(f"n_hpu: {world_size}, bf16")
+if args.habana and rank in [-1, 0]:
+    print(f"Args: {args}")
+    print(f"n_hpu: {world_size}, bf16")
 
-    # init api
+# warmup, the first time inference take longer because of graph compilation
+for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
     if args.local_rank in [-1, 0]:
-        # warmup, the first time inference take longer because of graph compilation
-        for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
-            if args.local_rank in [-1, 0]:
-                print(new_text, end="", flush=True)
-        print("\n"*3)
+        print(new_text, end="", flush=True)
+print("\n"*3)
 
-        import uvicorn
-        from fastapi import FastAPI
-        from fastapi import APIRouter
-        from starlette.middleware.cors import CORSMiddleware
-        from intel_extension_for_transformers.neural_chat.server.restful.api import setup_router
-        app = FastAPI(
-            title="NeuralChat Serving API", description="Api", version="0.0.1")
-
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"])
-
-        api_router = APIRouter()
-        api_router = setup_router(args.api_list, chatbot)
-        app.include_router(api_router)
-
-        try:
-            uvicorn.run(app, host=args.host, port=args.port)
-        except Exception as e:
-            print(f"Error starting uvicorn: {str(e)}")
+@app.post("/v1/code_generation")
+async def chat_completion_endpoint(request: ChatCompletionRequest):
+    ret = check_completion_request(request)
+    if ret is not None:
+        raise RuntimeError("Invalid parameter.")
+    try:
+        logger.info(f"Predicting chat completion using prompt '{request.prompt}'")
+        # Set attributes of the config object from the request
+        for attr, value in request.__dict__.items():
+            if attr == "stream":
+                continue
+            setattr(gen_config, attr, value)
+        buffered_texts = ""
+        if request.stream:
+            generator, _ = chatbot.predict_stream(query=request.prompt, config=config)
+            if not isinstance(generator, types.GeneratorType):
+                generator = (generator,)
+            def stream_generator():
+                nonlocal buffered_texts
+                for output in generator:
+                    if isinstance(output, str):
+                        chunks = output.split()
+                        for chunk in chunks:
+                            ret = {
+                                "text": chunk,
+                                "error_code": 0,
+                            }
+                            buffered_texts += chunk + ' '
+                            yield json.dumps(ret).encode() + b"\0"
+                    else:
+                        ret = {
+                            "text": output,
+                            "error_code": 0,
+                        }
+                        buffered_texts += output + ' '
+                        yield json.dumps(ret).encode() + b"\0"
+                yield f"data: [DONE]\n\n"
+            return StreamingResponse(stream_generator(), media_type="text/event-stream")
+        else:
+            response = chatbot.predict(query=request.prompt, config=config)
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+    else:
+        logger.info(f"Chat completion finished.")
+        return ChatCompletionResponse(response=response)
 
 if __name__ == "__main__":
-    main()
+    process_port = args.port + args.local_rank + 1
+    try:
+        uvicorn.run(app, host=args.host, port=process_port)
+    except Exception as e:
+        print(f"Error starting uvicorn: {str(e)}")
