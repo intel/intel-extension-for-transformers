@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+g5b2f8eb documentation</title>
+  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+gcee9d4c documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -136,7 +136,13 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 <p>The following prerequisites and requirements must be satisfied for a successful installation:</p>
 <ul class="simple">
 <li><p>Python version: 3.8 or 3.9 or 3.10</p></li>
-<li><p>GCC (on Linux) or Visual Studio (on Windows)</p></li>
+<li><p>GCC &gt;= version 8 (on Linux)</p>
+<ul>
+<li><p>version 11, if use the bf16-related features of the itrex backend</p></li>
+<li><p>version 13, if use the fp16-related features of the itrex backend</p></li>
+</ul>
+</li>
+<li><p>Visual Studio (on Windows)</p></li>
 </ul>
 </section>
 <section id="install-intel-extension-for-transformers">
@@ -226,7 +232,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f24c8958a60> 
+   <jinja2.runtime.BlockReference object at 0x7fce2186f2e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
