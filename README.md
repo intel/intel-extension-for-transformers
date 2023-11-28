@@ -49,7 +49,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to optimize
 
 
 ## 🆗Supported Hardware
-| Hardware | Fine-Tuning | NeuralChat | Qauntization | Inference |
+| Hardware | Fine-Tuning | NeuralChat | Quantization | Inference |
 |-------------|:-------------:|:-------------:|:-------------:|:-------------:|
 |Intel Gaudi2 | ✔ | ✔ | WIP | ✔ (bf16) |
 |Intel Data Center GPU Max Series | WIP | WIP | WIP | WIP |
