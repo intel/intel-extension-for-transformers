@@ -47,7 +47,7 @@ struct compute_policy_int4_dequantize_xmx<compute_attr_, perf_tuning_knob_,
 
     static constexpr bool is_int4_matB_policy = true;
 
-    static constexpr uint32_t block_size_x_b = 8;
+    static constexpr uint32_t block_size_x_b = 16;
     static constexpr uint32_t block_bytes_y_b = 32;
     static_assert(block_bytes_x_a == block_bytes_y_b,
             "mat_a x need to match with mat_b y");
