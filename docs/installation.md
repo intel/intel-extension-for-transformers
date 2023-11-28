@@ -34,10 +34,7 @@ conda install -c intel intel_extension_for_transformers
 ### Prerequisites
 The following prerequisites and requirements must be satisfied for a successful installation:
 - Python version: 3.8 or 3.9 or 3.10
-- GCC >= version 8 (on Linux)
-  - version 11, if use the bf16-related features of the itrex backend
-  - version 13, if use the fp16-related features of the itrex backend
-- Visual Studio (on Windows)
+- GCC (on Linux) or Visual Studio (on Windows)
 
 ### Install Intel Extension for Transformers
 ```Bash
