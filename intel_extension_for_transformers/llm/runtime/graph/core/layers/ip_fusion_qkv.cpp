@@ -17,285 +17,294 @@
 using namespace jblas;
 using namespace ne_jblas;
 
+namespace ip_qkv {
+
+template <class Parallel_T, class Launch_T>
+void GemmBaseRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+  device::CpuBase cb;
+  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache});
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    typename Parallel_T::ThreadProblem thdp{tidx};
+    para.getIndex(thdp);
+    if (thdp.valid) {
+      for (size_t i = 0; i < 3; i++) {
+        launcher.run(args[i], thdp);
+      }
+    }
+  });
+}
+
+template <class Parallel_T, class Launch_T>
+void GemmKBlockRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+  device::CpuBase cb;
+  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache, args[0].KBlock});
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    typename Parallel_T::ThreadProblem thdp{tidx};
+    para.getIndex(thdp);
+    if (thdp.valid) {
+      for (size_t i = 0; i < 3; i++) {
+        launcher.run(args[i], thdp);
+      }
+    }
+  });
+}
+
+template <class Parallel_T, class Launch_T>
+void GemmKBlockRunWithA_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+  device::CpuBase cb;
+  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache, args[0].KBlock});
+  using AParall = typename Launch_T::PrologueA::Parallel;
+  AParall apara({th->num_threads(), args[0].M, args[0].K, 1, args[0].KBlock});
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    typename AParall::ThreadProblem thdpA{tidx};
+    apara.getIndex(thdpA);
+    if (thdpA.valid) {
+      launcher.mProA.run(args[0].paramA, thdpA);
+    }
+    th->sync();
+    typename Parallel_T::ThreadProblem thdp{tidx};
+    para.getIndex(thdp);
+    if (thdp.valid) {
+      for (size_t i = 0; i < 3; i++) {
+        launcher.run(args[i], thdp);
+      }
+    }
+  });
+}
+
+template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
+void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
+                      jblas::storage::gemm::IWeightBase* _BQ, jblas::storage::gemm::IWeightBase* _BK,
+                      jblas::storage::gemm::IWeightBase* _BV, float* C, const int ldc, int8_t* WorkSpace,
+                      jblas::parallel::IThreading* th) {
+  if (M <= 32) {
+    using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+    using Launcher = tLauncher_Fp_F32F32<GemmCore_T, Wei_T>;
+    static Launcher kernel;
+    auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
+    auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
+    auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
+    auto reduceA = kernel.mProA.createStorage(M, K, BQ->mBlockSize);
+    if (BQ->IsAsym()) {
+      reduceA.assign(WorkSpace);
+    }
+    auto cstep = static_cast<int>(BQ->CStep());
+    typename Launcher::BEpiParam blkargs[3]{{BQ->template SPtr<int8_t>(), BQ->SDtype(), cstep,
+                                             BQ->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda},
+                                            {BK->template SPtr<int8_t>(), BK->SDtype(), cstep,
+                                             BK->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda},
+                                            {BV->template SPtr<int8_t>(), BV->SDtype(), cstep,
+                                             BV->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda}};
+    typename Launcher::Param args[3]{
+        {M, N, K, BQ->mBlockSize, {A, lda, &reduceA}, {BQ}, blkargs[0], {C, ldc}},
+        {M, N, K, BK->mBlockSize, {A, lda, &reduceA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
+        {M, N, K, BV->mBlockSize, {A, lda, &reduceA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
+    if (BQ->IsAsym()) {
+      GemmKBlockRunWithA_QKV<Parallel>(kernel, args, th);
+    } else {
+      GemmKBlockRun_QKV<Parallel>(kernel, args, th);
+    }
+  } else {
+    using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
+    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T,
+                                                        jblas::prologue_a::gemm::ActivationKBlockBaseF32, Wei_T,
+                                                        jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+    static Launcher kernel;
+    auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
+    auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
+    auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
+
+    typename Launcher::Param args[3]{{M, N, K, {A, K}, {BQ}, {C, ldc}},
+                                     {M, N, K, {A, K}, {BK}, {C + M * ldc, ldc}},
+                                     {M, N, K, {A, K}, {BV}, {C + M * ldc * 2, ldc}}};
+    GemmBaseRun_QKV<Parallel>(kernel, args, th);
+  }
+}
+
+template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
+void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
+                       jblas::storage::gemm::IWeightBase* _BQ, jblas::storage::gemm::IWeightBase* _BK,
+                       jblas::storage::gemm::IWeightBase* _BV, float* C, const int ldc, int8_t* WorkSpace,
+                       jblas::parallel::IThreading* th) {
+  using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+  using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
+  auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
+  auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
+  auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
+  static Launcher kernel;
+  auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
+  quanA.assign(WorkSpace);
+  typename Launcher::Param args[3]{
+      {M,
+       N,
+       K,
+       BQ->mBlockSize,
+       {A, K, &quanA},
+       {BQ},
+       {BQ->template SPtr<int8_t>(), BQ->SDtype(), BQ->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
+        quanA.template ZPtr<uint8_t>(), BQ->template RPtr<float>(), BQ->RDtype(), BQ->template ZPtr<int8_t>(),
+        quanA.template RPtr<float>(), BQ->mBlockSize},
+       {C, N}},
+      {M,
+       N,
+       K,
+       BK->mBlockSize,
+       {A, K, &quanA},
+       {BK},
+       {BK->template SPtr<int8_t>(), BK->SDtype(), BK->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
+        quanA.template ZPtr<uint8_t>(), BK->template RPtr<float>(), BK->RDtype(), BK->template ZPtr<int8_t>(),
+        quanA.template RPtr<float>(), BK->mBlockSize},
+       {C, N}},
+      {M,
+       N,
+       K,
+       BV->mBlockSize,
+       {A, K, &quanA},
+       {BV},
+       {BV->template SPtr<int8_t>(), BV->SDtype(), BV->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
+        quanA.template ZPtr<uint8_t>(), BV->template RPtr<float>(), BV->RDtype(), BV->template ZPtr<int8_t>(),
+        quanA.template RPtr<float>(), BV->mBlockSize},
+       {C, N}}};
+  GemmKBlockRunWithA_QKV<Parallel>(kernel, args, th);
+}
+}  // namespace ip_qkv
+
 unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, int _k, void* w1ptr) {
   // maximum padding
+  // we can parse w1ptr to get a accurate size, but not necessary
   int constexpr padding = 128;
   size_t s = size_t(_m) * utils::padto((size_t)_k, padding) * 4;
   return s;
 }
 
 bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int _m, int _n, int _k) {
-  return false;
-}
-#if 0
-JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4Fp32* wkptr, SS4Fp32* wvptr,
-                                          float* output, int _m, int _n, int _k, int lda, int ldo, void* workspace) {
   GetCPUDevice();
-  auto ret = JblasRuntimeError;
-  if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
-    if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
-      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS4Fp32KBlock;
-      static GemmKernel kernel;
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo},
-          {output + _m * _n, ldo},
-          {output + 2 * _m * _n, ldo},
-      };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-      quanA.assign((int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (wqptr->mBlockSize % 8 == 0) {
-      if (_cd->AVX512_VNNI()) {
-        if (_m <= 32) {
-          using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4Fp32KBlockNext;
-          static GemmKernel kernel;
-          GemmKernel::WeightType::Param wparams[3]{
-              wqptr,
-              wkptr,
-              wvptr,
-          };
-          GemmKernel::CParam oparams[3]{
-              {output, ldo},
-              {output + _m * _n, ldo},
-              {output + 2 * _m * _n, ldo},
-          };
-          auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-          quanA.assign((int8_t*)workspace);
-          ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-        } else {
-          using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4Fp32KBlock;
-          static GemmKernel kernel;
-          GemmKernel::WeightType::Param wparams[3]{
-              wqptr,
-              wkptr,
-              wvptr,
-          };
-          GemmKernel::CParam oparams[3]{
-              {output, ldo},
-              {output + _m * _n, ldo},
-              {output + 2 * _m * _n, ldo},
-          };
-          auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-          quanA.assign((int8_t*)workspace);
-          ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-        }
-      } else if (_cd->AVX_VNNI()) {
-        using GemmKernel = transformer::avx_vnni::QKVGemmDynamicS4Fp32KBlock;
-        static GemmKernel kernel;
-        GemmKernel::WeightType::Param wparams[3]{
-            wqptr,
-            wkptr,
-            wvptr,
-        };
-        GemmKernel::CParam oparams[3]{
-            {output, ldo},
-            {output + _m * _n, ldo},
-            {output + 2 * _m * _n, ldo},
-        };
-        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-        quanA.assign((int8_t*)workspace);
-        ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
+  bool support = false;
+  auto wqtmp = jblas::storage::gemm::PackedWeightParser::deserialBuffer(wqptr);
+  auto wktmp = jblas::storage::gemm::PackedWeightParser::deserialBuffer(wkptr);
+  auto wvtmp = jblas::storage::gemm::PackedWeightParser::deserialBuffer(wvptr);
+  if (wqtmp && wktmp && wvtmp) {
+    storage::gemm::IWeightBase* wset[] = {wqtmp, wktmp, wvtmp};
+    if (samePackedWeight(wset, 3)) {
+      if (wqtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+        constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
+        support = contains(wqtmp->mCoreId, AllCores, EleNum);
+        support &= hasISA(AllCores, EleNum);
+      } else if (wqtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
+        constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
+        support = contains(wqtmp->mCoreId, AllCores, EleNum);
+        support &= hasISA(AllCores, EleNum);
       }
     }
   }
-  return ret;
-}
-
-JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8Fp32* wkptr, SS8Fp32* wvptr,
-                                          float* output, int _m, int _n, int _k, int lda, int ldo, void* workspace) {
-  GetCPUDevice();
-  auto ret = JblasRuntimeError;
-  if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
-    if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
-      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS8Fp32KBlock;
-      static GemmKernel kernel;
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo},
-          {output + _m * _n, ldo},
-          {output + 2 * _m * _n, ldo},
-      };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-      quanA.assign((int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS8Fp32KBlock;
-      static GemmKernel kernel;
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo},
-          {output + _m * _n, ldo},
-          {output + 2 * _m * _n, ldo},
-      };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize);
-      quanA.assign((int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    }
-  }
-  return ret;
-}
-
-JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wqptr, SS8Fp32PerN* wkptr,
-                                              SS8Fp32PerN* wvptr, float* output, int _m, int _n, int _k, int lda,
-                                              int ldo, void* workspace) {
-  GetCPUDevice();
-  auto ret = JblasRuntimeError;
-  if (wqptr->mCoreType == GcCompInt8::TYPE) {
-    if (_cd->AMX_INT8()) {
-      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS8Fp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mSPtr, quanA.mCStep, wqptr->mSPtr},
-          {output + _m * _n, ldo, quanA.mSPtr, quanA.mCStep, wkptr->mSPtr},
-          {output + 2 * _m * _n, ldo, quanA.mSPtr, quanA.mCStep, wvptr->mSPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS8Fp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mCStep, quanA.mSPtr, wqptr->mSPtr, quanA.mZPtr, wqptr->mRPtr},
-          {output + _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wkptr->mSPtr, quanA.mZPtr, wkptr->mRPtr},
-          {output + 2 * _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wvptr->mSPtr, quanA.mZPtr, wvptr->mRPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (_cd->AVX_VNNI()) {
-      using GemmKernel = transformer::avx_vnni::QKVGemmDynamicS8Fp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mCStep, quanA.mSPtr, wqptr->mSPtr, quanA.mZPtr, wqptr->mRPtr},
-          {output + _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wkptr->mSPtr, quanA.mZPtr, wkptr->mRPtr},
-          {output + 2 * _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wvptr->mSPtr, quanA.mZPtr, wvptr->mRPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    }
-  }
-  return ret;
-}
-
-JBLAS_CODE jblas_QKVs4clipfp32pern_f32f32_forward(float* activation, SS4Fp32PerN* wqptr, SS4Fp32PerN* wkptr,
-                                                  SS4Fp32PerN* wvptr, float* output, int _m, int _n, int _k, int lda,
-                                                  int ldo, void* workspace) {
-  GetCPUDevice();
-  auto ret = JblasRuntimeError;
-  if (wqptr->mCoreType == GcCompInt8::TYPE) {
-    if (_cd->AMX_INT8()) {
-      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS4ClipFp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mSPtr, quanA.mCStep, wqptr->mSPtr},
-          {output + _m * _n, ldo, quanA.mSPtr, quanA.mCStep, wkptr->mSPtr},
-          {output + 2 * _m * _n, ldo, quanA.mSPtr, quanA.mCStep, wvptr->mSPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4ClipFp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mCStep, quanA.mSPtr, wqptr->mSPtr, quanA.mZPtr, wqptr->mRPtr},
-          {output + _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wkptr->mSPtr, quanA.mZPtr, wkptr->mRPtr},
-          {output + 2 * _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wvptr->mSPtr, quanA.mZPtr, wvptr->mRPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    } else if (_cd->AVX_VNNI()) {
-      using GemmKernel = transformer::avx_vnni::QKVGemmDynamicS4ClipFp32PerN;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
-      quanA.assign((int8_t*)workspace);
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo, quanA.mCStep, quanA.mSPtr, wqptr->mSPtr, quanA.mZPtr, wqptr->mRPtr},
-          {output + _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wkptr->mSPtr, quanA.mZPtr, wkptr->mRPtr},
-          {output + 2 * _m * _n, ldo, quanA.mCStep, quanA.mSPtr, wvptr->mSPtr, quanA.mZPtr, wvptr->mRPtr},
-      };
-      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, &quanA, wparams, oparams, NULL});
-    }
-  }
-  return ret;
+  safe_delete(wqtmp);
+  safe_delete(wktmp);
+  safe_delete(wvtmp);
+  return support;
 }
 
 // f32f32: activation & output dtype
 void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
-                                     int _n, int _k, int lda, int ldo, void* workspace) {
+                                     int _n, int _k, int lda, int ldo, void* _workspace) {
   GetCPUDevice();
-  auto ret = JblasRuntimeError;
-  auto wqtmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wqptr);
-  auto wktmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wkptr);
-  auto wvtmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wvptr);
+  auto wqtmp = storage::gemm::PackedWeightParser::deserialBuffer(wqptr);
+  auto wktmp = storage::gemm::PackedWeightParser::deserialBuffer(wkptr);
+  auto wvtmp = storage::gemm::PackedWeightParser::deserialBuffer(wvptr);
   // must check support before forward, there is no need to check support twice.
-  if (wqtmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32)) {
-    ret = jblas_QKVs4fp32_f32f32_forward(activation, dynamic_cast<SS4Fp32*>(wqtmp), dynamic_cast<SS4Fp32*>(wktmp),
-                                         dynamic_cast<SS4Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo, workspace);
-  } else if (wqtmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-    ret = jblas_QKVs8fp32_f32f32_forward(activation, dynamic_cast<SS8Fp32*>(wqtmp), dynamic_cast<SS8Fp32*>(wktmp),
-                                         dynamic_cast<SS8Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo, workspace);
-  } else if (wqtmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
-    ret = jblas_QKVs8fp32pern_f32f32_forward(activation, dynamic_cast<SS8Fp32PerN*>(wqtmp),
-                                             dynamic_cast<SS8Fp32PerN*>(wktmp), dynamic_cast<SS8Fp32PerN*>(wvtmp),
-                                             output, _m, _n, _k, lda, ldo, workspace);
-  } else if (wqtmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-    ret = jblas_QKVs4clipfp32pern_f32f32_forward(activation, dynamic_cast<SS4Fp32PerN*>(wqtmp),
-                                                 dynamic_cast<SS4Fp32PerN*>(wktmp), dynamic_cast<SS4Fp32PerN*>(wvtmp),
-                                                 output, _m, _n, _k, lda, ldo, workspace);
+  auto ptr = wqtmp;
+  auto coretype = ptr->mCoreId;
+  auto NTile = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::NTILE_MASK,
+                                                   jblas::gemm::CoreAttr::NTILE_SHIFT);
+  auto CType = jblas::gemm::CoreAttr::get_mask_val(ptr->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
+                                                   jblas::gemm::CoreAttr::COMP_SHIFT);
+  auto pth = get_threading();
+  auto workspace = reinterpret_cast<int8_t*>(_workspace);
+  if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+    if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
+      if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+        ip_qkv::JblasGemmCompF32<tAVX512F, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                     workspace, pth);
+        goto __END;
+      }
+      if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        ip_qkv::JblasGemmCompF32<tAVX2, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                  workspace, pth);
+        goto __END;
+      }
+    }
+    if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
+      if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+        ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                      workspace, pth);
+        goto __END;
+      }
+    }
+    if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
+      if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
+        ip_qkv::JblasGemmCompInt8<tAMX_INT8_US, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                          workspace, pth);
+        goto __END;
+      }
+      if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
+        ip_qkv::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                          workspace, pth);
+        goto __END;
+      }
+      if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
+        ip_qkv::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                       workspace, pth);
+        goto __END;
+      }
+    }
+    if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
+      if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
+        ip_qkv::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                          workspace, pth);
+        goto __END;
+      }
+    }
   }
-  assert(ret == JblasSuccess);
+  if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
+    if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
+      if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+        ip_qkv::JblasGemmCompF32<tAVX512F, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                   workspace, pth);
+        goto __END;
+      }
+      if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        ip_qkv::JblasGemmCompF32<tAVX2, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                workspace, pth);
+        goto __END;
+      }
+    }
+    if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
+      if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+        ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                    workspace, pth);
+        goto __END;
+      }
+    }
+  }
+__END:
   safe_delete(wqtmp);
   safe_delete(wktmp);
   safe_delete(wvtmp);
 }
-#endif
-// f32f32: activation & output dtype
-void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
-                                     int _n, int _k, int lda, int ldo, void* workspace) {}
