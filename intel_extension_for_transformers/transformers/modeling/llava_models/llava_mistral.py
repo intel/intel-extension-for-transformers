@@ -20,10 +20,12 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 
-from transformers import AutoConfig, AutoModelForCausalLM, \
-                         MistralConfig, MistralModel, MistralForCausalLM
+from transformers import AutoConfig, AutoModelForCausalLM
+from transformers import MistralConfig, MistralModel, MistralForCausalLM # pylint: disable=E0611 
 
 from transformers.modeling_outputs import CausalLMOutputWithPast
+from .multimodal_encoder.builder import build_vision_tower
+from .multimodal_projector.builder import build_vision_projector
 
 from .llava_arch import LlavaMetaModel, LlavaMetaForCausalLM
 
@@ -38,12 +40,20 @@ class LlavaMistralModel(LlavaMetaModel, MistralModel):
     def __init__(self, config: MistralConfig):
         super(LlavaMistralModel, self).__init__(config)
 
+        """
+
+        if hasattr(config, "mm_vision_tower"):
+            self.vision_tower = build_vision_tower(config, delay_load=True)
+            self.mm_projector = build_vision_projector(config)
+        """
+
+
 
 class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
     config_class = LlavaConfig
 
     def __init__(self, config):
-        super(LlavaMistralForCausalLM, self).__init__(config)
+        super(MistralForCausalLM, self).__init__(config)
         self.model = LlavaMistralModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)

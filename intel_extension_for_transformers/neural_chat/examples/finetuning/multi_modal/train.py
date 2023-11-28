@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-sys.path.append("/data2/lkk/intel-extension-for-transformers/")
-
 import os
 from dataclasses import dataclass, field
 import logging
@@ -30,7 +27,6 @@ import transformers
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig
 from intel_extension_for_transformers.transformers.modeling import LlavaMistralForCausalLM
-from intel_extension_for_transformers.transformers.multi_modal_trainers import LLaVATrainer
 from llava_utils import *
 
 if is_optimum_habana_available():

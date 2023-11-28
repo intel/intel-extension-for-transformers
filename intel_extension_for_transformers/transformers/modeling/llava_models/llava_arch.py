@@ -35,6 +35,8 @@ DEFAULT_IM_END_TOKEN = "<im_end>"
 class LlavaMetaModel:
 
     def __init__(self, config):
+        super(LlavaMetaModel, self).__init__(config)
+        self.config = config
 
         if hasattr(config, "mm_vision_tower"):
             self.vision_tower = build_vision_tower(config, delay_load=True)
