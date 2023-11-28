@@ -23,7 +23,7 @@ import os
 
 class TestNER(unittest.TestCase):
     def setUp(self):
-        self.skipTest("skip before debug finish")
+        #self.skipTest("skip before debug finish")
         return super().setUp()
 
     def tearDown(self) -> None:
