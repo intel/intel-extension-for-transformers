@@ -180,15 +180,15 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
+            out_count += 1
             if beam_search:
                 break
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
             elif ret[0][-1] == self.eos_token_id() or \
-                    (max_new_tokens != -1 and out_count > max_new_tokens):
+                    (max_new_tokens != -1 and out_count >= max_new_tokens):
                 break
-            out_count += 1
         if streamer:
             streamer.end()
 
@@ -197,7 +197,7 @@ class Model:
 
     def is_token_end(self):
         return self.model.is_token_end()
-    
+
     def eos_token_id(self):
         if self.tokenizer.eos_token_id == None:
             return self.tokenizer.special_tokens['<|endoftext|>']
