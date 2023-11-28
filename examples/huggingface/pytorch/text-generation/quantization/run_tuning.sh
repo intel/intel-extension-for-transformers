@@ -108,13 +108,13 @@ function run_tuning {
     elif [ "${topology}" = "llama_7b" ]; then
 	pip install transformers==4.31.0
         alpha=0.7
-        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+        model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "llama_13b" ]; then
 	pip install transformers==4.31.0
         alpha=0.8
-        model_name_or_path="decapoda-research/llama-13b-hf"
+        model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
