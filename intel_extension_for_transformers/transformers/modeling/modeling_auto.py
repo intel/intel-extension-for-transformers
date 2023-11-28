@@ -58,7 +58,7 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        if kwargs.get("use_engine", False):
+        if kwargs.get("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
             from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
             
