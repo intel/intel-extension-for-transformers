@@ -120,7 +120,7 @@ def convert_q4_f32_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, pe
     print(f"converting {dst_name} qauntized tensor to fp32 tensor")
 
 def convert_q4_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
-    import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
+    import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
     qzeros = model[f"{src_name}.qzeros"]
     zeros = qzeros_to_zeros(qzeros)
     scales = model[f"{src_name}.scales"]
@@ -133,9 +133,9 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, 
     gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])
     
     if permute:
-        int_weight = permute_func(int_weight.t().contiguous(), 32, 32).t().contiguous()
-        gptq_scales = permute_func(gptq_scales.t().contiguous(), 32, 32).t().contiguous()
-        gptq_zeros = permute_func(gptq_zeros.t().contiguous(), 32, 32).t().contiguous()
+        int_weight = permute_func(int_weight.t(), 32, 32).t().contiguous()
+        gptq_scales = permute_func(gptq_scales.t(), 32, 32).t().contiguous()
+        gptq_zeros = permute_func(gptq_zeros.t(), 32, 32).t().contiguous()
 
     shape = int_weight.shape
     write_header(fout, shape[::-1], dst_name, 13)

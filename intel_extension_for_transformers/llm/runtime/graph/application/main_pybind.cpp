@@ -95,7 +95,8 @@ class Model {
                             const quant_params_internal params, int nthread, int n, int k);
   static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
                                int k);
-  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros, py::array_t<int8_t> dst) {
+  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros,
+                               py::array_t<int8_t> dst) {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
     int8_t* zeros_ptr = src_zeros.mutable_data();
@@ -107,7 +108,7 @@ class Model {
     q_params.compute_dtype = quant_comp::int8;
     q_params.alg = quant_alg::sym;
     q_params.group_size = 128;
-    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 1, src_w.shape(1), src_w.shape(0));
+    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 8, src_w.shape(1), src_w.shape(0));
   }
 
   static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst) {
@@ -534,8 +535,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   std::copy(src_scales, src_scales + ssize, Tscales.data());
 
   jblas::utils::avector<int8_t> Tzps(packedw.mIsAsym ? ssize : 0);
-  if (packedw.mIsAsym)
-    std::copy(src_zps, src_zps + ssize, Tzps.data());
+  if (packedw.mIsAsym) std::copy(src_zps, src_zps + ssize, Tzps.data());
 
   kernel.packQWeight(n, k, tmpq.data(), n, Tscales.data(), Tzps.data(), &packedw);
 
