@@ -49,14 +49,14 @@ Intel® Extension for Transformers is an innovative toolkit designed to optimize
 
 
 ## 🆗Supported Hardware
-| Hardware | Fine-Tuning | Qauntization | Inference | NeuralCaht |
+| Hardware | Fine-Tuning | NeuralChat | Qauntization | Inference |
 |-------------|:-------------:|:-------------:|:-------------:|:-------------:|
 |Intel Xeon Scalable Processors | ✔ | ✔ | ✔ | ✔ |
 |Intel Xeon CPU Max Series | ✔ | ✔ | ✔ | ✔ |
-|Intel Core Processors | ✔ | ✔ | ✔ | WIP |
+|Intel Core Processors | ✔ | WIP | ✔ | ✔ |
 |Intel Arc GPU Series | WIP  | WIP | WIP | WIP |
 |Intel Data Center GPU Max Series | WIP | WIP | WIP | WIP |
-|Intel Gaudi2 | ✔ | WIP | ✔ (bf16) | ✔ |
+|Intel Gaudi2 | ✔ | ✔ | WIP | ✔ (bf16) |
 
 ## 🌱Getting Started
 You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.
