@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Before you start &mdash; Intel® Extension for Transformers 0.1.dev1+g82c53ec documentation</title>
-      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
-      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  <title>Before you start &mdash; Intel® Extension for Transformers 0.1.dev1+gf90681e documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=68dfede1" />
+
+  
 <script type="text/javascript">
   // Configure TMS settings
   window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
@@ -106,13 +108,8 @@
 }
 </pre></div>
 </div>
-<p>Secondly, convert its PyTorch FP32 weights into our format (<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/README.html#1-convert-and-quantize-llm">reference section</a>).</p>
-<p>command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>EleutherAI/polyglot-ko-5.8b
-</pre></div>
-</div>
-<p>Finally, use <code class="docutils literal notranslate"><span class="pre">transformers</span></code> tokenizer to encode prompt and decode return tokens instead of re-implementing C++ tokenizer.</p>
-<p>For checking text generation results, we recommend you to run this naive python codes below to align our runtime engine outputs with PyTorch (<code class="docutils literal notranslate"><span class="pre">FP32</span> <span class="pre">data</span> <span class="pre">type,</span> <span class="pre">greedy</span> <span class="pre">search</span></code>).</p>
+<p>Then, use <code class="docutils literal notranslate"><span class="pre">transformers</span></code> tokenizer to encode prompt and decode return tokens instead of re-implementing C++ tokenizer.</p>
+<p>For checking text generation results, we recommend you to run this python codes below to align our runtime engine outputs with PyTorch (<code class="docutils literal notranslate"><span class="pre">FP32</span> <span class="pre">data</span> <span class="pre">type,</span> <span class="pre">greedy</span> <span class="pre">search</span></code>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.graph</span> <span class="kn">import</span> <span class="n">Model</span>
@@ -132,8 +129,10 @@
 <span class="nb">print</span><span class="p">(</span><span class="n">pt_ans</span><span class="p">)</span>
 
 <span class="c1"># itrex infer</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span>
-<span class="n">model</span><span class="o">.</span><span class="n">init_from_bin</span><span class="p">(</span><span class="s2">&quot;polyglot&quot;</span><span class="p">,</span> <span class="s2">&quot;ne-f32.bin&quot;</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+<span class="c1"># fp32 config</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">use_quant</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1"># model file should be in `runtime_outs` folder</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">do_sample</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
 <span class="n">ans</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clean_up_tokenization_spaces</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====itrex result======&quot;</span><span class="p">)</span>
@@ -156,7 +155,7 @@ she<span class="w"> </span>open<span class="w"> </span>the<span class="w"> </spa
 <span class="s2">옛날 옛적에 어린 소녀가 있었어요. 그 소녀는 어느 날, 숲 속에서 길을 잃고 헤매다가 한 마리의 동물을 만나게 되었어요. 그 동물은 소녀에게 길을 안내해 주겠다고 하였어요. 소녀는 그 동물을 따라 숲 속으로 들어갔어요. 한참을 걷고 있는데, 갑자기 동물이 소녀를 땅 속으로 끌고 들어가는 것이었어요. 소녀는 깜짝 놀라서 소리쳤어요. &quot;</span>안돼!<span class="w"> </span>나를<span class="w"> </span>죽이려고<span class="w"> </span>하는<span class="w"> </span>거야?<span class="s2">&quot; 그러자 동물은 소녀에게 조용히 말했어요. &quot;</span>쉿!<span class="w"> </span>조용히<span class="w"> </span>해.<span class="w"> </span>내<span class="w"> </span>말을<span class="w"> </span>잘<span class="w"> </span>들어봐.<span class="w"> </span>저<span class="w"> </span>앞에
 </pre></div>
 </div>
-<p>Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using python codes of <code class="docutils literal notranslate"><span class="pre">transformers</span></code> style liked and <code class="docutils literal notranslate"><span class="pre">INT4</span></code> data type. Please refer to <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">API</span></code> section for more details.</p>
+<p>Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using low-bits precision like <code class="docutils literal notranslate"><span class="pre">INT4</span></code> data type and customized acceleration. Please refer to <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">API</span></code> section for more details.</p>
 </section>
 <section id="enable-graph-cpp-model-process">
 <h1>Enable graph cpp model process<a class="headerlink" href="#enable-graph-cpp-model-process" title="Link to this heading"></a></h1>
@@ -565,7 +564,7 @@ python<span class="w"> </span>scripts/convert_new_model.py<span class="w"> </spa
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff36ce4baf0> 
+   <jinja2.runtime.BlockReference object at 0x7ffac525c460> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
