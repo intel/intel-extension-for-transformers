@@ -54,8 +54,8 @@ Intel® Extension for Transformers is an innovative toolkit designed to optimize
 |Intel Xeon Scalable Processors | ✔ | ✔ | ✔ |
 |Intel Xeon CPU Max Series | ✔ | ✔ | ✔ |
 |Intel Core Processors | ✔ | ✔ | ✔ |
-|Intel Arc GPU Series | ✔  | ✔ | WIP |
-|Intel Data Center GPU Max Series | ✔ | ✔ | WIP |
+|Intel Arc GPU Series | WIP  | WIP | WIP |
+|Intel Data Center GPU Max Series | WIP | WIP | WIP |
 |Intel Gaudi2 | ✔ | WIP | ✔ (bf16) |
 
 ## 🌱Getting Started
