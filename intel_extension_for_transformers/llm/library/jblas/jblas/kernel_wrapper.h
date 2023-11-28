@@ -522,7 +522,7 @@ template <typename _DST_T, int PACK_ROW>
 class DecompressKBlockS8Fp {
  public:
   template <JBLAS_ISA ISA_T, typename SCA_T>
-  static inline JBLAS_CODE forward(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+  static inline JBLAS_CODE forward(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                    SCA_T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad, void* tmp,
                                    size_t tmpsize) {
     if constexpr (std::is_same_v<_DST_T, float>) {
