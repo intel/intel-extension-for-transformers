@@ -218,7 +218,7 @@ inline constexpr const char* type_str = std::is_same_v<T, double>    ? "double"
                                         : std::is_same_v<T, uint8_t> ? "uint8_t"
                                                                      : (assert(0), "undef");
 
-inline const char* dtype2str(JBLAS_DTYPE dtype) {
+inline const char* jblas_dtype_str(JBLAS_DTYPE dtype) {
   switch (dtype) {
     case JBLAS_DTYPE::F64:
       return "float64";
@@ -259,11 +259,24 @@ inline const char* dtype2str(JBLAS_DTYPE dtype) {
 
 template <JBLAS_DTYPE DT>
 inline constexpr const char* dtype_str() {
-  return dtype2str(DT);
+  return jblas_dtype_str(DT);
+}
+
+inline constexpr uint32_t jblas_dtype_get_mask_val(const JBLAS_DTYPE& t, const JBLAS_DTYPE& mask,
+                                                   const JBLAS_DTYPE& shift) {
+  return (static_cast<uint32_t>(t) & static_cast<uint32_t>(mask)) >> static_cast<uint32_t>(shift);
+}
+
+inline constexpr size_t jblas_dtype_bits(const JBLAS_DTYPE t) {
+  return jblas_dtype_get_mask_val(t, JBLAS_DTYPE::EleBitsMask, JBLAS_DTYPE::EleBitsShift);
+}
+
+inline constexpr size_t jblas_dtype_type(const JBLAS_DTYPE t) {
+  return jblas_dtype_get_mask_val(t, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift);
 }
 
 inline constexpr size_t jblas_dtype_size(const JBLAS_DTYPE t) {
-  auto bits = static_cast<uint32_t>(t) & static_cast<uint32_t>(0xff);
+  auto bits = jblas_dtype_get_mask_val(t, JBLAS_DTYPE::EleBitsMask, JBLAS_DTYPE::EleBitsShift);
   return bits >> 3;  // bits to bytes
 }
 

@@ -518,17 +518,46 @@ class DecompressKBlockS8F32 {
   }
 };
 
+template <typename _DST_T, int PACK_ROW>
+class DecompressKBlockS8Fp {
+ public:
+  template <JBLAS_ISA ISA_T, typename SCA_T>
+  static inline JBLAS_CODE forward(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   SCA_T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad, void* tmp,
+                                   size_t tmpsize) {
+    if constexpr (std::is_same_v<_DST_T, float>) {
+#if CompileAVX512F()
+      if constexpr (utils::isa_base<ISA_T>::avx512f && std::is_same_v<SCA_T, float> &&
+                    PACK_ROW == 1) {  // TODO Scale type support
+        return jit::DequanKBlockS8F32::forward_avx512f(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                       k_offset, kblock, NPad);
+      }
+#endif
+#if CompileAVX2()
+      if constexpr (utils::isa_base<ISA_T>::avx2 && std::is_same_v<SCA_T, float> &&
+                    PACK_ROW == 1) {  // TODO Scale type support
+        return avx2::dequant_kblock_s8_f32(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset,
+                                           kblock, NPad);
+      }
+#endif
+    }
+    return ref::decompress_kblock_s8_f32<_DST_T, PACK_ROW, SCA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                  zero_points, k_offset, kblock, NPad);
+  }
+};
+template <typename _DST_T>
 class DecompressKBlockS8S8Fp {
  public:
-  template <JBLAS_ISA ISA_T, typename T>
-  static inline JBLAS_CODE forward(int8_t* srcptr, T* dstptr, int row, int col, int ld_src, int ld_dst) {
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst, void* tmp,
+                                   size_t tmpsize) {
     if constexpr (utils::isa_base<ISA_T>::avx512f) {  // TODO Scale type support
-      return avx512f::decompress_kblock_s8_s8fp<T>(srcptr, dstptr, row, col, ld_src, ld_dst);
+      return avx512f::decompress_kblock_s8_s8fp<_DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
     if constexpr (utils::isa_base<ISA_T>::avx2) {  // TODO Scale type support
-      return avx2::decompress_kblock_s8_s8fp<T>(srcptr, dstptr, row, col, ld_src, ld_dst);
+      return avx2::decompress_kblock_s8_s8fp<_DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
-    return ref::decompress_kblock_s8_s8fp<T>(srcptr, dstptr, row, col, ld_src, ld_dst);
+    return ref::decompress_kblock_s8_s8fp<_DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
   }
 };
 
