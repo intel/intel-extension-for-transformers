@@ -23,8 +23,8 @@
 host: 127.0.0.1
 port: 7777
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
-device: "auto"
+model_name_or_path: "facebook/opt-125m"
+device: "cpu"
 plugin_as_service: true
 
 asr:
@@ -45,4 +45,5 @@ tts:
         stream_mode: false
         output_audio_path: "./output_audio.wav"
 
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'plugin_audio']
 tasks_list: ['plugin_audio']
