@@ -155,8 +155,10 @@ class TextToSpeech():
                 if cur_end != -1 and cur_end > cur_start:
                     res.append(text[cur_start:cur_end+1])
                 else:
-                    logging.warning(f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
-                        + f"in each {batch_length} charaters! Try to add batch_length!")
+                    logging.warning(
+                        f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
+                        + f"in each {batch_length} charaters! Try to add batch_length!"
+                    )
                     cur_end = cur_start+batch_length-1
                     res.append(text[cur_start:cur_end+1])
                 idx = cur_end

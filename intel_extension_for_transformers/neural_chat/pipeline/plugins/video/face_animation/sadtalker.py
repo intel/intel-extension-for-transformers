@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import subprocess
+import sys
 import os
 import psutil
 import signal

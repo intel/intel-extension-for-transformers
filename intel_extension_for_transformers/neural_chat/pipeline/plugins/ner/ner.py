@@ -57,7 +57,7 @@ class NamedEntityRecognition():
         mentioned_time = process_time(text, doc)
 
         new_doc = self.nlp(response)
-        result = process_entities(query, new_doc, mentioned_time)
+        result = process_entities(response, new_doc, mentioned_time)
         logging.info("[NER info] Inference time consumption: %s", time.time() - start_time)
 
         return result
