@@ -5,7 +5,7 @@ protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
-transformers==4.33.1
+transformers >= 4.35.0
 neural-compressor
 intel_extension_for_pytorch
 git+https://github.com/huggingface/optimum.git@fa8ad73de9063885476ee39dff7c0bffbd45bd2d
