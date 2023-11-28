@@ -62,9 +62,16 @@ class _BaseQBitsAutoModelClass:
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
             from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
             
+            # This interface will switch the MHA fusion off.
+            pattern_config = {
+                'pattern_switch': {
+                    'MultiHeadAttention': False,
+                }
+            }
+
             cast_type = kwargs.get("cast_type", "native")
             with autocast(cast_type):
-                model = compile(pretrained_model_name_or_path)
+                model = compile(pretrained_model_name_or_path, pattern_config)
 
             return model
 
