@@ -23,10 +23,11 @@ model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
 
 
 def convert_model(model, outfile, outtype):
+    import pdb; pdb.set_trace()
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
-    gpt_model = 'gptq' in model.lower()
+    gpt_model = 'gptq' in str(model).lower()
     if gpt_model:
         path = Path(Path(__file__).parent.absolute(), "convert_gptq_{}.py".format(model_type))
     else:
