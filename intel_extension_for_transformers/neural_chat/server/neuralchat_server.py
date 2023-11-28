@@ -18,6 +18,7 @@
 import argparse
 import subprocess
 import sys
+import os
 from typing import List
 
 
@@ -154,10 +155,15 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         api_list = list(task for task in config.tasks_list)
         if use_deepspeed:
             if device == "hpu":
+                os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+                os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
+                api_str = f"'{api_list[0]}'" if len(api_list) == 1 else ', '.join(f"'{item}'" for item in api_list)
+                multi_hpu_server_file = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), './multi_hpu_server.py'))
                 launch_str = f"deepspeed --num_nodes 1 --num_gpus {world_size} --no_local_rank \
-                    {sys.executable} -m intel_extension_for_transformers.neural_chat.server.multi_hpu_server"
+                    {multi_hpu_server_file}"
                 command_list = f"{launch_str} --habana --use_hpu_graphs --use_kv_cache --task chat \
-                     --base_model_path {model_name_or_path} --host {host} --port {port} --api_list {api_list}"
+                     --base_model_path {model_name_or_path} --host {host} --port {port} --api_list {api_str}"
                 try:
                     print(f"{self.__class__.__name__} init(): command = {command_list}")
                     sys.stdout.flush()

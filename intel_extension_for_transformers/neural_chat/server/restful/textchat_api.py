@@ -146,3 +146,10 @@ async def show_available_models():
     models = []
     models.append(router.get_chatbot().model_name)
     return {"models": models}
+
+@router.post("/v1/code_generation")
+async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
+    ret = check_completion_request(chat_request)
+    if ret is not None:
+        raise RuntimeError("Invalid parameter.")
+    return router.handle_chat_completion_request(chat_request)

@@ -25,24 +25,6 @@ from intel_extension_for_transformers.neural_chat.config import (
 
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 
-import uvicorn
-from fastapi import FastAPI
-from fastapi import APIRouter
-from starlette.middleware.cors import CORSMiddleware
-from .restful.api import setup_router
-
-app = FastAPI(
-    title="NeuralChat Serving API", description="Api", version="0.0.1")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"])
-
-api_router = APIRouter()
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-bm", "--base_model_path", type=str, default="")
@@ -248,6 +230,7 @@ def main():
     )
     chatbot = build_chatbot(config)
     gen_config = GenerationConfig(
+        device="hpu" if args.habana else "auto",
         task=args.task,
         temperature=args.temperature,
         top_p=args.top_p,
@@ -269,15 +252,31 @@ def main():
     if args.habana and rank in [-1, 0]:
         print(f"Args: {args}")
         print(f"n_hpu: {world_size}, bf16")
-    # warmup, the first time inference take longer because of graph compilation
-
-    for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
-        if args.local_rank in [-1, 0]:
-            print(new_text, end="", flush=True)
-    print("\n"*3)
 
     # init api
     if args.local_rank in [-1, 0]:
+        # warmup, the first time inference take longer because of graph compilation
+        for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
+            if args.local_rank in [-1, 0]:
+                print(new_text, end="", flush=True)
+        print("\n"*3)
+
+        import uvicorn
+        from fastapi import FastAPI
+        from fastapi import APIRouter
+        from starlette.middleware.cors import CORSMiddleware
+        from intel_extension_for_transformers.neural_chat.server.restful.api import setup_router
+        app = FastAPI(
+            title="NeuralChat Serving API", description="Api", version="0.0.1")
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"])
+
+        api_router = APIRouter()
         api_router = setup_router(args.api_list, chatbot)
         app.include_router(api_router)
 
@@ -285,33 +284,6 @@ def main():
             uvicorn.run(app, host=args.host, port=args.port)
         except Exception as e:
             print(f"Error starting uvicorn: {str(e)}")
-
-    # for idx, instruction in enumerate(args.instructions):
-    #     set_seed(args.seed)
-    #     idxs = f"{idx+1}"
-    #     if args.local_rank in [-1, 0]:
-    #         print("=" * 30 + idxs + "=" * 30)
-    #         print(f"Instruction: {instruction}")
-    #         print("Response: ")
-    #     for new_text in chatbot.predict_stream(query=instruction, config=gen_config)[0]:
-    #         if args.local_rank in [-1, 0]:
-    #             print(new_text, end="", flush=True)
-    #     if args.local_rank in [-1, 0]:
-    #         print("=" * (60 + len(idxs)))
-
-    # for idx, instruction in enumerate(args.instructions):
-    #     set_seed(args.seed)
-    #     idxs = f"{idx+1}"
-    #     if args.local_rank in [-1, 0]:
-    #         print("=" * 30 + idxs + "=" * 30)
-    #         print(f"Instruction: {instruction}")
-    #         start_time = time.time()
-    #         print("Response: ")
-    #     out = chatbot.predict(query=instruction, config=gen_config)
-    #     if args.local_rank in [-1, 0]:
-    #         print(f"whole sentence out = {out}")
-    #         print(f"duration: {time.time() - start_time}" + ' s')
-    #         print("=" * (60 + len(idxs)))
 
 if __name__ == "__main__":
     main()
