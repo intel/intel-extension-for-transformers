@@ -53,15 +53,15 @@ Neural Engine can parse ONNX model and Neural Engine IR.
 We provide with three `modes`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
-bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=fp32 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=fp32 --mode=throughput
 ```
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=int8 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=int8 --mode=throughput
 ```
 By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
 ```shell
-bash run_bge.sh --model=BAAI/bge-base-en-v1.5  --dataset=mrpc --precision=dynamic_int8 --mode=throughput
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=dynamic_int8 --mode=throughput
 ```
 
 
