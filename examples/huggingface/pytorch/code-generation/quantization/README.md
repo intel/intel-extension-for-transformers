@@ -26,7 +26,6 @@ python run_generation.py \
     --output_dir "./saved_results" \
     --sq \
     --alpha 0.7  \
-    --ipex \
     --calib_iters 500 \
     --calib_batch_size 1 \
     --dataset "mbpp"
@@ -35,9 +34,7 @@ python run_generation.py \
 python run_generation.py \
     --model codellama/CodeLlama-7b-hf \
     --output_dir "./saved_results" \
-    --sq \
-    --alpha 0.7  \
-    --ipex \
+    --woq \
     --calib_iters 500 \
     --calib_batch_size 1 \
     --dataset "mbpp"
@@ -56,7 +53,6 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
     --int8 \
-    --ipex \
     --benchmark \
     --batch_size 1
 ```
@@ -67,8 +63,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 python run_generation.py \
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
-    --int8 \    
-    --ipex \
+    --int8 \
     --batch_size 20 \
     --accuracy \
     --n_samples 20 \
