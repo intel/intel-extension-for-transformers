@@ -158,7 +158,7 @@ async def show_available_models():
     return {"models": models}
 
 @router.post("/v1/code_generation")
-async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
+async def code_generation_endpoint(chat_request: ChatCompletionRequest):
     if router.use_deepspeed:
         responses = []
 

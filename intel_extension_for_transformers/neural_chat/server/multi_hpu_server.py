@@ -111,7 +111,8 @@ def parse_args():
     parser.add_argument(
         "--trust_remote_code",
         action="store_true",
-        help="enable when use custom model architecture that is not yet part of the Hugging Face transformers package like MPT",
+        help="enable when use custom model architecture that is not yet part of \
+            the Hugging Face transformers package like MPT",
     )
 
     # habana parameters
@@ -213,6 +214,8 @@ use_deepspeed = (
 
 if args.habana:
     # Set seed before initializing model.
+    # pylint: disable=E0401
+    # pylint: disable=E0611
     from optimum.habana.utils import set_seed
 
     set_seed(args.seed)
@@ -254,7 +257,7 @@ gen_config = GenerationConfig(
 )
 
 if args.habana:
-    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
     world_size, rank, args.local_rank = initialize_distributed_hpu()
 
 if args.habana and rank in [-1, 0]:
