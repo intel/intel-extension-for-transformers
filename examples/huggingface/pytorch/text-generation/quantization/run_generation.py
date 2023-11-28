@@ -29,7 +29,7 @@ parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
 parser.add_argument(
-    "--max-new-tokens", default=32, type=int, help="output max new tokens"
+    "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--int8", action="store_true")
@@ -65,10 +65,9 @@ parser.add_argument("--woq_dtype", type=str, default="int8",
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
 parser.add_argument("--woq_group_size", type=int, default=-1)
 parser.add_argument("--woq_scheme", default="sym")
-parser.add_argument("--woq_enable_mse_search", action="store_true")
-parser.add_argument("--woq_enable_full_range", action="store_true")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
+# ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 # =======================================
@@ -160,22 +159,13 @@ elif args.bitsandbytes:
         bnb_4bit_quant_type="nf4",
     )
 
-# get model
-# `BitsAndBytesConfig` and (`load_in_4bit` or `load_in_8bit`) is alternative for WeightOnlyQuant.
+# get optimized model
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
                                                       use_llm_runtime=False
                                                       )
-    # save model
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.config.save_pretrained(args.output_dir)
-        torch.save(user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
-
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
@@ -189,7 +179,16 @@ elif not args.int8 and not args.int8_bf16_mixed:
     else:
         user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
 
+# save model
+if args.output_dir:
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+    elif args.mixed_precision:
+        user_model.config.save_pretrained(args.output_dir)
+        torch.save(user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
 
+# int8 model loading
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     import intel_extension_for_pytorch as ipex
