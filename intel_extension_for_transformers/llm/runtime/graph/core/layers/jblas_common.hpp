@@ -44,7 +44,7 @@ static bool hasISA(const uint32_t* coreset, size_t len) {
   bool support = false;
   for (size_t i = 0; i < len; i++) {
     auto isa = static_cast<JBLAS_ISA>(jblas::gemm::CoreAttr::get_mask_val(coreset[i], jblas::gemm::CoreAttr::ISA_MASK,
-                                                                          jblas::gemm::CoreAttr::COMP_SHIFT));
+                                                                          jblas::gemm::CoreAttr::ISA_SHIFT));
     switch (isa) {
       case JblasAVX:
         support |= _cd->AVX();
