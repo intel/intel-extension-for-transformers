@@ -17,6 +17,7 @@ import transformers
 from optimum.utils import NormalizedConfigManager
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
 )
@@ -41,8 +42,6 @@ parser.add_argument(
     "--max_new_tokens", default=32, type=int, help="output max new tokens"
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
-parser.add_argument("--sq", action="store_true")
-parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
 parser.add_argument("--calib_batch_size", default=1, type=int, help="calibration batch size.")
 parser.add_argument("--int8", action="store_true")
@@ -64,6 +63,11 @@ parser.add_argument("--batch_size", default=56, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
+# ============MixedPrecision configs==============
+parser.add_argument("--mixed_precision", action="store_true")
+# ============SmoothQuant configs==============
+parser.add_argument("--sq", action="store_true")
+parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============WeightOnlyQuant configs============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
@@ -142,9 +146,11 @@ recipes = {
             "smooth_quant_args": {"alpha": args.alpha if args.alpha == "auto" else float(args.alpha)},
             }
 excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+# mp/sq/woq/bitsandbytes config setting
 quantization_config = None
-# sq/woq config setting
-if args.sq:
+if args.mixed_precision:
+    quantization_config = MixedPrecisionConfig(dtype="bfloat16") # default is bfloat16
+elif args.sq:
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
         recipes=recipes,
@@ -173,6 +179,9 @@ if quantization_config is not None:
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
+    elif args.mixed_precision:
+        user_model.config.save_pretrained(args.output_dir)
+        torch.save(user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
 
 
 if args.int8 or args.int8_bf16_mixed:
