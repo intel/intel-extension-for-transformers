@@ -31,9 +31,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG C.UTF-8
 ARG PYTHON=python3.10
 
-RUN mkdir -p /app/intel-extension-for-transformers
-WORKDIR /app/intel-extension-for-transformers
-
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     autoconf \
     build-essential \
@@ -45,13 +42,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /app/intel-extension-for-transformers
+WORKDIR /app/intel-extension-for-transformers
 COPY . /app/intel-extension-for-transformers
 
-RUN ${PYTHON} -m pip install -r requirements.txt --no-cache-dir -f https://download.pytorch.org/whl/cpu/torch_stable.html
-
-RUN ${PYTHON} -m pip install -r tests/requirements.txt --no-cache-dir -f https://developer.intel.com/ipex-whl-stable-cpu
-
-RUN ${PYTHON} -m pip install . --no-cache-dir && \
+RUN ${PYTHON} -m pip install -r requirements.txt --no-cache-dir -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    ${PYTHON} -m pip install -r tests/requirements.txt --no-cache-dir -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    ${PYTHON} -m pip install . --no-cache-dir && \
     rm -rf .git*
 
 FROM itrex-base as prod
@@ -60,3 +57,4 @@ ARG PYTHON=python3.10
 
 COPY --from=devel /usr/local/lib/${PYTHON}/dist-packages /usr/local/lib/${PYTHON}/dist-packages
 COPY --from=devel /usr/local/bin /usr/local/bin
+COPY --from=devel /app/intel-extension-for-transformers/docker /app/licensing

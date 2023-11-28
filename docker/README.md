@@ -9,7 +9,7 @@ To build and run this workload inside a Docker Container, ensure you have Docker
 ```bash
 DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
 mkdir -p $DOCKER_CONFIG/cli-plugins
-curl -SL https://github.com/docker/compose/releases/download/v2.7.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+curl -SL https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
 chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 docker compose version
 ```
@@ -23,17 +23,17 @@ docker compose build
 ```
 OR
 ```bash
-docker pull intel/ai-tools:itrex-0.1.1
-docker pull intel/ai-tools:itrex-devel-0.1.1
+docker pull intel/ai-tools:itrex-1.3.0
+docker pull intel/ai-tools:itrex-devel-1.3.0
 ```
 
 ## Use Docker Image
 Utilize the TLT CLI without installation by using the provided docker image and docker compose.
 
 ```bash
-docker compose run base-devel
-docker compose run base-devel python setup.py sdist
-docker compose run base-devel python tests/<test_mytest>.py
+docker compose run devel
+docker compose run devel python setup.py sdist
+docker compose run devel python tests/<test_mytest>.py
 ```
 
 # Kubernetes
