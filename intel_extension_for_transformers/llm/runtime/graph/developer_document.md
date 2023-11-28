@@ -73,7 +73,7 @@ The Korean prompt would have the output like:
 옛날 옛적에 어린 소녀가 있었어요. 그 소녀는 어느 날, 숲 속에서 길을 잃고 헤매다가 한 마리의 동물을 만나게 되었어요. 그 동물은 소녀에게 길을 안내해 주겠다고 하였어요. 소녀는 그 동물을 따라 숲 속으로 들어갔어요. 한참을 걷고 있는데, 갑자기 동물이 소녀를 땅 속으로 끌고 들어가는 것이었어요. 소녀는 깜짝 놀라서 소리쳤어요. "안돼! 나를 죽이려고 하는 거야?" 그러자 동물은 소녀에게 조용히 말했어요. "쉿! 조용히 해. 내 말을 잘 들어봐. 저 앞에
 ```
 
-Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using low-bits precision like `INT4` data type and .customized acceleration. Please refer to `Python API` section for more details.
+Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using low-bits precision like `INT4` data type and customized acceleration. Please refer to `Python API` section for more details.
 
 # Enable graph cpp model process
 We enable a CPP model in the following four steps.
