@@ -33,6 +33,11 @@ from intel_extension_for_transformers.transformers.modeling import LlavaMistralF
 from intel_extension_for_transformers.transformers.multi_modal_trainers import LLaVATrainer
 from llava_utils import *
 
+if is_optimum_habana_available():
+    from optimum.habana import GaudiTrainingArguments as TrainingArguments
+else:
+    from transformers import TrainingArguments
+
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
@@ -67,7 +72,7 @@ class DataArguments:
 
 
 @dataclass
-class TrainingArguments(transformers.TrainingArguments):
+class TrainingArguments(TrainingArguments):
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_torch")
     remove_unused_columns: bool = field(default=False)
@@ -232,10 +237,24 @@ def train():
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
 
-    trainer = LLaVATrainer(model=model,
-                    tokenizer=tokenizer,
-                    args=training_args,
-                    **data_module)
+    if is_optimum_habana_available():
+        from optimum.habana import GaudiConfig
+        gaudi_config = GaudiConfig()
+        gaudi_config.use_fused_adam = True
+        gaudi_config.use_fused_clip_norm = True
+
+        from llava_trainer import GaudiLLaVATrainer
+        trainer = GaudiLLaVATrainer(model=model,
+                gaudi_config=gaudi_config,
+                tokenizer=tokenizer,
+                args=training_args,
+                **data_module)
+    else:
+        from llava_trainer import LLaVATrainer
+        trainer = LLaVATrainer(model=model,
+                tokenizer=tokenizer,
+                args=training_args,
+                **data_module)
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)

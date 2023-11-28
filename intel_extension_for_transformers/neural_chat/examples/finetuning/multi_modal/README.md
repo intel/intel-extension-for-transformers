@@ -9,17 +9,22 @@ LLaVA training consists of two stages: (1) feature alignment stage: use our 558K
 
 ### Pretraining
 
-1. Download the 558K subset of the LAION-CC-SBU dataset with BLIP captions from [liuhaotian/LLaVA-Pretrain](https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain) in `./pretraining_data`
+##### Prepare data
+Download the 558K subset of the LAION-CC-SBU dataset with BLIP captions from [liuhaotian/LLaVA-Pretrain](https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain) in `./pretraining_data`
 
-2. Training script with DeepSpeed ZeRO-2: `scripts/pretrain.sh`.
+##### Training 
+
+Training script with DeepSpeed ZeRO-2: `scripts/pretrain.sh`.
 
 - `--mm_projector_type mlp2x_gelu`: the two-layer MLP vision-language connector.
 - `--vision_tower openai/clip-vit-large-patch14-336`: CLIP ViT-L/14 336px.
 - `--use_habana, --use_lazy_mode` for Intel Gaudi2 setting.
 
+**Note:** If don't set `--use_habana, --use_lazy_mode`, the code can also run on gpus as well.
+
 ### Visual Instruction Tuning
 
-1. Prepare data
+##### Prepare data
 
 Please download the annotation of the final mixture our instruction tuning data [llava_v1_5_mix665k.json](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K/resolve/main/llava_v1_5_mix665k.json), and download the images from constituting datasets:
 
@@ -45,7 +50,7 @@ After downloading all of them, organize the data as follows in `./finetuning_dat
     └── VG_100K_2
 ```
 
-2. Start training!
+##### Start training!
 
 Training script with DeepSpeed ZeRO-3: `scripts/finetune.sh`, and lora has been enabled by running `scripts/finetune_lora.sh`
 
@@ -57,3 +62,5 @@ New options to note:
 - `--image_aspect_ratio pad`: this pads the non-square images to square, instead of cropping them; it slightly reduces hallucination.
 - `--group_by_modality_length True`: this should only be used when your instruction tuning dataset contains both language (e.g. ShareGPT) and multimodal (e.g. LLaVA-Instruct). It makes the training sampler only sample a single modality (either image or language) during training, which we observe to speed up training by ~25%, and does not affect the final outcome.
 - `--use_habana, --use_lazy_mode` for Intel Gaudi2 setting.
+
+**Note:** If don't set `--use_habana, --use_lazy_mode`, the code can also run on gpus as well.

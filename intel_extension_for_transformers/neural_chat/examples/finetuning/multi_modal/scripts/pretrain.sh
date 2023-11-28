@@ -15,14 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-deepspeed --include localhost:4,5 \
+deepspeed --include localhost:0,1 \
     --master_port 29501 \
     train.py \
     --deepspeed scripts/zero2.json \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --template plain \
-    --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder ./playground/data/LLaVA-Pretrain/images \
+    --data_path ./pretraining_data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
+    --image_folder ./pretraining_data/LLaVA-Pretrain/images \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
@@ -49,4 +49,6 @@ deepspeed --include localhost:4,5 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+    --use_habana \
+    --use_lazy_mode \
     --report_to wandb

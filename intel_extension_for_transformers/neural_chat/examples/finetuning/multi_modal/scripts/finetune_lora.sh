@@ -50,4 +50,6 @@ deepspeed train.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+    --use_habana \
+    --use_lazy_mode \
     --report_to wandb

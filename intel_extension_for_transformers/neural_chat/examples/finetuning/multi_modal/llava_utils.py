@@ -26,6 +26,12 @@ import os
 import copy
 import conversation_utils
 
+def is_optimum_habana_available():
+    import importlib
+    from transformers.utils.import_utils import is_optimum_available
+
+    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
+
 # Model Constants
 IGNORE_INDEX = -100
 DEFAULT_IMAGE_TOKEN = "<image>"
@@ -554,5 +560,4 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
     return dict(train_dataset=train_dataset,
                 eval_dataset=None,
                 data_collator=data_collator)
-
 
