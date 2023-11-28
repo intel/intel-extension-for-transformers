@@ -1,4 +1,4 @@
-# How to train Intel/neural-chat-7b-v3-1 on Gaudi2
+# How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2
 
 [Intel/neural-chat-7b-v3-1](https://huggingface.co/Intel/neural-chat-7b-v3-1) ranks top1 on the [HuggingFaceH4/open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) comparing with all the submitted 7B models (date: 11/17/2023). In this tutorial, we would like to share the details for the training process.
 
@@ -11,9 +11,9 @@ Similar to most finetuning work, we mainly divide the training to two stages.
 
 In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.
 
-IMPORTANT: Please note Habana's Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Habana HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
+IMPORTANT: Please note Intel Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
 
-To run finetuning on Habana HPU, please execute below steps
+To run finetuning on Intel Gaudi2, please execute below steps
 
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
