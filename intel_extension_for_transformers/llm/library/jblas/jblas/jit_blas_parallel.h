@@ -598,7 +598,7 @@ template <class Parallel_T, class Launch_T>
 void GemmBaseRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache});
-  static bool flag = true;
+  static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
     para.print();
@@ -617,7 +617,7 @@ template <class Parallel_T, class Launch_T>
 void GemmKBlockRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
-  static bool flag = true;
+  static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
     para.print();
@@ -638,7 +638,7 @@ void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args
   Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
   using AParall = typename Launch_T::PrologueA::Parallel;
   AParall apara({th->num_threads(), args.M, args.K, 1, args.KBlock});
-  static bool flag = true;
+  static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
     para.print();
