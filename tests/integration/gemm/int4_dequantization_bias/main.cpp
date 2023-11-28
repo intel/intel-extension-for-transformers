@@ -51,14 +51,14 @@ class qkv {
 public:
     //Extract the parameters required by different test cases
     static constexpr size_t mat_m = 1;
-    static constexpr size_t mat_n = 4096 * 3;
-    static constexpr size_t mat_k = 4096;
+    static constexpr size_t mat_n = 4096;
+    static constexpr size_t mat_k = 11008;
     static constexpr size_t wg_m = 8;
     static constexpr size_t wg_n = 64;
     static constexpr size_t sg_m = 8;
     static constexpr size_t sg_n = 16;
     static constexpr size_t sg_k = 16;
-    static constexpr size_t dequant_s = 128;
+    static constexpr size_t dequant_s = 64;
     static constexpr size_t num_buffer = 64;
     static constexpr size_t local_kslicing = 8;
     static constexpr size_t global_kslicing = 1;
@@ -227,7 +227,7 @@ void dequantize_gemm_run(int iter) {
     }
     for (unsigned i = 0; i < size_scale; ++i) {
         scale_h[i] = random_float();
-#ifdef UT_DEBUG
+#ifndef UT_DEBUG
         scale_h[i] = 1.f;
 #endif
     }
