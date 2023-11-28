@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g1a11d49 documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g82c53ec documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -182,7 +182,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 
 <span class="c1"># Download Hugging Face GPTQ model to local path</span>
 <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;PATH_TO_MODEL&quot;</span>  <span class="c1"># local path to model</span>
-<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">from_gptq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">use_gptq</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time, a little girl&quot;</span>
 
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -499,7 +499,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7eff1ea0c8b0> 
+   <jinja2.runtime.BlockReference object at 0x7ff36ce4bfd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
