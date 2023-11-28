@@ -103,6 +103,11 @@ def generate_dummy_past_key_values(config, input_bs):
             tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv)) for _ in range(num_layers)
         )
         return past_key_values
+    elif config.model_type == "gpt_bigcode":
+        new_shape = [input_bs, 0, d_k*2]
+        dummy_tensor = torch.zeros(size=new_shape)
+        past_key_values = tuple([dummy_tensor] * num_layers)
+        return past_key_values
     elif config.model_type == "qwen":
         new_shape = [input_bs, 0, num_key_value_heads, d_k]
     elif config.model_type == "chatglm":
