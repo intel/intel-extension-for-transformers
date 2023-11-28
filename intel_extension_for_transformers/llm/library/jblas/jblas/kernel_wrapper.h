@@ -545,6 +545,7 @@ class DecompressKBlockS8Fp {
                                                                   zero_points, k_offset, kblock, NPad);
   }
 };
+
 template <typename _DST_T>
 class DecompressKBlockS8S8Fp {
  public:

@@ -119,7 +119,7 @@ class ActivationKBlockQuantize {
     QParam tmp;
     int kpad = utils::padto(k, _GemmCore_T::KTILE);
     int mpad = utils::padto(m, _GemmCore_T::MTILE);
-    tmp.resize(mpad, kpad, kblock == -1 ? kpad : kblock, JBLAS_DTYPE::U8, JBLAS_DTYPE::F32, JBLAS_DTYPE::U8,
+    tmp.resize(mpad, kpad, m, k, kblock == -1 ? kpad : kblock, JBLAS_DTYPE::U8, JBLAS_DTYPE::F32, JBLAS_DTYPE::U8,
                JBLAS_DTYPE::F32, std::is_same_v<AType, uint8_t>, hasreduce);
     return tmp;
   }
@@ -129,26 +129,26 @@ class ActivationKBlockQuantize {
     if (thdp.valid) {
       // min max
       auto srcptr = const_cast<SRC_T*>(_param.A) + thdp.loc[0] * _param.lda + thdp.loc[1];
-      auto thdqptr = quan->template APtr<AType>() + thdp.loc[0] * quan->lda + thdp.loc[1];
-      auto blk_offset = thdp.loc[0] * quan->mCStep + thdp.loc[1] / quan->kblock;
+      auto thdqptr = quan->template APtr<AType>() + thdp.loc[0] * quan->mKPad + thdp.loc[1];
+      auto blk_offset = thdp.loc[0] * quan->CStep() + thdp.loc[1] / quan->mBlockSize;
       auto thdsptr = quan->template SPtr<float>() + blk_offset;
       auto thdzptr = quan->template ZPtr<AType>() + blk_offset;
       auto thdrptr = quan->template RPtr<float>() == nullptr ? nullptr : quan->template RPtr<float>() + blk_offset;
       if constexpr (std::is_same_v<AType, uint8_t>) {
         kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T, SRC_T>(
-            thdp.size[0], thdp.size[1], srcptr, _param.lda, thdqptr, quan->lda, thdsptr, quan->mCStep, thdzptr,
-            quan->kblock, thdrptr);
+            thdp.size[0], thdp.size[1], srcptr, _param.lda, thdqptr, quan->mKPad, thdsptr, quan->CStep(), thdzptr,
+            quan->mBlockSize, thdrptr);
       }
       if constexpr (std::is_same_v<AType, int8_t>) {
         kernel::wrapper::QuantizeS8ColBlock::template forward<ISA_T, SRC_T>(thdp.size[0], thdp.size[1], srcptr,
-                                                                            _param.lda, thdqptr, quan->lda, thdsptr,
-                                                                            quan->mCStep, quan->kblock, thdrptr);
+                                                                            _param.lda, thdqptr, quan->mKPad, thdsptr,
+                                                                            quan->CStep(), quan->mBlockSize, thdrptr);
       }
     }
   }
 
   JBLAS_CODE quantize(const Param& _param, int m, int k, jblas::parallel::IThreading* threading) {
-    auto paral = Parallel({threading->num_threads(), m, k, 1, _param.quan->kblock});
+    auto paral = Parallel({threading->num_threads(), m, k, 1, _param.quan->mBlockSize});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp{tidx};
       paral.getIndex(thdp);
@@ -164,8 +164,8 @@ class ActivationKBlockQuantize {
     (void)k_size;
     auto quan = _param.quan;
     auto aptr = quan->template APtr<AType>();
-    *dstptr = aptr + m_offset * quan->lda + k_offset;
-    *dststep = quan->lda;
+    *dstptr = aptr + m_offset * quan->mKPad + k_offset;
+    *dststep = quan->mKPad;
     return JblasSuccess;
   }
 
@@ -177,10 +177,10 @@ class ActivationKBlockQuantize {
       *dstptr = nullptr;
       return JblasSuccess;
     }
-    int kele = utils::updiv(k_size, quan->kblock);
+    int kele = utils::updiv(k_size, quan->mBlockSize);
     *dststep = kele;
-    kernel::ref::memcpy2d(aptr + m_offset * quan->mCStep + k_offset / quan->kblock, *dstptr, m_size,
-                          kele * sizeof(AType), quan->mCStep * sizeof(AType), kele * sizeof(AType));
+    kernel::ref::memcpy2d(aptr + m_offset * quan->CStep() + k_offset / quan->mBlockSize, *dstptr, m_size,
+                          kele * sizeof(AType), quan->CStep() * sizeof(AType), kele * sizeof(AType));
     return JblasSuccess;
   }
 
@@ -188,10 +188,10 @@ class ActivationKBlockQuantize {
                       int k_offset, void* tmpcache, size_t cachesize) {
     auto quan = _param.quan;
     auto aptr = quan->template SPtr<float>();
-    int kele = utils::updiv(k_size, quan->kblock);
+    int kele = utils::updiv(k_size, quan->mBlockSize);
     *dststep = kele;
-    kernel::ref::memcpy2d(aptr + m_offset * quan->mCStep + k_offset / quan->kblock, *dstptr, m_size,
-                          kele * sizeof(float), quan->mCStep * sizeof(float), kele * sizeof(float));
+    kernel::ref::memcpy2d(aptr + m_offset * quan->CStep() + k_offset / quan->mBlockSize, *dstptr, m_size,
+                          kele * sizeof(float), quan->CStep() * sizeof(float), kele * sizeof(float));
     return JblasSuccess;
   }
 
@@ -199,10 +199,10 @@ class ActivationKBlockQuantize {
                        int k_offset, void* tmpcache, size_t cachesize) {
     auto quan = _param.quan;
     auto aptr = quan->template RPtr<float>();
-    int kele = utils::updiv(k_size, quan->kblock);
+    int kele = utils::updiv(k_size, quan->mBlockSize);
     *dststep = kele;
-    kernel::ref::memcpy2d(aptr + m_offset * quan->mCStep + k_offset / quan->kblock, *dstptr, m_size,
-                          kele * sizeof(float), quan->mCStep * sizeof(float), kele * sizeof(float));
+    kernel::ref::memcpy2d(aptr + m_offset * quan->CStep() + k_offset / quan->mBlockSize, *dstptr, m_size,
+                          kele * sizeof(float), quan->CStep() * sizeof(float), kele * sizeof(float));
     return JblasSuccess;
   }
 };
@@ -238,7 +238,7 @@ class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_
       // min max
       auto srcptr = const_cast<SRC_T*>(_param.A) + thdp.loc[0] * _param.lda + thdp.loc[1];
       auto blk_offset = thdp.loc[0] * stor->lda + thdp.loc[1] / stor->kblock;
-      auto thdrptr = stor->template get<float>() + blk_offset;
+      auto thdrptr = stor->template RPtr<float>() + blk_offset;
       auto ret = kernel::wrapper::ColBlockReduceSum::template forward<ISA_T, SRC_T>(
           srcptr, _param.lda, thdp.size[0], thdp.size[1], stor->kblock, thdrptr, stor->lda);
       assert(ret == JblasSuccess);
@@ -264,7 +264,7 @@ class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_
   JBLAS_CODE getReduce(float** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                        int k_offset, void* tmpcache, size_t cachesize) {
     auto reduce = _param.reduce;
-    auto aptr = reduce->template get<float>();
+    auto aptr = reduce->template RPtr<float>();
     int kele = utils::updiv(k_size, reduce->kblock);
     *dststep = kele;
     kernel::ref::memcpy2d(aptr + m_offset * reduce->lda + k_offset / reduce->kblock, *dstptr, m_size,
