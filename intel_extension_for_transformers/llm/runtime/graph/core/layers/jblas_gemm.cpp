@@ -31,7 +31,7 @@ using namespace jblas;
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
-                      jblas::storage::gemm::WeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
+                      jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
                       jblas::parallel::IThreading* th) {
   if (M <= 32) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
@@ -39,15 +39,15 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     auto reduceA = kernel.mProA.createStorage(M, K, B->mBlockSize);
-    if (B->mIsAsym) {
+    if (B->IsAsym()) {
       reduceA.assign(WorkSpace);
     }
     typename Launcher::BEpiParam blkargs{
-        B->template SPtr<int8_t>(),    B->mScaT,   B->mCStep, B->template ZPtr<int8_t>(),
-        reduceA.template get<float>(), reduceA.lda};
+        B->template SPtr<int8_t>(),    B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
+        reduceA.template RPtr<float>(), reduceA.lda};
 
     typename Launcher::Param args{M, N, K, B->mBlockSize, {A, K, &reduceA}, {B}, blkargs, {C, N}};
-    if (B->mIsAsym) {
+    if (B->IsAsym()) {
       jblas::parallel::GemmKBlockRunWithA<Parallel>(kernel, args, th);
     } else {
       jblas::parallel::GemmKBlockRun<Parallel>(kernel, args, th);
@@ -67,13 +67,13 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
-                       jblas::storage::gemm::WeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
+                       jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
                        jblas::parallel::IThreading* th) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->mIsAsym);
+  auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
   typename Launcher::Param args{M,
                                 N,
@@ -81,8 +81,8 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                                 B->mBlockSize,
                                 {A, K, &quanA},
                                 {B},
-                                {B->template SPtr<int8_t>(), B->mScaT, B->mCStep, quanA.template SPtr<float>(),
-                                 quanA.mCStep, quanA.template ZPtr<uint8_t>(), B->template RPtr<float>(), B->mRedT,
+                                {B->template SPtr<int8_t>(), B->SDtype(), B->CStep(), quanA.template SPtr<float>(),
+                                 quanA.CStep(), quanA.template ZPtr<uint8_t>(), B->template RPtr<float>(), B->RDtype(),
                                  B->template ZPtr<int8_t>(), quanA.template RPtr<float>(), B->mBlockSize},
                                 {C, N}};
   jblas::parallel::GemmKBlockRunWithA<Parallel>(kernel, args, th);
@@ -184,7 +184,7 @@ static size_t JblasBuSize(int block_size, size_t N, size_t K, JBLAS_DTYPE QuantT
   using WType = typename T::PrologueB::StorageWeight;
   WType stor(0);
   if constexpr (std::is_same_v<typename T::PrologueB,
-                                      jblas::prologue_b::gemm::WeightKBlockNInteger<typename T::GemmCore, T::ISA>>) {
+                               jblas::prologue_b::gemm::WeightKBlockNInteger<typename T::GemmCore, T::ISA>>) {
     stor = launcher.mProB.createStorage(N, K, block_size, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, isAsym);
   } else {
     stor = launcher.mProB.createStorage(N, K, block_size, QuantType, ScaleDtype);

@@ -80,11 +80,11 @@ static bool hasISA(const uint32_t* coreset, size_t len) {
   return support;
 }
 
-static inline bool samePackedWeight(jblas::storage::gemm::WeightBase* ptr0, jblas::storage::gemm::WeightBase* ptr1) {
+static inline bool samePackedWeight(jblas::storage::gemm::IWeightBase* ptr0, jblas::storage::gemm::IWeightBase* ptr1) {
   return ptr0->mCoreId == ptr1->mCoreId && ptr0->mPrologueID == ptr1->mPrologueID;
 }
 
-static inline bool samePackedWeight(jblas::storage::gemm::WeightBase** ptrs, size_t len) {
+static inline bool samePackedWeight(jblas::storage::gemm::IWeightBase** ptrs, size_t len) {
   assert(len >= 2);
   bool sameKernel = samePackedWeight(ptrs[0], ptrs[1]);
   if (sameKernel) {
