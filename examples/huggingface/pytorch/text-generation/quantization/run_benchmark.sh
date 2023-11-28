@@ -107,10 +107,10 @@ function run_benchmark {
         model_name_or_path="bigscience/bloomz-3b"
     elif [ "${topology}" = "llama_7b" ]; then
 	pip install transformers==4.31.0
-        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+        model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
     elif [ "${topology}" = "llama_13b" ]; then
 	pip install transformers==4.31.0
-        model_name_or_path="decapoda-research/llama-13b-hf"
+        model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
