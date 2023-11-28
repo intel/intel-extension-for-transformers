@@ -40,20 +40,12 @@ class LlavaMistralModel(LlavaMetaModel, MistralModel):
     def __init__(self, config: MistralConfig):
         super(LlavaMistralModel, self).__init__(config)
 
-        """
-
-        if hasattr(config, "mm_vision_tower"):
-            self.vision_tower = build_vision_tower(config, delay_load=True)
-            self.mm_projector = build_vision_projector(config)
-        """
-
-
 
 class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
     config_class = LlavaConfig
 
     def __init__(self, config):
-        super(MistralForCausalLM, self).__init__(config)
+        super(LlavaMistralForCausalLM, self).__init__(config)
         self.model = LlavaMistralModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
