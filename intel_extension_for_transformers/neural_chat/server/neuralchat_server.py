@@ -120,31 +120,16 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     elif plugin_name == "asr":
                         from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
                         plugins[plugin_name]['class'] = AudioSpeechRecognition
-                    elif plugin_name == "retrieval":
-                        from ..pipeline.plugins.retrieval.retrieval_agent import Agent_QA
-                        plugins[plugin_name]['class'] = Agent_QA
-                    elif plugin_name == "cache":
-                        from ..pipeline.plugins.caching.cache import ChatCache
-                        plugins[plugin_name]['class'] = ChatCache
-                    elif plugin_name == "safety_checker":
-                        from ..pipeline.plugins.security.safety_checker import SafetyChecker
-                        plugins[plugin_name]['class'] = SafetyChecker
-                    elif plugin_name == "ner":
-                        from ..pipeline.plugins.ner.ner import NamedEntityRecognition
-                        plugins[plugin_name]['class'] = NamedEntityRecognition
-                    elif plugin_name == "ner_int":
-                        from ..pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
-                        plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                     elif plugin_name == "face_animation": # pragma: no cover
                         from ..pipeline.plugins.video.face_animation.sadtalker import SadTalker
                         plugins[plugin_name]['class'] = SadTalker
                     else: # pragma: no cover
-                        raise ValueError("NeuralChat Error: Unsupported plugin")
+                        raise ValueError("NeuralChat Error: Unsupported plugin for service")
                     print(f"create {plugin_name} plugin instance...")
                     print(f"plugin parameters: ", plugin_config["args"])
                     plugin_config['instance'] = plugins[plugin_name]['class'](plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
-            api_router = setup_router(api_list, self.chatbot, enable_llm=False)
+            api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             return True
 

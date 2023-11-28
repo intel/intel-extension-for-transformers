@@ -17,7 +17,7 @@
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
-from typing import Optional
+from typing import Optional, List
 from ...cli.log import logger
 from fastapi import File, UploadFile
 from pydub import AudioSegment
@@ -39,13 +39,20 @@ class AudioPluginAPIRouter(APIRouter):
             raise Exception(e)
         
     async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        tts = get_plugin_instance(tts)
-        tts.args["voice"] = voice
+        
+        plugins.tts.args['voice'] = voice
+        tts = get_plugin_instance("tts")
         try:
             result = tts.post_llm_inference_actions(text)
             def audio_file_generate(result):
-                for path in result:
-                    with open(path,mode="rb") as file:
+                if isinstance(result, List):
+                    for path in result:
+                        with open(path,mode="rb") as file:
+                            bytes = file.read()
+                            data = base64.b64encode(bytes)
+                        yield f"data: {data}\n\n"
+                else:
+                    with open(result,mode="rb") as file:
                         bytes = file.read()
                         data = base64.b64encode(bytes)
                     yield f"data: {data}\n\n"
@@ -55,10 +62,11 @@ class AudioPluginAPIRouter(APIRouter):
             raise Exception(e)
 
     async def handle_create_speaker_embedding(self, spk_id):
-        tts = get_plugin_instance(tts)
+        tts = get_plugin_instance("tts")
         try:
             spk_embedding = tts.create_speaker_embedding(spk_id)
-            torch.save(spk_embedding, f'speaker_embeddings/spk_embed_{spk_id}.pt')
+            torch.save(spk_embedding, f'../../assets/speaker_embeddings/spk_embed_{spk_id}.pt')
+            logger.info(f"create spk embedding succeed! {spk_id}")
         except Exception as e:
             logger.info(f"create spk embedding failes! {e}")
             return {"create_spk": "fail"}
@@ -90,7 +98,7 @@ async def talkingbot(request: Request):
     text = data["text"]
     voice = data["voice"]
     knowledge_id = data["knowledge_id"]
-    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio"
+    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
 
     logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
 
@@ -103,7 +111,7 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     file_name = file.filename
     # generate a unique id
     import uuid
-    spk_id = f"spk_{uuid.uuid1()}"
+    spk_id = f"spk_{str(uuid.uuid1())[:8]}"
     with open(f"tmp_spk_{file_name}", 'wb') as fout:
         content = await file.read()
         fout.write(content)

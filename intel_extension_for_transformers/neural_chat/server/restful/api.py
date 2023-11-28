@@ -44,7 +44,7 @@ api_router_mapping = {
     'plugin_audio': plugin_audio_router
 }
 
-def setup_router(api_list, chatbot, enable_llm=True):
+def setup_router(api_list, chatbot=None, enable_llm=True):
     """Setup router for FastAPI
 
     Args:
