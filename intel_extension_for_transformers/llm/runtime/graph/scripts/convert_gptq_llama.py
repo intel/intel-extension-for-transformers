@@ -80,7 +80,6 @@ def convert_q4_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permut
     qweight = model[f"{src_name}.qweight"]
 
     int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
-    # import pdb; pdb.set_trace()
     shape = int_weight.view(-1, int_weight.shape[-1]).t().shape
     write_header(fout, shape, dst_name, 2)
 
@@ -111,7 +110,6 @@ def convert_q4_f32_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, pe
     weight = (gptq_scales * (int_weight - gptq_zeros))
     weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
     weight = weight.t()
-    # import pdb; pdb.set_trace()
     weight = weight.float()
     if permute:
         weight = permute_func(weight, 32, 32).contiguous()
@@ -127,13 +125,12 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, 
     zeros = qzeros_to_zeros(qzeros)
     scales = model[f"{src_name}.scales"]
     g_idx = model[f"{src_name}.g_idx"]
-    qweight = model[f"{src_name}.qweight"] # k*n  pytorch activation m*k linear weight is n * k ->m*n
-    # import pdb; pdb.set_trace()
+    qweight = model[f"{src_name}.qweight"]
     int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
     
-    int_weight = int_weight.view(-1,int_weight.shape[-1])#.t() -> n*k
-    gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1])#.t()
-    gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])#.t()
+    int_weight = int_weight.view(-1,int_weight.shape[-1])
+    gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1])
+    gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])
     
     if permute:
         int_weight = permute_func(int_weight.t().contiguous(), 32, 32).t().contiguous()
@@ -144,14 +141,11 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, 
     write_header(fout, shape[::-1], dst_name, 13)
 
     dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*2), dtype=np.int8)
-    # import pdb; pdb.set_trace() #np.left_shift(int_weight, 4)
     int_weight = int_weight - 8
     int_weight = int_weight * 16
     gptq_scales = gptq_scales / 16
     byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.numpy(), gptq_zeros.numpy(), dst)
-    dst = dst.flatten()
-    dst = dst[:byte_size]
-    dst.tofile(fout)
+    dst.flatten()[:byte_size].tofile(fout)
     print(f"converting {dst_name} qauntized tensor to jblas q4 block")
 
 

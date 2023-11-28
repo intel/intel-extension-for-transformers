@@ -519,12 +519,10 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   auto dstbptr = (int8_t*)dstpr;
   cd->setThreads(nthread);
-  // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>; // fullrange
+
+  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
   static Kernel kernel;
   auto packedw = kernel.createStorage(n, k, params.group_size);
-
-  // jblas::utils::aligned_vector<int8_t> buffer(packedw.mSize);
   packedw.assign(dstbptr);
 
   jblas::utils::aligned_vector<int8_t> tmpq(n * k);
@@ -539,10 +537,8 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   if (packedw.mIsAsym)
     std::copy(src_zps, src_zps + ssize, Tzps.data());
 
-  printf("n: %d, k: %d\n", n, k);
   kernel.packQWeight(n, k, tmpq.data(), n, Tscales.data(), Tzps.data(), &packedw);
 
-  // kernel.unpackWeight(n, k, &packedw, dstbptr, n);
   return packedw.mSize;
 }
 
