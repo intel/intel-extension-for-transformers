@@ -11,7 +11,7 @@ Similar to most finetuning work, we mainly divide the training to two stages.
 
 In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.
 
-IMPORTANT: Please note Intel Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
+IMPORTANT: Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
 
 To run finetuning on Intel Gaudi2, please execute below steps
 
