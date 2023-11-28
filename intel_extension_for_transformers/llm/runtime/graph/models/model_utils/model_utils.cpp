@@ -891,7 +891,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     if (!JblasGemmQuantPackBTrans(dstpr, f32ptr, n, k, k, params.group_size, quant_type, scale_type,
                                   params.alg == quant_alg::asym, ctype, &threading)) {
       printf("Failed to quant this weight\n");
+      return 0;
     }
+    return size;
   }
   return 0;
 }
