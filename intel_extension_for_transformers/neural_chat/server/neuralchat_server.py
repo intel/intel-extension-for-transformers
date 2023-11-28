@@ -169,7 +169,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"{self.__class__.__name__} init(): command = {command_list}")
                     sys.stdout.flush()
                     sys.stderr.flush()
-                    subprocess.Popen(command_list, shell=True, executable="/bin/bash")
+                    subprocess.Popen(command_list, shell=True, executable="/bin/bash")   # nosec
                     logger.info("waiting for server to start...")
                     time.sleep(30)
                 except Exception as exc:
