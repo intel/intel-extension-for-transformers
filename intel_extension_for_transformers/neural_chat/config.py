@@ -228,9 +228,6 @@ class DataArguments:
             )
         },
     )
-    eval_dataset_size: int = field(
-        default=500, metadata={"help": "Size of validation dataset."}
-    )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     preprocessing_num_workers: Optional[int] = field(
         default=None,
