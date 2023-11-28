@@ -529,6 +529,51 @@ class Buffer4Bit : public ISerialBuffer {
   inline utils::bit4x2* WPtr() { return get<utils::bit4x2>(); }
 };
 
+class StorageWeightKBlockNInteger : public WeightKBlockBase, public Buffer8Bit, public StorageQuantCorrection {
+ public:
+  using InfoType = WeightKBlockBase;
+  using QWeightType = Buffer8Bit;
+  using CorrectionType = StorageQuantCorrection;
+  StorageWeightKBlockNInteger(uint32_t _type) : WeightKBlockBase(_type) {
+    mPrologueID = JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger;
+  }
+
+  size_t resize(int NPad, int KPad, int Block, int N, int K, JBLAS_DTYPE qtype, JBLAS_DTYPE scalet, JBLAS_DTYPE redt,
+                bool IsAsym) {
+    JBLAS_DTYPE zpt = JBLAS_DTYPE::S8;
+    InfoType::resize(NPad, KPad, Block, N, K, qtype);
+    auto bits = utils::jblas_dtype_bits(qtype);
+    auto elesize = static_cast<size_t>(NPad) * KPad;
+    auto bytes = utils::updiv(elesize * bits, 8);  // add 3bits, 5btis, 7bits size calculation here
+    QWeightType::resize(bytes);
+    int nk_scale = utils::updiv(KPad, Block);
+    auto gemm_comp = jblas::gemm::CoreAttr::get_mask_val(mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
+                                                         jblas::gemm::CoreAttr::COMP_SHIFT);
+    CorrectionType::resize(nk_scale, NPad, scalet, zpt, redt, IsAsym,
+                           gemm_comp >= static_cast<uint32_t>(jblas::gemm::CompType::COMP_INT_START));
+    mSize = InfoType::getSerializedSize() + QWeightType::getSerializedSize() + CorrectionType::getSerializedSize();
+    return mSize;
+  }
+
+  virtual void assign(int8_t* buf) override {
+    InfoType::deserializeBuffer(buf, true);
+    QWeightType::deserializeBuffer(buf, true);
+    CorrectionType::deserializeBuffer(buf, true);
+  }
+
+  virtual void serialize(int8_t* wptr) {
+    InfoType::serializeToBuffer(wptr);
+    QWeightType::serializeToBuffer(wptr);
+    CorrectionType::serializeToBuffer(wptr);
+  }
+
+  virtual void deserialize(int8_t* rptr) override {
+    InfoType::deserializeBuffer(rptr, false);
+    QWeightType::deserializeBuffer(rptr, false);
+    CorrectionType::deserializeBuffer(rptr, false);
+  }
+};
+
 class StorageWeightKBlockS8 : public WeightKBlockBase, public Buffer8Bit, public StorageQuantCorrection {
  public:
   using InfoType = WeightKBlockBase;
@@ -627,6 +672,28 @@ class StorageWeightKBlockF4 : public StorageWeightKBlockS4 {
   }
 };
 
+class StorageWeightKBlockNFloat : public StorageWeightKBlockNInteger {
+ public:
+  StorageWeightKBlockNFloat(uint32_t _type) : StorageWeightKBlockNInteger(_type) {
+    mPrologueID = JBLAS_PROLOGUEB_IDS::WeightKBlockNFloat;
+  }
+
+  size_t resize(int NPad, int KPad, int Block, int N, int K, JBLAS_DTYPE ftype, JBLAS_DTYPE scalet) {
+    StorageWeightKBlockNInteger::InfoType::resize(NPad, KPad, Block, N, K, ftype);
+    auto bits = utils::jblas_dtype_bits(ftype);
+    auto elesize = static_cast<size_t>(NPad) * KPad;
+    auto bytes = utils::updiv(elesize * bits, 8);  // add fp6 size calculation here
+    StorageWeightKBlockNInteger::QWeightType::resize(bytes);
+    int nk_scale = utils::updiv(KPad, Block);
+    StorageWeightKBlockNInteger::CorrectionType::resize(nk_scale, NPad, scalet, JBLAS_DTYPE::EleBitsUndef,
+                                                        JBLAS_DTYPE::EleBitsUndef, false, false);
+    mSize = StorageWeightKBlockNInteger::InfoType::getSerializedSize() +
+            StorageWeightKBlockNInteger::QWeightType::getSerializedSize() +
+            StorageWeightKBlockNInteger::CorrectionType::getSerializedSize();
+    return mSize;
+  }
+};
+
 class PackedWeightParser {
  public:
   static gemm::WeightBase* deserialBuffer(void* serialized_buf) {
@@ -649,6 +716,12 @@ class PackedWeightParser {
           break;
         case JBLAS_PROLOGUEB_IDS::WeightKBlockF4:
           ptr = new gemm::StorageWeightKBlockF4(0);
+          break;
+        case JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger:
+          ptr = new gemm::StorageWeightKBlockNInteger(0);
+          break;
+        case JBLAS_PROLOGUEB_IDS::WeightKBlockNFloat:
+          ptr = new gemm::StorageWeightKBlockNFloat(0);
           break;
         default:
           break;

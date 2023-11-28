@@ -324,6 +324,7 @@ class LauncherIntKBlock {
         if (_config.block[2] >= _param.KBlock) {
           run_block(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC, tmpCache);
         } else {
+          run_largekblock(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC, tmpCache);
         }
       }
     }
@@ -418,6 +419,50 @@ class LauncherIntKBlock {
     reduceB = utils::cpu_pointer_align(reduceB);
     auto tmp_ = reinterpret_cast<int8_t*>(reduceB + _config.block[1] * tmp_ldsa);
     tmp_ = utils::cpu_pointer_align(tmp_);
+
+    for (int iterk = 0; iterk < _param.K; iterk += _param.KBlock) {
+      for (int iterkk = iterk; iterkk < iterk + _param.KBlock; iterkk += _config.block[2]) {
+        int k_remain = utils::remainsize(iterkk, _param.K, _config.block[2]);
+        k_remain = utils::remainsize(iterkk, iterk + _param.KBlock, _config.block[2]);
+        int k_padded = utils::padto(k_remain, GemmCore::KTILE);
+        auto bptr_cache = tmpB;
+        int bcache_step = 0;
+        int ldsb_cache = tmp_ldsb;
+        auto scaleB_cache = scaleB;
+        auto reduceB_cache = reduceB;
+        mProB.getKBlockWeight(&bptr_cache, &bcache_step, k_padded, n_padded, iterkk, _config.loc[1] + blk_n,
+                              _param.paramB, tmp_, _config.tmpcachesize);
+        mProB.getScale(&scaleB_cache, &ldsb_cache, k_padded, n_padded, iterkk, _config.loc[1] + blk_n, _param.paramB,
+                       tmp_, _config.tmpcachesize);
+        mProB.getReduce(&reduceB_cache, &ldsb_cache, k_padded, n_padded, iterkk, _config.loc[1] + blk_n, _param.paramB,
+                        tmp_, _config.tmpcachesize);
+
+        int bcache_stride = bcache_step * sizeof(BType);
+        for (int i = 0; i < blk_msize; i += GemmCore::MTILE) {
+          int m_remain = utils::remainsize(i, blk_msize, GemmCore::MTILE);
+          auto cptr_cache = tmpC + i * _config.block[1];
+          int ccache_stride = _config.block[1] * sizeof(CType);
+          auto aptr_cache = tmpA;
+          int acache_step = k_padded;
+          auto zpA_cache = zpA;
+          auto scaleA_cache = scaleA;
+          int ldsa_cache = tmp_ldsa;
+          mProA.getActivation(&aptr_cache, &acache_step, _param.paramA, m_remain, k_padded,
+                              (blk_m + i + _config.loc[0]), iterkk, tmp_, _config.tmpcachesize);
+          mProA.getZp(&zpA_cache, &ldsa_cache, _param.paramA, m_remain, k_padded, (blk_m + i + _config.loc[0]), iterkk,
+                      tmp_, _config.tmpcachesize);
+          mProA.getScale(&scaleA_cache, &ldsa_cache, _param.paramA, m_remain, k_padded, (blk_m + i + _config.loc[0]),
+                         iterkk, tmp_, _config.tmpcachesize);
+          auto kscale = k_remain / float(_param.KBlock);
+          mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, zpA_cache, scaleA_cache, ldsa_cache, scaleB_cache,
+                            reduceB_cache, ldsb_cache, m_remain, n_padded, k_padded, k_padded,
+                            acache_step * sizeof(AType), bcache_stride, ccache_stride, iterkk, kscale, tmp_,
+                            _config.tmpcachesize);
+        }
+      }
+    }
+    mEpilogue.forward(tmpC, _config.block[1], (_config.loc[0] + blk_m), _config.loc[1] + blk_n, blk_msize, blk_nsize,
+                      _param.paramC, tmpcache, _config.tmpcachesize);
   }
 };
 }  // namespace gemm

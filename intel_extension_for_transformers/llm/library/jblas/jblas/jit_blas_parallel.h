@@ -638,6 +638,12 @@ void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args
   Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
   using AParall = typename Launch_T::PrologueA::Parallel;
   AParall apara({th->num_threads(), args.M, args.K, 1, args.KBlock});
+  static bool flag = true;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para.print();
+    flag = false;
+  }
   th->parallel_for([&](int tidx) {
     typename AParall::ThreadProblem thdpA{tidx};
     apara.getIndex(thdpA);
