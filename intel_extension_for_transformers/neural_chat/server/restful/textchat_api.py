@@ -157,15 +157,6 @@ async def show_available_models():
     models.append(router.get_chatbot().model_name)
     return {"models": models}
 
-async def send_request_async(url, chat_request):
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=chat_request) as response:
-                return await response.text()
-    except aiohttp.ClientError as e:
-        print(f"Error sending/receiving on {url}: {e}")
-        return None
-
 @router.post("/v1/code_generation")
 async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
     if router.use_deepspeed:
