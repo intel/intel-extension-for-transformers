@@ -688,13 +688,6 @@ private:
 
     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<mem_desc_b_t,
             matB_tile_desc_t, wg_size_y, arch_tag>;
-    //     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
-    //             // Arc only support 1D prefetch
-    //             subgroup::tile_desc_t<arch_tag == gpu_arch::Xe
-    //                             ? tile_size_x_b
-    //                             : tile_size_x_b * tile_size_y_b,
-    //                     arch_tag == gpu_arch::Xe ? tile_size_y_b : 1, 1, 1>,
-    //             mem_layout_b, mem_space_b, wg_size_y, arch_tag>;
 
     using matB_acc_tile_desc_t
             = subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b,
