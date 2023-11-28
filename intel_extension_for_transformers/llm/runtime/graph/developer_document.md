@@ -22,16 +22,9 @@ static const model_scratch gptneox_mem_req(int n_layers) {
 }
 ```
 
-Secondly, convert its PyTorch FP32 weights into our format ([reference section](https://github.com/intel/intel-extension-for-transformers/blob/1.2.1/intel_extension_for_transformers/llm/runtime/graph/README.md#1-convert-and-quantize-llm)).
+Then, use `transformers` tokenizer to encode prompt and decode return tokens instead of re-implementing C++ tokenizer.
 
-command:
-```bash
-python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/polyglot-ko-5.8b
-```
-
-Finally, use `transformers` tokenizer to encode prompt and decode return tokens instead of re-implementing C++ tokenizer.
-
-For checking text generation results, we recommend you to run this naive python codes below to align our runtime engine outputs with PyTorch (`FP32 data type, greedy search`).
+For checking text generation results, we recommend you to run this python codes below to align our runtime engine outputs with PyTorch (`FP32 data type, greedy search`).
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
@@ -52,8 +45,10 @@ print("=====pytorch result======")
 print(pt_ans)
 
 # itrex infer
-model = Model()
-model.init_from_bin("polyglot", "ne-f32.bin", do_sample=False, max_new_tokens=128)
+# fp32 config
+woq_config = WeightOnlyQuantConfig(use_quant=False)
+# model file should be in `runtime_outs` folder
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs, do_sample=False, max_new_tokens=128)
 ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 print("=====itrex result======")
@@ -78,7 +73,7 @@ The Korean prompt would have the output like:
 옛날 옛적에 어린 소녀가 있었어요. 그 소녀는 어느 날, 숲 속에서 길을 잃고 헤매다가 한 마리의 동물을 만나게 되었어요. 그 동물은 소녀에게 길을 안내해 주겠다고 하였어요. 소녀는 그 동물을 따라 숲 속으로 들어갔어요. 한참을 걷고 있는데, 갑자기 동물이 소녀를 땅 속으로 끌고 들어가는 것이었어요. 소녀는 깜짝 놀라서 소리쳤어요. "안돼! 나를 죽이려고 하는 거야?" 그러자 동물은 소녀에게 조용히 말했어요. "쉿! 조용히 해. 내 말을 잘 들어봐. 저 앞에
 ```
 
-Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using python codes of `transformers` style liked and `INT4` data type. Please refer to `Python API` section for more details.
+Once you make sure your model has the same generated tokens as PyTorch, you can deploy it by using low-bits precision like `INT4` data type and customized acceleration. Please refer to `Python API` section for more details.
 
 # Enable graph cpp model process
 We enable a CPP model in the following four steps.
