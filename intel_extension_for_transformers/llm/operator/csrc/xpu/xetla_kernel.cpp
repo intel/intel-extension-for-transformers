@@ -21,9 +21,9 @@ static constexpr size_t wg_tile_n = 64;
 static constexpr size_t sg_tile_m = 8;
 static constexpr size_t sg_tile_n = 16;
 static constexpr size_t num_buffer = 64;
-static constexpr size_t local_kslicing = 4;
+static constexpr size_t local_kslicing = 8;
 static constexpr size_t global_kslicing = 1;
-static constexpr uint32_t periodic_sync_interval = 1;
+static constexpr uint32_t periodic_sync_interval = 8;
 static constexpr uint32_t prefetch_distance = 3;
 static constexpr gpu::xetla::mem_layout layout_a
         = gpu::xetla::mem_layout::row_major;
