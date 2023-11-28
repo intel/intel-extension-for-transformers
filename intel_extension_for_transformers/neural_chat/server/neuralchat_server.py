@@ -19,6 +19,7 @@ import argparse
 import subprocess
 import sys
 import os
+import time
 from typing import List
 
 
@@ -168,15 +169,12 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"{self.__class__.__name__} init(): command = {command_list}")
                     sys.stdout.flush()
                     sys.stderr.flush()
-                    with subprocess.Popen(command_list, shell=True, executable="/bin/bash") as proc:
-                        proc.wait()
-                        sys.stdout.flush()
-                        sys.stderr.flush()
-                        if proc.returncode != 0:
-                            logger.error(f"{command_list} exited with status = {proc.returncode}")
-                            return proc.returncode
+                    subprocess.Popen(command_list, shell=True, executable="/bin/bash")
+                    logger.info("waiting for server to start...")
+                    time.sleep(30)
                 except Exception as exc:
                     raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
+                self.chatbot = None
         else:
             pipeline_config = PipelineConfig(**params)
             self.chatbot = build_chatbot(pipeline_config)

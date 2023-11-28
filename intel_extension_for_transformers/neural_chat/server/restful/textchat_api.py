@@ -176,7 +176,7 @@ async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
                 url = f'http://{router.host}:{port}/v1/code_generation'
                 response = requests.post(url, json=chat_request.dict())
                 response.raise_for_status()
-                responses.append(response.text)
+                responses.append(response.content)
             except requests.exceptions.RequestException as e:
                 print(f"Error sending/receiving on port {port}: {e}")
 

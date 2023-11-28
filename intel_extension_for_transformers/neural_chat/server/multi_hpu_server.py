@@ -281,7 +281,7 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
             setattr(gen_config, attr, value)
         buffered_texts = ""
         if request.stream:
-            generator, _ = chatbot.predict_stream(query=request.prompt, config=config)
+            generator, _ = chatbot.predict_stream(query=request.prompt, config=gen_config)
             if not isinstance(generator, types.GeneratorType):
                 generator = (generator,)
             def stream_generator():
@@ -306,7 +306,7 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
                 yield f"data: [DONE]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            response = chatbot.predict(query=request.prompt, config=config)
+            response = chatbot.predict(query=request.prompt, config=gen_config)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
     else:
