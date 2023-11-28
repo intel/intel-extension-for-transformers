@@ -377,14 +377,6 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
     else:
-        # model = AutoModelForSequenceClassification.from_pretrained(
-        #     model_args.model_name_or_path,
-        #     from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        #     config=config,
-        #     cache_dir=model_args.cache_dir,
-        #     revision=model_args.model_revision,
-        #     use_auth_token=True if model_args.use_auth_token else None,
-        # )
         model = AutoModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -525,32 +517,6 @@ def main():
     )
     training_args.metric_for_best_model = metric_name
 
-    # Initialize our Trainer
-    # dataset_id = "SetFit/amazon_counterfactual"
-    # train_dataset = datasets.load_dataset(dataset_id, name="en")['train']
-
-    # def preprocess_function(examples):
-    #     # Tokenize the texts
-    #     args = examples['text']
-    #     result= tokenizer(args, padding=padding, max_length=max_seq_length, truncation=True)
-
-    #     return result
-
-    # with training_args.main_process_first(desc="dataset map pre-processing"):
-    #     train_dataset = train_dataset.map(
-    #         preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
-    #     )
-
-    # trainer = NLPTrainer(
-    #     model=model,
-    #     args=training_args,
-    #     train_dataset=train_dataset if training_args.do_train else None,
-    #     eval_dataset=eval_dataset if training_args.do_eval else None,
-    #     compute_metrics=compute_metrics,
-    #     tokenizer=tokenizer,
-    #     data_collator=data_collator,
-    # )
-
     # new dataset for trainer calib_dataset
     from datasets import Dataset
     evaluation = MTEB(task_langs=['en'], tasks=['CQADupstackAndroidRetrieval'])
@@ -578,9 +544,7 @@ def main():
             preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
         )
 
-    from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant
-    from neural_compressor.data.dataloaders.pytorch_dataloader import PyTorchDataLoader
-    
+    from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant   
     
     trainer = NLPTrainer(
         model=model,
@@ -631,12 +595,6 @@ def main():
         )
 	
         stmodel = SentenceTransformer(model_args.model_name_or_path)
-        # def eval_func(model):
-        #     stmodel[0].auto_model = model.bert
-        #     evaluation = MTEB(task_langs=['en'], tasks=['AmazonCounterfactualClassification'])
-        #     results = evaluation.run(stmodel, overwrite_results=True)
-        #     print(results)
-        #     return results['AmazonCounterfactualClassification']['test']['en']['accuracy']
         def eval_func(model):
             stmodel[0].auto_model = model
             evaluation = MTEB(task_langs=['en'], task_types=['STS'])

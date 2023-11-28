@@ -18,7 +18,7 @@
 #
 
 OUTPUT_DIR=$(pwd)
-LOG_NAME="bge_mrpc.log"
+LOG_NAME="bge_mteb.log"
 DATASET="mrpc"
 MODEL_NAME_OR_PATH="BAAI/bge-base-en-v1.5"
 BATCH_SIZE=1
