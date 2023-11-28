@@ -76,7 +76,8 @@ function gtest() {
         [ $(grep -c "PASSED" ${ut_log_name}) == 0 ] ||
         [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ] ||
         [ $(grep -c "core dumped" ${ut_log_name}) != 0 ] ||
-        [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ]; then
+        [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ] ||
+        [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
         $BOLD_RED && echo "Find errors in gtest, please check the output..." && $RESET
         exit 1
     else
@@ -85,14 +86,8 @@ function gtest() {
 }
 
 function main() {
-    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
+    bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "${WORKING_DIR}/test/pytest"
     cd ${WORKING_DIR}/test/pytest || exit 1
-    if [ -f "requirements.txt" ]; then
-        python -m pip install --default-timeout=100 -r requirements.txt
-        pip list
-    else
-        echo "Not found requirements.txt file."
-    fi
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
         gtest

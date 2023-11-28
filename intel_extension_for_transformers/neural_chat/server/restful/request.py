@@ -51,6 +51,7 @@ class FinetuneRequest(RequestBaseModel):
 
 class AskDocRequest(RequestBaseModel):
     query: str
+    translated: str
     domain: str
     blob: Optional[str]
     filename: Optional[str]
@@ -59,6 +60,7 @@ class AskDocRequest(RequestBaseModel):
     params: Optional[dict] = None
     debug: Optional[bool] = False
     stream: bool = True
+    max_new_tokens: int = 256
 
 
 class FeedbackRequest(RequestBaseModel):

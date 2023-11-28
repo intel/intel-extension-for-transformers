@@ -352,13 +352,13 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
         cur = ne_silu(ctx0, cur);
         cur = ne_mul(ctx0, cur, tmp);
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
-#ifdef NE_TP_MODEL
-        // ffn2 and ffn0 use split row, ffn1 use split column
-        if (enable_tp) {
-          cur = ne_all_reduce(ctx0, cur);
-        }
-#endif
       }
+#ifdef NE_TP_MODEL
+      // ffn2 and ffn0 use split row, ffn1 use split column
+      if (enable_tp) {
+        cur = ne_all_reduce(ctx0, cur);
+      }
+#endif
     }
 
     cur = ne_add(ctx0, cur, inpFF);

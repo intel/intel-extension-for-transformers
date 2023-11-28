@@ -181,7 +181,7 @@ class WeightS8ScaleFp32 {
     auto Tscales = utils::amalloc<float>(ssize);
     auto Tzps = utils::amalloc<int8_t>(ptr->mIsAsym ? ssize : 0);
     quantizeWeight(N, K, B, ldb, ptr->mBlockSize, tmpq, Tscales, Tzps);
-    packQWeight(N, K, tmpq, ldb, Tscales, Tzps, stor);
+    packQWeight(N, K, tmpq, N, Tscales, Tzps, stor);
     utils::afree(tmpq);
     utils::afree(Tscales);
     utils::afree(Tzps);
@@ -979,8 +979,11 @@ class GemmSLauncherKBlockPackWeight {
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
+    tmpB = utils::pointer_align<64>(tmpB);
     auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
+    tmpA = utils::pointer_align<64>(tmpA);
     auto tmpC = (CType*)(tmpA + GemmCore::MTILE * _config.KStep);
+    tmpC = utils::pointer_align<64>(tmpC);
     for (int itern = 0; itern < colremain; itern += _config.NStep) {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
@@ -1077,8 +1080,11 @@ class GemmLauncherKBlock {
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
+    tmpB = utils::pointer_align<64>(tmpB);
     auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
+    tmpA = utils::pointer_align<64>(tmpA);
     auto tmpC = (CType*)(tmpA + GemmCore::MTILE * _config.KStep);
+    tmpC = utils::pointer_align<64>(tmpC);
     for (int itern = 0; itern < colremain; itern += _config.NStep) {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {

@@ -17,7 +17,6 @@
 """Neural Chat Chatbot API."""
 
 import os
-from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
@@ -50,28 +49,31 @@ def build_chatbot(config: PipelineConfig=None):
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path.lower():
         from .models.mpt_model import MptModel
         adapter = MptModel()
-    elif "neural-chat" in config.model_name_or_path:
+    elif "neural-chat" in config.model_name_or_path.lower():
         from .models.neuralchat_model import NeuralChatModel
         adapter = NeuralChatModel()
-    elif "chatglm" in config.model_name_or_path:
+    elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path:
+    elif "Qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
-    elif "opt" in config.model_name_or_path or \
-         "gpt" in config.model_name_or_path or \
-         "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path or \
-         "starcoder" in config.model_name_or_path:
+    elif "mistral" in config.model_name_or_path.lower():
+        from .models.mistral_model import MistralModel
+        adapter = MistralModel()
+    elif "opt" in config.model_name_or_path.lower() or \
+         "gpt" in config.model_name_or_path.lower() or \
+         "flan-t5" in config.model_name_or_path.lower() or \
+         "bloom" in config.model_name_or_path.lower() or \
+         "starcoder" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
+           only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -87,9 +89,6 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
                     plugins[plugin_name]['class'] = AudioSpeechRecognition
-                elif plugin_name == "asr_chinese":
-                    from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-                    plugins[plugin_name]['class'] = ChineseAudioSpeechRecognition
                 elif plugin_name == "retrieval":
                     from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
                     plugins[plugin_name]['class'] = Agent_QA
@@ -105,7 +104,10 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner_int":
                     from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
                     plugins[plugin_name]['class'] = NamedEntityRecognitionINT
-                else:
+                elif plugin_name == "face_animation": # pragma: no cover
+                    from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
+                    plugins[plugin_name]['class'] = SadTalker
+                else: # pragma: no cover
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -141,6 +143,7 @@ def finetune_model(config: BaseFinetuningConfig):
     """
 
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
+    from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
     finetuning.finetune()
 

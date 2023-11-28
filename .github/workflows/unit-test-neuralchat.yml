@@ -10,11 +10,13 @@ on:
       - 'setup.py'
       - 'intel_extension_for_transformers/llm/finetuning/**'
       - 'intel_extension_for_transformers/llm/quantization/**'
+      - 'intel_extension_for_transformers/llm/runtime/graph/**'
       - 'intel_extension_for_transformers/transformers/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'
       - '!intel_extension_for_transformers/neural_chat/README.md'
+      - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -89,19 +91,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
-          && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget sentencepiece \
-          && pip install transformers>=4.32.0 \
-          && pip install peft torch num2words speechbrain \
-          && pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6 \
-          && pip install shortuuid gptcache evaluate \
-          && pip install fschat pydub python-multipart PyPDF2 langchain \
-          && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
-          && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
-          && pip install yacs uvicorn optimum optimum[habana] \
-          && pip install sentence_transformers unstructured markdown rouge_score \
-          && pip install einops \
-          && pip install --upgrade accelerate"
+          && bash install_binary.sh"
 
       - name: Run UT
         run: |

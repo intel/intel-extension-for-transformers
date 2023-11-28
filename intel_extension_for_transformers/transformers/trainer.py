@@ -25,7 +25,9 @@ import sys
 import time
 import json
 import warnings
+from itertools import chain
 from functools import partial
+from optimum.exporters.tasks import TasksManager
 from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
@@ -2048,13 +2050,13 @@ class BaseTrainer():
         # Prepare input data
 
         # pylint: disable=E1101
-        eval_dataloader = self.get_train_dataloader()
+        eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
 
         # convert to a dict
-        input = dict(input.items())       
+        input = dict(input.items())   
 
         if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
             input.pop('token_type_ids')
@@ -2062,14 +2064,33 @@ class BaseTrainer():
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
 
+        # set input and output names
+        input_names=list(input.keys())
+        output_names=None
+
+        model_name_or_path = model.config._name_or_path
+        task = TasksManager.infer_task_from_model(model_name_or_path)
+        try:
+            # try to get export config
+            onnx_config_constructor = TasksManager.get_exporter_config_constructor(
+                model=model, exporter="onnx", task=task
+            )
+            onnx_config = onnx_config_constructor(model.config)
+            inputs = onnx_config.ordered_inputs(model)
+            input_names = list(inputs.keys())
+            output_names = list(onnx_config.outputs.keys())
+            axes_dict = dict(chain(inputs.items(), onnx_config.outputs.items()))
+        except:
+            # skip and use settings collected from dataloader
+            pass
+
         torch.onnx.export(
             model,
             (input, ),
             onnx_save_path,
             opset_version=opset_version,
-            # input_names=list(input.keys()),
-            input_names=['input_ids', 'attention_mask', 'token_type_ids'],
-            output_names=['last_hidden_state', 'pooler_output'],
+            input_names=input_names,
+            output_names=output_names,
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )
@@ -2400,7 +2421,7 @@ class BaseTrainer():
                     return next(self.data, None)
 
             # pylint: disable=E1101
-            calib_datareader = NLPDataReader(self.get_train_dataloader())
+            calib_datareader = NLPDataReader(self.get_eval_dataloader())
             ortq.quantize_static(
                 fp32_path,
                 onnx_save_path,
@@ -2468,7 +2489,7 @@ class BaseTrainer():
     def export_to_jit(self):
         """The function to tranfer model into jit model."""
         self.model.eval()
-        eval_dataloader = self.get_train_dataloader()
+        eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
