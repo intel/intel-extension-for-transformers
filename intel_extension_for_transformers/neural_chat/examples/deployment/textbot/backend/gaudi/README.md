@@ -13,21 +13,13 @@ bash Miniconda*.sh
 source ~/.bashrc
 ```
 
-# Install numactl
-
-Next, install the numactl library:
-
-```shell
-sudo apt install numactl
-```
-
 # Install Python dependencies
 
 Install dependencies using pip
 
 >**Note**: Please make sure transformers version is 4.34.1
 ```bash
-pip install -r ../../../requirements.txt
+pip install ../../../../../requirements_hpu.txt
 pip install transformers==4.34.1
 ```
 
