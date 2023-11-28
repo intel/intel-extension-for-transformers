@@ -1,18 +1,22 @@
-# Adopted from https://github.com/lm-sys/FastChat. Below is the original copyright:
-# Adopted from tatsu-lab@stanford_alpaca. Below is the original copyright:
-#    Copyright 2023 Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
+# Copyright (c) 2021 Intel Corporation
 #
-#        http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+sys.path.append("/data2/lkk/intel-extension-for-transformers/")
 
 import os
 from dataclasses import dataclass, field
@@ -25,7 +29,8 @@ import torch
 import transformers
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig
-
+from intel_extension_for_transformers.transformers.modeling import LlavaMistralForCausalLM
+from intel_extension_for_transformers.transformers.multi_modal_trainers import LLaVATrainer
 from llava_utils import *
 
 @dataclass
@@ -118,7 +123,6 @@ def train():
             bnb_4bit_quant_type=training_args.quant_type # {'fp4', 'nf4'}
             )
 
-    from llava_model.llava_mistral import LlavaMistralForCausalLM 
     model = LlavaMistralForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
@@ -166,7 +170,6 @@ def train():
                 model.to(torch.bfloat16)
             if training_args.fp16:
                 model.to(torch.float16)
-        rank0_print("Adding LoRA adapters...")
         model = get_peft_model(model, lora_config)
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -228,9 +231,6 @@ def train():
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
-    print(data_module["train_dataset"][0])
-
-    from llava_trainer import LLaVATrainer
 
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,
