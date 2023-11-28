@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to train Intel/neural-chat-7b-v3-1 on Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+g2067e0e documentation</title>
+  <title>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+g3602d14 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -78,7 +78,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">How to train Intel/neural-chat-7b-v3-1 on Gaudi2</li>
+      <li class="breadcrumb-item active">How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/finetune_neuralchat_v3/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -88,19 +88,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="how-to-train-intel-neural-chat-7b-v3-1-on-gaudi2">
-<h1>How to train Intel/neural-chat-7b-v3-1 on Gaudi2<a class="headerlink" href="#how-to-train-intel-neural-chat-7b-v3-1-on-gaudi2" title="Link to this heading"></a></h1>
+  <section id="how-to-train-intel-neural-chat-7b-v3-1-on-intel-gaudi2">
+<h1>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2<a class="headerlink" href="#how-to-train-intel-neural-chat-7b-v3-1-on-intel-gaudi2" title="Link to this heading"></a></h1>
 <p><a class="reference external" href="https://huggingface.co/Intel/neural-chat-7b-v3-1">Intel/neural-chat-7b-v3-1</a> ranks top1 on the <a class="reference external" href="https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard">HuggingFaceH4/open_llm_leaderboard</a> comparing with all the submitted 7B models (date: 11/17/2023). In this tutorial, we would like to share the details for the training process.</p>
 <p>Similar to most finetuning work, we mainly divide the training to two stages.</p>
 <ul class="simple">
-<li><p>First stage: Use supervised finetuning (SFT) to improve the performance of the base model like <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a>.</p></li>
+<li><p>First stage: Use supervised fine-tuning (SFT) to improve the performance of the base model like <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a>.</p></li>
 <li><p>Second stage: apply Direct Preference Optimization (DPO) to align the SFT model with preference dataset.</p></li>
 </ul>
 <section id="prepare-environment">
 <h2>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h2>
 <p>In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.</p>
-<p>IMPORTANT: Please note Habana’s Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Habana HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
-<p>To run finetuning on Habana HPU, please execute below steps</p>
+<p>IMPORTANT: Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
+<p>To run finetuning on Intel Gaudi2, please execute below steps</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
 <span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/neural_chat/docker/finetuning/
 
@@ -110,10 +110,10 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
 </pre></div>
 </div>
 </section>
-<section id="sft">
-<h2>SFT<a class="headerlink" href="#sft" title="Link to this heading"></a></h2>
+<section id="supervised-fine-tuning-sft">
+<h2>Supervised Fine-Tuning (SFT)<a class="headerlink" href="#supervised-fine-tuning-sft" title="Link to this heading"></a></h2>
 <p>We select the latest pretrained <a class="reference external" href="https://huggingface.co/mistralai/Mistral-7B-v0.1">mistralai/Mistral-7B-v0.1</a> and the open source dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/SlimOrca">Open-Orca/SlimOrca</a> to conduct the experiment.</p>
-<p>The below script use deepspeed zero2 to lanuch the training with 8 cards (GPUs/HPUs). In the <code class="docutils literal notranslate"><span class="pre">finetune_neuralchat_v3.py</span></code>, the default <code class="docutils literal notranslate"><span class="pre">use_habana=True,</span> <span class="pre">use_lazy_mode=True,</span> <span class="pre">device=&quot;hpu&quot;</span></code> for Gaudi2. And if you want to run it on Nvidia GPU, you can set them <code class="docutils literal notranslate"><span class="pre">use_habana=False,</span> <span class="pre">use_lazy_mode=False,</span> <span class="pre">device=&quot;auto&quot;</span></code>.</p>
+<p>The below script use deepspeed zero2 to lanuch the training with 8 cards Gaudi2. In the <code class="docutils literal notranslate"><span class="pre">finetune_neuralchat_v3.py</span></code>, the default <code class="docutils literal notranslate"><span class="pre">use_habana=True,</span> <span class="pre">use_lazy_mode=True,</span> <span class="pre">device=&quot;hpu&quot;</span></code> for Gaudi2. And if you want to run it on Nvidia GPU, you can set them <code class="docutils literal notranslate"><span class="pre">use_habana=False,</span> <span class="pre">use_lazy_mode=False,</span> <span class="pre">device=&quot;auto&quot;</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">deepspeed</span> <span class="o">--</span><span class="n">include</span> <span class="n">localhost</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span> \
     <span class="o">--</span><span class="n">master_port</span> <span class="mi">29501</span> \
     <span class="n">finetune_neuralchat_v3</span><span class="o">.</span><span class="n">py</span>
@@ -177,7 +177,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f724cd80d30> 
+   <jinja2.runtime.BlockReference object at 0x7fa0aa7626b0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
