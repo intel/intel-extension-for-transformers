@@ -5,7 +5,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.html)
 - Utilize AMX, VNNI, AVX512F and AVX2 instruction set
-- Support CPU (x86 platforms only) and initial (Intel) GPU
+- Support CPU (x86 platforms only) and Intel GPU (WIP)
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
