@@ -108,7 +108,7 @@ struct ne_object {
 
   struct ne_object* next;
 
-  char padding[8];
+  char padding[40]; // 8 for NE_MEM_ALIGN=16, 40 for NE_MEM_ALIGN=64
 };
 
 static const size_t NE_OBJECT_SIZE = sizeof(struct ne_object);
@@ -183,7 +183,7 @@ struct ne_tensor {
 
   char name[32];
 
-  char padding[8];
+  char padding[40]; // 8 for NE_MEM_ALIGN=16, 40 for NE_MEM_ALIGN=64
 };
 
 static const size_t NE_TENSOR_SIZE = sizeof(struct ne_tensor);
