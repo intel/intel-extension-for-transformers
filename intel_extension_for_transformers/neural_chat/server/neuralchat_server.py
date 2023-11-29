@@ -124,7 +124,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         optimization_type = yaml_config.get("optimization_type", {})
         compute_dtype = yaml_config.get("compute_dtype", {})
         weight_dtype = yaml_config.get("weight_dtype", {})
-        use_cached_bin = yaml_config.get("use_cached_bin", {})
         mix_precision_dtype = yaml_config.get("mix_precision_dtype", {})
         load_in_4bit = yaml_config.get("load_in_4bit", {})
         bnb_4bit_quant_type = yaml_config.get("bnb_4bit_quant_type", {})
@@ -135,8 +134,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                                             world_size=world_size)
         from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
         if optimization_type == "weight_only":
-            optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype,
-                                                        use_cache=use_cached_bin)
+            optimization_config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
         elif optimization_type == "mix_precision":
             optimization_config = MixedPrecisionConfig(dtype=mix_precision_dtype)
         elif optimization_type == "bits_and_bytes":
