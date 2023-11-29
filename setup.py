@@ -111,8 +111,6 @@ class CMakeBuild(build_ext):
         extdir = ext_fullpath.parent.resolve()
 
         output_dir = f"{extdir}{os.sep}"
-        gpp_path = subprocess.run(['which', 'g++'], capture_output=True).stdout.decode('ascii').replace('\n', '')
-        gcc_path = subprocess.run(['which', 'gcc'], capture_output=True).stdout.decode('ascii').replace('\n', '')
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={output_dir}",
             f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={output_dir}",
@@ -125,8 +123,6 @@ class CMakeBuild(build_ext):
             f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
             f"-DNE_PYTHON_API=ON",
-            f"-DCMAKE_CXX_COMPILER={gpp_path}", # https://github.com/intel/intel-extension-for-transformers/issues/743#issuecomment-1826789762
-            f"-DCMAKE_C_COMPILER={gcc_path}"
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')

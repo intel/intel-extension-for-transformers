@@ -14,7 +14,6 @@
 
 cmake_minimum_required(VERSION 3.12) # Don't bump this version for no reason
 project("ne_graph" C CXX)
-find_package(Threads)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
