@@ -27,22 +27,36 @@ class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         yaml_file_path = "/intel-extension-for-transformers/" + \
             "intel_extension_for_transformers/neural_chat/tests/ci/server/plugin_as_service.yaml"
+        log_file_path = "./neuralchat.log"
         if os.path.exists(yaml_file_path):
-            command = f'neuralchat_server start \
-                        --config_file {yaml_file_path} \
-                        --log_file "./neuralchat.log"'
+            print("1111111111111111")
+            command = [
+                'neuralchat_server', 'start', 
+                '--config_file', yaml_file_path, 
+                '--log_file', log_file_path
+            ]
         elif os.path.exists("./plugin_as_service.yaml"):
-            command = f'neuralchat_server start \
-                                    --config_file ./plugin_as_service.yaml \
-                                    --log_file "./neuralchat.log"'
+            print("222222222222222")
+            command = [
+                'neuralchat_server', 'start', 
+                '--config_file', './plugin_as_service.yaml', 
+                '--log_file', log_file_path
+            ]
         else:
-            command = 'sed -i "s|plugin_as_service|ci/server/plugin_as_service|g" \
-                        ./ci/server/plugin_as_service.yaml && neuralchat_server start \
-                        --config_file "./ci/server/plugin_as_service.yaml" \
-                        --log_file "./neuralchat.log"'
+            print("333333333333333")
+            with open("./ci/server/plugin_as_service.yaml", "r+") as file:
+                content = file.read()
+                content = content.replace("plugin_as_service", "ci/server/plugin_as_service")
+                file.seek(0)
+                file.write(content)
+                file.truncate()
+            command = [
+                'neuralchat_server', 'start', 
+                '--config_file', "./ci/server/plugin_as_service.yaml", 
+                '--log_file', log_file_path
+            ]
         try:
-            self.server_process = subprocess.Popen(command,
-                                    universal_newlines=True, shell=True) # nosec
+            self.server_process = subprocess.Popen(command, universal_newlines=True)
             time.sleep(30)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
