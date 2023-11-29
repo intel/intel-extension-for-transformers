@@ -115,6 +115,15 @@ class ActivationKBlockQuantize {
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
+  inline Parallel createParallel(int nthreads, const utils::GemmProblem& prbm) {
+    return Parallel({
+        nthreads, prbm.dims[1],  // m
+        prbm.dims[3],            // k
+        1,
+        prbm.dims[4]  // kblock
+    });
+  }
+
   inline QParam createStorage(int m, int k, int kblock, bool hasreduce) {
     QParam tmp;
     int kpad = utils::padto(k, _GemmCore_T::KTILE);
@@ -226,6 +235,14 @@ class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
+  inline Parallel createParallel(int nthreads, const utils::GemmProblem& prbm) {
+    return Parallel({
+        nthreads, prbm.dims[1],  // m
+        prbm.dims[3],            // k
+        1,
+        prbm.dims[4]  // kblock
+    });
+  }
   inline SType createStorage(int m, int k, int kblock) {
     SType tmp;
     tmp.resize(m, k, kblock == -1 ? k : kblock, JBLAS_DTYPE::F32);

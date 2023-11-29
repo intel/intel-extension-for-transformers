@@ -19,9 +19,6 @@
 #include "jit_blas_prologue_a.h"
 #include "jit_blas_prologue_b.h"
 #include "jit_blas_utils.h"
-#include "kernel_avx512f.h"
-#include "kernel_jit.h"
-#include "kernel_ref.h"
 
 namespace jblas {
 namespace wrapper {
@@ -43,7 +40,7 @@ class LauncherBase {
   using EpiParam = typename Epilogue::Param;
   static_assert(GemmCore::ISA <= _RT_ISA_T, "RunTime ISA should cover GEMM's ISA");
   struct Param {
-    const int M, N, K;
+    const utils::GemmProblem problem;
     const AParam paramA;
     const BParam paramB;
     const EpiParam paramC;
@@ -77,8 +74,9 @@ class LauncherBase {
   void run_block(const Param& _param, const parallel::gemm::ThreadProblemBase& _config, int blk_m, int blk_n,
                  int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpC, void* tmpcache) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
-    for (int iterk = 0; iterk < _param.K; iterk += _config.block[2]) {
-      int k_remain = utils::remainsize(iterk, _param.K, _config.block[2]);
+    auto& K = _param.problem.dims[3];
+    for (int iterk = 0; iterk < _param.problem.dims[3]; iterk += _config.block[2]) {
+      int k_remain = utils::remainsize(iterk, K, _config.block[2]);
       int k_padded = utils::padto(k_remain, GemmCore::KTILE);
       int k_paddedle = utils::padto_le(k_remain, GemmCore::KTILE);
       auto bptr_cache = tmpB;
@@ -137,7 +135,7 @@ class LauncherKBlock {
   using AccType = float;
   static_assert(GemmCore::ISA <= _RT_ISA_T, "RunTime ISA should cover GEMM's ISA");
   struct Param {
-    const int M, N, K, KBlock;
+    const utils::GemmProblem problem;
     const AParam paramA;
     const BParam paramB;
     const BEpiParam paramBlk;
@@ -167,7 +165,8 @@ class LauncherKBlock {
       for (int iterm = 0; iterm < _config.size[0]; iterm += _config.block[0]) {
         int m_remain = utils::remainsize(iterm, _config.size[0], _config.block[0]);
         std::memset(tmpC, 0, _config.block[0] * _config.block[1] * sizeof(AccType));
-        if (_param.KBlock <= _config.block[2]) {
+        auto& KBlock = _param.problem.dims[4];
+        if (KBlock <= _config.block[2]) {
           run_block(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpBlk, tmpC, tmpCache);
         } else {
           run_block_large(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpBlk, tmpC, tmpCache);
@@ -180,8 +179,10 @@ class LauncherKBlock {
   void run_block(const Param& _param, const parallel::gemm::ThreadProblemBase& _config, int blk_m, int blk_n,
                  int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpBlk, AccType* tmpC, void* tmpcache) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
-    for (int iterk = 0; iterk < _param.K; iterk += _config.block[2]) {
-      int k_remain = utils::remainsize(iterk, _param.K, _config.block[2]);
+    auto& K = _param.problem.dims[3];
+    auto& KBlock = _param.problem.dims[4];
+    for (int iterk = 0; iterk < K; iterk += _config.block[2]) {
+      int k_remain = utils::remainsize(iterk, K, _config.block[2]);
       int k_padded = utils::padto(k_remain, GemmCore::KTILE);
       auto bptr_cache = tmpB;
       int bcache_step = 0;
@@ -189,8 +190,8 @@ class LauncherKBlock {
                             tmpcache, _config.tmpcachesize);
       int bcache_stride = bcache_step * sizeof(BType);
 
-      for (int ikk = 0; ikk < k_remain; ikk += _param.KBlock) {
-        int k_remain1 = utils::remainsize(iterk + ikk, _param.K, _param.KBlock);
+      for (int ikk = 0; ikk < k_remain; ikk += KBlock) {
+        int k_remain1 = utils::remainsize(iterk + ikk, K, KBlock);
         int k_paddedle1 = utils::padto_le(k_remain1, GemmCore::KTILE);
         for (int i = 0; i < blk_msize; i += GemmCore::MTILE) {
           int m_remain = utils::remainsize(i, blk_msize, GemmCore::MTILE);
@@ -218,7 +219,7 @@ class LauncherKBlock {
           }
         }
         mBlockEpi.forward(tmpBlk, tmpC, _config.block[1], (_config.loc[0] + blk_m), _config.loc[1] + blk_n,
-                          (iterk + ikk) / _param.KBlock, blk_msize, blk_nsize, _param.paramBlk, tmpcache,
+                          (iterk + ikk) / KBlock, blk_msize, blk_nsize, _param.paramBlk, tmpcache,
                           _config.tmpcachesize);
       }
     }
@@ -231,11 +232,13 @@ class LauncherKBlock {
                        int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpBlk, AccType* tmpC,
                        void* tmpcache) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
-    assert(_param.K % _param.KBlock == 0);
-    for (int iterk = 0; iterk < _param.K; iterk += _param.KBlock) {
+    auto& K = _param.problem.dims[3];
+    auto KBlock = _param.problem.dims[4];
+    assert(K % KBlock == 0);
+    for (int iterk = 0; iterk < K; iterk += KBlock) {
       memset(tmpBlk, 0, sizeof(CType) * blk_msize * _config.block[1]);
-      for (int iblkk = 0; iblkk < _param.KBlock; iblkk += _config.block[2]) {
-        int k_remain = utils::remainsize(iterk + iblkk, iterk + _param.KBlock, _config.block[2]);
+      for (int iblkk = 0; iblkk < KBlock; iblkk += _config.block[2]) {
+        int k_remain = utils::remainsize(iterk + iblkk, iterk + KBlock, _config.block[2]);
         int k_padded = utils::padto(k_remain, GemmCore::KTILE);
         int k_paddedle = utils::padto_le(k_remain, GemmCore::KTILE);
         auto bptr_cache = tmpB;
@@ -270,7 +273,7 @@ class LauncherKBlock {
         }
       }
       mBlockEpi.forward(tmpBlk, tmpC, _config.block[1], (_config.loc[0] + blk_m), _config.loc[1] + blk_n,
-                        iterk / _param.KBlock, blk_msize, blk_nsize, _param.paramBlk, tmpcache, _config.tmpcachesize);
+                        iterk / KBlock, blk_msize, blk_nsize, _param.paramBlk, tmpcache, _config.tmpcachesize);
     }
     auto cachewithblk = _config.tmpcachesize + static_cast<size_t>(_config.block[0]) * _config.block[1] * sizeof(CType);
     mEpilogue.forward(tmpC, _config.block[1], (_config.loc[0] + blk_m), _config.loc[1] + blk_n, blk_msize, blk_nsize,
@@ -296,7 +299,7 @@ class LauncherIntKBlock {
   using AccType = float;
   static_assert(GemmCore::ISA <= _RT_ISA_T, "RunTime ISA should cover GEMM's ISA");
   struct Param {
-    const int M, N, K, KBlock;
+    const utils::GemmProblem problem;
     const AParam paramA;
     const BParam paramB;
     const EpiParam paramC;
@@ -321,7 +324,8 @@ class LauncherIntKBlock {
       int n_remain = utils::remainsize(itern, _config.size[1], _config.block[1]);
       for (int iterm = 0; iterm < _config.size[0]; iterm += _config.block[0]) {
         int m_remain = utils::remainsize(iterm, _config.size[0], _config.block[0]);
-        if (_config.block[2] >= _param.KBlock) {
+        auto& KBlock = _param.problem.dims[4];
+        if (_config.block[2] >= KBlock) {
           run_block(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC, tmpCache);
         } else {
           run_largekblock(_param, _config, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC, tmpCache);
@@ -336,14 +340,16 @@ class LauncherIntKBlock {
   void run_block(const Param& _param, const parallel::gemm::ThreadProblemBase& _config, int blk_m, int blk_n,
                  int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, AccType* tmpC, int8_t* tmpcache) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
-    assert(_config.block[2] % _param.KBlock == 0);
+    auto& K = _param.problem.dims[3];
+    auto& KBlock = _param.problem.dims[4];
+    assert(_config.block[2] % KBlock == 0);
     assert(_config.block[2] % GemmCore::KTILE == 0);
     // GemmCore: int8+int8=int32=>dequant to fp32
     // accumulate to tmpC
     // extra parameters: zpA, scaleA, scaleB, reduceB
     // zpA scaleA: [MTILE,kblk_perstep]
     // scaleB reduceB: [kblk_perstep, NStep]
-    int kblk_perstep = utils::updiv(_config.block[2], _param.KBlock);
+    int kblk_perstep = utils::updiv(_config.block[2], KBlock);
     int tmp_ldsb = _config.block[1];
     int tmp_ldsa = kblk_perstep;
     auto zpA = reinterpret_cast<AType*>(tmpcache);
@@ -357,8 +363,8 @@ class LauncherIntKBlock {
     auto tmp_ = reinterpret_cast<int8_t*>(reduceB + _config.block[1] * tmp_ldsa);
     tmp_ = utils::cpu_pointer_align(tmp_);
 
-    for (int iterk = 0; iterk < _param.K; iterk += _config.block[2]) {
-      int k_remain = utils::remainsize(iterk, _param.K, _config.block[2]);
+    for (int iterk = 0; iterk < K; iterk += _config.block[2]) {
+      int k_remain = utils::remainsize(iterk, K, _config.block[2]);
       int k_padded = utils::padto(k_remain, GemmCore::KTILE);
       auto bptr_cache = tmpB;
       int bcache_step = 0;
@@ -388,7 +394,7 @@ class LauncherIntKBlock {
         mProA.getScale(&scaleA_cache, &ldsa_cache, _param.paramA, m_remain, k_padded, (blk_m + i + _config.loc[0]),
                        iterk, tmp_, _config.tmpcachesize);
         mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, zpA_cache, scaleA_cache, ldsa_cache, scaleB_cache,
-                          reduceB_cache, ldsb_cache, m_remain, n_padded, k_padded, _param.KBlock,
+                          reduceB_cache, ldsb_cache, m_remain, n_padded, k_padded, KBlock,
                           acache_step * sizeof(AType), bcache_stride, ccache_stride, iterk, 1.f, tmp_,
                           _config.tmpcachesize);
       }
@@ -401,6 +407,8 @@ class LauncherIntKBlock {
   void run_largekblock(const Param& _param, const parallel::gemm::ThreadProblemBase& _config, int blk_m, int blk_n,
                        int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, AccType* tmpC, int8_t* tmpcache) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
+    auto& K = _param.problem.dims[3];
+    auto& KBlock = _param.problem.dims[4];
     // GemmCore: int8+int8=int32=>dequant to fp32
     // accumulate to tmpC
     // extra parameters: zpA, scaleA, scaleB, reduceB
@@ -420,10 +428,10 @@ class LauncherIntKBlock {
     auto tmp_ = reinterpret_cast<int8_t*>(reduceB + _config.block[1] * tmp_ldsa);
     tmp_ = utils::cpu_pointer_align(tmp_);
 
-    for (int iterk = 0; iterk < _param.K; iterk += _param.KBlock) {
-      for (int iterkk = iterk; iterkk < iterk + _param.KBlock; iterkk += _config.block[2]) {
-        int k_remain = utils::remainsize(iterkk, _param.K, _config.block[2]);
-        k_remain = utils::remainsize(iterkk, iterk + _param.KBlock, _config.block[2]);
+    for (int iterk = 0; iterk < K; iterk += KBlock) {
+      for (int iterkk = iterk; iterkk < iterk + KBlock; iterkk += _config.block[2]) {
+        int k_remain = utils::remainsize(iterkk, K, _config.block[2]);
+        k_remain = utils::remainsize(iterkk, iterk + KBlock, _config.block[2]);
         int k_padded = utils::padto(k_remain, GemmCore::KTILE);
         auto bptr_cache = tmpB;
         int bcache_step = 0;
@@ -453,7 +461,7 @@ class LauncherIntKBlock {
                       tmp_, _config.tmpcachesize);
           mProA.getScale(&scaleA_cache, &ldsa_cache, _param.paramA, m_remain, k_padded, (blk_m + i + _config.loc[0]),
                          iterkk, tmp_, _config.tmpcachesize);
-          auto kscale = k_remain / float(_param.KBlock);
+          auto kscale = k_remain / float(KBlock);
           mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, zpA_cache, scaleA_cache, ldsa_cache, scaleB_cache,
                             reduceB_cache, ldsb_cache, m_remain, n_padded, k_padded, k_padded,
                             acache_step * sizeof(AType), bcache_stride, ccache_stride, iterkk, kscale, tmp_,
