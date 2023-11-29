@@ -121,6 +121,32 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
 
   model.layers.resize(n_layer);
   size_t vram_total = 0;
+  // for (uint32_t i = 0; i < n_layer; ++i) {
+  //   const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+  //   auto& layer = model.layers[i];
+  //   std::string layers_i = "model.layers." + std::to_string(i);
+  //   layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
+
+  //   // qkv GEMM
+  //   layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.W_pack.weight", {n_embd, 3 * n_embd}, backend);
+  //   layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.o_proj.weight", {n_embd, n_embd}, backend);
+
+  //   layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
+
+  //   // ffn GEMM
+  //   layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight",
+  //                                 {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+
+  //   layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
+  //                                 {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
+  //   layer.ffn[2] =
+  //       ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+
+  //   layer.v_cache == nullptr;
+  //   layer.k_cache == nullptr;
+  // }
+
+  // 7B
   for (uint32_t i = 0; i < n_layer; ++i) {
     const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
@@ -130,6 +156,7 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.W_pack.weight", {n_embd, 3 * n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.o_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.rotary_emb.inv_freq", {64}, backend);
 
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
 

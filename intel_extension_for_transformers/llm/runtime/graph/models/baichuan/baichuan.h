@@ -20,11 +20,14 @@
 
 enum baichuan_model {
   BAICHUAN_UNKNOWN,
+  BAICHUAN_7B,
   BAICHUAN_13B,
 };
 
 static const model_scratch baichuan_mem_req(int n_layers) {
   switch (n_layers) {
+    case 32:
+      return {4096ull * MB, 4096ull * MB, 4096ull * MB};
     case 40:
       return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     default:
