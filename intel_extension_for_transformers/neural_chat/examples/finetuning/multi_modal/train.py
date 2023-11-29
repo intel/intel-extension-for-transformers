@@ -26,6 +26,7 @@ import torch
 import transformers
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig
+from transformers.integrations.deepspeed import is_deepspeed_available
 from intel_extension_for_transformers.transformers.modeling import LlavaMistralForCausalLM
 from llava_utils import *
 
@@ -124,12 +125,22 @@ def train():
             bnb_4bit_quant_type=training_args.quant_type # {'fp4', 'nf4'}
             )
 
+    low_cpu_mem_usage = True
+    device_map = {"": training_args.device}
+    if is_deepspeed_available():
+        from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+        if is_deepspeed_zero3_enabled():
+            low_cpu_mem_usage = False
+            device_map = None
+
+
     model = LlavaMistralForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         load_in_4bit=training_args.bits == 4,
         load_in_8bit=training_args.bits == 8,
-        device_map={"": training_args.device},
+        low_cpu_mem_usage=low_cpu_mem_usage,
+        device_map=device_map,
         quantization_config=quantization_config,
         torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
         trust_remote_code=model_args.trust_remote_code,
