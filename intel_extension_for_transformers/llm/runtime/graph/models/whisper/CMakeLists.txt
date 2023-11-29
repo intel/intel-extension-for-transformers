@@ -12,16 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
-add_subdirectory(llama)
-add_subdirectory(gptj)
-add_subdirectory(mpt)
-add_subdirectory(gptneox)
-add_subdirectory(starcoder)
-add_subdirectory(falcon)
-add_subdirectory(opt)
-add_subdirectory(bloom)
-add_subdirectory(chatglm)
-add_subdirectory(baichuan)
-add_subdirectory(qwen)
-add_subdirectory(whisper)
+set(TARGET whisper)
+add_library_w_warning(${TARGET} whisper.cpp whisper_utils.cpp)  # no (gpt) model utils needed
+target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)

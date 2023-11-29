@@ -67,13 +67,6 @@
   const type prefix##3 = (pointer)->array[3];          \
   NE_UNUSED(prefix##3);
 
-#define NE_ASSERT(x)                                                     \
-  do {                                                                   \
-    if (!(x)) {                                                          \
-      fprintf(stderr, "NE_ASSERT: %s:%d: %s\n", __FILE__, __LINE__, #x); \
-      abort();                                                           \
-    }                                                                    \
-  } while (0)
 
 #ifdef __cplusplus
 extern "C" {
@@ -434,6 +427,10 @@ struct ne_tensor* ne_clamp(struct ne_context* ctx, struct ne_tensor* a, float mi
 NE_API struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
 NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
+
+// conv_1d with padding = half
+// alias for ne_conv_1d(a, b, s, a->ne[0]/2, d)
+NE_API struct ne_tensor* ne_conv_1d_ph(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, int s, int d);
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
                                        struct ne_tensor* v, float scale, ne_attn_flags_t flags);
