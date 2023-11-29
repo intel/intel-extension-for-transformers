@@ -81,7 +81,7 @@ async def retrieval_upload(file: UploadFile = File(...)):
                     user_id='default')
     except Exception as e:
         logger.error(f"[askdoc - upload] Fail to record request into db. {e}")
-    path_prefix = "./enterprise_docs/"
+    path_prefix = "/home/sdp/askdoc_upload/enterprise_docs/"
     print(f"[askdoc - upload] filename: {filename}")
     if '/' in filename:
         filename = filename.split('/')[-1]
@@ -112,16 +112,18 @@ async def retrieval_chat(request: AskDocRequest):
         logger.error(f"[askdoc - chat] Fail to record request into db. {e}")
 
     chatbot = router.get_chatbot()
-    
     logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
     logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
+    logger.info(f"[askdoc - chat] translated query '{request.translated_query}'")
     config = GenerationConfig()
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
-        if attr == "stream":
+        if attr == "stream" or attr == "translated_query":
             continue
         setattr(config, attr, value)
-    generator, link = chatbot.predict_stream(query=request.query, config=config)
+    generator, link = chatbot.predict_stream(query=request.translated_query,
+                                             origin_query=request.query,
+                                             config=config)
     logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
@@ -134,6 +136,7 @@ async def retrieval_chat(request: AskDocRequest):
                     "text": output,
                     "error_code": 0,
                 }
+                flag = False
                 if '<' in output and '>' in output:
                     output = output.replace('<', '').replace('>', '').replace(' ', '')
                     if output.endswith('\n'):
@@ -159,10 +162,7 @@ async def retrieval_chat(request: AskDocRequest):
                     yield f"data: {formatted_link}\n\n"
                 else:
                     formatted_str = ret['text'].replace('\n', '<br/><br/>')
-                    if '**:' in formatted_str:
-                        formatted_str = formatted_str.replace('**:', '</b>:')
-                    if '**' in formatted_str:
-                        formatted_str = formatted_str.replace('**', '<b>')
+                    formatted_str = formatted_str.replace('**:', '</b>:').replace('**', '<b>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
             if link != []:
@@ -176,7 +176,7 @@ async def retrieval_chat(request: AskDocRequest):
                     if not raw_link.startswith("http"):
                         continue
                     formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
-                        margin: 8px 0; font-size: 0.55rem;">  <a style="color: blue; \
+                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
                             border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
                             background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
                             href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
