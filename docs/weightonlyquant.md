@@ -17,7 +17,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 |       RTN      |  &#10004;  |  &#10004;  |
 |       AWQ      |  &#10004;  | stay tuned |
 |      TEQ      | &#10004; | stay tuned |
-|      GPTQ      | stay tuned | stay tuned |
+|      GPTQ      | stay tuned | &#10004; |
 > **RTN:** A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.
 
 > **GPTQ:** A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.

@@ -21,8 +21,9 @@ import os, re
 from typing import List
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
-    HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
+from langchain.embeddings import GooglePalmEmbeddings
+from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 from .html_parser import load_html_data
 import logging

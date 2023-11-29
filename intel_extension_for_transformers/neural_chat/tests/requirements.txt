@@ -16,6 +16,7 @@ pydub
 python-multipart
 PyPDF2
 langchain
+langchain_core
 python-docx
 scikit-learn
 librosa
