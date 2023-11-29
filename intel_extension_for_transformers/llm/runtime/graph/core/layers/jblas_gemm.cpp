@@ -43,14 +43,14 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
       reduceA.assign(WorkSpace);
     }
     typename Launcher::BEpiParam blkargs{
-        B->template SPtr<int8_t>(),    B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
+        B->template SPtr<int8_t>(),     B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
         reduceA.template RPtr<float>(), reduceA.lda};
-
-    typename Launcher::Param args{M, N, K, B->mBlockSize, {A, K, &reduceA}, {B}, blkargs, {C, N}};
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    typename Launcher::Param args{gp, {A, K, &reduceA}, {B}, blkargs, {C, N}};
     if (B->IsAsym()) {
-      jblas::parallel::GemmKBlockRunWithA<Parallel>(kernel, args, th);
+      jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
     } else {
-      jblas::parallel::GemmKBlockRun<Parallel>(kernel, args, th);
+      jblas::parallel::GemmRun<Parallel>(kernel, args, th);
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
@@ -59,9 +59,10 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                                                         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
+    utils::GemmProblem gp(1, M, N, K);
 
-    typename Launcher::Param args{M, N, K, {A, K}, {B}, {C, N}};
-    jblas::parallel::GemmBaseRun<Parallel>(kernel, args, th);
+    typename Launcher::Param args{gp, {A, K}, {B}, {C, N}};
+    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
   }
 }
 
@@ -72,20 +73,18 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
+  utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
   auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
-  typename Launcher::Param args{M,
-                                N,
-                                K,
-                                B->mBlockSize,
+  typename Launcher::Param args{gp,
                                 {A, K, &quanA},
                                 {B},
                                 {B->template SPtr<int8_t>(), B->SDtype(), B->CStep(), quanA.template SPtr<float>(),
                                  quanA.CStep(), quanA.template ZPtr<uint8_t>(), B->template RPtr<float>(), B->RDtype(),
                                  B->template ZPtr<int8_t>(), quanA.template RPtr<float>(), B->mBlockSize},
                                 {C, N}};
-  jblas::parallel::GemmKBlockRunWithA<Parallel>(kernel, args, th);
+  jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
 }
 
 bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const size_t BatchN,

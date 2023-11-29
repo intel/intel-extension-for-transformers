@@ -201,6 +201,32 @@ struct f4x2 : bit4x2 {
   f4x2() : bit4x2() {}
 };
 
+struct GemmProblem {
+  int n;
+  int dims[8];  // batch, m, n, k, kblock, ... reserved
+  GemmProblem(int _n, int* _dims) {
+    n = _n;
+    for (size_t i = 0; i < n; i++) {
+      dims[i] = _dims[i];
+    }
+  }
+  GemmProblem(int batch, int _m, int _n, int _k) {
+    n = 4;
+    dims[0] = batch;
+    dims[1] = _m;
+    dims[2] = _n;
+    dims[3] = _k;
+  }
+  GemmProblem(int batch, int _m, int _n, int _k, int _kblock) {
+    n = 5;
+    dims[0] = batch;
+    dims[1] = _m;
+    dims[2] = _n;
+    dims[3] = _k;
+    dims[4] = _kblock;
+  }
+};
+
 template <typename T>
 inline constexpr JBLAS_DTYPE jblas_dtype = std::is_same_v<T, double>        ? JBLAS_DTYPE::F64
                                            : std::is_same_v<T, float>       ? JBLAS_DTYPE::F32

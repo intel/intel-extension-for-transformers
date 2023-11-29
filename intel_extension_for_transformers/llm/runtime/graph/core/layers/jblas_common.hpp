@@ -15,6 +15,7 @@
 #include "ne_jblas.h"
 #include "jblas/jit_blas_prologue_b.h"
 #include "jblas/jit_blas_device.h"
+#include "jblas/jit_blas_utils.h"
 #include "layers/ele_wise.h"
 #include "jblas_defs.h"
 #include "jblas/jit_blas_parallel.h"
