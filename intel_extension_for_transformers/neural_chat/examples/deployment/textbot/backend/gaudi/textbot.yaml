@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Modeling class."""
+# This is the parameter configuration file for NeuralChat Serving.
 
+#################################################################################
+#                             SERVER SETTING                                    #
+#################################################################################
+host: 0.0.0.0
+port: 8000
 
-from .model import OptimizedModel
-from .modeling_auto import (AutoModel, AutoModelForCausalLM,
-                            AutoModelForSeq2SeqLM, GPTBigCodeForCausalLM)
+model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
+device: "hpu"
+use_deepspeed: true
+world_size: 8
 
-from .llava_models.llava_mistral import LlavaMistralForCausalLM 
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat']
