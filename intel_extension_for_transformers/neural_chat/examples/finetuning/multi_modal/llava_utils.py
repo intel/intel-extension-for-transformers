@@ -320,9 +320,13 @@ def preprocess_v1(
     # Mask targets
     sep = conv.sep + conv.roles[1] + ": "
     for conversation, target in zip(conversations, targets):
-        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        # total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
+
+        total_len = int(target.ne(tokenizer.pad_token_id).sum()) + \
+                len([rou for rou in rounds if rou !=  ""])
+
         cur_len = 1
         target[:cur_len] = IGNORE_INDEX
         for i, rou in enumerate(rounds):
@@ -336,10 +340,10 @@ def preprocess_v1(
 
             if has_image:
                 round_len = len(tokenizer_image_token(rou, tokenizer))
-                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
+                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 1
             else:
                 round_len = len(tokenizer(rou).input_ids)
-                instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+                instruction_len = len(tokenizer(parts[0]).input_ids) - 1
 
             target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
 
