@@ -110,8 +110,8 @@ class WeightKBlockNInteger {
     StorageWeight* packedW;
   };
 
-  StorageWeight createStorage(int n, int k, int blocksize, JBLAS_DTYPE qtype, JBLAS_DTYPE scat, JBLAS_DTYPE redt,
-                              bool is_asym) {
+  static StorageWeight createStorage(int n, int k, int blocksize, JBLAS_DTYPE qtype, JBLAS_DTYPE scat, JBLAS_DTYPE redt,
+                                     bool is_asym) {
     int KPad = utils::padto(k, _GemmCore_T::KTILE);
     int NPad = utils::padto(n, _GemmCore_T::NTILE);
     StorageWeight tmp(_GemmCore_T::ID);
@@ -119,8 +119,10 @@ class WeightKBlockNInteger {
     return tmp;
   }
 
-  void packTransposeWeight(const int N, const int K, const float* B, const int ldb, StorageWeight* stor,
-                           parallel::IThreading* threading) {
+  static void enableShuffle(StorageWeight* stor) { stor->enable_shuffle(); }
+
+  static void packTransposeWeight(const int N, const int K, const float* B, const int ldb, StorageWeight* stor,
+                                  parallel::IThreading* threading) {
     auto B_NT = utils::amalloc<float>(static_cast<size_t>(N) * K);
     transposeWeight<float, ISA_T>(N, K, B, ldb, B_NT, N, threading);
     packWeight(N, K, B_NT, N, stor, threading);
@@ -128,8 +130,8 @@ class WeightKBlockNInteger {
   }
 
   // from packed N//NtilexKPadxNTile int8 weight to KxN f32 weight
-  void unpackTransposeWeight(const int N, const int K, StorageWeight* stor, float* B, const int ldb,
-                             parallel::IThreading* threading) {
+  static void unpackTransposeWeight(const int N, const int K, StorageWeight* stor, float* B, const int ldb,
+                                    parallel::IThreading* threading) {
     auto B_NT = utils::amalloc<float>(static_cast<size_t>(N) * K);
     unpackWeight(N, K, stor, B_NT, N, threading);
     transposeWeight<float, ISA_T>(K, N, B_NT, N, B, ldb, threading);
@@ -137,8 +139,8 @@ class WeightKBlockNInteger {
   }
 
   // from KxN f32 weight to packed N//NtilexKPadxNTile int8 weight
-  void packWeight(const int N, const int K, const float* B, const int ldb, StorageWeight* ptr,
-                  parallel::IThreading* threading) {
+  static void packWeight(const int N, const int K, const float* B, const int ldb, StorageWeight* ptr,
+                         parallel::IThreading* threading) {
     auto tmpq = utils::amalloc<int8_t>(static_cast<size_t>(N) * K);
     int nk_scale = utils::updiv(K, ptr->mBlockSize);
     auto ssize = static_cast<size_t>(N) * nk_scale;
@@ -151,8 +153,8 @@ class WeightKBlockNInteger {
     utils::afree(Tzps);
   }
 
-  void unpackWeight(const int N, const int K, StorageWeight* stor, float* B, const int ldb,
-                    parallel::IThreading* threading) {
+  static void unpackWeight(const int N, const int K, StorageWeight* stor, float* B, const int ldb,
+                           parallel::IThreading* threading) {
     parallel::Scheduler2D _para({threading->num_threads(), K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp{tidx};
@@ -173,8 +175,8 @@ class WeightKBlockNInteger {
     });
   }
 
-  void unpackWeight(const int N, const int K, StorageWeight* stor, int8_t* B, const int ldb,
-                    parallel::IThreading* threading) {
+  static void unpackWeight(const int N, const int K, StorageWeight* stor, int8_t* B, const int ldb,
+                           parallel::IThreading* threading) {
     parallel::Scheduler2D _para({threading->num_threads(), K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp{tidx};
@@ -195,8 +197,8 @@ class WeightKBlockNInteger {
     });
   }
 
-  void setQuantCorrection(const int N, const int K, const int8_t* zero_points, const float* scales, StorageWeight* stor,
-                          parallel::IThreading* threading) {
+  static void setQuantCorrection(const int N, const int K, const int8_t* zero_points, const float* scales,
+                                 StorageWeight* stor, parallel::IThreading* threading) {
     int rawnk_scale = utils::updiv(K, stor->mBlockSize);
     int nk_scale = utils::updiv(stor->mKPad, stor->mBlockSize);
     parallel::Scheduler2D _para({threading->num_threads(), 1, nk_scale, 1, 1});
@@ -249,8 +251,29 @@ class WeightKBlockNInteger {
     }
   }
 
-  void setTransposeQuantCorrection(const int N, const int K, const int8_t* zero_points, const float* scales,
-                                   StorageWeight* stor, parallel::IThreading* threading) {
+  static void setShuffleIndices(const int* groupindices, StorageWeight* stor, parallel::IThreading* threading) {
+    auto groupsize = utils::updiv(stor->mK, stor->mBlockSize);
+    parallel::Scheduler2D _para({threading->num_threads(), 1, groupsize, 1, 1});
+    auto countptr = utils::amalloc<int>(groupsize);
+    std::memset(countptr, 0, groupsize * sizeof(int));
+    threading->parallel_for([&](int tidx) {
+      parallel::ThreadProblem2D thdp{tidx};
+      _para.getIndex(thdp);
+      if (thdp.valid) {
+        auto siptr = stor->ShfIndice();
+        for (size_t i = 0; i < stor->mK; i++) {
+          if (groupindices[i] >= thdp.loc[1] && groupindices[i] < thdp.loc[1] + thdp.size[1]) {
+            siptr[i] = groupindices[i] * stor->mBlockSize + countptr[groupindices[i]];
+            countptr[groupindices[i]]++;
+          }
+        }
+      }
+    });
+    utils::afree(countptr);
+  }
+
+  static void setTransposeQuantCorrection(const int N, const int K, const int8_t* zero_points, const float* scales,
+                                          StorageWeight* stor, parallel::IThreading* threading) {
     int rawnk_scale = utils::updiv(K, stor->mBlockSize);
     int nk_scale = utils::updiv(stor->mKPad, stor->mBlockSize);
     parallel::Scheduler2D _para({threading->num_threads(), 1, nk_scale, 1, 1});
@@ -309,8 +332,8 @@ class WeightKBlockNInteger {
       });
   }
 
-  void packQWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
-                   const int8_t* zero_points, StorageWeight* stor, parallel::IThreading* threading) {
+  static void packQWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
+                          const int8_t* zero_points, StorageWeight* stor, parallel::IThreading* threading) {
     setQuantCorrection(N, K, zero_points, scales, stor, threading);
     if (stor->mDType == JBLAS_DTYPE::S8) {
       reorderWeight(N, K, B, ldb, stor->WPtr<int8_t>(), threading);
@@ -323,7 +346,7 @@ class WeightKBlockNInteger {
     reduceWeight(stor, threading);
   }
 
-  void reduceWeight(StorageWeight* stor, parallel::IThreading* threading) {
+  static void reduceWeight(StorageWeight* stor, parallel::IThreading* threading) {
     if (stor->HasReduce()) {
       auto deq = utils::amalloc<float>((size_t)stor->mK * stor->mN);
       unpackWeight(stor->mN, stor->mK, stor, deq, stor->mN, threading);
@@ -340,8 +363,9 @@ class WeightKBlockNInteger {
     }
   }
 
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB, float* scales,
-                      int8_t* zero_points, JBLAS_DTYPE quant_dtype, parallel::IThreading* threading) {
+  static void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB,
+                             float* scales, int8_t* zero_points, JBLAS_DTYPE quant_dtype,
+                             parallel::IThreading* threading) {
     int bsize = blocksize == -1 ? K : blocksize;
     parallel::Scheduler2D _para({threading->num_threads(), K, N, bsize, 16});
     threading->parallel_for([&](int tidx) {
@@ -356,8 +380,8 @@ class WeightKBlockNInteger {
     });
   }
 
-  void reorderWeight(const int N, const int K, const int8_t* B, const int ldb, int8_t* dstptr,
-                     parallel::IThreading* threading) {
+  static void reorderWeight(const int N, const int K, const int8_t* B, const int ldb, int8_t* dstptr,
+                            parallel::IThreading* threading) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     parallel::Scheduler2D _para({threading->num_threads(), K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE});
     threading->parallel_for([&](int tidx) {
@@ -378,8 +402,8 @@ class WeightKBlockNInteger {
     });
   }
 
-  void compressWeight(const int N, const int K, const int8_t* B, const int ldb, int8_t* dstptr, JBLAS_DTYPE qtype,
-                      parallel::IThreading* threading) {
+  static void compressWeight(const int N, const int K, const int8_t* B, const int ldb, int8_t* dstptr,
+                             JBLAS_DTYPE qtype, parallel::IThreading* threading) {
     parallel::Scheduler2D _para({threading->num_threads(), K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp({tidx});
@@ -394,8 +418,8 @@ class WeightKBlockNInteger {
   }
 
   template <typename RED_T>
-  void reduce(const int N, const int K, const int KBlock, const float* B, const int ldb, RED_T* rptr, const int ldr,
-              parallel::IThreading* threading) {
+  static void reduce(const int N, const int K, const int KBlock, const float* B, const int ldb, RED_T* rptr,
+                     const int ldr, parallel::IThreading* threading) {
     parallel::Scheduler2D _para({threading->num_threads(), K, N, KBlock, 16});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp({tidx});
@@ -416,18 +440,18 @@ class WeightKBlockNInteger {
   }
 
  public:
-  inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                              const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                                     const Param& _param, void* tmpcache, size_t cachesize) {
     return getFpWeight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
   }
 
-  inline JBLAS_CODE getWeight(utils::bf16** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                              const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getWeight(utils::bf16** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                     int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     return getFpWeight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
   }
 
-  inline JBLAS_CODE getWeight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                              const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getWeight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                                     const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     if (wptr->mDType == JBLAS_DTYPE::S8) {
       return getQ8Weight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
@@ -439,23 +463,23 @@ class WeightKBlockNInteger {
     return JblasNotSupport;
   }
 
-  inline JBLAS_CODE getKBlockWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                    const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getKBlockWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                           int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     return getFpKBlockWeight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
   }
 
-  inline JBLAS_CODE getKBlockWeight(utils::bf16** dstptr, int* dststep, int k_size, int n_size, int k_offset,
-                                    int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getKBlockWeight(utils::bf16** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                           int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     return getFpKBlockWeight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
   }
 
-  inline JBLAS_CODE getKBlockWeight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                    const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getKBlockWeight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                           int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     return getWeight(dstptr, dststep, k_size, n_size, k_offset, n_offset, _param, tmpcache, cachesize);
   }
 
-  inline JBLAS_CODE getScale(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                             const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getScale(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                                    const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     if (wptr->SDtype() == JBLAS_DTYPE::F32) {
       auto aptr = wptr->template SPtr<float>();
@@ -474,8 +498,8 @@ class WeightKBlockNInteger {
     return JblasSuccess;
   }
 
-  inline JBLAS_CODE getReduce(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                              const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getReduce(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                                     const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     if (wptr->RDtype() == JBLAS_DTYPE::F32) {
       auto aptr = wptr->template RPtr<float>();
@@ -496,8 +520,8 @@ class WeightKBlockNInteger {
 
  protected:
   template <typename T>
-  inline JBLAS_CODE getFpKBlockWeight(T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                      const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getFpKBlockWeight(T** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                             int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     auto NPad = wptr->mNPad;
     auto KPad = wptr->mKPad;
@@ -544,8 +568,8 @@ class WeightKBlockNInteger {
   }
 
   template <typename _T>
-  inline JBLAS_CODE getFpWeight(_T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getFpWeight(_T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                                       const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     auto NPad = wptr->mNPad;
     auto KPad = wptr->mKPad;
@@ -612,8 +636,8 @@ class WeightKBlockNInteger {
     return JblasSuccess;
   }
 
-  inline JBLAS_CODE getQ8Weight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getQ8Weight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                       int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     auto KPad = wptr->mKPad;
     auto bptr = wptr->template WPtr<int8_t>() + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
@@ -624,8 +648,8 @@ class WeightKBlockNInteger {
     return JblasSuccess;
   }
 
-  inline JBLAS_CODE getQ4Weight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                                const Param& _param, void* tmpcache, size_t cachesize) {
+  static inline JBLAS_CODE getQ4Weight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset,
+                                       int n_offset, const Param& _param, void* tmpcache, size_t cachesize) {
     auto wptr = _param.packedW;
     auto KPad = wptr->mKPad;
     auto bptr = wptr->template WPtr<utils::int4x2>() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
@@ -643,8 +667,8 @@ class WeightKBlockNInteger {
     return JblasSuccess;
   }
 
-  inline void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                            float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) {
+  static inline void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) {
     if (quant_dtype == JBLAS_DTYPE::S8) {
       kernel::wrapper::QuantizeSignIntRowBlock::forward<ISA_T, JBLAS_DTYPE::S8>(srcptr, dstptr, row, col, ld_src,
                                                                                 ld_dst, scales, zero_points, blocksize);
@@ -657,8 +681,8 @@ class WeightKBlockNInteger {
     }
   }
 
-  inline JBLAS_CODE doCompress(const int8_t* srcptr, void* dstptr, int row, int col, int ld_src, int ld_dst,
-                               JBLAS_DTYPE quant_dtype) {
+  static inline JBLAS_CODE doCompress(const int8_t* srcptr, void* dstptr, int row, int col, int ld_src, int ld_dst,
+                                      JBLAS_DTYPE quant_dtype) {
     if (quant_dtype == JBLAS_DTYPE::S4_CLIP || quant_dtype == JBLAS_DTYPE::S4_FULLRANGE) {
       return kernel::wrapper::CompressS8S4<_GemmCore_T::NTILE>::template forward<ISA_T>(
           srcptr, reinterpret_cast<utils::int4x2*>(dstptr), row, col, ld_src, ld_dst);

@@ -76,6 +76,8 @@ class Scheduler2D {
     printf("Thread in use:%d of %d, Nx%d\n", mThdValid, mThdCount, mThdPerRow);
   }
 
+  constexpr int* thread_size() { return mThdSize; }
+
  protected:
   void set(const int* thdsize, const int* size, const int* step) {
     for (size_t i = 0; i < 2; i++) {
