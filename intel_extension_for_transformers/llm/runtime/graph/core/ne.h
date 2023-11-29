@@ -45,6 +45,7 @@
 #define NE_MAX_CONTEXTS 64
 #define NE_MAX_OPT 4
 #define NE_DEFAULT_N_THREADS 4
+#define NE_MAX_OP_PARAMS 32
 
 #define NE_SIZE_CALC -1
 
@@ -53,6 +54,40 @@
 #else
 #define NE_ALIGNMENT 32
 #endif
+
+#define NE_ASSERT(x)                                                     \
+  do {                                                                   \
+    if (!(x)) {                                                          \
+      fprintf(stderr, "NE_ASSERT: %s:%d: %s\n", __FILE__, __LINE__, #x); \
+      abort();                                                           \
+    }                                                                    \
+  } while (0)
+
+//
+// logging
+//
+
+#define NE_DEBUG 0
+
+#if (NE_DEBUG >= 1)
+#define NE_PRINT_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define NE_PRINT_DEBUG(...)
+#endif
+
+#if (NE_DEBUG >= 5)
+#define NE_PRINT_DEBUG_5(...) printf(__VA_ARGS__)
+#else
+#define NE_PRINT_DEBUG_5(...)
+#endif
+
+#if (NE_DEBUG >= 10)
+#define NE_PRINT_DEBUG_10(...) printf(__VA_ARGS__)
+#else
+#define NE_PRINT_DEBUG_10(...)
+#endif
+
+#define NE_PRINT(...) printf(__VA_ARGS__)
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,6 +162,9 @@ struct ne_tensor {
 
   bool is_param;
 
+  // op params - allocated as int32_t for alignment
+  int32_t op_params[NE_MAX_OP_PARAMS / sizeof(int32_t)];
+
   struct ne_tensor* grad;
   struct ne_tensor* src0;
   struct ne_tensor* src1;
@@ -174,6 +212,26 @@ struct ne_init_params {
   size_t mem_size;   // bytes
   void* mem_buffer;  // if NULL, memory will be allocated internally
   bool no_alloc;     // don't allocate memory for the tensor data
+};
+
+//
+// compute types
+//
+
+enum ne_task_type {
+  NE_TASK_INIT = 0,
+  NE_TASK_COMPUTE,
+  NE_TASK_FINALIZE,
+};
+
+struct ne_compute_params {
+  enum ne_task_type type;
+
+  int ith, nth;
+
+  // work buffer for all threads
+  size_t wsize;
+  void* wdata;
 };
 
 #ifdef __cplusplus

@@ -58,9 +58,10 @@ class Agent_QA():
                                 + '/assets/docs/'
             elif os.path.exists(os.path.join(asset_path, 'docs/')):
                 self.input_path = os.path.join(asset_path, 'docs/')
-            print("The given file path is unavailable, please check and try again!")
         elif isinstance(input_path, List):
             self.input_path = input_path
+        else:
+            print("The given file path is unavailable, please check and try again!")
 
         assert self.input_path != None, "Should gave an input path!"
         
