@@ -119,7 +119,7 @@ def load_vocab_for_baichuan(path: Path) -> SentencePieceVocab:
     return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
 
 def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
-    print("ChatGLM-1 converting: ")
+    print("Baichuan13B converting: ")
     list_vars = model.state_dict()
     for name in list_vars.keys():
         print(name, list_vars[name].shape, list_vars[name].dtype)
@@ -140,6 +140,98 @@ def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
     fout.write(struct.pack("i", hparams["model_max_length"]))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
+    fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["intermediate_size"]))
+
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
+
+    vocab = load_vocab_for_baichuan(Path(dir_model))
+    counter = 0
+    for text, score in vocab.all_tokens():
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", score))
+        counter += 1
+
+    while counter < hparams["vocab_size"]:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", 0))
+        counter += 1
+
+    for name in list_vars.keys():
+        data = list_vars[name].squeeze().numpy()
+        print("Processing variable: " + name + " with shape: ", data.shape)
+        if 'inv_freq' in name:
+            continue
+
+        n_dims = len(data.shape)
+
+        # ftype == 0 -> float32, ftype == 1 -> float16
+        ftype_cur = 0
+        if ftype != 0:
+            if name[-7:] == ".weight" and n_dims == 2:
+                print("  Converting to float16")
+                data = data.astype(np.float16)
+                ftype_cur = 14
+            else:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+        else:
+            if data.dtype != np.float32:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+
+        # header
+        str = name.encode("utf-8")
+        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(str)
+
+        # data
+        data.tofile(fout)
+
+    fout.close()
+
+    print("Done. Output file: " + fname_out)
+    print("")
+
+def baichuan7B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
+    print("Baichuan7B converting: ")
+    list_vars = model.state_dict()
+    for name in list_vars.keys():
+        print(name, list_vars[name].shape, list_vars[name].dtype)
+
+    fout = open(fname_out, "wb")
+
+    print(hparams)
+
+    fout.write(struct.pack("i", 0x67676d66))
+    fout.write(struct.pack("i", 1))
+
+    fout.write(struct.pack("i", hparams["vocab_size"]))
+    fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["num_attention_heads"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["num_hidden_layers"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", hparams["max_position_embeddings"]))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("i", 0))
@@ -231,11 +323,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype== "f16":
         ftype = 1
 
-    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(dir_model, trust_remote_code=True)
 
-    baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+    if model.config.max_position_embeddings == 4096:
+        baichuan7B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+    else:
+        baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
 
 if __name__ == '__main__':
     main()
