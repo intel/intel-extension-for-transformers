@@ -83,6 +83,7 @@ pattern_default_setting = {
     'InsertBF16Node': True,
     'OperatorAdaptor': True,
     'ConvReshape': True,
+    'MultiHeadAttention': True,
 
     'GroupNorm': True,
 
