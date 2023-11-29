@@ -61,19 +61,29 @@ class UnitTest(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
 
+    
+    def tearDown(self) -> None:
+        for filename in os.listdir("."):
+            if filename.endswith(".wav"):
+                os.remove(filename)
+
 
     def test_plugin_as_service(self):
         url = 'http://127.0.0.1:7777/plugin/audio/asr'
-        file_path = Path("../assets/audio/welcome.wav")
+        audio_path = \
+           "/intel-extension-for-transformers/intel_extension_for_transformers \
+            /neural_chat/assets/audio/sample.wav"
         
-        if file_path.is_file():
-            with file_path.open("rb") as file:
+        if os.path.exists(audio_path):
+            with open(audio_path, 'rb') as file:
                 response = requests.post(url, files={"file": file})
             print(response.text)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.text.lower(), "welcome to neuralchat")
         else:
-            print(f"No such file: {file_path}")
+            with open("../assets/audio/sample.wav", 'rb') as file:
+                response = requests.post(url, files={"file": file})
+            print(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text.lower(), "welcome to neuralchat")
 
         url = 'http://127.0.0.1:7777/plugin/audio/tts'
         request = {
