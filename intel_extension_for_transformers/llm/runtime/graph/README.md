@@ -39,7 +39,7 @@ LLM Runtime supports the following models:
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |  Latest |
 |[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | 4.34.0 or newer |
 |[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |  Latest |
-
+|[Whisper-Tiny](https://huggingface.co/openai/whisper-tiny), [Whisper-Base](https://huggingface.co/openai/whisper-base), [Whisper-Small](https://huggingface.co/openai/whisper-small), [Whisper-Medium](https://huggingface.co/openai/whisper-medium),[Whisper-Large](https://huggingface.co/openai/whisper-large)| ✅ | ✅ |  Latest |
 
 ### Code Generation
 | Model Name | INT8 | INT4 | Transformer Version |
