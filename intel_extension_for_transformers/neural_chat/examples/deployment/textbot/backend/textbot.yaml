@@ -35,6 +35,7 @@ optimization:
     optimization_type: "weight_only"
     compute_dtype: "int8"
     weight_dtype: "int4"
+    use_cached_bin: true
 
 # ipex int8 optimization
 # optimization:
