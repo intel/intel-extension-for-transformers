@@ -43,7 +43,6 @@ class WeightOnlyQuantConfig:
         algorithm="RTN",
         use_ggml=False,
         use_quant=True,
-        use_cache=False,
         use_gptq=False,
         **kwargs,
     ):
@@ -70,7 +69,6 @@ class WeightOnlyQuantConfig:
         self.calib_iters = kwargs.pop("calib_iters", 100)
         self.use_ggml = use_ggml
         self.use_quant = use_quant
-        self.use_cache = use_cache
         self.use_gptq = use_gptq
 
         if compute_dtype is None:

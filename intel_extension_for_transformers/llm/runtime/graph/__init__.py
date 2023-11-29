@@ -75,7 +75,7 @@ class Model:
             model_type = "chatglm2"
         return model_type
 
-    def init(self, model_name, use_quant=True, use_cache=False, use_gptq=False, **quant_kwargs):
+    def init(self, model_name, use_quant=True, use_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.model_type = Model.get_model_type(self.config)
@@ -106,6 +106,9 @@ class Model:
             self.bin_file = fp32_bin
         else:
             self.bin_file = quant_bin
+
+        use_cache = is_use_cache(model_name)
+
         if use_cache and os.path.exists(self.bin_file):
             return
 
@@ -215,3 +218,11 @@ class Model:
             self.model.reinit()
             self.generate_round = 0
         return self.model.evaluate(input_ids.tolist())
+
+    def is_use_cache(model):
+        """
+            Wether the model is a HF format or LLM Runtime format.
+
+        """
+
+        return False
