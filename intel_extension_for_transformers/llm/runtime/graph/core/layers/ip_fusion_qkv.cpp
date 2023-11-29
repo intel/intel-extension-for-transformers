@@ -20,9 +20,9 @@ using namespace ne_jblas;
 namespace ip_qkv {
 
 template <class Parallel_T, class Launch_T>
-void GemmBaseRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+void GemmRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache});
+  Parallel_T para({th->num_threads(), args[0].problem, cb.mL2Cache, cb.mL1Cache});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -41,32 +41,11 @@ void GemmBaseRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, p
 }
 
 template <class Parallel_T, class Launch_T>
-void GemmKBlockRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+void GemmRunWithA_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache, args[0].KBlock});
-  static bool flag = false;
-  if (flag) {
-    printf("%s\n", __FUNCTION__);
-    para.print();
-    flag = false;
-  }
-  th->parallel_for([&](int tidx) {
-    typename Parallel_T::ThreadProblem thdp{tidx};
-    para.getIndex(thdp);
-    if (thdp.valid) {
-      for (size_t i = 0; i < 3; i++) {
-        launcher.run(args[i], thdp);
-      }
-    }
-  });
-}
-
-template <class Parallel_T, class Launch_T>
-void GemmKBlockRunWithA_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args[0].M, args[0].N, args[0].K, cb.mL2Cache, cb.mL1Cache, args[0].KBlock});
+  Parallel_T para({th->num_threads(), args[0].problem, cb.mL2Cache, cb.mL1Cache});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  AParall apara({th->num_threads(), args[0].M, args[0].K, 1, args[0].KBlock});
+  auto apara = launcher.mProA.createParallel(th->num_threads(), args[0].problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -113,14 +92,14 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                                              BK->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda},
                                             {BV->template SPtr<int8_t>(), BV->SDtype(), cstep,
                                              BV->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda}};
-    typename Launcher::Param args[3]{
-        {M, N, K, BQ->mBlockSize, {A, lda, &reduceA}, {BQ}, blkargs[0], {C, ldc}},
-        {M, N, K, BK->mBlockSize, {A, lda, &reduceA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
-        {M, N, K, BV->mBlockSize, {A, lda, &reduceA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
+    utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
+    typename Launcher::Param args[3]{{gp, {A, lda, &reduceA}, {BQ}, blkargs[0], {C, ldc}},
+                                     {gp, {A, lda, &reduceA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
+                                     {gp, {A, lda, &reduceA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
     if (BQ->IsAsym()) {
-      GemmKBlockRunWithA_QKV<Parallel>(kernel, args, th);
+      GemmRunWithA_QKV<Parallel>(kernel, args, th);
     } else {
-      GemmKBlockRun_QKV<Parallel>(kernel, args, th);
+      GemmRun_QKV<Parallel>(kernel, args, th);
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
@@ -132,10 +111,11 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
     auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
 
-    typename Launcher::Param args[3]{{M, N, K, {A, K}, {BQ}, {C, ldc}},
-                                     {M, N, K, {A, K}, {BK}, {C + M * ldc, ldc}},
-                                     {M, N, K, {A, K}, {BV}, {C + M * ldc * 2, ldc}}};
-    GemmBaseRun_QKV<Parallel>(kernel, args, th);
+    utils::GemmProblem gp(1, M, N, K);
+    typename Launcher::Param args[3]{{gp, {A, K}, {BQ}, {C, ldc}},
+                                     {gp, {A, K}, {BK}, {C + M * ldc, ldc}},
+                                     {gp, {A, K}, {BV}, {C + M * ldc * 2, ldc}}};
+    GemmRun_QKV<Parallel>(kernel, args, th);
   }
 }
 
@@ -152,38 +132,30 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   static Launcher kernel;
   auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
   quanA.assign(WorkSpace);
+  utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
   typename Launcher::Param args[3]{
-      {M,
-       N,
-       K,
-       BQ->mBlockSize,
+      {gp,
        {A, K, &quanA},
        {BQ},
        {BQ->template SPtr<int8_t>(), BQ->SDtype(), BQ->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
         quanA.template ZPtr<uint8_t>(), BQ->template RPtr<float>(), BQ->RDtype(), BQ->template ZPtr<int8_t>(),
         quanA.template RPtr<float>(), BQ->mBlockSize},
        {C, N}},
-      {M,
-       N,
-       K,
-       BK->mBlockSize,
+      {gp,
        {A, K, &quanA},
        {BK},
        {BK->template SPtr<int8_t>(), BK->SDtype(), BK->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
         quanA.template ZPtr<uint8_t>(), BK->template RPtr<float>(), BK->RDtype(), BK->template ZPtr<int8_t>(),
         quanA.template RPtr<float>(), BK->mBlockSize},
        {C, N}},
-      {M,
-       N,
-       K,
-       BV->mBlockSize,
+      {gp,
        {A, K, &quanA},
        {BV},
        {BV->template SPtr<int8_t>(), BV->SDtype(), BV->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
         quanA.template ZPtr<uint8_t>(), BV->template RPtr<float>(), BV->RDtype(), BV->template ZPtr<int8_t>(),
         quanA.template RPtr<float>(), BV->mBlockSize},
        {C, N}}};
-  GemmKBlockRunWithA_QKV<Parallel>(kernel, args, th);
+  GemmRunWithA_QKV<Parallel>(kernel, args, th);
 }
 }  // namespace ip_qkv
 

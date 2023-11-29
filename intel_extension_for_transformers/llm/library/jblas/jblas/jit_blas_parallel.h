@@ -117,11 +117,11 @@ class Scheduler2D {
 
 namespace gemm {
 
-struct ConfigGemmBase {
-  int threads;
-  int size[3];
-  size_t l2cache = 1024ULL * 1024;
-  size_t l1cache = 32ULL * 1024;
+struct Config {
+  const int threads;
+  const utils::GemmProblem problem;
+  const size_t l2cache = 1024ULL * 1024;
+  const size_t l1cache = 32ULL * 1024;
 };
 
 struct ThreadProblemBase : ThreadProblem2D {
@@ -135,7 +135,7 @@ class SchedulerBase : public Scheduler2D {
  public:
   using ThreadProblem = ThreadProblemBase;
   SchedulerBase() = default;
-  SchedulerBase(const ConfigGemmBase& config) { update(config); }
+  SchedulerBase(const Config& config) { update(config); }
   virtual void getIndex(ThreadProblem& problem) {
     problem.tmpcachesize = mL2Size - mL2Use;
     problem.stacksize = mL2Size;
@@ -145,9 +145,9 @@ class SchedulerBase : public Scheduler2D {
     Scheduler2D::getIndex(problem);
   }
 
-  virtual void update(const ConfigGemmBase& config) {
+  virtual void update(const Config& config) {
     for (size_t i = 0; i < 3; i++) {
-      mSize[i] = config.size[i];
+      mSize[i] = config.problem.dims[i + 1];  // skip 0th batch
       mSizePadded[i] = utils::padto(mSize[i], mStep[i]);
     }
     mThdCount = config.threads;
@@ -282,10 +282,6 @@ class SchedulerBase : public Scheduler2D {
   int mBlock[3] = {0, 0, 0};
 };
 
-struct ConfigGemmKBlock : ConfigGemmBase {
-  int kblock;
-};
-
 template <class _GemmCore_T>
 class SchedulerKBlock : public Scheduler2D {
   // Block[2]: block size of K must be mutiplier of mKBlock
@@ -293,7 +289,7 @@ class SchedulerKBlock : public Scheduler2D {
  public:
   using ThreadProblem = ThreadProblemBase;
   SchedulerKBlock() = default;
-  SchedulerKBlock(const ConfigGemmKBlock& config) { update(config); }
+  SchedulerKBlock(const Config& config) { update(config); }
   virtual void getIndex(ThreadProblem& problem) {
     problem.stacksize = mL2Size;
     problem.tmpcachesize = mL2Size - mL2Use;
@@ -303,15 +299,15 @@ class SchedulerKBlock : public Scheduler2D {
     Scheduler2D::getIndex(problem);
   }
 
-  void update(const ConfigGemmKBlock& config) {
+  void update(const Config& config) {
     for (size_t i = 0; i < 3; i++) {
-      mSize[i] = config.size[i];
+      mSize[i] = config.problem.dims[i + 1];
       mSizePadded[i] = utils::padto(mSize[i], mStep[i]);
     }
     mThdCount = config.threads;
     mL2Size = config.l2cache;
     mL1Size = config.l1cache;
-    mKBlock = config.kblock;
+    mKBlock = config.problem.dims[4];
     if (mSize[0] <= 0 || mSize[1] <= 0 || mSize[2] <= 0) {
       return;
     }
@@ -470,10 +466,10 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
   using ThreadProblem = ThreadProblemBase;
   using BaseScheduler = SchedulerBase<_GemmCore_T>;
   SchedulerKBlockS() = default;
-  SchedulerKBlockS(const ConfigGemmKBlock& config) { update(config); }
+  SchedulerKBlockS(const Config& config) { update(config); }
 
-  void update(const ConfigGemmKBlock& config) {
-    mKBlock = config.kblock;
+  void update(const Config& config) {
+    mKBlock = config.problem.dims[4];
     BaseScheduler::update(config);
   }
 
@@ -595,9 +591,9 @@ class SingleThread : public IThreading {
 };
 
 template <class Parallel_T, class Launch_T>
-void GemmBaseRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
+void GemmRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache});
+  Parallel_T para({th->num_threads(), args.problem, cb.mL2Cache, cb.mL1Cache});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -614,30 +610,11 @@ void GemmBaseRun(Launch_T& launcher, const typename Launch_T::Param& args, paral
 }
 
 template <class Parallel_T, class Launch_T>
-void GemmKBlockRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
+void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
-  static bool flag = false;
-  if (flag) {
-    printf("%s\n", __FUNCTION__);
-    para.print();
-    flag = false;
-  }
-  th->parallel_for([&](int tidx) {
-    typename Parallel_T::ThreadProblem thdp{tidx};
-    para.getIndex(thdp);
-    if (thdp.valid) {
-      launcher.run(args, thdp);
-    }
-  });
-}
-
-template <class Parallel_T, class Launch_T>
-void GemmKBlockRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args.M, args.N, args.K, cb.mL2Cache, cb.mL1Cache, args.KBlock});
+  Parallel_T para({th->num_threads(), args.problem, cb.mL2Cache, cb.mL1Cache});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  AParall apara({th->num_threads(), args.M, args.K, 1, args.KBlock});
+  auto apara = launcher.mProA.createParallel(th->num_threads(), args.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
