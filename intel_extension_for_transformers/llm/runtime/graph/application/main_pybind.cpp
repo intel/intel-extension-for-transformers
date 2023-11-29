@@ -491,7 +491,8 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
   float top_p = params.top_p;
   float temp = params.temp;
   std::vector<model_token> ids(ctx->batch_size);
-#pragma omp parallel for
+  // #pragma omp parallel for  // omp will affect sampling positions in batch infer
+  // TODO (make sample functions support batch processing)
   for (int bs = 0; bs < ctx->batch_size; ++bs) {
     std::vector<model_token_data> candidates;
     candidates.reserve(n_vocab);
