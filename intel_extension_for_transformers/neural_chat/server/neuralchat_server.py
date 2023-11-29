@@ -104,8 +104,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         host = config.get("host", "0.0.0.0")
         port = config.get("port", "80")
         use_deepspeed = config.get("use_deepspeed", False)
-        if use_deepspeed:
-            world_size = config.get("world_size", 1)
+        world_size = config.get("world_size", 1)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
