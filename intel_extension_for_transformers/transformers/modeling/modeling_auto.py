@@ -235,7 +235,7 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying SmoothQuant.")
 
             # ipex.optimize_transformers
-            ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox"]
+            ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
             if quantization_config.ipex_opt_llm is None:
                 if model_type in ipex_opt_llm_supported:
                     quantization_config.ipex_opt_llm = True
@@ -440,7 +440,7 @@ class _BaseQBitsAutoModelClass:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                         example_inputs = inputs
-                        if model_type == "chatglm":
+                        if model_type == "chatglm" or model_type == "falcon":
                             if re.search(
                                 "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
                             ):

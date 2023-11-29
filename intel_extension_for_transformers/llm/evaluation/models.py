@@ -26,7 +26,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     MODEL_TYPES_REQUIRING_POSITION_IDS,
 )
 
-ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox"]
+ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
 
 
 class TSModelCausalLMForITREX(TSModelForCausalLM):

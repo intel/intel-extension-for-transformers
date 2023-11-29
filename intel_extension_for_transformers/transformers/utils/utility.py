@@ -182,7 +182,6 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
 
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
-    "falcon",
     "gpt2",
     "gpt-bigcode",
     "gpt-neo",
