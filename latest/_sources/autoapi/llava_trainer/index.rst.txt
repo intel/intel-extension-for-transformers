@@ -1,0 +1,43 @@
+:orphan:
+
+:py:mod:`llava_trainer`
+=======================
+
+.. py:module:: llava_trainer
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   llava_trainer.LengthGroupedSampler
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   llava_trainer.split_to_even_chunks
+
+
+
+.. py:function:: split_to_even_chunks(indices, lengths, num_chunks)
+
+   Split a list of indices into `chunks` chunks of roughly equal lengths.
+
+
+.. py:class:: LengthGroupedSampler(batch_size: int, world_size: int, lengths: Optional[List[int]] = None, generator=None, group_by_modality: bool = False)
+
+
+
+
+   Sampler that samples indices in a way that groups together features of the dataset of roughly the same length while
+   keeping a bit of randomness.
+
+

@@ -1,0 +1,77 @@
+:orphan:
+
+:py:mod:`llava_utils`
+=====================
+
+.. py:module:: llava_utils
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   llava_utils.LazySupervisedDataset
+   llava_utils.DataCollatorForSupervisedDataset
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   llava_utils.safe_save_model_for_hf_trainer
+   llava_utils.smart_tokenizer_and_embedding_resize
+   llava_utils.preprocess
+   llava_utils.make_supervised_data_module
+
+
+
+.. py:function:: safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str)
+
+   Collects the state dict and dump to disk.
+
+
+.. py:function:: smart_tokenizer_and_embedding_resize(special_tokens_dict: Dict, tokenizer: transformers.PreTrainedTokenizer, model: transformers.PreTrainedModel)
+
+   Resize tokenizer and embedding.
+
+   Note: This is the unoptimized version that may make your embedding size not be divisible by 64.
+
+
+.. py:function:: preprocess(sources: Sequence[str], tokenizer: transformers.PreTrainedTokenizer, conversation_template, has_image: bool = False) -> Dict
+
+       Given a list of sources, each is a conversation list. This transform:
+       1. Add signal '### ' at the beginning each sentence, with end signal '
+   ';
+       2. Concatenate conversations together;
+       3. Tokenize the concatenated conversation;
+       4. Make a deepcopy as the target. Mask human words with IGNORE_INDEX.
+
+
+
+.. py:class:: LazySupervisedDataset(data_path: str, tokenizer: transformers.PreTrainedTokenizer, data_args, conversation_template)
+
+
+
+
+   Dataset for supervised fine-tuning.
+
+
+.. py:class:: DataCollatorForSupervisedDataset
+
+
+
+
+   Collate examples for supervised fine-tuning.
+
+
+.. py:function:: make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer, data_args) -> Dict
+
+   Make dataset and collator for supervised fine-tuning.
+
+

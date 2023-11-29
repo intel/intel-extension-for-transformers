@@ -1,0 +1,36 @@
+:orphan:
+
+:py:mod:`conversation_utils`
+============================
+
+.. py:module:: conversation_utils
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   conversation_utils.SeparatorStyle
+   conversation_utils.Conversation
+
+
+
+
+.. py:class:: SeparatorStyle
+
+
+
+
+   Different separator style.
+
+
+.. py:class:: Conversation
+
+
+   A class that keeps all conversation history.
+
+

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Modal &mdash; Intel® Extension for Transformers 0.1.dev1+gecb4480 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Multi-Modal</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/multi_modal/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="multi-modal">
+<h1>Multi-Modal<a class="headerlink" href="#multi-modal" title="Link to this heading"></a></h1>
+<p>Large Language and Vision Assistant (LLaVA) is a multi-modal training framework that proposed from <a class="reference external" href="https://arxiv.org/abs/2304.08485">Visual Instruction Tuning</a> and <a class="reference external" href="https://arxiv.org/abs/2310.03744">Improved Baselines with Visual Instruction Tuning</a>. This example demonstrates how to train mult-modal model on Intel Gaudi2.</p>
+<section id="train">
+<h2>Train<a class="headerlink" href="#train" title="Link to this heading"></a></h2>
+<p>LLaVA training consists of two stages: (1) feature alignment stage: use our 558K subset of the LAION-CC-SBU dataset to connect a <em>frozen pretrained</em> vision encoder to a <em>frozen LLM</em>; (2) visual instruction tuning stage: use 150K GPT-generated multimodal instruction-following data, plus around 515K VQA data from academic-oriented tasks, to teach the model to follow multimodal instructions.</p>
+<section id="pretraining">
+<h3>Pretraining<a class="headerlink" href="#pretraining" title="Link to this heading"></a></h3>
+<section id="prepare-data">
+<h4>Prepare data<a class="headerlink" href="#prepare-data" title="Link to this heading"></a></h4>
+<p>Download the 558K subset of the LAION-CC-SBU dataset with BLIP captions from <a class="reference external" href="https://huggingface.co/datasets/liuhaotian/LLaVA-Pretrain">liuhaotian/LLaVA-Pretrain</a> in <code class="docutils literal notranslate"><span class="pre">./pretraining_data</span></code></p>
+</section>
+<section id="training">
+<h4>Training<a class="headerlink" href="#training" title="Link to this heading"></a></h4>
+<p>Training script with DeepSpeed ZeRO-2: <code class="docutils literal notranslate"><span class="pre">scripts/pretrain.sh</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mm_projector_type</span> <span class="pre">mlp2x_gelu</span></code>: the two-layer MLP vision-language connector.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--vision_tower</span> <span class="pre">openai/clip-vit-large-patch14-336</span></code>: CLIP ViT-L/14 336px.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--use_habana,</span> <span class="pre">--use_lazy_mode</span></code> for Intel Gaudi2 setting.</p></li>
+</ul>
+<p><strong>Note:</strong> If don’t set <code class="docutils literal notranslate"><span class="pre">--use_habana,</span> <span class="pre">--use_lazy_mode</span></code>, the code can also run on gpus as well.</p>
+</section>
+</section>
+<section id="visual-instruction-tuning">
+<h3>Visual Instruction Tuning<a class="headerlink" href="#visual-instruction-tuning" title="Link to this heading"></a></h3>
+<section id="id1">
+<h4>Prepare data<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>Please download the annotation of the final mixture our instruction tuning data <a class="reference external" href="https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K/resolve/main/llava_v1_5_mix665k.json">llava_v1_5_mix665k.json</a>, and download the images from constituting datasets:</p>
+<ul class="simple">
+<li><p>COCO: <a class="reference external" href="http://images.cocodataset.org/zips/train2017.zip">train2017</a></p></li>
+<li><p>GQA: <a class="reference external" href="https://downloads.cs.stanford.edu/nlp/data/gqa/images.zip">images</a></p></li>
+<li><p>OCR-VQA: <a class="reference external" href="https://drive.google.com/drive/folders/1_GYPY5UkUy7HIcR0zq3ZCFgeZN7BAfm_?usp=sharing">download script</a>, <strong>we save all files as <code class="docutils literal notranslate"><span class="pre">.jpg</span></code></strong></p></li>
+<li><p>TextVQA: <a class="reference external" href="https://dl.fbaipublicfiles.com/textvqa/images/train_val_images.zip">train_val_images</a></p></li>
+<li><p>VisualGenome: <a class="reference external" href="https://cs.stanford.edu/people/rak248/VG_100K_2/images.zip">part1</a>, <a class="reference external" href="https://cs.stanford.edu/people/rak248/VG_100K_2/images2.zip">part2</a></p></li>
+</ul>
+<p>After downloading all of them, organize the data as follows in <code class="docutils literal notranslate"><span class="pre">./finetuning_data</span></code>,</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="err">├──</span><span class="w"> </span><span class="n">coco</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">train2017</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">gqa</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">images</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">ocr_vqa</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">images</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">textvqa</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">train_images</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">vg</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">VG_100K</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">VG_100K_2</span>
+</pre></div>
+</div>
+</section>
+<section id="start-training">
+<h4>Start training!<a class="headerlink" href="#start-training" title="Link to this heading"></a></h4>
+<p>Training script with DeepSpeed ZeRO-3: <code class="docutils literal notranslate"><span class="pre">scripts/finetune.sh</span></code>, and lora has been enabled by running <code class="docutils literal notranslate"><span class="pre">scripts/finetune_lora.sh</span></code></p>
+<p>New options to note:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--mm_projector_type</span> <span class="pre">mlp2x_gelu</span></code>: the two-layer MLP vision-language connector.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--vision_tower</span> <span class="pre">openai/clip-vit-large-patch14-336</span></code>: CLIP ViT-L/14 336px.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--image_aspect_ratio</span> <span class="pre">pad</span></code>: this pads the non-square images to square, instead of cropping them; it slightly reduces hallucination.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--group_by_modality_length</span> <span class="pre">True</span></code>: this should only be used when your instruction tuning dataset contains both language (e.g. ShareGPT) and multimodal (e.g. LLaVA-Instruct). It makes the training sampler only sample a single modality (either image or language) during training, which we observe to speed up training by ~25%, and does not affect the final outcome.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--use_habana,</span> <span class="pre">--use_lazy_mode</span></code> for Intel Gaudi2 setting.</p></li>
+</ul>
+<p><strong>Note:</strong> If don’t set <code class="docutils literal notranslate"><span class="pre">--use_habana,</span> <span class="pre">--use_lazy_mode</span></code>, the code can also run on gpus as well.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fe3b97755a0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

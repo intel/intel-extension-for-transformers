@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>train &mdash; Intel® Extension for Transformers 0.1.dev1+g7b73b1b documentation</title>
-      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <title>train &mdash; Intel® Extension for Transformers 0.1.dev1+gecb4480 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=68dfede1" />
+
+  
 <script type="text/javascript">
   // Configure TMS settings
   window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
@@ -88,59 +90,6 @@
              
   <section id="module-train">
 <span id="train"></span><h1><a class="reference internal" href="#module-train" title="train"><code class="xref py py-mod docutils literal notranslate"><span class="pre">train</span></code></a><a class="headerlink" href="#module-train" title="Link to this heading"></a></h1>
-<section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
-<section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#train.SupervisedDataset" title="train.SupervisedDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupervisedDataset</span></code></a></p></td>
-<td><p>Dataset for supervised fine-tuning.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#train.LazySupervisedDataset" title="train.LazySupervisedDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LazySupervisedDataset</span></code></a></p></td>
-<td><p>Dataset for supervised fine-tuning.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#train.safe_save_model_for_hf_trainer" title="train.safe_save_model_for_hf_trainer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">safe_save_model_for_hf_trainer</span></code></a>(trainer, output_dir)</p></td>
-<td><p>Collects the state dict and dump to disk.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#train.make_supervised_data_module" title="train.make_supervised_data_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_supervised_data_module</span></code></a>(→ Dict)</p></td>
-<td><p>Make dataset and collator for supervised fine-tuning.</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py function">
-<dt class="sig sig-object py" id="train.safe_save_model_for_hf_trainer">
-<span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">safe_save_model_for_hf_trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.Trainer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/train.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#train.safe_save_model_for_hf_trainer" title="Link to this definition"></a></dt>
-<dd><p>Collects the state dict and dump to disk.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="train.SupervisedDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">SupervisedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedTokenizer</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/train.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#train.SupervisedDataset" title="Link to this definition"></a></dt>
-<dd><p>Dataset for supervised fine-tuning.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="train.LazySupervisedDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">LazySupervisedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedTokenizer</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/train.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#train.LazySupervisedDataset" title="Link to this definition"></a></dt>
-<dd><p>Dataset for supervised fine-tuning.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="train.make_supervised_data_module">
-<span class="sig-prename descclassname"><span class="pre">train.</span></span><span class="sig-name descname"><span class="pre">make_supervised_data_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedTokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/train.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#train.make_supervised_data_module" title="Link to this definition"></a></dt>
-<dd><p>Make dataset and collator for supervised fine-tuning.</p>
-</dd></dl>
-
-</section>
-</section>
 </section>
 
 
@@ -157,7 +106,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fbae87adf60> 
+   <jinja2.runtime.BlockReference object at 0x7fe3d0633c40> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
