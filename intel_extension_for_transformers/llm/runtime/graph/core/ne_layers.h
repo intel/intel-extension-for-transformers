@@ -67,7 +67,6 @@
   const type prefix##3 = (pointer)->array[3];          \
   NE_UNUSED(prefix##3);
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
