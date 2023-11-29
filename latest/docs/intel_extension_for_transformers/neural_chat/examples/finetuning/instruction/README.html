@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gd155e75 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g0842eb8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -651,6 +651,36 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
 <span class="w">        </span>--use_lazy_mode<span class="w"> </span><span class="se">\</span>
 </pre></div>
 </div>
+<p>Multi-card finetuning of Llama2-70B with DeepSpeed ZeRO-3 optimization and LoRA in 8 Gaudi2 card
+The following command requires Habana DeepSpeed 1.13.0 or later.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PT_HPU_MAX_COMPOUND_OP_SIZE</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>gaudi_spawn.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--world_size<span class="w"> </span><span class="m">8</span><span class="w"> </span>--use_deepspeed<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-70b-chat-hf&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_name<span class="w"> </span>tatsu-lab/alpaca<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_train_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--evaluation_strategy<span class="w"> </span><span class="s2">&quot;no&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_strategy<span class="w"> </span><span class="s2">&quot;steps&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--save_total_limit<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--learning_rate<span class="w"> </span>1e-4<span class="w">  </span><span class="se">\</span>
+<span class="w">        </span>--logging_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--num_train_epochs<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--log_level<span class="w"> </span>info<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output_dir<span class="w"> </span>./llama2_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--device<span class="w"> </span><span class="s2">&quot;hpu&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_habana<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_lazy_mode<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--deepspeed<span class="w"> </span>llama2_ds_zero3_config.json<span class="w"> </span><span class="se">\</span>
+</pre></div>
+</div>
 <p>Where the <code class="docutils literal notranslate"><span class="pre">--dataset_concatenation</span></code> argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.</p>
 <p>For finetuning on SPR, add <code class="docutils literal notranslate"><span class="pre">--bf16</span></code> argument will speedup the finetuning process without the loss of model’s performance.
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
@@ -682,7 +712,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc9a945d240> 
+   <jinja2.runtime.BlockReference object at 0x7f9aa9d96c80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

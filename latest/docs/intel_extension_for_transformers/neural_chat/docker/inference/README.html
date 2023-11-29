@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Do chatbot inference with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+gd155e75 documentation</title>
+  <title>Do chatbot inference with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g0842eb8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -124,7 +124,7 @@ docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </
 </section>
 <section id="setup-habana-gaudi-environment">
 <h3>Setup Habana Gaudi Environment<a class="headerlink" href="#setup-habana-gaudi-environment" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--format<span class="w"> </span>docker<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-t<span class="w"> </span><span class="si">${</span><span class="nv">IMAGE_NAME</span><span class="si">}</span>:<span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span><span class="w">  </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">BASE_NAME</span><span class="o">=</span><span class="s2">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ARTIFACTORY_URL</span><span class="o">=</span><span class="s2">&quot;vault.habana.ai&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;1.11.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REVISION</span><span class="o">=</span><span class="s2">&quot;587&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">PT_VERSION</span><span class="o">=</span><span class="s2">&quot;2.0.1&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">OS_NUMBER</span><span class="o">=</span><span class="s2">&quot;2204&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--format<span class="w"> </span>docker<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>-t<span class="w"> </span><span class="si">${</span><span class="nv">IMAGE_NAME</span><span class="si">}</span>:<span class="si">${</span><span class="nv">IMAGE_TAG</span><span class="si">}</span><span class="w">  </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">BASE_NAME</span><span class="o">=</span><span class="s2">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ARTIFACTORY_URL</span><span class="o">=</span><span class="s2">&quot;vault.habana.ai&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;1.13.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REVISION</span><span class="o">=</span><span class="s2">&quot;463&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">PT_VERSION</span><span class="o">=</span><span class="s2">&quot;2.1.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">OS_NUMBER</span><span class="o">=</span><span class="s2">&quot;2204&quot;</span>
 </pre></div>
 </div>
 <p>If you need to set proxy settings:</p>
@@ -177,7 +177,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc9a975bac0> 
+   <jinja2.runtime.BlockReference object at 0x7f9ac351cca0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
