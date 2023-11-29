@@ -109,7 +109,7 @@ class Model:
 
         if os.path.exists(self.bin_file):
             print("{} existed, will use cahce file. Otherwise please remove the file".
-                  formant(self.bin_file))
+                  format(self.bin_file))
             return
 
         if use_gptq:
