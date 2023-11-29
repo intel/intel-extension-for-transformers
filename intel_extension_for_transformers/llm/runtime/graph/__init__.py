@@ -191,14 +191,12 @@ class Model:
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif (max_new_tokens != -1 and out_count > max_new_tokens):
+            elif (max_new_tokens != -1 and out_count >= max_new_tokens):
                 break
             else:
-                all_done = [(r[-1] in [self.eos_token_id(), self.pad_token_id()])
-                           for r in ret]
+                all_done = [(r[-1] in [self.eos_token_id(), self.pad_token_id()]) for r in ret]
                 if False not in all_done:
                     break
-            out_count += 1
         if streamer:
             streamer.end()
 
