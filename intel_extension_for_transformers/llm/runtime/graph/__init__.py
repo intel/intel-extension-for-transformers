@@ -108,7 +108,7 @@ class Model:
             self.bin_file = quant_bin
 
         if os.path.exists(self.bin_file):
-            print("{} existed, will use cahce file. Otherwise please remove the file".
+            print("{} existed, will use cache file. Otherwise please remove the file".
                   format(self.bin_file))
             return
 
