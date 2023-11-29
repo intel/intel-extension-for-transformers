@@ -139,6 +139,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             return True
+        # chatbot as service
         else:
             # Update plugins based on YAML configuration
             for plugin_name, plugin_config in plugins.items():

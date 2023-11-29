@@ -29,21 +29,18 @@ class UnitTest(unittest.TestCase):
             "intel_extension_for_transformers/neural_chat/tests/ci/server/plugin_as_service.yaml"
         log_file_path = "./neuralchat.log"
         if os.path.exists(yaml_file_path):
-            print("1111111111111111")
             command = [
                 'neuralchat_server', 'start', 
                 '--config_file', yaml_file_path, 
                 '--log_file', log_file_path
             ]
         elif os.path.exists("./plugin_as_service.yaml"):
-            print("222222222222222")
             command = [
                 'neuralchat_server', 'start', 
                 '--config_file', './plugin_as_service.yaml', 
                 '--log_file', log_file_path
             ]
         else:
-            print("333333333333333")
             with open("./ci/server/plugin_as_service.yaml", "r+") as file:
                 content = file.read()
                 content = content.replace("plugin_as_service", "ci/server/plugin_as_service")
@@ -61,7 +58,6 @@ class UnitTest(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
 
-    
     def tearDown(self) -> None:
         for filename in os.listdir("."):
             if filename.endswith(".wav"):
@@ -77,6 +73,7 @@ class UnitTest(unittest.TestCase):
         }
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
