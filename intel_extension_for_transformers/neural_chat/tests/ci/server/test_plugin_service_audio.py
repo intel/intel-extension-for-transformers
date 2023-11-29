@@ -64,8 +64,7 @@ class UnitTest(unittest.TestCase):
 
     def test_plugin_as_service(self):
         url = 'http://127.0.0.1:7777/plugin/audio/asr'
-        file_path = Path("/intel-extension-for-transformers/intel_extension_for_transformers \
-                         /neural_chat/assets/audio/welcome.wav")
+        file_path = Path("../assets/audio/welcome.wav")
         
         if file_path.is_file():
             with file_path.open("rb") as file:
