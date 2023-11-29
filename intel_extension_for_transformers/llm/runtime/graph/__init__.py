@@ -60,6 +60,8 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
         elif model_type == "polyglot":
             import intel_extension_for_transformers.llm.runtime.graph.polyglot_cpp as cpp_model
+        elif model_type == "qwen":
+            import intel_extension_for_transformers.llm.runtime.graph.qwen_cpp as cpp_model
         elif model_type == "mistral":
             import intel_extension_for_transformers.llm.runtime.graph.mistral_cpp as cpp_model
         else:
@@ -73,13 +75,17 @@ class Model:
             model_type = "chatglm2"
         return model_type
 
-    def init(self, model_name, not_quant=False, use_cache=False, **quant_kwargs):
+    def init(self, model_name, use_quant=True, use_cache=False, use_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model_type = Model.get_model_type(self.config)
         self.__import_package(model_type)
 
         # check cache and quantization
+        if use_quant:
+            if quant_kwargs['weight_dtype'] == "int8" and quant_kwargs['compute_dtype'] == "bf16":
+                raise ValueError("Error: This combination (weight_dtype=int8, compute_dtype=bf16)"
+                                 " is not currently supported. Please use other combinations.")
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
         fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
@@ -92,20 +98,27 @@ class Model:
                 quant_desc += "_pc"
             else:
                 quant_desc += "_g{}".format(quant_kwargs['group_size'])
+        if use_gptq:
+            quant_desc = "gptq"
         quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, model_type, quant_desc)
 
-        if not_quant:
+        if not use_quant:
             self.bin_file = fp32_bin
         else:
             self.bin_file = quant_bin
         if use_cache and os.path.exists(self.bin_file):
             return
 
+        if use_gptq:
+            convert_model(model_name, quant_bin, "f32")
+            return
+
+
         if not use_cache or not os.path.exists(fp32_bin):
             convert_model(model_name, fp32_bin, "f32")
             assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
-        if not_quant:
+        if not use_quant:
             print("FP32 model will be used.")
             return
         self.module.Model.quant_model(model_path=fp32_bin, out_path=quant_bin, **quant_kwargs)
@@ -171,15 +184,15 @@ class Model:
                 streamer.put(torch.tensor([response[0]]))
             for i in range(len(response)):
                 ret[i].extend(response[i])
+            out_count += 1
             if beam_search:
                 break
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif ret[0][-1] == self.tokenizer.eos_token_id or \
-                    (max_new_tokens != -1 and out_count > max_new_tokens):
+            elif ret[0][-1] == self.eos_token_id() or \
+                    (max_new_tokens != -1 and out_count >= max_new_tokens):
                 break
-            out_count += 1
         if streamer:
             streamer.end()
 
@@ -188,6 +201,11 @@ class Model:
 
     def is_token_end(self):
         return self.model.is_token_end()
+
+    def eos_token_id(self):
+        if self.tokenizer.eos_token_id == None:
+            return self.tokenizer.special_tokens['<|endoftext|>']
+        return self.tokenizer.eos_token_id
 
     def __call__(self, input_ids, reinit=False, **kwargs):
         if self.model is None:

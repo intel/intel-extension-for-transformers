@@ -1,12 +1,10 @@
 transformers==4.32.1
 peft
-fschat
+fschat==0.2.32
 num2words
 speechbrain
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 shortuuid
 gptcache
 evaluate
@@ -14,6 +12,7 @@ pydub
 python-multipart
 PyPDF2
 langchain
+langchain_core
 python-docx
 scikit-learn
 librosa
@@ -41,3 +40,6 @@ torchaudio==2.1.0
 spacy
 neural-compressor==2.3.1
 einops
+zhconv
+urllib3
+langid

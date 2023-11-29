@@ -32,8 +32,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include "common.h"
+#include "core/layers/jblas_common.hpp"
+#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
@@ -87,6 +91,32 @@ class Model {
     generate_count = 0;
   }
 
+  static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                            const quant_params_internal params, int nthread, int n, int k);
+  static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
+                               int k);
+  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> dst) {
+    int8_t* w_ptr = src_w.mutable_data();
+    float* scales_ptr = src_scales.mutable_data();
+    int8_t* dst_ptr = dst.mutable_data();
+
+    quant_params_internal q_params;
+    q_params.bits = quant_bits::q4;
+    q_params.scale_dtype = quant_sdtype::fp32;
+    q_params.compute_dtype = quant_comp::int8;
+    q_params.group_size = 128;
+    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 1, src_w.shape(0), src_w.shape(1));
+  }
+
+  static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst) {
+    quant_params_internal q_params;
+    q_params.bits = quant_bits::q4;
+    q_params.scale_dtype = quant_sdtype::fp32;
+    q_params.compute_dtype = quant_comp::int8;
+    q_params.group_size = 32;
+    return Model::jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, 8, src_w.shape(0), src_w.shape(1));
+  }
+
  private:
   model_context* ctx = nullptr;
   gpt_params params;
@@ -126,7 +156,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   params.beam_size = num_beams;
   params.do_sample = do_sample;
   params.batch_size = batch_size;
-  params.beam_search = (num_beams > 1 && !do_sample) ? true : false;
+  params.beam_search = (num_beams > 1 && !do_sample);
   params.top_k = top_k;
   params.top_p = top_p;
   params.temp = temperature;
@@ -141,7 +171,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
     params.memory_type = KV_MEM_TYPE_AUTO;
   else
     fprintf(stderr, "Unexpected memory dtype!");
-  if (params.beam_search) params.memory_type = KV_MEM_TYPE_F16;  // TODO(Yi): NO MHA IN BEAM SEARCH
+  if (batch_size > 1) params.memory_type = KV_MEM_TYPE_F16;  // TODO(Yi): NO MHA IN MULTI-BATCH
 
   printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
          params.top_p);
@@ -480,6 +510,57 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   return 0;
 }
 
+size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                          const quant_params_internal params, int nthread, int n, int k) {
+  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
+  using namespace ne_jblas;
+  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+  auto dstbptr = (int8_t*)dstpr;
+  cd->setThreads(nthread);
+  // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+  static Kernel kernel;
+  auto packedw = kernel.createStorage(n, k, params.group_size);
+
+  // jblas::utils::aligned_vector<int8_t> buffer(packedw.mSize);
+  packedw.assign(dstbptr);
+
+  jblas::utils::aligned_vector<int8_t> tmpq(n * k);
+  std::copy(src_w, src_w + n * k, tmpq.data());
+
+  int nk_scale = jblas::utils::updiv(k, packedw.mBlockSize);
+  auto ssize = (size_t)n * nk_scale;
+  jblas::utils::avector<float> Tscales(ssize);
+  std::copy(src_scales, src_scales + ssize, Tscales.data());
+
+  jblas::utils::avector<int8_t> Tzps(packedw.mIsAsym ? ssize : 0);
+
+  kernel.packQWeight(n, k, tmpq.data(), n, Tscales.data(), Tzps.data(), &packedw);
+
+  // kernel.unpackWeight(n, k, &packedw, dstbptr, n);
+  return packedw.mSize;
+}
+
+size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
+                             int k) {
+  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
+  using namespace ne_jblas;
+  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+  auto dstbptr = (int8_t*)dstpr;
+  cd->setThreads(nthread);
+  // using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+  static Kernel kernel;
+  auto packedw = kernel.createStorage(n, k, params.group_size);
+
+  // jblas::utils::aligned_vector<int8_t> buffer(packedw.mSize);
+  packedw.assign(dstbptr);
+
+  kernel.packTransposeWeight(n, k, src_w, k, &packedw);
+  // kernel.unpackTransposeWeight(n, k, &packedw, dstbptr, n);
+  return packedw.mSize;
+}
+
 #if MODEL_NAME_ID == 1
 
 PYBIND11_MODULE(gptj_cpp, m)
@@ -535,6 +616,10 @@ PYBIND11_MODULE(polyglot_cpp, m)
 
 PYBIND11_MODULE(mistral_cpp, m)
 
+#elif MODEL_NAME_ID == 15
+
+PYBIND11_MODULE(qwen_cpp, m)
+
 #endif
 {
   m.doc() = "cpp model python binding";
@@ -557,5 +642,7 @@ PYBIND11_MODULE(mistral_cpp, m)
                   py::arg("threads") = 8)
       .def("is_token_end", &Model::is_token_end)
       .def("reset_token_end", &Model::reset_token_end)
+      .def_static("np_jblas_qpack", &Model::np_jblas_qpack)
+      .def_static("np_jblas_quantize", &Model::np_jblas_quantize)
       .def("reinit", &Model::reinit);
 }

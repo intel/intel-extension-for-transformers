@@ -19,6 +19,7 @@ from intel_extension_for_transformers.neural_chat.models.chatglm_model import Ch
 from intel_extension_for_transformers.neural_chat.models.llama_model import LlamaModel
 from intel_extension_for_transformers.neural_chat.models.mpt_model import MptModel
 from intel_extension_for_transformers.neural_chat.models.neuralchat_model import NeuralChatModel
+from intel_extension_for_transformers.neural_chat.models.mistral_model import MistralModel
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
 
@@ -143,6 +144,26 @@ class TestNeuralChatModel(unittest.TestCase):
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)
         self.assertIn('The Intel Xeon Scalable Processors', str(result))
+
+class TestMistralModel(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_match(self):
+        result = MistralModel().match(model_path='mistralai/Mistral-7B-v0.1')
+        self.assertTrue(result)
+
+    def test_get_default_conv_template(self):
+        result = MistralModel().get_default_conv_template(model_path='mistralai/Mistral-7B-v0.1')
+        self.assertIn("[INST]{system_message}", str(result))
+        config = PipelineConfig(model_name_or_path="mistralai/Mistral-7B-v0.1")
+        chatbot = build_chatbot(config=config)
+        result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(result)
+        self.assertIn('Intel Xeon Scalable processors', str(result))
 
 class TestStarCoderModel(unittest.TestCase):
     def setUp(self):

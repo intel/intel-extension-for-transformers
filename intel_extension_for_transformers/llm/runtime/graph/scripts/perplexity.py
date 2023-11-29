@@ -253,7 +253,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_threads', type=int)
     parser.add_argument('--n_pred_per_sample', type=int)
     parser.add_argument('--n_sampels', type=int)
-    parser.add_argument('--data_text_concat', action="store_true")
+    parser.add_argument('--data_text_concat', action="store_true", default=None)
     parser.add_argument('--fig_path', type=str, default="out/ppl.png")
     add_quant_args(parser)
     add_run_args(parser)

@@ -3,5 +3,5 @@ Welcome to Talkingbot! This example introduces how to deploy the Talkingbot syst
 | Section              | Link                      |
 | ---------------------| --------------------------|
 | Backend Setup        | [Backend README](./backend/README.md) |
-| Frontend Setup       | [Frontend README](../../../../ui/talkingbot/README.md) |
+| Frontend Setup       | [Frontend README](../../../../ui/customized/talkingbot/README.md) |
 

@@ -17,7 +17,6 @@
 """Neural Chat Chatbot API."""
 
 import os
-from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
@@ -25,7 +24,8 @@ from .config import DeviceOptions
 from .plugins import plugins
 
 from intel_extension_for_transformers.utils import logger
-from .constants import ResponseCodes, MEMORY_THRESHOLD_GB, STORAGE_THRESHOLD_GB, GPU_MEMORY_THRESHOLD_MB
+from .constants import ErrorCodes, MEMORY_THRESHOLD_GB, STORAGE_THRESHOLD_GB, GPU_MEMORY_THRESHOLD_MB
+from .utils.error_manager import ErrorManager
 import psutil
 import torch
 
@@ -49,7 +49,8 @@ def build_chatbot(config: PipelineConfig=None):
     if available_memory < MEMORY_THRESHOLD_GB: # The 4-bit 7B model requires a minimum of 7GB of memory
         logger.error("LLM requires a minimum of 8GB of free system memory, \
                    but the current available memory is insufficient.")
-        return ResponseCodes.ERROR_OUT_OF_MEMORY
+        ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+        return
 
     # Check for out of storage
     available_storage = psutil.disk_usage('/').free
@@ -57,7 +58,8 @@ def build_chatbot(config: PipelineConfig=None):
     if available_storage_gb < STORAGE_THRESHOLD_GB:
         logger.error("LLM requires a minimum of 30GB of free system storage, \
                      but the current available storage is insufficient.")
-        return ResponseCodes.ERROR_OUT_OF_STORAGE
+        ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        return
 
     global plugins
     if not config:
@@ -66,7 +68,8 @@ def build_chatbot(config: PipelineConfig=None):
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         logger.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
-        return ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
+        ErrorManager.set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
 
     if config.device == "cuda":
         if torch.cuda.is_available():
@@ -77,35 +80,40 @@ def build_chatbot(config: PipelineConfig=None):
             if remaining_memory_gb < GPU_MEMORY_THRESHOLD_MB:
                 logger.error("LLM requires a minimum of 6GB of free GPU memory, \
                            but the current available GPU memory is insufficient.")
-                return ResponseCodes.ERROR_OUT_OF_MEMORY
+                ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                return
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path.lower():
         from .models.mpt_model import MptModel
         adapter = MptModel()
-    elif "neural-chat" in config.model_name_or_path:
+    elif "neural-chat" in config.model_name_or_path.lower():
         from .models.neuralchat_model import NeuralChatModel
         adapter = NeuralChatModel()
-    elif "chatglm" in config.model_name_or_path:
+    elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path:
+    elif "Qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
-    elif "opt" in config.model_name_or_path or \
-         "gpt" in config.model_name_or_path or \
-         "Mistral" in config.model_name_or_path or \
-         "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path or \
-         "starcoder" in config.model_name_or_path:
+    elif "mistral" in config.model_name_or_path.lower():
+        from .models.mistral_model import MistralModel
+        adapter = MistralModel()
+    elif "opt" in config.model_name_or_path.lower() or \
+         "gpt" in config.model_name_or_path.lower() or \
+         "flan-t5" in config.model_name_or_path.lower() or \
+         "bloom" in config.model_name_or_path.lower() or \
+         "starcoder" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        raise ValueError(f"NeuralChat Error: Unsupported model name or path {config.model_name_or_path}, \
+        logger.error(f"NeuralChat Error: Unsupported model name or path {config.model_name_or_path}, \
           only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+        ErrorManager.set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
+        return
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -121,9 +129,6 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition
                     plugins[plugin_name]['class'] = AudioSpeechRecognition
-                elif plugin_name == "asr_chinese":
-                    from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-                    plugins[plugin_name]['class'] = ChineseAudioSpeechRecognition
                 elif plugin_name == "retrieval":
                     from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
                     plugins[plugin_name]['class'] = Agent_QA
@@ -139,9 +144,13 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner_int":
                     from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
                     plugins[plugin_name]['class'] = NamedEntityRecognitionINT
-                else:
+                elif plugin_name == "face_animation": # pragma: no cover
+                    from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
+                    plugins[plugin_name]['class'] = SadTalker
+                else: # pragma: no cover
                     logger.error(f"Unsupported plugin: {plugin_name}")
-                    return ResponseCodes.ERROR_PLUGIN_NOT_SUPPORTED
+                    ErrorManager.set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
@@ -166,10 +175,11 @@ def build_chatbot(config: PipelineConfig=None):
 
     result = adapter.load_model(parameters)
 
-    if result == ResponseCodes.SUCCESS:
+    if result == ErrorCodes.SUCCESS:
         return adapter
     else:
-        return result
+        ErrorManager.set_latest_error(result)
+        return
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -179,8 +189,11 @@ def finetune_model(config: BaseFinetuningConfig):
     """
 
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
+    from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
-    finetuning.finetune()
+    res = finetuning.finetune()
+    if res != ErrorCodes.SUCCESS:
+        ErrorManager.set_latest_error(res)
 
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
@@ -191,5 +204,7 @@ def optimize_model(model, config, use_llm_runtime=False):
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model, use_llm_runtime)
-    return model
+    res = optimization.optimize(model, use_llm_runtime)
+    if isinstance(res, ErrorCodes):
+        ErrorManager.set_latest_error(res)
+    return res

@@ -18,7 +18,7 @@
 import time
 import base64
 import asyncio
-from typing import Optional
+from typing import Optional, Dict
 from fastapi.routing import APIRouter
 from fastapi import APIRouter
 from ...cli.log import logger
@@ -36,7 +36,8 @@ from .voicechat_api import (
     handle_talkingbot_asr as talkingbot_asr,
     create_speaker_embedding as talkingbot_embd
 )
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
+from ...plugins import plugins
+from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 
 
 class PhotoAIAPIRouter(APIRouter):
@@ -57,8 +58,11 @@ class PhotoAIAPIRouter(APIRouter):
     async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
+            plugins['tts']['enable'] = True
+            plugins['retrieval']['enable'] = False
+
             config = GenerationConfig(audio_output_path=audio_output_path)
-            result = chatbot.chat_stream(query=prompt, config=config)
+            result, link = chatbot.chat_stream(query=prompt, config=config)
             def audio_file_generate(result):
                 for path in result:
                     with open(path,mode="rb") as file:
@@ -72,6 +76,16 @@ class PhotoAIAPIRouter(APIRouter):
 
 
 router = PhotoAIAPIRouter()
+
+
+def get_current_time() -> str:
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    cur_time = utc_now.astimezone(SHA_TZ).strftime("%Y/%m/%d")
+    return cur_time
 
 
 @router.post("/v1/aiphotos/uploadImages")
@@ -314,10 +328,10 @@ async def handle_ai_photos_update_label(request: Request):
                 continue
             if label == 'address':
                 update_sql = f"""UPDATE image_info SET address='{label_to}' 
-                WHERE user_id='{user_id}' and address='{label_from}';"""
+                WHERE user_id='{user_id}' and address LIKE '%{label_from}%';"""
             elif label == 'time':
                 update_sql = f"""UPDATE image_info SET captured_time='{label_to}' 
-                WHERE user_id='{user_id}' and captured_time='{label_from}';"""
+                WHERE user_id='{user_id}' and DATEDIFF(captured_time, '{label_from}') = 0;"""
             else:
                 return JSONResponse(
                     content=f"Illegal label name: {label}", 
@@ -388,12 +402,18 @@ async def handle_ai_photos_chat_to_image(request: Request):
     query = params['query']
     logger.info(f'<chatWithImage> generating chat to image for user {user_id} with query: {query}')
 
+    chatbot = router.get_chatbot()
+    cur_time = get_current_time()
+    pt = PromptTemplate("ner")
+    pt.append_message(pt.conv.roles[0], cur_time)
+    pt.append_message(pt.conv.roles[1], query)
+    prompt = pt.get_prompt()
+    response = chatbot.predict(query=prompt)
+    response = response.split("[/INST]")[-1]
+
     try:
-        start_time = time.time()
-        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat", bf16=False)
-        result = ner_obj.inference(query=query)
-        end_time = time.time()
-        print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))
+        ner_obj = plugins['ner']["instance"]
+        result = ner_obj.ner_inference(response)
     except Exception as e:
         logger.error("<chatWithImage> "+str(e))
         raise Exception(e)
@@ -436,7 +456,7 @@ async def handle_image_to_image(request: Request):
                 "token": "intel_sd_bf16_112233"}
         start_time = time.time()
         img_str = stable_defusion_func(data)
-        logger.info("<image2Image> elapsed time: ", str(time.time() - start_time))
+        logger.info(f"<image2Image> elapsed time: {time.time() - start_time} seconds")
         generated_images.append({"imgId": img_id, "imgSrc": "data:image/jpeg;base64,"+img_str})
 
     return generated_images
@@ -473,7 +493,12 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
 async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
     result = talkingbot_embd(file=file)
     res = await asyncio.gather(result)
-    final_result = res['spk_id']
+    if isinstance(res, List):
+        final_result = res[0]['spk_id']
+    elif isinstance(res, Dict):
+        final_result = res['spk_id']
+    else:
+        return "Error occurred."
     return {"voice_id": final_result}
 
 

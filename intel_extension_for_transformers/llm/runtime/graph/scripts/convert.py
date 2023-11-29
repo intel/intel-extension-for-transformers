@@ -26,7 +26,11 @@ def convert_model(model, outfile, outtype):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
-    path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
+    gpt_model = 'gptq' in str(model).lower()
+    if gpt_model:
+        path = Path(Path(__file__).parent.absolute(), "convert_gptq_{}.py".format(model_type))
+    else:
+        path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
     cmd = []
     cmd.extend(["python", path])
     cmd.extend(["--outfile", outfile])

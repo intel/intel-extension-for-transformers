@@ -22,6 +22,9 @@ from transformers import AutoTokenizer
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+def is_win():
+    return sys.platform.startswith('win')
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="Model name: String", required=True)
@@ -119,7 +122,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     args = parser.parse_args(args_in)
     print(args)
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(args.build_dir, "./bin/run_{}".format(model_name))
+    if is_win():
+        path = Path(args.build_dir, "./Bin/Release/run_{}.exe".format(model_name))
+    else:
+        path = Path(args.build_dir, "./bin/run_{}".format(model_name))
     if not path.exists():
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
@@ -152,7 +158,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
-    elif (args.model_name == "baichuan"):
+    elif (args.model_name == "baichuan" or args.model_name == "qwen"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         def truncate(ids, max_length):
             """Truncates a list of integers to a given length.

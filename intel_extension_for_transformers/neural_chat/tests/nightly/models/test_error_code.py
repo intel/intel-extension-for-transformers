@@ -21,7 +21,7 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 from unittest.mock import patch
-from intel_extension_for_transformers.neural_chat.constants import ResponseCodes
+from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestErrorCodeBuilder(unittest.TestCase):
@@ -42,7 +42,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
         with patch('psutil.virtual_memory') as mock_virtual_memory:
             mock_virtual_memory.return_value.available = 7 * 1024 ** 3  # 7GB
             result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+        assert result == ErrorCodes.ERROR_OUT_OF_MEMORY
 
     def test_build_chatbot_out_of_storage(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -50,13 +50,13 @@ class TestErrorCodeBuilder(unittest.TestCase):
         with patch('psutil.disk_usage') as mock_disk_usage:
             mock_disk_usage.return_value.free = 29 * 1024 ** 3  # 29GB
             result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_OUT_OF_STORAGE
+        assert result == ErrorCodes.ERROR_OUT_OF_STORAGE
 
     def test_build_chatbot_unsupported_device(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "unsupported_device"
         result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_DEVICE_NOT_SUPPORTED
+        assert result == ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED
 
     def test_build_chatbot_out_of_gpu_memory(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -68,7 +68,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
                 mock_get_device_properties.return_value.total_memory = 8 * 1024 ** 3  # 8GB
                 mock_get_device_properties.return_value.memory_allocated = 3 * 1024 ** 3  # 3GB
                 result = build_chatbot(config)
-            assert result == ResponseCodes.ERROR_OUT_OF_MEMORY
+            assert result == ErrorCodes.ERROR_OUT_OF_MEMORY
 
     def test_build_chatbot_unsupported_model(self):
         plugins["unsupported_plugin"] = {
@@ -79,7 +79,7 @@ class TestErrorCodeBuilder(unittest.TestCase):
         }
         config = PipelineConfig(model_name_or_path="unsupported_model", plugins=plugins)
         result = build_chatbot(config)
-        assert result == ResponseCodes.ERROR_MODEL_NOT_SUPPORTED
+        assert result == ErrorCodes.ERROR_MODEL_NOT_SUPPORTED
 
 if __name__ == '__main__':
     unittest.main()

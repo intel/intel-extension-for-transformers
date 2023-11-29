@@ -32,6 +32,7 @@ from peft import (
     PeftConfig,
     get_peft_model,
     get_peft_model_state_dict,
+    prepare_model_for_kbit_training
 )
 from peft.tuners.adaption_prompt import AdaptionPromptConfig
 from transformers import (
@@ -56,6 +57,8 @@ import importlib.util
 from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
+from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
+from intel_extension_for_transformers.utils import logger
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
@@ -245,53 +248,61 @@ class Finetuning:
     def finetune(self):
         model_args, data_args, training_args, finetune_args = \
             self.model_args, self.data_args, self.training_args, self.finetune_args
-        if not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
+        if training_args.device.type != "cpu" and \
+            not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
             finetune_args.qlora = False
+        self.device_map = None
+        self.bitsandbytes_quant_config = None
+        self.load_in_4bit = False
+        self.load_in_8bit = False
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
+            object.__setattr__(training_args, "gradient_checkpointing", True)
+            object.__setattr__(training_args, "ddp_find_unused_parameters", False)
             finetune_args.peft = "lora"
             compute_dtype = (
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
-            self.device_map = "auto"
-            self.bitsandbytes_quant_config = BitsAndBytesConfig(
-                load_in_4bit=finetune_args.bits == 4,
-                load_in_8bit=finetune_args.bits == 8,
-                llm_int8_threshold=6.0,
-                llm_int8_has_fp16_weight=False,
-                bnb_4bit_compute_dtype=compute_dtype,
-                bnb_4bit_use_double_quant=finetune_args.double_quant,
-                bnb_4bit_quant_type=finetune_args.quant_type,
-            )
-            if finetune_args.bits not in [4, 8]:
-                raise NotImplementedError(
-                    f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now."
+            self.load_in_4bit = finetune_args.bits == 4
+            self.load_in_8bit = finetune_args.bits == 8
+            if training_args.device.type == "cuda":
+                self.device_map = "auto"
+                self.bitsandbytes_quant_config = BitsAndBytesConfig(
+                    load_in_4bit=self.load_in_4bit,
+                    load_in_8bit=self.load_in_8bit,
+                    llm_int8_threshold=6.0,
+                    llm_int8_has_fp16_weight=False,
+                    bnb_4bit_compute_dtype=compute_dtype,
+                    bnb_4bit_use_double_quant=finetune_args.double_quant,
+                    bnb_4bit_quant_type=finetune_args.quant_type,
                 )
-        else:
-            self.device_map = None
-            self.bitsandbytes_quant_config = None
+            if finetune_args.bits not in [4, 8]:
+                logger.error(f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now.")
+                return ErrorCodes.ERROR_LORA_FINETUNE_FAIL
 
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM"):
-            self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
+            return self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
+            return self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
-            raise NotImplementedError(
-                "Unsupported architecture {}, only support CausalLM (CLM) \
+            logger.error("Unsupported architecture {}, only support CausalLM (CLM) \
                     and ConditionalGeneration (Seq2seq) now.".format(
-                    config.architectures[0]
-                )
-            )
+                    config.architectures[0]))
+            return ErrorCodes.ERROR_UNSUPPORTED_FINETUNE
 
     def find_all_linear_names(self, model):
         cls = torch.nn.Linear
         if self.finetune_args.qlora:
-            if self.finetune_args.bits == 8:
-                cls = bnb.nn.Linear8bitLt
-            elif self.finetune_args.bits == 4:
-                cls = bnb.nn.Linear4bit
+            if self.training_args.device.type == "cuda":
+                if self.finetune_args.bits == 8:
+                    cls = bnb.nn.Linear8bitLt
+                elif self.finetune_args.bits == 4:
+                    cls = bnb.nn.Linear4bit
+            elif self.training_args.device.type == "cpu":
+                from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+                cls = QuantizedLinearQBits
 
         lora_module_names = set()
         for name, module in model.named_modules():
@@ -306,9 +317,8 @@ class Finetuning:
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
         if finetune_args.device == 'hpu':
             if not is_optimum_habana_available():
-                raise ImportError(
-                    "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
-                )
+                logger.error("optimum habana is not installed. refer https://github.com/huggingface/optimum-habana")
+                return ErrorCodes.ERROR_SOFTWARE_PACKAGE_UNAVAILABLE
 
         # Load pretrained model and tokenizer
         #
@@ -330,6 +340,12 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
+            kwargs = {}
+            if finetune_args.qlora and training_args.device.type == "cpu":
+                from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+                kwargs['use_llm_runtime'] = False
+            else:
+                from transformers import AutoModelForCausalLM
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -342,16 +358,23 @@ class Finetuning:
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=True,
+                load_in_4bit=self.load_in_4bit,
+                load_in_8bit=self.load_in_8bit,
+                **kwargs
             )
+            if finetune_args.qlora:
+                model = prepare_model_for_kbit_training(
+                    model, use_gradient_checkpointing=training_args.gradient_checkpointing
+                )
+            if training_args.gradient_checkpointing:
+                model.gradient_checkpointing_enable()
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
-            raise ValueError(
-                "Must provide model_name_or_path to load a pretrained CausalLM model."
-            )
-
+            logger.error("Must provide model_name_or_path to load a pretrained CausalLM model.")
+            return ErrorCodes.ERROR_MODEL_NOT_FOUND
         # add special tokens
         if data_args.special_tokens:
             additional_special_tokens = {
@@ -419,18 +442,19 @@ class Finetuning:
             )
 
         if training_args.do_eval:
-            if "test" not in tokenized_datasets:
-                self.logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
-                tokenized_datasets = tokenized_datasets["train"].train_test_split(
-                    test_size=data_args.eval_dataset_size, shuffle=True, seed=42
-                )
-            eval_dataset = tokenized_datasets["test"]
+            if "validation" not in tokenized_datasets:
+                logger.error("--do_eval requires a validation dataset.")
+                return ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND
+
+            eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
         if training_args.do_train:
             if "train" not in tokenized_datasets:
-                raise ValueError("--do_train requires a train dataset")
+                logger.error("--do_train requires a train dataset.")
+                return ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND
+
             train_dataset = tokenized_datasets["train"]
             if data_args.max_train_samples is not None:
                 train_dataset = train_dataset.select(range(data_args.max_train_samples))
@@ -593,6 +617,8 @@ class Finetuning:
                             training_args, gen_kwargs)
                     self.logger.info(results)
 
+        return ErrorCodes.SUCCESS
+
     def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args, config):
         # Detecting last checkpoint.
         last_checkpoint = None
@@ -649,7 +675,8 @@ class Finetuning:
 
         if training_args.do_train:
             if "train" not in raw_datasets:
-                raise ValueError("--do_train requires a train dataset")
+                logger.error("--do_train requires a train dataset.")
+                return ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND
             train_dataset = raw_datasets["train"]
             if data_args.max_train_samples is not None:
                 # We will select sample from whole data if argument is specified
@@ -709,7 +736,8 @@ class Finetuning:
 
         if training_args.do_eval:
             if "validation" not in raw_datasets:
-                raise ValueError("--do_eval requires a validation dataset")
+                logger.error("--do_eval requires a validation dataset.")
+                return ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND
             eval_examples = raw_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 # We will select sample from whole data
@@ -746,6 +774,12 @@ class Finetuning:
                     torch.float16 if training_args.fp16 else
                         (torch.bfloat16 if training_args.bf16 else torch.float32)
                 )
+                kwargs = {}
+                if finetune_args.qlora and training_args.device.type == "cpu":
+                    from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
+                    kwargs['use_llm_runtime'] = False
+                else:
+                    from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -756,10 +790,14 @@ class Finetuning:
                     revision=model_args.model_revision,
                     use_auth_token=True if model_args.use_auth_token else None,
                     torch_dtype=model_dtype,
+                    load_in_4bit=self.load_in_4bit,
+                    load_in_8bit=self.load_in_8bit,
+                    **kwargs
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
-                raise ValueError("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
+                logger.error("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
+                return ErrorCodes.ERROR_MODEL_NOT_FOUND
 
             # PEFT settings
             if finetune_args.peft == "lora":
@@ -838,3 +876,4 @@ class Finetuning:
 
             trainer.log_metrics("eval", metrics)
             trainer.save_metrics("eval", metrics)
+        return ErrorCodes.SUCCESS

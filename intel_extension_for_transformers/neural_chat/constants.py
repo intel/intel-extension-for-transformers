@@ -20,7 +20,7 @@ MEMORY_THRESHOLD_GB = 8
 STORAGE_THRESHOLD_GB = 30
 GPU_MEMORY_THRESHOLD_MB = 6
 
-class ResponseCodes:
+class ErrorCodes:
     # General Service Error Code - System related
     ERROR_OUT_OF_MEMORY = 1001 # out of memory
     ERROR_DEVICE_BUSY = 1002 # device busy
@@ -51,6 +51,8 @@ class ResponseCodes:
     ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL = 4003
     ERROR_PREFIX_FINETUNE_FAIL = 4004
     ERROR_PROMPT_FINETUNE_FAIL = 4005
+    ERROR_UNSUPPORTED_FINETUNE = 4006
+    ERROR_SOFTWARE_PACKAGE_UNAVAILABLE = 4007
 
     # Advanced Service Error Code - Inference related
     ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL = 5001
