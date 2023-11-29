@@ -18,7 +18,7 @@
 deepspeed train.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
-    --version v1 \
+    --template v1 \
     --data_path ./finetuning_data/llava_v1_5_mix665k.json \
     --image_folder ./finetuning_data/ \
     --vision_tower openai/clip-vit-large-patch14-336 \
@@ -44,7 +44,6 @@ deepspeed train.py \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
-    --tf32 True \
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
