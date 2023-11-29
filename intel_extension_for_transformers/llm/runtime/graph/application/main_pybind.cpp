@@ -105,10 +105,10 @@ class Model {
     quant_params_internal q_params;
     q_params.bits = quant_bits::q4;
     q_params.scale_dtype = quant_sdtype::fp32;
-    q_params.compute_dtype = quant_comp::int8;
-    q_params.alg = quant_alg::sym;
-    q_params.group_size = 128;
-    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 8, src_w.shape(1), src_w.shape(0));
+    q_params.compute_dtype = quant_comp::fp32; // int8 may fail for asym
+    q_params.alg = quant_alg::asym;
+    q_params.group_size = 32;
+    return Model::jblas_qpack(w_ptr, scales_ptr, zeros_ptr, dst_ptr, q_params, 8, src_w.shape(1), src_w.shape(0));
   }
 
   static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst) {
@@ -521,7 +521,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   auto dstbptr = (int8_t*)dstpr;
   cd->setThreads(nthread);
 
-  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+  using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512F>;
   static Kernel kernel;
   auto packedw = kernel.createStorage(n, k, params.group_size);
   packedw.assign(dstbptr);
