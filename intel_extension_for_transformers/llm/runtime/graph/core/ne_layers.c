@@ -130,7 +130,7 @@ static_assert(sizeof(block_q8_1) == 2 * sizeof(float) + QK8_1, "wrong q8_1 block
 #if UINTPTR_MAX == 0xFFFFFFFF
 #define NE_MEM_ALIGN 4
 #else
-#define NE_MEM_ALIGN 16
+#define NE_MEM_ALIGN 64
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
