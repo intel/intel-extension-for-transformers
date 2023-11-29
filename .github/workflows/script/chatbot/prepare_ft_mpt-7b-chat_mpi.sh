@@ -8,7 +8,7 @@ export I_MPI_HYDRA_IFACE=eth0
 EOF
 )"
 # for launching mpirun from yaml
-docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot; echo \"source activate && conda activate neuralchat\" > bash_setup.sh; echo export MASTER_ADDR=$master_node >> bash_setup.sh"
+docker exec "chatbotfinetune-mpi-s0" bash -c "cd /intel-extension-for-transformers; echo \"source activate && conda activate neuralchat\" > bash_setup.sh; echo export MASTER_ADDR=$master_node >> bash_setup.sh"
 # for ssh setup mpi and oneccl properly
 docker exec "chatbotfinetune-mpi-s0" bash -c "echo \"$prepare_script\" >> ~/.bashrc; echo export MASTER_ADDR=$master_node >> ~/.bashrc"
 

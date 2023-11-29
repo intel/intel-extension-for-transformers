@@ -150,7 +150,7 @@ class SafetyChecker:
         return resultTxt
 
     def pre_llm_inference_actions(self, query):
-        return self.sensitive_check(query)
+        return self.sensitive_check(query.lower())
 
     def post_llm_inference_actions(self, response):
         if self.sensitive_check(response):

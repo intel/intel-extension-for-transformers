@@ -3,9 +3,15 @@ import shutil
 import unittest
 import subprocess
 import torch
+import optimum.version
+import platform
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
+from packaging.version import Version
+OPTIMUM114_VERSION = Version("1.14.0")
+PYTHON_VERSION = Version(platform.python_version())
 
-
+@unittest.skipIf(PYTHON_VERSION.release < Version("3.9.0").release,
+    "Please use Python 3.9 or higher version for lm-eval")
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -131,7 +137,10 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
     def test_evaluate_for_ort_CasualLM(self):
         from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-        cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
+        if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
+            cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past --legacy gptj-past/'
+        else:
+            cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
@@ -160,7 +169,10 @@ class TestLmEvaluationHarness(unittest.TestCase):
             self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
 
         # test evaluate decoder_model
-        cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/'
+        if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
+            cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation --legacy gptj/'
+        else:
+            cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()

@@ -344,7 +344,8 @@ class Finetuning:
                 low_cpu_mem_usage=True,
             )
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
+                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE) or
+                re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
@@ -522,6 +523,8 @@ class Finetuning:
                         training_args.output_dir, state_dict=unwrapped_model.state_dict()
                     )
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
+            tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
+            tokenizer.truncation_side = "left"
             unwrapped_model.eval()
             class Eval_Args:
                 n_samples = 20
@@ -529,7 +532,7 @@ class Finetuning:
                 allow_code_execution = True
                 prefix = ""
                 generation_only = False
-                postprocess = False
+                postprocess = True
                 save_references = False
                 save_generations = False
                 instruction_tokens = None
@@ -546,7 +549,7 @@ class Finetuning:
                 max_memory_per_gpu = None
                 modeltype = "causal"
                 limit_start = 0
-                batch_size = 20 # batch_size >= n_samples if do_sample.
+                batch_size = 20 # batch_size <= n_samples if do_sample.
             eval_args = Eval_Args()
             from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):

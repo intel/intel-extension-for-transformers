@@ -44,3 +44,23 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # support single socket and multiple sockets
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <physical cores list> python run_generation.py -m EleutherAI/gpt-j-6b --dtype bfloat16 --ipex
 ```
+
+## Performance for GPU with DeepSpeed
+
+Note: need ipex and torch-ccl with xpu support.
+
+We recommend using `mpirun` to launch multi ranks inference rather than `deepspeed` launcher for better performance.
+
+```bash
+# run inference for bloom-176b
+mpirun -np 8 --prepend-rank python -u run_generation_with_deepspeed.py -m bigscience/bloom --benchmark --ipex --input-tokens=1024 --max-new-tokens=128 --greedy
+
+# run inference for bloom-176b with deepspeed launcher
+deepspeed --num_gpus 8 --master_addr `hostname -I | sed -e 's/\s.*$//'` run_generation_with_deepspeed.py -m bigscience/bloom --benchmark --ipex --input-tokens=1024 --max-new-tokens=128 --greedy
+
+# run inference for multi configs and only load checkpoint once
+#mpirun -np 8 --prepend-rank python -u run_generation_with_deepspeed.py -m bigscience/bloom --benchmark --ipex --input-tokens 1024 1024 32 32 --max-new-tokens 128 128 32 32 --num-beams 1 4 1 4
+
+# run accuracy test
+LLM_ACC_TEST=1 mpirun -np 2 --prepend-rank python -u run_generation_with_deepspeed.py -m EleutherAI/gpt-j-6b --accuracy-only --ipex
+```

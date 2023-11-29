@@ -2832,7 +2832,9 @@ struct ne_tensor* ne_diag(struct ne_context* ctx, struct ne_tensor* a) {
 
 // ne_diag_mask_inf
 
-struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, bool inplace) {
+struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, bool inplace,
+                                        int* n_padding, bool padding_left) {
+  NE_ASSERT(padding_left);
   bool is_node = false;
 
   if (a->grad) {
@@ -2843,10 +2845,18 @@ struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2, NE_SIZE_CALC);
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2 + bs, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = inplace ? 1 : 0;
+  for (int i = 0; i < bs; ++i) {
+    if (n_padding == NULL) {
+      ((int32_t*)b->data)[2 + i] = 0;
+    } else {
+      ((int32_t*)b->data)[2 + i] = *(n_padding + i);
+    }
+  }
 
   ne_scratch_load(ctx);
 
@@ -2859,11 +2869,21 @@ struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor
 }
 
 struct ne_tensor* ne_diag_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int n_past) {
-  return ne_diag_mask_inf_impl(ctx, a, n_past, false);
+  return ne_diag_mask_inf_impl(ctx, a, n_past, false, NULL, true);
 }
 
 struct ne_tensor* ne_diag_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past) {
-  return ne_diag_mask_inf_impl(ctx, a, n_past, true);
+  return ne_diag_mask_inf_impl(ctx, a, n_past, true, NULL, true);
+}
+
+struct ne_tensor* ne_diag_mask_inf_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                int* n_padding) {
+  return ne_diag_mask_inf_impl(ctx, a, n_past, false, n_padding, true);
+}
+
+struct ne_tensor* ne_diag_mask_inf_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                        int* n_padding) {
+  return ne_diag_mask_inf_impl(ctx, a, n_past, true, n_padding, true);
 }
 
 // ne_diag_mask_zero
@@ -7302,7 +7322,8 @@ static void ne_compute_forward_diag(const struct ne_compute_params* params, cons
 static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                              const struct ne_tensor* src1, struct ne_tensor* dst, const float value) {
   assert(src1->type == NE_TYPE_I32);
-  assert(ne_nelements(src1) == 2);
+  const int bs = src0->ne[3];
+  assert(ne_nelements(src1) == (2 + bs));
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7333,6 +7354,18 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
 
   assert(dst->nb[0] == sizeof(float));
   assert(src0->nb[0] == sizeof(float));
+
+  // mask padding token (padding left)
+  for (int b = 0; b < bs; b++) {
+    const int n_padding = ((int32_t*)src1->data)[2 + b];
+    if (n_padding == 0) continue;
+    for (int k = 0; k < (nz / bs); k++) {
+      for (int j = ith; j < nr; j += nth) {
+        // it will not affect next token if don't mask the pad_token row
+        ne_vec_set_f32(n_padding, (float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]), value);
+      }
+    }
+  }
 
   for (int k = 0; k < nz; k++) {
     for (int j = ith; j < nr; j += nth) {
@@ -7410,7 +7443,7 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
     float max = -INFINITY;
     ne_vec_max_f32(nc, &max, sp);
 
-    ne_float sum = 0.0;
+    ne_float sum = (max == -INFINITY) ? (1.0 * nc) : 0.0;
 
     uint16_t scvt;
     for (int i = 0; i < nc; i++) {

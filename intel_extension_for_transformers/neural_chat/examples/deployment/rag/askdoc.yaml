@@ -35,4 +35,7 @@ retrieval:
         append: True
         search_kwargs: {"score_threshold": 0.7, "k": 1}
 
+safety_checker:
+    enable: true
+
 tasks_list: ['textchat', 'retrieval']

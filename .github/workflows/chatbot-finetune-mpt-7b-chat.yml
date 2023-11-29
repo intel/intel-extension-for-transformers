@@ -24,7 +24,7 @@ jobs:
       - name: Build Docker Image
         run: 
           if [[ $(docker images | grep chatbotfinetune-mpi | wc -l) == 0 ]]; then
-            docker build ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune;
+            docker build ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune;
           fi
 
       - name: Start Docker Container on socket 0
@@ -32,7 +32,7 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-mpi:latest
+          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-mpi:latest
           master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s0")
           echo "master_node=$master" >> $GITHUB_OUTPUT
 
@@ -41,16 +41,16 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s1")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s1" --hostname="chatbotfinetune-container-mpi-s1" chatbotfinetune-mpi:latest
+          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s1" --hostname="chatbotfinetune-container-mpi-s1" chatbotfinetune-mpi:latest
           slave=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s1")
           echo "slave_node=$slave" >> $GITHUB_OUTPUT
 
       - name: Run Finetuning
         run: |
           sh .github/workflows/script/chatbot/prepare_ft_mpt-7b-chat_mpi.sh ${{ steps.master_container.outputs.master_node }} ${{ steps.slave_container.outputs.slave_node }}
-          docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot && source activate && conda activate neuralchat && pip uninstall intel-extension-for-transformers -y && python setup.py install"
-          docker exec "chatbotfinetune-mpi-s1" bash -c "cd /root/chatbot && source activate && conda activate neuralchat && pip uninstall intel-extension-for-transformers -y && python setup.py install"
-          docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
+          docker exec "chatbotfinetune-mpi-s0" bash -c "cd /intel-extension-for-transformers && source activate && conda activate neuralchat && pip uninstall intel-extension-for-transformers -y && python setup.py install"
+          docker exec "chatbotfinetune-mpi-s1" bash -c "cd /intel-extension-for-transformers && source activate && conda activate neuralchat && pip uninstall intel-extension-for-transformers -y && python setup.py install"
+          docker exec "chatbotfinetune-mpi-s0" bash -c "cd /intel-extension-for-transformers; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
 
       - name: Print Logs and Check Finetuning Status
         if: success() || failure()

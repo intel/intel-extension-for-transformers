@@ -24,21 +24,24 @@ import requests
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.skipTest("disable until fix random error")
         yaml_file_path = "/intel-extension-for-transformers/" + \
             "intel_extension_for_transformers/neural_chat/tests/ci/server/askdoc.yaml"
         if os.path.exists(yaml_file_path):
             command = f'neuralchat_server start \
                         --config_file {yaml_file_path} \
                         --log_file "./neuralchat.log"'
+        elif os.path.exists("./askdoc.yaml"):
+            command = f'neuralchat_server start \
+                                    --config_file ./askdoc.yaml \
+                                    --log_file "./neuralchat.log"'
         else:
-            command = 'neuralchat_server start \
-                        --config_file "./askdoc.yaml" \
+            command = 'sed -i "s|askdoc|ci/server/askdoc|g" ./ci/server/askdoc.yaml && neuralchat_server start \
+                        --config_file "./ci/server/askdoc.yaml" \
                         --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(30)
+            time.sleep(60)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
 
@@ -46,12 +49,12 @@ class UnitTest(unittest.TestCase):
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
-        os.system("ps -ef |grep 'askdoc.yaml' |awk '{print $2}' |xargs kill -9")
 
     def test_askdoc_chat(self):
-        url = 'http://127.0.0.1:9000/v1/askdoc/chat'
+        url = 'http://127.0.0.1:6000/v1/askdoc/chat'
         request = {
-            "query": "What is Intel oneAPI Compiler?",
+            "query": "oneAPI编译器是什么?",
+            "translated": "What is Intel oneAPI Compiler?",
             "domain": "test",
             "blob": "",
             "filename": ""
@@ -59,6 +62,16 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
 
+        request = {
+            "query": "蔡英文是谁?",
+            "translated": "Who is Tsai Ing-wen?",
+            "domain": "test",
+            "blob": "",
+            "filename": ""
+        }
+        res = requests.post(url, json.dumps(request))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('Your query contains sensitive words, please try another query', str(res.text))
 
 if __name__ == "__main__":
     unittest.main()

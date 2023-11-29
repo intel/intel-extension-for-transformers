@@ -23,21 +23,21 @@ jobs:
         run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
-        run: docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target hpu --build-arg ITREX_VER=${{ github.event.pull_request.head.ref }} --build-arg REPO=${{ github.server_url }}/${{ github.event.pull_request.head.repo.full_name }}.git --build-arg REPO_PATH="." --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-hpu")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-hpu" --hostname="chatbotinfer-hpu-container" chatbotinfer-hpu:latest
+          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-hpu" --hostname="chatbotinfer-hpu-container" chatbotinfer-hpu:latest
 
       - name: Run Inference Test without DeepSpeed
         run: |
-          docker exec "chatbotinfer-hpu" bash -c "cd /root/chatbot; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --habana --use_hpu_graphs --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer-hpu" bash -c "cd /intel-extension-for-transformers; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --habana --use_hpu_graphs --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Run Inference Test with DeepSpeed
         run: |
-          docker exec "chatbotinfer-hpu" bash -c "cd /root/chatbot; export HABANA_VISIBLE_MODULES=\"0,1\"; python workflows/chatbot/utils/gaudi_spawn.py --use_deepspeed --world_size 2 workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --habana --use_hpu_graphs --use_kv_cache --task chat --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer-hpu" bash -c "cd /intel-extension-for-transformers; export HABANA_VISIBLE_MODULES=\"0,1\"; python workflows/chatbot/utils/gaudi_spawn.py --use_deepspeed --world_size 2 workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --habana --use_hpu_graphs --use_kv_cache --task chat --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()

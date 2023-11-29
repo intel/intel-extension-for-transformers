@@ -818,6 +818,19 @@ register_conv_template(
     )
 )
 
+# Mistral template
+# source: https://docs.mistral.ai/llm/mistral-instruct-v0.1#chat-template
+register_conv_template(
+    Conversation(
+        name="mistral",
+        system_template="[INST]{system_message}\n",
+        roles=("[INST]", "[/INST]"),
+        sep_style=SeparatorStyle.LLAMA2,
+        sep=" ",
+        sep2="</s>",
+    )
+)
+
 # llama2 template
 # reference: https://huggingface.co/blog/codellama#conversational-instructions
 # reference: https://github.com/facebookresearch/llama/blob/1a240688810f8036049e8da36b073f63d2ac552c/llama/generation.py#L212
@@ -934,6 +947,38 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="neural-chat-7b-v2",
+        system_message="""### System:
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
+# neuralchat-v2 template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3",
+        system_message="""### System:
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.</s>\n""",
+        roles=("### User:", "### Assistant:"),
+        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep="\n",
+        sep2="</s>",
+    )
+)
+
+# neuralchat-v2 template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v3-1",
         system_message="""### System:
     - You are a helpful assistant chatbot trained by Intel.
     - You answer questions.

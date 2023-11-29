@@ -36,7 +36,7 @@ class TestCutVideo(unittest.TestCase):
             if os.path.exists(video_path):
                 parser.add_argument("--path", type=str, default=video_path)
             else:
-                parser.add_argument("--path", type=str, default="../../../../assets/video/intel.mp4")
+                parser.add_argument("--path", type=str, default="../assets/video/intel.mp4")
             parser.add_argument("--min", type=str, default='1')
             parser.add_argument("--sr", type=str, default='16000')
             parser.add_argument("--out_path", type=str, default="./raw")
