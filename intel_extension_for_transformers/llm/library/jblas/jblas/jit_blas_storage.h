@@ -85,7 +85,8 @@ class ObjectAlignedBuffer : public ISerialObject {
   }
   virtual void serializeToBuffer(int8_t*& wptr) override {
     utils::serialize(wptr, mBufSize);
-    mBufOffset = utils::pointer_align<ALIGN>(wptr) - wptr;
+    auto tmpptr = wptr + sizeof(mBufOffset);
+    mBufOffset = utils::pointer_align<ALIGN>(tmpptr) - tmpptr;
     utils::serialize(wptr, mBufOffset);
     wptr += mBufOffset;
     if (wptr != mBufPtr) {
@@ -99,12 +100,50 @@ class ObjectAlignedBuffer : public ISerialObject {
       mBufOffset = utils::deserialize<size_t>(rptr);
     } else {
       utils::serialize<size_t>(rptr, mBufSize);
-      mBufOffset = utils::pointer_align<ALIGN>(rptr) - rptr;
+      auto tmpptr = rptr + sizeof(mBufOffset);
+      mBufOffset = utils::pointer_align<ALIGN>(tmpptr) - tmpptr;
       utils::serialize(rptr, mBufOffset);
     }
     rptr += mBufOffset;
     mBufPtr = rptr;
     rptr += mBufSize;
+  }
+};
+
+template <int ALIGN>
+class ObjectOptionalBuffer : public ObjectAlignedBuffer<ALIGN> {
+ public:
+  void resize(size_t bytes) {
+    ObjectAlignedBuffer<ALIGN>::resize(bytes);
+    mNotEmpty = bytes > 0;
+  }
+
+  // ser
+  bool mNotEmpty{false};
+
+  virtual size_t getSerializedSize() override {
+    size_t totalsize = 0;
+    totalsize += sizeof(mNotEmpty);
+    if (mNotEmpty) {
+      totalsize += ObjectAlignedBuffer<ALIGN>::getSerializedSize();
+    }
+    return totalsize;
+  }
+  virtual void serializeToBuffer(int8_t*& wptr) override {
+    utils::serialize(wptr, mNotEmpty);
+    if (mNotEmpty) {
+      ObjectAlignedBuffer<ALIGN>::serializeToBuffer(wptr);
+    }
+  }
+  virtual void deserializeBuffer(int8_t*& rptr, bool map_buf) override {
+    if (!map_buf) {
+      mNotEmpty = utils::deserialize<bool>(rptr);
+    } else {
+      utils::serialize<bool>(rptr, mNotEmpty);
+    }
+    if (mNotEmpty) {
+      ObjectAlignedBuffer<ALIGN>::deserializeBuffer(rptr, map_buf);
+    }
   }
 };
 
@@ -115,10 +154,9 @@ class ObjectQuantCorrection : public ISerialObject {
  public:
   size_t mCSize = 0;
   int mCStep = 0;
-  bool mIsAsym = false;
-  bool mHasReduce = false;
   JBLAS_DTYPE mScaT = JBLAS_DTYPE::F32, mZpT = JBLAS_DTYPE::F32, mRedT = JBLAS_DTYPE::F32;
-  ObjectAlignedBuffer<Alignment> mScaleBuf, mZpBuf, mRedBuf;
+  ObjectAlignedBuffer<Alignment> mScaleBuf;
+  ObjectOptionalBuffer<Alignment> mZpBuf, mRedBuf;
 
   // non-ser
  public:
@@ -130,15 +168,13 @@ class ObjectQuantCorrection : public ISerialObject {
     mZpT = zpt;
     mRedT = redt;
     updateSize();
-    mIsAsym = _is_asym;
-    mHasReduce = _has_reduce;
     mCStep = Step;
     mCSize = static_cast<size_t>(Rows) * Step;
     mScaleBuf.resize(mCSize * mScaEleSize);
-    if (mIsAsym) {
+    if (_is_asym) {
       mZpBuf.resize(mCSize * mZpEleSize);
     }
-    if (mHasReduce) {
+    if (_has_reduce) {
       mRedBuf.resize(mCSize * mRedEleSize);
     }
     return getSerializedSize();
@@ -147,25 +183,19 @@ class ObjectQuantCorrection : public ISerialObject {
   virtual size_t getSerializedSize() override {
     size_t totalsize = getMiscSize();
     totalsize += mScaleBuf.getSerializedSize();
-    if (mIsAsym) totalsize += mZpBuf.getSerializedSize();
-    if (mHasReduce) totalsize += mRedBuf.getSerializedSize();
+    totalsize += mZpBuf.getSerializedSize();
+    totalsize += mRedBuf.getSerializedSize();
     return totalsize;
   }
   virtual void serializeToBuffer(int8_t*& wptr) override {
     utils::serialize(wptr, mScaT);
     utils::serialize(wptr, mZpT);
     utils::serialize(wptr, mRedT);
-    utils::serialize(wptr, mIsAsym);
-    utils::serialize(wptr, mHasReduce);
     utils::serialize(wptr, mCStep);
     utils::serialize(wptr, mCSize);
     mScaleBuf.serializeToBuffer(wptr);
-    if (mIsAsym) {
-      mZpBuf.serializeToBuffer(wptr);
-    }
-    if (mHasReduce) {
-      mRedBuf.serializeToBuffer(wptr);
-    }
+    mZpBuf.serializeToBuffer(wptr);
+    mRedBuf.serializeToBuffer(wptr);
   }
   virtual void deserializeBuffer(int8_t*& rptr, bool locate_buf) override {
     if (!locate_buf) {
@@ -173,26 +203,18 @@ class ObjectQuantCorrection : public ISerialObject {
       mZpT = utils::deserialize<JBLAS_DTYPE>(rptr);
       mRedT = utils::deserialize<JBLAS_DTYPE>(rptr);
       updateSize();
-      mIsAsym = utils::deserialize<bool>(rptr);
-      mHasReduce = utils::deserialize<bool>(rptr);
       mCStep = utils::deserialize<int>(rptr);
       mCSize = utils::deserialize<size_t>(rptr);
     } else {
       utils::serialize<JBLAS_DTYPE>(rptr, mScaT);
       utils::serialize<JBLAS_DTYPE>(rptr, mZpT);
       utils::serialize<JBLAS_DTYPE>(rptr, mRedT);
-      utils::serialize<bool>(rptr, mIsAsym);
-      utils::serialize<bool>(rptr, mHasReduce);
       utils::serialize<int>(rptr, mCStep);
       utils::serialize<size_t>(rptr, mCSize);
     }
     mScaleBuf.deserializeBuffer(rptr, locate_buf);
-    if (mIsAsym) {
-      mZpBuf.deserializeBuffer(rptr, locate_buf);
-    }
-    if (mHasReduce) {
-      mRedBuf.deserializeBuffer(rptr, locate_buf);
-    }
+    mZpBuf.deserializeBuffer(rptr, locate_buf);
+    mRedBuf.deserializeBuffer(rptr, locate_buf);
   }
 
  protected:
@@ -207,8 +229,6 @@ class ObjectQuantCorrection : public ISerialObject {
     totalsize += sizeof(mScaT);
     totalsize += sizeof(mZpT);
     totalsize += sizeof(mRedT);
-    totalsize += sizeof(mIsAsym);
-    totalsize += sizeof(mHasReduce);
     totalsize += sizeof(mCStep);
     totalsize += sizeof(mCSize);
     return totalsize;
@@ -574,10 +594,10 @@ class StorageQuantActivation : public IActivationKBlockBase {
   inline constexpr JBLAS_DTYPE RDtype() { return mCorrection.mRedT; }
   inline constexpr JBLAS_DTYPE ZDtype() { return mCorrection.mZpT; }
   inline constexpr JBLAS_DTYPE SDtype() { return mCorrection.mScaT; }
-  inline constexpr bool IsAsym() { return mCorrection.mIsAsym; }
-  inline constexpr bool HasReduce() { return mCorrection.mHasReduce; }
+  inline constexpr bool IsAsym() { return mCorrection.mZpBuf.mNotEmpty; }
+  inline constexpr bool HasReduce() { return mCorrection.mRedBuf.mNotEmpty; }
   inline constexpr size_t CSize() { return mCorrection.mCSize; }
-  inline constexpr size_t CStep() { return mCorrection.mCStep; }
+  inline constexpr int CStep() { return mCorrection.mCStep; }
 
   virtual void assign(int8_t* buf) override {
     IActivationKBlockBase::deserializeBuffer(buf, true);
@@ -623,6 +643,7 @@ class StorageWeightKBlockNInteger : public IWeightKBlockBase {
   using CorrectionType = ObjectQuantCorrection;
   QWeightType mQBuf;
   CorrectionType mCorrection;
+  ObjectOptionalBuffer<Alignment> mShuffleIndices;
   StorageWeightKBlockNInteger(uint32_t _type) : IWeightKBlockBase(_type) {
     mPrologueID = JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger;
   }
@@ -640,18 +661,23 @@ class StorageWeightKBlockNInteger : public IWeightKBlockBase {
                                                          jblas::gemm::CoreAttr::COMP_SHIFT);
     mCorrection.resize(nk_scale, NPad, scalet, zpt, redt, IsAsym,
                        gemm_comp >= static_cast<uint32_t>(jblas::gemm::CompType::COMP_INT_START));
-    mSize = InfoType::getSerializedSize() + mQBuf.getSerializedSize() + mCorrection.getSerializedSize();
-    mSize = utils::padto(mSize, Alignment);
+    update_size();
     return mSize;
+  }
+
+  void enable_shuffle() {
+    auto indicessize = mK * sizeof(int);
+    mShuffleIndices.resize(indicessize);
+    update_size();
   }
 
   inline constexpr JBLAS_DTYPE RDtype() { return mCorrection.mRedT; }
   inline constexpr JBLAS_DTYPE ZDtype() { return mCorrection.mZpT; }
   inline constexpr JBLAS_DTYPE SDtype() { return mCorrection.mScaT; }
-  inline constexpr bool IsAsym() { return mCorrection.mIsAsym; }
-  inline constexpr bool HasReduce() { return mCorrection.mHasReduce; }
+  inline constexpr bool IsAsym() { return mCorrection.mZpBuf.mNotEmpty; }
+  inline constexpr bool HasReduce() { return mCorrection.mRedBuf.mNotEmpty; }
   inline constexpr size_t CSize() { return mCorrection.mCSize; }
-  inline constexpr size_t CStep() { return mCorrection.mCStep; }
+  inline constexpr int CStep() { return mCorrection.mCStep; }
 
   template <typename T>
   inline constexpr T* WPtr() {
@@ -673,22 +699,33 @@ class StorageWeightKBlockNInteger : public IWeightKBlockBase {
     return mCorrection.mRedBuf.get<T>();
   }
 
+  inline constexpr int* ShfIndice() { return mShuffleIndices.get<int>(); }
+
+  void update_size() {
+    mSize = InfoType::getSerializedSize() + mQBuf.getSerializedSize() + mCorrection.getSerializedSize() +
+            mShuffleIndices.getSerializedSize();
+    mSize = utils::padto(mSize, Alignment);
+  }
+
   virtual void assign(int8_t* buf) override {
     InfoType::deserializeBuffer(buf, true);
     mQBuf.deserializeBuffer(buf, true);
     mCorrection.deserializeBuffer(buf, true);
+    mShuffleIndices.deserializeBuffer(buf, true);
   }
 
   virtual void serialize(int8_t* wptr) {
     InfoType::serializeToBuffer(wptr);
     mQBuf.serializeToBuffer(wptr);
     mCorrection.serializeToBuffer(wptr);
+    mShuffleIndices.serializeToBuffer(wptr);
   }
 
   virtual void deserialize(int8_t* rptr) override {
     InfoType::deserializeBuffer(rptr, false);
     mQBuf.deserializeBuffer(rptr, false);
     mCorrection.deserializeBuffer(rptr, false);
+    mShuffleIndices.deserializeBuffer(rptr, false);
   }
 };
 
@@ -720,10 +757,10 @@ class StorageWeightKBlockS8 : public IWeightKBlockBase {
   inline constexpr JBLAS_DTYPE RDtype() { return mCorrection.mRedT; }
   inline constexpr JBLAS_DTYPE ZDtype() { return mCorrection.mZpT; }
   inline constexpr JBLAS_DTYPE SDtype() { return mCorrection.mScaT; }
-  inline constexpr bool IsAsym() { return mCorrection.mIsAsym; }
-  inline constexpr bool HasReduce() { return mCorrection.mHasReduce; }
+  inline constexpr bool IsAsym() { return mCorrection.mZpBuf.mNotEmpty; }
+  inline constexpr bool HasReduce() { return mCorrection.mRedBuf.mNotEmpty; }
   inline constexpr size_t CSize() { return mCorrection.mCSize; }
-  inline constexpr size_t CStep() { return mCorrection.mCStep; }
+  inline constexpr int CStep() { return mCorrection.mCStep; }
 
   template <typename T>
   inline T* WPtr() {
