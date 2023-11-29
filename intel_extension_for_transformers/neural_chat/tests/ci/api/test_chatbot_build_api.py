@@ -20,6 +20,7 @@ import os
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
+import torch
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
@@ -58,7 +59,8 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
-        plugins.tts.args["output_audio_path"]="./output_audio.wav"
+        plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"
+        plugins.tts.args["output_audio_path"] = "./output_audio.wav"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)

@@ -58,8 +58,12 @@ class RetrievalAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, bot) -> None:
+    def set_chatbot(self, bot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = bot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:

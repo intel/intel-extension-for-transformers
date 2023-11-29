@@ -579,6 +579,39 @@ python gaudi_spawn.py \
         --use_lazy_mode \
 ```
 
+Multi-card finetuning of Llama2-70B with DeepSpeed ZeRO-3 optimization and LoRA in 8 Gaudi2 card
+The following command requires Habana DeepSpeed 1.13.0 or later.
+
+```bash
+PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 python gaudi_spawn.py \
+        --world_size 8 --use_deepspeed finetune_clm.py \
+        --model_name_or_path "meta-llama/Llama-2-70b-chat-hf" \
+        --bf16 True \
+        --dataset_name tatsu-lab/alpaca \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./llama2_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --device "hpu" \
+        --use_habana \
+        --use_lazy_mode \
+        --deepspeed llama2_ds_zero3_config.json \
+
+```
+
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.

@@ -19,6 +19,7 @@ from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
 from ..ops import Tensor
+from .. import logger
 import numpy as np
 
 
@@ -265,6 +266,8 @@ class MultiHeadAttention(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
+                logger.info('MultiHeadAttention mathched...')
+                logger.debug('MultiHeadAttention = {}'.format(new_node_names))
                 if i in [0, 1]:  # entry int8
                     if len(new_node_names) != len(patterns_search_nodes_name):
                         all_fused = False
