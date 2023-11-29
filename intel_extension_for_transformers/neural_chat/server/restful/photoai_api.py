@@ -36,8 +36,8 @@ from .voicechat_api import (
     handle_talkingbot_asr as talkingbot_asr,
     create_speaker_embedding as talkingbot_embd
 )
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
 from ...plugins import plugins
+from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 
 
 class PhotoAIAPIRouter(APIRouter):
@@ -46,8 +46,12 @@ class PhotoAIAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -76,6 +80,16 @@ class PhotoAIAPIRouter(APIRouter):
 
 
 router = PhotoAIAPIRouter()
+
+
+def get_current_time() -> str:
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    cur_time = utc_now.astimezone(SHA_TZ).strftime("%Y/%m/%d")
+    return cur_time
 
 
 @router.post("/v1/aiphotos/uploadImages")
@@ -392,12 +406,18 @@ async def handle_ai_photos_chat_to_image(request: Request):
     query = params['query']
     logger.info(f'<chatWithImage> generating chat to image for user {user_id} with query: {query}')
 
+    chatbot = router.get_chatbot()
+    cur_time = get_current_time()
+    pt = PromptTemplate("ner")
+    pt.append_message(pt.conv.roles[0], cur_time)
+    pt.append_message(pt.conv.roles[1], query)
+    prompt = pt.get_prompt()
+    response = chatbot.predict(query=prompt)
+    response = response.split("[/INST]")[-1]
+
     try:
-        start_time = time.time()
-        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat", bf16=False)
-        result = ner_obj.inference(query=query)
-        end_time = time.time()
-        print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))
+        ner_obj = plugins['ner']["instance"]
+        result = ner_obj.ner_inference(response)
     except Exception as e:
         logger.error("<chatWithImage> "+str(e))
         raise Exception(e)

@@ -57,6 +57,10 @@ import importlib.util
 from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
+from transformers.integrations.deepspeed import (
+    is_deepspeed_available,
+)
+
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
@@ -348,6 +352,13 @@ class Finetuning:
                 kwargs['use_llm_runtime'] = False
             else:
                 from transformers import AutoModelForCausalLM
+
+            low_cpu_mem_usage = True
+            if is_deepspeed_available():
+                from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+                if is_deepspeed_zero3_enabled():
+                    low_cpu_mem_usage = False
+
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -359,7 +370,7 @@ class Finetuning:
                 use_auth_token=True if model_args.use_auth_token else None,
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
+                low_cpu_mem_usage=low_cpu_mem_usage,
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
                 **kwargs
@@ -445,12 +456,10 @@ class Finetuning:
             )
 
         if training_args.do_eval:
-            if "test" not in tokenized_datasets:
-                self.logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
-                tokenized_datasets = tokenized_datasets["train"].train_test_split(
-                    test_size=data_args.eval_dataset_size, shuffle=True, seed=42
-                )
-            eval_dataset = tokenized_datasets["test"]
+            if "validation" not in tokenized_datasets:
+                raise ValueError("--do_eval requires a validation dataset")
+
+            eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 

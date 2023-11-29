@@ -46,7 +46,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     LazyImport,
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
-    get_example_inputs_for_chatglm
+    get_example_inputs_for_chatglm,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -58,7 +58,25 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if kwargs.get("use_embedding_runtime", False):
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
+            
+            # This interface will switch the MHA fusion off.
+            pattern_config = {
+                'pattern_switch': {
+                    'MultiHeadAttention': False,
+                }
+            }
+
+            cast_type = kwargs.get("cast_type", "native")
+            with autocast(cast_type):
+                model = compile(pretrained_model_name_or_path, pattern_config)
+
+            return model
+
         import intel_extension_for_transformers.transformers.modeling.modeling_map
+
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
@@ -75,8 +93,7 @@ class _BaseQBitsAutoModelClass:
         elif load_in_8bit or load_in_4bit:
             use_cpu = (
                 True
-                if device_map == torch.device("cpu")
-                or device_map == "cpu"
+                if device_map == torch.device("cpu") or device_map == "cpu"
                 else False
             )
             if (
@@ -99,10 +116,11 @@ class _BaseQBitsAutoModelClass:
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
+
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
                 if quantization_config is None:
-                    if use_llm_runtime: 
+                    if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
                             compute_dtype="int8", weight_dtype="int4"
                         )
@@ -118,7 +136,7 @@ class _BaseQBitsAutoModelClass:
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
-                    if use_llm_runtime: 
+                    if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
                             compute_dtype="bf16", weight_dtype="int8"
                         )
@@ -132,7 +150,10 @@ class _BaseQBitsAutoModelClass:
                         and quantization_config.compute_dtype == torch_dtype
                     ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
         if isinstance(quantization_config, MixedPrecisionConfig):
-            if quantization_config.dtype == "float16" or quantization_config.dtype == "fp16":
+            if (
+                quantization_config.dtype == "float16"
+                or quantization_config.dtype == "fp16"
+            ):
                 kwargs["torch_dtype"] = torch.float16
             else:
                 kwargs["torch_dtype"] = torch.bfloat16
@@ -147,6 +168,7 @@ class _BaseQBitsAutoModelClass:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
                 from intel_extension_for_transformers.llm.runtime.graph import Model
+
                 model = Model()
                 model.init(
                     pretrained_model_name_or_path,
@@ -165,16 +187,18 @@ class _BaseQBitsAutoModelClass:
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path, *model_args, **kwargs
                 )
-                if (not torch.cuda.is_available() or
-                        device_map == "cpu" or
-                        device_map == torch.device("cpu")
-                        ) and model.config.model_type == "chatglm":
+                if (
+                    not torch.cuda.is_available()
+                    or device_map == "cpu"
+                    or device_map == torch.device("cpu")
+                ) and model.config.model_type == "chatglm":
                     model = model.float()
-                model.eval()        
+                model.eval()
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
+
                 model = convert_to_quantized_model(model, quantization_config)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
@@ -184,19 +208,22 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            assert (
+                ipex.__version__ >= "2.1.0+cpu"
+            ), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             model = cls.ORIG_MODEL.from_pretrained(
-                    pretrained_model_name_or_path,
-                    low_cpu_mem_usage=True,
-                    torch_dtype=torch.float,
-                    torchscript=True,
-                    *model_args,
-                    **kwargs
+                pretrained_model_name_or_path,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                torchscript=True,
+                *model_args,
+                **kwargs,
             )
-            if (not torch.cuda.is_available() or 
-                    device_map == "cpu" or 
-                    device_map == torch.device("cpu")
-                    ) and model.config.model_type == "chatglm":
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
@@ -207,7 +234,9 @@ class _BaseQBitsAutoModelClass:
             if quantization_config.ipex_opt_llm is None:
                 if model_type in ipex_opt_llm_supported:
                     quantization_config.ipex_opt_llm = True
-                    logger.info("quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used.")
+                    logger.info(
+                        "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
+                    )
                     logger.warning("The suggested transformers version is 4.31.0.")
                 else:
                     quantization_config.ipex_opt_llm = False
@@ -218,7 +247,7 @@ class _BaseQBitsAutoModelClass:
                     quantization_config=qconfig,
                     dtype=torch.float32,
                     inplace=True,
-                    deployment_mode=False
+                    deployment_mode=False,
                 )
                 model.eval()
 
@@ -226,13 +255,13 @@ class _BaseQBitsAutoModelClass:
             num_beams = quantization_config.num_beams
             if quantization_config.ipex_opt_llm:
                 past_key_values = generate_dummy_past_key_values_for_opt_llm(
-                                                                            config=model.config,
-                                                                            input_bs=1,
-                                                                            num_beams=num_beams
-                                                                            )
+                    config=model.config, input_bs=1, num_beams=num_beams
+                )
             else:
-                past_key_values = generate_dummy_past_key_values(config=model.config, input_bs=1)
-          
+                past_key_values = generate_dummy_past_key_values(
+                    config=model.config, input_bs=1
+                )
+
             # calibration function
             calib_func = quantization_config.calib_func
             if calib_func is None:
@@ -247,9 +276,11 @@ class _BaseQBitsAutoModelClass:
 
                 from datasets import load_dataset
                 from torch.utils.data import DataLoader
+
                 calib_dataset = quantization_config.calib_dataset
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, split="train")
+                calib_dataset = load_dataset(calib_dataset, 
+                                            split="test" if calib_dataset in ["mbpp", "openai_humaneval"] else "train")
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
@@ -278,9 +309,7 @@ class _BaseQBitsAutoModelClass:
                     for text in batch:
                         input_ids = text["input_ids"]
                         input_ids = (
-                            input_ids[: 512]
-                            if len(input_ids) > 512
-                            else input_ids
+                            input_ids[:512] if len(input_ids) > 512 else input_ids
                         )
                         last_ind.append(input_ids.shape[0] - 1)
                         attention_mask = torch.ones(len(input_ids))
@@ -289,41 +318,43 @@ class _BaseQBitsAutoModelClass:
                         attention_mask_padded.append(attention_mask)
                         position_ids_padded.append(position_ids)
                     return (
-                        (
-                            torch.vstack(input_ids_padded),
-                            torch.vstack(attention_mask_padded),
-                            torch.vstack(position_ids_padded),
-                            past_key_values,
-                        ),
+                        {
+                            "input_ids": torch.vstack(input_ids_padded),
+                            "attention_mask": torch.vstack(attention_mask_padded),
+                            "position_ids": torch.vstack(position_ids_padded),
+                            "past_key_values": past_key_values,
+                        },
                         torch.tensor(last_ind),
                     )
+
                 calib_dataloader = DataLoader(
                     tokenized_dataset,
                     batch_size=1,
                     shuffle=False,
                     collate_fn=collate_batch,
                 )
+
                 from optimum.exporters.onnx import MODEL_TYPES_REQUIRING_POSITION_IDS
+
                 def calib_func(model):
                     with torch.no_grad():
-                        for i, (
-                            (input_ids, attention_mask, position_ids, past_key_values), last_ind
-                            ) in enumerate(calib_dataloader):
+                        for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
                             if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
-                                    input_ids=input_ids,
-                                    past_key_values=past_key_values,
-                                    position_ids=position_ids,
-                                    attention_mask=attention_mask,
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    position_ids=inputs["position_ids"],
+                                    attention_mask=inputs["attention_mask"],
                                 )
                             else:
                                 model(
-                                    input_ids=input_ids,
-                                    past_key_values=past_key_values,
-                                    attention_mask=attention_mask,
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    attention_mask=inputs["attention_mask"],
                                 )
+
                 logger.info(
                     "The default calibration funcation is used, "
                     + "the calibration dataset is NeelNanda/pile-10k,"
@@ -334,30 +365,24 @@ class _BaseQBitsAutoModelClass:
             # example_inputs
             example_inputs = quantization_config.example_inputs
             if model_type == "chatglm":
-                example_inputs = get_example_inputs_for_chatglm(model, 
-                                                                quantization_config=quantization_config,
-                                                                return_type="dict")
+                example_inputs = get_example_inputs_for_chatglm(
+                    model, quantization_config=quantization_config, return_type="dict"
+                )
             if example_inputs is None:
-                for i, (
-                    (input_ids, attention_mask, position_ids, past_key_values),
-                    last_ind,
-                ) in enumerate(calib_dataloader):
+                for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        example_inputs = {
-                            "input_ids": input_ids,
-                            "attention_mask": attention_mask,
-                            "position_ids": position_ids,
-                            "past_key_values": past_key_values
-                        }
+                        example_inputs = inputs
                     else:
                         example_inputs = {
-                            "input_ids": input_ids,
-                            "attention_mask": attention_mask,
-                            "past_key_values": past_key_values
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "past_key_values": inputs["past_key_values"],
                         }
                     break
+
             # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
+
             conf = PostTrainingQuantConfig(
                 backend=quantization_config.backend,  # default is ipex
                 excluded_precisions=quantization_config.excluded_precisions,
@@ -367,24 +392,26 @@ class _BaseQBitsAutoModelClass:
                 example_inputs=example_inputs,
             )
             model = quantization.fit(
-                                    model, 
-                                    conf,
-                                    calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader if \
-                                        quantization_config.recipes['smooth_quant_args']['alpha']=="auto" else None
-                                    )
+                model,
+                conf,
+                calib_func=calib_func,
+                calib_dataloader=calib_dataloader
+                if quantization_config.recipes["smooth_quant_args"]["alpha"] == "auto"
+                else None,
+            )
             logger.info("SmoothQuant done.")
         else:
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path, *model_args, **kwargs
             )
-            if (not torch.cuda.is_available() or
-                    device_map == "cpu" or
-                    device_map == torch.device("cpu")
-                    ) and model.config.model_type == "chatglm":
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
                 model = model.float()
 
-            model.eval() 
+            model.eval()
         return model
 
 

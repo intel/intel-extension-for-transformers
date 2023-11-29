@@ -181,6 +181,9 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* NeurIPS'23 on Diffusion Models: [Effective Quantization for Diffusion Models on CPUs](https://arxiv.org/pdf/2311.16133.pdf) (Nov 2023)
+* Blog published on geeky-gadgets: [New Intel Neural-Chat 7B LLM tops Hugging Face leaderboard beating original Mistral 7B] (https://www.geeky-gadgets.com/intel-neural-chat-7b-llm/) (Nov 2023)
+* Blog published on Huggingface: [Intel Neural-Chat 7b: Fine-Tuning on Gaudi2 for Top LLM Performance](https://huggingface.co/blog/Andyrasika/neural-chat-intel) (Nov 2023)
 * Video on YouTube: [Neural Chat 7B v3-1 Installation on Windows - Step by Step](https://www.youtube.com/watch?v=7_urstS-noU) (Nov 2023)
 * Video on YouTube: [Intel's Neural-Chat 7b: Most Powerful 7B Model! Beats GPT-4!?](https://www.youtube.com/watch?v=bWhZ1u_1rlc) (Nov 2023)
 * Blog published on marktechpost: [Intel Researchers Propose a New Artificial Intelligence Approach to Deploy LLMs on CPUs More Efficiently](https://www.marktechpost.com/2023/11/09/intel-researchers-propose-a-new-artificial-intelligence-approach-to-deploy-llms-on-cpus-more-efficiently) (Nov 2023)
