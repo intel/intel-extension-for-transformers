@@ -30,7 +30,7 @@ class parallel_class {
   ~parallel_class() {
     delete pcomm;
     if (use_shm) {
-      shared_close(&shared_buffer);
+      shared_close(shm_name, cbuffer, world_size * sizeof(struct ccl_buffer));
     }
   }
 
@@ -90,21 +90,23 @@ class parallel_class {
       use_shm = std::stoi(local_size) == world_size;
     }
     if (use_shm) {
-      char shm_name[100];
+      void* shared_ptr = nullptr;
       snprintf(shm_name, 100, "%s_%d", "shared_memory_tp", getuid());
       if (rank == 0) {
         cbuffer = (struct ccl_buffer*)malloc(world_size * sizeof(struct ccl_buffer));
-        shared_create(&shared_buffer, shm_name, cbuffer, world_size * sizeof(struct ccl_buffer));
-        cbuffer = (struct ccl_buffer*)shared_buffer.bytes;
+        shared_ptr = shared_create(shm_name, cbuffer, world_size * sizeof(struct ccl_buffer));
+        assert(shared_ptr != nullptr);
+        cbuffer = (struct ccl_buffer*)(shared_ptr);
         for (int i = 0; i < world_size; i++) {
           cbuffer[i].state = ccl_begin;
         }
       }
       ccl::barrier(*pcomm).wait();
       if (rank != 0) {
-        shared_open(&shared_buffer, shm_name, world_size * sizeof(struct ccl_buffer));
+        shared_ptr = shared_open(shm_name, world_size * sizeof(struct ccl_buffer));
+        assert(shared_ptr != nullptr);
+        cbuffer = (struct ccl_buffer*)shared_ptr;
       }
-      cbuffer = (struct ccl_buffer*)shared_buffer.bytes;
     }
   }
   static void mpi_finalize() {
@@ -117,7 +119,7 @@ class parallel_class {
   }
 
   bool use_shm = false;
-  SharedData shared_buffer;
+  char shm_name[100];
   int world_size;
   int rank;
 

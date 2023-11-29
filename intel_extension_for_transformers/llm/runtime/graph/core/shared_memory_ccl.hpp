@@ -32,47 +32,35 @@ enum ccl_state {
   copy_out_done,
 };
 
-// SHM building blocks
-struct SharedData {
-  const char* name;
-  int descriptor;
-  void* bytes;
-  size_t nbytes;
-};
-
-void shared_open(SharedData* data, const char* name, size_t nbytes) {
+void* shared_open(const char* name, size_t nbytes) {
   int d = shm_open(name, O_RDWR, S_IRUSR | S_IWUSR);
   if (d != -1) {
-    void* bytes = mmap(NULL, nbytes, PROT_READ | PROT_WRITE, MAP_SHARED, d, 0);
-    data->name = name;
-    data->descriptor = d;
-    data->bytes = bytes;
-    data->nbytes = nbytes;
+    return mmap(NULL, nbytes, PROT_READ | PROT_WRITE, MAP_SHARED, d, 0);
   } else {
     printf("shared_open %s failed\n", name);
-    data->descriptor = -1;
+    return nullptr;
   }
 }
 
-void shared_create(SharedData* data, const char* name, void* bytes, size_t nbytes) {
+void* shared_create(const char* name, void* bytes, size_t nbytes) {
   int d = shm_open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-  if (d != -1) {
-    if (nbytes = write(d, bytes, nbytes)) {
-      shared_open(data, name, nbytes);
-    }
+  if ((d != -1) && (nbytes = write(d, bytes, nbytes))) {
+    return mmap(NULL, nbytes, PROT_READ | PROT_WRITE, MAP_SHARED, d, 0);
   } else {
     printf("shared_create %s failed\n", name);
+    return nullptr;
   }
 }
 
-void shared_close(SharedData* data) {
-  if (data->descriptor != -1) {
-    munmap(data->bytes, data->nbytes);
-    shm_unlink(data->name);
+void shared_close(const char* name, void* bytes, size_t nbytes) {
+  int d = shm_open(name, O_RDWR, S_IRUSR | S_IWUSR);
+  if (d != -1) {
+    munmap(bytes, nbytes);
+    shm_unlink(name);
   }
 }
 
-#define MAX_BUF_SIZE 1048576
+#define MAX_BUF_SIZE 1048576 * 4
 struct ccl_buffer {
   enum ccl_state state;
   char data[MAX_BUF_SIZE];
@@ -105,7 +93,7 @@ void reduce_fp32_buffers(int num_elements, int num_buffers, struct ccl_buffer* c
 #define N_REDUCE_LIMIT 8
 
 void reduce_buffers(struct ccl_buffer* cbuffer, int num_elements, int num_buffers) {
-  if(num_buffers == 2) {
+  if (num_buffers == 2) {
     reduce_2_fp32_buffers(num_elements, cbuffer[0].data, cbuffer[1].data);
   } else if (num_buffers > 2 && num_buffers <= N_REDUCE_LIMIT) {
     reduce_fp32_buffers(num_elements, num_buffers, cbuffer);
@@ -139,16 +127,17 @@ void reduce_buffers(struct ccl_buffer* cbuffer, int num_elements, int num_buffer
 // iteration depends on vector length.  256bit vector ==> 32 bytes, 512bit vector ==> 64 bytes
 #define VECTOR_LENGTH_IN_BYTES 32
 
-#define REDUCE_ADD_F32(x)                                                     \
-  do {                                                                     \
+#define REDUCE_ADD_F32(x)                                              \
+  do {                                                                 \
     auto in##x##_val = _mm256_loadu_ps((float*)(cbuffer[x].data + i)); \
-    inout_val = _mm256_add_ps(inout_val, in##x##_val);                     \
+    inout_val = _mm256_add_ps(inout_val, in##x##_val);                 \
   } while (0)
 
 void reduce_fp32_buffers(int num_elements, int num_buffers, struct ccl_buffer* cbuffer) {
-// TODO num_elements must be divisible by 16 (caller check)
+  // For vector reduce add
+  assert(num_elements % 16 == 0);
 #pragma omp parallel for
-  for (int i = 0; i < num_elements * 4; i += VECTOR_LENGTH_IN_BYTES) {
+  for (int i = 0; i < num_elements * sizeof(float); i += VECTOR_LENGTH_IN_BYTES) {
     auto inout_val = _mm256_loadu_ps((float*)(cbuffer[0].data + i));
     switch (num_buffers) {
       case 8:

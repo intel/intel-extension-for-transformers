@@ -107,8 +107,8 @@ struct model_load_tensor {
       size = shards[0].size;
 #ifdef NE_TP_MODEL
       if (split_type == TP_1D_ROW || split_type == TP_1D_COLUMN) {
-	// TODO when we can calc accurate jblas split size, remove this
-	size_t JBLAS_MISC_SIZE = 192;
+        // TODO when we can calc accurate jblas split size, remove this
+        size_t JBLAS_MISC_SIZE = 192;
         size = int(size / world_size) + JBLAS_MISC_SIZE;
       }
 #endif
@@ -634,8 +634,8 @@ struct model_model_loader {
     }
   }
 
-  size_t jblas_split_weight(void** src, void** dst, size_t src_n, size_t src_k, size_t dst_n, size_t dst_k, size_t n_rank,
-                          size_t k_rank) {
+  size_t jblas_split_weight(void** src, void** dst, size_t src_n, size_t src_k, size_t dst_n, size_t dst_k,
+                            size_t n_rank, size_t k_rank) {
     auto src_fp32 = (float*)malloc(src_n * src_k * sizeof(float));
     if (src_fp32 == nullptr) {
       assert(0);
@@ -700,8 +700,8 @@ struct model_model_loader {
         file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        lt.size = jblas_split_weight(&src_data, &dst_data, lt.world_size * num_rows, lt.ne.at(0), num_rows, lt.ne.at(0), lt.rank,
-                           0);
+        lt.size = jblas_split_weight(&src_data, &dst_data, lt.world_size * num_rows, lt.ne.at(0), num_rows, lt.ne.at(0),
+                                     lt.rank, 0);
       } else {
         // only copy part of weight form the tmp_buf of origin file
         tmp_buf.resize(lt.size * lt.world_size);
@@ -722,8 +722,8 @@ struct model_model_loader {
         file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
-        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.world_size * lt.ne.at(0), num_rows, lt.ne.at(0), 0,
-                           lt.rank);
+        lt.size = jblas_split_weight(&src_data, &dst_data, num_rows, lt.world_size * lt.ne.at(0), num_rows, lt.ne.at(0),
+                                     0, lt.rank);
       } else {
         tmp_buf.resize(lt.size * lt.world_size);
         file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
