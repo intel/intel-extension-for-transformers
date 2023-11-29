@@ -214,7 +214,7 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
     }
     if (rank == 0) {
       for (int i = 1; i < world_size; i++) {
-        wait_state_change(i, copy_out_done);
+        wait_state_equal(i, copy_out_done);
       }
       std::atomic_thread_fence(std::memory_order_release);
       cbuffer[rank].state = ccl_begin;
