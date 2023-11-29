@@ -109,6 +109,11 @@ Classes
       The inference API of the neural engine.
 
 
+   .. py:method:: generate(input_data)
+
+      The inference API of the neural engine.
+
+
    .. py:method:: graph_init(config, weight_data=None, load_weight=False)
 
       The initialization of the neural engine graph.
