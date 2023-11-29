@@ -57,6 +57,9 @@ import importlib.util
 from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
+from transformers.integrations.deepspeed import (
+    is_deepspeed_available,
+)
 from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
 from intel_extension_for_transformers.utils import logger
 
@@ -346,6 +349,13 @@ class Finetuning:
                 kwargs['use_llm_runtime'] = False
             else:
                 from transformers import AutoModelForCausalLM
+
+            low_cpu_mem_usage = True
+            if is_deepspeed_available():
+                from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
+                if is_deepspeed_zero3_enabled():
+                    low_cpu_mem_usage = False
+
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -357,7 +367,7 @@ class Finetuning:
                 use_auth_token=True if model_args.use_auth_token else None,
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
+                low_cpu_mem_usage=low_cpu_mem_usage,
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
                 **kwargs
