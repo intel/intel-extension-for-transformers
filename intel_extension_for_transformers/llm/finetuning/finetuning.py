@@ -445,12 +445,10 @@ class Finetuning:
             )
 
         if training_args.do_eval:
-            if "test" not in tokenized_datasets:
-                self.logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
-                tokenized_datasets = tokenized_datasets["train"].train_test_split(
-                    test_size=data_args.eval_dataset_size, shuffle=True, seed=42
-                )
-            eval_dataset = tokenized_datasets["test"]
+            if "validation" not in tokenized_datasets:
+                raise ValueError("--do_eval requires a validation dataset")
+
+            eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
