@@ -250,8 +250,8 @@ if __name__ == "__main__":
     def return_prompt_and_responses(samples) -> Dict[str, str]:
         return {
             "prompt": [system + question for system,question in zip(samples["system"], samples["question"])],
-            "chosen": samples["chatgpt"],
-            "rejected": samples["llama2-13b-chat"],
+            "chosen": samples["chosen"],
+            "rejected": samples["rejected"],
         }
 
     column_names = raw_datasets["train"].column_names
