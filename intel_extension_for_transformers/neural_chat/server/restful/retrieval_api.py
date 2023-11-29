@@ -81,7 +81,7 @@ async def retrieval_upload(file: UploadFile = File(...)):
                     user_id='default')
     except Exception as e:
         logger.error(f"[askdoc - upload] Fail to record request into db. {e}")
-    path_prefix = "/home/sdp/askdoc_upload/enterprise_docs/"
+    path_prefix = "./enterprise_docs/"
     print(f"[askdoc - upload] filename: {filename}")
     if '/' in filename:
         filename = filename.split('/')[-1]
@@ -176,7 +176,7 @@ async def retrieval_chat(request: AskDocRequest):
                     if not raw_link.startswith("http"):
                         continue
                     formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
-                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
+                        margin: 8px 0; font-size: 0.55rem;">  <a style="color: blue; \
                             border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
                             background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
                             href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
