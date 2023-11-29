@@ -32,7 +32,7 @@
 
 
 import warnings
-
+import re
 import torch
 import transformers
 from intel_extension_for_transformers.transformers import (
@@ -46,7 +46,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     LazyImport,
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
-    get_example_inputs_for_chatglm,
+    MODEL_TYPES_REQUIRING_POSITION_IDS,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -59,13 +59,18 @@ class _BaseQBitsAutoModelClass:
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         if kwargs.get("use_embedding_runtime", False):
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
-            from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
-            
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
+                Graph,
+            )
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import (
+                compile,
+                autocast,
+            )
+
             # This interface will switch the MHA fusion off.
             pattern_config = {
-                'pattern_switch': {
-                    'MultiHeadAttention': False,
+                "pattern_switch": {
+                    "MultiHeadAttention": False,
                 }
             }
 
@@ -264,6 +269,7 @@ class _BaseQBitsAutoModelClass:
 
             # calibration function
             calib_func = quantization_config.calib_func
+            tokenizer = quantization_config.tokenizer
             if calib_func is None:
                 if quantization_config.tokenizer is None:
                     logger.error(
@@ -278,18 +284,23 @@ class _BaseQBitsAutoModelClass:
                 from torch.utils.data import DataLoader
 
                 calib_dataset = quantization_config.calib_dataset
+                calib_len = quantization_config.calib_len
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, 
-                                            split="test" if calib_dataset in ["mbpp", "openai_humaneval"] else "train")
+                calib_dataset = load_dataset(
+                    calib_dataset,
+                    split="test"
+                    if calib_dataset in ["mbpp", "openai_humaneval"]
+                    else "train",
+                )
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
                     if "prompt" in examples:
-                        example = quantization_config.tokenizer(examples["prompt"])
+                        example = tokenizer(examples["prompt"])
                     elif "text" in examples:
-                        example = quantization_config.tokenizer(examples["text"])
+                        example = tokenizer(examples["text"])
                     elif "code" in examples:
-                        example = quantization_config.tokenizer(examples["code"])
+                        example = tokenizer(examples["code"])
                     else:
                         logger.error(
                             "Please check dataset prompt identifier,"
@@ -309,7 +320,9 @@ class _BaseQBitsAutoModelClass:
                     for text in batch:
                         input_ids = text["input_ids"]
                         input_ids = (
-                            input_ids[:512] if len(input_ids) > 512 else input_ids
+                            input_ids[:calib_len]
+                            if len(input_ids) > calib_len
+                            else input_ids
                         )
                         last_ind.append(input_ids.shape[0] - 1)
                         attention_mask = torch.ones(len(input_ids))
@@ -327,21 +340,80 @@ class _BaseQBitsAutoModelClass:
                         torch.tensor(last_ind),
                     )
 
-                calib_dataloader = DataLoader(
-                    tokenized_dataset,
-                    batch_size=1,
-                    shuffle=False,
-                    collate_fn=collate_batch,
-                )
+                def collate_batch_for_chatglm(batch):
+                    last_ind = []
+                    for text in batch:
+                        input_ids = torch.vstack([text["input_ids"]])
+                        if re.search(
+                            "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
+                        ):
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                            eos = torch.tensor([130001, 130004]).repeat(1, 1)
+                            input_ids = torch.cat((input_ids, eos), 1)
+                        else:
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                        prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        if prepared_inputs["attention_mask"] is None:
+                            prepared_inputs["attention_mask"] = torch.ones_like(
+                                input_ids
+                            )
+                        last_ind.append(input_ids.shape[1] - 1)
+                    return (
+                        {
+                            "input_ids": input_ids,
+                            "attention_mask": prepared_inputs["attention_mask"],
+                            "position_ids": prepared_inputs["position_ids"],
+                            "past_key_values": past_key_values,
+                        },
+                        torch.tensor(last_ind),
+                    )
 
-                from optimum.exporters.onnx import MODEL_TYPES_REQUIRING_POSITION_IDS
+                if model_type == "chatglm":
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch_for_chatglm,
+                    )
+                else:
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch,
+                    )
 
                 def calib_func(model):
                     with torch.no_grad():
                         for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
-                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                            if model_type == "chatglm":
+                                if re.search(
+                                    "THUDM/chatglm-6b",
+                                    model.config.auto_map["AutoConfig"],
+                                ):
+                                    model(
+                                        input_ids=inputs["input_ids"],
+                                        past_key_values=inputs["past_key_values"],
+                                        position_ids=inputs["position_ids"],
+                                    )
+                                else:
+                                    model(
+                                        input_ids=inputs["input_ids"],
+                                        past_key_values=inputs["past_key_values"],
+                                        position_ids=inputs["position_ids"],
+                                        attention_mask=inputs["attention_mask"],
+                                    )
+                            elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
                                     input_ids=inputs["input_ids"],
                                     past_key_values=inputs["past_key_values"],
@@ -357,21 +429,35 @@ class _BaseQBitsAutoModelClass:
 
                 logger.info(
                     "The default calibration funcation is used, "
-                    + "the calibration dataset is NeelNanda/pile-10k,"
+                    + "the calibration dataset is NeelNanda/pile-10k, "
                     + "batchsize is 1 and calibration iteration is 100."
                 )
                 calib_func = calib_func
 
             # example_inputs
             example_inputs = quantization_config.example_inputs
-            if model_type == "chatglm":
-                example_inputs = get_example_inputs_for_chatglm(
-                    model, quantization_config=quantization_config, return_type="dict"
-                )
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                         example_inputs = inputs
+                        if model_type == "chatglm":
+                            if re.search(
+                                "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
+                            ):
+                                example_inputs.pop("attention_mask")
+                            else:
+                                input_bs, input_len = example_inputs["input_ids"].shape
+                                outputs = model(example_inputs["input_ids"])
+                                example_inputs["past_key_values"] = outputs[1]
+                                example_inputs["attention_mask"] = torch.ones(
+                                    input_bs, input_len
+                                )
+                                example_inputs["position_ids"] = (
+                                    example_inputs["position_ids"][:, -1:] + 1
+                                )
+                                example_inputs["input_ids"] = example_inputs[
+                                    "input_ids"
+                                ][:, -1:]
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],

@@ -33,8 +33,15 @@ WEIGHTS_NAME = "pytorch_model.bin"
 
 torch = LazyImport("torch")
 
-def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
-                     master_addr='127.0.0.1', master_port='12345'):
+
+def distributed_init(
+    backend="gloo",
+    world_size=1,
+    rank=-1,
+    init_method=None,
+    master_addr="127.0.0.1",
+    master_port="12345",
+):
     """Init the distibute environment."""
     torch = LazyImport("torch")
     rank = int(os.environ.get("RANK", rank))
@@ -42,44 +49,45 @@ def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
     if init_method is None:
         master_addr = os.environ.get("MASTER_ADDR", master_addr)
         master_port = os.environ.get("MASTER_PORT", master_port)
-        init_method = 'env://{addr}:{port}'.format(addr=master_addr, port=master_port)
+        init_method = "env://{addr}:{port}".format(addr=master_addr, port=master_port)
     torch.distributed.init_process_group(
-        backend,
-        init_method=init_method,
-        world_size=world_size, 
-        rank=rank
+        backend, init_method=init_method, world_size=world_size, rank=rank
     )
 
 
 def remove_label(input):
     if "labels" in input:  # for GLUE
-        input.pop('labels')
+        input.pop("labels")
     elif "start_positions" in input and "end_positions" in input:  # for SQuAD
         # pragma: no cover
-        input.pop('start_positions')
-        input.pop('end_positions')
+        input.pop("start_positions")
+        input.pop("end_positions")
     return input
 
 
 def _build_inc_dataloader(dataloader):
     # transformer issue #1
     # for transformers 4.31.0: accelerate dataloader
-    # *** ValueError: batch_size attribute should not be set 
+    # *** ValueError: batch_size attribute should not be set
     # after DataLoaderShard is initialized
     class INCDataLoader:
         __iter__ = dataloader.__iter__
         __len__ = dataloader.__len__
+
         def __init__(self) -> None:
             self.dataloader = dataloader
             self.batch_size = dataloader.total_batch_size
             self.dataset = dataloader.dataset
+
     return INCDataLoader()
+
 
 def generate_dummy_past_key_values(config, input_bs):
     """
-        Generate the dummy past_key_values.
+    Generate the dummy past_key_values.
     """
     from optimum.utils import NormalizedConfigManager
+
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
         config.model_type
     )(config)
@@ -100,11 +108,12 @@ def generate_dummy_past_key_values(config, input_bs):
         key = torch.empty(size=shape_key)
         value = torch.empty(size=shape_value)
         past_key_values = tuple(
-            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv)) for _ in range(num_layers)
+            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
+            for _ in range(num_layers)
         )
         return past_key_values
     elif config.model_type == "gpt_bigcode":
-        new_shape = [input_bs, 0, d_k*2]
+        new_shape = [input_bs, 0, d_k * 2]
         dummy_tensor = torch.zeros(size=new_shape)
         past_key_values = tuple([dummy_tensor] * num_layers)
         return past_key_values
@@ -114,17 +123,22 @@ def generate_dummy_past_key_values(config, input_bs):
         new_shape = [0, input_bs, num_key_value_heads, d_k]
     else:
         new_shape = [input_bs, num_key_value_heads, 0, d_k]
-    past_key_values = [(
+    past_key_values = [
+        (
             torch.zeros(size=new_shape).contiguous(),
-            torch.zeros(size=new_shape).contiguous())
-              for _ in range(num_layers)]
+            torch.zeros(size=new_shape).contiguous(),
+        )
+        for _ in range(num_layers)
+    ]
     return tuple(past_key_values)
+
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     """
-        Generate the dummy past_key_values.
+    Generate the dummy past_key_values.
     """
     from optimum.utils import NormalizedConfigManager
+
     normalized_config = NormalizedConfigManager.get_normalized_config_class(
         config.model_type
     )(config)
@@ -152,47 +166,30 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
         new_shape = [input_bs, num_key_value_heads, 1, d_k]
 
     beam_idx_tmp = torch.zeros(
-                (2048, int(input_bs * num_beams)), dtype=torch.long
-            ).contiguous()
-    past_key_values = [(torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
+        (2048, int(input_bs * num_beams)), dtype=torch.long
+    ).contiguous()
+    past_key_values = [
+        (
+            torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
             torch.zeros(size=new_shape).contiguous(),
             torch.zeros(size=new_shape).contiguous(),
-            beam_idx_tmp) for _ in range(num_layers)]
+            beam_idx_tmp,
+        )
+        for _ in range(num_layers)
+    ]
     return tuple(past_key_values)
 
 
-def get_example_inputs_for_chatglm(model, quantization_config=None, return_type="dict"):
-    """
-        Generate the example_input for tracing, support models load from AutoModelForCausalLM.
-
-    """
-    query = "我该怎么办?"
-    tokenizer = quantization_config.tokenizer
-    if hasattr(tokenizer, "build_chat_inputs"):
-        inputs = tokenizer.build_chat_inputs(query)
-        eos_token_id = [tokenizer.eos_token_id, tokenizer.get_command("<|user|>"),
-                        tokenizer.get_command("<|observation|>")]
-        inputs["eos_token_id"] = eos_token_id
-        input_ids = inputs["input_ids"]
-        input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len)
-        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
-    elif hasattr(tokenizer, "build_prompt"):
-        prompt = tokenizer.build_prompt(query)
-        inputs = tokenizer([prompt], return_tensors="pt")
-        input_ids = inputs["input_ids"]
-        input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len)
-        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
-    else:
-        inputs = tokenizer([query], return_tensors="pt")
-        input_ids = inputs["input_ids"]
-        input_bs, input_len = input_ids.shape
-        attention_mask = torch.ones(input_bs, input_len)
-        past_key_values = generate_dummy_past_key_values(model.config, input_bs)
-    example_inputs = {
-        "input_ids": input_ids,
-        "past_key_values": tuple(past_key_values),
-        "attention_mask": attention_mask
-    }
-    return example_inputs
+MODEL_TYPES_REQUIRING_POSITION_IDS = {
+    "codegen",
+    "falcon",
+    "gpt2",
+    "gpt-bigcode",
+    "gpt-neo",
+    "gpt-neox",
+    "gptj",
+    "imagegpt",
+    "llama",
+    "mistral",
+    "chatglm",
+}
