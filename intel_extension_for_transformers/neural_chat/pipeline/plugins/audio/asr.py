@@ -22,10 +22,13 @@ import time
 import contextlib
 from pydub import AudioSegment
 import numpy as np
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class AudioSpeechRecognition():
     """Convert audio to text."""
     def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, language=None, device="cpu"):
+        if device == "auto":
+            device = get_device_type()
         self.device = device
         self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
         self.processor = WhisperProcessor.from_pretrained(model_name_or_path)
