@@ -41,6 +41,7 @@ class AudioPluginAPIRouter(APIRouter):
     async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
         
         plugins.tts.args['voice'] = voice
+        plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")
         try:
             result = tts.post_llm_inference_actions(text)
