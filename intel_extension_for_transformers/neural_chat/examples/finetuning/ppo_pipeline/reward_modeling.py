@@ -200,7 +200,7 @@ def preprocess_function(examples):
         "attention_mask_k": [],
     }
     for system, question, response_j, response_k in zip(
-        examples["system"], examples["question"], examples["chatgpt"], examples["llama2-13b-chat"]
+        examples["system"], examples["question"], examples["chosen"], examples["rejected"]
     ):
         tokenized_j = tokenizer(
             system + question + response_j, truncation=True

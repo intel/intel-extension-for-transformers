@@ -47,7 +47,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
 install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
-opt_install_requires_list = ['neural_compressor', 'transformers']
+opt_install_requires_list = ['neural_compressor', 'transformers==4.34.1']
 
 
 packages_list = find_packages()

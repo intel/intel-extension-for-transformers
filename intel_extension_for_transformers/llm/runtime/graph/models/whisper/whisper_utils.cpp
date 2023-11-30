@@ -138,37 +138,69 @@ void whisper_print_usage(int /*argc*/, char** argv, const whisper_params& params
   fprintf(stderr, "usage: %s [options] file0.wav file1.wav ...\n", argv[0]);
   fprintf(stderr, "\n");
   fprintf(stderr, "options:\n");
-  fprintf(stderr, "  -h,        --help              [default] show this help message and exit\n");
-  fprintf(stderr, "  -t N,      --threads N         [%-7d] number of threads to use during computation\n",
+  fprintf(stderr,
+          "  -h,        --help              [default] show this help message "
+          "and exit\n");
+  fprintf(stderr,
+          "  -t N,      --threads N         [%-7d] number of threads to use "
+          "during computation\n",
           params.n_threads);
-  fprintf(stderr, "  -p N,      --processors N      [%-7d] number of processors to use during computation\n",
+  fprintf(stderr,
+          "  -p N,      --processors N      [%-7d] number of processors to use "
+          "during computation\n",
           params.n_processors);
   fprintf(stderr, "  -ot N,     --offset-t N        [%-7d] time offset in milliseconds\n", params.offset_t_ms);
   fprintf(stderr, "  -on N,     --offset-n N        [%-7d] segment index offset\n", params.offset_n);
-  fprintf(stderr, "  -d  N,     --duration N        [%-7d] duration of audio to process in milliseconds\n",
+  fprintf(stderr,
+          "  -d  N,     --duration N        [%-7d] duration of audio to "
+          "process in milliseconds\n",
           params.duration_ms);
-  fprintf(stderr, "  -mc N,     --max-context N     [%-7d] maximum number of text context tokens to store\n",
+  fprintf(stderr,
+          "  -mc N,     --max-context N     [%-7d] maximum number of text "
+          "context tokens to store\n",
           params.max_context);
-  fprintf(stderr, "  -ml N,     --max-len N         [%-7d] maximum segment length in characters\n", params.max_len);
-  fprintf(stderr, "  -sow,      --split-on-word     [%-7s] split on word rather than on token\n",
+  fprintf(stderr,
+          "  -ml N,     --max-len N         [%-7d] maximum segment length in "
+          "characters\n",
+          params.max_len);
+  fprintf(stderr,
+          "  -sow,      --split-on-word     [%-7s] split on word rather than "
+          "on token\n",
           params.split_on_word ? "true" : "false");
-  fprintf(stderr, "  -bo N,     --best-of N         [%-7d] number of best candidates to keep\n", params.best_of);
+  fprintf(stderr,
+          "  -bo N,     --best-of N         [%-7d] number of best candidates "
+          "to keep\n",
+          params.best_of);
   fprintf(stderr, "  -bs N,     --beam-size N       [%-7d] beam size for beam search\n", params.beam_size);
-  fprintf(stderr, "  -wt N,     --word-thold N      [%-7.2f] word timestamp probability threshold\n",
+  fprintf(stderr,
+          "  -wt N,     --word-thold N      [%-7.2f] word timestamp "
+          "probability threshold\n",
           params.word_thold);
-  fprintf(stderr, "  -et N,     --entropy-thold N   [%-7.2f] entropy threshold for decoder fail\n",
+  fprintf(stderr,
+          "  -et N,     --entropy-thold N   [%-7.2f] entropy threshold for "
+          "decoder fail\n",
           params.entropy_thold);
-  fprintf(stderr, "  -lpt N,    --logprob-thold N   [%-7.2f] log probability threshold for decoder fail\n",
+  fprintf(stderr,
+          "  -lpt N,    --logprob-thold N   [%-7.2f] log probability threshold "
+          "for decoder fail\n",
           params.logprob_thold);
-  fprintf(stderr, "  -su,       --speed-up          [%-7s] speed up audio by x2 (reduced accuracy)\n",
+  fprintf(stderr,
+          "  -su,       --speed-up          [%-7s] speed up audio by x2 "
+          "(reduced accuracy)\n",
           params.speed_up ? "true" : "false");
-  fprintf(stderr, "  -tr,       --translate         [%-7s] translate from source language to english\n",
+  fprintf(stderr,
+          "  -tr,       --translate         [%-7s] translate from source "
+          "language to english\n",
           params.translate ? "true" : "false");
   fprintf(stderr, "  -di,       --diarize           [%-7s] stereo audio diarization\n",
           params.diarize ? "true" : "false");
-  fprintf(stderr, "  -tdrz,     --tinydiarize       [%-7s] enable tinydiarize (requires a tdrz model)\n",
+  fprintf(stderr,
+          "  -tdrz,     --tinydiarize       [%-7s] enable tinydiarize "
+          "(requires a tdrz model)\n",
           params.tinydiarize ? "true" : "false");
-  fprintf(stderr, "  -nf,       --no-fallback       [%-7s] do not use temperature fallback while decoding\n",
+  fprintf(stderr,
+          "  -nf,       --no-fallback       [%-7s] do not use temperature "
+          "fallback while decoding\n",
           params.no_fallback ? "true" : "false");
   fprintf(stderr, "  -otxt,     --output-txt        [%-7s] output result in a text file\n",
           params.output_txt ? "true" : "false");
@@ -178,24 +210,35 @@ void whisper_print_usage(int /*argc*/, char** argv, const whisper_params& params
           params.output_srt ? "true" : "false");
   fprintf(stderr, "  -olrc,     --output-lrc        [%-7s] output result in a lrc file\n",
           params.output_lrc ? "true" : "false");
-  fprintf(stderr, "  -owts,     --output-words      [%-7s] output script for generating karaoke video\n",
+  fprintf(stderr,
+          "  -owts,     --output-words      [%-7s] output script for "
+          "generating karaoke video\n",
           params.output_wts ? "true" : "false");
-  fprintf(stderr, "  -fp,       --font-path         [%-7s] path to a monospace font for karaoke video\n",
+  fprintf(stderr,
+          "  -fp,       --font-path         [%-7s] path to a monospace font "
+          "for karaoke video\n",
           params.font_path.c_str());
   fprintf(stderr, "  -ocsv,     --output-csv        [%-7s] output result in a CSV file\n",
           params.output_csv ? "true" : "false");
   fprintf(stderr, "  -oj,       --output-json       [%-7s] output result in a JSON file\n",
           params.output_jsn ? "true" : "false");
-  fprintf(stderr, "  -of FNAME, --output-file FNAME [%-7s] output file path (without file extension)\n", "");
+  fprintf(stderr,
+          "  -of FNAME, --output-file FNAME [%-7s] output file path (without "
+          "file extension)\n",
+          "");
   fprintf(stderr, "  -ps,       --print-special     [%-7s] print special tokens\n",
           params.print_special ? "true" : "false");
   fprintf(stderr, "  -pc,       --print-colors      [%-7s] print colors\n", params.print_colors ? "true" : "false");
   fprintf(stderr, "  -pp,       --print-progress    [%-7s] print progress\n", params.print_progress ? "true" : "false");
   fprintf(stderr, "  -nt,       --no-timestamps     [%-7s] do not print timestamps\n",
           params.no_timestamps ? "true" : "false");
-  fprintf(stderr, "  -l LANG,   --language LANG     [%-7s] spoken language ('auto' for auto-detect)\n",
+  fprintf(stderr,
+          "  -l LANG,   --language LANG     [%-7s] spoken language ('auto' for "
+          "auto-detect)\n",
           params.language.c_str());
-  fprintf(stderr, "  -dl,       --detect-language   [%-7s] exit after automatically detecting language\n",
+  fprintf(stderr,
+          "  -dl,       --detect-language   [%-7s] exit after automatically "
+          "detecting language\n",
           params.detect_language ? "true" : "false");
   fprintf(stderr, "             --prompt PROMPT     [%-7s] initial prompt\n", params.prompt.c_str());
   fprintf(stderr, "  -m FNAME,  --model FNAME       [%-7s] model path\n", params.model.c_str());

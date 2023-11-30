@@ -78,8 +78,8 @@ class Model:
     def init(self, model_name, use_quant=True, use_cache=False, use_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model_type = Model.get_model_type(self.config)
-        self.__import_package(model_type)
+        self.model_type = Model.get_model_type(self.config)
+        self.__import_package(self.model_type)
 
         # check cache and quantization
         if use_quant:
@@ -88,7 +88,7 @@ class Model:
                                  " is not currently supported. Please use other combinations.")
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
-        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
+        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, self.model_type)
         quant_desc = quant_kwargs['weight_dtype']
         if quant_kwargs['use_ggml']:
             quant_desc += "_ggml"
@@ -100,7 +100,7 @@ class Model:
                 quant_desc += "_g{}".format(quant_kwargs['group_size'])
         if use_gptq:
             quant_desc = "gptq"
-        quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, model_type, quant_desc)
+        quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, self.model_type, quant_desc)
 
         if not use_quant:
             self.bin_file = fp32_bin
@@ -203,7 +203,7 @@ class Model:
         return self.model.is_token_end()
 
     def eos_token_id(self):
-        if self.tokenizer.eos_token_id == None:
+        if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
 

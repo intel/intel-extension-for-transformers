@@ -82,7 +82,7 @@ WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neura
 CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.13.0/ubuntu22.04/habanalabs/pytorch-installer-2.1.0:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
@@ -109,15 +109,14 @@ RUN cd /intel-extension-for-transformers && \
     pip install -v .
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard 0dfda27dd0351d0753c35de2abb752309e2383b4 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
     pip install peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.12 origin/1.12.0 && \
-    git apply /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    git checkout -b v1.13 origin/1.13.0 && \
     pip install -e .
 
 # Install dependency
@@ -129,7 +128,8 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
     pip install -r requirements_hpu.txt && \
     pip install transformers==4.34.1 && \
     pip install accelerate==0.24.0 && \
-    pip install pymysql
+    pip install pymysql && \
+    pip uninstall -y intel_extension_for_pytorch
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
