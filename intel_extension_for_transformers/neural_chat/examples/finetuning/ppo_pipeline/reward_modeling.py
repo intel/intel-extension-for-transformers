@@ -475,5 +475,4 @@ if __name__ == "__main__":
     trainer.train()
 
     trainer.model = trainer.model.merge_and_unload()
-    if trainer.is_world_process_zero():
-        trainer.save_model()
+    trainer.save_model()
