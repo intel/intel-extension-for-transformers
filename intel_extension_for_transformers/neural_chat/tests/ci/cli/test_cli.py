@@ -53,18 +53,20 @@ class UnitTest(unittest.TestCase):
         if os.path.exists(audio_path):
             command = f'neuralchat predict \
                         --query {audio_path} \
-                        --model_name_or_path "facebook/opt-125m"'
+                        --model_name_or_path "facebook/opt-125m" \
+                        --output_audio_path ./output_audio.wav'
         else:
             command = f'neuralchat predict \
                         --query "../assets/audio/sample.wav" \
-                        --model_name_or_path "facebook/opt-125m"'
+                        --model_name_or_path "facebook/opt-125m" \
+                        --output_audio_path ./output_audio.wav'
         result = None
         try:
             result = subprocess.run(command, capture_output = True, check=True,
                                     universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertIn("Loading model", result.stdout)
+        self.assertIn("Model loaded", result.stdout)
 
 
 if __name__ == "__main__":
