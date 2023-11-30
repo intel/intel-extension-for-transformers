@@ -30,7 +30,7 @@
 
 #include "core/data_types.h"
 #include "jblas/jit_blas_gemm.h"
-#include "jblas/jit_blas_prologue.h"
+// #include "jblas/jit_blas_prologue.h"
 #include "jblas/jit_blas_utils.h"
 #include "jblas/jit_blas_wrapper.h"
 
@@ -47,7 +47,7 @@ constexpr bool MHA_PREFER_AVX512FP16 = true;
 #pragma GCC target("avx512fp16")
 #endif
 #endif
-
+#if 0
 namespace {
 using namespace jblas::utils;
 
@@ -1836,12 +1836,13 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
       }
 }
 }  // namespace
-
 void jblas_fusion_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
   return jblas_fusion_attn_forward(*reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
 }
+#endif
 
 bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
+  return false;
 #if CompileBF16()
   GetCPUDevice();
   // TODO check K V's layout
@@ -1849,12 +1850,15 @@ bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
 #endif
   return false;
 }
+#if 0
 void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
   return jblas_fusion_attn_forward(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
   // return jblas_fusion_attn_forward_ref(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
 }
-
+#endif
+void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {}
 bool jblas_fusion_attn_fp16_support(const attn_shape_t* params) {
+  return false;
 #if CompileFP16()
   GetCPUDevice();
   // TODO check K V's layout
@@ -1862,6 +1866,7 @@ bool jblas_fusion_attn_fp16_support(const attn_shape_t* params) {
 #endif
   return false;
 }
+#if 0
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
   return jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(
       *reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));
@@ -1870,12 +1875,14 @@ void jblas_fusion_attn_int8_forward(const attn_int8_fwd_args_t* params) {
   return jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
       *reinterpret_cast<const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>*>(params));
 }
+
+#endif
 size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params) {
   const auto& p = *params;  // TODO(Yi): Better way to get tmp size?
-  return size_t(omp_get_max_threads() * sizeof(float) * 16) * padto(padto(p.sl_kv, 48), 64);
+  return size_t(omp_get_max_threads() * sizeof(float) * 16) * jblas::utils::padto(jblas::utils::padto(p.sl_kv, 48), 64);
 }
-
 bool jblas_reordered_attn_fp32_support(const attn_shape_t* params) {
+  return false;
 #if CompileBF16()
   GetCPUDevice();
   // TODO check K V's layout
@@ -1884,6 +1891,7 @@ bool jblas_reordered_attn_fp32_support(const attn_shape_t* params) {
   return false;
 }
 // kv cache sizes in bytes per layer per batch per beam for;
+#if 0
 void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_info_t* out) {
   // use bf16 for kv-cache
   const auto p = *params;
@@ -2476,3 +2484,11 @@ int main() {
   return ret_ok ? 0 : -1;
 }
 #endif
+
+#endif
+void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_args_t* params) {}
+void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_args_t* params) {}
+void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_info_t* out) {}
+void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_args_t* params) {}
+void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin, int batch_size, int heads_kv,
+                                            int head_size, int seq_max, int seq_keep) {}
