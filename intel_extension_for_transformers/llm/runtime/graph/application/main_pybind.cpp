@@ -58,6 +58,7 @@ std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_
   return ql_registry::create_ql(model_name);
 }
 
+#define STATIC_INPUT_HEAD_IDX 0
 class Model {
  public:
   Model() { model_init_backend(); }
@@ -222,7 +223,7 @@ bool Model::check_input_and_count_padding(const std::vector<std::vector<model_to
     return true;
   } else if (input_ids.size() == 1) {
     padding_count = {0};
-    n_prompt_tokens = input_ids[0].size();
+    n_prompt_tokens = input_ids[STATIC_INPUT_HEAD_IDX].size();
     return true;
   } else {  // multi-batch inputs (first token)
     MODEL_ASSERT(input_ids.size() == ctx->batch_size);
@@ -244,7 +245,7 @@ bool Model::check_input_and_count_padding(const std::vector<std::vector<model_to
       padding_count.push_back(std::distance(input_ids[bs].begin(), iter));
     }
     // shoule be same in static batching inference
-    n_prompt_tokens = input_ids[0].size();
+    n_prompt_tokens = input_ids[STATIC_INPUT_HEAD_IDX].size();
     return true;
   }
 }
@@ -325,8 +326,8 @@ const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_t
   }
   model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
   // static batching inference should have same input length and context window length
-  n_past += curr_input_ids[0].size();
-  n_total += curr_input_ids[0].size();
+  n_past += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
+  n_total += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
 
   return ctx->logits;
 }
@@ -395,40 +396,43 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
     return rets;
   }
 
-  if (curr_input_ids[0].empty()) {
-    if (input_ids[0].size() > n_ctx - 4) {
+  if (curr_input_ids[STATIC_INPUT_HEAD_IDX].empty()) {
+    if (input_ids[STATIC_INPUT_HEAD_IDX].size() > n_ctx - 4) {
       fprintf(stderr, "\n%s: Warning: prompt is too long (%d tokens, max %d), will be truncated\n", __func__,
-              input_ids[0].size(), n_ctx - 4);
-      curr_input_ids[0].resize(n_ctx - 4);
-      std::copy(input_ids[0].end() - n_ctx - 4, input_ids[0].end(), curr_input_ids[0].begin());
+              input_ids[STATIC_INPUT_HEAD_IDX].size(), n_ctx - 4);
+      curr_input_ids[STATIC_INPUT_HEAD_IDX].resize(n_ctx - 4);
+      std::copy(input_ids[STATIC_INPUT_HEAD_IDX].end() - n_ctx - 4, input_ids[STATIC_INPUT_HEAD_IDX].end(),
+                curr_input_ids[STATIC_INPUT_HEAD_IDX].begin());
     } else {
-      curr_input_ids[0] = input_ids[0];
+      curr_input_ids[STATIC_INPUT_HEAD_IDX] = input_ids[STATIC_INPUT_HEAD_IDX];
     }
   }
 
   while (output_ids.size() < n_remain) {
-    for (auto item : curr_input_ids[0]) {
-      last_n_tokens[0].erase(last_n_tokens[0].begin());
-      last_n_tokens[0].push_back(item);
+    for (auto item : curr_input_ids[STATIC_INPUT_HEAD_IDX]) {
+      last_n_tokens[STATIC_INPUT_HEAD_IDX].erase(last_n_tokens[STATIC_INPUT_HEAD_IDX].begin());
+      last_n_tokens[STATIC_INPUT_HEAD_IDX].push_back(item);
     }
     // infinite text generation via context swapping
-    if (n_past + curr_input_ids[0].size() > n_ctx) {
+    if (n_past + curr_input_ids[STATIC_INPUT_HEAD_IDX].size() > n_ctx) {
       // always keep the first token
       n_past = std::max(1, params.n_keep);
 
       int n_discard = params.n_discard;
       if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
-        if (n_discard == -1) n_discard = (n_ctx - curr_input_ids[0].size() - params.n_keep) / 2;
+        if (n_discard == -1) n_discard = (n_ctx - curr_input_ids[STATIC_INPUT_HEAD_IDX].size() - params.n_keep) / 2;
         // drop n_discard tokens
-        curr_input_ids[0].insert(curr_input_ids[0].begin(), last_n_tokens[0].begin() + params.n_keep + n_discard,
-                                 last_n_tokens[0].end() - curr_input_ids[0].size());
+        curr_input_ids[STATIC_INPUT_HEAD_IDX].insert(
+            curr_input_ids[STATIC_INPUT_HEAD_IDX].begin(),
+            last_n_tokens[STATIC_INPUT_HEAD_IDX].begin() + params.n_keep + n_discard,
+            last_n_tokens[STATIC_INPUT_HEAD_IDX].end() - curr_input_ids[STATIC_INPUT_HEAD_IDX].size());
       } else {
         NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
       }
     }
     std::vector<model_input> inputs = {model_input{
-        /*.tokens              =*/curr_input_ids[0].data(),
-        /*.n_tokens           =*/(uint32_t)curr_input_ids[0].size(),
+        /*.tokens              =*/curr_input_ids[STATIC_INPUT_HEAD_IDX].data(),
+        /*.n_tokens           =*/(uint32_t)curr_input_ids[STATIC_INPUT_HEAD_IDX].size(),
         /*.n_prompt_tokens    =*/0,
         /*.n_past             =*/(uint32_t)n_past,
         /*.n_total            =*/(uint32_t)n_total,
@@ -438,15 +442,15 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
         /*n_padding           =*/0,
     }};
     model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
-    n_past += curr_input_ids[0].size();
-    n_total += curr_input_ids[0].size();
+    n_past += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
+    n_total += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
 
     float* logits = model_get_logits(ctx);
     std::vector<model_token> next_token_id = post_process(logits);
-    curr_input_ids[0] = {next_token_id[0]};
-    output_ids.push_back(next_token_id[0]);
+    curr_input_ids[STATIC_INPUT_HEAD_IDX] = {next_token_id[STATIC_INPUT_HEAD_IDX]};
+    output_ids.push_back(next_token_id[STATIC_INPUT_HEAD_IDX]);
     generate_count++;
-    if (next_token_id[0] == ctx->vocab.eos_token_id) {
+    if (next_token_id[STATIC_INPUT_HEAD_IDX] == ctx->vocab.eos_token_id) {
       token_eos = true;
       break;
     }

@@ -2906,16 +2906,21 @@ struct ne_tensor* ne_padding_mask_inf_impl(struct ne_context* ctx, struct ne_ten
 
   ne_scratch_save(ctx);
 
-  const int bs = a->ne[3];
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2 + bs, NE_SIZE_CALC);
+#define PM_PARAMS_NUM 2
+#define PM_NPAST_IDX 0
+#define PM_INPLACE_IDX 1
+#define PM_PADDING_IDX 2
 
-  ((int32_t*)b->data)[0] = n_past;
-  ((int32_t*)b->data)[1] = inplace ? 1 : 0;
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, PM_PARAMS_NUM + bs, NE_SIZE_CALC);
+
+  ((int32_t*)b->data)[PM_NPAST_IDX] = n_past;
+  ((int32_t*)b->data)[PM_INPLACE_IDX] = inplace ? 1 : 0;
   for (int i = 0; i < bs; ++i) {
     if (n_padding == NULL) {
-      ((int32_t*)b->data)[2 + i] = 0;
+      ((int32_t*)b->data)[PM_PADDING_IDX + i] = 0;
     } else {
-      ((int32_t*)b->data)[2 + i] = *(n_padding + i);
+      ((int32_t*)b->data)[PM_PADDING_IDX + i] = *(n_padding + i);
     }
   }
 
@@ -2981,20 +2986,28 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  const int bs = a->ne[3];
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5 + bs, NE_SIZE_CALC);
+#define ROPE_PARAMS_NUM 5
+#define ROPE_NPAST_IDX 0
+#define ROPE_NDIMS_IDX 1
+#define ROPE_MODE_IDX 2
+#define ROPE_PROMPTSIZE_IDX 3
+#define ROPE_NKEEP_IDX 4
+#define ROPE_PADDING_IDX 5
 
-  ((int32_t*)b->data)[0] = n_past;
-  ((int32_t*)b->data)[1] = n_dims;
-  ((int32_t*)b->data)[2] = mode;
-  ((int32_t*)b->data)[3] = prompt_size;
-  ((int32_t*)b->data)[4] = n_keep;  // set to non-negative value to enable shift mode
+  const int bs = a->ne[3];
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, ROPE_PARAMS_NUM + bs, NE_SIZE_CALC);
+
+  ((int32_t*)b->data)[ROPE_NPAST_IDX] = n_past;
+  ((int32_t*)b->data)[ROPE_NDIMS_IDX] = n_dims;
+  ((int32_t*)b->data)[ROPE_MODE_IDX] = mode;
+  ((int32_t*)b->data)[ROPE_PROMPTSIZE_IDX] = prompt_size;
+  ((int32_t*)b->data)[ROPE_NKEEP_IDX] = n_keep;  // set to non-negative value to enable shift mode
   // store n_padding (chatglm position ids)
   for (int i = 0; i < bs; ++i) {
     if (n_padding == NULL) {
-      ((int32_t*)b->data)[5 + i] = 0;
+      ((int32_t*)b->data)[ROPE_PADDING_IDX + i] = 0;
     } else {
-      ((int32_t*)b->data)[5 + i] = *(n_padding + i);
+      ((int32_t*)b->data)[ROPE_PADDING_IDX + i] = *(n_padding + i);
     }
   }
 
@@ -7524,17 +7537,7 @@ static void ne_compute_forward_padding_mask_f32(const struct ne_compute_params* 
   assert(dst->nb[0] == sizeof(float));
   assert(src0->nb[0] == sizeof(float));
 
-  // mask padding token (padding left)
-  for (int b = 0; b < bs; b++) {
-    const int n_padding = ((int32_t*)src1->data)[2 + b];
-    if (n_padding == 0) continue;
-    for (int k = 0; k < (nz / bs); k++) {
-      for (int j = ith; j < nr; j += nth) {
-        // it will not affect next token if don't mask the pad_token row
-        ne_vec_set_f32(n_padding, (float*)((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]), value);
-      }
-    }
-  }
+  ne_attention_padding_mask_f32_forward(bs, nz, nr, ith, nth, src1->data + 2 * ne_element_size(src1), value, dst);
 }
 
 static void ne_compute_forward_padding_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
