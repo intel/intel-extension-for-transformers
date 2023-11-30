@@ -1030,7 +1030,7 @@ static inline JBLAS_CODE quantize_fp_s8_colblock(int row, int col, const SRC_T* 
     if (j < col) {
       float absmaxval = std::numeric_limits<float>::min();
       for (size_t ij = j; ij < col; ij++) {
-        absmaxval = std::max(std::abs((float)srcptr[(j + ij) + i * ld_src]), absmaxval);
+        absmaxval = std::max(std::abs((float)srcptr[(ij) + i * ld_src]), absmaxval);
       }
       float scale = absmaxval / 127;
       float rscale = 1.f / scale;
