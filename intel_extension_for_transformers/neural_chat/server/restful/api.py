@@ -42,7 +42,7 @@ api_router_mapping = {
     'photoai': photoai_router
 }
 
-def setup_router(api_list, chatbot):
+def setup_router(api_list, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):
     """Setup router for FastAPI
 
     Args:
@@ -56,7 +56,7 @@ def setup_router(api_list, chatbot):
         lower_api_name = api_name.lower()
         if lower_api_name in api_router_mapping:
             api_router = api_router_mapping[lower_api_name]
-            api_router.set_chatbot(chatbot)
+            api_router.set_chatbot(chatbot, use_deepspeed, world_size, host, port)
             _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")

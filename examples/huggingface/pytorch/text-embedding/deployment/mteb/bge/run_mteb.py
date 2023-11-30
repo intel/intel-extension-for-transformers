@@ -18,7 +18,6 @@
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 from mteb import MTEB
-from C_MTEB import *
 from sentence_transformers import SentenceTransformer
 import datasets
 import logging
@@ -34,6 +33,7 @@ from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 from transformers import (
     AutoConfig,
+    AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -377,7 +377,7 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
     else:
-        model = AutoModelForSequenceClassification.from_pretrained(
+        model = AutoModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
@@ -385,6 +385,7 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
         )
+        
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
@@ -516,15 +517,26 @@ def main():
     )
     training_args.metric_for_best_model = metric_name
 
-    # Initialize our Trainer
-    dataset_id = "SetFit/amazon_counterfactual"
-    train_dataset = datasets.load_dataset(dataset_id, name="en")['train']
+    # new dataset for trainer calib_dataset
+    from datasets import Dataset
+    evaluation = MTEB(task_langs=['en'], tasks=['CQADupstackAndroidRetrieval'])
+    evaluation.select_tasks(task_langs=['en'], tasks=['CQADupstackAndroidRetrieval'])
+    evaluation.tasks[0].load_data(eval_splits=['test'])
+    task = evaluation.tasks[0]
+    corpus = task.corpus['test']
+    queries = task.queries['test']
+    queries = [queries[qid] for qid in queries]
+    corpus_ids = sorted(corpus, key=lambda k: len(corpus[k].get("title", "") + corpus[k].get("text", "")), reverse=True)
+    corpus = [corpus[cid] for cid in corpus_ids][:100]
+    corpus = [(doc["title"] + " " + doc["text"]).strip() 
+                if "title" in doc else doc["text"].strip() for doc in corpus]
+    data_list = [*queries[:100], *corpus[:100]] #extend
+    date_dict = {'text': data_list}
+    train_dataset = Dataset.from_dict(date_dict)
 
-    def preprocess_function(examples):
+    def preprocess_function(example):
         # Tokenize the texts
-        args = examples['text']
-        result= tokenizer(args, padding=padding, max_length=max_seq_length, truncation=True)
-
+        result= tokenizer(example['text'], padding=padding, max_length=max_seq_length, truncation=True)
         return result
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
@@ -532,16 +544,27 @@ def main():
             preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
         )
 
+    from neural_compressor.adaptor.torch_utils.smooth_quant import TorchSmoothQuant   
+    
     trainer = NLPTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
+        train_dataset=train_dataset, # for calibration
+        eval_dataset=train_dataset, # for calibration
         tokenizer=tokenizer,
-        data_collator=data_collator,
     )
 
+    sq = TorchSmoothQuant(model, trainer.get_eval_dataloader())
+    sq.transform(alpha="auto", calib_iter=3, folding=True)
+    del trainer
+
+    trainer = NLPTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset, # for calibration
+        eval_dataset=train_dataset, # for calibration
+        tokenizer=tokenizer,
+    )
 
     if optim_args.tune:
 
@@ -573,11 +596,20 @@ def main():
 	
         stmodel = SentenceTransformer(model_args.model_name_or_path)
         def eval_func(model):
-            stmodel[0].auto_model = model.bert
-            evaluation = MTEB(task_langs=['en'], tasks=['AmazonCounterfactualClassification'])
-            results = evaluation.run(stmodel, overwrite_results=True)
-            print(results)
-            return results['AmazonCounterfactualClassification']['test']['en']['accuracy']
+            stmodel[0].auto_model = model
+            evaluation = MTEB(task_langs=['en'], task_types=['STS'])
+            results = evaluation.run(stmodel, overwrite_results=True, eval_splits=["test"])
+            avg_res = 0
+            for task_name, task_res in results.items():
+                if task_name in ['STS17']:
+                    avg_res += round(task_res['test']['en-en']['cos_sim']['spearman'] * 100, 2)
+                elif task_name in ['STS22']:
+                    avg_res += round(task_res['test']['en']['cos_sim']['spearman'] * 100, 2)
+                else:
+                    avg_res += round(task_res['test']['cos_sim']['spearman'] * 100, 2)
+            
+            avg_res /= len(results)
+            return avg_res
         model = trainer.quantize(
             quant_config=quantization_config, 
             eval_func=eval_func,
@@ -618,6 +650,35 @@ def main():
     if optim_args.to_onnx:
         trainer.enable_executor = True
         trainer.export_to_onnx()
+        import onnx
+        if trainer.enable_inc_quant == True and trainer.enable_bf16 == False:
+            model_path = './model_and_tokenizer/int8-model.onnx'
+        
+        if trainer.enable_inc_quant == False and trainer.enable_bf16 == False:
+            model_path = './model_and_tokenizer/fp32-model.onnx'
+
+        model = onnx.load(model_path)
+        remove_nodes = []
+        for node in reversed(model.graph.node):
+            if node.name == "/encoder/layer.11/output/LayerNorm/Add_1":
+                node.output[0] = "last_hidden_state"
+                break
+            remove_nodes.append(node)
+
+        for node in remove_nodes:
+            model.graph.node.remove(node)
+            print('remove node', node.name, node.op_type)
+
+        remove_output = []
+        for output in model.graph.output:
+            remove_output.append(output)
+        for output in remove_output:
+            model.graph.output.remove(output)
+            print('remove output', output.name)
+        model.graph.output.extend([onnx.ValueInfoProto(name="last_hidden_state")])
+        print(model.graph.output)
+        onnx.save(model, model_path)
+
 
 if __name__ == "__main__":
     main()

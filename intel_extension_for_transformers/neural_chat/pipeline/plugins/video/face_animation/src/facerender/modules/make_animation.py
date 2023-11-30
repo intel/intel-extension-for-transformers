@@ -218,7 +218,7 @@ def make_animation(
                 out = generator(source_image, kp_source=kp_source, kp_driving=kp_norm)
                 # print(f"{rank}:{frame_idx}")
                 # print(out['prediction'])
-                predictions.append(out["prediction"])
+                predictions.append(out["prediction"].to("cpu"))
         folder_name = "logs"
         file_name = f"{p_num}_{rank}.npz"
         if not os.path.exists(folder_name):
