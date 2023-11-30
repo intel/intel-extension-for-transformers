@@ -142,7 +142,7 @@ class IntelDpoDataPreprocess:
         prompts["target"] = []
         for example in examples:
             prompts["source"].append(example["system"] + example["question"])
-            prompts["target"].append(example["chatgpt"])
+            prompts["target"].append(example["chosen"])
         return prompts
 
     @staticmethod
