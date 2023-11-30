@@ -107,41 +107,6 @@ if config.model_type == "llama":
 else:
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
-if args.benchmark:
-    prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
-
-    input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
-    print("---- Prompt size:", input_size)
-
-    # start
-    total_time = 0.0
-    num_iter = args.iters
-    num_warmup = args.num_warmup
-    prompt = [prompt] * args.batch_size
-    total_token_num = 0
-
-    with torch.inference_mode(), torch.no_grad():
-        for i in range(num_iter):
-            tic = time.time()
-            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-            gen_ids = user_model.generate(
-                input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs
-            )
-            gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
-            toc = time.time()
-            # please check the gen_ids if include input_ids.
-            input_tokens_num = input_ids.numel()
-            output_tokens_num = gen_ids.numel() - input_tokens_num
-            print(gen_text, flush=True)
-            if i >= num_warmup:
-                total_time += toc - tic
-                total_token_num += output_tokens_num
-
-    print("\n", "-" * 10, "Summary:", "-" * 10)
-    latency = total_time / total_token_num
-    print("Inference latency: %.3f sec." % latency)
-    throughput = total_token_num / total_time
-    print("Throughput: {} samples/sec".format(throughput))
 
 def get_example_inputs(tokenized_dataset, model_config, model_type="llama", num_beams=4, ipex_opt_llm=True):
     from intel_extension_for_transformers.transformers.utils.utility import (
@@ -260,7 +225,3 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
-
-
-            
-
