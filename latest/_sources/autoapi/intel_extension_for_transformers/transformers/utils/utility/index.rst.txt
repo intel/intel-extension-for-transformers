@@ -21,7 +21,6 @@ Functions
    intel_extension_for_transformers.transformers.utils.utility.distributed_init
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm
-   intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_chatglm
 
 
 
@@ -38,11 +37,5 @@ Functions
 .. py:function:: generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1)
 
    Generate the dummy past_key_values.
-
-
-.. py:function:: get_example_inputs_for_chatglm(model, quantization_config=None, return_type='dict')
-
-   Generate the example_input for tracing, support models load from AutoModelForCausalLM.
-
 
 
