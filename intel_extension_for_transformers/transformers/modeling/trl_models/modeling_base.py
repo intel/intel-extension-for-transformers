@@ -27,6 +27,7 @@ from huggingface_hub.utils import (
     EntryNotFoundError,
     HFValidationError,
     LocalEntryNotFoundError,
+    RepositoryNotFoundError,
 )
 from safetensors.torch import load_file as safe_load_file
 from transformers import PreTrainedModel
@@ -51,6 +52,7 @@ def is_optimum_habana_available():
 
 if is_optimum_habana_available():
     from optimum.habana.accelerate import GaudiAccelerator as Accelerator # pylint: disable=E0611, E0401
+    from optimum.habana.utils import to_device_dtype # pylint: disable=E0611, E0401
 else:
     from accelerate import Accelerator
 
@@ -228,7 +230,7 @@ class PreTrainedModelWrapper(nn.Module):
                         "adapter_config.json",
                         token=token,
                     )
-                except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError):
+                except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError, RepositoryNotFoundError):
                     remote_adapter_config = None
             else:
                 remote_adapter_config = None
@@ -432,7 +434,7 @@ class PreTrainedModelWrapper(nn.Module):
                 token=token,
             )
         # sharded
-        except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError):
+        except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError, RepositoryNotFoundError):
             if os.path.exists(index_filename):
                 index_file_name = index_filename
             else:
@@ -442,7 +444,7 @@ class PreTrainedModelWrapper(nn.Module):
                         model_index_name,
                         token=token,
                     )
-                except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError):
+                except (EntryNotFoundError, LocalEntryNotFoundError, HFValidationError, RepositoryNotFoundError):
                     # not continue training, do not have v_head weight
                     is_resuming_training = False
                     logging.warning(
@@ -473,11 +475,12 @@ class PreTrainedModelWrapper(nn.Module):
                 The current device.
         """
         dummy_accelerator = Accelerator()
-        return (
-            dummy_accelerator.local_process_index
-            if torch.cuda.is_available()
-            else "cpu"
-        )
+        if torch.cuda.is_available():
+            return dummy_accelerator.local_process_index
+        elif hasattr(torch, "hpu") and torch.hpu.is_available():
+            return "hpu"
+        else:
+            return "cpu"
 
     @classmethod
     def _split_kwargs(cls, kwargs):
@@ -543,6 +546,8 @@ class PreTrainedModelWrapper(nn.Module):
         state_dict = kwargs.get("state_dict")
         if state_dict is None:
             state_dict = self.state_dict()
+            if self._get_current_device() == "hpu":
+                state_dict = to_device_dtype(state_dict, target_device=torch.device("cpu"))
             kwargs["state_dict"] = state_dict
 
         # if it is a peft model only save the `v_head` state_dict and
@@ -552,6 +557,10 @@ class PreTrainedModelWrapper(nn.Module):
             save_path = os.path.join(save_path, "pytorch_model.bin")
             torch.save(state_dict, save_path)
             _ = kwargs.pop("state_dict", None)
+            if self._get_current_device() == "hpu":
+                state_dict = self.pretrained_model.state_dict()
+                state_dict = to_device_dtype(state_dict, target_device=torch.device("cpu"))
+                kwargs["state_dict"] = state_dict
 
         return self.pretrained_model.save_pretrained(*args, **kwargs)
 
