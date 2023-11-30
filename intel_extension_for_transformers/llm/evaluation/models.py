@@ -49,7 +49,8 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                 for layer_past in past_key_values
             )
 
-    # Adapted from transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
+    # Adapted from 
+    # transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         past_key_values = past_key_values or kwargs.get("past", None)
 
