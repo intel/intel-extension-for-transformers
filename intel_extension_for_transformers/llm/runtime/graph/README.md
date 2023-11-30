@@ -198,7 +198,7 @@ while True:
         break
     prompt = tokenizer.build_prompt(prompt)  # prompt template for chatglm2
     inputs = tokenizer([prompt], return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True, n_keep=2)
 ```
 
 Chat with Qwen:
