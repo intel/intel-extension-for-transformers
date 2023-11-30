@@ -2472,8 +2472,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
   static int constexpr RegLen = 8, PackRow = 4;
   static_assert(_NTILE % RegLen == 0);
   static int constexpr NRegs = _NTILE / RegLen;
-  static int constexpr MRegs = _MTILE == 0 ? (RegCount - 1) / (NRegs * 2) : _MTILE;
-  static_assert(NRegs * MRegs <= RegCount - 1);
+  static int constexpr MRegs = _MTILE == 0 ? (RegCount - 3) / (NRegs * 2) : _MTILE;
+  static_assert(NRegs * MRegs <= RegCount - 3);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 4;
   static int constexpr KUNROLL = 2;
   static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX_VNNI;
@@ -2539,7 +2539,7 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
   void assign_regs() {
     CRegCount = MRegs * NRegs;
     ARegCount = 1;
-    BRegCount = CRegCount - CRegCount - ARegCount - 1;
+    BRegCount = RegCount - CRegCount - CRegCount - ARegCount - 2;
     if (BRegCount >= NRegs) {
       BRegCount = NRegs;
     } else {
@@ -2552,7 +2552,7 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
     TmpReg = AReg + ARegCount;
     assert(TmpReg < RegCount);
     TmpRegCount = RegCount - TmpReg;
-    assert(TmpRegCount >= 1);
+    assert(TmpRegCount >= 2);
   }
 
   void generate_mtile(int _mtile) {
@@ -2724,7 +2724,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
         lea(reg_tmp, ptr[reg_tmp + reg_tmp1 * sizeof(float)]);
         for (int i = 0; i < NRegs; i++) {
           vcvtdq2ps(vreg_t(CReg + mm * NRegs + i), vreg_t(CReg + mm * NRegs + i));
-          vmulps(vreg_t(AReg), vreg_t(TmpReg), ptr[reg_tmp2 + i * VecBytes]);
+          vmovups(vreg_t(AReg), ptr[reg_tmp2 + i * VecBytes]);
+          vmulps(vreg_t(AReg), vreg_t(TmpReg));
           vmulps(vreg_t(CReg + mm * NRegs + i), vreg_t(AReg));
           vaddps(vreg_t(CF32Reg + mm * NRegs + i), vreg_t(CReg + mm * NRegs + i));
         }
@@ -2763,7 +2764,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
         vpbroadcastb(Xbyak::Xmm(AReg), ptr[reg_zpA]);
         vpmovzxbd(vreg_t(AReg), Xbyak::Xmm(AReg));
         vcvtdq2ps(vreg_t(AReg), vreg_t(AReg));
-        vmulps(vreg_t(AReg), vreg_t(AReg), zword_b[reg_scaleA]);
+        vmovups(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
+        vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg + 1));
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg));
         for (int j = 0; j < NRegs; j++) {
           vmulps(vreg_t(CReg + j), vreg_t(AReg), vreg_t(BReg + j));
@@ -2777,7 +2779,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
         vpbroadcastb(Xbyak::Xmm(AReg), ptr[reg_zpA]);
         vpmovzxbd(vreg_t(AReg), Xbyak::Xmm(AReg));
         vcvtdq2ps(vreg_t(AReg), vreg_t(AReg));
-        vmulps(vreg_t(AReg), vreg_t(AReg), zword_b[reg_scaleA]);
+        vmovups(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
+        vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg + 1));
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg));
         for (int j = 0; j < NRegs; j++) {
           vmulps(vreg_t(CReg + j), vreg_t(AReg), ptr[reg_redB + j * VecBytes]);
