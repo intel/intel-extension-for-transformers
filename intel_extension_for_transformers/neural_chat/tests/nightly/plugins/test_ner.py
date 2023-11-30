@@ -16,26 +16,15 @@
 # limitations under the License.
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
 import unittest
 import os
 
 
 class TestNER(unittest.TestCase):
     def setUp(self):
-        self.skipTest("skip before debug finish")
         return super().setUp()
 
     def tearDown(self) -> None:
-        for filename in os.getcwd():
-            import re
-            if re.match(r'ne_.*_fp32.bin', filename) or re.match(r'ne_.*_q.bin', filename):
-                file_path = os.path.join(os.getcwd(), filename)
-                try:
-                    os.remove(file_path)
-                    print(f"Deleted file: {filename}")
-                except OSError as e:
-                    print(f"Error deleting file {filename}: {str(e)}")
         return super().tearDown()
 
     def test_ner(self):
