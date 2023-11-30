@@ -1,6 +1,6 @@
-This README is intended to guide you through setting up the backend for a text chatbot using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
+This README serves as a guide to set up the backend for a code generation chatbot utilizing the NeuralChat framework. You can deploy this code generation chatbot across various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU, and Client GPU.
 
-This textbot shows how to deploy chatbot backend on Habana's Gaudi processors (HPU).
+This code generation chatbot demonstrates how to deploy it specifically on Habana's Gaudi processors (HPU). To run the 34b or 70b level LLM model, we require implementing model parallelism using Gaudi multi-cards.
 
 # Setup Conda
 
@@ -31,7 +31,7 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | ------------------- | --------------------------------------- |
 | host                | 127.0.0.1                              |
 | port                | 8000                                   |
-| model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
+| model_name_or_path  | "Phind/Phind-CodeLlama-34B-v2"        |
 | device              | "hpu"                                  |
 | use_deepspeed       | true                                   |
 | world_size          | 8                                      |
@@ -39,9 +39,9 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 
 
 
-# Run the TextChat server
-To start the TextChat server, use the following command:
+# Run the Code Generation Chatbot server
+To start the code-generating chatbot server, use the following command:
 
 ```shell
-nohup python run_text_chat.py &
+nohup python run_code_gen.py &
 ```
