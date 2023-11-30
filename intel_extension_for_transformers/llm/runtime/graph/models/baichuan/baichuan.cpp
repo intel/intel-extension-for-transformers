@@ -254,7 +254,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_input*
       struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
       struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
       gate = ne_silu(ctx0, gate);
-      struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
+      mlp_output = ne_mul(ctx0, gate, up);
       mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
     }
 
