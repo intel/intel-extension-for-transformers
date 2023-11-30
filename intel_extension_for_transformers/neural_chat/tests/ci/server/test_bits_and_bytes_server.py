@@ -20,8 +20,9 @@ import unittest
 import time
 import os
 import json
+import torch
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
+from transformers.utils import is_bitsandbytes_available
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
