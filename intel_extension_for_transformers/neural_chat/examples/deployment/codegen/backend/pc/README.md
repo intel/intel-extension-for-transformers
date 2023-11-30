@@ -27,13 +27,19 @@ pip install transformers==4.34.1
 
 You can customize the configuration file 'codegen.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
 
-|  Item              | Value                                      |
-| ------------------- | --------------------------------------- |
-| host                | 127.0.0.1                              |
-| port                | 8000                                   |
-| model_name_or_path  | "codellama/CodeLlama-7b-hf"        |
-| device              | "cpu"                                  |
-| tasks_list          | ['textchat']                           |
+| Item               | Value                                |
+| ------------------ | -------------------------------------|
+| host               | 127.0.0.1                            |
+| port               | 8000                                 |
+| model_name_or_path | "codellama/CodeLlama-7b-hf"          |
+| device             | "cpu"                                |
+| tasks_list         | ['textchat']                         |
+| optimization       |                                      |
+|                    |  use_llm_runtime  | true             |
+|                    |  optimization_type| "weight_only"    |
+|                    |  compute_dtype    | "int8"           |
+|                    |  weight_dtype     | "int4"           |
+
 
 
 # Run the Code Generation Chatbot server
