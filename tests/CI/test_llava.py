@@ -1,8 +1,6 @@
-import sys
-sys.path.append("/data2/lkk/intel-extension-for-transformers")
 import os
 import unittest
-from intel_extension_for_transformers.transformers.modeling import LlavaMistralForCausalLM
+from intel_extension_for_transformers.transformers.modeling.llava_models import LlavaMistralForCausalLM
 from accelerate import init_empty_weights
 from transformers import AutoConfig, AutoTokenizer
 import torch

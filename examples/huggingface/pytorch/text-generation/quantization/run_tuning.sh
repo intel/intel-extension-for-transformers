@@ -55,7 +55,6 @@ function init_params {
 # run_tuning
 function run_tuning {
     if [ "${topology}" = "gpt_j" ]; then
-	pip install transformers==4.31.0
         alpha=1.0
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
@@ -76,19 +75,16 @@ function run_tuning {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --mixed_precision"
     elif [ "${topology}" = "opt_1.3b" ]; then
-	pip install transformers==4.31.0
         alpha=0.8
         model_name_or_path="facebook/opt-1.3b"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "opt_2.7b" ]; then
-	pip install transformers==4.31.0
         alpha=0.8
         model_name_or_path="facebook/opt-2.7b"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "opt_6.7b" ]; then
-	pip install transformers==4.31.0
         alpha=0.8
         model_name_or_path="facebook/opt-6.7b"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
@@ -106,13 +102,11 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "llama_7b" ]; then
-	pip install transformers==4.31.0
         alpha=0.7
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
     elif [ "${topology}" = "llama_13b" ]; then
-	pip install transformers==4.31.0
         alpha=0.8
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
