@@ -44,7 +44,7 @@ docker run -it chatbotinfer:latest /bin/bash
 
 ### Setup Habana Gaudi Environment
 ```bash
-DOCKER_BUILDKIT=1 docker build --format docker --network=host -t ${IMAGE_NAME}:${IMAGE_TAG}  ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.11.0" --build-arg REVISION="587" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
+DOCKER_BUILDKIT=1 docker build --format docker --network=host -t ${IMAGE_NAME}:${IMAGE_TAG}  ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.13.0" --build-arg REVISION="463" --build-arg PT_VERSION="2.1.0" --build-arg OS_NUMBER="2204"
 ```
 
 If you need to set proxy settings:
