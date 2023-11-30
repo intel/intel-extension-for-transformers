@@ -15,11 +15,25 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include "jblas/jit_blas.h"
 #include "jit_blas_utils.h"
 
 namespace jblas {
 namespace kernel {
 namespace ref {
+
+template <typename T>
+static inline JBLAS_CODE shuffle_activation(T* src, T* dst, int shuffle_m, int shuffle_k, int m_offset, int k_offset,
+                                            int* indices, int src_stride, int dst_stride) {
+  T* cur_src = src + m_offset * src_stride;
+  for (int i = 0; i < shuffle_m; i++) {
+    for (int j = 0; j < shuffle_k; j++) {
+      dst[i * dst_stride + j] = cur_src[i * src_stride + indices[k_offset + j]];
+    }
+  }
+  return JblasSuccess;
+}
+
 template <typename T_SRC, typename T_DST = T_SRC>
 static inline JBLAS_CODE padding_interleave(const T_SRC* src_ptr, T_DST* dst_ptr, int row, int col, int rowpad,
                                             int colpad, int src_step, int dst_step, int NTile, int RowPack) {
@@ -808,7 +822,7 @@ inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* srcptr,
       float maxval = 0.f;
       float minval = 0.f;
       for (size_t ij = j; ij < col; ij++) {
-        auto fsrc = static_cast<float>(srcptr[(j + ij) + i * ld_src]);
+        auto fsrc = static_cast<float>(srcptr[(ij) + i * ld_src]);
         maxval = std::max(fsrc, maxval);
         minval = std::min(fsrc, minval);
       }
@@ -820,10 +834,10 @@ inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* srcptr,
       int sum = 0;
       auto zpf = float(zp);
       for (size_t ij = j; ij < col; ij++) {
-        auto fsrc = static_cast<float>(srcptr[(j + ij) + i * ld_src]);
+        auto fsrc = static_cast<float>(srcptr[(ij) + i * ld_src]);
         auto qtmp = utils::cast<float, int>(fsrc * rscale);
         sum += qtmp;
-        dstptr[(j + ij) + i * ld_dst] = utils::cast<float, uint8_t>(zpf + qtmp);
+        dstptr[(ij) + i * ld_dst] = utils::cast<float, uint8_t>(zpf + qtmp);
       }
       if (blkreduce) {
         blkreduce[j / blocksize + i * ld_scale] = sum * scale;
@@ -860,7 +874,7 @@ inline JBLAS_CODE quantize_fp_s8_colblock(int row, int col, const SRC_T* srcptr,
     if (j < col) {
       float absmaxval = std::numeric_limits<float>::min();
       for (size_t ij = j; ij < col; ij++) {
-        auto fsrc = static_cast<float>(srcptr[(j + ij) + i * ld_src]);
+        auto fsrc = static_cast<float>(srcptr[(ij) + i * ld_src]);
         absmaxval = std::max(std::abs(fsrc), absmaxval);
       }
       float scale = absmaxval / 127;
@@ -868,7 +882,7 @@ inline JBLAS_CODE quantize_fp_s8_colblock(int row, int col, const SRC_T* srcptr,
       scales[j / blocksize + i * ld_scale] = scale;
       int sum = 0;
       for (size_t ij = j; ij < col; ij++) {
-        auto fsrc = static_cast<float>(srcptr[(j + ij) + i * ld_src]);
+        auto fsrc = static_cast<float>(srcptr[(ij) + i * ld_src]);
         dstptr[(ij) + i * ld_dst] = utils::cast<float, int8_t>(fsrc * rscale);
         sum += dstptr[(ij) + i * ld_dst];
       }
