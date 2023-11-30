@@ -49,8 +49,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                 for layer_past in past_key_values
             )
 
-    # Adapted from 
-    # transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
+    # Adapted from transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         past_key_values = past_key_values or kwargs.get("past", None)
 
@@ -58,7 +57,8 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             if not re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
                 input_ids = input_ids[:, -1:]
 
-        # `past_key_values` may be in the stardard format (e.g. in contrastive search), converts to bloom's format if needed
+        # `past_key_values` may be in the stardard format (e.g. in contrastive search),
+        # converts to bloom's format if needed
         if past_key_values is not None and self.config.model_type == "bloom":
             if past_key_values[0][0].shape[0] == input_ids.shape[0]:
                 past_key_values = self._convert_to_bloom_cache(past_key_values)
