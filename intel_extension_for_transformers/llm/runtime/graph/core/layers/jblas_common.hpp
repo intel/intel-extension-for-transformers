@@ -86,7 +86,6 @@ static inline bool samePackedWeight(jblas::storage::gemm::IWeightBase* ptr0, jbl
 }
 
 static inline bool samePackedWeight(jblas::storage::gemm::IWeightBase** ptrs, size_t len) {
-  assert(len >= 2);
   bool sameKernel = samePackedWeight(ptrs[0], ptrs[1]);
   if (sameKernel) {
     for (size_t i = 2; i < len; i++) {
@@ -207,6 +206,31 @@ class Add {
 };
 template <JBLAS_ISA ISA_T>
 using AddFp32 = Add<ISA_T, float>;
+
+template <JBLAS_ISA ISA_T, typename _T>
+class Mul {
+ public:
+  struct Param {
+    _T *C, *D;
+    int ldc, ldd;
+  };
+
+  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param, void* tmpcache, size_t cachesize) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto DOffset = M_offset * _param.ldd + N_offset;
+    auto cptr = _param.C + COffset;
+    auto dptr = _param.D + DOffset;
+    for (int i = 0; i < M; i++) {
+      for (int j = 0; j < N; j++) {
+        cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j] * cacheptr[i * cachestep + j];
+      }
+    }
+    return JblasSuccess;
+  }
+};
+template <JBLAS_ISA ISA_T>
+using MulFp32 = Mul<ISA_T, float>;
 
 template <JBLAS_ISA ISA_T, typename _T>
 class ZpDequantAdd : protected jblas::epilogue::gemm::ZpDequantInt32ToFp32<ISA_T> {
