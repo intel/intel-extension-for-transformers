@@ -42,6 +42,7 @@ from intel_extension_for_transformers.transformers.modeling.trl_models import (
 
 import sys
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 # Setup logging
@@ -319,6 +320,9 @@ if __name__ == "__main__":
 
         reward_model = wrap_in_hpu_graph(reward_model)
 
+    if device.type == "hpu":
+        device = "hpu"
+
     sentiment_pipe = pipeline(
         "sentiment-analysis",
         model=reward_model,
@@ -367,7 +371,7 @@ if __name__ == "__main__":
             break
 
         question_tensors = batch["input_ids"]
-
+        t0 = time.time()
         response_tensors = ppo_trainer.generate(
             question_tensors,
             return_prompt=False,
@@ -377,6 +381,7 @@ if __name__ == "__main__":
         batch["response"] = tokenizer.batch_decode(
             response_tensors, skip_special_tokens=True
         )
+        t1 = time.time()
         # Compute reward score (using the sentiment analysis pipeline)
         texts = [q + r for q, r in zip(batch["query"], batch["response"])]
         pipe_outputs = sentiment_pipe(texts, **sent_kwargs)
@@ -384,8 +389,11 @@ if __name__ == "__main__":
             torch.tensor(output[0]["score"] - script_args.reward_baseline)
             for output in pipe_outputs
         ]
+        t2 = time.time()
         # Run PPO step
         stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
+        stats["time/ppo/rollout"] = t1-t0
+        stats["time/ppo/evaluate"] = t2-t1
         ppo_trainer.log_stats(stats, batch, rewards)
         epochs.update(1)
 

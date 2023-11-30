@@ -66,7 +66,6 @@ from typing import List, Optional, Tuple, Union
 import importlib, sys
 
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -229,12 +228,6 @@ inputs = tokenizer("Hello, my llama is cute", return_tensors="pt")
 outputs = model(**inputs, labels=inputs["input_ids"])
 ```
 """
-
-
-def disable_dropout_in_model(model: torch.nn.Module) -> None:  # pragma: no cover
-    for module in model.modules():
-        if isinstance(module, torch.nn.Dropout):
-            module.p = 0
 
 
 class PPOTrainer(PyTorchModelHubMixin):
@@ -467,9 +460,6 @@ class PPOTrainer(PyTorchModelHubMixin):
             self.accelerator.distributed_type == "DEEPSPEED"
             and hasattr(self.accelerator.state, "deepspeed_plugin")
         )
-        if self.accelerator.device.type == "hpu":  # pragma: no cover
-            # WA for Gaudi
-            disable_dropout_in_model(self.model)
 
         (
             self.model,
@@ -937,7 +927,6 @@ class PPOTrainer(PyTorchModelHubMixin):
                 if self.ref_model is not None:
                     self.unwrap_generation_for_hpu_graph_mode(self.ref_model)
                     self.wrap_fw_for_hpu_graph_mode(self.ref_model)
-
             all_logprobs, logits_or_none, values, masks = self.batched_forward_pass(
                 self.model,
                 queries,
@@ -999,6 +988,14 @@ class PPOTrainer(PyTorchModelHubMixin):
         early_stop = False
         if self.config.use_habana: # pragma: no cover
             self.unwrap_fw_for_hpu_graph_mode(self.model)
+            import habana_frameworks.torch as ht # pylint: disable=E0611, E0401
+            model=self.accelerator.unwrap_model(self.model)
+            if not hasattr(model, "wrap_train_in_graph"):
+                ht.hpu.ModuleCacher()(model=model, inplace=True)
+                setattr(model, "wrap_train_in_graph", model.forward)
+            else:
+                model.forward = getattr(model, "wrap_train_in_graph")
+
         for _ in range(self.config.ppo_epochs):
             if early_stop:
                 break
