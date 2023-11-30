@@ -147,14 +147,14 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
        {BK->template SPtr<int8_t>(), BK->SDtype(), BK->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
         quanA.template ZPtr<uint8_t>(), BK->template RPtr<float>(), BK->RDtype(), BK->template ZPtr<int8_t>(),
         quanA.template RPtr<float>(), BK->mBlockSize},
-       {C, N}},
+       {C + M * ldc, N}},
       {gp,
        {A, K, &quanA},
        {BV},
        {BV->template SPtr<int8_t>(), BV->SDtype(), BV->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
         quanA.template ZPtr<uint8_t>(), BV->template RPtr<float>(), BV->RDtype(), BV->template ZPtr<int8_t>(),
         quanA.template RPtr<float>(), BV->mBlockSize},
-       {C, N}}};
+       {C + M * ldc * 2, N}}};
   GemmRunWithA_QKV<Parallel>(kernel, args, th);
 }
 }  // namespace ip_qkv
