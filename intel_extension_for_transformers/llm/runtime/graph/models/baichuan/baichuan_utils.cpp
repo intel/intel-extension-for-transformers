@@ -156,7 +156,7 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.W_pack.weight", {n_embd, 3 * n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.o_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.rotary_emb.inv_freq", {64}, backend);
+    // layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.rotary_emb.inv_freq", {64}, backend);
 
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
 

@@ -326,7 +326,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(dir_model, trust_remote_code=True)
 
-    if model.config.max_position_embeddings == 4096:
+    if hasattr(model.config, 'max_position_embeddings'):
         baichuan7B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
     else:
         baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
