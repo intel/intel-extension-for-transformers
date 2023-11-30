@@ -65,7 +65,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>Intel Gaudi2</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>FP8 (WIP)</td>
+			<td>WIP (FP8)</td>
 			<td>WIP</td>
 		</tr>
 		<tr>
@@ -86,22 +86,22 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>Intel Xeon Scalable Processors</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>INT8 (✔)</td>
-			<td>✔</td>
+			<td>✔ (INT8)</td>
+			<td>✔ (INT4)</td>
 		</tr>
 		<tr>
 			<td>Intel Xeon CPU Max Series</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>INT8 (✔)</td>
-			<td>✔</td>
+			<td>✔ (INT8)</td>
+			<td>✔ (INT4)</td>
 		</tr>
 		<tr>
 			<td>Intel Core Processors</td>
-			<td>WIP</td>
+			<td>n/a</td>
 			<td>✔</td>
-			<td>INT8 (✔)</td>
-			<td>✔</td>
+			<td>✔ (INT8)</td>
+			<td>✔ (INT4)</td>
 		</tr>
 	</tbody>
 </table>
