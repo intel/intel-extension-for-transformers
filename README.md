@@ -51,12 +51,11 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 <table>
 	<tbody>
 		<tr>
-			<td>Hardware</td>
+			<td rowspan="2">Hardware</td>
 			<td colspan="2">Fine-Tuning</td>
 			<td colspan="2">Inference</td>
 		</tr>
 		<tr>
-			<td></td>
 			<td>Full</td>
 			<td>PEFT</td>
 			<td>8-bit</td>
