@@ -101,9 +101,6 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
                     plugins[plugin_name]['class'] = NamedEntityRecognition
-                elif plugin_name == "ner_int":
-                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
-                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 elif plugin_name == "face_animation": # pragma: no cover
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker

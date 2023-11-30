@@ -28,6 +28,7 @@ class TestNER(unittest.TestCase):
 
     def tearDown(self) -> None:
         for filename in os.getcwd():
+            import re
             if re.match(r'ne_.*_fp32.bin', filename) or re.match(r'ne_.*_q.bin', filename):
                 file_path = os.path.join(os.getcwd(), filename)
                 try:
@@ -37,55 +38,11 @@ class TestNER(unittest.TestCase):
                     print(f"Error deleting file {filename}: {str(e)}")
         return super().tearDown()
 
-    def test_fp32(self):
+    def test_ner(self):
         os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognition(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b")
+        ner_obj = NamedEntityRecognition()
         query = "Show me photos taken in Shanghai."
-        result = ner_obj.inference(query=query)
-        _result = {
-            'period': [], 
-            'time': [], 
-            'location': ['Shanghai'], 
-            'name': [], 
-            'organization': []
-        }
-        self.assertEqual(result, _result)
-
-    def test_bf16(self):
-        os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognition(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b", bf16=True)
-        query = "Show me photos taken in Shanghai."
-        result = ner_obj.inference(query=query)
-        _result = {
-            'period': [], 
-            'time': [], 
-            'location': ['Shanghai'], 
-            'name': [], 
-            'organization': []
-        }
-        self.assertEqual(result, _result)
-
-    def test_int8(self):
-        os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognitionINT(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b")
-        query = "Show me photos taken in Shanghai."
-        result = ner_obj.inference(query=query, threads=8)
-        _result = {
-            'period': [], 
-            'time': [], 
-            'location': ['Shanghai'], 
-            'name': [], 
-            'organization': []
-        }
-        self.assertEqual(result, _result)
-
-    def test_int4(self):
-        os.system('python -m spacy download en_core_web_lg')
-        ner_obj = NamedEntityRecognitionINT(model_path="/tf_dataset2/models/nlp_toolkit/mpt-7b", 
-                                            compute_dtype="int8", 
-                                            weight_dtype="int4")
-        query = "Show me photos taken in Shanghai."
-        result = ner_obj.inference(query=query, threads=8)
+        result = ner_obj.ner_inference(query)
         _result = {
             'period': [], 
             'time': [], 
