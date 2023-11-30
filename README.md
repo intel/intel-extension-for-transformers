@@ -66,67 +66,47 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>Intel Gaudi2</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>FP8(WIP)</td>
+			<td>FP8 (WIP)</td>
 			<td>WIP</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Data Center GPU Max Series</td>
+			<td>WIP</td>
+			<td>WIP</td>
+			<td>WIP</td>
+			<td>WIP</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Arc GPU Series</td>
+			<td>WIP</td>
+			<td>WIP</td>
+			<td>WIP</td>
+			<td>WIP</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Xeon Scalable Processors</td>
+			<td>✔</td>
+			<td>✔</td>
+			<td>INT8 (✔)</td>
+			<td>✔</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Xeon CPU Max Series</td>
+			<td>✔</td>
+			<td>✔</td>
+			<td>INT8 (✔)</td>
+			<td>✔</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Core Processors</td>
+			<td>WIP</td>
+			<td>✔</td>
+			<td>INT8 (✔)</td>
+			<td>✔</td>
 		</tr>
 	</tbody>
 </table>
 
-
-| Hardware |: Fine-Tuning :|
-|---------|:---------|:---------| 
-|Intel Gaudi2 | Full | PEFT  \ 
-
-
-
-
-| Hardware | Fine-Tuning  |  Inference                         |
-|          | Full | PEFT  |    8-bit          |    4-bit       |
-|-------------|:-------------|:-------------|:-------------:|:-------------:|
-|Intel Gaudi2 | ✔ | ✔  | FP8 (WIP)  | WIP |
-
-
-|Intel Gaudi2 | ✔ | ✔  | ✔ (bf16) |
-|Intel Data Center GPU Max Series | WIP | WIP | WIP |
-|Intel Arc GPU Series | WIP  | WIP | WIP |
-|Intel Xeon Scalable Processors | ✔ | ✔ | ✔ |
-|Intel Xeon CPU Max Series | ✔ | ✔ | ✔ |
-|Intel Core Processors | ✔ | WIP | ✔ |
 
 ## 🌱Getting Started
 You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.
