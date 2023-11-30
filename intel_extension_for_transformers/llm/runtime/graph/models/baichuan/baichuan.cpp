@@ -139,11 +139,11 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_input*
       // Linear::forward compute QKV
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
-      ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
-                                          0);  // [N, hidden]
+      ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1], 0);  // [N, hidden]
+      ne_tensor* key_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],hidden_size * ne_element_size(cur));
 
-      ne_tensor* key_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
-                                        hidden_size * ne_element_size(cur));
+      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, head_size, 2, 0);
+      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, head_size, 2, 0);
 
       ne_tensor* value_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                                           2 * hidden_size * ne_element_size(cur));  // [N, heads, head_size]
@@ -179,7 +179,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_input*
         // attention
         struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [heads, N, klen]
         attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, attn_scale));
-        attn_scores = ne_alibi(ctx0, attn_scores, n_past, n_head, 8);
+        //attn_scores = ne_alibi(ctx0, attn_scores, n_past, n_head, 8);
         if (n_past == 0) {
           attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
         }
