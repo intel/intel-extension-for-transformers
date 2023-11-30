@@ -48,14 +48,18 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels for Intel CPU and Intel GPU (TBD), supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj), and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set. We've boosted the performance of Intel CPUs, with a particular focus on the 4th generation Intel Xeon Scalable processor, codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html).
 
 ## 🔓Supported Hardware
-| Hardware | Fine-Tuning | NeuralChat | Quantization | Inference |
+| Hardware | Fine-Tuning ||  Inference ||
+|          | Full | PEFT  |    8-bit          |    4-bit       |
 |-------------|:-------------:|:-------------:|:-------------:|:-------------:|
-|Intel Gaudi2 | ✔ | ✔ | WIP | ✔ (bf16) |
-|Intel Data Center GPU Max Series | WIP | WIP | WIP | WIP |
-|Intel Arc GPU Series | WIP  | WIP | WIP | WIP |
-|Intel Xeon Scalable Processors | ✔ | ✔ | ✔ | ✔ |
-|Intel Xeon CPU Max Series | ✔ | ✔ | ✔ | ✔ |
-|Intel Core Processors | ✔ | WIP | ✔ | ✔ |
+|Intel Gaudi2 | ✔ | ✔  | FP8 (WIP)  | WIP |
+
+
+|Intel Gaudi2 | ✔ | ✔  | ✔ (bf16) |
+|Intel Data Center GPU Max Series | WIP | WIP | WIP |
+|Intel Arc GPU Series | WIP  | WIP | WIP |
+|Intel Xeon Scalable Processors | ✔ | ✔ | ✔ |
+|Intel Xeon CPU Max Series | ✔ | ✔ | ✔ |
+|Intel Core Processors | ✔ | WIP | ✔ |
 
 ## 🌱Getting Started
 You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.
