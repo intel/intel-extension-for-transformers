@@ -77,7 +77,7 @@ class UnitTest(unittest.TestCase):
                 response = requests.post(url, files={"file": file})
             print(response.text)
         else:
-            with open("../../../assets/audio/sample.wav", 'rb') as file:
+            with open("../assets/audio/sample.wav", 'rb') as file:
                 response = requests.post(url, files={"file": file})
             print(response.text)
         self.assertEqual(response.status_code, 200)
