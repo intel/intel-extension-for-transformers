@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+geef7117 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g7a70a47 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -199,7 +199,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <ol class="simple">
 <li><p>Text Generation (General domain instruction): We use the <a class="reference external" href="https://github.com/tatsu-lab/stanford_alpaca">Alpaca dataset</a> from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, <a class="reference external" href="https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json">alpaca_data.json</a>. In Alpaca, researchers have manually crafted 175 seed tasks to guide <code class="docutils literal notranslate"><span class="pre">text-davinci-003</span></code> in generating 52K instruction data for diverse tasks.</p></li>
 <li><p>Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the <a class="reference external" href="https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt">prompt template</a> to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in <code class="docutils literal notranslate"><span class="pre">intel_domain.json</span></code>.</p></li>
-<li><p>Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset <a class="reference external" href="https://huggingface.co/datasets/HuggingFaceH4/oasst1_en">HuggingFaceH4/oasst1_en</a>.</p></li>
+<li><p>Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset <a class="reference external" href="https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k">HuggingFaceH4/ultrachat_200k</a>.</p></li>
 <li><p>Summarization: An English-language dataset <a class="reference external" href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a> containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.</p></li>
 <li><p>Code Generation: To enhance code performance of LLMs (Large Language Models), we use the <a class="reference external" href="https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1">theblackcat102/evol-codealpaca-v1</a>.</p></li>
 </ol>
@@ -290,7 +290,8 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <span class="w">        </span>--output_dir<span class="w"> </span>./codellama_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--no_cuda
+<span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--task<span class="w"> </span>code-generation
 </pre></div>
 </div>
 <p><strong>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a></strong>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.</p>
@@ -384,6 +385,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/b
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--task<span class="w"> </span>code-generation
 </pre></div>
 </div>
 <p>Where the <code class="docutils literal notranslate"><span class="pre">--dataset_concatenation</span></code> argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.</p>
@@ -712,7 +714,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f927c20f640> 
+   <jinja2.runtime.BlockReference object at 0x7f863c9ed330> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
