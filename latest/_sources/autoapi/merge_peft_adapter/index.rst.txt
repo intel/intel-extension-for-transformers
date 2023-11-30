@@ -1,0 +1,28 @@
+:orphan:
+
+:py:mod:`merge_peft_adapter`
+============================
+
+.. py:module:: merge_peft_adapter
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   merge_peft_adapter.ScriptArguments
+
+
+
+
+.. py:class:: ScriptArguments
+
+
+   The input names representing the Adapter and Base model fine-tuned with PEFT, and the output name representing the
+   merged model.
+
+
