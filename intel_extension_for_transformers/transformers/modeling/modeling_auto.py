@@ -200,8 +200,9 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
+            if 'falcon' in model_type and transformers.__version__ > "4.33":
+                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(model.eval())
             logger.info("Applying SmoothQuant.")
-
             # ipex.optimize_transformers
             ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox"]
             if quantization_config.ipex_opt_llm is None:
