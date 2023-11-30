@@ -10,6 +10,7 @@
     "zero_optimization": {
         "stage": 3,
         "overlap_comm": false,
-        "contiguous_gradients": false
+        "contiguous_gradients": false,
+        "stage3_gather_16bit_weights_on_model_save": true
     }
 }
