@@ -14,14 +14,10 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <immintrin.h>
-#include <math.h>
 #include <omp.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <atomic>
-#include <cstdlib>
-#include <iostream>
+// #include <atomic>
 #include "oneapi/ccl.hpp"
 
 // states for collectives
@@ -175,15 +171,6 @@ void reduce_2_fp32_buffers(int num_elements, void* rank_0, void* rank_1) {
   }
 }
 
-static void parallel_memcpy(void* to, void* from, size_t n_bytes) __attribute__((target("avx512bw")));
-static void parallel_memcpy(void* to, void* from, size_t n_bytes) {
-#pragma omp parallel for
-  for (int i = 0; i < n_bytes; i += VECTOR_LENGTH_IN_BYTES) {
-    auto val = _mm256_loadu_si256((__m256i*)((char*)from + i));
-    _mm256_storeu_si256((__m256i*)((char*)to + i), val);
-  }
-}
-
 void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, size_t world_size) {
   for (int offset = 0; offset < count * sizeof(float); offset += MAX_BUF_SIZE) {
     auto send_ptr = (char*)sendBuf + offset;
@@ -191,8 +178,7 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
     size_t chunk_size = count * sizeof(float) - offset > MAX_BUF_SIZE ? MAX_BUF_SIZE : count * sizeof(float) - offset;
     size_t chunk_count = chunk_size / sizeof(float);
 
-    parallel_memcpy(cbuffer[rank].data, send_ptr, chunk_size);
-    std::atomic_thread_fence(std::memory_order_release);
+    memcpy(cbuffer[rank].data, send_ptr, chunk_size);
     cbuffer[rank].state = copy_in_done;
 
     if (rank == 0) {
@@ -202,21 +188,18 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
         wait_state_equal(i, copy_in_done);
       }
       reduce_buffers(cbuffer, chunk_count, world_size);
-      std::atomic_thread_fence(std::memory_order_release);
       cbuffer[rank].state = reduce_done;
-      parallel_memcpy(recv_ptr, cbuffer[0].data, chunk_size);
+      memcpy(recv_ptr, cbuffer[0].data, chunk_size);
     }
     if (rank != 0) {
       wait_state_equal(0, reduce_done);
-      parallel_memcpy(recv_ptr, cbuffer[0].data, chunk_size);
-      std::atomic_thread_fence(std::memory_order_release);
+      memcpy(recv_ptr, cbuffer[0].data, chunk_size);
       cbuffer[rank].state = copy_out_done;
     }
     if (rank == 0) {
       for (int i = 1; i < world_size; i++) {
         wait_state_equal(i, copy_out_done);
       }
-      std::atomic_thread_fence(std::memory_order_release);
       cbuffer[rank].state = ccl_begin;
     }
     if (rank != 0) {
