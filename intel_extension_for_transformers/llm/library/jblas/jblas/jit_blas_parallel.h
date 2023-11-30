@@ -14,6 +14,7 @@
 #pragma once
 #include <functional>
 #include <thread>
+#include <vector>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -45,7 +46,7 @@ class Scheduler2D {
   Scheduler2D(const Config2D& config) { update(config); }
   using ThreadProblem = ThreadProblem2D;
 
-  virtual void getIndex(ThreadProblem& problem) {
+  virtual void getIndex(ThreadProblem& problem) const {
     if (problem.tid >= mThdValid) {
       problem.size[0] = 0;
       problem.size[1] = 0;
@@ -528,10 +529,10 @@ using thread_func = std::function<void(int tid)>;
 
 class IThreading {
  public:
-  IThreading(int nthreads) : mThreadNum(nthreads) {}
-  virtual void parallel_for(const thread_func& func) = 0;
-  virtual inline void sync() = 0;
-  virtual int num_threads() { return mThreadNum; };
+  explicit IThreading(int nthreads) : mThreadNum(nthreads) {}
+  virtual void parallel_for(const thread_func& func) const = 0;
+  virtual inline void sync() const = 0;
+  virtual int num_threads() const { return mThreadNum; };
   virtual void set_threads(int nthreads) = 0;
 
  protected:
@@ -540,8 +541,8 @@ class IThreading {
 #ifdef _OPENMP
 class OMPThreading : public IThreading {
  public:
-  OMPThreading(int nthreads) : IThreading(nthreads) { omp_set_num_threads(nthreads); }
-  void parallel_for(const thread_func& func) override {
+  explicit OMPThreading(int nthreads) : IThreading(nthreads) { omp_set_num_threads(nthreads); }
+  void parallel_for(const thread_func& func) const override {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
@@ -552,7 +553,7 @@ class OMPThreading : public IThreading {
     mThreadNum = nthreads;
     omp_set_num_threads(nthreads);
   }
-  virtual inline void sync() override {
+  virtual inline void sync() const override {
 #pragma omp barrier
     (void)(0);  // make msvc happy with c++20
   }
@@ -561,8 +562,9 @@ class OMPThreading : public IThreading {
 
 class StdThreading : public IThreading {
  public:
-  StdThreading(int nthreads) : IThreading(nthreads) { thdset.resize(nthreads); }
-  void parallel_for(const thread_func& func) override {
+  explicit StdThreading(int nthreads) : IThreading(nthreads) { }
+  void parallel_for(const thread_func& func) const override {
+    std::vector<std::thread> thdset(mThreadNum);
     for (size_t i = 0; i < mThreadNum; i++) {
       thdset[i] = std::thread([&](int tidx) { func(tidx); }, int(i));
     }
@@ -571,25 +573,23 @@ class StdThreading : public IThreading {
     }
   }
 
-  virtual void set_threads(int nthreads) override {
+   void set_threads(int nthreads) override {
     mThreadNum = nthreads;
-    thdset.resize(nthreads);
   }
 
-  virtual inline void sync() override { assert(0); }
+  inline void sync() const override { assert(0); }
 
  private:
-  std::vector<std::thread> thdset;
 };
 
 class SingleThread : public IThreading {
  public:
   SingleThread() : IThreading(1) {}
-  void parallel_for(const thread_func& func) override { func(0); }
+  void parallel_for(const thread_func& func) const override { func(0); }
 
-  virtual void set_threads(int nthreads) override { (void)(nthreads); }
+  void set_threads(int nthreads) override { (void)(nthreads); }
 
-  virtual inline void sync() override {}
+  inline void sync() const override {}
 };
 
 template <class Parallel_T, class Launch_T>

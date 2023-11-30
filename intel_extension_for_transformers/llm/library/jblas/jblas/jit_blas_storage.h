@@ -61,13 +61,13 @@ template <int ALIGN>
 class ObjectAlignedBuffer : public ISerialObject {
  public:
   template <typename T>
-  inline constexpr T* get() {
+  inline constexpr T* get() const {
     return reinterpret_cast<T*>(mBufPtr);
-  };
+  }
   template <typename T>
   inline size_t size() {
     return mBufSize / sizeof(T);
-  };
+  }
 
   void resize(size_t bytes) { mBufSize = bytes; }
 
@@ -458,7 +458,7 @@ class StoragePackedWeight : public IWeightBase {
   }
 
   template <typename T>
-  inline constexpr T* WPtr() {
+  inline constexpr T* WPtr() const {
     return mWBuf.get<T>();
   }
 
@@ -680,7 +680,7 @@ class StorageWeightKBlockNInteger : public IWeightKBlockBase {
   inline constexpr int CStep() { return mCorrection.mCStep; }
 
   template <typename T>
-  inline constexpr T* WPtr() {
+  inline constexpr T* WPtr() const {
     return mQBuf.get<T>();
   }
 
