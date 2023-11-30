@@ -342,6 +342,10 @@ class FinetuningArguments:
         default=4,
         metadata={"help": "How many bits to use."}
     )
+    full_finetune: bool = field(
+        default=False,
+        metadata={"help": "Finetune the entire model without adapters."}
+    )
 
 @dataclass
 class TTSDatasetArguments:
