@@ -23,9 +23,9 @@ pip install ../../../../../requirements_pc.txt
 pip install transformers==4.34.1
 ```
 
-# Configure the textbot.yaml
+# Configure the codegen.yaml
 
-You can customize the configuration file 'textbot.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
+You can customize the configuration file 'codegen.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
 
 |  Item              | Value                                      |
 | ------------------- | --------------------------------------- |
@@ -36,9 +36,9 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | tasks_list          | ['textchat']                           |
 
 
-# Run the TextChat server
+# Run the Code Generation Chatbot server
 To start the code-generating chatbot server, use the following command:
 
 ```shell
-nohup python run_text_chat.py &
+nohup python run_code_gen.py &
 ```

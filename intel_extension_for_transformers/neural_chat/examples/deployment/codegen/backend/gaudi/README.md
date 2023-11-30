@@ -23,9 +23,9 @@ pip install ../../../../../requirements_hpu.txt
 pip install transformers==4.34.1
 ```
 
-# Configure the textbot.yaml
+# Configure the codegen.yaml
 
-You can customize the configuration file 'textbot.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
+You can customize the configuration file 'codegen.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
 
 |  Item              | Value                                      |
 | ------------------- | --------------------------------------- |
