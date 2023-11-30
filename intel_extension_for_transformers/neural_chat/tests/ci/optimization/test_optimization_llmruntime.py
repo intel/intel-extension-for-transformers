@@ -16,14 +16,11 @@
 # limitations under the License.
 
 import unittest
-import torch
 import re, os
-from transformers import BitsAndBytesConfig
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
