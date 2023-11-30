@@ -161,9 +161,6 @@ class Model:
         beam_search = False
         if (generate_kwargs.get("num_beams", 1) > 1) and not generate_kwargs.get("do_sample", False):
             beam_search = True
-        # if not beam_search:
-        #     # TODO support multi batch
-        #     assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
 
         if streamer:
             assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
