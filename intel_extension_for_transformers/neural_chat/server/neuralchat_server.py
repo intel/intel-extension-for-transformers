@@ -134,7 +134,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         raise ValueError("NeuralChat Error: Unsupported plugin for service")
                     print(f"create {plugin_name} plugin instance...")
                     print(f"plugin parameters: ", plugin_config["args"])
-                    plugin_config['instance'] = plugins[plugin_name]['class'](plugin_config['args'])
+                    plugin_config['instance'] = plugins[plugin_name]['class'](**plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)

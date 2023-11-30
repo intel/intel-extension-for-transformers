@@ -27,6 +27,16 @@ model_name_or_path: "facebook/opt-125m"
 device: "cpu"
 plugin_as_service: true
 
+asr:
+    enable: true
+    args:
+        # support cpu, hpu, xpu, cuda
+        device: "cpu"
+        # support openai/whisper series
+        model_name_or_path: "openai/whisper-small"
+        # only can be set to true when the device is set to "cpu"
+        bf16: false
+
 tts:
     enable: true
     args:

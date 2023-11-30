@@ -65,6 +65,24 @@ class UnitTest(unittest.TestCase):
 
 
     def test_plugin_as_service(self):
+        url = 'http://127.0.0.1:7777/plugin/audio/asr'
+        audio_path = \
+           "/intel-extension-for-transformers/intel_extension_for_transformers \
+            /neural_chat/assets/audio/sample.wav"
+
+        print("########", os.getcwd())
+
+        if os.path.exists(audio_path):
+            with open(audio_path, 'rb') as file:
+                response = requests.post(url, files={"file": file})
+            print(response.text)
+        else:
+            with open("../../../assets/audio/sample.wav", 'rb') as file:
+                response = requests.post(url, files={"file": file})
+            print(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text.lower(), '{"asr_result":"who is pat gelsinger"}')
+        
         url = 'http://127.0.0.1:7777/plugin/audio/tts'
         request = {
             "text": "Hello",
