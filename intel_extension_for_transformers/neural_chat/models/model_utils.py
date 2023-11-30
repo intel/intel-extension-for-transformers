@@ -20,7 +20,7 @@ from pathlib import Path
 import copy, time
 from datetime import datetime
 import torch
-import
+import transformers
 import warnings
 from queue import Queue
 import re, os
@@ -426,7 +426,6 @@ def load_model(
                 )
             assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
             if re.search("falcon", model_name, re.IGNORECASE):
-                import transformers
                 assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
             from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
             model = TSModelCausalLMForITREX.from_pretrained(
