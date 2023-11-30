@@ -5,6 +5,7 @@ import json
 import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
+import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
 from intel_extension_for_transformers.transformers import (
@@ -118,8 +119,7 @@ if args.benchmark:
     print("---- Prompt size:", input_size)
 
     user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
-    import intel_extension_for_pytorch as ipex
-    user_model = ipex.optimize_transformers(user_model.eval(), device="xpu")
+    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device)
     # start
     total_time = 0.0
     num_iter = args.iters
@@ -174,12 +174,14 @@ if args.benchmark:
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
+    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device)
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
+        device=args.device
     )
     dumped = json.dumps(results, indent=2)
     if args.save_accuracy_path:
