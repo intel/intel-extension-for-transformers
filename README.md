@@ -57,17 +57,17 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Full</td>
+			<td>PEFT</td>
+			<td>8-bit</td>
+			<td>4-bit</td>
 		</tr>
 		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
+			<td>Intel Gaudi2</td>
+			<td>✔</td>
+			<td>✔</td>
+			<td>FP8(WIP)</td>
+			<td>WIP</td>
 		</tr>
 		<tr>
 			<td></td>
