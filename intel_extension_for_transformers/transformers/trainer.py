@@ -2046,7 +2046,7 @@ class BaseTrainer():
           else os.path.join(self.args.output_dir, 'fp32-model.onnx')
 
         # get export args
-        input_names, output_names, axes_dict = self.get_export_args(model)
+        input, input_names, output_names, axes_dict = self.get_export_args(model)
 
         torch.onnx.export(
             model,
@@ -2506,7 +2506,7 @@ class BaseTrainer():
             # skip and use settings collected from dataloader
             pass
 
-        return input_names, output_names, axes_dict
+        return input, input_names, output_names, axes_dict
     
     @staticmethod
     def _remove_label(input):
