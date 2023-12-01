@@ -28,18 +28,15 @@
 #include <fstream>
 #include <random>
 #include <string>
-#include <thread>
+#include <thread>  // NOLINT
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
+
 #include "common.h"
 #include "core/layers/jblas_common.hpp"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
-#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -127,10 +124,14 @@ class Model {
   int n_ctx = 0;
   std::vector<std::vector<model_token>> last_n_tokens;
   bool token_eos = false;
+<<<<<<< HEAD
   long int generate_count = 0;
   std::vector<uint32_t> padding_count;
   uint32_t n_prompt_tokens = 0;
   std::vector<float> times;
+=======
+  int64_t generate_count = 0;
+>>>>>>> fix extra cpplint issues under application
 
   std::vector<std::vector<model_token>> beam_generate(const std::vector<std::vector<model_token>>& input_ids);
   std::vector<model_token> post_process(const float* logits);
@@ -493,7 +494,7 @@ std::vector<model_token> Model::post_greedy_search(const float* logits) {
 std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lctx, const int& n_predict,
                                                               const std::vector<model_input>& inputs,
                                                               const int& n_threads) {
-  // TODO: to implement
+  // TODO(Zhentao): to implement
   static std::set<model_archs> supported_archs = {MODEL_GPTJ, MODEL_GPTNEOX};
   if (supported_archs.count(params.model_arch) != 0) {
     return beam_search(lctx, n_predict, inputs, n_threads);
@@ -541,7 +542,29 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
     model_sample_temperature(ctx, &candidates_p, temp);
     ids[bs] = model_sample_token(ctx, &candidates_p);
   }
+<<<<<<< HEAD
   return ids;
+=======
+  model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+
+  // Apply penalties
+  float nl_logit = logits[model_token_nl()];
+  auto last_n_repeat = std::min(std::min(static_cast<int>(last_n_tokens.size()), repeat_last_n), n_ctx);
+  model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+                                  last_n_repeat, params.repeat_penalty);
+  model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
+                                                last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+                                                last_n_repeat, alpha_frequency, alpha_presence);
+  // int id = model_sample_token_greedy(ctx, &candidates_p);
+  // Temperature sampling
+  model_sample_top_k(ctx, &candidates_p, top_k, 1);
+  model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
+  model_sample_typical(ctx, &candidates_p, typical_p, 1);
+  model_sample_top_p(ctx, &candidates_p, top_p, 1);
+  model_sample_temperature(ctx, &candidates_p, temp);
+  int id = model_sample_token(ctx, &candidates_p);
+  return id;
+>>>>>>> fix extra cpplint issues under application
 }
 
 std::vector<model_token> Model::post_process(const float* logits) {
@@ -590,9 +613,9 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
 size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
                           const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
   using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
@@ -606,7 +629,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   std::copy(src_w, src_w + n * k, tmpq.data());
 
   int nk_scale = jblas::utils::updiv(k, packedw.mBlockSize);
-  auto ssize = (size_t)n * nk_scale;
+  auto ssize = static_cast<size_t>(n * nk_scale);
   jblas::utils::avector<float> Tscales(ssize);
   std::copy(src_scales, src_scales + ssize, Tscales.data());
 
@@ -621,9 +644,9 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
 size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
                              int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   // using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
   using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;

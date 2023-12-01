@@ -123,7 +123,7 @@ std::vector<gpt_vocab::id> gpt_tokenize(const gpt_vocab& vocab, const std::strin
 void test_gpt_tokenizer(gpt_vocab& vocab, const std::string& fpath_test);
 
 // load the tokens from encoder.json
-bool gpt_vocab_init(const std::string& fname, gpt_vocab& vocab);
+bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab);
 
 // sample next token given probabilities for each embedding
 //
