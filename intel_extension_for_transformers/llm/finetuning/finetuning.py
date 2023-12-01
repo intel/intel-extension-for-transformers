@@ -231,6 +231,7 @@ class Finetuning:
             "use_fast": model_args.use_fast_tokenizer,
             "revision": model_args.model_revision,
             "use_auth_token": True if model_args.use_auth_token else None,
+            "trust_remote_code": model_args.trust_remote_code,
         }
         if model_args.tokenizer_name:
             tokenizer = AutoTokenizer.from_pretrained(
@@ -285,7 +286,8 @@ class Finetuning:
                 )
 
         config = self.load_model_config(self.model_args)
-        if config.architectures[0].endswith("ForCausalLM"):
+        if config.architectures[0].endswith("ForCausalLM") \
+            or config.architectures[0].endswith("QWenLMHeadModel"):
             self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
             self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
@@ -551,15 +553,11 @@ class Finetuning:
                 )
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
-            with training_args.main_process_first(desc="save model"):
-                if is_main_process(training_args.local_rank):
-                    unwrapped_model = unwrap_model(model)
-                    unwrapped_model.save_pretrained(
-                        training_args.output_dir, state_dict=unwrapped_model.state_dict()
-                    )
+            trainer.save_model()
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             class Eval_Args:
                 n_samples = 20

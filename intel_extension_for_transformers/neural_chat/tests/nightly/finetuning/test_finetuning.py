@@ -26,6 +26,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 json_data = \
 """
@@ -39,6 +40,7 @@ test_data_file = './alpaca_test.json'
 class TestFinetuning(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+        self.device = get_device_type()
         with open(test_data_file, mode='w') as f:
             f.write(json_data)
 
@@ -56,7 +58,7 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments(device='cpu')
+        finetune_args = FinetuningArguments(device=self.device)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
@@ -74,7 +76,7 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments(device='cpu', qlora=True)
+        finetune_args = FinetuningArguments(device=self.device, qlora=True)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
@@ -92,7 +94,7 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments(device='cpu')
+        finetune_args = FinetuningArguments(device=self.device)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
