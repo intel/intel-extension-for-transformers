@@ -55,8 +55,6 @@ class UnitTest(unittest.TestCase):
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
-        if os.path.exists("./photoai_retrieval_docs"):
-            shutil.rmtree("./photoai_retrieval_docs")
 
     def test_askdoc_chat(self):
         url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
@@ -80,7 +78,6 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
         self.assertIn('Your query contains sensitive words, please try another query', str(res.text))
-
 
 if __name__ == "__main__":
     unittest.main()
