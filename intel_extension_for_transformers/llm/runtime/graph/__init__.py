@@ -75,7 +75,7 @@ class Model:
             model_type = "chatglm2"
         return model_type
 
-    def init(self, model_name, use_quant=True, use_cache=False, use_gptq=False, **quant_kwargs):
+    def init(self, model_name, use_quant=True, use_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.model_type = Model.get_model_type(self.config)
@@ -106,7 +106,10 @@ class Model:
             self.bin_file = fp32_bin
         else:
             self.bin_file = quant_bin
-        if use_cache and os.path.exists(self.bin_file):
+
+        if os.path.exists(self.bin_file):
+            print("{} existed, will use cache file. Otherwise please remove the file".
+                  format(self.bin_file))
             return
 
         if use_gptq:
@@ -114,7 +117,7 @@ class Model:
             return
 
 
-        if not use_cache or not os.path.exists(fp32_bin):
+        if not os.path.exists(fp32_bin):
             convert_model(model_name, fp32_bin, "f32")
             assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
@@ -125,8 +128,7 @@ class Model:
         assert os.path.exists(quant_bin), "Fail to quantize model"
 
         # clean
-        if not use_cache:
-            os.remove(fp32_bin)
+        os.remove(fp32_bin)
 
     def init_from_bin(self, model_type, model_path, **generate_kwargs):
         self.__import_package(model_type)
