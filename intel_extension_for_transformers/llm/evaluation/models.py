@@ -54,7 +54,10 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         past_key_values = past_key_values or kwargs.get("past", None)
 
         if self.use_cache and past_key_values is not None:
-            if not re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
+            if not (
+                self.config.model_type == "chatglm"
+                and re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"])
+            ):
                 input_ids = input_ids[:, -1:]
 
         # `past_key_values` may be in the stardard format (e.g. in contrastive search),
@@ -73,7 +76,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             if past_key_values:
                 position_ids = position_ids[:, -1].unsqueeze(-1)
 
-        if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
+        if self.config.model_type == "chatglm" and re.search(
+            "THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]
+        ):
             MASK, gMASK = self.config.mask_token_id, self.config.gmask_token_id
             seqs = input_ids.tolist()
             mask_positions, use_gmasks = [], []
@@ -160,7 +165,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         inputs["past_key_values"] = past_key_values
         if attention_mask is None:
             inputs["attention_mask"] = torch.ones_like(input_ids)
-        if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
+        if model_type == "chatglm" and re.search(
+            "THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]
+        ):
             if position_ids is None:
                 position_ids = self.prepare_inputs_for_generation(input_ids)[
                     "position_ids"

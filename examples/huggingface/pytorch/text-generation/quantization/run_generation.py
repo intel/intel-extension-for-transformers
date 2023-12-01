@@ -155,10 +155,6 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
-    if re.search("dolly", args.model):
-        ipex_opt_llm = False
-    else:
-        ipex_opt_llm = None
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
         "smooth_quant": True,
@@ -172,7 +168,6 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
-        ipex_opt_llm=ipex_opt_llm,
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
@@ -243,6 +238,11 @@ if args.int8 or args.int8_bf16_mixed:
     )
 
 if args.benchmark:
+    def trace_handler(prof):
+        print(
+            prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=-1)
+        )
+
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -258,34 +258,40 @@ if args.benchmark:
         prompt = [prompt] * args.batch_size
 
     with torch.inference_mode(), torch.no_grad():
-        for i in range(num_iter):
-            tic = time.time()
-            if hasattr(tokenizer, "build_chat_input"):
-                input_ids = tokenizer.build_chat_input(prompt)["input_ids"]
-                input_ids = input_ids.repeat(args.batch_size, 1)
-                eos_token_id = [
-                    tokenizer.eos_token_id,
-                    tokenizer.get_command("<|user|>"),
-                    tokenizer.get_command("<|observation|>"),
-                ]
-            else:
-                input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        with torch.profiler.profile(
+            activities=[torch.profiler.ProfilerActivity.CPU],
+            schedule=torch.profiler.schedule(wait=1, warmup=3, active=1),
+            on_trace_ready=trace_handler,
+        ) as prof:
+            for i in range(num_iter):
+                tic = time.time()
+                if hasattr(tokenizer, "build_chat_input"):
+                    input_ids = tokenizer.build_chat_input(prompt)["input_ids"]
+                    input_ids = input_ids.repeat(args.batch_size, 1)
+                    eos_token_id = [
+                        tokenizer.eos_token_id,
+                        tokenizer.get_command("<|user|>"),
+                        tokenizer.get_command("<|observation|>"),
+                    ]
+                else:
+                    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
-            gen_ids = user_model.generate(
-                input_ids,
-                max_new_tokens=args.max_new_tokens,
-                **generate_kwargs,
-                eos_token_id=eos_token_id
-            )
-            gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
-            toc = time.time()
-            # please check the gen_ids if include input_ids.
-            input_tokens_num = input_ids.numel()
-            output_tokens_num = gen_ids.numel() - input_tokens_num
-            print(gen_text, flush=True)
-            if i >= num_warmup:
-                total_time += toc - tic
-                total_token_num += output_tokens_num
+                gen_ids = user_model.generate(
+                    input_ids,
+                    max_new_tokens=args.max_new_tokens,
+                    **generate_kwargs,
+                    eos_token_id=eos_token_id
+                )
+                gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
+                prof.step()
+                toc = time.time()
+                # please check the gen_ids if include input_ids.
+                input_tokens_num = input_ids.numel()
+                output_tokens_num = gen_ids.numel() - input_tokens_num
+                print(gen_text, flush=True)
+                if i >= num_warmup:
+                    total_time += toc - tic
+                    total_token_num += output_tokens_num
 
     print("\n", "-" * 10, "Summary:", "-" * 10)
     latency = total_time / total_token_num
@@ -310,7 +316,7 @@ if args.accuracy:
         + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
-        tasks=args.tasks,
+        tasks=args.tasks
     )
     dumped = json.dumps(results, indent=2)
     if args.save_accuracy_path:

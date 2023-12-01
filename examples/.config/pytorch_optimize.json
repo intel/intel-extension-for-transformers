@@ -26,6 +26,33 @@
       }
     }
   },
+  "codellama_7b": {
+    "working_dir": "huggingface/pytorch/code-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "codellama_7b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "codellama_7b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_neo_clm_static": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune":{
@@ -1700,6 +1727,87 @@
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "opt_6.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "chatglm3_6b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "chatglm3_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "chatglm3_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "chatglm2_6b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "chatglm2_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "chatglm2_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "chatglm_6b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "chatglm_6b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "chatglm_6b",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",
