@@ -87,6 +87,7 @@ class Model {
   void reset_token_end() {
     token_eos = false;
     curr_input_ids.clear();
+    curr_input_ids.resize(params.batch_size);
     generate_count = 0;
   }
 
