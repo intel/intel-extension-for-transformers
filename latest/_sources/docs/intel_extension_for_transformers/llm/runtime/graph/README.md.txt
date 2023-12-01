@@ -178,8 +178,7 @@ while True:
         break
     b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
 ```
 
 Chat with ChatGLM2:
@@ -199,10 +198,28 @@ while True:
         break
     prompt = tokenizer.build_prompt(prompt)  # prompt template for chatglm2
     inputs = tokenizer([prompt], return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1, n_keep=2)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True, n_keep=2)
 ```
 
+Chat with Qwen:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "Qwen/Qwen-7B-Chat"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    prompt = input("> ").strip()
+    if prompt == "quit":
+        break
+    prompt = "\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n".format(prompt)  # prompt template for qwen
+    inputs = tokenizer([prompt], return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
+```
 
 ## How to use: Python script
 Install from binary
