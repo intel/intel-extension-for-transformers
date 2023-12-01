@@ -216,9 +216,6 @@ class _BaseQBitsAutoModelClass:
             assert (
                 ipex.__version__ >= "2.1.0+cpu"
             ), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            import pdb
-
-            pdb.set_trace()
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
                 low_cpu_mem_usage=True,
