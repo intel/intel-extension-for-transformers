@@ -40,7 +40,6 @@ python -m pylint -f json --disable=R,C,W,E1129 \
     --extension-pkg-whitelist=numpy,nltk \
     --ignored-classes=TensorProto,NodeProto \
     --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,neural_compressor.benchmark,intel_extension_for_transformers.neural_engine_py,cv2,PIL.Image \
-    --ignore-paths=/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/ \
     /intel-extension-for-transformers/intel_extension_for_transformers >${log_dir}/pylint.json
 exit_code=$?
 
