@@ -302,7 +302,7 @@ struct beam {
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
 
   void print() const {
-    printf("length: %d, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
+    printf("length: %ld, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
            score, eos(), request_idx, beam_idx, done);
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
