@@ -364,6 +364,11 @@ Classes
       The function to tranfer model into jit model.
 
 
+   .. py:method:: get_export_args(model)
+
+      Get input name, output names and axes for export.
+
+
    .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', batch_size: int = 8, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
 
       get performance of model
