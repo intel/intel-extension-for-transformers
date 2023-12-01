@@ -221,6 +221,7 @@ class _BaseQBitsAutoModelClass:
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float,
                 torchscript=True,
+                use_cache=True,
                 *model_args,
                 **kwargs,
             )
