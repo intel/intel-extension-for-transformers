@@ -441,35 +441,6 @@ std::map<std::string, std::vector<gpt_vocab::id>> extract_tests_from_file(const 
   return tests;
 }
 
-void test_gpt_tokenizer(const gpt_vocab& vocab, const std::string& fpath_test) {
-  std::map<std::string, std::vector<gpt_vocab::id>> tests = extract_tests_from_file(fpath_test);
-
-  size_t n_fails = 0;
-
-  for (const auto& test : tests) {
-    std::vector<gpt_vocab::id> tokens = gpt_tokenize(vocab, test.first);
-
-    if (tokens != test.second) {
-      n_fails++;
-
-      // print out failure cases
-      fprintf(stderr, "%s : failed test: '%s'\n", __func__, test.first.c_str());
-      fprintf(stderr, "%s : tokens in hf:   ", __func__);
-      for (const auto& t : test.second) {
-        fprintf(stderr, "%s(%d), ", vocab.id_to_token[t].c_str(), t);
-      }
-      fprintf(stderr, "\n");
-      fprintf(stderr, "%s : tokens in ggml: ", __func__);
-      for (const auto& t : tokens) {
-        fprintf(stderr, "%s(%d), ", vocab.id_to_token[t].c_str(), t);
-      }
-      fprintf(stderr, "\n");
-    }
-  }
-
-  fprintf(stderr, "%s : %lu tests failed out of %lu tests.\n", __func__, n_fails, tests.size());
-}
-
 bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab) {
   printf("%s: loading vocab from '%s'\n", __func__, fname.c_str());
 
