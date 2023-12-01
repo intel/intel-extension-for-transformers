@@ -39,6 +39,9 @@ add_compile_definitions(NE_USE_RN_BF16FP16=1)
 
 
 if (NE_BUILD_TESTS)
+add_library_w_warning(layers_jblas_common layers/jblas_common.cpp)
+target_include_directories(layers_jblas_common PUBLIC .)
+target_link_libraries(layers_jblas_common PUBLIC Threads::Threads jblas::jblas ne_vec)
 
 function(add_test_target src)
   get_filename_component(test_target ${src} NAME_WE)
@@ -53,7 +56,7 @@ function(add_test_target src)
   target_compile_options(${test_target} PRIVATE -fsanitize=address)
   target_link_options(${test_target} PRIVATE -fsanitize=address)
   target_include_directories(${test_target} PUBLIC .)
-  target_link_libraries(${test_target} PUBLIC Threads::Threads jblas::jblas ne_vec)
+  target_link_libraries(${test_target} PUBLIC Threads::Threads jblas::jblas ne_vec layers_jblas_common)
   if(NOT WIN32)
     target_link_libraries(${test_target} PUBLIC rt)
   endif()
