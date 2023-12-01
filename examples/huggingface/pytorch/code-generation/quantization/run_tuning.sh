@@ -12,7 +12,7 @@ function main {
 function init_params {
   topology="gpt"
   tuned_checkpoint="saved_results"
-  DATASET_NAME="openai_humaneval"
+  DATASET_NAME="mbpp"
   model_name_or_path="bigcode/starcoder"
   extra_cmd=""
   batch_size=8
@@ -61,6 +61,12 @@ function run_tuning {
             extra_cmd=$extra_cmd" --ipex"
             alpha=0.5
         fi
+    elif [ "${topology}" = "codellama_7b" ]; then
+        model_name_or_path="codellama/CodeLlama-7b-hf"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+            alpha=0.5
+        fi
     fi
 
     if [ ${script} = "run_generation.py" ];then
@@ -68,8 +74,6 @@ function run_tuning {
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
             --dataset ${DATASET_NAME} \
-            --calib_split "test" \
-            --quantize \
             --sq \
             --alpha ${alpha} \
             ${extra_cmd}

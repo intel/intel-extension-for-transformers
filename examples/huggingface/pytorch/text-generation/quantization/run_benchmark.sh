@@ -109,9 +109,18 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"
+    elif [ "${topology}" = "chatglm3_6b" ]; then
+        model_name_or_path="THUDM/chatglm3-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm2_6b" ]; then
+        model_name_or_path="THUDM/chatglm2-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm_6b" ]; then
+        model_name_or_path="THUDM/chatglm-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
     fi
 
-    
     if [[ ${int8} == "true" ]]; then
         if [ "${topology}" = "gpt_j_woq_rtn" ]; then
             extra_cmd=$extra_cmd" --woq"

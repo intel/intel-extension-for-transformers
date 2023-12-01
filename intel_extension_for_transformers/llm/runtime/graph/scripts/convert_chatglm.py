@@ -262,10 +262,10 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["inner_hidden_size"]))
 
-    fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
-    fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     vocab = load_vocab_for_glm1(Path(dir_model))
     counter = 0

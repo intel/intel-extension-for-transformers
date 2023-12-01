@@ -121,6 +121,25 @@ function run_tuning {
         model_name_or_path="mosaicml/mpt-7b-chat"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+    elif [ "${topology}" = "chatglm3_6b" ]; then
+        alpha=0.75
+        model_name_or_path="THUDM/chatglm3-6b"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm2_6b" ]; then
+        alpha=0.75
+        model_name_or_path="THUDM/chatglm2-6b"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm_6b" ]; then
+        alpha=0.75
+        model_name_or_path="THUDM/chatglm-6b"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
     fi
 
     if [ ${script} = "run_generation.py" ];then

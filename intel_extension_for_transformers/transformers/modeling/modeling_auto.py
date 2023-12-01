@@ -47,6 +47,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
+    IPEX_OPT_LLM_SUPPORTED,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -184,7 +185,6 @@ class _BaseQBitsAutoModelClass:
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
                     use_quant=quantization_config.use_quant,
-                    use_cache=quantization_config.use_cache,
                     use_gptq=quantization_config.use_gptq,
                 )
                 return model
@@ -225,6 +225,7 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
+
             if (
                 not torch.cuda.is_available()
                 or device_map == "cpu"
@@ -236,9 +237,8 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying SmoothQuant.")
 
             # ipex.optimize_transformers
-            ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
             if quantization_config.ipex_opt_llm is None:
-                if model_type in ipex_opt_llm_supported:
+                if model_type in IPEX_OPT_LLM_SUPPORTED:
                     quantization_config.ipex_opt_llm = True
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
@@ -441,7 +441,7 @@ class _BaseQBitsAutoModelClass:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                         example_inputs = inputs
-                        if model_type == "chatglm" or model_type == "falcon":
+                        if model_type in ["chatglm", "falcon"]:
                             if re.search(
                                 "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
                             ):
@@ -451,7 +451,7 @@ class _BaseQBitsAutoModelClass:
                                 outputs = model(example_inputs["input_ids"])
                                 example_inputs["past_key_values"] = outputs[1]
                                 example_inputs["attention_mask"] = torch.ones(
-                                    input_bs, input_len
+                                    input_bs, input_len + 1
                                 )
                                 example_inputs["position_ids"] = (
                                     example_inputs["position_ids"][:, -1:] + 1
