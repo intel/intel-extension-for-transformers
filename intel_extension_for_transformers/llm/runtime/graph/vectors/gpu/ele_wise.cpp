@@ -11,6 +11,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+#include <iostream>
 #include "vector_kernel.h"
 #define GPU_BACKEND
 #include "../parallel_for.h"
@@ -255,7 +257,7 @@ inline static void ne_vec_gelu_f32(const int n, float* y, const float* x) {
 // }
 
 // }
-#include <iostream>
+
 int main() {
   constexpr unsigned size = 17;
   sycl::queue q = sycl::queue();
