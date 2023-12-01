@@ -120,7 +120,7 @@ std::vector<gpt_vocab::id> gpt_tokenize(const gpt_vocab& vocab, const std::strin
 //   - if all sentences are tokenized identically, print 'All tests passed.'
 //   - otherwise, print sentence, huggingface tokens, ggml tokens
 //
-void test_gpt_tokenizer(gpt_vocab& vocab, const std::string& fpath_test);
+void test_gpt_tokenizer(const gpt_vocab& vocab, const std::string& fpath_test);
 
 // load the tokens from encoder.json
 bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab);
