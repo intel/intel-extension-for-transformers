@@ -49,19 +49,5 @@ class NamedEntityRecognition():
         print("[NER inference] Inference time consumption: ", time.time() - start_time)
 
         return result
-    
 
-    def ner_inference(self, response):
-        start_time = time.time()
-        cur_time = get_current_time()
-        print("[NER inference] Current time is:{}".format(cur_time))
-        text = enforce_stop_tokens(response)
-        doc = self.nlp(text)
-        mentioned_time = process_time(text, doc)
-
-        new_doc = self.nlp(response)
-        result = process_entities(response, new_doc, mentioned_time)
-        print("[NER inference] Inference time consumption: ", time.time() - start_time)
-
-        return result
 
