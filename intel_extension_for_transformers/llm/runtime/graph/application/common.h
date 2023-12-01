@@ -71,9 +71,9 @@ bool isValidFilename(const std::string& filename);
 
 void gpt_print_usage(int argc, char** argv, const common_params& params);
 
-std::string gpt_random_prompt(const std::mt19937& rng);
+std::string gpt_random_prompt(std::mt19937& rng);
 
-std::vector<int> gpt_random_ids(const std::mt19937& rng);
+std::vector<int> gpt_random_ids(std::mt19937& rng);
 
 //
 // Vocab utils
@@ -134,12 +134,12 @@ bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab);
 // TODO: temperature is not implemented
 //
 gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits, int top_k, double top_p, double temp,
-                                     const std::mt19937& rng);
+                                     std::mt19937& rng);
 
 gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float* logits,
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
-                                            float repeat_penalty, const std::mt19937& rng);
+                                            float repeat_penalty, std::mt19937& rng);
 
 struct quant_params {
   std::string model_file = "";
