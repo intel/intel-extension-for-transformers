@@ -55,6 +55,8 @@ class UnitTest(unittest.TestCase):
         import shutil
         if os.path.exists("./out_persist"):
             shutil.rmtree("./out_persist")
+        if os.path.exists("./photoai_retrieval_docs"):
+            shutil.rmtree("./photoai_retrieval_docs")
 
     def test_askdoc_chat(self):
         url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/chat'
@@ -78,6 +80,25 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
         self.assertIn('Your query contains sensitive words, please try another query', str(res.text))
+
+        url = 'http://127.0.0.1:6000/v1/aiphotos/askdoc/create'
+        file_path = \
+           "/intel-extension-for-transformers/intel_extension_for_transformers \
+            /neural_chat/assets/docs/sample.txt"
+        print("########", os.getcwd())
+
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as file:
+                response = requests.post(url, files={"file": file})
+        elif os.path.exists("../assets/docs/sample.txt"):
+            with open("../assets/docs/sample.txt", 'rb') as file:
+                response = requests.post(url, files={"file": file})
+        else:
+            with open("../../assets/docs/sample.txt", 'rb') as file:
+                response = requests.post(url, files={"file": file})
+        print(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('knowledge_base_id', response.text.lower())
 
 if __name__ == "__main__":
     unittest.main()
