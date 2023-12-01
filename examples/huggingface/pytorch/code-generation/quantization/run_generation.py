@@ -153,7 +153,6 @@ if not tokenizer.eos_token:
 tokenizer.pad_token = tokenizer.eos_token
 
 
-calib_dataset = args.dataset
 op_type_dict = {
     "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
 }
@@ -174,7 +173,7 @@ elif args.sq:
         recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
-        calib_dataset=calib_dataset,
+        calib_dataset=args.dataset,
         calib_iters=args.calib_iters,
     )
 elif args.woq:
