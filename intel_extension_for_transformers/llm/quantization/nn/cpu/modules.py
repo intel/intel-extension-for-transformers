@@ -98,7 +98,7 @@ class QuantizedLinearCPU(torch.nn.Linear):
             self.bias.data = self.bias.data.to(x.dtype)
 
         if getattr(self.weight, 'quant_state', None) is None:
-            print('quantization state not initialized. Please call .set_weights_bias().')
+            print('quantization state not initialized. Please call .init_weights_bias().')
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
@@ -113,7 +113,7 @@ class QuantizedLinearCPU(torch.nn.Linear):
 
         return out
 
-    def set_weights_bias(self, weight_data, bias=None):
+    def init_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
         weight = torch.ops.weight_only_jblasop.qbits_quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
@@ -176,7 +176,7 @@ class QuantizedLinearCPU(torch.nn.Linear):
 
 #         return out
 
-#     def set_weights_bias(self, weight_data, bias=None):
+#     def init_weights_bias(self, weight_data, bias=None):
 #         weight = torch.ops.weight_only_jblasop.qbits_quantize(
 #             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
 #         self.weight = ParamsQBits(

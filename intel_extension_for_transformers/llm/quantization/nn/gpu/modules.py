@@ -105,7 +105,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
         out = out.view(shape)
         return out
 
-    def set_weights_bias(self, weight_data, bias=None):
+    def init_weights_bias(self, weight_data, bias=None):
         weight = gbits.quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype
         )
@@ -167,7 +167,7 @@ class QuantizedLinearGPU(torch.nn.Linear):
 
 #         return out
 
-#     def set_weights_bias(self, weight_data, bias=None):
+#     def init_weights_bias(self, weight_data, bias=None):
 #         weight = torch.ops.weight_only_jblasop.qbits_quantize(
 #             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
 #         self.weight = ParamsQBits(
