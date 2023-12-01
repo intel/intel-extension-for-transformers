@@ -9,9 +9,10 @@ log_path=${log_dir}/cpplint.log
 cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/deprecated/compile 2>&1 | tee ${log_path}
 cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/deprecated/executor 2>&1 | tee -a ${log_path}
 cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/deprecated/test 2>&1 | tee -a ${log_path}
-cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/graph 2>&1 | tee -a ${log_path}
+cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/graph/application 2>&1 | tee -a ${log_path}
 cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/library/kernels 2>&1 | tee -a ${log_path}
-cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/library/kernels 2>&1 | tee -a ${log_path}
+cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/graph/models 2>&1 | tee -a ${log_path}
+cpplint --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/graph/vectors 2>&1 | tee -a ${log_path}
 if [[ ! -f ${log_path} ]] || [[ $(grep -c "Total errors found:" ${log_path}) != 0 ]]; then
     exit 1
 fi
