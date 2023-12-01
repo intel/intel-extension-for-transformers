@@ -869,7 +869,7 @@ int main(int argc, char** argv) {
 
         wparams.encoder_begin_callback = [](struct whisper_context* /*ctx*/, struct whisper_state* /*state*/,
                                             void* user_data) {
-          bool is_aborted = *(bool*)user_data;
+          bool is_aborted = *(reinterpret_cast<bool*>(user_data));
           return !is_aborted;
         };
         wparams.encoder_begin_callback_user_data = &is_aborted;
