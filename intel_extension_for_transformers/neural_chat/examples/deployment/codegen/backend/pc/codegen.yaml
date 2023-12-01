@@ -20,18 +20,18 @@
 #################################################################################
 #                             SERVER SETTING                                    #
 #################################################################################
-host: 127.0.0.1
-port: 8080
+host: 0.0.0.0
+port: 8000
 
-model_name_or_path: "facebook/opt-125m"
-device: "auto"
+model_name_or_path: "codellama/CodeLlama-7b-hf"
+device: "cpu"
 
-# itrex int4 optimization
+# itrex int4 llm runtime optimization
 optimization:
-    use_llm_runtime: false
+    use_llm_runtime: true
     optimization_type: "weight_only"
     compute_dtype: "int8"
-    weight_dtype: "int4_fullrange"
+    weight_dtype: "int4"
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat']

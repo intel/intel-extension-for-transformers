@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -15,16 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 127.0.0.1
-port: 7000
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
-model_name_or_path: "facebook/opt-125m"
-device: "auto"
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./codegen.yaml", log_file="./codegen.log")
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+if __name__ == "__main__":
+    main()

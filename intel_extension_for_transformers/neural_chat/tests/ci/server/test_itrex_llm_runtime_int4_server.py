@@ -21,9 +21,13 @@ import time
 import os
 import json
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
-
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
+        device = get_device_type()
+        if device != "cpu":
+            self.skipTest("Only test this UT case on Intel CPU.")
+
         yaml_file_path = "/intel-extension-for-transformers/" + \
             "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_itrex_llm_runtime_int4.yaml"
         if os.path.exists(yaml_file_path):
