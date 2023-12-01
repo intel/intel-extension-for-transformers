@@ -28,7 +28,7 @@ function pytest() {
     export GLOG_minloglevel=2
 
     # Kill the neuralchat server processes
-    ports="5000 6000 6060 7000 7070 8000 8080 9000 9090"
+    ports="5000 6000 6060 7000 7070 7777 8000 8080 9000 9090"
     # Loop through each port and find associated PIDs
     for port in $ports; do
         # Use lsof to find the processes associated with the port
@@ -47,7 +47,7 @@ function pytest() {
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
     sort run.sh -o run.sh
     echo -e '
-ports="5000 6000 6060 7000 7070 8000 8080 9000 9090"
+ports="5000 6000 6060 7000 7070 7777 8000 8080 9000 9090"
 for port in $ports; do
     pids=$(lsof -ti :$port)
     if [ -n "$pids" ]; then
@@ -78,22 +78,29 @@ done
 
     # check UT status
     if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ]; then
-        $BOLD_RED && echo "Find errors in UT test, please search [FAILED]..." && $RESET
+        $BOLD_RED && echo "Find errors in UT, please search [FAILED]..." && $RESET
         exit 1
     fi
     if [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
-        $BOLD_RED && echo "Find errors in UT test, please search [ModuleNotFoundError:]..." && $RESET
+        $BOLD_RED && echo "Find errors in UT, please search [ModuleNotFoundError:]..." && $RESET
         exit 1
     fi
     if [ $(grep -c "core dumped" ${ut_log_name}) != 0 ]; then
-        $BOLD_RED && echo "Find errors in UT test, please search [core dumped]..." && $RESET
+        $BOLD_RED && echo "Find errors in UT, please search [core dumped]..." && $RESET
         exit 1
     fi
     if [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
         $BOLD_RED && echo "No pass case found, please check the output..." && $RESET
         exit 1
     fi
-
+    if [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "ERROR found in UT, please check the output..." && $RESET
+        exit 1
+    fi 
+    if [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "Segmentation Fault found in UT, please check the output..." && $RESET
+        exit 1
+    fi  
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 

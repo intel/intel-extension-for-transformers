@@ -19,6 +19,7 @@
 import io
 import os
 import re
+import csv
 import datetime
 from pathlib import Path
 from datetime import timedelta, timezone
@@ -57,8 +58,12 @@ class RetrievalAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, bot) -> None:
+    def set_chatbot(self, bot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = bot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -73,7 +78,7 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
-RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH")+'/'
+RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
 
 
 @router.post("/v1/aiphotos/askdoc/upload_link")
@@ -112,19 +117,16 @@ async def retrieval_upload_link(request: Request):
         import uuid
         kb_id = f"kb_{str(uuid.uuid1())[:8]}"
         path_prefix = RETRIEVAL_FILE_PATH
-        
+
         # create new upload path dir
-        if os.path.exists(path_prefix):
-            os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
-        # user already created knowledge base
-        else:
-            os.system(f"mkdir {path_prefix}")
-            os.system(f"mkdir {path_prefix}/{user_id}-{kb_id}")
+        cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
+        os.makedirs(path_prefix, exist_ok=True)
+        cur_path.mkdir(parents=True, exist_ok=True)
         
-        user_upload_dir = path_prefix+user_id+'-'+kb_id+'/upload_dir'
-        user_persist_dir = path_prefix+user_id+'-'+kb_id+'/persist_dir'
-        os.system(f"mkdir {user_upload_dir}")
-        os.system(f"mkdir {user_persist_dir}")
+        user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
+        user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
+        user_upload_dir.mkdir(parents=True, exist_ok=True)
+        user_persist_dir.mkdir(parents=True, exist_ok=True)
         print(f"[askdoc - upload_link] upload path: {user_upload_dir}")
         
         try:

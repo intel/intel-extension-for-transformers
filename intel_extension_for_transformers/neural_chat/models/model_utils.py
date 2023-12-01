@@ -20,6 +20,7 @@ from pathlib import Path
 import copy, time
 from datetime import datetime
 import torch
+import transformers
 import warnings
 from queue import Queue
 import re, os
@@ -333,8 +334,7 @@ def load_model(
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
-
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
+    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         if not model.config.is_encoder_decoder:
@@ -345,10 +345,11 @@ def load_model(
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
         return
-
+    
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
+
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
@@ -413,6 +414,7 @@ def load_model(
              or re.search("opt", model_name, re.IGNORECASE)
              or re.search("gpt_neox", model_name, re.IGNORECASE)
              or re.search("gptj", model_name, re.IGNORECASE)
+             or re.search("falcon", model_name, re.IGNORECASE)
             ) and ipex_int8
     ):  
         with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -423,22 +425,13 @@ def load_model(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
             assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            torch._C._jit_set_texpr_fuser_enabled(False)
-            qconfig = ipex.quantization.default_static_qconfig_mapping
-            with ipex.OnDevice(dtype=torch.float, device="meta"):
-                model = AutoModelForCausalLM.from_pretrained(model_name)
-            model = ipex.optimize_transformers(
-                model.eval(),
-                dtype=torch.float,
-                inplace=True,
-                quantization_config=qconfig,
-                deployment_mode=False,
+            if re.search("falcon", model_name, re.IGNORECASE):
+                assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
+            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+            model = TSModelCausalLMForITREX.from_pretrained(
+                model_name,
+                file_name="best_model.pt"
             )
-            if not hasattr(model, "trace_graph"):
-                print("load_quantized_model")
-                self_jit = torch.jit.load(os.path.join(model_name, "best_model.pt"))
-                self_jit = torch.jit.freeze(self_jit.eval())
-                ipex._set_optimized_model_for_generation(model, optimized_model=self_jit)       
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports "
@@ -477,6 +470,14 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
+    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
+        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        model = optimize_model(model, optimization_config, use_llm_runtime)
+
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        print("Optimized Model loaded.")
+        return
     if device == "hpu":
         if peft_path:
             from peft import PeftModel
@@ -506,9 +507,18 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            if torch_dtype == torch.bfloat16 and not ipex_int8:
-                import intel_extension_for_pytorch as intel_ipex
-
+            import intel_extension_for_pytorch as intel_ipex
+            if re.search("llama", model_name, re.IGNORECASE):
+                qconfig = None if ipex_int8 == False else intel_ipex.quantization.get_weight_only_quant_qconfig_mapping(
+                    weight_dtype=torch.quint4x2, lowp_mode=intel_ipex.quantization.WoqLowpMode.BF16
+                )
+                model = intel_ipex.optimize_transformers(model.eval(),
+                                                         dtype=torch_dtype,
+                                                         inplace=True,
+                                                         quantization_config=qconfig,
+                                                         deployment_mode=cpu_jit
+                                                        )
+            elif torch_dtype == torch.bfloat16 and not ipex_int8:
                 model = intel_ipex.optimize(
                     model.eval(),
                     dtype=torch_dtype,
@@ -768,7 +778,7 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                    output_token_len = len(output_token[0]) if is_llm_runtime_model(model) else \
                                       output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:

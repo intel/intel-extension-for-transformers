@@ -45,10 +45,31 @@ function pytest() {
     coverage xml -o ${coverage_log_dir}/coverage.xml --rcfile=${COVERAGE_RCFILE}
 
     # check UT status
-    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ] || [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
-        $BOLD_RED && echo "Find errors in UT test, please check the output..." && $RESET
+    if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT, please search [FAILED]..." && $RESET
         exit 1
     fi
+    if [ $(grep -c "ModuleNotFoundError:" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT, please search [ModuleNotFoundError:]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "core dumped" ${ut_log_name}) != 0 ]; then
+        $BOLD_RED && echo "Find errors in UT, please search [core dumped]..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "OK" ${ut_log_name}) == 0 ]; then
+        $BOLD_RED && echo "No pass case found, please check the output..." && $RESET
+        exit 1
+    fi
+    if [ $(grep -c "==ERROR:" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "ERROR found in UT, please check the output..." && $RESET
+        exit 1
+    fi 
+    if [ $(grep -c "Segmentation fault" ${ut_log_name}) != 0 ]; then
+       $BOLD_RED && echo "Segmentation Fault found in UT, please check the output..." && $RESET
+        exit 1
+    fi  
+
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 

@@ -46,8 +46,12 @@ class PhotoAIAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -408,11 +412,8 @@ async def handle_ai_photos_chat_to_image(request: Request):
     pt.append_message(pt.conv.roles[0], cur_time)
     pt.append_message(pt.conv.roles[1], query)
     prompt = pt.get_prompt()
-    logger.info(f'<chatWithImage> LLM inference prompt: {prompt}')
     response = chatbot.predict(query=prompt)
-    logger.info(f'<chatWithImage> LLM inference origin result: {response}')
     response = response.split("[/INST]")[-1]
-    logger.info(f'<chatWithImage> processed result: {response}')
 
     try:
         ner_obj = plugins['ner']["instance"]
