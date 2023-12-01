@@ -7510,8 +7510,8 @@ static void ne_compute_forward_padding_mask_f32(const struct ne_compute_params* 
   const int ith = params->ith;
   const int nth = params->nth;
 
-  const int n_past = ((int32_t*)src1->data)[0];
-  const bool inplace = (bool)((int32_t*)src1->data)[1];
+  const int n_past = ((int32_t*)src1->data)[PM_NPAST_IDX];
+  const bool inplace = (bool)((int32_t*)src1->data)[PM_INPLACE_IDX];
 
   assert(n_past >= 0);
 
@@ -7537,7 +7537,8 @@ static void ne_compute_forward_padding_mask_f32(const struct ne_compute_params* 
   assert(dst->nb[0] == sizeof(float));
   assert(src0->nb[0] == sizeof(float));
 
-  ne_attention_padding_mask_f32_forward(bs, nz, nr, ith, nth, src1->data + 2 * ne_element_size(src1), value, dst);
+  ne_attention_padding_mask_f32_forward(bs, nz, nr, ith, nth, src1->data + PM_PARAMS_NUM * ne_element_size(src1), value,
+                                        dst);
 }
 
 static void ne_compute_forward_padding_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7866,11 +7867,11 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   static const float freq_base = 10000.0f;
   static const float freq_scale = 1.0f;
 
-  const int64_t n_past = ((int32_t*)src1->data)[0];
-  const int64_t n_dims = ((int32_t*)src1->data)[1];
-  const int64_t mode = ((int32_t*)src1->data)[2];
-  const int64_t prompt_size = ((int32_t*)src1->data)[3];
-  const int64_t n_keep = ((int32_t*)src1->data)[4];
+  const int64_t n_past = ((int32_t*)src1->data)[ROPE_NPAST_IDX];
+  const int64_t n_dims = ((int32_t*)src1->data)[ROPE_NDIMS_IDX];
+  const int64_t mode = ((int32_t*)src1->data)[ROPE_MODE_IDX];
+  const int64_t prompt_size = ((int32_t*)src1->data)[ROPE_PROMPTSIZE_IDX];
+  const int64_t n_keep = ((int32_t*)src1->data)[ROPE_NKEEP_IDX];
 
   assert(n_past >= 0);
 
@@ -7916,7 +7917,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
         // only for glm when mode == 4
         if (is_glm) {
-          const int64_t n_padding = ((int32_t*)src1->data)[5 + i3];
+          const int64_t n_padding = ((int32_t*)src1->data)[ROPE_PARAMS_NUM + i3];
           // position ids
           theta = MIN(MAX(p - n_padding, 0), prompt_size - 2 - n_padding);
           float block_theta = MAX(p - (prompt_size - 2), 0);

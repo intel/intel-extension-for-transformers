@@ -129,6 +129,7 @@ class Model {
   long int generate_count = 0;
   std::vector<uint32_t> padding_count;
   uint32_t n_prompt_tokens = 0;
+  std::vector<float> times;
 
   std::vector<std::vector<model_token>> beam_generate(const std::vector<std::vector<model_token>>& input_ids);
   std::vector<model_token> post_process(const float* logits);
@@ -465,9 +466,25 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
 
 std::vector<model_token> Model::post_greedy_search(const float* logits) {
   std::vector<model_token> ids(ctx->batch_size);
-#pragma omp parallel for
+  static int n_vocab_segment = 1024;
+  int num_segments = (n_vocab + n_vocab_segment - 1) / n_vocab_segment;
+  std::vector<model_token> candidate_tokens(ctx->batch_size * num_segments);
+  std::vector<float> candidate_logits(ctx->batch_size * num_segments);
+#pragma omp parallel for collapse(2)
   for (int bs = 0; bs < ctx->batch_size; ++bs) {
-    ids[bs] = std::max_element(logits + bs * n_vocab, logits + (bs + 1) * n_vocab) - (logits + bs * n_vocab);
+    for (int vocab = 0; vocab < n_vocab; vocab += n_vocab_segment) {
+      auto max_e =
+          std::max_element(logits + bs * n_vocab + vocab, vocab + n_vocab_segment > n_vocab
+                                                              ? logits + bs * n_vocab + n_vocab
+                                                              : logits + bs * n_vocab + vocab + n_vocab_segment);
+      candidate_tokens[bs * num_segments + vocab / n_vocab_segment] = max_e - (logits + bs * n_vocab);
+      candidate_logits[bs * num_segments + vocab / n_vocab_segment] = *max_e;
+    }
+  }
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
+    ids[bs] = candidate_tokens[std::distance(candidate_logits.begin(),
+                                             std::max_element(candidate_logits.begin() + bs * num_segments,
+                                                              candidate_logits.begin() + (bs + 1) * num_segments))];
   }
   return ids;
 }
