@@ -14,12 +14,6 @@
 #include "jblas_common.hpp"
 using namespace jblas;
 
-#ifdef _OPENMP
-static parallel::OMPThreading DefaultThreading(4);
-#else
-static parallel::StdThreading DefaultThreading(4);
-#endif  // _OPNEMP
-
 void jblas_init() {
   GetCPUDevice();
   if (_cd->AMX_BF16() || _cd->AMX_INT8()) {
@@ -37,8 +31,15 @@ void jblas_timer(bool _init) {
 }
 
 int jblas_set_threads(int _nth) {
-  DefaultThreading.set_threads(_nth);
-  return DefaultThreading.num_threads();
+  get_threading()->set_threads(_nth);
+  return get_threading()->num_threads();
 }
 
-jblas::parallel::IThreading* get_threading() { return &DefaultThreading; }
+jblas::parallel::IThreading* get_threading() {
+#ifdef _OPENMP
+  static parallel::OMPThreading DefaultThreading(4);
+#else
+  static parallel::StdThreading DefaultThreading(4);
+#endif  // _OPNEMP
+  return &DefaultThreading;
+}

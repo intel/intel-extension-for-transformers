@@ -54,7 +54,7 @@
 #define CompileAVX512F() (__GNUC__ >= 6)
 #define CompileAVX2() (__GNUC__ >= 5)
 #define CompileAMX() (__GNUC__ >= 11)
-#define CompileBF16() (__GNUC__ >= 13)
+#define CompileBF16() (__GNUC__ >= 11)
 #define CompileFP16() (__GNUC__ >= 13)
 #define CompileAMXBF16() (CompileAMX())
 #define CompileAMXINT8() (CompileAMX())
