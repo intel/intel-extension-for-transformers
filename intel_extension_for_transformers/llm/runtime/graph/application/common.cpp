@@ -194,7 +194,7 @@ bool common_params_parse(int argc, char** argv, common_params& params) {
   return true;
 }
 
-std::string gpt_random_prompt(std::mt19937& rng) { // NOLINT
+std::string gpt_random_prompt(std::mt19937& rng) {  // NOLINT
   const int r = rng() % 10;
   switch (r) {
     case 0:
