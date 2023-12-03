@@ -512,7 +512,3 @@ class AutoModel(_BaseQBitsAutoModelClass):
 
 class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
-
-
-class GPTBigCodeForCausalLM(_BaseQBitsAutoModelClass):
-    ORIG_MODEL = transformers.GPTBigCodeForCausalLM
