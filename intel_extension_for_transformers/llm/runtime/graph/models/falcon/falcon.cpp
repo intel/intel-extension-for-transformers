@@ -48,10 +48,7 @@
 static bool falcon_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                        const int n_threads) {
   const int64_t t_start_us = ne_time_us();
-<<<<<<< Updated upstream
-=======
   model_context& lctx = *ctx;
->>>>>>> Stashed changes
   // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
