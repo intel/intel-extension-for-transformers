@@ -92,6 +92,7 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --woq \
+    --woq_weight_dtype "nf4" \
     --accuracy \
     --tasks "lambada_openai"
 # load_in_4bit

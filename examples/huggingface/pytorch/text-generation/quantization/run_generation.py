@@ -69,12 +69,18 @@ parser.add_argument(
     help="Weight-only parameter.",
 )
 parser.add_argument(
-    "--woq_dtype",
+    "--woq_weight_dtype",
     type=str,
     default="int8",
     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
 )
-parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument(
+    "--woq_compute_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "bf16", "int8"],
+)
+parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
@@ -174,7 +180,10 @@ elif args.sq:
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
-        compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32
+        compute_dtype=args.woq_compute_dtype,
+        weight_dtype=args.woq_weight_dtype,
+        scheme=args.woq_scheme,
+        group_size=args.woq_group_size,
     )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
@@ -256,8 +265,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-    if not hasattr(tokenizer, "build_chat_input"):
-        prompt = [prompt] * args.batch_size
 
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
@@ -270,9 +277,15 @@ if args.benchmark:
                     tokenizer.get_command("<|user|>"),
                     tokenizer.get_command("<|observation|>"),
                 ]
+            elif hasattr(tokenizer, "build_prompt"):
+                build_prompt = tokenizer.build_prompt(prompt)
+                input_ids = tokenizer(
+                    [build_prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             else:
-                input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-
+                input_ids = tokenizer(
+                    [prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
                 max_new_tokens=args.max_new_tokens,
