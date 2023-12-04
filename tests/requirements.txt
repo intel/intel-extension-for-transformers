@@ -23,3 +23,4 @@ tyro
 bitsandbytes
 tiktoken
 transformers_stream_generator
+einops
