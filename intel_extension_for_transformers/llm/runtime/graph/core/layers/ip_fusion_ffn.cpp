@@ -237,13 +237,13 @@ bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr,
     auto sameKernel = samePackedWeight(tmps, 3);
     if (w1tmp) {
       if (w1tmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
-        constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
-        support = contains(w1tmp->mCoreId, AllCores, EleNum);
-        support &= hasISA(AllCores, EleNum);
+        constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
+        support = contains(w1tmp->mCoreId, AllKBlockCores, EleNum);
+        support &= hasISA(AllKBlockCores, EleNum);
       } else if (w1tmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
-        constexpr size_t EleNum = sizeof(AllCores) / sizeof(AllCores[0]);
-        support = contains(w1tmp->mCoreId, AllCores, EleNum);
-        support &= hasISA(AllCores, EleNum);
+        constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
+        support = contains(w1tmp->mCoreId, AllKBlockCores, EleNum);
+        support &= hasISA(AllKBlockCores, EleNum);
       }
     }
   }
@@ -266,74 +266,55 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
     auto coretype = ptr1->mCoreId;
     auto NTile = jblas::gemm::CoreAttr::get_mask_val(ptr1->mCoreId, jblas::gemm::CoreAttr::NTILE_MASK,
                                                      jblas::gemm::CoreAttr::NTILE_SHIFT);
-    auto CType = jblas::gemm::CoreAttr::get_mask_val(ptr1->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
-                                                     jblas::gemm::CoreAttr::COMP_SHIFT);
+    auto PackRow = jblas::gemm::CoreAttr::get_packrow(ptr1->mCoreId);
+    auto CType = jblas::gemm::CoreAttr::get_comp(ptr1->mCoreId);
+    auto btype = static_cast<jblas::gemm::CompType>(jblas::gemm::CompTypeHelper::get_B(CType));
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
-      if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
+      if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           ffn_silu::JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                        seq, fin, fmid, fout, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           ffn_silu::JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                     seq, fin, fmid, fout, workspace, pth);
-          goto __END;
         }
       }
-      if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
+      if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
                                                                         output, seq, fin, fmid, fout, workspace, pth);
-          goto __END;
         }
       }
-      if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32) ||
-          CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
+      if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
         if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
           ffn_silu::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                      seq, fin, fmid, fout, workspace, pth);
-          goto __END;
-        }
-        /*if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
-          ffn_silu::JblasGemmCompInt8<tAMX_INT8_US, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
-                                                              fin, fmid, fout, workspace, pth);
-          goto __END;
-        }*/
-        if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
+        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
           ffn_silu::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                      seq, fin, fmid, fout, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
+        } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
           ffn_silu::JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
                                                                   fin, fmid, fout, workspace, pth);
-          goto __END;
         }
       }
     }
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
-      if (CType == uint32_t(gemm::CompType::COMP_FP32)) {
+      if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           ffn_silu::JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                      seq, fin, fmid, fout, workspace, pth);
-          goto __END;
-        }
-        if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           ffn_silu::JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
                                                                   fin, fmid, fout, workspace, pth);
-          goto __END;
         }
       }
-      if (CType == uint32_t(gemm::CompType::COMP_BF16_FP32)) {
+      if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                       seq, fin, fmid, fout, workspace, pth);
-          goto __END;
         }
       }
     }
-  __END:
     delete ptr1;
     delete ptr2;
     delete ptr3;

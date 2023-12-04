@@ -40,12 +40,11 @@ static bool contains(const T& val, const T* set, size_t len) {
   return false;
 }
 
-static bool hasISA(const uint32_t* coreset, size_t len) {
+static bool hasISA(const uint64_t* coreset, size_t len) {
   GetCPUDevice();
   bool support = false;
   for (size_t i = 0; i < len; i++) {
-    auto isa = static_cast<JBLAS_ISA>(jblas::gemm::CoreAttr::get_mask_val(coreset[i], jblas::gemm::CoreAttr::ISA_MASK,
-                                                                          jblas::gemm::CoreAttr::ISA_SHIFT));
+    auto isa = jblas::gemm::CoreAttr::get_ISA(coreset[i]);
     switch (isa) {
       case JblasAVX:
         support |= _cd->AVX();
