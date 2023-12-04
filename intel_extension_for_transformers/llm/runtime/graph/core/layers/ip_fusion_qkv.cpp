@@ -209,8 +209,15 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
     }
     if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
       if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
-        ip_qkv::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
-                                                                 output, ldo, workspace, pth);
+        if (_m <= tAVX512_VNNI_KBlock::MTILE) {
+          static_assert(tAVX512_VNNI_KBlock::NTILE == tAMX_INT8_SS_KBlock::NTILE);
+          ip_qkv::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
+                                                                   output, ldo, workspace, pth);
+        } else {
+          ip_qkv::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
+                                                                   output, ldo, workspace, pth);
+        }
+
       } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
         ip_qkv::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
                                                                  output, ldo, workspace, pth);

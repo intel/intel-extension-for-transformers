@@ -33,8 +33,8 @@ using tAVX512_FP16 = jblas::gemm::HCoreRowNAvx512fp16<96, 8>;
 using tAMX_INT8_US = jblas::gemm::ICoreRowNAmxint8<48, 16>;
 using tAMX_INT8_SS = jblas::gemm::ICoreRowNAmxint8SS<48, 16>;
 
-using tAVX_VNNI_KBlock = jblas::gemm::ICoreRowNAvxvnniKBlock<24, 4>;
-using tAVX512_VNNI_KBlock = jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 8>;
+using tAVX_VNNI_KBlock = jblas::gemm::ICoreRowNAvxvnniKBlock<24, 2>;
+using tAVX512_VNNI_KBlock = jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>;
 using tAMX_INT8_US_KBlock = jblas::gemm::ICoreRowNAmxint8KBlock<48, 16>;
 using tAMX_INT8_SS_KBlock = jblas::gemm::ICoreRowNAmxint8SSKBlock<48, 16>;
 
