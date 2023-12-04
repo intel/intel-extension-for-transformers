@@ -150,7 +150,7 @@ static bool gptj_model_eval_internal(model_context* ctx, const model_input* inpu
 #ifdef NE_TP_MODEL
   if (enable_tp) {
     // need to broadcast the ids
-    broadcast(p_ctx, (float*)embd->data, N * batch_size * ne_element_size(embd));
+    broadcast(p_ctx, reinterpret_cast<float*>(embd->data), N * batch_size * ne_element_size(embd));
   }
 #endif
 
@@ -345,7 +345,7 @@ static bool gptj_model_eval_internal(model_context* ctx, const model_input* inpu
 
     struct ne_tensor* KQV_merged_contiguous;
 
-    const float attn_scale = 1.0f / sqrtf(float(head_size));
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_size));
     ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
     if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
     if (run_mha_reordered) {  // reordered kv-cache bf16 mha must be used if run_mha_reordered
@@ -499,13 +499,13 @@ static bool gptj_model_eval_internal(model_context* ctx, const model_input* inpu
     size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
 #pragma omp parallel for
       for (int i = 0; i < batch_size; ++i) {
-        memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
+        memcpy(logits_out.data() + (i * n_vocab), reinterpret_cast<float*>(ne_get_data(inpL)) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
       }
     }
@@ -516,7 +516,7 @@ static bool gptj_model_eval_internal(model_context* ctx, const model_input* inpu
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)), sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
