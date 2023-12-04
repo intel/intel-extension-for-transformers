@@ -201,7 +201,8 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
       // [n_past + N, N, n_head]
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>((n_embd) / n_head))));
+      struct ne_tensor* KQ_scaled =
+          ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>((n_embd) / n_head))));
 
       // KQ_masked = mask_past(KQ_scaled)
       // [n_past + N, N, n_head]
@@ -341,7 +342,8 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -350,7 +352,8 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
