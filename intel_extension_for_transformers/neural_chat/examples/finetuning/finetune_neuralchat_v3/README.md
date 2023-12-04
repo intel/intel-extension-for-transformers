@@ -23,7 +23,7 @@ docker build --no-cache ./ --target hpu --build-arg REPO=https://github.com/inte
 
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest
 
-# cd
+# after entering docker container
 cd examples/finetuning/finetune_neuralchat_v3
 
 ```
