@@ -265,8 +265,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-    if not hasattr(tokenizer, "build_chat_input"):
-        prompt = [prompt] * args.batch_size
 
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
@@ -279,9 +277,15 @@ if args.benchmark:
                     tokenizer.get_command("<|user|>"),
                     tokenizer.get_command("<|observation|>"),
                 ]
+            elif hasattr(tokenizer, "build_prompt"):
+                build_prompt = tokenizer.build_prompt(prompt)
+                input_ids = tokenizer(
+                    [build_prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             else:
-                input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-
+                input_ids = tokenizer(
+                    [prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
                 max_new_tokens=args.max_new_tokens,

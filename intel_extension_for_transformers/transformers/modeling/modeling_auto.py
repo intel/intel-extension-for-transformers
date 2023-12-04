@@ -310,9 +310,6 @@ class _BaseQBitsAutoModelClass:
                         exit(0)
                     return example
 
-                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-
                 def collate_batch(batch):
                     position_ids_padded = []
                     input_ids_padded = []
@@ -362,21 +359,18 @@ class _BaseQBitsAutoModelClass:
                                 else input_ids
                             )
                         prepared_inputs = model.prepare_inputs_for_generation(input_ids)
-                        if prepared_inputs["attention_mask"] is None:
-                            prepared_inputs["attention_mask"] = torch.ones_like(
-                                input_ids
-                            )
                         last_ind.append(input_ids.shape[1] - 1)
                     return (
                         {
                             "input_ids": input_ids,
-                            "attention_mask": prepared_inputs["attention_mask"],
                             "position_ids": prepared_inputs["position_ids"],
                             "past_key_values": past_key_values,
                         },
                         torch.tensor(last_ind),
                     )
 
+                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
                 if model_type == "chatglm":
                     calib_dataloader = DataLoader(
                         tokenized_dataset,
@@ -398,22 +392,11 @@ class _BaseQBitsAutoModelClass:
                             if i >= calib_iters:
                                 break
                             if model_type == "chatglm":
-                                if re.search(
-                                    "THUDM/chatglm-6b",
-                                    model.config.auto_map["AutoConfig"],
-                                ):
-                                    model(
-                                        input_ids=inputs["input_ids"],
-                                        past_key_values=inputs["past_key_values"],
-                                        position_ids=inputs["position_ids"],
-                                    )
-                                else:
-                                    model(
-                                        input_ids=inputs["input_ids"],
-                                        past_key_values=inputs["past_key_values"],
-                                        position_ids=inputs["position_ids"],
-                                        attention_mask=inputs["attention_mask"],
-                                    )
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    position_ids=inputs["position_ids"],
+                                )
                             elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
                                     input_ids=inputs["input_ids"],
@@ -440,25 +423,25 @@ class _BaseQBitsAutoModelClass:
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        example_inputs = inputs
-                        if model_type in ["chatglm", "falcon"]:
-                            if re.search(
-                                "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
-                            ):
-                                example_inputs.pop("attention_mask")
-                            else:
-                                input_bs, input_len = example_inputs["input_ids"].shape
-                                outputs = model(example_inputs["input_ids"])
-                                example_inputs["past_key_values"] = outputs[1]
-                                example_inputs["attention_mask"] = torch.ones(
-                                    input_bs, input_len + 1
-                                )
-                                example_inputs["position_ids"] = (
-                                    example_inputs["position_ids"][:, -1:] + 1
-                                )
-                                example_inputs["input_ids"] = example_inputs[
-                                    "input_ids"
-                                ][:, -1:]
+                        if model_type == "chatglm":
+                            example_inputs = {
+                                "input_ids": inputs["input_ids"],
+                                "position_ids": inputs["position_ids"],
+                                "past_key_values": inputs["past_key_values"],
+                            }
+                        if model_type == "falcon":
+                            input_bs, input_len = example_inputs["input_ids"].shape
+                            outputs = model(example_inputs["input_ids"])
+                            example_inputs["past_key_values"] = outputs[1]
+                            example_inputs["attention_mask"] = torch.ones(
+                                input_bs, input_len
+                            )
+                            example_inputs["position_ids"] = (
+                                example_inputs["position_ids"][:, -1:] + 1
+                            )
+                            example_inputs["input_ids"] = example_inputs["input_ids"][
+                                :, -1:
+                            ]
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],
