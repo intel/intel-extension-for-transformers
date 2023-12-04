@@ -50,4 +50,3 @@ class NamedEntityRecognition():
 
         return result
 
-
