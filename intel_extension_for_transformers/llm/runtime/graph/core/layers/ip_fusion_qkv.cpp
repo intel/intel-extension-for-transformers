@@ -133,28 +133,9 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
   quanA.assign(WorkSpace);
   utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
-  typename Launcher::Param args[3]{
-      {gp,
-       {A, K, &quanA},
-       {BQ},
-       {BQ->template SPtr<int8_t>(), BQ->SDtype(), BQ->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
-        quanA.template ZPtr<uint8_t>(), BQ->template RPtr<float>(), BQ->RDtype(), BQ->template ZPtr<int8_t>(),
-        quanA.template RPtr<float>(), BQ->mBlockSize},
-       {C, N}},
-      {gp,
-       {A, K, &quanA},
-       {BK},
-       {BK->template SPtr<int8_t>(), BK->SDtype(), BK->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
-        quanA.template ZPtr<uint8_t>(), BK->template RPtr<float>(), BK->RDtype(), BK->template ZPtr<int8_t>(),
-        quanA.template RPtr<float>(), BK->mBlockSize},
-       {C + M * ldc, N}},
-      {gp,
-       {A, K, &quanA},
-       {BV},
-       {BV->template SPtr<int8_t>(), BV->SDtype(), BV->CStep(), quanA.template SPtr<float>(), quanA.CStep(),
-        quanA.template ZPtr<uint8_t>(), BV->template RPtr<float>(), BV->RDtype(), BV->template ZPtr<int8_t>(),
-        quanA.template RPtr<float>(), BV->mBlockSize},
-       {C + M * ldc * 2, N}}};
+  typename Launcher::Param args[3]{{gp, {A, K, &quanA}, {BQ}, {C, N}},
+                                   {gp, {A, K, &quanA}, {BK}, {C + M * ldc, N}},
+                                   {gp, {A, K, &quanA}, {BV}, {C + M * ldc * 2, N}}};
   GemmRunWithA_QKV<Parallel>(kernel, args, th);
 }
 }  // namespace ip_qkv
@@ -229,27 +210,26 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
         goto __END;
       }
     }
-    if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
-      if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
-        ip_qkv::JblasGemmCompInt8<tAMX_INT8_US, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                          workspace, pth);
+    if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32) ||
+        CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
+      if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
+        ip_qkv::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
+                                                                 output, ldo, workspace, pth);
         goto __END;
       }
-      if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-        ip_qkv::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                          workspace, pth);
+      /*if (NTile == tAMX_INT8_US_KBlock::NTILE && _cd->AMX_INT8()) {
+        ip_qkv::JblasGemmCompInt8<tAMX_INT8_US_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
+                                                                 output, ldo, workspace, pth);
+        goto __END;
+      }*/
+      if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
+        ip_qkv::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp,
+                                                                 output, ldo, workspace, pth);
         goto __END;
       }
-      if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-        ip_qkv::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                       workspace, pth);
-        goto __END;
-      }
-    }
-    if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
-      if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-        ip_qkv::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                          workspace, pth);
+      if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
+        ip_qkv::JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output,
+                                                              ldo, workspace, pth);
         goto __END;
       }
     }
