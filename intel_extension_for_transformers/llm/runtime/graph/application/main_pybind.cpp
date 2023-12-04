@@ -58,6 +58,7 @@ std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_
   return ql_registry::create_ql(model_name);
 }
 
+#define STATIC_INPUT_HEAD_IDX 0
 class Model {
  public:
   Model() { model_init_backend(); }
@@ -70,13 +71,11 @@ class Model {
                   bool shift_roped_k, int batch_size, model_vocab::id pad_token, const std::string& memory_dtype);
   void reinit();
   std::vector<std::vector<model_token>> generate(const std::vector<std::vector<model_token>>& input_ids);
+  // deprecated API
   std::vector<std::vector<model_token>> generate_tokens(const std::vector<std::vector<model_token>>& input_ids);
   const std::vector<float>& evaluate_(const std::vector<std::vector<model_token>>& input_ids);
   py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
-    if (input_ids.size() != 1) {
-      fprintf(stderr, "\nERROR: only support batch == 1 input!\n");
-      return py::array_t<float>();
-    }
+    if (!check_input_and_count_padding(input_ids)) return py::array_t<float>();
     const auto& logits = evaluate_(input_ids);
     return py::array_t<float, py::array::c_style>(logits.size(), logits.data())
         .reshape({py::ssize_t(-1), static_cast<py::ssize_t>(ctx->model.hparams.n_vocab)});
@@ -88,6 +87,7 @@ class Model {
   void reset_token_end() {
     token_eos = false;
     curr_input_ids.clear();
+    curr_input_ids.resize(params.batch_size);
     generate_count = 0;
   }
 
@@ -120,21 +120,25 @@ class Model {
  private:
   model_context* ctx = nullptr;
   gpt_params params;
-  std::vector<model_token> curr_input_ids;
+  std::vector<std::vector<model_token>> curr_input_ids;
   int n_past = 0;
   int n_total = 0;
   int n_vocab = 0;
   int n_ctx = 0;
-  std::vector<model_token> last_n_tokens;
+  std::vector<std::vector<model_token>> last_n_tokens;
   bool token_eos = false;
   long int generate_count = 0;
+  std::vector<uint32_t> padding_count;
+  uint32_t n_prompt_tokens = 0;
+  std::vector<float> times;
 
   std::vector<std::vector<model_token>> beam_generate(const std::vector<std::vector<model_token>>& input_ids);
-  model_token post_process(const float* logits);
-  model_token post_greedy_search(const float* logits);
+  std::vector<model_token> post_process(const float* logits);
+  std::vector<model_token> post_greedy_search(const float* logits);
   std::vector<std::vector<model_token>> post_beam_search(model_context* lctx, const int& n_predict,
                                                          const std::vector<model_input>& inputs, const int& n_threads);
-  model_token post_sample_top_k_top_p_repeat(const float* logits);
+  std::vector<model_token> post_sample_top_k_top_p_repeat(const float* logits);
+  bool check_input_and_count_padding(const std::vector<std::vector<model_token>>& input_ids);
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int n_batch, int ctx_size, int seed,
@@ -180,10 +184,14 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   n_total = 0;
   token_eos = false;
   curr_input_ids.clear();
+  curr_input_ids.resize(params.batch_size);
   ctx = model_init_from_gpt_params(params);
   n_vocab = model_n_vocab(ctx);
   n_ctx = model_n_ctx(ctx);
-  last_n_tokens.resize(n_ctx, 0);
+  last_n_tokens.resize(params.batch_size);
+  for (int i = 0; i < params.batch_size; ++i) {
+    last_n_tokens[i].resize(n_ctx, 0);
+  }
   ctx->generation_conf.min_new_tokens = min_new_tokens;
   ctx->generation_conf.length_penalty = length_penalty;
   ctx->generation_conf.do_early_stopping = early_stopping;
@@ -194,28 +202,59 @@ void Model::reinit() {
   n_past = 0;
   n_total = 0;
   last_n_tokens.clear();
-  last_n_tokens.resize(n_ctx, 0);
+  last_n_tokens.resize(params.batch_size);
+  for (int i = 0; i < params.batch_size; ++i) {
+    last_n_tokens[i].resize(n_ctx, 0);
+  }
   token_eos = false;
   curr_input_ids.clear();
+  curr_input_ids.resize(params.batch_size);
   ctx->n_sample = 0;
   ctx->t_sample_us = 0;
   generate_count = 0;
+  padding_count.clear();
+  n_prompt_tokens = 0;
+}
+
+bool Model::check_input_and_count_padding(const std::vector<std::vector<model_token>>& input_ids) {
+  if (input_ids.empty()) {  // next token generation (internal)
+    if (curr_input_ids.empty()) {
+      fprintf(stderr, "%s: error: no input\n", __func__);
+      return false;
+    }
+    return true;
+  } else if (input_ids.size() == 1) {
+    padding_count = {0};
+    n_prompt_tokens = input_ids[STATIC_INPUT_HEAD_IDX].size();
+    return true;
+  } else {  // multi-batch inputs (first token)
+    MODEL_ASSERT(input_ids.size() == ctx->batch_size);
+    static std::set<model_archs> batched_model_archs = {MODEL_GPTJ, MODEL_GPTNEOX, MODEL_CHATGLM};
+    if (batched_model_archs.count(params.model_arch) == 0) {
+      fprintf(stderr, "\nERROR: Only gpt-j, gpt-neox, chatglm support multi-batch generation!\n");
+      return false;
+    }
+    if (ctx->vocab.pad_token_id == -1) {
+      fprintf(stderr, "\nERROR: please set pad_token for static multi-batch generation (tokenizer.pad_token_id)!\n");
+      return false;
+    }
+    if (!padding_count.empty()) padding_count.clear();
+    for (int bs = 0; bs < input_ids.size(); ++bs) {
+      model_vocab::id pad_token_id = ctx->vocab.pad_token_id;
+      auto iter = std::find_if(input_ids[bs].begin(), input_ids[bs].end(),
+                               [&pad_token_id](model_token t) { return (t != pad_token_id); });
+      if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
+      padding_count.push_back(std::distance(input_ids[bs].begin(), iter));
+    }
+    // shoule be same in static batching inference
+    n_prompt_tokens = input_ids[STATIC_INPUT_HEAD_IDX].size();
+    return true;
+  }
 }
 
 std::vector<std::vector<model_token>> Model::beam_generate(const std::vector<std::vector<model_token>>& input_ids) {
-  MODEL_ASSERT(input_ids.size() == ctx->batch_size);
-  if (ctx->batch_size > 1 && ctx->vocab.pad_token_id == -1) {
-    fprintf(stderr, "\nERROR: please set pad_token for beam search multi-batch generation!\n");
-    return {};
-  }
   std::vector<model_input> inputs;
   for (int bs = 0; bs < input_ids.size(); ++bs) {
-    uint32_t count = 0;
-    model_vocab::id pad_token_id = ctx->vocab.pad_token_id;
-    auto iter = std::find_if(input_ids[bs].begin(), input_ids[bs].end(),
-                             [&pad_token_id](model_token t) { return (t != pad_token_id); });
-    if (iter == input_ids[bs].end()) fprintf(stderr, "\nERROR: there are all pad tokens in batch %d!\n", bs);
-    count = std::distance(input_ids[bs].begin(), iter);
     inputs.push_back(model_input{
         /*.tokens              =*/input_ids[bs].data(),
         /*.n_tokens           =*/(uint32_t)input_ids[bs].size(),
@@ -225,7 +264,7 @@ std::vector<std::vector<model_token>> Model::beam_generate(const std::vector<std
         /*.request_idx        =*/bs,
         /*.beam_idx           =*/0,
         /*.padding_side       =*/0,
-        /*n_padding           =*/count,
+        /*n_padding           =*/padding_count[bs],
     });
   }
   return post_beam_search(ctx, params.n_predict, inputs, params.n_threads);
@@ -233,85 +272,94 @@ std::vector<std::vector<model_token>> Model::beam_generate(const std::vector<std
 
 const std::vector<float>& Model::evaluate_(const std::vector<std::vector<model_token>>& input_ids) {
   static const std::vector<float> empty_ret{};
-  if (input_ids.size() > 1) {
-    fprintf(stderr, "\nERROR: Only beam search supports multi-batch generation!\n");
-    return empty_ret;
-  }
 
   static const std::vector<model_token> empty_id{};
-  const auto& input_id0 = input_ids.empty() ? empty_id : input_ids[0];  // currently only support single batch
-  if (input_id0.empty()) {                                              // use internel input id
-    if (curr_input_ids.empty()) {
-      fprintf(stderr, "%s: error: no input\n", __func__);
+  std::vector<model_input> inputs;
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
+    const auto& input_id_cb = input_ids.empty() ? empty_id : input_ids[bs];
+    if (input_id_cb.empty()) {  // use internel input id
+      if (curr_input_ids[bs].empty()) {
+        fprintf(stderr, "%s: error: no input\n", __func__);
+        return empty_ret;
+      }
+    } else if (!curr_input_ids[bs].empty()) {
+      fprintf(stderr, "%s: error: prompt confliction\n", __func__);
       return empty_ret;
+    } else if (input_id_cb.size() > n_ctx - 4) {  // long input_id_cb and empty curr_input_ids[bs]
+      fprintf(stderr, "\n%s: Warning: prompt is too long (%d tokens, max %d), will be truncated\n", __func__,
+              input_id_cb.size(), n_ctx - 4);
+      curr_input_ids[bs].resize(n_ctx - 4);
+      std::copy(input_id_cb.end() - n_ctx - 4, input_id_cb.end(), curr_input_ids[bs].begin());
+    } else {  // good input_id_cb and empty curr_input_ids[bs]
+      curr_input_ids[bs] = input_id_cb;
     }
-  } else if (!curr_input_ids.empty()) {
-    fprintf(stderr, "%s: error: prompt confliction\n", __func__);
-    return empty_ret;
-  } else if (input_id0.size() > n_ctx - 4) {  // long input_id0 and empty curr_input_ids
-    fprintf(stderr, "\n%s: Warning: prompt is too long (%d tokens, max %d), will be truncated\n", __func__,
-            input_id0.size(), n_ctx - 4);
-    curr_input_ids.resize(n_ctx - 4);
-    std::copy(input_id0.end() - n_ctx - 4, input_id0.end(), curr_input_ids.begin());
-  } else {  // good input_id0 and empty curr_input_ids
-    curr_input_ids = input_id0;
-  }
 
-  // push elements in curr_input_ids to the last_n_tokens queue
-  last_n_tokens.erase(last_n_tokens.begin(), last_n_tokens.begin() + curr_input_ids.size());
-  last_n_tokens.insert(last_n_tokens.end(), curr_input_ids.begin(), curr_input_ids.end());
+    // push elements in curr_input_ids[bs] to the last_n_tokens[bs] queue
+    last_n_tokens[bs].erase(last_n_tokens[bs].begin(), last_n_tokens[bs].begin() + curr_input_ids[bs].size());
+    last_n_tokens[bs].insert(last_n_tokens[bs].end(), curr_input_ids[bs].begin(), curr_input_ids[bs].end());
 
-  // infinite text generation via context swapping
-  if (n_past + curr_input_ids.size() > n_ctx) {
-    // always keep the first token
-    n_past = std::max(1, params.n_keep);
+    // infinite text generation via context swapping
+    if (n_past + curr_input_ids[bs].size() > n_ctx) {
+      // always keep the first token
+      n_past = std::max(1, params.n_keep);
 
-    int n_discard = params.n_discard;
-    if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
-      if (n_discard == -1) n_discard = (n_ctx - curr_input_ids.size() - params.n_keep) / 2;
-      // drop n_discard tokens
-      curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
-                            last_n_tokens.end() - curr_input_ids.size());
-    } else {
-      NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
+      int n_discard = params.n_discard;
+      if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
+        if (n_discard == -1) n_discard = (n_ctx - curr_input_ids[bs].size() - params.n_keep) / 2;
+        // drop n_discard tokens
+        curr_input_ids[bs].insert(curr_input_ids[bs].begin(), last_n_tokens[bs].begin() + params.n_keep + n_discard,
+                                  last_n_tokens[bs].end() - curr_input_ids[bs].size());
+      } else {
+        NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
+      }
     }
-  }
 
-  std::vector<model_input> inputs{{
-      /*.tokens              =*/curr_input_ids.data(),
-      /*.n_tokens           =*/(uint32_t)curr_input_ids.size(),
-      /*.n_prompt_tokens    =*/0,
-      /*.n_past             =*/(uint32_t)n_past,
-      /*.n_total            =*/(uint32_t)n_total,
-      /*.request_idx        =*/0,
-      /*.beam_idx           =*/0,
-      /*.padding_side       =*/0,
-      /*n_padding           =*/0,
-  }};
+    inputs.push_back({
+        /*.tokens              =*/curr_input_ids[bs].data(),
+        /*.n_tokens           =*/(uint32_t)curr_input_ids[bs].size(),
+        /*.n_prompt_tokens    =*/n_prompt_tokens,
+        /*.n_past             =*/(uint32_t)n_past,
+        /*.n_total            =*/(uint32_t)n_total,
+        /*.request_idx        =*/bs,
+        /*.beam_idx           =*/0,
+        /*.padding_side       =*/0,
+        /*n_padding           =*/padding_count[bs],
+    });
+  }
   model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
-  n_past += curr_input_ids.size();
-  n_total += curr_input_ids.size();
+  // static batching inference should have same input length and context window length
+  n_past += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
+  n_total += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
 
-  curr_input_ids.clear();  // add new tok to curr_input_ids if necessary after post processing
   return ctx->logits;
 }
 
 std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vector<model_token>>& input_ids) {
+  if (!check_input_and_count_padding(input_ids)) return {};
   if (ctx->beam_search) return beam_generate(input_ids);
-  if (input_ids.size() > 1) {
-    fprintf(stderr, "\nERROR: Only beam search supports multi-batch generation!\n");
-    return {};
-  }
 
   const auto& logits = evaluate_(input_ids);
   if (logits.empty()) return {};
 
-  model_token next_token_id = post_process(logits.data());
-  curr_input_ids = {next_token_id};
+  std::vector<model_token> next_token_ids = post_process(logits.data());
+  MODEL_ASSERT(next_token_ids.size() == ctx->batch_size);
+  std::vector<std::vector<model_token>> ret_next_tokens;
+  for (int bs = 0; bs < next_token_ids.size(); ++bs) {
+    // padding eos seq for continuous batched kv cache
+    // TODO batch reduction after for-loop attention implementation
+    if (curr_input_ids[bs].back() == ctx->vocab.eos_token_id || curr_input_ids[bs].back() == ctx->vocab.pad_token_id) {
+      curr_input_ids[bs] = {ctx->vocab.pad_token_id};
+      ret_next_tokens.push_back({ctx->vocab.pad_token_id});
+    } else {
+      curr_input_ids[bs] = {next_token_ids[bs]};
+      ret_next_tokens.push_back({next_token_ids[bs]});
+    }
+  }
   generate_count++;
-  return {{next_token_id}};
+  return ret_next_tokens;
 }
 
+// deprecated API
 std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<std::vector<model_token>>& input_ids) {
   int n_remain = params.n_predict;
   std::vector<model_token> output_ids;
@@ -350,40 +398,43 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
     return rets;
   }
 
-  if (curr_input_ids.empty()) {
-    if (input_ids[0].size() > n_ctx - 4) {
+  if (curr_input_ids[STATIC_INPUT_HEAD_IDX].empty()) {
+    if (input_ids[STATIC_INPUT_HEAD_IDX].size() > n_ctx - 4) {
       fprintf(stderr, "\n%s: Warning: prompt is too long (%d tokens, max %d), will be truncated\n", __func__,
-              input_ids[0].size(), n_ctx - 4);
-      curr_input_ids.resize(n_ctx - 4);
-      std::copy(input_ids[0].end() - n_ctx - 4, input_ids[0].end(), curr_input_ids.begin());
+              input_ids[STATIC_INPUT_HEAD_IDX].size(), n_ctx - 4);
+      curr_input_ids[STATIC_INPUT_HEAD_IDX].resize(n_ctx - 4);
+      std::copy(input_ids[STATIC_INPUT_HEAD_IDX].end() - n_ctx - 4, input_ids[STATIC_INPUT_HEAD_IDX].end(),
+                curr_input_ids[STATIC_INPUT_HEAD_IDX].begin());
     } else {
-      curr_input_ids = input_ids[0];
+      curr_input_ids[STATIC_INPUT_HEAD_IDX] = input_ids[STATIC_INPUT_HEAD_IDX];
     }
   }
 
   while (output_ids.size() < n_remain) {
-    for (auto item : curr_input_ids) {
-      last_n_tokens.erase(last_n_tokens.begin());
-      last_n_tokens.push_back(item);
+    for (auto item : curr_input_ids[STATIC_INPUT_HEAD_IDX]) {
+      last_n_tokens[STATIC_INPUT_HEAD_IDX].erase(last_n_tokens[STATIC_INPUT_HEAD_IDX].begin());
+      last_n_tokens[STATIC_INPUT_HEAD_IDX].push_back(item);
     }
     // infinite text generation via context swapping
-    if (n_past + curr_input_ids.size() > n_ctx) {
+    if (n_past + curr_input_ids[STATIC_INPUT_HEAD_IDX].size() > n_ctx) {
       // always keep the first token
       n_past = std::max(1, params.n_keep);
 
       int n_discard = params.n_discard;
       if (!params.shift_roped_k) {  // shift_roped_k can use ring-buffer and thus does not need re-computing
-        if (n_discard == -1) n_discard = (n_ctx - curr_input_ids.size() - params.n_keep) / 2;
+        if (n_discard == -1) n_discard = (n_ctx - curr_input_ids[STATIC_INPUT_HEAD_IDX].size() - params.n_keep) / 2;
         // drop n_discard tokens
-        curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
-                              last_n_tokens.end() - curr_input_ids.size());
+        curr_input_ids[STATIC_INPUT_HEAD_IDX].insert(
+            curr_input_ids[STATIC_INPUT_HEAD_IDX].begin(),
+            last_n_tokens[STATIC_INPUT_HEAD_IDX].begin() + params.n_keep + n_discard,
+            last_n_tokens[STATIC_INPUT_HEAD_IDX].end() - curr_input_ids[STATIC_INPUT_HEAD_IDX].size());
       } else {
         NE_ASSERT(("n_discard cannot be used with shift_roped_k!", n_discard == -1 || n_discard == 1));
       }
     }
     std::vector<model_input> inputs = {model_input{
-        /*.tokens              =*/curr_input_ids.data(),
-        /*.n_tokens           =*/(uint32_t)curr_input_ids.size(),
+        /*.tokens              =*/curr_input_ids[STATIC_INPUT_HEAD_IDX].data(),
+        /*.n_tokens           =*/(uint32_t)curr_input_ids[STATIC_INPUT_HEAD_IDX].size(),
         /*.n_prompt_tokens    =*/0,
         /*.n_past             =*/(uint32_t)n_past,
         /*.n_total            =*/(uint32_t)n_total,
@@ -393,15 +444,15 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
         /*n_padding           =*/0,
     }};
     model_eval(ctx, inputs.data(), inputs.size(), params.n_threads);
-    n_past += curr_input_ids.size();
-    n_total += curr_input_ids.size();
+    n_past += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
+    n_total += curr_input_ids[STATIC_INPUT_HEAD_IDX].size();
 
     float* logits = model_get_logits(ctx);
-    model_token next_token_id = post_process(logits);
-    curr_input_ids = {next_token_id};
-    output_ids.push_back(next_token_id);
+    std::vector<model_token> next_token_id = post_process(logits);
+    curr_input_ids[STATIC_INPUT_HEAD_IDX] = {next_token_id[STATIC_INPUT_HEAD_IDX]};
+    output_ids.push_back(next_token_id[STATIC_INPUT_HEAD_IDX]);
     generate_count++;
-    if (next_token_id == ctx->vocab.eos_token_id) {
+    if (next_token_id[STATIC_INPUT_HEAD_IDX] == ctx->vocab.eos_token_id) {
       token_eos = true;
       break;
     }
@@ -414,9 +465,29 @@ std::vector<std::vector<model_token>> Model::generate_tokens(const std::vector<s
   return rets;
 }
 
-model_token Model::post_greedy_search(const float* logits) {
-  model_token id = std::max_element(logits, logits + n_vocab) - logits;
-  return id;
+std::vector<model_token> Model::post_greedy_search(const float* logits) {
+  std::vector<model_token> ids(ctx->batch_size);
+  static int n_vocab_segment = 1024;
+  int num_segments = (n_vocab + n_vocab_segment - 1) / n_vocab_segment;
+  std::vector<model_token> candidate_tokens(ctx->batch_size * num_segments);
+  std::vector<float> candidate_logits(ctx->batch_size * num_segments);
+#pragma omp parallel for collapse(2)
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
+    for (int vocab = 0; vocab < n_vocab; vocab += n_vocab_segment) {
+      auto max_e =
+          std::max_element(logits + bs * n_vocab + vocab, vocab + n_vocab_segment > n_vocab
+                                                              ? logits + bs * n_vocab + n_vocab
+                                                              : logits + bs * n_vocab + vocab + n_vocab_segment);
+      candidate_tokens[bs * num_segments + vocab / n_vocab_segment] = max_e - (logits + bs * n_vocab);
+      candidate_logits[bs * num_segments + vocab / n_vocab_segment] = *max_e;
+    }
+  }
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
+    ids[bs] = candidate_tokens[std::distance(candidate_logits.begin(),
+                                             std::max_element(candidate_logits.begin() + bs * num_segments,
+                                                              candidate_logits.begin() + (bs + 1) * num_segments))];
+  }
+  return ids;
 }
 
 std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lctx, const int& n_predict,
@@ -432,7 +503,7 @@ std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lct
   }
 }
 
-model_token Model::post_sample_top_k_top_p_repeat(const float* logits) {
+std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logits) {
   int alpha_frequency = 0;
   int alpha_presence = 0;
   int repeat_last_n = 64;
@@ -441,33 +512,39 @@ model_token Model::post_sample_top_k_top_p_repeat(const float* logits) {
   float typical_p = 1.00f;
   float top_p = params.top_p;
   float temp = params.temp;
-  std::vector<model_token_data> candidates;
-  candidates.reserve(n_vocab);
-  for (model_token token_id = 0; token_id < n_vocab; token_id++) {
-    candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
-  }
-  model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+  std::vector<model_token> ids(ctx->batch_size);
+  // #pragma omp parallel for  // omp will affect sampling positions in batch infer
+  // TODO (make sample functions support batch processing)
+  for (int bs = 0; bs < ctx->batch_size; ++bs) {
+    std::vector<model_token_data> candidates;
+    candidates.reserve(n_vocab);
+    for (model_token token_id = 0; token_id < n_vocab; token_id++) {
+      candidates.emplace_back(model_token_data{token_id, logits[bs * n_vocab + token_id], 0.0f});
+    }
+    model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
 
-  // Apply penalties
-  float nl_logit = logits[model_token_nl()];
-  auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
-  model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                  last_n_repeat, params.repeat_penalty);
-  model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
-                                                last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                                last_n_repeat, alpha_frequency, alpha_presence);
-  // int id = model_sample_token_greedy(ctx, &candidates_p);
-  // Temperature sampling
-  model_sample_top_k(ctx, &candidates_p, top_k, 1);
-  model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
-  model_sample_typical(ctx, &candidates_p, typical_p, 1);
-  model_sample_top_p(ctx, &candidates_p, top_p, 1);
-  model_sample_temperature(ctx, &candidates_p, temp);
-  int id = model_sample_token(ctx, &candidates_p);
-  return id;
+    // Apply penalties
+    float nl_logit = logits[bs * n_vocab + model_token_nl()];
+    auto last_n_repeat = std::min(std::min((int)last_n_tokens[bs].size(), repeat_last_n), n_ctx);
+    model_sample_repetition_penalty(ctx, &candidates_p,
+                                    last_n_tokens[bs].data() + last_n_tokens[bs].size() - last_n_repeat, last_n_repeat,
+                                    params.repeat_penalty);
+    model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
+                                                  last_n_tokens[bs].data() + last_n_tokens[bs].size() - last_n_repeat,
+                                                  last_n_repeat, alpha_frequency, alpha_presence);
+    // int id = model_sample_token_greedy(ctx, &candidates_p);
+    // Temperature sampling
+    model_sample_top_k(ctx, &candidates_p, top_k, 1);
+    model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
+    model_sample_typical(ctx, &candidates_p, typical_p, 1);
+    model_sample_top_p(ctx, &candidates_p, top_p, 1);
+    model_sample_temperature(ctx, &candidates_p, temp);
+    ids[bs] = model_sample_token(ctx, &candidates_p);
+  }
+  return ids;
 }
 
-model_token Model::post_process(const float* logits) {
+std::vector<model_token> Model::post_process(const float* logits) {
   assert(("Beam search does not support streaming.", params.beam_size == 1));
   if (params.do_sample == false) {
     return post_greedy_search(logits);
@@ -635,6 +712,7 @@ PYBIND11_MODULE(qwen_cpp, m)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("evaluate", &Model::evaluate, "Evaluate token with input ids and output logits",
            py::arg("input_ids") = std::vector<std::vector<model_token>>{})
+      // deprecated API
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,

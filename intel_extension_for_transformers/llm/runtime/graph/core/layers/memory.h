@@ -11,8 +11,19 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "ele_wise.h"
-#include "ele_reduce.h"
 
-#include "conv.h"
-#include "memory.h"
+#pragma once
+
+#include "ele_wise.h"
+#include "core/ne.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void ne_attention_padding_mask_f32_forward(const int bs, const int nr_qk, const int qlen, const int ith, const int nth,
+                                           const void* padding, const float p_value, struct ne_tensor* dst);
+
+#ifdef __cplusplus
+}
+#endif

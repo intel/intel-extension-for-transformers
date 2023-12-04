@@ -180,6 +180,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     return tuple(past_key_values)
 
 
+IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon"}
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
