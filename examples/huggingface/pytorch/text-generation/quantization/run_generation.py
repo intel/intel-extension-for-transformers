@@ -59,6 +59,7 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+parser.add_argument("--fallback_add", action="store_true", help="Whether to fallback add ops to FP32")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -155,6 +156,8 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
+    if args.fallback_add:
+        op_type_dict["add"] = {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
         "smooth_quant": True,
