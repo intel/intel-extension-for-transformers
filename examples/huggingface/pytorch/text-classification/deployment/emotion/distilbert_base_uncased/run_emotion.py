@@ -467,11 +467,7 @@ def main():
         for index in random.sample(range(len(train_dataset)), 3):
             logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
-    # Get the metric function
-    if data_args.task_name is not None:
-        metric = load_metric("accuracy")
-    else:
-        metric = load_metric("accuracy")
+    metric = load_metric("accuracy")
 
     # You can define your custom compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
