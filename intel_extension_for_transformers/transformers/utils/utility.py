@@ -194,4 +194,5 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
+    "falcon"
 }
