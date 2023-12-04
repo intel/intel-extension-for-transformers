@@ -17,14 +17,14 @@ import json
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoModel, AutoConfig, AutoModelForCausalLM, AutoTokenizer
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
+
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
-
     """
     Returns list of utf-8 byte and a corresponding list of unicode strings.
     The reversible bpe codes work on unicode strings.
@@ -34,13 +34,13 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
 
     cs = [chr(n) for n in cs]
@@ -60,7 +60,8 @@ class SentencePieceVocab:
         expected_ids = list(range(vocab_size, vocab_size + len(added_tokens)))
         actual_ids = sorted(added_tokens.values())
         if expected_ids != actual_ids:
-            raise Exception(f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
+            raise Exception(
+                f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
         items = sorted(added_tokens.items(), key=lambda text_idx: text_idx[1])
         self.added_tokens_list = [text for (text, idx) in items]
         self.vocab_size_base: int = vocab_size
@@ -113,10 +114,13 @@ def load_vocab_for_baichuan(path: Path) -> SentencePieceVocab:
         elif path3.exists():
             path = path3
         else:
-            raise FileNotFoundError(f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir")
+            raise FileNotFoundError(
+                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir"
+            )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
     return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+
 
 def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     print("ChatGLM-1 converting: ")
@@ -228,7 +232,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
 
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
@@ -236,6 +240,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = AutoModelForCausalLM.from_pretrained(dir_model, trust_remote_code=True)
 
     baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+
 
 if __name__ == '__main__':
     main()

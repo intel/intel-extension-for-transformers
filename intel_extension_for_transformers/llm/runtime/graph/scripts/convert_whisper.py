@@ -42,27 +42,28 @@ from pathlib import Path
 from transformers import WhisperForConditionalGeneration
 
 conv_map = {
-        'self_attn.k_proj'              : 'attn.key',
-        'self_attn.q_proj'              : 'attn.query',
-        'self_attn.v_proj'              : 'attn.value',
-        'self_attn.out_proj'            : 'attn.out',
-        'self_attn_layer_norm'          : 'attn_ln',
-        'encoder_attn.q_proj'           : 'cross_attn.query',
-        'encoder_attn.v_proj'           : 'cross_attn.value',
-        'encoder_attn.out_proj'         : 'cross_attn.out',
-        'encoder_attn_layer_norm'       : 'cross_attn_ln',
-        'fc1'                           : 'mlp.0',
-        'fc2'                           : 'mlp.2',
-        'final_layer_norm'              : 'mlp_ln',
-        'encoder.layer_norm.bias'       : 'encoder.ln_post.bias',
-        'encoder.layer_norm.weight'     : 'encoder.ln_post.weight',
-        'encoder.embed_positions.weight': 'encoder.positional_embedding',
-        'decoder.layer_norm.bias'       : 'decoder.ln.bias',
-        'decoder.layer_norm.weight'     : 'decoder.ln.weight',
-        'decoder.embed_positions.weight': 'decoder.positional_embedding',
-        'decoder.embed_tokens.weight'   : 'decoder.token_embedding.weight',
-        'proj_out.weight'               : 'decoder.proj.weight',
-        }
+    'self_attn.k_proj': 'attn.key',
+    'self_attn.q_proj': 'attn.query',
+    'self_attn.v_proj': 'attn.value',
+    'self_attn.out_proj': 'attn.out',
+    'self_attn_layer_norm': 'attn_ln',
+    'encoder_attn.q_proj': 'cross_attn.query',
+    'encoder_attn.v_proj': 'cross_attn.value',
+    'encoder_attn.out_proj': 'cross_attn.out',
+    'encoder_attn_layer_norm': 'cross_attn_ln',
+    'fc1': 'mlp.0',
+    'fc2': 'mlp.2',
+    'final_layer_norm': 'mlp_ln',
+    'encoder.layer_norm.bias': 'encoder.ln_post.bias',
+    'encoder.layer_norm.weight': 'encoder.ln_post.weight',
+    'encoder.embed_positions.weight': 'encoder.positional_embedding',
+    'decoder.layer_norm.bias': 'decoder.ln.bias',
+    'decoder.layer_norm.weight': 'decoder.ln.weight',
+    'decoder.embed_positions.weight': 'decoder.positional_embedding',
+    'decoder.embed_tokens.weight': 'decoder.token_embedding.weight',
+    'proj_out.weight': 'decoder.proj.weight',
+}
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -75,28 +76,29 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 if len(sys.argv) < 4:
     print("Usage: convert-h5-to-ggml.py dir_model path-to-whisper-repo dir-output [use-f32]\n")
     sys.exit(1)
 
-dir_model   = Path(sys.argv[1])
+dir_model = Path(sys.argv[1])
 dir_whisper = Path(sys.argv[2])
-dir_out     = Path(sys.argv[3])
+dir_out = Path(sys.argv[3])
 
 encoder = json.load((dir_model / "vocab.json").open("r", encoding="utf8"))
-encoder_added = json.load((dir_model / "added_tokens.json").open( "r", encoding="utf8"))
-hparams = json.load((dir_model / "config.json").open("r", encoding="utf8") )
+encoder_added = json.load((dir_model / "added_tokens.json").open("r", encoding="utf8"))
+hparams = json.load((dir_model / "config.json").open("r", encoding="utf8"))
 
 model = WhisperForConditionalGeneration.from_pretrained(dir_model)
 
@@ -120,7 +122,7 @@ if len(sys.argv) > 4:
 
 fout = open(fname_out, "wb")
 
-fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
+fout.write(struct.pack("i", 0x67676d6c))  # magic: ggml in hex
 fout.write(struct.pack("i", hparams["vocab_size"]))
 fout.write(struct.pack("i", hparams["max_source_positions"]))
 fout.write(struct.pack("i", hparams["d_model"]))
@@ -140,7 +142,7 @@ for i in range(filters.shape[0]):
         fout.write(struct.pack("f", filters[i][j]))
 
 byte_encoder = bytes_to_unicode()
-byte_decoder = {v:k for k, v in byte_encoder.items()}
+byte_decoder = {v: k for k, v in byte_encoder.items()}
 
 fout.write(struct.pack("i", len(tokens)))
 
@@ -184,7 +186,7 @@ for name in list_vars.keys():
     # reshape conv bias from [n] to [n, 1]
     if name in ["encoder.conv1.bias", "encoder.conv2.bias"]:
         data = data.reshape(data.shape[0], 1)
-        print("  Reshaped variable: " , name , " to shape: ", data.shape)
+        print("  Reshaped variable: ", name, " to shape: ", data.shape)
 
     n_dims = len(data.shape)
     print(name, n_dims, data.shape)
@@ -218,5 +220,5 @@ for name in list_vars.keys():
 
 fout.close()
 
-print("Done. Output file: " , fname_out)
+print("Done. Output file: ", fname_out)
 print("")
