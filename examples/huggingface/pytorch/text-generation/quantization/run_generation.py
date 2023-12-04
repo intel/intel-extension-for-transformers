@@ -70,7 +70,7 @@ parser.add_argument(
 parser.add_argument(
     "--woq_weight_dtype",
     type=str,
-    default="nf4",
+    default="int8",
     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
 )
 parser.add_argument(
@@ -187,7 +187,7 @@ elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
-        bnb_4bit_quant_type=args.woq_dtype,
+        bnb_4bit_quant_type="nf4",
     )
 
 # get optimized model
