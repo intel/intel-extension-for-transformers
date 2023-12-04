@@ -194,7 +194,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
                        jblas::storage::gemm::IWeightBase* w2ptr, jblas::storage::gemm::IWeightBase* w3ptr, float* tmp1,
                        float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
                        jblas::parallel::IThreading* th) {
-  using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher_silu =
       jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
                                               jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
@@ -287,8 +287,15 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
         if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
-          ffn_silu::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
-                                                                     seq, fin, fmid, fout, workspace, pth);
+          if (seq <= tAVX512_VNNI_KBlock::MTILE) {
+            static_assert(tAVX512_VNNI_KBlock::NTILE == tAMX_INT8_SS_KBlock::NTILE);
+            ffn_silu::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
+                                                                       seq, fin, fmid, fout, workspace, pth);
+          } else {
+            ffn_silu::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
+                                                                       seq, fin, fmid, fout, workspace, pth);
+          }
+
         } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
           ffn_silu::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
                                                                      seq, fin, fmid, fout, workspace, pth);
