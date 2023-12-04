@@ -19,51 +19,104 @@
 
 namespace jblas {
 namespace gemm {
-enum class CompType : uint32_t {
-  COMP_FP32 = 0,
-  COMP_BF16_FP32 = 1,
-  COMP_FP16_FP16 = 2,
-  COMP_INT_START = 3,
-  COMP_INT8_US_INT32 = COMP_INT_START,
-  COMP_INT8_UU_INT32 = 4,
-  COMP_INT8_SS_INT32 = 5,
-  COMP_INT8_SU_INT32 = 6,
-  COMP_INT16_SS_INT32 = 7,
-  COMP_INT8_US_FP32 = 8,
-  COMP_INT8_UU_FP32 = 9,
-  COMP_INT8_SS_FP32 = 10,
-  COMP_INT8_SU_FP32 = 11,
+enum class CompType : uint16_t {
+  // base type, too many bits if reuse JBLAS_DTYPE
+  tFP32 = 0,
+  tBF16 = 1,
+  tFP16 = 2,
+  tS8 = 3,
+  tU8 = 4,
+  tS32 = 5,
+  tS16 = 6,
+  MASK_A = 0xf,
+  SHIFT_A = 0,
+  MASK_B = 0xf0,
+  SHIFT_B = 4,
+  MASK_C = 0xf00,
+  SHIFT_C = 8,
+  COMP_FP32 = (tFP32 << SHIFT_A) | (tFP32 << SHIFT_B) | (tFP32 << SHIFT_C),
+  COMP_BF16_FP32 = (tBF16 << SHIFT_A) | (tBF16 << SHIFT_B) | (tFP32 << SHIFT_C),
+  COMP_FP16_FP16 = (tFP16 << SHIFT_A) | (tFP16 << SHIFT_B) | (tFP16 << SHIFT_C),
+  COMP_INT8_US_INT32 = (tU8 << SHIFT_A) | (tS8 << SHIFT_B) | (tS32 << SHIFT_C),
+  COMP_INT8_UU_INT32 = (tU8 << SHIFT_A) | (tU8 << SHIFT_B) | (tS32 << SHIFT_C),
+  COMP_INT8_SS_INT32 = (tS8 << SHIFT_A) | (tS8 << SHIFT_B) | (tS32 << SHIFT_C),
+  COMP_INT8_SU_INT32 = (tS8 << SHIFT_A) | (tU8 << SHIFT_B) | (tS32 << SHIFT_C),
+  COMP_INT16_SS_INT32 = (tS16 << SHIFT_A) | (tS16 << SHIFT_B) | (tS32 << SHIFT_C),
+  COMP_INT8_US_FP32 = (tU8 << SHIFT_A) | (tS8 << SHIFT_B) | (tFP32 << SHIFT_C),
+  COMP_INT8_UU_FP32 = (tU8 << SHIFT_A) | (tU8 << SHIFT_B) | (tFP32 << SHIFT_C),
+  COMP_INT8_SS_FP32 = (tS8 << SHIFT_A) | (tS8 << SHIFT_B) | (tFP32 << SHIFT_C),
+  COMP_INT8_SU_FP32 = (tS8 << SHIFT_A) | (tU8 << SHIFT_B) | (tFP32 << SHIFT_C),
+};
+
+class CompTypeHelper {
+ public:
+  static inline uint64_t get_mask_val(CompType raw, CompType mask, CompType shift) {
+    return (static_cast<uint64_t>(raw) & static_cast<uint64_t>(mask)) >> static_cast<uint64_t>(shift);
+  }
+
+  static void parse_id(CompType id, uint64_t* vals) {
+    vals[0] = get_mask_val(id, CompType::MASK_A, CompType::SHIFT_A);
+    vals[1] = get_mask_val(id, CompType::MASK_B, CompType::SHIFT_B);
+    vals[2] = get_mask_val(id, CompType::MASK_C, CompType::SHIFT_C);
+  }
+
+  static const char* to_str(CompType id) {
+    static char tmp[128];
+    uint64_t vals[3];
+    parse_id(id, vals);
+    sprintf(tmp, "A%d_B%d_C%d", vals[0], vals[1], vals[2]);
+    return tmp;
+  }
+
+  static inline uint64_t get_B(CompType id) { return get_mask_val(id, CompType::MASK_B, CompType::SHIFT_B); }
+
+  static inline bool is_integer(CompType id) {
+    auto bt = get_B(id);
+    bool flag = false;
+    flag |= bt == static_cast<uint64_t>(CompType::tS8);
+    flag |= bt == static_cast<uint64_t>(CompType::tU8);
+    return flag;
+  }
 };
 
 class CoreAttr {
  public:
-  // INT32=LSB|**8bits:NTile**||**8bits:PackRow**||**8bits:CompType**||**8bits:Reserve**|
-  static uint32_t constexpr NTILE_MASK = 0xff, NTILE_SHIFT = 0, PACKROW_MASK = 0xff00, PACKROW_SHIFT = 8,
-                            COMP_MASK = 0xff0000, COMP_SHIFT = 16, ISA_MASK = 0xff000000, ISA_SHIFT = 24;
+  // INT64=LSB|**8bits:NTile**||**8bits:PackRow**||**16bits:CompType**||**8bits:ISA**||**24bits:reversed**|
+  static uint64_t constexpr NTILE_MASK = 0xff, NTILE_SHIFT = 0, PACKROW_MASK = 0xff00, PACKROW_SHIFT = 8,
+                            COMP_MASK = 0xffff0000, COMP_SHIFT = 16, ISA_MASK = 0xff00000000, ISA_SHIFT = 32;
 
-  static inline uint32_t get_mask_val(uint32_t raw, uint32_t mask, uint32_t shift) { return (raw & mask) >> shift; }
-  static constexpr uint32_t make_core_id(uint32_t NTile, uint32_t PackRow, uint32_t CompType, uint32_t ISA) {
-    return (NTile << NTILE_SHIFT) | (PackRow << PACKROW_SHIFT) | (CompType << COMP_SHIFT) | (ISA << ISA_SHIFT);
+  static inline uint64_t get_mask_val(uint64_t raw, uint64_t mask, uint64_t shift) { return (raw & mask) >> shift; }
+
+  static constexpr uint64_t make_core_id(int NTile, int PackRow, CompType CompType, JBLAS_ISA ISA) {
+    return (static_cast<uint64_t>(NTile) << NTILE_SHIFT) | (static_cast<uint64_t>(PackRow) << PACKROW_SHIFT) |
+           (static_cast<uint64_t>(CompType) << COMP_SHIFT) | (static_cast<uint64_t>(ISA) << ISA_SHIFT);
   }
-
-  static void parse_id(uint32_t id, uint32_t* vals) {
+  static void parse_id(uint64_t id, uint64_t* vals) {
     vals[0] = get_mask_val(id, NTILE_MASK, NTILE_SHIFT);
     vals[1] = get_mask_val(id, PACKROW_MASK, PACKROW_SHIFT);
     vals[2] = get_mask_val(id, COMP_MASK, COMP_SHIFT);
     vals[3] = get_mask_val(id, ISA_MASK, ISA_SHIFT);
   }
 
-  static const char* to_str(uint32_t id) {
+  static const char* to_str(uint64_t id) {
     static char tmp[128];
-    uint32_t vals[4];
+    uint64_t vals[4];
     parse_id(id, vals);
-    sprintf(tmp, "N%d_PACK%d_COMP%d_ISA%d", vals[0], vals[1], vals[2], vals[3]);
+    sprintf(tmp, "N%d_PACK%llu_COMP%llu_ISA%llu", vals[0], vals[1], vals[2], vals[3]);
     return tmp;
   }
 
-  static inline size_t get_bsize(uint32_t id) {
-    auto packrow = get_mask_val(id, PACKROW_MASK, PACKROW_SHIFT);
+  static inline int get_packrow(uint64_t id) { return static_cast<int>(get_mask_val(id, PACKROW_MASK, PACKROW_SHIFT)); }
+
+  static inline size_t get_bsize(uint64_t id) {
+    auto packrow = get_packrow(id);
     return size_t(4 / packrow);
+  }
+
+  static inline JBLAS_ISA get_ISA(uint64_t id) { return static_cast<JBLAS_ISA>(get_mask_val(id, ISA_MASK, ISA_SHIFT)); }
+
+  static inline CompType get_comp(uint64_t id) {
+    return static_cast<CompType>(get_mask_val(id, COMP_MASK, COMP_SHIFT));
   }
 };
 
@@ -79,8 +132,8 @@ class Avx2N8P1 : protected jblas::xbyak::JitAvx2 {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 1;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX2;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX2;
+  static auto constexpr COMPUTE = CompType::COMP_FP32;
   typedef float AType;
   typedef float BType;
   typedef float CType;
@@ -299,8 +352,8 @@ class Avx512fN16P1 : protected jblas::xbyak::JitAvx512f {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 1;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512F;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512F;
+  static auto constexpr COMPUTE = CompType::COMP_FP32;
   typedef float AType;
   typedef float BType;
   typedef float CType;
@@ -519,8 +572,8 @@ class Avx512fp16N32P1 : protected jblas::xbyak::JitAvx512_fp16 {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 1;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512_FP16;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_FP16_FP16;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512_FP16;
+  static auto constexpr COMPUTE = CompType::COMP_FP16_FP16;
   typedef utils::fp16 AType;
   typedef utils::fp16 BType;
   typedef utils::fp16 CType;
@@ -739,8 +792,8 @@ class Avx512bf16N16P2 : protected jblas::xbyak::JitAvx512_bf16 {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 2;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512_BF16;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_BF16_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512_BF16;
+  static auto constexpr COMPUTE = CompType::COMP_BF16_FP32;
   typedef utils::bf16 AType;
   typedef utils::bf16 BType;
   typedef float CType;
@@ -959,8 +1012,8 @@ class Avx512vnniN16P4 : protected jblas::xbyak::JitAvx512vnni {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 4;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512_VNNI;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_INT8_US_INT32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512_VNNI;
+  static auto constexpr COMPUTE = CompType::COMP_INT8_US_INT32;
   typedef uint8_t AType;
   typedef int8_t BType;
   typedef int32_t CType;
@@ -1178,8 +1231,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 4;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX_VNNI;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_INT8_US_INT32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX_VNNI;
+  static auto constexpr COMPUTE = CompType::COMP_INT8_US_INT32;
   typedef uint8_t AType;
   typedef int8_t BType;
   typedef int32_t CType;
@@ -1399,8 +1452,8 @@ class Amxbf16N16P2 : protected jblas::xbyak::JitAmxbf16 {
   static_assert(NRegs * MRegs + 2 <= TileCount);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs * RegLen, KTILE = 32;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAMX_BF16;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_BF16_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAMX_BF16;
+  static auto constexpr COMPUTE = CompType::COMP_BF16_FP32;
   typedef utils::bf16 AType;
   typedef utils::bf16 BType;
   typedef float CType;
@@ -1662,12 +1715,12 @@ class Amxint8N16P4 : protected jblas::xbyak::JitAmxint8 {
   static_assert(NRegs * MRegs + 2 <= TileCount);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs * RegLen, KTILE = 64;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAMX_INT8;
-  static uint32_t constexpr COMPUTE =
-      (uint32_t)(std::is_same_v<AT, int8_t>
-                     ? std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_SS_INT32 : CompType::COMP_INT8_SU_INT32
-                 : std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_US_INT32
-                                              : CompType::COMP_INT8_UU_INT32);
+  static auto constexpr ISA = JBLAS_ISA::JblasAMX_INT8;
+  static auto constexpr COMPUTE =
+      (std::is_same_v<AT, int8_t>
+           ? std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_SS_INT32 : CompType::COMP_INT8_SU_INT32
+       : std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_US_INT32
+                                    : CompType::COMP_INT8_UU_INT32);
   using AType = AT;
   using BType = BT;
   typedef int32_t CType;
@@ -1958,8 +2011,8 @@ class Avx512fN16P1 : protected jblas::xbyak::JitAvx512f {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 1;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512F;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512F;
+  static auto constexpr COMPUTE = CompType::COMP_FP32;
   typedef float AType;
   typedef float BType;
   typedef float CType;
@@ -2178,8 +2231,8 @@ class Avx512vnniN16P4 : protected jblas::xbyak::JitAvx512vnni {
   static_assert(NRegs * MRegs <= RegCount - 1);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 4;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX512_VNNI;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_INT8_US_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX512_VNNI;
+  static auto constexpr COMPUTE = CompType::COMP_INT8_US_FP32;
   typedef uint8_t AType;
   typedef int8_t BType;
   typedef float CType;
@@ -2476,8 +2529,8 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
   static_assert(NRegs * MRegs <= RegCount - 3);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs, KTILE = 4;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAVX_VNNI;
-  static uint32_t constexpr COMPUTE = (uint32_t)CompType::COMP_INT8_US_FP32;
+  static auto constexpr ISA = JBLAS_ISA::JblasAVX_VNNI;
+  static auto constexpr COMPUTE = CompType::COMP_INT8_US_FP32;
   typedef uint8_t AType;
   typedef int8_t BType;
   typedef float CType;
@@ -2764,7 +2817,7 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
         vpbroadcastb(Xbyak::Xmm(AReg), ptr[reg_zpA]);
         vpmovzxbd(vreg_t(AReg), Xbyak::Xmm(AReg));
         vcvtdq2ps(vreg_t(AReg), vreg_t(AReg));
-        vmovups(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
+        vbroadcastss(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg + 1));
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg));
         for (int j = 0; j < NRegs; j++) {
@@ -2779,7 +2832,7 @@ class AvxvnniN8P4 : protected jblas::xbyak::JitAvxvnni {
         vpbroadcastb(Xbyak::Xmm(AReg), ptr[reg_zpA]);
         vpmovzxbd(vreg_t(AReg), Xbyak::Xmm(AReg));
         vcvtdq2ps(vreg_t(AReg), vreg_t(AReg));
-        vmovups(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
+        vbroadcastss(vreg_t(TmpReg + 1), ptr[reg_scaleA]);
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg + 1));
         vmulps(vreg_t(AReg), vreg_t(AReg), vreg_t(TmpReg));
         for (int j = 0; j < NRegs; j++) {
@@ -2821,12 +2874,11 @@ class Amxint8N16P4 : protected jblas::xbyak::JitAmxint8 {
   static_assert(NRegs * MRegs + 2 <= TileCount);
   static int constexpr NTILE = RegLen * NRegs, MTILE = MRegs * RegLen, KTILE = 64;
   static int constexpr KUNROLL = 2;
-  static uint32_t constexpr ISA = (uint32_t)JBLAS_ISA::JblasAMX_INT8;
-  static uint32_t constexpr COMPUTE =
-      (uint32_t)(std::is_same_v<AT, int8_t>
-                     ? std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_SS_FP32 : CompType::COMP_INT8_SU_FP32
-                 : std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_US_FP32
-                                              : CompType::COMP_INT8_UU_FP32);
+  static auto constexpr ISA = JBLAS_ISA::JblasAMX_INT8;
+  static auto constexpr COMPUTE = (std::is_same_v<AT, int8_t> ? std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_SS_FP32
+                                                                                           : CompType::COMP_INT8_SU_FP32
+                                   : std::is_same_v<BT, int8_t> ? CompType::COMP_INT8_US_FP32
+                                                                : CompType::COMP_INT8_UU_FP32);
   using AType = AT;
   using BType = BT;
   typedef float CType;
@@ -3185,14 +3237,14 @@ class CoreCodeBase {
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  static int constexpr NTILE = Code::NTILE;
-  static int constexpr MTILE = Code::MTILE;
-  static int constexpr KTILE = Code::KTILE;
-  static int constexpr PACK_ROW = Code::PackRow;
-  static int constexpr COMP = Code::COMPUTE;
+  static auto constexpr NTILE = Code::NTILE;
+  static auto constexpr MTILE = Code::MTILE;
+  static auto constexpr KTILE = Code::KTILE;
+  static auto constexpr PACK_ROW = Code::PackRow;
+  static auto constexpr COMP = Code::COMPUTE;
   static int constexpr PREFERRED_N = NTILE * 3;
-  static JBLAS_ISA constexpr ISA = (JBLAS_ISA)Code::ISA;
-  static uint32_t constexpr ID = CoreAttr::make_core_id(NTILE, PACK_ROW, COMP, ISA);
+  static auto constexpr ISA = Code::ISA;
+  static auto constexpr ID = CoreAttr::make_core_id(NTILE, PACK_ROW, COMP, ISA);
   void configure() { (void)(0); }
 
  protected:
@@ -3211,14 +3263,14 @@ class CoreCodeBaseAMX {
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  static int constexpr NTILE = Code::NTILE;
-  static int constexpr MTILE = Code::MTILE;
-  static int constexpr KTILE = Code::KTILE;
-  static int constexpr PACK_ROW = Code::PackRow;
-  static int constexpr COMP = Code::COMPUTE;
+  static auto constexpr NTILE = Code::NTILE;
+  static auto constexpr MTILE = Code::MTILE;
+  static auto constexpr KTILE = Code::KTILE;
+  static auto constexpr PACK_ROW = Code::PackRow;
+  static auto constexpr COMP = Code::COMPUTE;
   static int constexpr PREFERRED_N = NTILE * 3;
-  static JBLAS_ISA constexpr ISA = (JBLAS_ISA)Code::ISA;
-  static uint32_t constexpr ID = CoreAttr::make_core_id(_NTILE, PACK_ROW, COMP, ISA);
+  static auto constexpr ISA = Code::ISA;
+  static auto constexpr ID = CoreAttr::make_core_id(_NTILE, PACK_ROW, COMP, ISA);
   Xbyak::CodeGenerator cfgcode;
 
  protected:
