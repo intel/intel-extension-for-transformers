@@ -57,16 +57,10 @@ function run_tuning {
 
     if [ "${topology}" = "starcoder_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/starcode_3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-            alpha=0.5
-        fi
+        alpha=0.5
     elif [ "${topology}" = "codellama_7b" ]; then
         model_name_or_path="codellama/CodeLlama-7b-hf"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-            alpha=0.5
-        fi
+        alpha=0.5
     fi
 
     if [ ${script} = "run_generation.py" ];then

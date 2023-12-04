@@ -24,9 +24,8 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
+    IPEX_OPT_LLM_SUPPORTED
 )
-
-ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
 
 
 class TSModelCausalLMForITREX(TSModelForCausalLM):
@@ -152,9 +151,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             "input_ids": input_ids,
             "attention_mask": attention_mask,
         }
+        input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
-            input_bs, input_len = input_ids.shape
-            if model_type in ipex_opt_llm_supported:
+            if model_type in IPEX_OPT_LLM_SUPPORTED:
                 past_key_values = generate_dummy_past_key_values_for_opt_llm(
                     config=self.config, input_bs=input_bs, num_beams=1
                 )

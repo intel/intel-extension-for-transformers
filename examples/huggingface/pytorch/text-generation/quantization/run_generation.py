@@ -21,8 +21,6 @@ from intel_extension_for_transformers.transformers import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default=None)
-parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -61,6 +59,7 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+parser.add_argument("--fallback_add", action="store_true", help="Whether to fallback add ops to FP32")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -82,6 +81,8 @@ parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
+parser.add_argument("--revision", default="main", type=str)
+parser.add_argument("--trust_remote_code", default=False)
 # =======================================
 args = parser.parse_args()
 
@@ -155,6 +156,8 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
+    if args.fallback_add:
+        op_type_dict["add"] = {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
         "smooth_quant": True,
@@ -187,6 +190,7 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
         use_llm_runtime=False,
     )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -195,6 +199,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         args.model,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
+        revision=args.revision,
         use_llm_runtime=False,
     )
 elif not args.int8 and not args.int8_bf16_mixed:
@@ -202,6 +207,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
             trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
             use_llm_runtime=False,
         )
     else:
@@ -209,6 +215,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
             args.model,
             config=config,
             trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
             use_llm_runtime=False,
         )
 
@@ -305,6 +312,8 @@ if args.accuracy:
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
+        + ",revision="
+        + args.revision
         + ",trust_remote_code="
         + str(args.trust_remote_code),
         user_model=user_model,

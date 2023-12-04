@@ -598,6 +598,7 @@ class Finetuning:
                         self.logger.info(results)
 
         elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
@@ -615,6 +616,8 @@ class Finetuning:
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
+            unwrapped_model = unwrap_model(model)
+            unwrapped_model.eval()
             from .eval_utils import compute_rouge_metric
             gen_kwargs = {
                     "num_beams": data_args.num_beams,

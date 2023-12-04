@@ -47,6 +47,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
+    IPEX_OPT_LLM_SUPPORTED,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -224,6 +225,7 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
+
             if (
                 not torch.cuda.is_available()
                 or device_map == "cpu"
@@ -235,9 +237,8 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying SmoothQuant.")
 
             # ipex.optimize_transformers
-            ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
             if quantization_config.ipex_opt_llm is None:
-                if model_type in ipex_opt_llm_supported:
+                if model_type in IPEX_OPT_LLM_SUPPORTED:
                     quantization_config.ipex_opt_llm = True
                     logger.info(
                         "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
@@ -494,7 +495,3 @@ class AutoModel(_BaseQBitsAutoModelClass):
 
 class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
-
-
-class GPTBigCodeForCausalLM(_BaseQBitsAutoModelClass):
-    ORIG_MODEL = transformers.GPTBigCodeForCausalLM
