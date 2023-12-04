@@ -39,8 +39,9 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void QWEN::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+void QWEN::init(const char* path_model, model_context* ctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
                 bool vocab_only_) {
+  model_context& lctx = *ctx;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -68,9 +69,10 @@ void QWEN::init(const char* path_model, model_context& lctx, int n_gpu_layer_, b
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void QWEN::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void QWEN::load(model_context* ctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+  model_context& lctx = *ctx;
   auto& model = lctx.model;
-  auto& ctx = model.ctx;
+  auto& ne_ctx = model.ctx;
 
   size_t ctx_size;
   size_t mmapped_size;
@@ -95,7 +97,7 @@ void QWEN::load(model_context& lctx, model_progress_callback progress_callback, 
     throw format("ne_init() failed");
   }
 
-  ml->ne_ctx = ctx;
+  ml->ne_ctx = ne_ctx;
 
   model.others[0] = ml->get_tensor("transformer.wte.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   model.others[1] = ml->get_tensor("transformer.ln_f.weight", {n_embd}, NE_BACKEND_CPU);
@@ -166,11 +168,12 @@ class qwen_quant_layer : public quant_layer_base {
 };
 REGISTER_QUANT_LAYER_CLASS(qwen);
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
   std::unique_ptr<QWEN> ms(new QWEN());
-  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
-  ms->load(lctx, progress_callback, progress_callback_user_data);
+  ms->init(fname.c_str(), ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  ms->load(ctx, progress_callback, progress_callback_user_data);
+  model_context& lctx = *ctx;
   lctx.support_jblas_kv = true;
 }

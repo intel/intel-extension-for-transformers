@@ -49,9 +49,10 @@
 //   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool gptj_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool gptj_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                      const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
   const int batch_size = lctx.batch_size;  // num of beams of all batches
   MODEL_ASSERT(batch_size == n_input);
@@ -539,7 +540,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!gptj_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!gptj_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

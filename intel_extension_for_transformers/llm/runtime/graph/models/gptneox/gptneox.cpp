@@ -71,9 +71,10 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 //   - n_threads: number of threads to use
 //
 
-static bool gptneox_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool gptneox_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                         const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
   // static batching for now
   const int N = inputs->n_tokens;
@@ -420,7 +421,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!gptneox_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!gptneox_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
