@@ -19,8 +19,8 @@ import torch
 from pathlib import Path
 import numpy as np
 import struct
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
 GGML_QK8_0 = 32
@@ -28,6 +28,7 @@ GGML_QK4_0 = 32
 GGML_QK4_1 = 32
 GGML_QK5_0 = 32
 GGML_QK5_1 = 32
+
 
 def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     # equivalent to ggml_quantize_q4_0 in ggml.c
@@ -43,6 +44,7 @@ def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     tensor = torch.cat((scale.half().view(torch.int8), tensor), dim=-1)
     return tensor
 
+
 class SentencePieceVocab:
     def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
         self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
@@ -55,7 +57,8 @@ class SentencePieceVocab:
         expected_ids = list(range(vocab_size, vocab_size + len(added_tokens)))
         actual_ids = sorted(added_tokens.values())
         if expected_ids != actual_ids:
-            raise Exception(f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
+            raise Exception(
+                f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
         items = sorted(added_tokens.items(), key=lambda text_idx: text_idx[1])
         self.added_tokens_list = [text for (text, idx) in items]
         self.vocab_size_base: int = vocab_size
@@ -94,6 +97,7 @@ class SentencePieceVocab:
     def __repr__(self) -> str:
         return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
 
+
 def load_vocab(path: Path) -> SentencePieceVocab:
     # Be extra-friendly and accept either a file or a directory.  Also, if it's
     # a directory, it might be the model directory, and tokenizer.model might
@@ -107,17 +111,20 @@ def load_vocab(path: Path) -> SentencePieceVocab:
         elif path3.exists():
             path = path3
         else:
-            raise FileNotFoundError(f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir")
+            raise FileNotFoundError(
+                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir"
+            )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
     return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+
 
 def expandToInt4(qweight):
     eweight = qweight.repeat(8, axis=2)
     eweight = eweight.astype(np.uint32)
     for i in range(0, eweight.shape[2]):
         offset = i % (32 // 4) * 4
-        eweight[:, :, i] = eweight[:, :, i] >> offset & (2 ** 4 - 1)
+        eweight[:, :, i] = eweight[:, :, i] >> offset & (2**4 - 1)
     return eweight
 
 
@@ -138,7 +145,7 @@ def qzeros_to_zeros(qzeros, bits=4):
     col = 0
     while col < qzeros.shape[1]:
         for j in range(i, i + (32 // bits)):
-            zeros[:, j] = (qzeros[:, col] >> (bits * (j - i)) & (2 ** bits - 1)) + 1
+            zeros[:, j] = (qzeros[:, col] >> (bits * (j - i)) & (2**bits - 1)) + 1
         i += 32 // bits
         col += 1
     return zeros

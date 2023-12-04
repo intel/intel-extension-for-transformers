@@ -21,7 +21,8 @@ import argparse
 import fnmatch
 import subprocess
 
-ProjectEXT=['h','hpp','c','cpp']
+ProjectEXT = ['h', 'hpp', 'c', 'cpp']
+
 
 def glob_files(dirs):
     files = []
@@ -32,31 +33,34 @@ def glob_files(dirs):
                     files.append(os.path.join(root, filename))
     return files
 
+
 if sys.platform == "linux":
-    ClangBin='clang-format'
+    ClangBin = 'clang-format'
 elif sys.platform == 'win32':
-    ClangBin='clang-format.exe'
+    ClangBin = 'clang-format.exe'
+
 
 def clang_format_dir(args):
-    files=glob_files(args.dirs)
+    files = glob_files(args.dirs)
     for file in files:
-        cmds=[ClangBin,'-i','--style=file',file]
+        cmds = [ClangBin, '-i', '--style=file', file]
         subprocess.run(cmds, check=True)
+
 
 def parse_args(argv=None):
     if argv is None:
         argv = sys.argv
     parser = argparse.ArgumentParser(description='Recursively clang-format')
-    parser.add_argument('--dirs',nargs='+',
-                        help='paths to clang-format')
+    parser.add_argument('--dirs', nargs='+', help='paths to clang-format')
     args = parser.parse_args(argv[1:])
     if not args.dirs:
         sys.exit(-1)
     return args
 
-if __name__=='__main__':
-    if len(sys.argv)==1:
-        args=parse_args(['','--dirs','core','models','vectors','application'])
+
+if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        args = parse_args(['', '--dirs', 'core', 'models', 'vectors', 'application'])
     else:
-        args=parse_args()
+        args = parse_args()
     clang_format_dir(args)

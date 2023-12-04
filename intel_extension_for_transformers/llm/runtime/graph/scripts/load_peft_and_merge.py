@@ -16,30 +16,24 @@ import argparse
 from peft import PeftModel
 from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Load CausalLM and Peft model, then merge and save."
-    )
+    parser = argparse.ArgumentParser(description="Load CausalLM and Peft model, then merge and save.")
     parser.add_argument(
         "--model_name_or_path",
         type=str,
         required=True,
         help="The model checkpoint for weights initialization."
-            "Set to model id of huggingface model hub or local path to the model.",
+        "Set to model id of huggingface model hub or local path to the model.",
     )
     parser.add_argument(
         "--peft_name_or_path",
         type=str,
         required=True,
         help="The peft model checkpoint for weights initialization."
-            "Set to model id of huggingface model hub or local path to the model.",
+        "Set to model id of huggingface model hub or local path to the model.",
     )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        default=None,
-        help="Path to save merged model checkpoint."
-    )
+    parser.add_argument("--save_path", type=str, default=None, help="Path to save merged model checkpoint.")
     args = parser.parse_args()
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
     config = AutoConfig.from_pretrained(args.model_name_or_path)
@@ -54,6 +48,7 @@ def main():
     tokenizer.save_pretrained(save_path)
     model.save_pretrained(save_path)
     print(f"Merged model saved in {save_path}")
+
 
 if __name__ == "__main__":
     main()
