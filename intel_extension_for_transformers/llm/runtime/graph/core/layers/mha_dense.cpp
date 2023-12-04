@@ -387,7 +387,7 @@ class WeightPackBatchBf16Trans : public WeightPackBatchBf16Base<GemmCore_T, ISA_
     // y for batch; x for major-dim of the source data (N-dim of the packed weight)
     const auto [y, x] = thdp.loc;
     const auto [ny, nx] = thdp.size;
-    const auto nx_pad = jblas::utils::padto(nx, NPad);
+    const auto nx_pad = jblas::utils::padto(nx, GemmCore_T::NTILE);
 
     assert(padto(pw->mK, GemmCore_T::KTILE) == KPad);
 
@@ -429,6 +429,7 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
 
     auto [y, x] = thdp.loc;
     auto [ny, nx] = thdp.size;
+    const auto nx_pad = jblas::utils::padto(nx, GemmCore_T::KTILE);
 
     using KernInterleave = typename jblas::kernel::wrapper::PaddingInterleaveMN<  //
         GemmCore_T::NTILE, GemmCore_T::PACK_ROW>;
@@ -438,7 +439,7 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
           p.B + step_batch(ibat) + x * p.ldb,                                           //
           pw->template WPtr<WType>() + ibat * KPad * NPad + x * GemmCore_T::NTILE,      //
           nx, pw->mN,                                                                   // size
-          padto(nx, KPad), NPad,                                                        // padded size
+          nx_pad, NPad,                                                                 // padded size
           p.ldb, KPad);                                                                 // stride
       assert(forward_stat == JblasSuccess);
     }
@@ -775,6 +776,7 @@ class MHAInterface {
           const int i_m = task_id % m_tiles * M_TILE;
           const int ibs = ibat / p.head_num;
           const int ihn = ibat % p.head_num;
+          const int m_size = std::min(M_TILE, p.sl_q - i_m);
           // TODO(Yi): heads_kv
 
           float exp_sum[M_TILE]{};
@@ -790,7 +792,7 @@ class MHAInterface {
           const auto ld_tmp_exp = padto(padto(unmasked_size_pad_pv, GemmQK::NTILE), GemmPV::KTILE);
 
           typename jblas::parallel::gemm::ThreadProblemBase tpQK{
-              /* ThreadProblem2D */ {tid, {}, {i_m, 0}, {M_TILE, unmasked_size_pad_qk}, true},
+              /* ThreadProblem2D */ {tid, {}, {i_m, 0}, {m_size, unmasked_size_pad_qk}, true},
               /* .block = */ {M_TILE, GemmQK::NTILE, p.head_size},
               /* .stacksize = */ cb.mL2Cache,
               /* .tmpcachesize = */ cb.mL2Cache,
@@ -820,7 +822,7 @@ class MHAInterface {
           for (int ii = 0; ii < M_TILE; ++ii) exp_sum[ii] = 1.f / exp_sum[ii];
 
           typename jblas::parallel::gemm::ThreadProblemBase tpPV{
-              /* ThreadProblem2D */ {tid, {}, {0, 0}, {M_TILE, p.head_size}, true},
+              /* ThreadProblem2D */ {tid, {}, {0, 0}, {m_size, p.head_size}, true},
               /* .block = */ {M_TILE, GemmPV::NTILE, unmasked_size_pad_qk},
               /* .stacksize = */ cb.mL2Cache,
               /* .tmpcachesize = */ cb.mL2Cache,
@@ -2154,17 +2156,17 @@ class TestMhaDese {
     printf("Test suit: %s\n", __FUNCTION__);
     CheckISA(AMX_BF16);
     GetCPUDevice();
-    jblas_set_threads(_cd->getThreads());
+    jblas_set_threads(std::min(_cd->getThreads(), omp_get_max_threads()));
 
     jblas::utils::request_perm_xtile_data();
 #if CompileFP16()
     // TODO(Yi): Disable as there are some bugs for the new jblas
-    // ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE);
-    // ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE);
-    // ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE);
-    // ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE);
-    // ret_ok &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE);
-    // ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 63, 63}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL);
 
     ret_ok &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, true);
     ret_ok &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, true);
@@ -2241,7 +2243,7 @@ class TestMhaDese {
     assert(("GQA not supported!", s.head_num == s.heads_kv));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
+    printf("bs_%d hn_%d hkv_%d hs_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
            flags & NE_ATTN_FLAG_IS_CAUSAL ? "maksed" : "unmask", flags & NE_ATTN_FLAG_IS_ALIBI8 ? "alibi8" : "");
 
     const auto NTILE = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
