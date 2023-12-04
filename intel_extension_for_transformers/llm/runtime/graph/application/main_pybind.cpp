@@ -124,14 +124,10 @@ class Model {
   int n_ctx = 0;
   std::vector<std::vector<model_token>> last_n_tokens;
   bool token_eos = false;
-<<<<<<< HEAD
-  long int generate_count = 0;
+  int64_t generate_count = 0;
   std::vector<uint32_t> padding_count;
   uint32_t n_prompt_tokens = 0;
   std::vector<float> times;
-=======
-  int64_t generate_count = 0;
->>>>>>> fix extra cpplint issues under application
 
   std::vector<std::vector<model_token>> beam_generate(const std::vector<std::vector<model_token>>& input_ids);
   std::vector<model_token> post_process(const float* logits);
@@ -347,7 +343,7 @@ std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vec
   std::vector<std::vector<model_token>> ret_next_tokens;
   for (int bs = 0; bs < next_token_ids.size(); ++bs) {
     // padding eos seq for continuous batched kv cache
-    // TODO batch reduction after for-loop attention implementation
+    // TODO(Zhentao): batch reduction after for-loop attention implementation
     if (curr_input_ids[bs].back() == ctx->vocab.eos_token_id || curr_input_ids[bs].back() == ctx->vocab.pad_token_id) {
       curr_input_ids[bs] = {ctx->vocab.pad_token_id};
       ret_next_tokens.push_back({ctx->vocab.pad_token_id});
@@ -515,7 +511,7 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
   float temp = params.temp;
   std::vector<model_token> ids(ctx->batch_size);
   // #pragma omp parallel for  // omp will affect sampling positions in batch infer
-  // TODO (make sample functions support batch processing)
+  // TODO(Zhentao): (make sample functions support batch processing)
   for (int bs = 0; bs < ctx->batch_size; ++bs) {
     std::vector<model_token_data> candidates;
     candidates.reserve(n_vocab);
@@ -526,7 +522,7 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
 
     // Apply penalties
     float nl_logit = logits[bs * n_vocab + model_token_nl()];
-    auto last_n_repeat = std::min(std::min((int)last_n_tokens[bs].size(), repeat_last_n), n_ctx);
+    auto last_n_repeat = std::min(std::min(static_cast<int>(last_n_tokens[bs].size()), repeat_last_n), n_ctx);
     model_sample_repetition_penalty(ctx, &candidates_p,
                                     last_n_tokens[bs].data() + last_n_tokens[bs].size() - last_n_repeat, last_n_repeat,
                                     params.repeat_penalty);
@@ -542,29 +538,7 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
     model_sample_temperature(ctx, &candidates_p, temp);
     ids[bs] = model_sample_token(ctx, &candidates_p);
   }
-<<<<<<< HEAD
   return ids;
-=======
-  model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
-
-  // Apply penalties
-  float nl_logit = logits[model_token_nl()];
-  auto last_n_repeat = std::min(std::min(static_cast<int>(last_n_tokens.size()), repeat_last_n), n_ctx);
-  model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                  last_n_repeat, params.repeat_penalty);
-  model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
-                                                last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                                last_n_repeat, alpha_frequency, alpha_presence);
-  // int id = model_sample_token_greedy(ctx, &candidates_p);
-  // Temperature sampling
-  model_sample_top_k(ctx, &candidates_p, top_k, 1);
-  model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
-  model_sample_typical(ctx, &candidates_p, typical_p, 1);
-  model_sample_top_p(ctx, &candidates_p, top_p, 1);
-  model_sample_temperature(ctx, &candidates_p, temp);
-  int id = model_sample_token(ctx, &candidates_p);
-  return id;
->>>>>>> fix extra cpplint issues under application
 }
 
 std::vector<model_token> Model::post_process(const float* logits) {
