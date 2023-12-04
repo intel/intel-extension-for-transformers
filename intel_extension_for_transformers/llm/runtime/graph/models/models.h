@@ -17,9 +17,9 @@
 #include "models/model_utils/model_types.h"
 
 struct IModel {
-  virtual void init(const char* path_model, model_context& lctx, int n_gpu_layers, bool use_mmap, bool use_mlock,
+  virtual void init(const char* path_model, model_context* lctx, int n_gpu_layers, bool use_mmap, bool use_mlock,
                     bool vocab_only) = 0;
-  virtual void load(model_context& lctx, model_progress_callback progress_callback,
+  virtual void load(model_context* lctx, model_progress_callback progress_callback,
                     void* progress_callback_user_data) = 0;
 };
 

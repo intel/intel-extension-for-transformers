@@ -217,7 +217,7 @@ static bool model_load(const std::string& fname, model_archs arch, model_context
   try {
     lctx.t_start_us = ne_time_us();
     lctx.model.arch = arch;
-    model_load_internal(fname, arch, lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+    model_load_internal(fname, arch, &lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
     lctx.t_load_us = ne_time_us() - lctx.t_start_us;
     return true;
