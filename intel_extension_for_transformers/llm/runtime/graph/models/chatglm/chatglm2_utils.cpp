@@ -183,8 +183,7 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
 
 class chatglm2_quant_layer : public quant_layer_base {
  public:
-  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
-                                                 ne_type type) override {
+  quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne, ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
     if (layername == "transformer.embedding.word_embeddings.weight" ||
         layername == "transformer.word_embeddings.weight") {

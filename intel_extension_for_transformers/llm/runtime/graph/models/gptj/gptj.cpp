@@ -55,7 +55,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 
   const int batch_size = lctx.batch_size;  // num of beams of all batches
   MODEL_ASSERT(batch_size == n_input);
-  // TODO static batching for now
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -545,7 +545,7 @@ int model_eval(struct model_context* ctx, const model_input* inputs, const int n
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;
