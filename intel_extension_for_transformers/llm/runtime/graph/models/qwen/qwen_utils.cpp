@@ -107,7 +107,7 @@ void QWEN::load(model_context* ctx, model_progress_callback progress_callback, v
   model.layers.resize(n_layer);
   size_t vram_total = 0;
   for (uint32_t i = 0; i < n_layer; ++i) {
-    const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+    const ne_backend backend = static_cast<int>(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
     std::string layers_i = "transformer.h." + std::to_string(i);
 
