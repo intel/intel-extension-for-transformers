@@ -79,7 +79,7 @@ template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
                        jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, float* bias, bool broadcast_bias,
                        int8_t* WorkSpace, jblas::parallel::IThreading* th) {
-  using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher =
       jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T,
                                            jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
@@ -138,8 +138,7 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           ip_add::JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
                                                                      bias, broadcast_bias, workspace, pth);
-        }
-        else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           ip_add::JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                   broadcast_bias, workspace, pth);
         }
@@ -152,14 +151,19 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
         if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-          ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                            broadcast_bias, workspace, pth);
-        }
-        else if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
+          static_assert(tAMX_INT8_SS_KBlock::NTILE == tAVX512_VNNI_KBlock::NTILE);
+          if (_m <= tAVX512_VNNI_KBlock::MTILE) {
+            ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+                                                              broadcast_bias, workspace, pth);
+          } else {
+            ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+                                                              broadcast_bias, workspace, pth);
+          }
+
+        } else if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
           ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                             broadcast_bias, workspace, pth);
-        }
-        else if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
+        } else if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
           ip_add::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                          broadcast_bias, workspace, pth);
         }
@@ -170,8 +174,7 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           ip_add::JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                    broadcast_bias, workspace, pth);
-        }
-        else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           ip_add::JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                 broadcast_bias, workspace, pth);
         }
