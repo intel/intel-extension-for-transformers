@@ -124,7 +124,7 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                        jblas::storage::gemm::IWeightBase* _BQ, jblas::storage::gemm::IWeightBase* _BK,
                        jblas::storage::gemm::IWeightBase* _BV, float* C, const int ldc, int8_t* WorkSpace,
                        jblas::parallel::IThreading* th) {
-  using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
   auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
