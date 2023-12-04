@@ -334,7 +334,7 @@ class TestQuantization(unittest.TestCase):
 
         # weight-only
         #RTN
-        woq_config = WeightOnlyQuantConfig()
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
