@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import os
+import torch
 import unittest
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
@@ -91,7 +92,7 @@ class UnitTest(unittest.TestCase):
         self.assertTrue(os.path.exists("./response.wav"))
 
     def test_quantization(self):
-        config = MixedPrecisionConfig()
+        config = MixedPrecisionConfig(dtype="float16" if torch.cuda.is_available() else "bfloat16")
         model = AutoModelForCausalLM.from_pretrained(
                 "facebook/opt-125m",
                 low_cpu_mem_usage=True,
