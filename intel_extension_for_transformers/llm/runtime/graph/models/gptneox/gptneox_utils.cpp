@@ -115,7 +115,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
   model.layers.resize(n_layer);
   size_t vram_total = 0;
   for (uint32_t i = 0; i < n_layer; ++i) {
-    const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+    const ne_backend backend = static_cast<int>(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
     std::string layers_i = "gpt_neox.layers." + std::to_string(i);
 
@@ -171,8 +171,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
 
 class gptneox_quant_layer : public quant_layer_base {
  public:
-  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
-                                                 ne_type type) override {
+  quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne, ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
     if (layername == "gpt_neox.embed_in.weight") {
       // special layer process, can be loaded by config file
