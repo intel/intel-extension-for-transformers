@@ -56,7 +56,6 @@ constexpr bool MHA_PREFER_AVX512FP16 = true;
 namespace {
 using namespace jblas::utils;
 namespace utils = jblas::utils;
-constexpr size_t Alignment = 64;
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
 struct attn_fwd_args_t {
@@ -246,7 +245,7 @@ class StoragePackedWeightBatch : public jblas::storage::gemm::IWeightBase {
 
  public:
   int mBatch;
-  jblas::storage::ObjectAlignedBuffer<Alignment> mWBuf;
+  jblas::storage::ObjectAlignedBuffer<NE_ALIGNMENT> mWBuf;
   // size_t mWSize;
 
   explicit StoragePackedWeightBatch(uint32_t _core_id) : Base(_core_id), mBatch(0) {}
@@ -255,7 +254,7 @@ class StoragePackedWeightBatch : public jblas::storage::gemm::IWeightBase {
     mBatch = num_batch;
     auto bsize = static_cast<size_t>(mBatch) * NPad * KPad * jblas::utils::jblas_dtype_size(dtype);
     mWBuf.resize(bsize);
-    mSize = utils::padto(IWeightBase::getSerializedSize() + mWBuf.getSerializedSize(), Alignment);
+    mSize = utils::padto(IWeightBase::getSerializedSize() + mWBuf.getSerializedSize(), NE_ALIGNMENT);
     return mSize;
   }
 
@@ -1658,13 +1657,13 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
   if (/* params.sl_q > 4 &&  */ _cd->AMX_INT8()) {         // TODO(Yi): add vnni impl
     using GemmKernelInt32TrackMax = ::LauncherBaseWeight<  //
         JblasAMX_INT8,                                     //
-        jblas::gemm::ICoreRowNAmxint8SS<64, 16>,           //
+        jblas::gemm::ICoreRowNAmxint8SS<48, 16>,           //
         jblas::prologue_a::gemm::ActivationBase,           //
         ::WeightForwardNTile48,                            //
         ::ScaleTrackMaxS32Fp32>;                           //
     using GemmKernelInt32 = ::LauncherBaseWeight<          //
         JblasAMX_INT8,                                     //
-        jblas::gemm::ICoreRowNAmxint8<64, 16>,             //
+        jblas::gemm::ICoreRowNAmxint8<48, 16>,             //
         jblas::prologue_a::gemm::ActivationBase,           //
         ::WeightForwardNTile48,                            //
         ::ScaleWriteBackS32S8>;                            //
@@ -2106,14 +2105,13 @@ class TestMhaDese {
 #endif
 
     // TODO(Yi): Disable as there are some bugs for the new jblas
-    // const auto s8layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK4;
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, s8layout);
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, s8layout);
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, s8layout);
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, s8layout);
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, s8layout);
-    // ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false,
-    // s8layout);
+    const auto s8layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK4;
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, s8layout);
 
     const auto bf16layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
     ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, bf16layout);
@@ -2298,7 +2296,7 @@ class TestMhaDese {
     assert(("head_num must be a multiple of heads_kv!", head_num % heads_kv == 0));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
+    printf("bs_%d hn_%d hkv_%d hs_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
            flags & NE_ATTN_FLAG_IS_CAUSAL ? "maksed" : "unmask", flags & NE_ATTN_FLAG_IS_ALIBI8 ? "alibi8" : "");
 
     assert(sl_kv_max >= sl_kv);
