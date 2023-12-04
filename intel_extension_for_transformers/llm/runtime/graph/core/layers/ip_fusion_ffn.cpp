@@ -195,16 +195,16 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
                        float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
                        jblas::parallel::IThreading* th) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
-  using Launcher_silu = jblas::wrapper::gemm::LauncherKBlock<
-      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-      jblas::epilogue::gemm::CompInt8BlockEpilogue, jblas::epilogue::gemm::AccumulatorWriteBackWithSwishFp32>;
-  using Launcher_mul =
-      jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T,
-                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-                                           jblas::epilogue::gemm::CompInt8BlockEpilogue, custom::epilogue::MulFp32>;
-  using Launcher = jblas::wrapper::gemm::LauncherKBlock<
-      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-      jblas::epilogue::gemm::CompInt8BlockEpilogue, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+  using Launcher_silu =
+      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
+                                              jblas::epilogue::gemm::AccumulatorWriteBackWithSwishFp32>;
+  using Launcher_mul = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                                               jblas::prologue_a::gemm::ActivationF32KBlockQuantize,
+                                                               Wei_T, custom::epilogue::MulFp32>;
+  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
+                                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_silu::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
@@ -216,27 +216,12 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher kernel;
   auto quanA1 = kernel_silu.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
   quanA1.assign(reinterpret_cast<int8_t*>(workspace));
-  typename Launcher_silu::BEpiParam blkargs1{
-      w1ptr_->template SPtr<int8_t>(), w1ptr_->SDtype(),  w1ptr_->CStep(),
-      quanA1.template SPtr<float>(),   quanA1.CStep(),    quanA1.template ZPtr<uint8_t>(),
-      w1ptr_->template RPtr<float>(),  w1ptr_->RDtype(),  w1ptr_->template ZPtr<int8_t>(),
-      quanA1.template RPtr<float>(),   w1ptr_->mBlockSize};
   auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
   quanA2.assign(reinterpret_cast<int8_t*>(workspace));
-  typename Launcher::BEpiParam blkargs2{
-      w2ptr_->template SPtr<int8_t>(), w2ptr_->SDtype(),  w2ptr_->CStep(),
-      quanA2.template SPtr<float>(),   quanA2.CStep(),    quanA2.template ZPtr<uint8_t>(),
-      w2ptr_->template RPtr<float>(),  w2ptr_->RDtype(),  w2ptr_->template ZPtr<int8_t>(),
-      quanA2.template RPtr<float>(),   w2ptr_->mBlockSize};
-  typename Launcher_mul::BEpiParam blkargs3{
-      w3ptr_->template SPtr<int8_t>(), w3ptr_->SDtype(),  w3ptr_->CStep(),
-      quanA1.template SPtr<float>(),   quanA1.CStep(),    quanA1.template ZPtr<uint8_t>(),
-      w3ptr_->template RPtr<float>(),  w3ptr_->RDtype(),  w3ptr_->template ZPtr<int8_t>(),
-      quanA1.template RPtr<float>(),   w3ptr_->mBlockSize};
   float silu_alpha = -1.0;
-  typename Launcher_silu::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, blkargs1, {tmp1, fmid, &silu_alpha}};
-  typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, blkargs2, {output, fout}};
-  typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, blkargs3, {tmp2, tmp1, fmid, fmid}};
+  typename Launcher_silu::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, {tmp1, fmid, &silu_alpha}};
+  typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, {output, fout}};
+  typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
   GemmRunWithA_ffn<Parallel>(kernel_silu, kernel_mul, kernel, args1, args3, args2, th);
 }
 }  // namespace ffn_silu
@@ -303,27 +288,26 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
           goto __END;
         }
       }
-      if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32)) {
-        if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
+      if (CType == uint32_t(gemm::CompType::COMP_INT8_US_INT32) ||
+          CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
+        if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
+          ffn_silu::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
+                                                                     seq, fin, fmid, fout, workspace, pth);
+          goto __END;
+        }
+        /*if (NTile == tAMX_INT8_US::NTILE && _cd->AMX_INT8()) {
           ffn_silu::JblasGemmCompInt8<tAMX_INT8_US, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
                                                               fin, fmid, fout, workspace, pth);
           goto __END;
-        }
-        if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-          ffn_silu::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
-                                                              fin, fmid, fout, workspace, pth);
+        }*/
+        if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
+          ffn_silu::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
+                                                                     seq, fin, fmid, fout, workspace, pth);
           goto __END;
         }
-        if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-          ffn_silu::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin,
-                                                           fmid, fout, workspace, pth);
-          goto __END;
-        }
-      }
-      if (CType == uint32_t(gemm::CompType::COMP_INT8_SS_INT32)) {
-        if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
-          ffn_silu::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
-                                                              fin, fmid, fout, workspace, pth);
+        if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
+          ffn_silu::JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
+                                                                  fin, fmid, fout, workspace, pth);
           goto __END;
         }
       }
