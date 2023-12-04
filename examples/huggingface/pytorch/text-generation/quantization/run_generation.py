@@ -40,6 +40,7 @@ parser.add_argument(
 )
 parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
 parser.add_argument("--quantized_model_path", type=str, default="saved_results/best_model.pt", help="the int8 model path")
+parser.add_argument("--restore", action="store_true", help="restore ipex quantized model from output_dir/best_configure.json")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
@@ -267,6 +268,120 @@ if args.accuracy:
             ',dtype=float32' + ",trust_remote_code=" + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
+        tasks=args.tasks,
+    )
+    dumped = json.dumps(results, indent=2)
+    if args.save_accuracy_path:
+        with open(args.save_accuracy_path, "w") as f:
+            f.write(dumped)
+    for task_name in args.tasks:
+        if task_name == "wikitext":
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+        else:
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+
+if args.restore:
+    def get_example_inputs(tokenized_dataset, model_config, model_type="llama", num_beams=4, ipex_opt_llm=True):
+        from intel_extension_for_transformers.transformers.utils.utility import (
+        generate_dummy_past_key_values,
+        generate_dummy_past_key_values_for_opt_llm,
+    )
+        if ipex_opt_llm:
+            past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                                                                        config=model_config,
+                                                                        input_bs=1,
+                                                                        num_beams=num_beams
+                                                                        )
+        else:
+            past_key_values = generate_dummy_past_key_values(config=model_config, input_bs=1)
+
+        def collate_batch(batch):
+            position_ids_padded = []
+            input_ids_padded = []
+            last_ind = []
+            attention_mask_padded = []
+            for input_ids in batch:
+                input_ids = (
+                    input_ids[: 512]
+                    if len(input_ids) > 512
+                    else input_ids
+                )
+                last_ind.append(input_ids.shape[0] - 1)
+                attention_mask = torch.ones(len(input_ids))
+                position_ids = torch.arange(len(input_ids))
+                input_ids_padded.append(input_ids)
+                attention_mask_padded.append(attention_mask)
+                position_ids_padded.append(position_ids)
+                break
+            return (
+                (
+                    torch.vstack(input_ids_padded),
+                    torch.vstack(attention_mask_padded),
+                    torch.vstack(position_ids_padded),
+                    past_key_values,
+                ),
+                torch.tensor(last_ind),
+            )
+        from torch.utils.data import DataLoader
+        calib_dataloader = DataLoader(
+            tokenized_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=collate_batch,
+        )
+        from optimum.exporters.onnx import MODEL_TYPES_REQUIRING_POSITION_IDS
+        for i, (
+                (input_ids, attention_mask, position_ids, past_key_values),
+                last_ind,
+            ) in enumerate(calib_dataloader):
+                if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                    example_inputs = {
+                                "input_ids": input_ids,
+                                "attention_mask": attention_mask,
+                                "position_ids": position_ids,
+                                "past_key_values": past_key_values
+                            }
+                else:
+                    example_inputs = {
+                                "input_ids": input_ids,
+                                "attention_mask": attention_mask,
+                                "past_key_values": past_key_values
+                            }
+                break
+        return example_inputs
+
+    args.model = peft_config.base_model_name_or_path if args.peft_model_id else args.model
+
+    prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
+    prompt = [prompt] * args.batch_size
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, use_llm_runtime=False, torchscript=True)
+
+    import intel_extension_for_pytorch as ipex
+    qconfig = ipex.quantization.default_static_qconfig_mapping
+    user_model = ipex.optimize_transformers(
+        user_model.eval(),
+        dtype=torch.float,
+        inplace=True,
+        quantization_config=qconfig,
+        deployment_mode=False,
+    )
+    example_inputs = get_example_inputs(input_ids, user_model.config, model_type=config.model_type, ipex_opt_llm=True)
+
+    from neural_compressor.utils.pytorch import recover_model_from_json
+    user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), example_inputs)
+    from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForOPTLLM
+    config = AutoConfig.from_pretrained(args.output_dir)
+    user_model = TSModelCausalLMForOPTLLM(user_model, config=config)
+
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+    results = evaluate(
+        model="hf-causal",
+        model_args='pretrained=' + args.model + ',tokenizer=' + args.model + \
+            ',dtype=float32' + ",trust_remote_code=" + str(args.trust_remote_code),
+        user_model=user_model,
+        batch_size= args.batch_size,
         tasks=args.tasks,
     )
     dumped = json.dumps(results, indent=2)

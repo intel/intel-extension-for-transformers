@@ -126,5 +126,11 @@ python run_generation.py \
     --load_in_8bit True \
     --accuracy \
     --tasks "lambada_openai"
+# restore the model optimized with smoothquant
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --restore \
+    --tasks "lambada_openai"
 
 ```
