@@ -17,7 +17,7 @@ To run finetuning on Intel Gaudi2, please execute below steps
 
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/neural_chat/docker/finetuning/
+cd intel-extension-for-transformers/neural_chat/docker/
 
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.10.0" --build-arg REVISION="494" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
 
@@ -58,7 +58,7 @@ For details of the dataset and DPO training code, you can refer [Intel/orca_dpo_
 
 
 ```python
-python ../../../../intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline/dpo_clm.py \
+python ../dpo_pipeline/dpo_clm.py \
         --model_name_or_path "./finetuned_model_lora" \
         --output_dir "./finetuned_model_lora_plus_dpo" \
         --per_device_train_batch_size 8 \

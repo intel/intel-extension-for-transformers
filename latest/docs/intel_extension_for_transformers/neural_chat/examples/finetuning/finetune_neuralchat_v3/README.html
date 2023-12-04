@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+g320a059 documentation</title>
+  <title>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+gb94e07a documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -102,7 +102,7 @@
 <p>IMPORTANT: Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
 <p>To run finetuning on Intel Gaudi2, please execute below steps</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
-<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/neural_chat/docker/finetuning/
+<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/neural_chat/docker/
 
 <span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--tag<span class="w"> </span>chatbot_finetuning:latest<span class="w"> </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">BASE_NAME</span><span class="o">=</span><span class="s2">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ARTIFACTORY_URL</span><span class="o">=</span><span class="s2">&quot;vault.habana.ai&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;1.10.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REVISION</span><span class="o">=</span><span class="s2">&quot;494&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">PT_VERSION</span><span class="o">=</span><span class="s2">&quot;2.0.1&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">OS_NUMBER</span><span class="o">=</span><span class="s2">&quot;2204&quot;</span>
 
@@ -134,7 +134,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
 <p>For Better aligning human preferences, we apply <a class="reference external" href="https://arxiv.org/pdf/2305.18290.pdf">Direct Preference Optimization</a> (DPO) algorithm, which is stable and computationally lightweight. The algorithm derives the probability of human preference data for the optimal policy to replace the reward model that reinforcement learning from human feedback (RLHF) needs and formulates a maximum likelihood objective for a parameterized policy.</p>
 <p>The preference dataset contains 12k examples selected from <a class="reference external" href="https://arxiv.org/abs/2306.02707">Orca</a> style dataset <a class="reference external" href="https://huggingface.co/datasets/Open-Orca/OpenOrca">Open-Orca/OpenOrca</a> and its completions that are generated from GPT-4 or GPT-3.5 are regarded as chosen response. In term of reject responses, we use <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">meta-llama/Llama-2-13b-chat-hf</a> model to generate corresponding completions automatically because maybe better rejected responses are also better for alignment.</p>
 <p>For details of the dataset and DPO training code, you can refer <a class="reference external" href="https://huggingface.co/datasets/Intel/orca_dpo_pairs">Intel/orca_dpo_pairs</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline">DPO example</a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">../../../../</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">finetuning</span><span class="o">/</span><span class="n">dpo_pipeline</span><span class="o">/</span><span class="n">dpo_clm</span><span class="o">.</span><span class="n">py</span> \
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">../</span><span class="n">dpo_pipeline</span><span class="o">/</span><span class="n">dpo_clm</span><span class="o">.</span><span class="n">py</span> \
         <span class="o">--</span><span class="n">model_name_or_path</span> <span class="s2">&quot;./finetuned_model_lora&quot;</span> \
         <span class="o">--</span><span class="n">output_dir</span> <span class="s2">&quot;./finetuned_model_lora_plus_dpo&quot;</span> \
         <span class="o">--</span><span class="n">per_device_train_batch_size</span> <span class="mi">8</span> \
@@ -177,7 +177,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f2fe9525570> 
+   <jinja2.runtime.BlockReference object at 0x7f84cd2b44f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
