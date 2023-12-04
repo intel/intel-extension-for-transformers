@@ -133,7 +133,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
   fprintf(stderr, "\n");
 }
 
-bool common_params_parse(int argc, char** argv, common_params& params) {
+bool common_params_parse(int argc, char** argv, common_params& params) {  // NOLINT
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
@@ -224,7 +224,7 @@ std::string gpt_random_prompt(std::mt19937& rng) {  // NOLINT
   return "The";
 }
 
-std::vector<int> gpt_random_ids(std::mt19937& rng) {
+std::vector<int> gpt_random_ids(std::mt19937& rng) {  // NOLINT
   const int l = rng() % 10 + 1;
   std::vector<int> res(l, 0);
   for (int i = 0; i < l; ++i) {
@@ -461,7 +461,7 @@ bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab) {
 }
 
 gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits, int top_k, double top_p, double temp,
-                                     std::mt19937& rng) {
+                                     std::mt19937& rng) {  // NOLINT
   int n_logits = vocab.id_to_token.size();
   std::vector<std::pair<double, gpt_vocab::id>> logits_id;
   logits_id.reserve(n_logits);
@@ -535,7 +535,7 @@ gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits
 gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float* logits,
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
-                                            float repeat_penalty, std::mt19937& rng) {
+                                            float repeat_penalty, std::mt19937& rng) {  // NOLINT
   int n_logits = vocab.id_to_token.size();
 
   const auto* plogits = logits;
@@ -660,7 +660,7 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr, "\n");
 }
 
-bool quant_params_parse(int argc, char** argv, quant_params& params) {
+bool quant_params_parse(int argc, char** argv, quant_params& params) {  // NOLINT
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
     if (arg == "--model_file") {
