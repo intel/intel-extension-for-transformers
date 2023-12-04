@@ -44,7 +44,7 @@
 #define WHISPER_USE_SCRATCH
 #define WHISPER_MAX_SCRATCH_BUFFERS 16
 
-// TODO: avoid dup code
+// avoid dup code
 int64_t model_time_us() { return ne_time_us(); }
 
 // available whisper models
@@ -1179,7 +1179,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
       if (ne_nelements(tensor) != nelements) {
         fprintf(stderr, "%s: tensor '%s' has wrong size in model file\n", __func__, name.data());
         fprintf(stderr, "%s: shape: [%d, %d, %d], expected: [%d, %d, %d]\n", __func__, ne[0], ne[1], ne[2],
-                (int)tensor->ne[0], (int)tensor->ne[1], (int)tensor->ne[2]);
+                static_cast<int>(tensor->ne[0]), static_cast<int>(tensor->ne[1]), static_cast<int>(tensor->ne[2]));
         return false;
       }
 
@@ -1187,7 +1187,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
         fprintf(stderr,
                 "%s: tensor '%s' has wrong shape in model file: got [%d, %d, "
                 "%d], expected [%d, %d, %d]\n",
-                __func__, name.data(), (int)tensor->ne[0], (int)tensor->ne[1], (int)tensor->ne[2], ne[0], ne[1], ne[2]);
+                __func__, name.data(), static_cast<int>(tensor->ne[0]), static_cast<int>(tensor->ne[1]), static_cast<int>(tensor->ne[2]), ne[0], ne[1], ne[2]);
         return false;
       }
 
@@ -1209,7 +1209,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
               "%s: WARN no tensors loaded from model file - assuming empty "
               "model for testing\n",
               __func__);
-    } else if (model.n_loaded != (int)model.tensors.size()) {
+    } else if (model.n_loaded != static_cast<int>(model.tensors.size())) {
       fprintf(stderr,
               "%s: ERROR not all tensors loaded from model file - expected "
               "%zu, got %d\n",
@@ -1263,7 +1263,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
   struct ne_tensor* mel = ne_new_tensor_2d(ctx0, NE_TYPE_F32, 2 * n_ctx, n_mels, NE_SIZE_CALC);
   assert(mel->type == NE_TYPE_F32);
   {
-    float* dst = (float*)mel->data;
+    float* dst = reinterpret_cast<float*>(mel->data);
     memset(dst, 0, ne_nbytes(mel));
 
     const int i0 = std::min(mel_offset, mel_inp.n_len);
@@ -1394,7 +1394,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
         struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
         struct ne_tensor* KQ_scaled =
-            ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_state) / n_head)));
+            ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>(n_state) / n_head)));
 
         struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_scaled);
 
@@ -1525,7 +1525,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
   {
     struct ne_cgraph gf = {};
 
-    // TODO: hack to disconnect the encoded features from the previous graph
+    // hack to disconnect the encoded features from the previous graph
     cur->op = NE_OP_NONE;
     cur->src0 = nullptr;
     cur->src1 = nullptr;
@@ -1537,7 +1537,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
       struct ne_tensor* Kcross = ne_mul_mat(ctx0, layer.cross_attn_k_w, cur);
 
-      Kcross = ne_scale_inplace(ctx0, Kcross, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+      Kcross = ne_scale_inplace(ctx0, Kcross, ne_new_f32(ctx0, pow(static_cast<float>(n_state) / n_head, -0.25)));
 
       wstate.use_buf(ctx0, 1);
 
@@ -1632,7 +1632,7 @@ static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate
 
   struct ne_tensor* position = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   for (int i = 0; i < N; ++i) {
-    ((int32_t*)position->data)[i] = n_past + i;
+    (reinterpret_cast<int32_t*>(position->data))[i] = n_past + i;
   }
 
   wstate.use_buf(ctx0, 3);
@@ -1662,12 +1662,12 @@ static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate
 
       Qcur = ne_add(ctx0, ne_repeat(ctx0, layer.attn_q_b, Qcur), Qcur);
 
-      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(static_cast<float>(n_state) / n_head, -0.25)));
 
       // note: no bias for Key
       struct ne_tensor* Kcur = ne_mul_mat(ctx0, layer.attn_k_w, cur);
 
-      Kcur = ne_scale_inplace(ctx0, Kcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+      Kcur = ne_scale_inplace(ctx0, Kcur, ne_new_f32(ctx0, pow(static_cast<float>(n_state) / n_head, -0.25)));
 
       // store key and value to memory
       {
@@ -1761,7 +1761,7 @@ static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate
 
       Qcur = ne_add(ctx0, ne_repeat(ctx0, layer.cross_attn_q_b, Qcur), Qcur);
 
-      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(static_cast<float>(n_state) / n_head, -0.25)));
 
       // Kcross is already scaled
       struct ne_tensor* Kcross = ne_reshape_3d(
@@ -2292,7 +2292,7 @@ struct whisper_context* whisper_init_from_file_no_state(const char* path_model) 
 
   loader.read = [](void* ctx, void* output, size_t read_size) {
     std::ifstream* fin = (std::ifstream*)ctx;
-    fin->read((char*)output, read_size);
+    fin->read(reinterpret_cast<char*>(output), read_size);
     return read_size;
   };
 
@@ -2534,7 +2534,7 @@ int whisper_decode_with_state(struct whisper_context* ctx, struct whisper_state*
 }
 
 int whisper_decode(struct whisper_context* ctx, const whisper_token* tokens, int n_tokens, int n_past, int n_threads) {
-  // TODO: add selected_decoder_id to state
+  // add selected_decoder_id to state
   const int selected_decoder_id = 0;
 
   if (ctx->state == nullptr) {
@@ -2554,8 +2554,8 @@ int whisper_decode(struct whisper_context* ctx, const whisper_token* tokens, int
 int whisper_tokenize(struct whisper_context* ctx, const char* text, whisper_token* tokens, int n_max_tokens) {
   const auto res = tokenize(ctx->vocab, text);
 
-  if (n_max_tokens < (int)res.size()) {
-    fprintf(stderr, "%s: too many resulting tokens: %d (max %d)\n", __func__, (int)res.size(), n_max_tokens);
+  if (n_max_tokens < static_cast<int>(res.size())) {
+    fprintf(stderr, "%s: too many resulting tokens: %d (max %d)\n", __func__, static_cast<int>(res.size()), n_max_tokens);
     return -1;
   }
 
@@ -2891,13 +2891,13 @@ struct whisper_full_params whisper_full_default_params(enum whisper_sampling_str
   switch (strategy) {
     case WHISPER_SAMPLING_GREEDY: {
       result.greedy = {
-          /*.best_of   =*/2,  // TODO: increase to 5 when we speed-up batch
+          /*.best_of   =*/2,  // increase to 5 when we speed-up batch
                               // decoding
       };
     } break;
     case WHISPER_SAMPLING_BEAM_SEARCH: {
       result.beam_search = {
-          /*.beam_size =*/2,  // TODO: increase to 5 when we speed-up batch
+          /*.beam_size =*/2,  // increase to 5 when we speed-up batch
                               // decoding
 
           /*.patience  =*/-1.0f,
@@ -3033,7 +3033,7 @@ static void whisper_process_logits(struct whisper_context& ctx, struct whisper_s
 
     // suppress sot and nosp tokens
     logits[vocab.token_sot] = -INFINITY;
-    logits[vocab.token_nosp] = -INFINITY;  // TODO: ignore this token for now
+    logits[vocab.token_nosp] = -INFINITY;  // ignore this token for now
 
     // [TDRZ] when tinydiarize is disabled, suppress solm token
     if (params.tdrz_enable == false) {
@@ -3100,7 +3100,7 @@ static void whisper_process_logits(struct whisper_context& ctx, struct whisper_s
     // ref:
     // https://github.com/openai/whisper/blob/0b1ba3d46ebf7fe6f953acfd8cad62a4f851b49f/whisper/decoding.py#L426-L429
     if (is_initial && params.max_initial_ts > 0.0f) {
-      const float precision = float(WHISPER_CHUNK_SIZE) / ctx.model.hparams.n_audio_ctx;
+      const float precision = static_cast<float>(WHISPER_CHUNK_SIZE) / ctx.model.hparams.n_audio_ctx;
       const int tid0 = std::round(params.max_initial_ts / precision);
 
       for (int i = vocab.token_beg + tid0 + 1; i < n_logits; ++i) {
@@ -3386,7 +3386,7 @@ static void whisper_sequence_score(const struct whisper_full_params& params, whi
     }
 
     for (const auto& kv : token_counts) {
-      const auto p = kv.second / (double)cnt;
+      const auto p = kv.second / static_cast<double>(cnt);
       entropy -= p * log(p);
 
       // NE_PRINT_DEBUG("entropy: %d %f %f, count %d\n", kv.first, p, log(p),
@@ -3475,7 +3475,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
     case WHISPER_SAMPLING_BEAM_SEARCH: {
       n_decoders = std::max(params.greedy.best_of, params.beam_search.beam_size);
     } break;
-  };
+  }
 
   n_decoders = std::max(1, n_decoders);
 
@@ -3616,7 +3616,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
     int best_decoder_id = 0;
 
-    for (int it = 0; it < (int)temperatures.size(); ++it) {
+    for (int it = 0; it < static_cast<int>(temperatures.size()); ++it) {
       const float t_cur = temperatures[it];
 
       int n_decoders_cur = 1;
@@ -3634,7 +3634,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
             n_decoders_cur = params.beam_search.beam_size;
           }
         } break;
-      };
+      }
 
       n_decoders_cur = std::max(1, n_decoders_cur);
 
@@ -3670,7 +3670,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         // if we have already generated some text, use it as a prompt to
         // condition the next generation
         if (!prompt_past.empty() && t_cur < 0.5f && params.n_max_text_ctx > 0) {
-          int n_take = std::min(std::min(params.n_max_text_ctx, whisper_n_text_ctx(ctx) / 2), int(prompt_past.size()));
+          int n_take = std::min(std::min(params.n_max_text_ctx, whisper_n_text_ctx(ctx) / 2), static_cast<int>(prompt_past.size()));
 
           prompt = {whisper_token_prev(ctx)};
           prompt.insert(prompt.begin() + 1, prompt_past.end() - n_take, prompt_past.end());
@@ -3680,7 +3680,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         prompt.insert(prompt.end(), prompt_init.begin(), prompt_init.end());
         // print the prompt
         NE_PRINT_DEBUG("\n\n");
-        for (int i = 0; i < (int)prompt.size(); i++) {
+        for (int i = 0; i < static_cast<int>(prompt.size()); i++) {
           NE_PRINT_DEBUG("%s: prompt[%d] = %s\n", __func__, i, ctx->vocab.id_to_token.at(prompt[i]).c_str());
         }
         NE_PRINT_DEBUG("\n\n");
@@ -3772,7 +3772,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
                 // beam_candidates.back().sequence.sum_logprobs_all);
               }
             } break;
-          };
+          }
         }
 
         // for beam-search, choose the top candidates and update the KV caches
@@ -3839,7 +3839,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
               // do not allow to go back in time
               if (has_ts && seek_delta > seek_delta_new && result_len < i) {
-                failed = true;  // TODO: maybe this is not a failure ?
+                failed = true;  // maybe this is not a failure ?
                 continue;
               }
 
@@ -3996,7 +3996,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
       // do fallback only if:
       // - we are not at the last temperature
       // - we are not at the end of the audio (3 sec)
-      if (it != (int)temperatures.size() - 1 && seek_end - seek > 10 * WHISPER_CHUNK_SIZE) {
+      if (it != static_cast<int>(temperatures.size()) - 1 && seek_end - seek > 10 * WHISPER_CHUNK_SIZE) {
         bool success = true;
 
         const auto& decoder = state->decoders[best_decoder_id];
@@ -4052,7 +4052,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         std::string text;
         bool speaker_turn_next = false;
 
-        for (int i = 0; i < (int)tokens_cur.size(); i++) {
+        for (int i = 0; i < static_cast<int>(tokens_cur.size()); i++) {
           // printf("%s: %18s %6.3f %18s %6.3f\n", __func__,
           //         ctx->vocab.id_to_token[tokens_cur[i].id].c_str(),
           //         tokens_cur[i].p,
@@ -4109,7 +4109,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
               }
             }
             text = "";
-            while (i < (int)tokens_cur.size() && tokens_cur[i].id > whisper_token_beg(ctx)) {
+            while (i < static_cast<int>(tokens_cur.size()) && tokens_cur[i].id > whisper_token_beg(ctx)) {
               i++;
             }
             i--;
@@ -4135,7 +4135,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           }
 
           result_all.push_back({tt0, tt1, text, {}, speaker_turn_next});
-          for (int j = i0; j < (int)tokens_cur.size(); j++) {
+          for (int j = i0; j < static_cast<int>(tokens_cur.size()); j++) {
             result_all.back().tokens.push_back(tokens_cur[j]);
           }
 
@@ -4161,7 +4161,6 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
       NE_PRINT_DEBUG("seek = %d, seek_delta = %d\n", seek, seek_delta);
     }
   }
-
   return 0;
 }
 

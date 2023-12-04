@@ -1,3 +1,4 @@
+//  Copyright (c) 2023 Intel Corporation
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -31,7 +32,7 @@ std::string to_timestamp(int64_t t, bool comma) {
 }
 
 int timestamp_to_sample(int64_t t, int n_samples) {
-  return std::max(0, std::min((int)n_samples - 1, (int)((t * WHISPER_SAMPLE_RATE) / 100)));
+  return std::max(0, std::min(static_cast<int>(n_samples) - 1, static_cast<int>(((t * WHISPER_SAMPLE_RATE) / 100))));
 }
 
 bool whisper_params_parse(int argc, char** argv, whisper_params& params) {
