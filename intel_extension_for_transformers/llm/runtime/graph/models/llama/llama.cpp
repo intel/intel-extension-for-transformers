@@ -151,7 +151,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
 #ifdef NE_TP_MODEL
   if (enable_tp) {
     // need to broadcast the ids
-    broadcast(p_ctx, (float*)embd->data, N * ne_element_size(embd));
+    broadcast(p_ctx, reinterpret_cast<float*>(embd->data), N * ne_element_size(embd));
   }
 #endif
 
@@ -195,7 +195,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    const float attn_scale = 1.0f / sqrtf(float(head_size));
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_size));
     if (!run_mha_reordered) {
       // store key and value to memory
       {
@@ -410,11 +410,11 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
     }
   }
 
@@ -423,7 +423,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)), sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
