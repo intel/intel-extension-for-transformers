@@ -70,7 +70,7 @@ template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, const int lda,
                        jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
                        jblas::parallel::IThreading* th) {
-  using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
+  using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
@@ -114,8 +114,15 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
         if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
           // Do we need US for AMX_INT8
           if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
-            JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
-                                                             DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
+            static_assert(tAMX_INT8_SS_KBlock::NTILE == tAVX512_VNNI_KBlock::NTILE);
+            if (M <= tAVX512_VNNI_KBlock::MTILE) {
+              JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
+                                                               DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
+            } else {
+              JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
+                                                               DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
+            }
+
           } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
             JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
                                                              DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
