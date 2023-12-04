@@ -1187,7 +1187,8 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
         fprintf(stderr,
                 "%s: tensor '%s' has wrong shape in model file: got [%d, %d, "
                 "%d], expected [%d, %d, %d]\n",
-                __func__, name.data(), static_cast<int>(tensor->ne[0]), static_cast<int>(tensor->ne[1]), static_cast<int>(tensor->ne[2]), ne[0], ne[1], ne[2]);
+                __func__, name.data(), static_cast<int>(tensor->ne[0]), static_cast<int>(tensor->ne[1]),
+                static_cast<int>(tensor->ne[2]), ne[0], ne[1], ne[2]);
         return false;
       }
 
@@ -2555,7 +2556,8 @@ int whisper_tokenize(struct whisper_context* ctx, const char* text, whisper_toke
   const auto res = tokenize(ctx->vocab, text);
 
   if (n_max_tokens < static_cast<int>(res.size())) {
-    fprintf(stderr, "%s: too many resulting tokens: %d (max %d)\n", __func__, static_cast<int>(res.size()), n_max_tokens);
+    fprintf(stderr, "%s: too many resulting tokens: %d (max %d)\n", __func__, static_cast<int>(res.size()),
+            n_max_tokens);
     return -1;
   }
 
@@ -3670,7 +3672,8 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         // if we have already generated some text, use it as a prompt to
         // condition the next generation
         if (!prompt_past.empty() && t_cur < 0.5f && params.n_max_text_ctx > 0) {
-          int n_take = std::min(std::min(params.n_max_text_ctx, whisper_n_text_ctx(ctx) / 2), static_cast<int>(prompt_past.size()));
+          int n_take = std::min(std::min(params.n_max_text_ctx, whisper_n_text_ctx(ctx) / 2),
+                                static_cast<int>(prompt_past.size()));
 
           prompt = {whisper_token_prev(ctx)};
           prompt.insert(prompt.begin() + 1, prompt_past.end() - n_take, prompt_past.end());
