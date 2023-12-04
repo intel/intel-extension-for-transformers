@@ -305,22 +305,12 @@ class WeightPackBatchBf16Base {
   using WType = typename GemmCore_T::BType;      // weight type
   using SType = T_SRC;                           // source type (before packed)
   using StorageType = StoragePackedWeightBatch;  // packed weight type
-  using Scheduler [[deprecated]] = jblas::parallel::Scheduler2D;
 
   struct Param {
     const SType* B;
     const int ldb;
     const StorageType* packedW;
   };
-
-  // additional parameter to pack weight at runtime
-  // struct PackParam {
-  //   SType* src;
-  //   int ld;
-  //   std::function<int(int)> step_batch;
-  //   int K;
-  //   int N;
-  // };
 
   JBLAS_CODE getWeight(...) = delete;
 
@@ -343,24 +333,6 @@ class WeightPackBatchBf16Base {
   }
 
   JBLAS_CODE packWeight(...) = delete;
-
-  /**
-   * @brief Create a Parallel object (batch major)
-   *
-   * @param b batch dim size
-   * @param k K dim size (or N dim for transposed pack)
-   * @param bblock batch dim block
-   * @param kblock
-   * @return Parallel
-   */
-  [[deprecated]] Scheduler createParallel(int b, int k, int bblock, int kblock, int n_thr) {
-    return Scheduler({n_thr, b, k, bblock, kblock});
-  }
-
-  /// Reorder job of a thread
-  void reorderT(const Param& p, jblas::parallel::ThreadProblem2D& thdp) {
-    assert(false);  // Use the overload function
-  }
 };
 
 template <class GemmCore_T, JBLAS_ISA ISA_T, typename T_SRC = typename GemmCore_T::BType>
@@ -645,14 +617,10 @@ class LauncherBaseWeight                          //
 template </* class Parallel_T, */ class L_ExpSum, class L_Scale>
 class MHAInterface {
  public:
-  // using PC_QK = typename L_ExpSum::ParallelConfig;
-  // using PC_PV = typename L_Scale::ParallelConfig;
-
   using PrologueQ = typename L_ExpSum::PrologueA;
   using PrologueK = typename L_ExpSum::PrologueB;
   using QKProQArgs = typename PrologueQ::Param;
   using QKProKArgs = typename PrologueK::Param;
-  // using QKProKPackArgs = typename PrologueK::PackParam;
   using QKArgs = typename L_ExpSum::Param;
   using QKEpiArgs = typename L_ExpSum::EpiParam;
 
@@ -660,7 +628,6 @@ class MHAInterface {
   using PrologueV = typename L_Scale::PrologueB;
   using PVProPArgs = typename PrologueS::Param;
   using PVProVArgs = typename PrologueV::Param;
-  // using PVProVPackArgs = typename PrologueV::PackParam;
   using PVArgs = typename L_Scale::Param;
   using PVEpiArgs = typename L_Scale::EpiParam;
 
@@ -681,7 +648,7 @@ class MHAInterface {
     assert(p.step_v_head_size == 1);
     assert(p.step_k_head_size == 1 || p.step_k_sl == 1);
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
-    jblas::device::CpuBase cb;
+    jblas::device::CpuBase cb;                         // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
 
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
     const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
@@ -705,12 +672,6 @@ class MHAInterface {
     const auto K_pack_batch_off = K_pack.mKPad * K_pack.mNPad;
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
-    // prepare parallel scheme for packed weight
-    // const auto paralK = p.step_k_head_size == 1
-    //                         ? l_expsum.mProB.createParallel(num_heads, p.sl_kv, 1, GemmQK::NTILE)
-    //                         : l_expsum.mProB.createParallel(num_heads, p.head_size, 1, GemmQK::KTILE);
-    // const auto paralV = l_scale.mProB.createParallel(num_heads, p.sl_kv, 1, GemmPV::KTILE);
-
     const auto step_batch_k = [step_bs = p.step_k_bs, step_hn = p.step_k_head_num, hn = p.heads_kv](int ibat) {
       return (ibat / hn) * step_bs + (ibat % hn) * step_hn;
     };
@@ -718,24 +679,22 @@ class MHAInterface {
       return (ibat / hn) * step_bs + (ibat % hn) * step_hn;
     };
 
-    const auto schK =
-        p.step_k_head_size == 1
-            ? typename jblas::parallel::Scheduler2D({th.num_threads(), {num_heads, p.sl_kv}, {1, GemmQK::NTILE}})
-            : typename jblas::parallel::Scheduler2D({th.num_threads(), {num_heads, p.head_size}, {1, GemmQK::KTILE}});
-    const auto schV =
-        typename jblas::parallel::Scheduler2D({th.num_threads(), {num_heads, p.sl_kv}, {1, GemmPV::KTILE}});
+    // prepare parallel scheduler for packed weight
+    using Scheduler2D = typename jblas::parallel::Scheduler2D;
+    using ThreadProblem2D = typename jblas::parallel::ThreadProblem2D;
+    const auto schK = p.step_k_head_size == 1
+                          ? Scheduler2D({th.num_threads(), {num_heads, p.sl_kv}, {1, GemmQK::NTILE}})
+                          : Scheduler2D({th.num_threads(), {num_heads, p.head_size}, {1, GemmQK::KTILE}});
+    const auto schV = Scheduler2D({th.num_threads(), {num_heads, p.sl_kv}, {1, GemmPV::KTILE}});
 
     const MHAProblem problem = {p.batch_size, p.head_num, p.heads_kv, p.head_size, p.sl_q, p.sl_kv};
-    // Parallel2DRowMajor parl;  // w1&w3 from Seq* Fin=>FMid
     const auto m_tiles = updiv(p.sl_q, M_TILE);
     const auto num_tasks = num_heads * m_tiles;
-    // parl.update(num_tasks, 1, 1, 1, cb.mNumThreads);
-    using Scheduler2D = typename jblas::parallel::Scheduler2D;
     const Scheduler2D parl({th.num_threads(), {num_tasks, 1}, {1, 1}});
 
     th.parallel_for([&](int tid) {
       {  // reorder K & V
-        typename jblas::parallel::ThreadProblem2D thdpK{tid};
+        ThreadProblem2D thdpK{tid};
         schK.getIndex(thdpK);
         l_expsum.mProB.run(  // pack K
             QKProKArgs{
@@ -745,7 +704,7 @@ class MHAInterface {
             },
             thdpK, step_batch_k);
 
-        typename jblas::parallel::ThreadProblem2D thdpV{tid};
+        ThreadProblem2D thdpV{tid};
         schV.getIndex(thdpV);
         l_scale.mProB.run(  // pack V
             PVProVArgs{
@@ -762,7 +721,7 @@ class MHAInterface {
       {
         const int tmp_exp_size = M_TILE * padto(p.sl_kv, GemmQK::NTILE) * sizeof(ne_bf16_t);  // TODO
         const auto tmp = p.tmp + tid * tmp_exp_size;
-        typename jblas::parallel::ThreadProblem2D thdp{tid};
+        ThreadProblem2D thdp{tid};
         parl.getIndex(thdp);
         const auto [task_start, _assert0] = thdp.loc;
         auto [task_size, _assert_max1] = thdp.size;
@@ -1321,9 +1280,6 @@ class MHAStableInterface {
   }
 
  public:
-  // using PC_QK = typename L_Max::ParallelConfig;
-  // using PC_PV = typename L_Scale::ParallelConfig;
-
   using PrologueQ = typename L_Max::PrologueA;
   using PrologueK = typename L_Max::PrologueB;
   using QKProQArgs = typename PrologueQ::Param;
@@ -1372,7 +1328,7 @@ class MHAStableInterface {
     assert((p.K_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_v_head_size == 1));
     assert((p.V_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_k_sl == 1));
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
-    jblas::device::CpuBase cb;
+    jblas::device::CpuBase cb;                         // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
     const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
     assert(!is_causal || p.sl_q <= p.sl_kv);
@@ -1385,12 +1341,11 @@ class MHAStableInterface {
     const float m0 = powf(2.0f, -(8.f) / n_heads_log2_floor);
     const float m1 = powf(2.0f, -(8.f / 2.0f) / n_heads_log2_floor);
 
-    // Parallel2DRowMajor parl;  // main parallel scheme
     const auto m_tiles = updiv(p.sl_q, M_TILE);
     const auto num_tasks = num_heads * m_tiles;
+
     using Scheduler2D = typename jblas::parallel::Scheduler2D;
-    const Scheduler2D parl({th.num_threads(), {num_tasks, 1}, {1, 1}});  // main parallel scheme
-    // parl.update(num_tasks, 1, 1, 1, cb.mNumThreads);
+    const Scheduler2D parl({th.num_threads(), {num_tasks, 1}, {1, 1}});  // main parallel scheduler
 
     th.parallel_for([&](int tid) {
       const int tmp_s_size = M_TILE * padto(padto(p.sl_kv, GemmQK::NTILE), GemmPV::KTILE);
@@ -2078,10 +2033,9 @@ class TestMhaDese {
     CheckISA(AMX_BF16);
     GetCPUDevice();
     jblas_set_threads(std::min(_cd->getThreads(), omp_get_max_threads()));
-
     jblas::utils::request_perm_xtile_data();
+
 #if CompileFP16()
-    // TODO(Yi): Disable as there are some bugs for the new jblas
     ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE);
     ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE);
     ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE);
@@ -2104,7 +2058,6 @@ class TestMhaDese {
     ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, true);
 #endif
 
-    // TODO(Yi): Disable as there are some bugs for the new jblas
     const auto s8layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK4;
     ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, s8layout);
     ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, s8layout);
