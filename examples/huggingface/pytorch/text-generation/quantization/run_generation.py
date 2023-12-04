@@ -69,12 +69,18 @@ parser.add_argument(
     help="Weight-only parameter.",
 )
 parser.add_argument(
-    "--woq_dtype",
+    "--woq_weight_dtype",
     type=str,
     default="int8",
     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
 )
-parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument(
+    "--woq_compute_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "bf16", "int8"],
+)
+parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
@@ -174,7 +180,10 @@ elif args.sq:
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
-        compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32
+        compute_dtype=args.woq_compute_dtype,
+        weight_dtype=args.woq_weight_dtype,
+        scheme=args.woq_scheme,
+        group_size=args.woq_group_size,
     )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:

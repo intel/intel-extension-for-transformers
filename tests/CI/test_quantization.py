@@ -334,7 +334,7 @@ class TestQuantization(unittest.TestCase):
 
         # weight-only
         #RTN
-        woq_config = WeightOnlyQuantConfig()
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
@@ -342,7 +342,10 @@ class TestQuantization(unittest.TestCase):
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -6.498642921447754, rel_tol=1e-04))
         #AWQ
-        woq_config = WeightOnlyQuantConfig(calib_iters=5, tokenizer=tokenizer, algorithm="AWQ")
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
+                                           calib_iters=5,
+                                           tokenizer=tokenizer,
+                                           algorithm="AWQ")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
@@ -350,7 +353,10 @@ class TestQuantization(unittest.TestCase):
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.122483253479004, rel_tol=1e-04))
         #TEQ
-        woq_config = WeightOnlyQuantConfig(calib_iters=5, tokenizer=tokenizer, algorithm="TEQ")
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
+                                           calib_iters=5,
+                                           tokenizer=tokenizer,
+                                           algorithm="TEQ")
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config,
                                                     use_llm_runtime=False
