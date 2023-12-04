@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+gcaa715f documentation</title>
+  <title>How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2 &mdash; Intel® Extension for Transformers 0.1.dev1+g0a384c9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -99,14 +99,17 @@
 <section id="prepare-environment">
 <h2>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h2>
 <p>In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.</p>
-<p>IMPORTANT: Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
+<p><strong>IMPORTANT:</strong> Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.</p>
 <p>To run finetuning on Intel Gaudi2, please execute below steps</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
-<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/neural_chat/docker/
+<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers
 
-<span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--tag<span class="w"> </span>chatbot_finetuning:latest<span class="w"> </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">BASE_NAME</span><span class="o">=</span><span class="s2">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ARTIFACTORY_URL</span><span class="o">=</span><span class="s2">&quot;vault.habana.ai&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;1.10.0&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REVISION</span><span class="o">=</span><span class="s2">&quot;494&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">PT_VERSION</span><span class="o">=</span><span class="s2">&quot;2.0.1&quot;</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">OS_NUMBER</span><span class="o">=</span><span class="s2">&quot;2204&quot;</span>
+docker<span class="w"> </span>build<span class="w"> </span>--no-cache<span class="w"> </span>./<span class="w"> </span>--target<span class="w"> </span>hpu<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">REPO</span><span class="o">=</span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">ITREX_VER</span><span class="o">=</span>main<span class="w"> </span>-f<span class="w"> </span>./intel_extension_for_transformers/neural_chat/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetuning:latest
 
 docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--runtime<span class="o">=</span>habana<span class="w"> </span>-e<span class="w"> </span><span class="nv">HABANA_VISIBLE_DEVICES</span><span class="o">=</span>all<span class="w"> </span>-e<span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none<span class="w"> </span>--cap-add<span class="o">=</span>sys_nice<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>chatbot_finetuning:latest
+
+<span class="c1"># after entering docker container</span>
+<span class="nb">cd</span><span class="w"> </span>examples/finetuning/finetune_neuralchat_v3
 </pre></div>
 </div>
 </section>
@@ -146,7 +149,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
         <span class="o">--</span><span class="n">lora_alpha</span> <span class="mi">16</span> \
         <span class="o">--</span><span class="n">lora_rank</span> <span class="mi">16</span> \
         <span class="o">--</span><span class="n">lora_dropout</span> <span class="mf">0.05</span> \
-        <span class="o">--</span><span class="n">dataset_name</span> <span class="o">/</span><span class="n">lkk</span><span class="o">/</span><span class="n">orca_dpo_pairs</span> \
+        <span class="o">--</span><span class="n">dataset_name</span> <span class="n">Intel</span><span class="o">/</span><span class="n">orca_dpo_pairs</span> \
         <span class="o">--</span><span class="n">bf16</span> \
         <span class="o">--</span><span class="n">max_length</span> <span class="mi">1536</span> \
         <span class="o">--</span><span class="n">max_prompt_length</span> <span class="mi">1024</span> \
@@ -177,7 +180,7 @@ docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc023569c00> 
+   <jinja2.runtime.BlockReference object at 0x7fe0659f8fa0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
