@@ -106,7 +106,7 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
   */
   struct ne_tensor* position = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   for (int i = 0; i < N; ++i) {
-    ((int32_t*)position->data)[i] = n_past + i + OPT_POS_EMBD_OFFS;
+    (reinterpret_cast<int32_t*>(position->data))[i] = n_past + i + OPT_POS_EMBD_OFFS;
   }
 
   // wte + wpe
@@ -201,7 +201,7 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
       // [n_past + N, N, n_head]
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>((n_embd) / n_head))));
 
       // KQ_masked = mask_past(KQ_scaled)
       // [n_past + N, N, n_head]
@@ -337,11 +337,11 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
     }
   }
 
@@ -350,7 +350,7 @@ static bool opt_model_eval_internal(model_context* ctx, const model_input* input
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)), sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
