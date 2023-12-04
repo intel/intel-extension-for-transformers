@@ -20,7 +20,7 @@ enum JBLAS_CODE {
   JblasRuntimeError = 4,
   JblasNotSupport = 8,
 };
-enum JBLAS_ISA : uint32_t {
+enum JBLAS_ISA : uint8_t {
   JblasNoSIMD = 0,
   JblasAVX,
   JblasAVX2,
