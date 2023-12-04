@@ -7537,8 +7537,8 @@ static void ne_compute_forward_padding_mask_f32(const struct ne_compute_params* 
   assert(dst->nb[0] == sizeof(float));
   assert(src0->nb[0] == sizeof(float));
 
-  ne_attention_padding_mask_f32_forward(bs, nz, nr, ith, nth, src1->data + PM_PARAMS_NUM * ne_element_size(src1), value,
-                                        dst);
+  ne_attention_padding_mask_f32_forward(bs, nz, nr, ith, nth, (char*)src1->data + PM_PARAMS_NUM * ne_element_size(src1),
+                                        value, dst);
 }
 
 static void ne_compute_forward_padding_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
