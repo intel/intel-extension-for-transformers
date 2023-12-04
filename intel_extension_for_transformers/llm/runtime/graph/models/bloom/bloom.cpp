@@ -131,8 +131,7 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
     // self-attention
     {
       struct ne_tensor* Qcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0 * sizeof(float) * n_embd);
-      struct ne_tensor* Kcur =
-          ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);
+      struct ne_tensor* Kcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);
       struct ne_tensor* Vcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2 * sizeof(float) * n_embd);
 
       // store key and value to memory
@@ -163,7 +162,8 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled = ne_scale(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled =
+          ne_scale(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>(n_embd) / n_head)));
 
       // Alibi
       // KQ_scaled_alibi = KQ_scaled + alibi_bias
@@ -280,7 +280,8 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -289,7 +290,8 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {

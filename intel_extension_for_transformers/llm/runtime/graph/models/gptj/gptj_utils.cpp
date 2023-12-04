@@ -115,8 +115,8 @@ void GPTJ::load(model_context* ctx, model_progress_callback progress_callback, v
   model.others[2] = ml->get_tensor("transformer.ln_f.bias", {n_embd}, NE_BACKEND_CPU);
   model.others[3] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab},
                                    n_gpu_layer > static_cast<int>(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
-  model.others[4] =
-      ml->get_tensor("lm_head.bias", {n_vocab}, n_gpu_layer > static_cast<int>(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
+  model.others[4] = ml->get_tensor("lm_head.bias", {n_vocab},
+                                   n_gpu_layer > static_cast<int>(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
 
   const int i_gpu_start = n_layer - n_gpu_layer;
 

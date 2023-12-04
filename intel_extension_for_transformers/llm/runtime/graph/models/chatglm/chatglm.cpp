@@ -320,7 +320,8 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
 #pragma omp parallel for
     for (int i = 0; i < batch_size; ++i) {
       memcpy(embedding_out.data() + (i * n_embd),
-             reinterpret_cast<float*>(ne_get_data(embeddings)) + (i * n_embd * N) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+             reinterpret_cast<float*>(ne_get_data(embeddings)) + (i * n_embd * N) + (n_embd * (N - 1)),
+             sizeof(float) * n_embd);
     }
   }
 
