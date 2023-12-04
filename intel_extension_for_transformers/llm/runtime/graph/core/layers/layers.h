@@ -13,3 +13,6 @@
 //  limitations under the License.
 #include "ele_wise.h"
 #include "ele_reduce.h"
+
+#include "conv.h"
+#include "memory.h"

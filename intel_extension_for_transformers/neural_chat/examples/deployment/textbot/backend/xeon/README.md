@@ -1,5 +1,6 @@
 This README is intended to guide you through setting up the backend for a text chatbot using the NeuralChat framework. You can deploy this text chatbot on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
 
+This textbot shows how to deploy chatbot backend on Intel XEON Scalable Processors.
 
 # Setup Conda
 

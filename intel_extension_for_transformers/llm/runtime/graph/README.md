@@ -5,7 +5,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
 - Utilize AMX, VNNI, AVX512F and AVX2 instruction set
-- Support CPU (x86 platforms only) and initial (Intel) GPU
+- Support CPU (x86 platforms only) and Intel GPU (WIP)
 - Support 4bits and 8bits quantization
 
 > LLM Runtime is under active development so APIs are subject to change.
@@ -87,7 +87,7 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM, 
 
 # Download Hugging Face GPTQ model to local path
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(from_gptq=True, use_cache=True)
+woq_config = WeightOnlyQuantConfig(use_gptq=True)
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -128,7 +128,6 @@ Argument description of WeightOnlyQuantConfig:
 | scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
 | use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
-| use_cache         | Bool        | Use local quantized model if file exists (default: False)                               |
 
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
@@ -178,8 +177,7 @@ while True:
         break
     b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
 ```
 
 Chat with ChatGLM2:
@@ -199,10 +197,28 @@ while True:
         break
     prompt = tokenizer.build_prompt(prompt)  # prompt template for chatglm2
     inputs = tokenizer([prompt], return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
-                num_beams=1, max_new_tokens=-1, ctx_size = 1024, do_sample=True, threads=28, repetition_penalty=1.1, n_keep=2)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True, n_keep=2)
 ```
 
+Chat with Qwen:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "Qwen/Qwen-7B-Chat"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    prompt = input("> ").strip()
+    if prompt == "quit":
+        break
+    prompt = "\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n".format(prompt)  # prompt template for qwen
+    inputs = tokenizer([prompt], return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
+```
 
 ## How to use: Python script
 Install from binary

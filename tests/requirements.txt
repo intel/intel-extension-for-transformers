@@ -7,7 +7,7 @@ onnx>=1.10
 onnxruntime
 --find-links https://download.pytorch.org/cpu/whl/torch_stable.html
 torch==2.1.0
-transformers==4.33
+transformers==4.34.1
 intel-tensorflow==2.13.0
 torchprofile
 intel-extension-for-pytorch
@@ -20,3 +20,7 @@ git+https://github.com/huggingface/optimum.git@fa8ad73de9063885476ee39dff7c0bffb
 git+https://github.com/huggingface/optimum-intel.git
 peft
 tyro
+bitsandbytes
+tiktoken
+transformers_stream_generator
+einops

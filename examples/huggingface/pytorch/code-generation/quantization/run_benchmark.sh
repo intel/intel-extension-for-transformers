@@ -13,7 +13,7 @@ function init_params {
   iters=100
   batch_size=1
   tuned_checkpoint=saved_results
-  lm_eval_tasks="openai_humaneval"
+  lm_eval_tasks="humaneval"
   script="run_generation.py"
   for var in "$@"
   do
@@ -67,10 +67,10 @@ function run_benchmark {
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy "
-	extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks} --allow_code_execution --n_samples 20 --batch_size 20 --do_sample"
-	batch_size=112
+	    extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks} --allow_code_execution --n_samples 20 --batch_size 20 --do_sample"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
+        extra_cmd=$extra_cmd" --batch_size ${batch_size}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -79,9 +79,8 @@ function run_benchmark {
 
     if [ "${topology}" = "starcoder_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/starcode_3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
+    elif [ "${topology}" = "codellama_7b" ]; then
+        model_name_or_path="codellama/CodeLlama-7b-hf"
     fi
 
 
@@ -95,7 +94,6 @@ function run_benchmark {
         python -u ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
-            --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     else

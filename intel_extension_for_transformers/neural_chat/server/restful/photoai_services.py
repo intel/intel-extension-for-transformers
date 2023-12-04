@@ -358,7 +358,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             img_face_list = mysql_db.fetch_all(sql=find_face_sql)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while selecting info from image_face: {e}")
+            raise Exception(f"Exception occurred while selecting info from image_face: {e}")
         logger.info(f"[background - face] reference image and faces: {img_face_list}")
         # wrong ref image found
         if img_face_list == ():
@@ -385,7 +385,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                mysql_db.insert(sql=insert_img_face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting info into image_face: {e}")
+            raise Exception(f"Exception occurred while inserting info into image_face: {e}")
         # current face matched and saved into db, delete from face_xywh_list
         logger.info(f'[background - face] image_face data inserted: {insert_img_face_sql}')
         if image_xywh in face_xywh_list:
@@ -408,7 +408,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 mysql_db.insert(sql=face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting new face into face_info: {e}")
+            raise Exception(f"Exception occurred while inserting new face into face_info: {e}")
         logger.info(f"[background - face] face {tag} inserted into db.")
         face_id = mysql_db.fetch_one(f"SELECT * FROM face_info WHERE face_tag='{tag}';")['face_id']
         logger.info(f"[background - face] new face id is: {face_id}")
@@ -419,7 +419,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 mysql_db.insert(sql=img_face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting new face into image_face: {e}")
+            raise Exception(f"Exception occurred while inserting new face into image_face: {e}")
         logger.info(f"[background - face] img_face {img_face_sql} inserted into db.")
     mysql_db._close()
     logger.info(f"[background - face] Image {image_id} face process finished.")

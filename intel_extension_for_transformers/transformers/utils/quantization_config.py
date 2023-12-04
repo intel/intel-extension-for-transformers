@@ -43,7 +43,6 @@ class WeightOnlyQuantConfig:
         algorithm="RTN",
         use_ggml=False,
         use_quant=True,
-        use_cache=False,
         use_gptq=False,
         **kwargs,
     ):
@@ -70,7 +69,6 @@ class WeightOnlyQuantConfig:
         self.calib_iters = kwargs.pop("calib_iters", 100)
         self.use_ggml = use_ggml
         self.use_quant = use_quant
-        self.use_cache = use_cache
         self.use_gptq = use_gptq
 
         if compute_dtype is None:
@@ -285,6 +283,7 @@ class SmoothQuantConfig:
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
     calib_iters: int = 100
+    calib_len: int = 512
     alpha: float = 0.5
     op_type_dict: dict = None
     op_name_dict: dict = None

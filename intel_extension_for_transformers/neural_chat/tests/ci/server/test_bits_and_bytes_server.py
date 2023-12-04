@@ -20,13 +20,14 @@ import unittest
 import time
 import os
 import json
+import torch
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
+from transformers.utils import is_bitsandbytes_available
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         if not (is_bitsandbytes_available() and torch.cuda.is_available()):
-            self.skipTest("Skipping this test on CPU.")
+            self.skipTest("Only test this UT case on Nvidia GPU.")
         yaml_file_path = "/intel-extension-for-transformers/" + \
             "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_bits_and_bytes.yaml"
         if os.path.exists(yaml_file_path):

@@ -1,32 +1,11 @@
 # Step-by-Step
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
-
-|Validated models| Smoothquant alpha |
-|---| ---|
-|[EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B)| 1.0 |
-|[decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf)| 0.7 |
-|[decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf)| 0.8 |
-|[lmsys/vicuna-7b-v1.3](https://huggingface.co/lmsys/vicuna-7b-v1.3)| 0.7 |
-|[meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| 1.0 |
-|[meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| 1.0 |
-|[databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-)| 0.5 |
-|[bigscience/bloom-560m](https://huggingface.co/bigscience/bloom-560m)| 0.5 |
-|[bigscience/bloom-1b7](https://huggingface.co/bigscience/bloom-1b7)| 0.5 |
-|[bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1)| 0.5 |
-|[bigscience/bloomz-560m](https://huggingface.co/bigscience/bloomz-560m)| 0.5 |
-|[bigscience/bloomz-1b7](https://huggingface.co/bigscience/bloomz-1b7)| 0.5 |
-|[bigscience/bloomz-7b1](https://huggingface.co/bigscience/bloomz-7b1)| 0.5 |
-|[facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b)| 0.5 |
-|[facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b)| 0.5 |
-|[facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b)| 0.5 |
-|[mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat)| 1.0 |
-|[Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1)| 1.0 |
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
 
 # Prerequisite​
 ## 1. Create Environment​
-Pytorch and Intel-extension-for-pytorch version 2.1 are required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
+Pytorch and Intel-extension-for-pytorch version 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
 pip install -r requirements.txt
@@ -61,6 +40,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --benchmark
 # smoothquant
 # [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+# --fallback_add option could be enabled to fallback all add-ops to FP32.
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --sq \

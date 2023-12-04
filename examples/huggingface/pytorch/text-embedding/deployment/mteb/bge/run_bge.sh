@@ -18,12 +18,12 @@
 #
 
 OUTPUT_DIR=$(pwd)
-LOG_NAME="bge_mrpc.log"
+LOG_NAME="bge_mteb.log"
 DATASET="mrpc"
 MODEL_NAME_OR_PATH="BAAI/bge-base-en-v1.5"
-BATCH_SIZE=8
+BATCH_SIZE=1
 WARM_UP=100
-SEQUENCE_LEN=128
+SEQUENCE_LEN=512
 ITERATION=1000
 PRECISION="int8"
 CACHE_DIR="./tmp"
@@ -129,7 +129,7 @@ else
     fi
     echo "tmp output, will remove later"${mode_cmd}
 
-    python run_glue.py \
+    python run_mteb.py \
         --model_name_or_path ${MODEL_NAME_OR_PATH} \
         --task_name ${DATASET} \
         --do_train \
@@ -149,25 +149,22 @@ if [[ ${PRECISION} = 'dynamic_int8' ]]; then
 fi
 if [[ ${MODE} == "accuracy" ]]; then
     echo "------------ACCURACY BENCHMARK---------"
+    rm -rf en_results
     python run_executor.py \
-      --input_model=${inference_model} \
-      --mode=$MODE \
-      --batch_size=${BATCH_SIZE} \
-      --seq_len=${SEQUENCE_LEN} \
-      --warm_up=${WARM_UP} \
-      --iteration=${ITERATION} \
-      --dataset_name=glue \
-      --task_name=${DATASET} \
-      --tokenizer_dir=./model_and_tokenizer \
-      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
-    status=$?
+        --input_model=${inference_model} \
+        --mode=accuracy \
+        --model_name_or_path ${MODEL_NAME_OR_PATH} \
+        --task_type STS \
+        --ort_model_path ./model_and_tokenizer/ --file_name ${PRECISION}-model.onnx \
+        ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-${MODE}-pipeline.log" 
+        status=$?
     if [ ${status} != 0 ]; then
         echo "Benchmark process returned non-zero exit code."
         exit 1
     fi
 elif [[ ${MODE} == "latency" ]]; then
-    echo "------------LATENCY BENCHMARK---------"
-    python run_executor.py \
+    echo "------------0 - 7---------"
+    numactl -m 0 -C 0-7 python run_executor.py \
       --input_model=${inference_model} \
       --mode="performance" \
       --batch_size=${BATCH_SIZE} \
