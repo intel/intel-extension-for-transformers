@@ -248,7 +248,7 @@ class StoragePackedWeightBatch : public jblas::storage::gemm::IWeightBase {
   jblas::storage::ObjectAlignedBuffer<NE_ALIGNMENT> mWBuf;
   // size_t mWSize;
 
-  explicit StoragePackedWeightBatch(uint32_t _core_id) : Base(_core_id), mBatch(0) {}
+  explicit StoragePackedWeightBatch(uint64_t _core_id) : Base(_core_id), mBatch(0) {}
   size_t resize(int NPad, int KPad, int N, int K, int num_batch, JBLAS_DTYPE dtype) {
     IWeightBase::resize(NPad, KPad, N, K, dtype);
     mBatch = num_batch;
