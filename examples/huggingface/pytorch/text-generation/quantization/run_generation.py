@@ -21,8 +21,6 @@ from intel_extension_for_transformers.transformers import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default=None)
-parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -61,6 +59,7 @@ parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
+parser.add_argument("--fallback_add", action="store_true", help="Whether to fallback add ops to FP32")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -70,18 +69,26 @@ parser.add_argument(
     help="Weight-only parameter.",
 )
 parser.add_argument(
-    "--woq_dtype",
+    "--woq_weight_dtype",
     type=str,
     default="int8",
     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
 )
-parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument(
+    "--woq_compute_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "bf16", "int8"],
+)
+parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
+parser.add_argument("--revision", default="main", type=str)
+parser.add_argument("--trust_remote_code", default=False)
 # =======================================
 args = parser.parse_args()
 
@@ -155,10 +162,8 @@ elif args.sq:
         op_type_dict = {".*": {"activation": {"algorithm": "minmax"}}}
     else:
         op_type_dict = {}
-    if re.search("dolly", args.model):
-        ipex_opt_llm = False
-    else:
-        ipex_opt_llm = None
+    if args.fallback_add:
+        op_type_dict["add"] = {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     recipes = {
         "smooth_quant": True,
@@ -172,11 +177,13 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
-        ipex_opt_llm=ipex_opt_llm,
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
-        compute_dtype="fp32", weight_dtype="int4_fullrange", group_size=32
+        compute_dtype=args.woq_compute_dtype,
+        weight_dtype=args.woq_weight_dtype,
+        scheme=args.woq_scheme,
+        group_size=args.woq_group_size,
     )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
@@ -192,6 +199,7 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
         use_llm_runtime=False,
     )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -200,6 +208,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         args.model,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
+        revision=args.revision,
         use_llm_runtime=False,
     )
 elif not args.int8 and not args.int8_bf16_mixed:
@@ -207,6 +216,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
             trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
             use_llm_runtime=False,
         )
     else:
@@ -214,6 +224,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
             args.model,
             config=config,
             trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
             use_llm_runtime=False,
         )
 
@@ -254,8 +265,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-    if not hasattr(tokenizer, "build_chat_input"):
-        prompt = [prompt] * args.batch_size
 
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
@@ -268,9 +277,15 @@ if args.benchmark:
                     tokenizer.get_command("<|user|>"),
                     tokenizer.get_command("<|observation|>"),
                 ]
+            elif hasattr(tokenizer, "build_prompt"):
+                build_prompt = tokenizer.build_prompt(prompt)
+                input_ids = tokenizer(
+                    [build_prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             else:
-                input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-
+                input_ids = tokenizer(
+                    [prompt] * args.batch_size, return_tensors="pt"
+                ).input_ids
             gen_ids = user_model.generate(
                 input_ids,
                 max_new_tokens=args.max_new_tokens,
@@ -306,6 +321,8 @@ if args.accuracy:
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
+        + ",revision="
+        + args.revision
         + ",trust_remote_code="
         + str(args.trust_remote_code),
         user_model=user_model,

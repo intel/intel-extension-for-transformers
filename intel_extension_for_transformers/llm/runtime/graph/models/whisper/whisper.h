@@ -95,7 +95,7 @@ struct whisper_params {
 
 void whisper_print_usage(int argc, char** argv, const whisper_params& params);
 
-bool whisper_params_parse(int argc, char** argv, whisper_params& params);
+bool whisper_params_parse(int argc, char** argv, whisper_params* params);
 
 struct whisper_print_user_data {
   const whisper_params* params;

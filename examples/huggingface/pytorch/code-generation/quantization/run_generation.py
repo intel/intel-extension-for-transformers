@@ -33,7 +33,7 @@ parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
 parser.add_argument("--trust_remote_code", default=False)
-parser.add_argument("--revision", default=None, type=str)
+parser.add_argument("--revision", default="main", type=str)
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
@@ -136,7 +136,7 @@ config = AutoConfig.from_pretrained(
     if (
         args.sq
         or args.woq_algo in ["AWQ", "TEQ"]
-        or (args.int8 or args.int8_bf16_mixed)
+        or (args.int8 or args.int8_bf16_mixed or args.benchmark)
     )
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
@@ -153,7 +153,6 @@ if not tokenizer.eos_token:
 tokenizer.pad_token = tokenizer.eos_token
 
 
-calib_dataset = args.dataset
 op_type_dict = {
     "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
 }
@@ -174,7 +173,7 @@ elif args.sq:
         recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
-        calib_dataset=calib_dataset,
+        calib_dataset=args.dataset,
         calib_iters=args.calib_iters,
     )
 elif args.woq:
@@ -191,6 +190,7 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
         use_llm_runtime=False,
     )
     # save model
@@ -202,6 +202,14 @@ if quantization_config is not None:
         torch.save(
             user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
         )
+elif not args.int8 and not args.int8_bf16_mixed:
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        config=config,
+        trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
+        use_llm_runtime=False,
+    )
 
 
 if args.int8 or args.int8_bf16_mixed:
@@ -215,6 +223,7 @@ if args.int8 or args.int8_bf16_mixed:
         args.output_dir,
         file_name="best_model.pt",
         trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
     )
 
 if args.benchmark:
@@ -256,20 +265,34 @@ if args.benchmark:
                         dummy_tensor = torch.zeros(size=new_shape)
                         past_key_values = tuple([dummy_tensor] * num_layers)
                     else:
-                        new_shape = [input_bs, num_key_value_heads, 1, d_k]
-                        beam_idx_tmp = torch.zeros(
-                            (2048, int(input_bs * num_beams)), dtype=torch.long
-                        ).contiguous()
-                        past_key_values = [
-                            (
-                                torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
-                                torch.zeros(size=new_shape).contiguous(),
-                                torch.zeros(size=new_shape).contiguous(),
-                                beam_idx_tmp,
-                            )
-                            for _ in range(num_layers)
-                        ]
-                        past_key_values = tuple(past_key_values)
+                        if not (args.int8 or args.int8_bf16_mixed):
+                            new_shape = [input_bs, num_key_value_heads, 0, d_k]
+                            past_key_values = [
+                                (
+                                    torch.zeros(size=new_shape).contiguous(),
+                                    torch.zeros(size=new_shape).contiguous(),
+                                )
+                                for _ in range(num_layers)
+                            ]
+                            past_key_values = tuple(past_key_values)
+
+                        else:
+                            new_shape = [input_bs, num_key_value_heads, 1, d_k]
+                            beam_idx_tmp = torch.zeros(
+                                (2048, int(input_bs * num_beams)), dtype=torch.long
+                            ).contiguous()
+                            past_key_values = [
+                                (
+                                    torch.zeros(
+                                        1, 0, 0, 1, dtype=torch.long
+                                    ).contiguous(),
+                                    torch.zeros(size=new_shape).contiguous(),
+                                    torch.zeros(size=new_shape).contiguous(),
+                                    beam_idx_tmp,
+                                )
+                                for _ in range(num_layers)
+                            ]
+                            past_key_values = tuple(past_key_values)
 
                 inp = {
                     "input_ids": input_ids,

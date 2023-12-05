@@ -24,9 +24,8 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
+    IPEX_OPT_LLM_SUPPORTED
 )
-
-ipex_opt_llm_supported = ["gptj", "opt", "llama", "gpt-neox", "falcon"]
 
 
 class TSModelCausalLMForITREX(TSModelForCausalLM):
@@ -54,7 +53,10 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         past_key_values = past_key_values or kwargs.get("past", None)
 
         if self.use_cache and past_key_values is not None:
-            if not re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
+            if not (
+                self.config.model_type == "chatglm"
+                and re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"])
+            ):
                 input_ids = input_ids[:, -1:]
 
         # `past_key_values` may be in the stardard format (e.g. in contrastive search),
@@ -73,7 +75,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             if past_key_values:
                 position_ids = position_ids[:, -1].unsqueeze(-1)
 
-        if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
+        if self.config.model_type == "chatglm" and re.search(
+            "THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]
+        ):
             MASK, gMASK = self.config.mask_token_id, self.config.gmask_token_id
             seqs = input_ids.tolist()
             mask_positions, use_gmasks = [], []
@@ -147,9 +151,9 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             "input_ids": input_ids,
             "attention_mask": attention_mask,
         }
+        input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
-            input_bs, input_len = input_ids.shape
-            if model_type in ipex_opt_llm_supported:
+            if model_type in IPEX_OPT_LLM_SUPPORTED:
                 past_key_values = generate_dummy_past_key_values_for_opt_llm(
                     config=self.config, input_bs=input_bs, num_beams=1
                 )
@@ -160,12 +164,13 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         inputs["past_key_values"] = past_key_values
         if attention_mask is None:
             inputs["attention_mask"] = torch.ones_like(input_ids)
-        if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
-            if position_ids is None:
+        if model_type == "chatglm":
+            inputs.pop("attention_mask")
+            if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
                 position_ids = self.prepare_inputs_for_generation(input_ids)[
                     "position_ids"
                 ]
-            inputs.pop("attention_mask")
+
         if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
             if position_ids is not None:
                 inputs["position_ids"] = position_ids

@@ -32,12 +32,12 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <mutex>
+#include <mutex>  //NOLINT
 #include <numeric>
 #include <queue>
 #include <random>
 #include <sstream>
-#include <thread>
+#include <thread>  //NOLINT
 #include <unordered_map>
 
 #include "application/common.h"
@@ -56,9 +56,9 @@
 //
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
-static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
-                          const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
-                          model_struct* model) {
+static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache,  // NOLINT
+                          const ne_type wtype, const int n_ctx, const int batch_size, const int beam_size,
+                          const bool shift_roped_k, model_struct* model) {
   const auto n_layer = hparams.n_layer;
   const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
   const auto head_size = hparams.n_embd / hparams.n_head;
@@ -104,8 +104,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
         const int head_size = hparams.n_embd / hparams.n_head;
         const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv);
+        k_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv, batch_size * beam_size);
+        v_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv, batch_size * beam_size);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -211,13 +211,13 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, bool use_mmap,
-                       bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,  // NOLINT
+                       bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
     lctx.t_start_us = ne_time_us();
     lctx.model.arch = arch;
-    model_load_internal(fname, arch, lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+    model_load_internal(fname, arch, &lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
     lctx.t_load_us = ne_time_us() - lctx.t_start_us;
     return true;
@@ -249,7 +249,7 @@ static_assert(std::is_trivially_copyable<model_sp_symbol>::value, "model_sp_symb
 
 struct model_sp_bigram {
   struct comparator {
-    bool operator()(model_sp_bigram& l, model_sp_bigram& r) {
+    bool operator()(model_sp_bigram& l, model_sp_bigram& r) {  // NOLINT
       return (l.score < r.score) || (l.score == r.score && l.left > r.left);
     }
   };
@@ -264,7 +264,7 @@ struct model_sp_bigram {
 // original implementation:
 // https://github.com/ggerganov/model.cpp/commit/074bea2eb1f1349a0118239c4152914aecaa1be4
 struct model_tokenizer {
-  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {}
+  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {}  // NOLINT
 
   void tokenize(const std::string& text, std::vector<model_vocab::id>& output) {
     // split string into utf8 chars
@@ -325,7 +325,7 @@ struct model_tokenizer {
 
       if (token == vocab_.token_to_id.end()) {
         // output any symbols that did not form tokens as bytes.
-        for (int j = 0; j < (int)symbol.n; ++j) {
+        for (int j = 0; j < static_cast<int>(symbol.n); ++j) {
           model_vocab::id token_id = static_cast<uint8_t>(symbol.text[j]) + 3;
           output.push_back(token_id);
         }
@@ -418,13 +418,13 @@ void model_sample_softmax(struct model_context* ctx, model_token_data_array* can
 void model_sample_top_k(struct model_context* ctx, model_token_data_array* candidates, int k, size_t min_keep) {
   const int64_t t_start_sample_us = ne_time_us();
 
-  k = std::max(k, (int)min_keep);
-  k = std::min(k, (int)candidates->size);
+  k = std::max(k, static_cast<int>(min_keep));
+  k = std::min(k, static_cast<int>(candidates->size));
 
   // Sort scores in descending order
   if (!candidates->sorted) {
     auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
-    if (k == (int)candidates->size) {
+    if (k == static_cast<int>(candidates->size)) {
       std::sort(candidates->data, candidates->data + candidates->size, comp);
     } else {
       std::partial_sort(candidates->data, candidates->data + k, candidates->data + candidates->size, comp);
@@ -652,7 +652,7 @@ model_token model_sample_top_k_top_p(struct model_context* ctx, const int n_logi
     }
 
     cumsum = 1.0 / cumsum;
-    for (int i = 0; i < (int)probs.size(); i++) {
+    for (int i = 0; i < static_cast<int>(probs.size()); i++) {
       probs[i] *= cumsum;
     }
   }
@@ -719,7 +719,8 @@ void model_sample_frequency_and_presence_penalties(struct model_context* ctx, mo
     }
 
     int count = token_iter->second;
-    candidates->data[i].logit -= float(count) * alpha_frequency + float(count > 0) * alpha_presence;
+    candidates->data[i].logit -=
+        static_cast<float>(count) * alpha_frequency + static_cast<float>((count > 0)) * alpha_presence;
   }
 
   candidates->sorted = false;
@@ -732,7 +733,7 @@ void model_sample_frequency_and_presence_penalties(struct model_context* ctx, mo
 model_token model_sample_token_mirostat(struct model_context* ctx, model_token_data_array* candidates, float tau,
                                         float eta, int m, float* mu) {
   assert(ctx);
-  auto N = float(model_n_vocab(ctx));
+  auto N = static_cast<float>(model_n_vocab(ctx));
   int64_t t_start_sample_us;
   t_start_sample_us = ne_time_us();
 
@@ -743,7 +744,7 @@ model_token model_sample_token_mirostat(struct model_context* ctx, model_token_d
   float sum_ti_bi = 0.0;
   float sum_ti_sq = 0.0;
   for (size_t i = 0; i < size_t(m - 1) && i < candidates->size - 1; ++i) {
-    float t_i = logf(float(i + 2) / float(i + 1));
+    float t_i = logf(static_cast<float>(i + 2) / static_cast<float>(i + 1));
     float b_i = logf(candidates->data[i].p / candidates->data[i + 1].p);
     sum_ti_bi += t_i * b_i;
     sum_ti_sq += t_i * t_i;
@@ -755,7 +756,7 @@ model_token model_sample_token_mirostat(struct model_context* ctx, model_token_d
   float k = powf((epsilon_hat * powf(2, *mu)) / (1 - powf(N, -epsilon_hat)), 1 / s_hat);
 
   // Sample the next word X using top-k sampling
-  model_sample_top_k(nullptr, candidates, int(k), 1);
+  model_sample_top_k(nullptr, candidates, static_cast<int>(k), 1);
   if (ctx) {
     ctx->t_sample_us += ne_time_us() - t_start_sample_us;
   }
@@ -869,9 +870,9 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   if (params.scale_dtype != quant_sdtype::fp32) {
     // TODO(BesTLA): add unified scale type
@@ -938,7 +939,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     }
 
   } else if (params.bits == quant_bits::q8) {
-    // TODO add 8bit quantization
+    // add 8bit quantization
     if (params.compute_dtype == quant_comp::int8) {
       if (params.alg != quant_alg::sym) {
         printf("Current not support asymmetric int8 computation, reset to symmetric\n");
@@ -1023,7 +1024,7 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
         counter += chunk_size;
         if (first >= nelements) {
           if (!local_hist.empty()) {
-            for (int j = 0; j < int(local_hist.size()); ++j) {
+            for (int j = 0; j < static_cast<int>(local_hist.size()); ++j) {
               hist_cur[j] += local_hist[j];
             }
             new_size += local_size;
@@ -1038,7 +1039,7 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
         local_size += ne_quantize_chunk(new_type, f32ptr, dstpr, first, last - first, local_hist.data());
       }
     };
-    if ((int)workers.size() < nthread_use - 1) {
+    if (static_cast<int>(workers.size()) < nthread_use - 1) {
       workers.resize(nthread_use - 1);
     }
     for (int it = 0; it < nthread_use - 1; ++it) {
@@ -1052,8 +1053,8 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
   return new_size;
 }
 
-void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,
-                        model_file_saver& saver, size_t& size_org, size_t& size_new) {
+void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,  // NOLINT
+                        model_file_saver& saver, size_t& size_org, size_t& size_new) {                      // NOLINT
   size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
   enum ne_type new_type = quant_params_to_type(params);
   model_buffer work;
@@ -1063,10 +1064,10 @@ void ne_common_quantize(const int nthread, const quant_params_internal& params, 
   float* f32_data = NULL;
   model_buffer f32_conv_buf;
   if (tensor.type == NE_TYPE_F32) {
-    f32_data = (float*)tensor.data;
+    f32_data = reinterpret_cast<float*>(tensor.data);
   } else if (tensor.type == NE_TYPE_F16) {
     f32_conv_buf.resize(nelements * sizeof(float));
-    f32_data = (float*)f32_conv_buf.addr;
+    f32_data = reinterpret_cast<float*>(f32_conv_buf.addr);
     const auto* f16_data = (const ne_fp16_t*)tensor.data;
     for (size_t i = 0; i < nelements; i++) {
       f32_data[i] = ne_fp16_to_fp32(f16_data[i]);
@@ -1152,7 +1153,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   if (params.progress_callback == NULL) {
     params.progress_callback_user_data = &cur_percentage;
     params.progress_callback = [](float progress, void* ctx) {
-      unsigned* cur_percentage_p = (unsigned*)ctx;
+      unsigned* cur_percentage_p = reinterpret_cast<unsigned*>(ctx);
       unsigned percentage = (unsigned)(100 * progress);
       while (percentage > *cur_percentage_p) {
         *cur_percentage_p = percentage;
@@ -1175,6 +1176,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     ctx->beam_search = true;
     ctx->beam_size = params.beam_size;
     ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  } else {
+    ctx->kv_n_ctx_block = ctx->batch_size;
   }
   const model_archs arch = params.arch;
 
@@ -1286,13 +1289,13 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
   // verify magic and version
   {
     uint32_t magic;
-    fin.read((char*)&magic, sizeof(magic));
+    fin.read(reinterpret_cast<char*>(&magic), sizeof(magic));
     if (magic != MODEL_FILE_MAGIC_GGLA) {
       fprintf(stderr, "%s: bad file magic\n", __func__);
       return 1;
     }
     uint32_t format_version;
-    fin.read((char*)&format_version, sizeof(format_version));
+    fin.read(reinterpret_cast<char*>(&format_version), sizeof(format_version));
 
     if (format_version != 1) {
       fprintf(stderr, "%s: unsupported file version\n", __func__);
@@ -1302,9 +1305,9 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
 
   int32_t lora_r;
   int32_t lora_alpha;
-  fin.read((char*)&lora_r, sizeof(lora_r));
-  fin.read((char*)&lora_alpha, sizeof(lora_alpha));
-  float scaling = (float)lora_alpha / (float)lora_r;
+  fin.read(reinterpret_cast<char*>(&lora_r), sizeof(lora_r));
+  fin.read(reinterpret_cast<char*>(&lora_alpha), sizeof(lora_alpha));
+  float scaling = static_cast<float>(lora_alpha) / static_cast<float>(lora_r);
 
   fprintf(stderr, "%s: r = %d, alpha = %d, scaling = %.2f\n", __func__, lora_r, lora_alpha, scaling);
 
@@ -1426,7 +1429,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     size_t tensor_data_size = ne_nbytes(lora_tensor);
     offset = (offset + 31) & -32;
     fin.seekg(offset);
-    fin.read((char*)lora_tensor->data, tensor_data_size);
+    fin.read(reinterpret_cast<char*>(lora_tensor->data), tensor_data_size);
 
     lora_tensors[name] = lora_tensor;
 
@@ -1445,7 +1448,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
         model_load_tensor& lt = model_loader->tensors_map.tensors[idx];
         base_t =
             model_loader->get_tensor(base_name, {(uint32_t)dest_t->ne[0], (uint32_t)dest_t->ne[1]}, NE_BACKEND_CPU);
-        lt.data = (uint8_t*)lt.ne_tensor->data;
+        lt.data = reinterpret_cast<uint8_t*>(lt.ne_tensor->data);
         model_loader->load_data_for(lt);
         lt.ne_tensor->data = lt.data;
       } else {
@@ -1507,7 +1510,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     }
   }
 
-  // TODO: this should be in a destructor, it will leak on failure
+  // this should be in a destructor, it will leak on failure
   ne_free(lora_ctx);
   if (base_ctx) {
     ne_free(base_ctx);
@@ -1834,11 +1837,11 @@ size_t model_set_state_data(struct model_context* ctx, uint8_t* src) {
       gf.n_threads = 1;
 
       ne_tensor* kin3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer, NE_SIZE_CALC);
-      kin3d->data = (void*)inp;
+      kin3d->data = reinterpret_cast<void*>(inp);
       inp += ne_nbytes(kin3d);
 
       ne_tensor* vin3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer, NE_SIZE_CALC);
-      vin3d->data = (void*)inp;
+      vin3d->data = reinterpret_cast<void*>(inp);
       inp += ne_nbytes(vin3d);
 
       ne_tensor* k3d =
@@ -1951,9 +1954,9 @@ bool model_save_session_file(struct model_context* ctx, const char* path_session
 int model_tokenize(struct model_context* ctx, const char* text, model_token* tokens, int n_max_tokens, bool add_bos) {
   auto res = model_tokenize(ctx->vocab, text, add_bos);
 
-  if (n_max_tokens < (int)res.size()) {
+  if (n_max_tokens < static_cast<int>(res.size())) {
     fprintf(stderr, "%s: too many tokens\n", __func__);
-    return -((int)res.size());
+    return -(static_cast<int>(res.size()));
   }
 
   for (size_t i = 0; i < res.size(); i++) {
@@ -1965,7 +1968,7 @@ int model_tokenize(struct model_context* ctx, const char* text, model_token* tok
 
 std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
   // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-  std::vector<model_token> res(text.size() + (int)add_bos);
+  std::vector<model_token> res(text.size() + static_cast<int>(add_bos));
   const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
   assert(n >= 0);
   res.resize(n);
@@ -2222,7 +2225,7 @@ struct logits_info {
     float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
   };
 
-  logits_info(struct model_context* lctx)
+  logits_info(struct model_context* lctx)  // NOLINT
       : ctx(lctx),
         logits(model_get_logits(lctx)),
         batch_size(lctx->batch_size),
@@ -2309,7 +2312,7 @@ void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
                                           const std::vector<int> request_running_indices,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
-  // TODO beam search unsupport shift kv cache when prompt + new_tokens > nctx
+  // beam search unsupport shift kv cache when prompt + new_tokens > nctx
   NE_ASSERT(("error: unimplement shifted kv cache update\n", !ctx->model.kv_self.has_shift));
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("start to update kv cache for next step...\n");
@@ -2343,7 +2346,7 @@ void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
         if (cur_id == cpy_id) continue;
         model_pos p0 = cur_n_prompt_tokens;
         model_pos p1 = cur_n_past;
-        // TODO too long text
+        // too long text
         if (cur_n_past > n_ctx) {
           // all token hidden states cache should be updated
           p0 = 0;
@@ -2378,7 +2381,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
                                                                       const std::vector<int> beam_indices,
                                                                       const int& sample_scale, const int& dim) {
   MODEL_ASSERT(dim == -1);  // raise unimplemented error
-  // TODO different requests may have different num_beams (ctx->beam_size >= num_beams[i])?
+  // different requests may have different num_beams (ctx->beam_size >= num_beams[i])?
   const int request_running_bs = ctx->request_running_bs;
   logits_info li(ctx);
   std::vector<uint32_t> cur_lens;

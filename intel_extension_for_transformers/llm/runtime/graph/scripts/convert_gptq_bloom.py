@@ -25,11 +25,13 @@ import json
 import copy
 from neural_compressor.adaptor.torch_utils.weight_only import quant_weight, quant_weight_w_scale
 import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
+
 GGML_QK8_0 = 32
 GGML_QK4_0 = 32
 GGML_QK4_1 = 32
 GGML_QK5_0 = 32
 GGML_QK5_1 = 32
+
 
 def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     # equivalent to ggml_quantize_q4_0 in ggml.c
@@ -45,6 +47,7 @@ def quantize_q4_0(tensor: torch.Tensor) -> torch.CharTensor:
     # add scale into each block
     tensor = torch.cat((scale.half().view(torch.int8), tensor), dim=-1)
     return tensor
+
 
 def fetch_module(model, op_name):
     """Get module with a given op name.
@@ -64,6 +67,7 @@ def fetch_module(model, op_name):
         else:
             module = module
     return module
+
 
 def extract_gptq(model, k, v):
     print(f"Compressing {k}")
@@ -89,9 +93,9 @@ def extract_gptq(model, k, v):
     int_weight = quant_weight_w_scale(fp32_weight, gptq_scale, gptq_zp, group_size)
     return int_weight.to(torch.int8), gptq_scale, gptq_zp
 
+
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
-
     """
     Returns list of utf-8 byte and a corresponding list of unicode strings.
     The reversible bpe codes work on unicode strings.
@@ -101,13 +105,13 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
 
     cs = [chr(n) for n in cs]
@@ -125,16 +129,15 @@ model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 
 gptq_model = "/mnt/disk1/data2/zhenweil/models/bloom/bloom-gptq/"
 from neural_compressor.utils.pytorch import load
+
 new_model = load(gptq_model, copy.deepcopy(model), weight_only=True)
 new_model_bk = copy.deepcopy(new_model)
 from neural_compressor.model import Model as INCModel
+
 inc_model = INCModel(new_model)
-qweight_config_path=gptq_model + "qconfig.json"
-gptq_config_path=gptq_model + "gptq_config.json"
-inc_model.export_compressed_model(
-    qweight_config_path=qweight_config_path,
-    gptq_config_path=gptq_config_path
-)
+qweight_config_path = gptq_model + "qconfig.json"
+gptq_config_path = gptq_model + "gptq_config.json"
+inc_model.export_compressed_model(qweight_config_path=qweight_config_path, gptq_config_path=gptq_config_path)
 
 with open(qweight_config_path, "r") as f:
     weight_config = json.load(f)
@@ -147,13 +150,13 @@ f = open("bloom_gptq_q4.bin", "wb")
 # 1. write head and params
 hparams = config.to_dict()
 ftype = 0
-f.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
+f.write(struct.pack("i", 0x67676d6c))  # magic: ggml in hex
 
 f.write(struct.pack("i", hparams["vocab_size"]))
 f.write(struct.pack("i", hparams["hidden_size"]))
 f.write(struct.pack("i", 1))
 f.write(struct.pack("i", hparams["n_head"]))
-f.write(struct.pack("i", hparams.get("n_head_kv", 0))) # multi-query attention
+f.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
 f.write(struct.pack("i", hparams["n_layer"]))
 f.write(struct.pack("i", 0))
 f.write(struct.pack("i", ftype))
@@ -176,13 +179,12 @@ f.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not
 # 2. vocab
 reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
 byte_encoder = bytes_to_unicode()
-byte_decoder = {v:k for k, v in byte_encoder.items()}
+byte_decoder = {v: k for k, v in byte_encoder.items()}
 
 for i in range(hparams["vocab_size"]):
     text = tokenizer.decode([i]).encode('utf-8')
     f.write(struct.pack("i", len(text)))
     f.write(text)
-
 
 # 3. write tensors
 for name in list_vars.keys():
@@ -193,10 +195,11 @@ for name in list_vars.keys():
 
     ftype_cur = 0
     if ".weight" in name and list_vars[name].dim() == 2:
-        if name.replace(".weight", "") in weight_config and weight_config[name.replace(".weight", "")]["dtype"] != "fp32":
-            ftype_cur = 2 # 13
-        else: 
-            ftype_cur = 2 # 2
+        if name.replace(".weight",
+                        "") in weight_config and weight_config[name.replace(".weight", "")]["dtype"] != "fp32":
+            ftype_cur = 2  # 13
+        else:
+            ftype_cur = 2  # 2
 
     data = list_vars[src].squeeze().numpy()
     data = data.astype(np.float32)
@@ -218,8 +221,8 @@ for name in list_vars.keys():
 
             tensor = int_weight.view(-1, 32) + 8
             tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
-            gptq_scale = gptq_scale.view(-1,1)
-            gptq_scale = torch.cat([gptq_scale,gptq_scale,gptq_scale,gptq_scale], dim=1).view(-1,1)
+            gptq_scale = gptq_scale.view(-1, 1)
+            gptq_scale = torch.cat([gptq_scale, gptq_scale, gptq_scale, gptq_scale], dim=1).view(-1, 1)
             tensor = torch.cat((gptq_scale.half().view(torch.int8), tensor), dim=-1)
             if "query_key_value" in src:
                 q_d, k_d, v_d = tensor.reshape(config.n_head, 3, -1).unbind(1)
