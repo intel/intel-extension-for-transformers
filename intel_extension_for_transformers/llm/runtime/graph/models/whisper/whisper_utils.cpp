@@ -4,7 +4,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
-#include <thread>
+#include <thread> //NOLINT
 #include <vector>
 
 #include "whisper.h"
@@ -26,7 +26,7 @@ std::string to_timestamp(int64_t t, bool comma) {
   msec = msec - sec * 1000;
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", (int)hr, (int)min, (int)sec, comma ? "," : ".", (int)msec);
+  snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", static_cast<int>(hr), static_cast<int>(min), static_cast<int>(sec), comma ? "," : ".", static_cast<int>(msec));
 
   return std::string(buf);
 }
@@ -35,98 +35,98 @@ int timestamp_to_sample(int64_t t, int n_samples) {
   return std::max(0, std::min(static_cast<int>(n_samples) - 1, static_cast<int>(((t * WHISPER_SAMPLE_RATE) / 100))));
 }
 
-bool whisper_params_parse(int argc, char** argv, whisper_params& params) {
+bool whisper_params_parse(int argc, char** argv, whisper_params* params) {
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
     if (arg == "-") {
-      params.fname_inp.push_back(arg);
+      params->fname_inp.push_back(arg);
       continue;
     }
 
     if (arg[0] != '-') {
-      params.fname_inp.push_back(arg);
+      params->fname_inp.push_back(arg);
       continue;
     }
 
     if (arg == "-h" || arg == "--help") {
-      whisper_print_usage(argc, argv, params);
+      whisper_print_usage(argc, argv, *params);
       exit(0);
     } else if (arg == "-t" || arg == "--threads") {
-      params.n_threads = std::stoi(argv[++i]);
+      params->n_threads = std::stoi(argv[++i]);
     } else if (arg == "-p" || arg == "--processors") {
-      params.n_processors = std::stoi(argv[++i]);
+      params->n_processors = std::stoi(argv[++i]);
     } else if (arg == "-ot" || arg == "--offset-t") {
-      params.offset_t_ms = std::stoi(argv[++i]);
+      params->offset_t_ms = std::stoi(argv[++i]);
     } else if (arg == "-on" || arg == "--offset-n") {
-      params.offset_n = std::stoi(argv[++i]);
+      params->offset_n = std::stoi(argv[++i]);
     } else if (arg == "-d" || arg == "--duration") {
-      params.duration_ms = std::stoi(argv[++i]);
+      params->duration_ms = std::stoi(argv[++i]);
     } else if (arg == "-mc" || arg == "--max-context") {
-      params.max_context = std::stoi(argv[++i]);
+      params->max_context = std::stoi(argv[++i]);
     } else if (arg == "-ml" || arg == "--max-len") {
-      params.max_len = std::stoi(argv[++i]);
+      params->max_len = std::stoi(argv[++i]);
     } else if (arg == "-bo" || arg == "--best-of") {
-      params.best_of = std::stoi(argv[++i]);
+      params->best_of = std::stoi(argv[++i]);
     } else if (arg == "-bs" || arg == "--beam-size") {
-      params.beam_size = std::stoi(argv[++i]);
+      params->beam_size = std::stoi(argv[++i]);
     } else if (arg == "-wt" || arg == "--word-thold") {
-      params.word_thold = std::stof(argv[++i]);
+      params->word_thold = std::stof(argv[++i]);
     } else if (arg == "-et" || arg == "--entropy-thold") {
-      params.entropy_thold = std::stof(argv[++i]);
+      params->entropy_thold = std::stof(argv[++i]);
     } else if (arg == "-lpt" || arg == "--logprob-thold") {
-      params.logprob_thold = std::stof(argv[++i]);
+      params->logprob_thold = std::stof(argv[++i]);
     } else if (arg == "-su" || arg == "--speed-up") {
-      params.speed_up = true;
+      params->speed_up = true;
     } else if (arg == "-tr" || arg == "--translate") {
-      params.translate = true;
+      params->translate = true;
     } else if (arg == "-di" || arg == "--diarize") {
-      params.diarize = true;
+      params->diarize = true;
     } else if (arg == "-tdrz" || arg == "--tinydiarize") {
-      params.tinydiarize = true;
+      params->tinydiarize = true;
     } else if (arg == "-sow" || arg == "--split-on-word") {
-      params.split_on_word = true;
+      params->split_on_word = true;
     } else if (arg == "-nf" || arg == "--no-fallback") {
-      params.no_fallback = true;
+      params->no_fallback = true;
     } else if (arg == "-otxt" || arg == "--output-txt") {
-      params.output_txt = true;
+      params->output_txt = true;
     } else if (arg == "-ovtt" || arg == "--output-vtt") {
-      params.output_vtt = true;
+      params->output_vtt = true;
     } else if (arg == "-osrt" || arg == "--output-srt") {
-      params.output_srt = true;
+      params->output_srt = true;
     } else if (arg == "-owts" || arg == "--output-words") {
-      params.output_wts = true;
+      params->output_wts = true;
     } else if (arg == "-olrc" || arg == "--output-lrc") {
-      params.output_lrc = true;
+      params->output_lrc = true;
     } else if (arg == "-fp" || arg == "--font-path") {
-      params.font_path = argv[++i];
+      params->font_path = argv[++i];
     } else if (arg == "-ocsv" || arg == "--output-csv") {
-      params.output_csv = true;
+      params->output_csv = true;
     } else if (arg == "-oj" || arg == "--output-json") {
-      params.output_jsn = true;
+      params->output_jsn = true;
     } else if (arg == "-of" || arg == "--output-file") {
-      params.fname_out.emplace_back(argv[++i]);
+      params->fname_out.emplace_back(argv[++i]);
     } else if (arg == "-ps" || arg == "--print-special") {
-      params.print_special = true;
+      params->print_special = true;
     } else if (arg == "-pc" || arg == "--print-colors") {
-      params.print_colors = true;
+      params->print_colors = true;
     } else if (arg == "-pp" || arg == "--print-progress") {
-      params.print_progress = true;
+      params->print_progress = true;
     } else if (arg == "-nt" || arg == "--no-timestamps") {
-      params.no_timestamps = true;
+      params->no_timestamps = true;
     } else if (arg == "-l" || arg == "--language") {
-      params.language = argv[++i];
+      params->language = argv[++i];
     } else if (arg == "-dl" || arg == "--detect-language") {
-      params.detect_language = true;
+      params->detect_language = true;
     } else if (arg == "--prompt") {
-      params.prompt = argv[++i];
+      params->prompt = argv[++i];
     } else if (arg == "-m" || arg == "--model") {
-      params.model = argv[++i];
+      params->model = argv[++i];
     } else if (arg == "-f" || arg == "--file") {
-      params.fname_inp.emplace_back(argv[++i]);
+      params->fname_inp.emplace_back(argv[++i]);
     } else {
       fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
-      whisper_print_usage(argc, argv, params);
+      whisper_print_usage(argc, argv, *params);
       exit(0);
     }
   }
