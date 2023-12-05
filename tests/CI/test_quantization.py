@@ -7,6 +7,7 @@ import shutil
 import torch
 import torch.utils.data as data
 import unittest
+import subprocess
 from intel_extension_for_transformers.transformers import (
     metrics,
     objectives,
@@ -79,6 +80,22 @@ class TestQuantization(unittest.TestCase):
             eval_dataset=self.dummy_dataset,
         )
         self.optimizer = NoTrainerOptimizer(self.model)
+
+        # model with local path
+        cmd = (
+            "git clone https://huggingface.co/" + MODEL_NAME + ' local_model_dir'
+        )
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
+
+        # use local path to create model and trainer
+        local_model = AutoModelForSequenceClassification.from_pretrained("local_model_dir")
+        self.local_model_trainer = NLPTrainer(
+            model=local_model,
+            train_dataset=self.dummy_dataset,
+            eval_dataset=self.dummy_dataset,
+        )
 
     @classmethod
     def tearDownClass(self):
@@ -404,22 +421,7 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(check_onnx("export.onnx", self.trainer.get_eval_dataloader()))
 
         # test local model path
-        # download model
-        cmd = (
-            "git clone https://huggingface.co/" + MODEL_NAME + ' local_model_dir'
-        )
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
-
-        # use local path to create model and trainer
-        local_model = AutoModelForSequenceClassification.from_pretrained("local_model_dir")
-        local_model_trainer = NLPTrainer(
-            model=local_model,
-            train_dataset=self.dummy_dataset,
-            eval_dataset=self.dummy_dataset,
-        )
-        local_model_trainer.export_to_onnx("export.onnx")
+        self.local_model_trainer.export_to_onnx("export.onnx")
         self.assertTrue(check_onnx("export.onnx", self.trainer.get_eval_dataloader()))
 
 
