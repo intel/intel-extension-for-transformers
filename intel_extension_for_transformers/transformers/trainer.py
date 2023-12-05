@@ -2515,13 +2515,16 @@ class BaseTrainer():
             raise ValueError("model doesn't have 'config' attribute.")
         
         try:
+            # infer task from model id
             model_name_or_path = model.config._name_or_path
             task = TasksManager.infer_task_from_model(model_name_or_path)
         except:
             try:
+                # infer task from model itself
                 task = TasksManager.infer_task_from_model(model)
             except:  # pragma: no cover
                 try: 
+                    # infer task from model type
                     model_type = model.config.model_type.replace("_", "-")
                     tasks = TasksManager.get_supported_tasks_for_model_type(model_type, "onnx")
                     if len(tasks) != 0:
