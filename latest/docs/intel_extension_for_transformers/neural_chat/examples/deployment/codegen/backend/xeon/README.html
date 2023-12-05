@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+gfec4bb4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Setup Conda</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/deployment/codegen/backend/xeon/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>This README serves as a guide to set up the backend for a code generation chatbot utilizing the NeuralChat framework. You can deploy this code generation chatbot across various platforms, including Intel XEON Scalable Processors, Habana’s Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU, and Client GPU.</p>
+<p>This code generation chatbot demonstrates how to deploy it specifically on Intel XEON processors. To run the 34b or 70b level LLM model, we require implementing model parallelism using multi-node strategy.</p>
+<section id="setup-conda">
+<h1>Setup Conda<a class="headerlink" href="#setup-conda" title="Link to this heading"></a></h1>
+<p>First, you need to install and configure the Conda environment:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download and install Miniconda</span>
+wget<span class="w"> </span>https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash<span class="w"> </span><span class="sb">`</span>Miniconda*.sh<span class="sb">`</span>
+<span class="nb">source</span><span class="w"> </span>~/.bashrc
+<span class="c1"># Create Conda Virtual Environment</span>
+conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>your_env_name<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9<span class="w"> </span>-y
+conda<span class="w"> </span>activate<span class="w"> </span>your_env_name
+</pre></div>
+</div>
+</section>
+<section id="install-numactl">
+<h1>Install numactl<a class="headerlink" href="#install-numactl" title="Link to this heading"></a></h1>
+<p>Next, install the numactl library:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>numactl
+</pre></div>
+</div>
+</section>
+<section id="install-python-dependencies">
+<h1>Install Python Dependencies<a class="headerlink" href="#install-python-dependencies" title="Link to this heading"></a></h1>
+<p>Install DeepSpeed from Pypi/source code</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install from pypi</span>
+pip<span class="w"> </span>install<span class="w"> </span>deepspeed
+<span class="c1"># Install from source code</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/microsoft/DeepSpeed/
+<span class="nb">cd</span><span class="w"> </span>DeepSpeed
+rm<span class="w"> </span>-rf<span class="w"> </span>build
+<span class="nv">TORCH_CUDA_ARCH_LIST</span><span class="o">=</span><span class="s2">&quot;8.6&quot;</span><span class="w"> </span><span class="nv">DS_BUILD_CPU_ADAM</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">DS_BUILD_UTILS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
+--global-option<span class="o">=</span><span class="s2">&quot;build_ext&quot;</span><span class="w"> </span>--global-option<span class="o">=</span><span class="s2">&quot;-j8&quot;</span><span class="w"> </span>--no-cache<span class="w"> </span>-v<span class="w"> </span><span class="se">\</span>
+--disable-pip-version-check<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>build.log
+</pre></div>
+</div>
+<p>Install OneCCL for multi-node model</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the torch-ccl version according to your torch version (v2.1.0 in this example)</span>
+<span class="c1"># Check out the corresponding version here: https://github.com/intel/torch-ccl/</span>
+git<span class="w"> </span>clone<span class="w"> </span>-b<span class="w"> </span>ccl_torch2.1.0+cpu<span class="w"> </span>https://github.com/intel/torch-ccl.git<span class="w"> </span>torch-ccl-2.1.0
+<span class="nb">cd</span><span class="w"> </span>torch-ccl-2.1.0
+git<span class="w"> </span>submodule<span class="w"> </span>sync
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+python<span class="w"> </span>setup.py<span class="w"> </span>install
+</pre></div>
+</div>
+<p>Install neuralchat dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>../../../requirements.txt
+<span class="c1"># make sure you install the latest version of transformers</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="nv">transformers</span><span class="o">==</span><span class="m">4</span>.35.2
+</pre></div>
+</div>
+</section>
+<section id="configure-multi-node">
+<h1>Configure Multi-node<a class="headerlink" href="#configure-multi-node" title="Link to this heading"></a></h1>
+<p>To use the multi-node model parallelism with Xeon servers, you need to configure a hostfile first and make sure ssh is able between your servers.</p>
+<p>For example, you have two servers which have the IP of <code class="docutils literal notranslate"><span class="pre">192.168.1.1</span></code> and <code class="docutils literal notranslate"><span class="pre">192.168.1.2</span></code>, and each of it has 4 CPUs.</p>
+<section id="modify-hostfile">
+<h2>Modify hostfile<a class="headerlink" href="#modify-hostfile" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>vim<span class="w"> </span>../../../server/config/hostfile
+<span class="w">    </span><span class="m">192</span>.168.1.1<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">4</span>
+<span class="w">    </span><span class="m">192</span>.168.1.2<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">4</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-ssh-between-servers">
+<h2>Configure SSH between Servers<a class="headerlink" href="#configure-ssh-between-servers" title="Link to this heading"></a></h2>
+<p>In order to enable this hostfile, you have to make sure <code class="docutils literal notranslate"><span class="pre">192.168.1.1</span></code> and <code class="docutils literal notranslate"><span class="pre">192.168.1.2</span></code> are able to access each other via SSH. Check it with <code class="docutils literal notranslate"><span class="pre">ssh</span> <span class="pre">192.168.1.2</span></code>.</p>
+<p>If your servers are not available with SSH, follow the instructions below.</p>
+<ol>
+<li><p>Generate SSH Key
+Execute this command on both servers to generate ssh key in  <code class="docutils literal notranslate"><span class="pre">~/.ssh/</span></code>.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ssh-keygen
+</pre></div>
+</div>
+</li>
+<li><p>Copy SSH Key
+Execute this command on both servers. Specify your user on the server.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ssh-copy-id<span class="w"> </span>user@192.168.1.2
+</pre></div>
+</div>
+</li>
+<li><p>Test SSH Connection
+Test whether SSH is available now.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ssh<span class="w"> </span>user@192.168.1.2
+</pre></div>
+</div>
+</li>
+<li><p>Check Network
+Check network communication between servers.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ping<span class="w"> </span><span class="m">192</span>.168.1.2
+</pre></div>
+</div>
+</li>
+</ol>
+<p>If you cannot SSH to your local server via IP, configure it with localhost as below.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>~/.ssh/id_rsa.pub<span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/authorized_keys
+chmod<span class="w"> </span><span class="m">700</span><span class="w"> </span>~/.ssh
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.ssh/authorized_keys
+</pre></div>
+</div>
+<p>Then modify hostfile as below.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>localhost<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">4</span>
+<span class="m">192</span>.168.1.2<span class="w"> </span><span class="nv">slots</span><span class="o">=</span><span class="m">4</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configure-the-codegen-yaml">
+<h1>Configure the codegen.yaml<a class="headerlink" href="#configure-the-codegen-yaml" title="Link to this heading"></a></h1>
+<p>You can customize the configuration file ‘codegen.yaml’ to match your environment setup. Here’s a table to help you understand the configurable options:</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>host</td>
+<td>0.0.0.0</td>
+</tr>
+<tr>
+<td>port</td>
+<td>8000</td>
+</tr>
+<tr>
+<td>model_name_or_path</td>
+<td>"Phind/Phind-CodeLlama-34B-v2"</td>
+</tr>
+<tr>
+<td>device</td>
+<td>"cpu"</td>
+</tr>
+<tr>
+<td>use_deepspeed</td>
+<td>true</td>
+</tr>
+<tr>
+<td>world_size</td>
+<td>8</td>
+</tr>
+<tr>
+<td>tasks_list</td>
+<td>['textchat']</td>
+</tr>
+</tbody>
+</table></section>
+<section id="run-the-code-generation-chatbot-server">
+<h1>Run the Code Generation Chatbot Server<a class="headerlink" href="#run-the-code-generation-chatbot-server" title="Link to this heading"></a></h1>
+<p>Before running the code-generating chatbot server, make sure you have already deploy the same <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">environment</span></code> and <code class="docutils literal notranslate"><span class="pre">intel-extension-for-tranformers</span> <span class="pre">codes</span></code> on both servers.</p>
+<p>To start the code-generating chatbot server, use the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>nohup<span class="w"> </span>python<span class="w"> </span>run_code_gen.py<span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f1a0462dc00> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
