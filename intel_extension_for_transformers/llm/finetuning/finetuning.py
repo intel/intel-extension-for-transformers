@@ -289,8 +289,8 @@ class Finetuning:
                     f"qlora and full_finetune can't be True at the same time."
                 )
         elif finetune_args.full_finetune:
-            if finetune_args.bits in [4, 8]:
-                raise NotImplementedError(
+            if finetune_args.bits not in [16, 32]:
+                raise ValueError(
                     f"full finetune only support 16 and 32 bits."
                 )
 
