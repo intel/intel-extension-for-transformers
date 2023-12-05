@@ -304,6 +304,9 @@ struct model_context {
   // input embedding (1-dimensional array: [n_embd * batch_size])
   std::vector<float> embedding;
 
+  // next tokens (1-dimensional array: [1 * batch_size])
+  std::vector<model_token> next_tokens;
+
   // memory buffers used to evaluate the model
   // TODO: move in model_state
   model_ctx_buffer buf_compute;
