@@ -1939,7 +1939,7 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
 // naive Discrete Fourier Transform
 // input is real-valued
 // output is complex-valued
-static void dft(const std::vector<float>& in, std::vector<float>& out) { // NOLINT
+static void dft(const std::vector<float>& in, std::vector<float>& out) {  // NOLINT
   int N = in.size();
 
   out.resize(N * 2);
@@ -1963,7 +1963,7 @@ static void dft(const std::vector<float>& in, std::vector<float>& out) { // NOLI
 // poor man's implementation - use something better
 // input is real-valued
 // output is complex-valued
-static void fft(const std::vector<float>& in, std::vector<float>& out) { // NOLINT
+static void fft(const std::vector<float>& in, std::vector<float>& out) {  // NOLINT
   out.resize(in.size() * 2);
 
   int N = in.size();
