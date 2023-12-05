@@ -40,10 +40,9 @@ def convert_model(model, outfile, outtype):
     print("cmd:", cmd)
     subprocess.run(cmd)
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(
-        description="Convert a PyTorch model to a NE compatible file"
-    )
+    parser = argparse.ArgumentParser(description="Convert a PyTorch model to a NE compatible file")
     parser.add_argument(
         "--outtype",
         choices=["f32", "f16"],
@@ -51,9 +50,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="f32",
     )
     parser.add_argument("--outfile", type=Path, required=True, help="path to write to")
-    parser.add_argument(
-        "model", type=Path, help="directory containing model file or model id"
-    )
+    parser.add_argument("model", type=Path, help="directory containing model file or model id")
     args = parser.parse_args(args_in)
 
     if args.model.exists():

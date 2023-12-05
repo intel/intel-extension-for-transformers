@@ -22,6 +22,7 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
@@ -32,14 +33,11 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="run quantization and inference")
-    parser.add_argument(
-        "model", type=Path, help="directory containing model file or model id"
-    )
-    parser.add_argument(
-        "--build_dir", type=Path, help="path to build directory", default=build_path
-    )
+    parser.add_argument("model", type=Path, help="directory containing model file or model id")
+    parser.add_argument("--build_dir", type=Path, help="path to build directory", default=build_path)
 
     # quantization related arguments.
     parser.add_argument(
@@ -54,9 +52,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         help="Quantization algorithm: sym/asym (default sym)",
         default="sym",
     )
-    parser.add_argument(
-        "--group_size", type=int, help="Group size: Int (default: 32)", default=32
-    )
+    parser.add_argument("--group_size", type=int, help="Group size: Int (default: 32)", default=32)
     parser.add_argument(
         "--scale_dtype",
         type=str,
@@ -107,7 +103,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "-c",
         "--ctx_size",
         type=int,
-        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
+        help=
+        "Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
@@ -140,9 +137,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         help="Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)",
     )
 
-
     args = parser.parse_args(args_in)
-
 
     if args.model.exists():
         dir_model = args.model.as_posix()
@@ -155,7 +150,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     work_path = Path(model_type + "_files")
     if not work_path.exists():
         Path.mkdir(work_path)
-
 
     # 1. convert
     path = Path(parent_path, "convert.py")
@@ -171,7 +165,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd = ["python", path]
     quant_cmd.extend(["--model_name", model_type])
     quant_cmd.extend(["--model_file", Path(work_path, "ne_{}_f32.bin".format(model_type))])
-    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.group_size))])
+    quant_cmd.extend(
+        ["--out_file",
+         Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.group_size))])
     quant_cmd.extend(["--weight_dtype", args.weight_dtype])
     quant_cmd.extend(["--group_size", str(args.group_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
@@ -188,13 +184,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
     infer_cmd.extend(["--model_name", model_type])
     infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.group_size))])
     infer_cmd.extend(["--prompt", args.prompt])
-    infer_cmd.extend(["--n_predict",      str(args.n_predict)])
-    infer_cmd.extend(["--threads",        str(args.threads)])
-    infer_cmd.extend(["--batch_size_truncate",     str(args.batch_size_truncate)])
-    infer_cmd.extend(["--ctx_size",       str(args.ctx_size)])
-    infer_cmd.extend(["--seed",           str(args.seed)])
+    infer_cmd.extend(["--n_predict", str(args.n_predict)])
+    infer_cmd.extend(["--threads", str(args.threads)])
+    infer_cmd.extend(["--batch_size_truncate", str(args.batch_size_truncate)])
+    infer_cmd.extend(["--ctx_size", str(args.ctx_size)])
+    infer_cmd.extend(["--seed", str(args.seed)])
     infer_cmd.extend(["--repeat_penalty", str(args.repeat_penalty)])
-    infer_cmd.extend(["--keep",           str(args.keep)])
+    infer_cmd.extend(["--keep", str(args.keep)])
     infer_cmd.extend(["--build_dir", args.build_dir])
     if args.shift_roped_k:
         infer_cmd.extend(["--shift-roped-k"])

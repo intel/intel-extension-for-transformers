@@ -26,7 +26,7 @@
 #include <vector>
 #include <algorithm>
 #include <random>
-#include <thread>
+#include <thread>  // NOLINT
 #include <unordered_map>
 #include <utility>
 #include <iostream>
@@ -71,7 +71,7 @@ const std::vector<std::string> k_colors = {
     "\033[38;5;226m", "\033[38;5;190m", "\033[38;5;154m", "\033[38;5;118m", "\033[38;5;82m",
 };
 
-bool read_wav(const std::string& fname, std::vector<float>& pcmf32, std::vector<std::vector<float>>& pcmf32s,
+bool read_wav(const std::string& fname, std::vector<float>* pcmf32, std::vector<std::vector<float>>* pcmf32s,
               bool stereo) {
   drwav wav;
   std::vector<uint8_t> wav_data;  // used for pipe input from stdin
@@ -128,26 +128,26 @@ bool read_wav(const std::string& fname, std::vector<float>& pcmf32, std::vector<
   drwav_uninit(&wav);
 
   // convert to mono, float
-  pcmf32.resize(n);
+  (*pcmf32).resize(n);
   if (wav.channels == 1) {
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32[i] = float(pcm16[i]) / 32768.0f;
+      (*pcmf32)[i] = static_cast<float>(pcm16[i]) / 32768.0f;
     }
   } else {
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32[i] = float(pcm16[2 * i] + pcm16[2 * i + 1]) / 65536.0f;
+      (*pcmf32)[i] = static_cast<float>(pcm16[2 * i] + pcm16[2 * i + 1]) / 65536.0f;
     }
   }
 
   if (stereo) {
     // convert to stereo, float
-    pcmf32s.resize(2);
+    (*pcmf32s).resize(2);
 
-    pcmf32s[0].resize(n);
-    pcmf32s[1].resize(n);
+    (*pcmf32s)[0].resize(n);
+    (*pcmf32s)[1].resize(n);
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32s[0][i] = float(pcm16[2 * i]) / 32768.0f;
-      pcmf32s[1][i] = float(pcm16[2 * i + 1]) / 32768.0f;
+      (*pcmf32s)[0][i] = static_cast<float>(pcm16[2 * i]) / 32768.0f;
+      (*pcmf32s)[1][i] = static_cast<float>(pcm16[2 * i + 1]) / 32768.0f;
     }
   }
 
@@ -191,8 +191,8 @@ std::string estimate_diarization_speaker(std::vector<std::vector<float>> pcmf32s
 
 void whisper_print_segment_callback(struct whisper_context* ctx, struct whisper_state* /*state*/, int n_new,
                                     void* user_data) {
-  const auto& params = *((whisper_print_user_data*)user_data)->params;
-  const auto& pcmf32s = *((whisper_print_user_data*)user_data)->pcmf32s;
+  const auto& params = *(reinterpret_cast<whisper_print_user_data*>(user_data))->params;
+  const auto& pcmf32s = *(reinterpret_cast<whisper_print_user_data*>(user_data))->pcmf32s;
 
   const int n_segments = whisper_full_n_segments(ctx);
 
@@ -234,7 +234,8 @@ void whisper_print_segment_callback(struct whisper_context* ctx, struct whisper_
         const char* text = whisper_full_get_token_text(ctx, i, j);
         const float p = whisper_full_get_token_p(ctx, i, j);
 
-        const int col = std::max(0, std::min((int)k_colors.size() - 1, (int)(std::pow(p, 3) * float(k_colors.size()))));
+        const int col = std::max(0, std::min(static_cast<int>(k_colors.size()) - 1,
+                                             static_cast<int>(std::pow(p, 3) * static_cast<float>(k_colors.size()))));
 
         printf("%s%s%s%s", speaker.c_str(), k_colors[col].c_str(), text, "\033[0m");
       }
@@ -272,7 +273,7 @@ char* escape_double_quotes_and_backslashes(const char* str) {
     }
   }
 
-  char* escaped = (char*)calloc(escaped_length, 1);  // pre-zeroed
+  char* escaped = reinterpret_cast<char*>(calloc(escaped_length, 1));  // pre-zeroed
   if (escaped == NULL) {
     return NULL;
   }
@@ -291,7 +292,7 @@ char* escape_double_quotes_and_backslashes(const char* str) {
 }
 
 // helper function to replace substrings
-void replace_all(std::string& s, const std::string& search, const std::string& replace) {
+void replace_all(std::string s, const std::string& search, const std::string& replace) {
   for (size_t pos = 0;; pos += replace.length()) {
     pos = s.find(search, pos);
     if (pos == std::string::npos) break;
@@ -557,7 +558,7 @@ bool output_json(struct whisper_context* ctx, const char* fname, const whisper_p
 
 // karaoke video generation
 // outputs a bash script that uses ffmpeg to generate a video with the subtitles
-// TODO: font parameter adjustments
+// TODO(Bo): font parameter adjustments
 bool output_wts(struct whisper_context* ctx, const char* fname, const char* fname_inp, const whisper_params& params,
                 float t_sec, std::vector<std::vector<float>> pcmf32s) {
   std::ofstream fout(fname);
@@ -640,13 +641,13 @@ bool output_wts(struct whisper_context* ctx, const char* fname, const char* fnam
           txt_bg += txt;
 
           if (k == j) {
-            for (int l = 0; l < (int)txt.size(); ++l) {
+            for (size_t l = 0; l < txt.size(); ++l) {
               txt_fg += txt[l];
               txt_ul += "_";
             }
             txt_fg += "|";
           } else {
-            for (int l = 0; l < (int)txt.size(); ++l) {
+            for (size_t l = 0; l < txt.size(); ++l) {
               txt_fg += "\\ ";
               txt_ul += "\\ ";
             }
@@ -717,7 +718,8 @@ bool output_lrc(struct whisper_context* ctx, const char* fname, const whisper_pa
     msec = msec - sec * 1000;
 
     char buf[16];
-    snprintf(buf, sizeof(buf), "%02d:%02d.%02d", (int)min, (int)sec, (int)(msec / 10));
+    snprintf(buf, sizeof(buf), "%02d:%02d.%02d", static_cast<int>(min), static_cast<int>(sec),
+             static_cast<int>(msec / 100));
     std::string timestamp_lrc = std::string(buf);
     std::string speaker = "";
 
@@ -739,7 +741,7 @@ int main(int argc, char** argv) {
   params.model_name = MODEL_NAME;
 #endif
 
-  if (whisper_params_parse(argc, argv, params) == false) {
+  if (whisper_params_parse(argc, argv, &params) == false) {
     whisper_print_usage(argc, argv, params);
     return 1;
   }
@@ -770,15 +772,15 @@ int main(int argc, char** argv) {
     return 3;
   }
 
-  for (int f = 0; f < (int)params.fname_inp.size(); ++f) {
+  for (size_t f = 0; f < params.fname_inp.size(); ++f) {
     const auto fname_inp = params.fname_inp[f];
     const auto fname_out =
-        f < (int)params.fname_out.size() && !params.fname_out[f].empty() ? params.fname_out[f] : params.fname_inp[f];
+        f < params.fname_out.size() && !params.fname_out[f].empty() ? params.fname_out[f] : params.fname_inp[f];
 
     std::vector<float> pcmf32;                // mono-channel F32 PCM
     std::vector<std::vector<float>> pcmf32s;  // stereo-channel F32 PCM
 
-    if (!::read_wav(fname_inp, pcmf32, pcmf32s, params.diarize)) {
+    if (!::read_wav(fname_inp, &pcmf32, &pcmf32s, params.diarize)) {
       fprintf(stderr, "error: failed to read WAV file '%s'\n", fname_inp.c_str());
       continue;
     }
@@ -807,10 +809,10 @@ int main(int argc, char** argv) {
       fprintf(stderr,
               "%s: processing '%s' (%d samples, %.1f sec), %d threads, %d processors, lang = %s, task = %s, "
               "%stimestamps = %d ...\n",
-              __func__, fname_inp.c_str(), int(pcmf32.size()), float(pcmf32.size()) / WHISPER_SAMPLE_RATE,
-              params.n_threads, params.n_processors, params.language.c_str(),
-              params.translate ? "translate" : "transcribe", params.tinydiarize ? "tdrz = 1, " : "",
-              params.no_timestamps ? 0 : 1);
+              __func__, fname_inp.c_str(), static_cast<int>(pcmf32.size()),
+              static_cast<float>(pcmf32.size()) / WHISPER_SAMPLE_RATE, params.n_threads, params.n_processors,
+              params.language.c_str(), params.translate ? "translate" : "transcribe",
+              params.tinydiarize ? "tdrz = 1, " : "", params.no_timestamps ? 0 : 1);
 
       fprintf(stderr, "\n");
     }
@@ -867,7 +869,7 @@ int main(int argc, char** argv) {
 
         wparams.encoder_begin_callback = [](struct whisper_context* /*ctx*/, struct whisper_state* /*state*/,
                                             void* user_data) {
-          bool is_aborted = *(bool*)user_data;
+          bool is_aborted = *(reinterpret_cast<bool*>(user_data));
           return !is_aborted;
         };
         wparams.encoder_begin_callback_user_data = &is_aborted;
@@ -904,8 +906,8 @@ int main(int argc, char** argv) {
       // output to WTS file
       if (params.output_wts) {
         const auto fname_wts = fname_out + ".wts";
-        output_wts(ctx, fname_wts.c_str(), fname_inp.c_str(), params, float(pcmf32.size() + 1000) / WHISPER_SAMPLE_RATE,
-                   pcmf32s);
+        output_wts(ctx, fname_wts.c_str(), fname_inp.c_str(), params,
+                   static_cast<float>(pcmf32.size() + 1000) / WHISPER_SAMPLE_RATE, pcmf32s);
       }
 
       // output to CSV file
