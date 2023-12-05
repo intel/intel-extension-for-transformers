@@ -25,7 +25,7 @@ pip install intel-extension-for-transformers
 ```
 
 ```Bash
-# install stable basic version from from conda
+# install stable basic version from conda
 conda install -c intel intel_extension_for_transformers
 ```
 

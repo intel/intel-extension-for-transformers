@@ -4,7 +4,7 @@ We provide the inference benchmarking script `run_generation.py` for Starcoder a
 
 # Prerequisite​
 ## 1. Environment​
-Recommend python 3.7 or higher version is recommended. The dependent packages are listed in requirements, please install them as follows,
+Recommend python version is 3.10 due to [code evaluation library](https://github.com/bigcode-project/bigcode-evaluation-harness) limitation. The dependent packages are listed in requirements, please install them as follows,
 
 ```shell
 git clone https://github.com/intel/intel-extension-for-transformers.git

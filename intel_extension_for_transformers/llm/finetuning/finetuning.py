@@ -553,15 +553,11 @@ class Finetuning:
                 )
 
             trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
-            with training_args.main_process_first(desc="save model"):
-                if is_main_process(training_args.local_rank):
-                    unwrapped_model = unwrap_model(model)
-                    unwrapped_model.save_pretrained(
-                        training_args.output_dir, state_dict=unwrapped_model.state_dict()
-                    )
+            trainer.save_model()
         if finetune_args.do_lm_eval and finetune_args.task == "code-generation":
             tokenizer.padding_side = "right" # padding on the right is needed to cut off padding in `complete_code`
             tokenizer.truncation_side = "left"
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             class Eval_Args:
                 n_samples = 20
@@ -602,6 +598,7 @@ class Finetuning:
                         self.logger.info(results)
 
         elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model = unwrap_model(model)
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
@@ -619,6 +616,8 @@ class Finetuning:
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
+            unwrapped_model = unwrap_model(model)
+            unwrapped_model.eval()
             from .eval_utils import compute_rouge_metric
             gen_kwargs = {
                     "num_beams": data_args.num_beams,

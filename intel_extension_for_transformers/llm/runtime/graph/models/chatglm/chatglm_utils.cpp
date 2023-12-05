@@ -141,8 +141,8 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
     layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {4 * n_embd, n_embd}, backend);
     layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 2048, 32);
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 2048, 4096 / 32, 32);
+    layer.k_cache = nullptr;  // kv-cache will be init later in model_utils
+    layer.v_cache = nullptr;  // kv-cache will be init later in model_utils
     // if (backend != NE_BACKEND_CPU) {
     //   vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
     //                 ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +

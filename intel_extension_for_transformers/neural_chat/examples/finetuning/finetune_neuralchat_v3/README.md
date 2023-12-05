@@ -11,17 +11,20 @@ Similar to most finetuning work, we mainly divide the training to two stages.
 
 In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.
 
-IMPORTANT: Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
+**IMPORTANT:** Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
 
 To run finetuning on Intel Gaudi2, please execute below steps
 
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/neural_chat/docker/finetuning/
+cd intel-extension-for-transformers
 
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.10.0" --build-arg REVISION="494" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
+docker build --no-cache ./ --target hpu --build-arg REPO=https://github.com/intel/intel-extension-for-transformers.git --build-arg ITREX_VER=main -f ./intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetuning:latest
 
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest
+
+# after entering docker container
+cd examples/finetuning/finetune_neuralchat_v3
 
 ```
 
@@ -58,7 +61,7 @@ For details of the dataset and DPO training code, you can refer [Intel/orca_dpo_
 
 
 ```python
-python ../../../../intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline/dpo_clm.py \
+python ../dpo_pipeline/dpo_clm.py \
         --model_name_or_path "./finetuned_model_lora" \
         --output_dir "./finetuned_model_lora_plus_dpo" \
         --per_device_train_batch_size 8 \
@@ -70,7 +73,7 @@ python ../../../../intel_extension_for_transformers/neural_chat/examples/finetun
         --lora_alpha 16 \
         --lora_rank 16 \
         --lora_dropout 0.05 \
-        --dataset_name /lkk/orca_dpo_pairs \
+        --dataset_name Intel/orca_dpo_pairs \
         --bf16 \
         --max_length 1536 \
         --max_prompt_length 1024 \

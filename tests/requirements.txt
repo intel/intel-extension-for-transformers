@@ -20,3 +20,7 @@ git+https://github.com/huggingface/optimum.git@fa8ad73de9063885476ee39dff7c0bffb
 git+https://github.com/huggingface/optimum-intel.git
 peft
 tyro
+bitsandbytes
+tiktoken
+transformers_stream_generator
+einops
