@@ -323,11 +323,10 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(utils::bit4x2* srcptr, 
   return JblasNotSupport;
 }
 
-template <typename _ST, typename _DT, bool _IS_SYM = true>
+template <JBLAS_DTYPE _SRCT, typename _ST, typename _DT, bool _IS_SYM = true>
 static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, _DT* dstptr, int row, int col,
                                                          int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
                                                          int k_offset, int kblock, int NPad,
-                                                         void (*dequantize)(_DT*, int8_t*, __m512*, __m512i*),
                                                          void (*pad_bit4)(int8_t*, int8_t*, __m512i, int),
                                                          int8_t* tmpbuf, size_t tmpsize) {
   uint32_t mask = 0xf0f0f0f0;
@@ -361,10 +360,12 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, 
 
         for (; irow < row0; irow++) {
           pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + icol / 2), zmm_mask, LoadMask64);
-          if constexpr (_IS_SYM) {
-            dequantize(dstptr + irow * ld_dst + icol, tmpbuf, vscales, nullptr);
+          auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+              utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+          if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+            dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
           } else {
-            dequantize(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+            dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
           }
         }
       }
@@ -385,10 +386,12 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, 
         for (int irr = 0; irr < kblock; irr += 1) {
           pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + (irow + irr) * ld_src / 2 + icol / 2), zmm_mask,
                    LoadMask64);
-          if constexpr (_IS_SYM) {
-            dequantize(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, nullptr);
+          auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+              utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+          if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+            dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, vzps);
           } else {
-            dequantize(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, vzps);
+            dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, vzps);
           }
         }
       }
@@ -406,10 +409,98 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, 
       }
       for (; irow < row; irow++) {
         pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + icol / 2), zmm_mask, LoadMask64);
-        if constexpr (_IS_SYM) {
-          dequantize(dstptr + irow * ld_dst + icol, tmpbuf, vscales, nullptr);
+        auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+            utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+        if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+          dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
         } else {
-          dequantize(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+          dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+        }
+      }
+    }
+    return JblasSuccess;
+  } else if (col % 96 == 0) {
+    constexpr int ColTile = 96;
+    constexpr int NRegs = ColTile / 16;
+    constexpr int LoadMask64 = (1 << (64 / 8)) - 1;
+    for (int icol = 0; icol < col; icol += ColTile) {
+      __m512 vscales[NRegs];
+      __m512i vzps[NRegs];
+      assert(tmpsize >= ColTile);
+      int row0 = kblock - k_offset % kblock;
+      row0 = row0 == kblock ? 0 : row0;
+      row0 = row0 > row ? row : row0;
+      int row1 = row - row0;
+      int irow = 0;
+      if (row0) {
+        for (int iv = 0; iv < 3; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 3, &tmpscale, broadcast_idx);
+          if constexpr (!_IS_SYM) {
+            auto tmpzp = _mm_loadu_si128(
+                reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2));
+            auto vzp = _mm512_cvtepi8_epi32(tmpzp);
+            vec_broadcast_epi32_1_2(vzps + iv * 3, &vzp, broadcast_idx);
+          }
+        }
+
+        for (; irow < row0; irow++) {
+          pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + icol / 2), zmm_mask, LoadMask64);
+          auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+              utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+          if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+            dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+          } else {
+            dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+          }
+        }
+      }
+
+      int row1_blk = utils::padto_le(row1, kblock) + row0;
+      for (; irow < row1_blk; irow += kblock) {
+        for (int iv = 0; iv < 2; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 2, &tmpscale, broadcast_idx);
+          if constexpr (!_IS_SYM) {
+            auto tmpzp = _mm_loadu_si128(
+                reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2));
+            auto vzp = _mm512_cvtepi8_epi32(tmpzp);
+            vec_broadcast_epi32_1_2(vzps + iv * 2, &vzp, broadcast_idx);
+          }
+        }
+
+        for (int irr = 0; irr < kblock; irr += 1) {
+          pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + (irow + irr) * ld_src / 2 + icol / 2), zmm_mask,
+                   LoadMask64);
+          auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+              utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+          if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+            dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, vzps);
+          } else {
+            dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales, vzps);
+          }
+        }
+      }
+      if (irow < row) {
+        for (int iv = 0; iv < 2; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 2, &tmpscale, broadcast_idx);
+          if constexpr (!_IS_SYM) {
+            auto tmpzp = _mm_loadu_si128(
+                reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2));
+            auto vzp = _mm512_cvtepi8_epi32(tmpzp);
+            vec_broadcast_epi32_1_2(vzps + iv * 2, &vzp, broadcast_idx);
+          }
+        }
+      }
+      for (; irow < row; irow++) {
+        pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + icol / 2), zmm_mask, LoadMask64);
+        auto constexpr SRC_TYPE = static_cast<JBLAS_DTYPE>(
+            utils::jblas_dtype_get_mask_val(_SRCT, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+        if constexpr (SRC_TYPE == JBLAS_DTYPE::TypeFloat) {
+          dequant_f4_N<ColTile, _DT, _SRCT>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
+        } else {
+          dequant_s8_N<ColTile, _DT, _IS_SYM>(dstptr + irow * ld_dst + icol, tmpbuf, vscales, vzps);
         }
       }
     }
@@ -435,13 +526,13 @@ static inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* 
     }
   } else if constexpr (_PACK_ROW == 2) {
     if (zero_points == nullptr) {
-      return decompress_kblock_bit4_packrow2<_ST, _DST_T, true>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
-          &dequant_s8_N<64, _DST_T, true>, &convert_s4_s8<S4_T>, tmp, tmpsize);
+      return decompress_kblock_bit4_packrow2<S4_T, _ST, _DST_T, true>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                      zero_points, k_offset, kblock, NPad,
+                                                                      &convert_s4_s8<S4_T>, tmp, tmpsize);
     } else {
-      return decompress_kblock_bit4_packrow2<_ST, _DST_T, false>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset, kblock, NPad,
-          &dequant_s8_N<64, _DST_T, false>, &convert_s4_s8<S4_T>, tmp, tmpsize);
+      return decompress_kblock_bit4_packrow2<S4_T, _ST, _DST_T, false>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                       zero_points, k_offset, kblock, NPad,
+                                                                       &convert_s4_s8<S4_T>, tmp, tmpsize);
     }
   }
   return JblasNotSupport;
@@ -456,9 +547,8 @@ static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* ds
                                                               k_offset, kblock, NPad, &dequant_f4_N<48, _DST_T, _F4_T>,
                                                               pad_fp4, tmp, tmpsize);
   } else if constexpr (_PACK_ROW == 2) {
-    return decompress_kblock_bit4_packrow2<_ST, _DST_T, true>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
-                                                              k_offset, kblock, NPad, &dequant_f4_N<64, _DST_T, _F4_T>,
-                                                              pad_fp4, tmp, tmpsize);
+    return decompress_kblock_bit4_packrow2<_F4_T, _ST, _DST_T, true>(
+        srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset, kblock, NPad, pad_fp4, tmp, tmpsize);
   }
   return JblasNotSupport;
 }

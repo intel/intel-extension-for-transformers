@@ -51,7 +51,7 @@ class LauncherBase {
   Epilogue mEpilogue;
 
   void run(const Param& _param, const parallel::gemm::ThreadProblemBase& _config) {
-    mGemmCore.configure();
+    mGemmCore.configure(_config.size[0], _config.size[1], _param.problem.dims[3]);
     auto StackTmp = alloca(_config.stacksize);
     auto tmpB = reinterpret_cast<BType*>(StackTmp);
     tmpB = utils::cpu_pointer_align(tmpB);
@@ -148,7 +148,7 @@ class LauncherKBlock {
   Epilogue mEpilogue;
 
   void run(const Param& _param, const parallel::gemm::ThreadProblemBase& _config) {
-    mGemmCore.configure();
+    mGemmCore.configure(_config.size[0], _config.size[1], _param.problem.dims[3]);
     auto StackTmp = alloca(_config.stacksize);
     auto tmpB = reinterpret_cast<BType*>(StackTmp);
     tmpB = utils::cpu_pointer_align(tmpB);
@@ -310,7 +310,7 @@ class LauncherIntKBlock {
   Epilogue mEpilogue;
 
   void run(const Param& _param, const parallel::gemm::ThreadProblemBase& _config) {
-    mGemmCore.configure();
+    mGemmCore.configure(_config.size[0], _config.size[1], _param.problem.dims[3]);
     auto StackTmp = alloca(_config.stacksize);
     auto tmpB = reinterpret_cast<BType*>(StackTmp);
     tmpB = utils::cpu_pointer_align(tmpB);
