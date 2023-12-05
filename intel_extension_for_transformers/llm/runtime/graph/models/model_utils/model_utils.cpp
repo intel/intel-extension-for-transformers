@@ -56,8 +56,8 @@
 //
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
-static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache,
-                          const ne_type wtype,  // NOLINT
+static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, // NOLINT
+                          const ne_type wtype,
                           const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
                           model_struct* model) {
   const auto n_layer = hparams.n_layer;
@@ -212,8 +212,8 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
-                       bool use_mmap,  // NOLINT
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, // NOLINT
+                       bool use_mmap,
                        bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
