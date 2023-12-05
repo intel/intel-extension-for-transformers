@@ -10,3 +10,4 @@ onnx>=1.12
 onnxruntime==1.13.1
 onnxoptimizer
 evaluate
+optimum
