@@ -29,6 +29,7 @@ using tAVX_VNNI = jblas::gemm::ICoreRowNAvxvnni<24, 4>;
 using tAVX512F = jblas::gemm::SCoreRowNAvx512f<48, 8>;
 using tAVX512_VNNI = jblas::gemm::ICoreRowNAvx512vnni<48, 8>;
 using tAMX_BF16 = jblas::gemm::HCoreRowNAmxbf16<48, 16>;
+using tAVX512_BF16 = jblas::gemm::HCoreRowNAvx512bf16<48, 8>;
 using tAVX512_FP16 = jblas::gemm::HCoreRowNAvx512fp16<96, 8>;
 using tAMX_INT8_US = jblas::gemm::ICoreRowNAmxint8<48, 16>;
 using tAMX_INT8_SS = jblas::gemm::ICoreRowNAmxint8SS<48, 16>;

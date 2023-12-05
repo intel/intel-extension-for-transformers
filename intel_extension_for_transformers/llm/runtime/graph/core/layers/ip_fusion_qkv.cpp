@@ -203,8 +203,14 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
     }
     if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
       if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-        ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                      workspace, pth);
+        if (_m <= tAVX512_BF16::MTILE) {
+          static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+          ip_qkv::JblasGemmCompF32<tAVX512_BF16, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output,
+                                                           ldo, workspace, pth);
+        } else {
+          ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                        workspace, pth);
+        }
       }
     }
     if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
@@ -239,8 +245,14 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
     }
     if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
       if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-        ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
-                                                    workspace, pth);
+        if (_m <= tAVX512_BF16::MTILE) {
+          static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+          ip_qkv::JblasGemmCompF32<tAVX512_BF16, tWeiNInt>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output,
+                                                           ldo, workspace, pth);
+        } else {
+          ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                      workspace, pth);
+        }
       }
     }
   }
