@@ -28,7 +28,7 @@ unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void*
 void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo,
                           void* workspace) {
   auto ret = JblasRuntimeError;
-  JBLAS_GEMM_DATA_PACKED_PARAMS param{activation, weiptr, output, lda, ldo};
+  JBLAS_GEMM_DATA_PACKED_PARAMS param{activation, weiptr, output, static_cast<size_t>(lda), static_cast<size_t>(ldo)};
   if (!JblasGemmBatchDriver(_m, _n, _k, 1, &param, reinterpret_cast<int8_t*>(workspace), get_threading())) {
     printf("Err: invalid parameters\n");
     assert(0);
@@ -145,8 +145,14 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ip_add::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
-                                                                      bias, broadcast_bias, workspace, pth);
+          if (_m <= tAVX512_BF16::MTILE) {
+            static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
+                                                                           ldo, bias, broadcast_bias, workspace, pth);
+          } else {
+            ip_add::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
+                                                                        bias, broadcast_bias, workspace, pth);
+          }
         }
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
@@ -181,8 +187,14 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ip_add::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                                    broadcast_bias, workspace, pth);
+          if (_m <= tAVX512_BF16::MTILE) {
+            static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
+                                                                           ldo, bias, broadcast_bias, workspace, pth);
+          } else {
+            ip_add::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
+                                                                      bias, broadcast_bias, workspace, pth);
+          }
         }
       }
     }
