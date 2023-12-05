@@ -538,8 +538,8 @@ struct whisper_context {
 };
 
 template <typename T>
-static void read_safe(whisper_model_loader* loader, const T& dest) {
-  loader->read(loader->context, *dest, sizeof(T));
+static void read_safe(whisper_model_loader* loader, T& dest) { //NOLINT
+  loader->read(loader->context, &dest, sizeof(T));
 }
 
 static bool kv_cache_init(const struct whisper_hparams& hparams, const size_t mem_bytes, struct whisper_kv_cache* cache,
@@ -631,7 +631,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 
   // verify magic
   {
-    uint32_t* magic;
+    uint32_t magic;
     read_safe(loader, magic);
     // if (magic != MODEL_FILE_MAGIC) {
     //   fprintf(stderr, "%s: invalid model data (bad magic)\n", __func__);
@@ -4100,7 +4100,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
               int n_new = 1;
 
               if (params.token_timestamps) {
-                whisper_exp_compute_token_level_timestamps(*ctx, *state, result_all.size() - 1, params.thold_pt,
+                whisper_exp_compute_token_level_timestamps(ctx, state, result_all.size() - 1, params.thold_pt,
                                                            params.thold_ptsum);
 
                 if (params.max_len > 0) {
@@ -4145,7 +4145,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           int n_new = 1;
 
           if (params.token_timestamps) {
-            whisper_exp_compute_token_level_timestamps(*ctx, *state, result_all.size() - 1, params.thold_pt,
+            whisper_exp_compute_token_level_timestamps(ctx, state, result_all.size() - 1, params.thold_pt,
                                                        params.thold_ptsum);
 
             if (params.max_len > 0) {
