@@ -2490,8 +2490,7 @@ class BaseTrainer():
         input_names=list(input.keys())
         output_names=None
 
-        model_name_or_path = model.config._name_or_path
-        task = TasksManager.infer_task_from_model(model_name_or_path)
+        task = self.infer_task(model)
         try:
             # try to get export config
             onnx_config_constructor = TasksManager.get_exporter_config_constructor(
@@ -2508,6 +2507,33 @@ class BaseTrainer():
 
         return input, input_names, output_names, axes_dict
     
+    def infer_task(self, model):
+        """Infer task."""
+        from optimum.exporters.tasks import TasksManager
+
+        if not hasattr(model, "config"):
+            raise ValueError("model doesn't have 'config' attribute.")
+        
+        try:
+            # infer task from model id
+            model_name_or_path = model.config._name_or_path
+            task = TasksManager.infer_task_from_model(model_name_or_path)
+        except:
+            try:
+                # infer task from model itself
+                task = TasksManager.infer_task_from_model(model)
+            except:  # pragma: no cover
+                try: 
+                    # infer task from model type
+                    model_type = model.config.model_type.replace("_", "-")
+                    tasks = TasksManager.get_supported_tasks_for_model_type(model_type, "onnx")
+                    if len(tasks) != 0:
+                        task = tasks[0]
+                except:
+                    raise ValueError("Could not infer the task.")
+        
+        return task
+
     @staticmethod
     def _remove_label(input):
         if "labels" in input:  # for GLUE
