@@ -71,7 +71,7 @@ const std::vector<std::string> k_colors = {
     "\033[38;5;226m", "\033[38;5;190m", "\033[38;5;154m", "\033[38;5;118m", "\033[38;5;82m",
 };
 
-bool read_wav(const std::string& fname, std::vector<float> pcmf32, std::vector<std::vector<float>> pcmf32s,
+bool read_wav(const std::string& fname, std::vector<float>& pcmf32, std::vector<std::vector<float>>& pcmf32s,
               bool stereo) {
   drwav wav;
   std::vector<uint8_t> wav_data;  // used for pipe input from stdin
