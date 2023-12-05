@@ -369,6 +369,11 @@ Classes
       Get input name, output names and axes for export.
 
 
+   .. py:method:: infer_task(model)
+
+      Infer task.
+
+
    .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', batch_size: int = 8, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
 
       get performance of model
