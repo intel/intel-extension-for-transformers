@@ -45,13 +45,12 @@ void do_gemm(jblas_gemm_runtime_ctx* ctx) {
     launcher.mProB.packWeight(ctx->n, ctx->k, {reinterpret_cast<DT*>(ctx->matB->data_ptr()), ctx->n, &packw},
                               &dispatcher_utils::DefaultThreading);
   }
-  typename Launcher::Param args{ctx->m,
-                                ctx->n,
-                                ctx->k,
+  jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k);
+  typename Launcher::Param args{gp,
                                 {reinterpret_cast<DT*>(ctx->matA->data_ptr()), ctx->k},
                                 {reinterpret_cast<DT*>(ctx->matB->data_ptr()), ctx->n, &packw},
                                 {reinterpret_cast<DT*>(ctx->matC->data_ptr()), ctx->n}};
-  jblas::parallel::GemmBaseRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+  jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
   jblas::utils::afree(tmpbuf);
 }
 
