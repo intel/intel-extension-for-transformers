@@ -114,16 +114,16 @@ void GPTJ::load(model_context* ctx, model_progress_callback progress_callback, v
   model.others[1] = ml->get_tensor("transformer.ln_f.weight", {n_embd}, NE_BACKEND_CPU);
   model.others[2] = ml->get_tensor("transformer.ln_f.bias", {n_embd}, NE_BACKEND_CPU);
   model.others[3] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab},
-                                   n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
-  model.others[4] =
-      ml->get_tensor("lm_head.bias", {n_vocab}, n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
+                                   n_gpu_layer > static_cast<int>(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
+  model.others[4] = ml->get_tensor("lm_head.bias", {n_vocab},
+                                   n_gpu_layer > static_cast<int>(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
 
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
   size_t vram_total = 0;
   for (uint32_t i = 0; i < n_layer; ++i) {
-    const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+    const ne_backend backend = static_cast<int>(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
     std::string layers_i = "transformer.h." + std::to_string(i);
 

@@ -298,11 +298,11 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab);
     }
   }
 
@@ -311,7 +311,8 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {

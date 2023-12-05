@@ -106,7 +106,7 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
   }
 
   for (int il = 0; il < n_layer; ++il) {
-    struct ne_tensor* inpSA = inpL;  // TODO: copy?
+    struct ne_tensor* inpSA = inpL;
 
     struct ne_tensor* cur;
     lctx.use_buf(ctx0, 0);
@@ -131,8 +131,7 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
     // self-attention
     {
       struct ne_tensor* Qcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0 * sizeof(float) * n_embd);
-      struct ne_tensor* Kcur =
-          ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);  // TODO: float or fp16?
+      struct ne_tensor* Kcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1 * sizeof(float) * n_embd);
       struct ne_tensor* Vcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2 * sizeof(float) * n_embd);
 
       // store key and value to memory
@@ -163,10 +162,11 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled = ne_scale(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled =
+          ne_scale(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>(n_embd) / n_head)));
 
       // Alibi
-      // KQ_scaled_alibi = KQ_scaled + alibi_bias //TODO: optimize
+      // KQ_scaled_alibi = KQ_scaled + alibi_bias
       struct ne_tensor* KQ_scaled_alibi = ne_alibi(ctx0, KQ_scaled, n_past, n_head, 8);
 
       // KQ_masked = mask_past(KQ_scaled)
@@ -276,11 +276,12 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -289,7 +290,8 @@ static bool bloom_model_eval_internal(model_context* ctx, const model_input* inp
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {

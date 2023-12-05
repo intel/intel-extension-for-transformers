@@ -79,14 +79,8 @@ function run_benchmark {
 
     if [ "${topology}" = "starcoder_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/starcode_3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "codellama_7b" ]; then
         model_name_or_path="codellama/CodeLlama-7b-hf"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     fi
 
 

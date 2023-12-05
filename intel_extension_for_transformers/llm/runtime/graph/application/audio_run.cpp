@@ -741,7 +741,7 @@ int main(int argc, char** argv) {
   params.model_name = MODEL_NAME;
 #endif
 
-  if (whisper_params_parse(argc, argv, params) == false) {
+  if (whisper_params_parse(argc, argv, &params) == false) {
     whisper_print_usage(argc, argv, params);
     return 1;
   }
