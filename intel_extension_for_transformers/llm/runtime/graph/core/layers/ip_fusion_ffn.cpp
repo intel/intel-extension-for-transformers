@@ -281,8 +281,14 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
-                                                                        output, seq, fin, fmid, fout, workspace, pth);
+          if (seq <= tAVX512_BF16::MTILE) {
+            static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+            ffn_silu::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth);
+          } else {
+            ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
+                                                                          output, seq, fin, fmid, fout, workspace, pth);
+          }
         }
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
@@ -317,8 +323,14 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
-          ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
-                                                                      seq, fin, fmid, fout, workspace, pth);
+          if (seq <= tAVX512_BF16::MTILE) {
+            static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+            ffn_silu::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth);
+          } else {
+            ffn_silu::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
+                                                                        output, seq, fin, fmid, fout, workspace, pth);
+          }
         }
       }
     }
