@@ -32,7 +32,7 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-void process_escapes(std::string& input) { //NOLINT
+void process_escapes(std::string& input) {  // NOLINT
   std::size_t input_len = input.length();
   std::size_t output_idx = 0;
 
@@ -70,7 +70,7 @@ void process_escapes(std::string& input) { //NOLINT
   input.resize(output_idx);
 }
 
-bool gpt_params_parse(int argc, char** argv, gpt_params& params) { //NOLINT
+bool gpt_params_parse(int argc, char** argv, gpt_params& params) {  // NOLINT
   bool invalid_param = false;
   bool escape_prompt = false;
   std::string arg;
@@ -424,7 +424,8 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  -n N, --n-predict N   number of tokens to predict (default: %d, -1 = infinity)\n",
           params.n_predict);
   fprintf(stderr, "  --top-k N             top-k sampling (default: %d, 0 = disabled)\n", params.top_k);
-  fprintf(stderr, "  --top-p N             top-p sampling (default: %.1f, 1.0 = disabled)\n", static_cast<double>(params.top_p));
+  fprintf(stderr, "  --top-p N             top-p sampling (default: %.1f, 1.0 = disabled)\n",
+          static_cast<double>(params.top_p));
   fprintf(stderr, "  --tfs N               tail free sampling, parameter z (default: %.1f, 1.0 = disabled)\n",
           static_cast<double>(params.tfs_z));
   fprintf(stderr, "  --typical N           locally typical sampling, parameter p (default: %.1f, 1.0 = disabled)\n",

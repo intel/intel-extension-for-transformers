@@ -22,9 +22,9 @@
 #include <iostream>
 #include <map>
 #include <random>
-#include <regex> //NOLINT
+#include <regex>  //NOLINT
 #include <string>
-#include <thread> //NOLINT
+#include <thread>  //NOLINT
 #include <vector>
 
 #include "core/data_types.h"
@@ -538,7 +538,7 @@ struct whisper_context {
 };
 
 template <typename T>
-static void read_safe(whisper_model_loader* loader, T& dest) { //NOLINT
+static void read_safe(whisper_model_loader* loader, T& dest) {  // NOLINT
   loader->read(loader->context, &dest, sizeof(T));
 }
 
@@ -1388,8 +1388,9 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
             2, 1, 3);
 
         struct ne_tensor* K = ne_permute(
-            ctx0, ne_cpy(ctx0, Kcur, ne_new_tensor_3d(ctx0, wctx->itype, n_state / n_head, n_head, n_ctx, NE_SIZE_CALC)),
-            0, 2, 1, 3);
+            ctx0,
+            ne_cpy(ctx0, Kcur, ne_new_tensor_3d(ctx0, wctx->itype, n_state / n_head, n_head, n_ctx, NE_SIZE_CALC)), 0,
+            2, 1, 3);
 
         // K * Q
         struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
@@ -1766,7 +1767,8 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
 
       // Kcross is already scaled
       struct ne_tensor* Kcross = ne_reshape_3d(
-          ctx0, ne_view_1d(ctx0, wstate->kv_cross.k, M * n_state, il * M * ne_element_size(wstate->kv_cross.k) * n_state),
+          ctx0,
+          ne_view_1d(ctx0, wstate->kv_cross.k, M * n_state, il * M * ne_element_size(wstate->kv_cross.k) * n_state),
           n_state / n_head, n_head, M);
 
       // struct ne_tensor * Vcross =
@@ -2953,7 +2955,7 @@ static int whisper_wrap_segment(struct whisper_context* ctx, struct whisper_stat
 
       // add tokens [i, end] to the new segment
       state->result_all.back().tokens.insert(state->result_all.back().tokens.end(), segment.tokens.begin() + i,
-                                            segment.tokens.end());
+                                             segment.tokens.end());
 
       state->result_all.back().speaker_turn_next = segment.speaker_turn_next;
 
@@ -4165,7 +4167,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
     }
   }
   return 0;
-} //NOLINT
+}  // NOLINT
 
 int whisper_full(struct whisper_context* ctx, struct whisper_full_params params, const float* samples, int n_samples) {
   return whisper_full_with_state(ctx, ctx->state, params, samples, n_samples);

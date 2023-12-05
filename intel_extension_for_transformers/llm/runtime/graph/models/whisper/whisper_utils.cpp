@@ -4,7 +4,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
-#include <thread> //NOLINT
+#include <thread>  //NOLINT
 #include <vector>
 
 #include "whisper.h"
@@ -26,7 +26,8 @@ std::string to_timestamp(int64_t t, bool comma) {
   msec = msec - sec * 1000;
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", static_cast<int>(hr), static_cast<int>(min), static_cast<int>(sec), comma ? "," : ".", static_cast<int>(msec));
+  snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", static_cast<int>(hr), static_cast<int>(min), static_cast<int>(sec),
+           comma ? "," : ".", static_cast<int>(msec));
 
   return std::string(buf);
 }

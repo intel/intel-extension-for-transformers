@@ -32,12 +32,12 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <mutex> //NOLINT
+#include <mutex>  //NOLINT
 #include <numeric>
 #include <queue>
 #include <random>
 #include <sstream>
-#include <thread> //NOLINT
+#include <thread>  //NOLINT
 #include <unordered_map>
 
 #include "application/common.h"
@@ -56,7 +56,8 @@
 //
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
-static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype, //NOLINT
+static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache,
+                          const ne_type wtype,  // NOLINT
                           const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
                           model_struct* model) {
   const auto n_layer = hparams.n_layer;
@@ -211,7 +212,8 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, bool use_mmap, //NOLINT
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+                       bool use_mmap,  // NOLINT
                        bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
@@ -249,7 +251,7 @@ static_assert(std::is_trivially_copyable<model_sp_symbol>::value, "model_sp_symb
 
 struct model_sp_bigram {
   struct comparator {
-    bool operator()(model_sp_bigram& l, model_sp_bigram& r) { //NOLINT
+    bool operator()(model_sp_bigram& l, model_sp_bigram& r) {  // NOLINT
       return (l.score < r.score) || (l.score == r.score && l.left > r.left);
     }
   };
@@ -264,7 +266,7 @@ struct model_sp_bigram {
 // original implementation:
 // https://github.com/ggerganov/model.cpp/commit/074bea2eb1f1349a0118239c4152914aecaa1be4
 struct model_tokenizer {
-  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {} //NOLINT
+  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {}  // NOLINT
 
   void tokenize(const std::string& text, std::vector<model_vocab::id>& output) {
     // split string into utf8 chars
@@ -719,7 +721,8 @@ void model_sample_frequency_and_presence_penalties(struct model_context* ctx, mo
     }
 
     int count = token_iter->second;
-    candidates->data[i].logit -= float(count) * alpha_frequency + static_cast<float>((count > 0)) * alpha_presence;
+    candidates->data[i].logit -=
+        static_cast<float>(count) * alpha_frequency + static_cast<float>((count > 0)) * alpha_presence;
   }
 
   candidates->sorted = false;
@@ -869,7 +872,7 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas; //NOLINT
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
@@ -1052,8 +1055,8 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
   return new_size;
 }
 
-void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor, //NOLINT
-                        model_file_saver& saver, size_t& size_org, size_t& size_new) { //NOLINT
+void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,  // NOLINT
+                        model_file_saver& saver, size_t& size_org, size_t& size_new) {                      // NOLINT
   size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
   enum ne_type new_type = quant_params_to_type(params);
   model_buffer work;
@@ -2224,7 +2227,7 @@ struct logits_info {
     float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
   };
 
-  logits_info(struct model_context* lctx) //NOLINT
+  logits_info(struct model_context* lctx)  // NOLINT
       : ctx(lctx),
         logits(model_get_logits(lctx)),
         batch_size(lctx->batch_size),
