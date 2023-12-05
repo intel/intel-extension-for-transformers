@@ -408,9 +408,8 @@ class TestQuantization(unittest.TestCase):
         cmd = (
             "git clone https://huggingface.co/" + MODEL_NAME + ' local_model_dir'
         )
-        p = subprocess.Popen(
-            cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )  # nosec
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
         # use local path to create model and trainer
