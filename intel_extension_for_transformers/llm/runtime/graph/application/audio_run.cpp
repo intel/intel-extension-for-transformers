@@ -71,7 +71,7 @@ const std::vector<std::string> k_colors = {
     "\033[38;5;226m", "\033[38;5;190m", "\033[38;5;154m", "\033[38;5;118m", "\033[38;5;82m",
 };
 
-bool read_wav(const std::string& fname, std::vector<float>& pcmf32, std::vector<std::vector<float>>& pcmf32s,
+bool read_wav(const std::string& fname, std::vector<float>* pcmf32, std::vector<std::vector<float>>* pcmf32s,
               bool stereo) {
   drwav wav;
   std::vector<uint8_t> wav_data;  // used for pipe input from stdin
@@ -128,26 +128,26 @@ bool read_wav(const std::string& fname, std::vector<float>& pcmf32, std::vector<
   drwav_uninit(&wav);
 
   // convert to mono, float
-  pcmf32.resize(n);
+  (*pcmf32).resize(n);
   if (wav.channels == 1) {
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32[i] = static_cast<float>(pcm16[i]) / 32768.0f;
+      (*pcmf32)[i] = static_cast<float>(pcm16[i]) / 32768.0f;
     }
   } else {
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32[i] = static_cast<float>(pcm16[2 * i] + pcm16[2 * i + 1]) / 65536.0f;
+      (*pcmf32)[i] = static_cast<float>(pcm16[2 * i] + pcm16[2 * i + 1]) / 65536.0f;
     }
   }
 
   if (stereo) {
     // convert to stereo, float
-    pcmf32s.resize(2);
+    (*pcmf32s).resize(2);
 
-    pcmf32s[0].resize(n);
-    pcmf32s[1].resize(n);
+    (*pcmf32s)[0].resize(n);
+    (*pcmf32s)[1].resize(n);
     for (uint64_t i = 0; i < n; i++) {
-      pcmf32s[0][i] = static_cast<float>(pcm16[2 * i]) / 32768.0f;
-      pcmf32s[1][i] = static_cast<float>(pcm16[2 * i + 1]) / 32768.0f;
+      (*pcmf32s)[0][i] = static_cast<float>(pcm16[2 * i]) / 32768.0f;
+      (*pcmf32s)[1][i] = static_cast<float>(pcm16[2 * i + 1]) / 32768.0f;
     }
   }
 
@@ -780,7 +780,7 @@ int main(int argc, char** argv) {
     std::vector<float> pcmf32;                // mono-channel F32 PCM
     std::vector<std::vector<float>> pcmf32s;  // stereo-channel F32 PCM
 
-    if (!::read_wav(fname_inp, pcmf32, pcmf32s, params.diarize)) {
+    if (!::read_wav(fname_inp, &pcmf32, &pcmf32s, params.diarize)) {
       fprintf(stderr, "error: failed to read WAV file '%s'\n", fname_inp.c_str());
       continue;
     }
