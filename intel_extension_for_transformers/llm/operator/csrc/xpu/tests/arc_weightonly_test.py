@@ -20,7 +20,6 @@ import intel_extension_for_transformers.gbits as gbits
 import inspect
 from functools import wraps
 
-
 def capture_args(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -40,7 +39,6 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     torch.manual_seed(0)
     
     ref_activation = torch.rand(m, k, dtype=torch.float).to('xpu')
-    # ref_activation = torch.ones(m, k, dtype=torch.float).to('xpu')
     tar_activation = ref_activation.clone()
     tar_dst = torch.zeros(m, n, dtype=torch.float).to('xpu')
     wei_row = k
@@ -48,7 +46,6 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, is_
     if transpose:
         wei_row, wei_col = wei_col, wei_row
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float).to('xpu')
-    # raw_wei = torch.ones(wei_row, wei_col, dtype=torch.float).to('xpu')
     if is_meta:
         raw_wei = torch.empty(raw_wei.shape, dtype=raw_wei.dtype).to('meta')
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float).to('xpu')
@@ -92,6 +89,9 @@ blocksizes = [16, 32, 64, 128, 256, 1024]
 do_trans = [False, True]
 add_bias = [False, True]
 meta_weight = [True, False]
+
+workspace = torch.zeros(1572928, dtype=torch.int8)
+gbits.set_workspace(workspace)
 
 for weight_type in configs:
     m = 256

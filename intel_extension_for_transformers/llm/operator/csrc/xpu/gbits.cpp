@@ -22,21 +22,16 @@
 #define CONSTANT
 #endif
 
+void* workspace = nullptr;
+int64_t workspace_size = 0;
+
 void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                             uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                            int dequant_s, fp16 *bias);
-
-// void xetla_linear_fp32_bias(sycl::queue queue, float *A, CompressWei4Bit *B,
-//                             float *C, uint32_t matrix_m, uint32_t matrix_n,
-//                             uint32_t matrix_k, int dequant_s, float *bias);
+                            int dequant_s, fp16 *bias, void *workspace, int64_t workspace_size);
 
 void xetla_linear_fp16(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-                       int dequant_s);
-
-// void xetla_linear_fp32(sycl::queue queue, float *A, CompressWei4Bit *B,
-//                        float *C, uint32_t matrix_m, uint32_t matrix_n,
-//                        uint32_t matrix_k, int dequant_s);
+                       int dequant_s, void *workspace, int64_t workspace_size);
 
 static void gbits_linear(const torch::Tensor &activation,
                          const torch::Tensor weight, const torch::Tensor &bias,
@@ -55,26 +50,19 @@ static void gbits_linear(const torch::Tensor &activation,
   uint32_t matrix_k = activation.sizes()[1];
   if (initer.verbose) timer.start();
   if (activation.dtype() == torch::kFloat32) {
-    // auto *A = activation.data_ptr<float>();
-    // auto *C = output.data_ptr<float>();
-    // if (with_bias) {
-    //   auto *D = reinterpret_cast<float *>(bias.data_ptr<float>());
-    //   xetla_linear_fp32_bias(queue, A, &obj, C, matrix_m, matrix_n,
-    //                          matrix_k, obj._blksize, D);
-    // } else {
-    //   xetla_linear_fp32(queue, A, &obj, C, matrix_m, matrix_n,
-    //                     matrix_k, obj._blksize);
-    // }
+    std::cout << "Only support fp16 input now, aborting ... "
+              << std::endl;
+    exit(0);
   } else {
     auto *A = reinterpret_cast<fp16 *>(activation.data_ptr<at::Half>());
     auto *C = reinterpret_cast<fp16 *>(output.data_ptr<at::Half>());
     if (with_bias) {
       auto *D = reinterpret_cast<fp16 *>(bias.data_ptr<at::Half>());
       xetla_linear_fp16_bias(queue, A, weight.data_ptr<int8_t>(), C, matrix_m, matrix_n,
-                             matrix_k, blksize, D);
+                             matrix_k, blksize, D, workspace, workspace_size);
     } else {
       xetla_linear_fp16(queue, A, weight.data_ptr<int8_t>(), C, matrix_m, matrix_n,
-                        matrix_k, blksize);
+                        matrix_k, blksize, workspace, workspace_size);
     }
   }
   if (initer.verbose) {
@@ -196,8 +184,14 @@ static torch::Tensor gbits_quantize(const torch::Tensor &weight, bool transpose,
   return output;
 }
 
+static void set_workspace(torch::Tensor& workspace_tensor) {
+  workspace = workspace_tensor.data_ptr();
+  workspace_size = workspace_tensor.element_size() * workspace_tensor.numel();
+}
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("linear", &gbits_linear, "gbits_linear forward (XPU)");
   m.def("quantize", &gbits_quantize, "gbits_quantize forward (XPU)");
   m.def("dequantize", &gbits_dequantize, "gbits_dequantize forward (XPU)");
+  m.def("set_workspace", &set_workspace, "set_workspace (XPU)");
 }
