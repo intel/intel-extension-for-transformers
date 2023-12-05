@@ -877,7 +877,7 @@ class Finetuning:
             gaudi_config = GaudiConfig()
             gaudi_config.use_fused_adam = True
             gaudi_config.use_fused_clip_norm = True
-            trainer = Seq2SeqTrainer(
+            trainer = GaudiSeq2SeqTrainer(
                 model=model,
                 gaudi_config=gaudi_config,
                 args=training_args,
