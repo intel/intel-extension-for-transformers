@@ -39,7 +39,7 @@ struct woq_runtime_ctx {
   bool transpose;
   int64_t blocksize, m, n, k, lda, ldo;
   float alpha, beta;
-  jblas::storage::gemm::WeightBase* deseries_wei;
+  jblas::storage::gemm::IWeightBase* deseries_wei;
 };
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);

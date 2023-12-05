@@ -107,27 +107,21 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   using GemmCore = typename Launcher::GemmCore;
   if constexpr (GemmCore::ISA == JblasAMX_INT8 || GemmCore::ISA == JblasAVX512_VNNI || GemmCore::ISA == JblasAVX_VNNI) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore>;
-    typename Launcher::Param args{ctx->m,
-                                  ctx->deseries_wei->mN,
-                                  ctx->deseries_wei->mK,
-                                  ctx->blocksize,
-                                  param_a,
-                                  dynamic_cast<jblas::storage::gemm::WeightKBlockBase*>(ctx->deseries_wei),
-                                  param_epi};
-    jblas::parallel::GemmKBlockRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
+    typename Launcher::Param args{gp, param_a,
+                                  dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei), param_epi};
+    jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore>;
     using StorageWeight = typename Launcher::PrologueB::StorageWeight;
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
-    typename Launcher::Param args{ctx->m,
-                                  ctx->deseries_wei->mN,
-                                  ctx->deseries_wei->mK,
-                                  ctx->blocksize,
+    jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
+    typename Launcher::Param args{gp,
                                   param_a,
-                                  dynamic_cast<jblas::storage::gemm::WeightKBlockBase*>(ctx->deseries_wei),
-                                  {packedw->template SPtr<int8_t>(), packedw->mScaT, packedw->mCStep},
+                                  dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei),
+                                  {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep()},
                                   param_epi};
-    jblas::parallel::GemmKBlockRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
   }
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
@@ -301,7 +295,7 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK>
 void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
   ctx->deseries_wei = jblas::storage::gemm::PackedWeightParser::deserialBuffer(ctx->weight->data_ptr());
-  ctx->blocksize = dynamic_cast<jblas::storage::gemm::WeightKBlockBase*>(ctx->deseries_wei)->mBlockSize;
+  ctx->blocksize = dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei)->mBlockSize;
   auto NTile = jblas::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, jblas::gemm::CoreAttr::NTILE_MASK,
                                                    jblas::gemm::CoreAttr::NTILE_SHIFT);
   auto CType = jblas::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,

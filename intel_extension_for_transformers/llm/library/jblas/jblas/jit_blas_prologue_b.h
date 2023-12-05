@@ -30,9 +30,9 @@ static inline void transposeWeight(const int Row, const int Col, const WT* src, 
     jblas::parallel::ThreadProblem2D thdp{tidx};
     _para.getIndex(thdp);
     if (thdp.valid) {
-      kernel::wrapper::Transpose2D<float>::template forward<ISA_T>(src + thdp.loc[0] * ld_src + thdp.loc[1],
-                                                                   dst + thdp.loc[0] + thdp.loc[1] * ld_dst,
-                                                                   thdp.size[0], thdp.size[1], ld_src, ld_dst);
+      kernel::wrapper::Transpose2D<WT>::template forward<ISA_T>(src + thdp.loc[0] * ld_src + thdp.loc[1],
+                                                                dst + thdp.loc[0] + thdp.loc[1] * ld_dst, thdp.size[0],
+                                                                thdp.size[1], ld_src, ld_dst);
     }
   });
 }
