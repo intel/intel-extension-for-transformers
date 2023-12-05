@@ -282,7 +282,7 @@ int main() {
   }
   std::cout << std::endl;
   for (unsigned i = 0; i < size; ++i) {
-    std::cout << (float)dst1[i] << " ";
+    std::cout << static_cast<float>(dst1[i]) << " ";
   }
   std::cout << std::endl;
 
