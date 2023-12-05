@@ -157,6 +157,7 @@ async def show_available_models():
     models.append(router.get_chatbot().model_name)
     return {"models": models}
 
+# router /v1/code_generation only supports non-streaming mode.
 @router.post("/v1/code_generation")
 async def code_generation_endpoint(chat_request: ChatCompletionRequest):
     if router.use_deepspeed:
@@ -167,7 +168,9 @@ async def code_generation_endpoint(chat_request: ChatCompletionRequest):
                 url = f'http://{router.host}:{port}/v1/code_generation'
                 response = requests.post(url, json=chat_request.dict())
                 response.raise_for_status()
-                responses.append(response.content)
+                json_response = json.loads(response.content)
+                chat_completion_response = ChatCompletionResponse(response=json_response['response'])
+                responses.append(chat_completion_response)
             except requests.exceptions.RequestException as e:
                 print(f"Error sending/receiving on port {port}: {e}")
 
@@ -176,6 +179,56 @@ async def code_generation_endpoint(chat_request: ChatCompletionRequest):
             executor.map(send_request, worker_ports)
         if responses:
             return responses[0]
+    else:
+        ret = check_completion_request(chat_request)
+        if ret is not None:
+            raise RuntimeError("Invalid parameter.")
+        return router.handle_chat_completion_request(chat_request)
+
+# router /v1/code_chat supports both non-streaming and streaming mode.
+@router.post("/v1/code_chat")
+async def code_chat_endpoint(chat_request: ChatCompletionRequest):
+    if router.use_deepspeed:
+        if chat_request.stream:
+            responses = []
+            def generate_stream(port):
+                url = f'http://{router.host}:{port}/v1/code_generation'
+                response = requests.post(url, json=chat_request.dict(), stream=True, timeout=1000)
+                responses.append(response)
+            with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
+                worker_ports = [router.port + i + 1 for i in range(router.world_size)]
+                executor.map(generate_stream, worker_ports)
+
+            while not responses:
+                pass
+            def generate():
+                if responses[0]:
+                    for chunk in responses[0].iter_lines(decode_unicode=False, delimiter=b"\0"):
+                        if chunk:
+                            data = chunk.decode("utf-8")
+                            yield f"data: {data}\n\n"
+                    yield f"data: [DONE]\n\n"
+
+            return StreamingResponse(generate(), media_type="text/event-stream")
+        else:
+            responses = []
+
+            def send_request(port):
+                try:
+                    url = f'http://{router.host}:{port}/v1/code_generation'
+                    response = requests.post(url, json=chat_request.dict())
+                    response.raise_for_status()
+                    json_response = json.loads(response.content)
+                    chat_completion_response = ChatCompletionResponse(response=json_response['response'])
+                    responses.append(chat_completion_response)
+                except requests.exceptions.RequestException as e:
+                    print(f"Error sending/receiving on port {port}: {e}")
+
+            with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
+                worker_ports = [router.port + i + 1 for i in range(router.world_size)]
+                executor.map(send_request, worker_ports)
+            if responses:
+                return responses[0]
     else:
         ret = check_completion_request(chat_request)
         if ret is not None:
