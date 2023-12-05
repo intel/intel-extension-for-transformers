@@ -67,14 +67,6 @@
   const type prefix##3 = (pointer)->array[3];          \
   NE_UNUSED(prefix##3);
 
-#define NE_ASSERT(x)                                                     \
-  do {                                                                   \
-    if (!(x)) {                                                          \
-      fprintf(stderr, "NE_ASSERT: %s:%d: %s\n", __FILE__, __LINE__, #x); \
-      abort();                                                           \
-    }                                                                    \
-  } while (0)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -379,6 +371,13 @@ NE_API struct ne_tensor* ne_diag_mask_inf(struct ne_context* ctx, struct ne_tens
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_diag_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past);
 
+// set padding tokens to -INF
+// only support padding left for now
+NE_API struct ne_tensor* ne_padding_left_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int* n_padding);
+
+// in-place, returns view(a)
+NE_API struct ne_tensor* ne_padding_left_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int* n_padding);
+
 // set elements above the diagonal and padding tokens to -INF
 NE_API struct ne_tensor* ne_diag_mask_inf_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past,
                                                        int* n_padding);
@@ -419,6 +418,13 @@ NE_API struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne
 // a - dy
 NE_API struct ne_tensor* ne_rope_back(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode);
 
+NE_API struct ne_tensor* ne_rope_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims,
+                                              int mode, int prompt_size, int* n_padding);
+
+// in-place, returns view(a)
+NE_API struct ne_tensor* ne_rope_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                      int n_dims, int mode, int prompt_size, int* n_padding);
+
 // alibi position embedding
 // in-place, returns view(a)
 struct ne_tensor* ne_alibi(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_head, float bias_max);
@@ -434,6 +440,10 @@ struct ne_tensor* ne_clamp(struct ne_context* ctx, struct ne_tensor* a, float mi
 NE_API struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
 NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
+
+// conv_1d with padding = half
+// alias for ne_conv_1d(a, b, s, a->ne[0]/2, d)
+NE_API struct ne_tensor* ne_conv_1d_ph(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, int s, int d);
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
                                        struct ne_tensor* v, float scale, ne_attn_flags_t flags);

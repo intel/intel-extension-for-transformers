@@ -2045,29 +2045,16 @@ class BaseTrainer():
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'fp32-model.onnx')
 
-        # Prepare input data
-
-        # pylint: disable=E1101
-        eval_dataloader = self.get_eval_dataloader()
-        it = iter(eval_dataloader)
-        input = next(it)
-        self._remove_label(input)
-
-        # convert to a dict
-        input = dict(input.items())       
-
-        if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
-            input.pop('token_type_ids')
-        # Set variable length axes
-        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
-        axes_dict = {k: symbolic_names for k in input.keys()}
+        # get export args
+        input, input_names, output_names, axes_dict = self.get_export_args(model)
 
         torch.onnx.export(
             model,
             (input, ),
             onnx_save_path,
             opset_version=opset_version,
-            input_names=list(input.keys()),
+            input_names=input_names,
+            output_names=output_names,
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )
@@ -2477,6 +2464,50 @@ class BaseTrainer():
         logger.info("*" * len(info))
         return jit_model
 
+    def get_export_args(self, model):
+        """Get input name, output names and axes for export."""
+        from itertools import chain
+        from optimum.exporters.tasks import TasksManager
+
+        # prepare input data
+        # pylint: disable=E1101
+        eval_dataloader = self.get_eval_dataloader()
+        it = iter(eval_dataloader)
+        input = next(it)
+        self._remove_label(input)
+
+        # convert to a dict
+        input = dict(input.items())   
+
+        if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
+            input.pop('token_type_ids')
+
+        # set variable length axes
+        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+        axes_dict = {k: symbolic_names for k in input.keys()}
+
+        # set input and output names
+        input_names=list(input.keys())
+        output_names=None
+
+        model_name_or_path = model.config._name_or_path
+        task = TasksManager.infer_task_from_model(model_name_or_path)
+        try:
+            # try to get export config
+            onnx_config_constructor = TasksManager.get_exporter_config_constructor(
+                model=model, exporter="onnx", task=task
+            )
+            onnx_config = onnx_config_constructor(model.config)
+            inputs = onnx_config.ordered_inputs(model)
+            input_names = list(inputs.keys())
+            output_names = list(onnx_config.outputs.keys())
+            axes_dict = dict(chain(inputs.items(), onnx_config.outputs.items()))
+        except:
+            # skip and use settings collected from dataloader
+            pass
+
+        return input, input_names, output_names, axes_dict
+    
     @staticmethod
     def _remove_label(input):
         if "labels" in input:  # for GLUE

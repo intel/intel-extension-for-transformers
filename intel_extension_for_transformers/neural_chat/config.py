@@ -228,9 +228,6 @@ class DataArguments:
             )
         },
     )
-    eval_dataset_size: int = field(
-        default=500, metadata={"help": "Size of validation dataset."}
-    )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     preprocessing_num_workers: Optional[int] = field(
         default=None,
@@ -405,6 +402,7 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    world_size: int = 1
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
@@ -435,7 +433,8 @@ class PipelineConfig:
             WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
-        self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else \
+            MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."

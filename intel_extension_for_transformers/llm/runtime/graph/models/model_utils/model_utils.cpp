@@ -104,8 +104,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
         const int head_size = hparams.n_embd / hparams.n_head;
         const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv);
+        k_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv, batch_size * beam_size);
+        v_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv, batch_size * beam_size);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -1175,6 +1175,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     ctx->beam_search = true;
     ctx->beam_size = params.beam_size;
     ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  } else {
+    ctx->kv_n_ctx_block = ctx->batch_size;
   }
   const model_archs arch = params.arch;
 

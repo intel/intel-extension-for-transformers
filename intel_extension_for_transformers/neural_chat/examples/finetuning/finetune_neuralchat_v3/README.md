@@ -1,9 +1,9 @@
-# How to train Intel/neural-chat-7b-v3-1 on Gaudi2
+# How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2
 
 [Intel/neural-chat-7b-v3-1](https://huggingface.co/Intel/neural-chat-7b-v3-1) ranks top1 on the [HuggingFaceH4/open_llm_leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) comparing with all the submitted 7B models (date: 11/17/2023). In this tutorial, we would like to share the details for the training process.
 
 Similar to most finetuning work, we mainly divide the training to two stages.
-- First stage: Use supervised finetuning (SFT) to improve the performance of the base model like [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1).
+- First stage: Use supervised fine-tuning (SFT) to improve the performance of the base model like [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1).
 - Second stage: apply Direct Preference Optimization (DPO) to align the SFT model with preference dataset.
 
 
@@ -11,26 +11,29 @@ Similar to most finetuning work, we mainly divide the training to two stages.
 
 In order to streamline the process, users can construct a Docker image employing a Dockerfile, initiate the Docker container, and then proceed to execute inference or finetuning operations.
 
-IMPORTANT: Please note Habana's Gaudi processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Habana HPU. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
+**IMPORTANT:** Please note Intel Gaudi2 processors(HPU) requires docker environment for running. User needs to manually execute below steps to build docker image and run docker container for inference on Intel Gaudi2. The Jupyter notebook server should be started in the docker container and then run this Jupyter notebook.
 
-To run finetuning on Habana HPU, please execute below steps
+To run finetuning on Intel Gaudi2, please execute below steps
 
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers/neural_chat/docker/finetuning/
+cd intel-extension-for-transformers
 
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.10.0" --build-arg REVISION="494" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
+docker build --no-cache ./ --target hpu --build-arg REPO=https://github.com/intel/intel-extension-for-transformers.git --build-arg ITREX_VER=main -f ./intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetuning:latest
 
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest
+
+# after entering docker container
+cd examples/finetuning/finetune_neuralchat_v3
 
 ```
 
 
-## SFT
+## Supervised Fine-Tuning (SFT)
 
 We select the latest pretrained [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1) and the open source dataset [Open-Orca/SlimOrca](https://huggingface.co/datasets/Open-Orca/SlimOrca) to conduct the experiment.
 
-The below script use deepspeed zero2 to lanuch the training with 8 cards (GPUs/HPUs). In the `finetune_neuralchat_v3.py`, the default `use_habana=True, use_lazy_mode=True, device="hpu"` for Gaudi2. And if you want to run it on Nvidia GPU, you can set them `use_habana=False, use_lazy_mode=False, device="auto"`.
+The below script use deepspeed zero2 to lanuch the training with 8 cards Gaudi2. In the `finetune_neuralchat_v3.py`, the default `use_habana=True, use_lazy_mode=True, device="hpu"` for Gaudi2. And if you want to run it on Nvidia GPU, you can set them `use_habana=False, use_lazy_mode=False, device="auto"`.
 
 ```python
 deepspeed --include localhost:0,1,2,3,4,5,6,7 \
@@ -58,7 +61,7 @@ For details of the dataset and DPO training code, you can refer [Intel/orca_dpo_
 
 
 ```python
-python ../../../../intel_extension_for_transformers/neural_chat/examples/finetuning/dpo_pipeline/dpo_clm.py \
+python ../dpo_pipeline/dpo_clm.py \
         --model_name_or_path "./finetuned_model_lora" \
         --output_dir "./finetuned_model_lora_plus_dpo" \
         --per_device_train_batch_size 8 \
@@ -70,7 +73,7 @@ python ../../../../intel_extension_for_transformers/neural_chat/examples/finetun
         --lora_alpha 16 \
         --lora_rank 16 \
         --lora_dropout 0.05 \
-        --dataset_name /lkk/orca_dpo_pairs \
+        --dataset_name Intel/orca_dpo_pairs \
         --bf16 \
         --max_length 1536 \
         --max_prompt_length 1024 \
