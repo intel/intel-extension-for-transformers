@@ -187,7 +187,8 @@ class Params:
         )
 
     # LLaMA v2 70B params.json
-    # {"dim": 8192, "multiple_of": 4096, "ffn_dim_multiplier": 1.3, "n_heads": 64, "n_kv_heads": 8, "n_layers": 80, "norm_eps": 1e-05, "vocab_size": -1}
+    # {"dim": 8192, "multiple_of": 4096, "ffn_dim_multiplier": 1.3, "n_heads": 64, "n_kv_heads": 8,
+    #  "n_layers": 80, "norm_eps": 1e-05, "vocab_size": -1}
     @staticmethod
     def loadOriginalParamsJson(model: 'LazyModel', config_path: Path) -> 'Params':
         config = json.load(open(config_path))
@@ -282,7 +283,8 @@ class SentencePieceVocab:
         yield from self.added_tokens()
 
     def __repr__(self) -> str:
-        return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
+        return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and\
+        {len(self.added_tokens_list)} added tokens>"
 
 
 class NEVocab:
@@ -603,7 +605,9 @@ class LazyTensor:
                 raise Exception(f"Can't turn an unquantized tensor into a quantized type ({data_type})")
             if self.data_type.have_g_idx:
                 sys.stderr.write(
-                    "Error: Input uses the newer GPTQ-for-LLaMa format (using g_idx), which is not yet natively supported by NE.  For now you can still convert this model by passing `--outtype f16` to dequantize, but that will result in a much larger output file for no quality benefit.\n"
+                    "Error: Input uses the newer GPTQ-for-LLaMa format (using g_idx), which is not yet natively \
+                    supported by NE.  For now you can still convert this model by passing `--outtype f16` to \
+                    dequantize, but that will result in a much larger output file for no quality benefit.\n"
                 )
                 sys.exit(1)
             assert not data_type.have_g_idx and self.data_type.have_addends and data_type.have_addends
@@ -1048,7 +1052,9 @@ class OutputFile:
 
         self.fout.write(
             struct.pack("i", 1)
-        )  # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
+        )  
+        # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
+        # but bos_token_id = 1 in llama.cpp
         self.fout.write(struct.pack("i", 2))
 
         self.fout.write(struct.pack("i", 0))
@@ -1093,7 +1099,8 @@ class OutputFile:
             size = ' x '.join(f"{dim:6d}" for dim in lazy_tensor.shape)
             padi = len(str(len(model)))
             print(
-                f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} | type {lazy_tensor.data_type}"
+                f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} |\
+                type {lazy_tensor.data_type}"
             )
             of.write_tensor_header(name, lazy_tensor.shape, lazy_tensor.data_type)
             ndarray.tofile(of.fout)
@@ -1220,7 +1227,8 @@ def load_vocab(path: Path) -> SentencePieceVocab:
             path = path3
         else:
             raise FileNotFoundError(
-                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir"
+                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory,\
+                pass the directory as --vocab-dir"
             )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
@@ -1238,7 +1246,8 @@ def default_outfile(model_paths: List[Path], params: Params) -> Path:
     ret = model_paths[0].parent / f"ne-model-{namestr}.bin"
     if ret in model_paths:
         sys.stderr.write(
-            f"Error: Default output path ({ret}) would overwrite the input.  Please explicitly specify a path using --outfile.\n"
+            f"Error: Default output path ({ret}) would overwrite the input.  Please explicitly specify \
+            a path using --outfile.\n"
         )
         sys.exit(1)
     return ret

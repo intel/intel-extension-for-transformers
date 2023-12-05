@@ -98,7 +98,8 @@ class SentencePieceVocab:
         yield from self.added_tokens()
 
     def __repr__(self) -> str:
-        return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
+        return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)}\
+                added tokens>"
 
 
 def load_vocab_for_glm1(path: Path) -> SentencePieceVocab:
@@ -115,7 +116,8 @@ def load_vocab_for_glm1(path: Path) -> SentencePieceVocab:
             path = path3
         else:
             raise FileNotFoundError(
-                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir"
+                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, \
+                pass the directory as --vocab-dir"
             )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
@@ -136,7 +138,8 @@ def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
             path = path3
         else:
             raise FileNotFoundError(
-                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir"
+                f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, \
+                pass the directory as --vocab-dir"
             )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")

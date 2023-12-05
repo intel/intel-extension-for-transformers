@@ -155,7 +155,8 @@ for key in tokens:
 list_vars = model.state_dict()
 for name in list_vars.keys():
     # this seems to not be used
-    # ref: https://github.com/huggingface/transformers/blob/9a5b84a0076a04fe9596da72e8668069d4f09ea0/src/transformers/models/whisper/modeling_whisper.py#L1099-L1106
+    # ref: https://github.com/huggingface/transformers/blob/9a5b84a0076a04fe9596da72e8668069d4f09ea0/src
+    #      /transformers/models/whisper/modeling_whisper.py#L1099-L1106
     if name == "proj_out.weight":
         print('Skipping', name)
         continue

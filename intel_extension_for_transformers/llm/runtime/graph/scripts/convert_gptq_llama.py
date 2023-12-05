@@ -184,7 +184,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     f.write(
         struct.pack("i", 1)
-    )  # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
+    )  
+    # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
+    # but bos_token_id = 1 in llama.cpp
     f.write(struct.pack("i", 2))
 
     f.write(struct.pack("i", 0))
