@@ -886,10 +886,11 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.scale_dtype == quant_sdtype::fp16) {
     printf("Current not support float16 scale, reset to bf16\n");
   }
-  auto size = JblasGemmPackBSize(n, k, params.group_size, quant_type, scale_type, params.alg == quant_alg::asym, ctype);
+  auto gsize = params.group_size == -1 ? k : params.group_size;
+  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype);
   if (size) {
-    if (!JblasGemmQuantPackBTrans(dstpr, f32ptr, n, k, k, params.group_size, quant_type, scale_type,
-                                  params.alg == quant_alg::asym, ctype, &threading)) {
+    if (!JblasGemmQuantPackBTrans(dstpr, f32ptr, n, k, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym,
+                                  ctype, &threading)) {
       printf("Failed to quant this weight\n");
       return 0;
     }
