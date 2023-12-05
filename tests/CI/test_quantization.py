@@ -87,6 +87,8 @@ class TestQuantization(unittest.TestCase):
         shutil.rmtree('./quantized_model', ignore_errors=True)
         shutil.rmtree('fp32-model.onnx', ignore_errors=True)
         shutil.rmtree('int8-model.onnx', ignore_errors=True)
+        shutil.rmtree('export.onnx', ignore_errors=True)
+        shutil.rmtree('./local_model_dir', ignore_errors=True)
 
     def test_fx_model_quant(self):
         fp32_output = self.trainer.predict(self.dummy_dataset).predictions
@@ -393,6 +395,33 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = bit8_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
+
+    def test_export(self):
+        import subprocess
+
+        # test model with model_id
+        self.trainer.export_to_onnx("export.onnx")
+        self.assertTrue(check_onnx("export.onnx", self.trainer.get_eval_dataloader()))
+
+        # test local model path
+        # download model
+        cmd = (
+            "git clone https://huggingface.co/" + MODEL_NAME + ' local_model_dir'
+        )
+        p = subprocess.Popen(
+            cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )  # nosec
+        p.communicate()
+
+        # use local path to create model and trainer
+        local_model = AutoModelForSequenceClassification.from_pretrained("local_model_dir")
+        local_model_trainer = NLPTrainer(
+            model=local_model,
+            train_dataset=self.dummy_dataset,
+            eval_dataset=self.dummy_dataset,
+        )
+        local_model_trainer.export_to_onnx("export.onnx")
+        self.assertTrue(check_onnx("export.onnx", self.trainer.get_eval_dataloader()))
 
 
 if __name__ == "__main__":
