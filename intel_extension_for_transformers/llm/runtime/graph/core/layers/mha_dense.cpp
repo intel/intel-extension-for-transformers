@@ -457,7 +457,8 @@ class LauncherBaseOff                             //
 
   void run(const Param& _param, const jblas::parallel::gemm::ThreadProblemBase& _config,
            int w_offset /* weight offset for batching */) {
-    this->mGemmCore.configure();  // Need 'this->' here; See：https://stackoverflow.com/questions/11405
+    // TO(Yi) temperarily configure to max tiling size
+    this->mGemmCore.configure(16, 16, 16);  // Need 'this->' here; See：https://stackoverflow.com/questions/11405
     auto StackTmp = alloca(_config.stacksize);
     auto tmpB = reinterpret_cast<BType*>(StackTmp);
     tmpB = utils::cpu_pointer_align(tmpB);
@@ -544,7 +545,7 @@ class LauncherBaseWeight                          //
   static constexpr auto RT_ISA = RT_ISA_;
 
   void run(const Param& _param, const jblas::parallel::gemm::ThreadProblemBase& _config) {
-    this->mGemmCore.configure();  // Need 'this->' here; See：https://stackoverflow.com/questions/11405
+    this->mGemmCore.configure(16, 16, 16);  // Need 'this->' here; See：https://stackoverflow.com/questions/11405
     auto StackTmp = alloca(_config.stacksize);
     auto tmpB = reinterpret_cast<BType*>(StackTmp);
     tmpB = utils::cpu_pointer_align(tmpB);
