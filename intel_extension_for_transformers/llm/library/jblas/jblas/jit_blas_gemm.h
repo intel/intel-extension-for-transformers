@@ -64,7 +64,7 @@ class CompTypeHelper {
     static char tmp[128];
     uint64_t vals[3];
     parse_id(id, vals);
-    sprintf(tmp, "A%d_B%d_C%d", vals[0], vals[1], vals[2]);
+    sprintf(tmp, "A%d_B%d_C%d", static_cast<int>(vals[0]), static_cast<int>(vals[1]), static_cast<int>(vals[2]));
     return tmp;
   }
 
@@ -102,7 +102,8 @@ class CoreAttr {
     static char tmp[128];
     uint64_t vals[4];
     parse_id(id, vals);
-    sprintf(tmp, "N%d_PACK%llu_COMP%llu_ISA%llu", vals[0], vals[1], vals[2], vals[3]);
+    sprintf(tmp, "N%d_PACK%d_COMP%d_ISA%d", static_cast<int>(vals[0]), static_cast<int>(vals[1]),
+            static_cast<int>(vals[2]), static_cast<int>(vals[3]));
     return tmp;
   }
 
@@ -3245,7 +3246,7 @@ class CoreCodeBase {
   static int constexpr PREFERRED_N = NTILE * 3;
   static auto constexpr ISA = Code::ISA;
   static auto constexpr ID = CoreAttr::make_core_id(NTILE, PACK_ROW, COMP, ISA);
-  void configure() { (void)(0); }
+  void configure(int _M, int _N, int _K) { (void)(0); }
 
  protected:
   CoreCodeBase() {
@@ -3351,8 +3352,8 @@ class HCoreRowNAmxbf16 : public CoreCodeBaseAMX<code::Amxbf16N16P2, _NTILE, _MTI
   using BType = typename Code::BType;
   using CType = typename Code::CType;
 
-  void configure() {
-    code::AmxConfigure::configure(16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
+  void configure(int _M, int _N, int _K) {
+    code::AmxConfigure::configure(_M < 16 ? _M : 16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
                                   this->mCodes[0].BTileCount, this->mCodes[0].CTileCount);
   }
 
@@ -3443,8 +3444,8 @@ class ICoreRowNAmxint8 : public CoreCodeBaseAMX<code::Amxint8N16P4US, _NTILE, _M
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  void configure() {
-    code::AmxConfigure::configure(16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
+  void configure(int _M, int _N, int _K) {
+    code::AmxConfigure::configure(_M < 16 ? _M : 16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
                                   this->mCodes[0].BTileCount, this->mCodes[0].CTileCount);
   }
 
@@ -3468,8 +3469,8 @@ class ICoreRowNAmxint8SS : public CoreCodeBaseAMX<code::Amxint8N16P4SS, _NTILE, 
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  void configure() {
-    code::AmxConfigure::configure(16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
+  void configure(int _M, int _N, int _K) {
+    code::AmxConfigure::configure(_M < 16 ? _M : 16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
                                   this->mCodes[0].BTileCount, this->mCodes[0].CTileCount);
   }
 
@@ -3493,8 +3494,8 @@ class ICoreRowNAmxint8KBlock : public CoreCodeBaseAMX<code::kblock::Amxint8N16P4
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  void configure() {
-    code::AmxConfigure::configure(16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
+  void configure(int _M, int _N, int _K) {
+    code::AmxConfigure::configure(_M < 16 ? _M : 16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
                                   this->mCodes[0].BTileCount, this->mCodes[0].CTileCount);
   }
 
@@ -3520,8 +3521,8 @@ class ICoreRowNAmxint8SSKBlock : public CoreCodeBaseAMX<code::kblock::Amxint8N16
   using AType = typename Code::AType;
   using BType = typename Code::BType;
   using CType = typename Code::CType;
-  void configure() {
-    code::AmxConfigure::configure(16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
+  void configure(int _M, int _N, int _K) {
+    code::AmxConfigure::configure(_M < 16 ? _M : 16, 16, Code::KTILE, sizeof(BType), this->mCodes[0].ATileCount,
                                   this->mCodes[0].BTileCount, this->mCodes[0].CTileCount);
   }
 
