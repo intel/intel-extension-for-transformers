@@ -16,7 +16,7 @@ sentencepiece != 0.1.92
 accelerate
 evaluate
 wget
-git+https://github.com/huggingface/optimum.git@fa8ad73de9063885476ee39dff7c0bffbd45bd2d
+git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c
 git+https://github.com/huggingface/optimum-intel.git
 peft
 tyro
