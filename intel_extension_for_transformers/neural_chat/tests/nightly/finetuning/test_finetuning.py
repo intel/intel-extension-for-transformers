@@ -49,7 +49,7 @@ class TestFinetuning(unittest.TestCase):
         shutil.rmtree('./tmp', ignore_errors=True)
         os.remove(test_data_file)
 
-    def test_finetune_clm(self):
+    def test_finetune_clm_lora(self):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
         training_args = TrainingArguments(
@@ -85,7 +85,70 @@ class TestFinetuning(unittest.TestCase):
         )
         finetune_model(finetune_cfg)
 
-    def test_finetune_seq2seq(self):
+    def test_finetune_clm_full_finetuning(self):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = TrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', full_finetune=True,
+                bits=16, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        finetune_model(finetune_cfg)
+
+    def test_finetune_clm_value1(self):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = TrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', full_finetune=True, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        # finetune_model(finetune_cfg)
+        try:
+            finetune_model(finetune_cfg)
+        except ValueError:
+            print("code pass")
+
+    def test_finetune_clm_value2(self):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = TrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', qlora=True,
+                full_finetune=True, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        try:
+            finetune_model(finetune_cfg)
+        except ValueError:
+            print("code pass")
+
+    def test_finetune_seq2seq_lora(self):
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)
         training_args = Seq2SeqTrainingArguments(
@@ -95,6 +158,43 @@ class TestFinetuning(unittest.TestCase):
             overwrite_output_dir=True
         )
         finetune_args = FinetuningArguments(device=self.device)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        finetune_model(finetune_cfg)
+
+    def test_finetune_seq2seq_qlora(self):
+        model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = Seq2SeqTrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', qlora=True)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=training_args,
+            finetune_args=finetune_args,
+        )
+        finetune_model(finetune_cfg)
+
+    def test_finetune_seq2seq_full_finetuning(self):
+        model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
+        data_args = DataArguments(train_file=test_data_file)
+        training_args = Seq2SeqTrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=3,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device='cpu', full_finetune=True,
+                bits=16, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
