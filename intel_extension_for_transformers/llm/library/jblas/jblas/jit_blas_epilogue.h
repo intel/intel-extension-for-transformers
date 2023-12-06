@@ -23,16 +23,19 @@ namespace jblas {
 namespace epilogue {
 namespace gemm {
 
+template <typename DT>
+struct ParamAccumulatorWriteBack {
+  DT* C;
+  int ldc;
+  void* elt_const_v;
+};
+
 template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T>
 class AccumulatorWriteBack {
  public:
   using SType = _SRC_T;
   using DType = _DST_T;
-  struct Param {
-    DType* C;
-    int ldc;
-    void* elt_const_v;
-  };
+  using Param = ParamAccumulatorWriteBack<DType>;
 
   template <typename... Eltops>
   JBLAS_CODE forward(const _SRC_T* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
@@ -59,11 +62,7 @@ class AccumulatorWriteBack {
 template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, JBLAS_ELTWISEOP _OP>
 class CustomAccumulatorWriteBackWithEltop {
  public:
-  struct Param {
-    _DST_T* C;
-    int ldc;
-    void* elt_const_v;
-  };
+  using Param = ParamAccumulatorWriteBack<_DST_T>;
   JBLAS_CODE forward(const _SRC_T* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;
@@ -95,14 +94,16 @@ using AccumulatorWriteBackWithGeluFp32 = CustomAccumulatorWriteBackWithEltop<ISA
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackWithSwishFp32 = CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
 
+template <typename DT>
+struct ParamAlphaBetaProcess {
+  DT *C, *D;
+  int ldc, ldd;
+  float alpha, beta;
+};
 template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessFp32 {
  public:
-  struct Param {
-    float *C, *D;
-    int ldc, ldd;
-    float alpha, beta;
-  };
+  using Param = ParamAlphaBetaProcess<float>;
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
@@ -115,17 +116,18 @@ class AlphaBetaProcessFp32 {
   }
 };
 
+struct ParamCompFp32BlockEpilogue {
+  void* scales;
+  JBLAS_DTYPE scaledtype;
+  int ldsb;
+  int8_t* zps = nullptr;
+  float* reduce = nullptr;
+  int ldra;
+};
 template <JBLAS_ISA ISA_T>
 class CompFp32BlockEpilogue {
  public:
-  struct Param {
-    void* scales;
-    JBLAS_DTYPE scaledtype;
-    int ldsb;
-    int8_t* zps = nullptr;
-    float* reduce = nullptr;
-    int ldra;
-  };
+  using Param = ParamCompFp32BlockEpilogue;
   JBLAS_CODE forward(const float* srcptr, float* dstptr, const int cachestep, const int M_offset, const int N_offset,
                      const int K_offset, const int M, const int N, const Param& _param, void* tmpcache,
                      size_t cachesize) {
@@ -157,16 +159,17 @@ class CompFp32BlockEpilogue {
   }
 };
 
+struct ParamDequantInt32ToFp32 {
+  float* C;
+  int ldc;
+  int ldsa;
+  float* scalesA;
+  float* scalesB;
+};
 template <JBLAS_ISA ISA_T>
 class DequantInt32ToFp32 {
  public:
-  struct Param {
-    float* C;
-    int ldc;
-    int ldsa;
-    float* scalesA;
-    float* scalesB;
-  };
+  using Param = ParamDequantInt32ToFp32;
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;
@@ -177,24 +180,25 @@ class DequantInt32ToFp32 {
   }
 };
 
+struct ParamCompInt8BlockEpilogue {
+  void* scalesB;
+  JBLAS_DTYPE scaleBdtype;
+  int ldsb;
+  float* scalesA;
+  int ldsa;
+  // optional if A asym
+  uint8_t* zpA = nullptr;
+  void* reduceB = nullptr;
+  JBLAS_DTYPE reduceBdtype = JBLAS_DTYPE::F32;
+  // optional if B asym
+  int8_t* zpB = nullptr;
+  float* reduceA = nullptr;
+  int K = 1;
+};
 template <JBLAS_ISA ISA_T>
 class CompInt8BlockEpilogue {
  public:
-  struct Param {
-    void* scalesB;
-    JBLAS_DTYPE scaleBdtype;
-    int ldsb;
-    float* scalesA;
-    int ldsa;
-    // optional if A asym
-    uint8_t* zpA = nullptr;
-    void* reduceB = nullptr;
-    JBLAS_DTYPE reduceBdtype = JBLAS_DTYPE::F32;
-    // optional if B asym
-    int8_t* zpB = nullptr;
-    float* reduceA = nullptr;
-    int K = 1;
-  };
+  using Param = ParamCompInt8BlockEpilogue;
   JBLAS_CODE forward(const int32_t* srcptr, float* dstptr, const int cachestep, const int M_offset, const int N_offset,
                      const int K_offset, const int M, const int N, const Param& _param, void* tmpcache,
                      size_t cachesize) {
@@ -258,24 +262,25 @@ class CompInt8BlockEpilogue {
   }
 };
 
+struct ParamZpDequantInt32ToFp32 {
+  // necessary
+  float* C;
+  int ldc;
+  int ldsa;
+  float* scalesA;
+  float* scalesB;
+  // optional if A asym
+  uint8_t* zpA = nullptr;
+  float* reduceB = nullptr;
+  // optional if B asym
+  int8_t* zpB = nullptr;
+  float* reduceA = nullptr;
+  int K = 1;
+};
 template <JBLAS_ISA ISA_T>
 class ZpDequantInt32ToFp32 {
  public:
-  struct Param {
-    // necessary
-    float* C;
-    int ldc;
-    int ldsa;
-    float* scalesA;
-    float* scalesB;
-    // optional if A asym
-    uint8_t* zpA = nullptr;
-    float* reduceB = nullptr;
-    // optional if B asym
-    int8_t* zpB = nullptr;
-    float* reduceA = nullptr;
-    int K = 1;
-  };
+  using Param = ParamZpDequantInt32ToFp32;
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;
@@ -306,17 +311,17 @@ class ZpDequantInt32ToFp32 {
   }
 };
 
+struct ParamAlphaBetaProcessS32U8 {
+  uint8_t* C;
+  int ldc;
+  float alpha;
+  float scaleAcc, scaleC;
+  int zpC;
+};
 template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessS32U8 {
  public:
-  struct Param {
-    uint8_t* C;
-    int ldc;
-    float alpha;
-    float scaleAcc, scaleC;
-    int zpC;
-  };
-
+  using Param = ParamAlphaBetaProcessS32U8;
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;

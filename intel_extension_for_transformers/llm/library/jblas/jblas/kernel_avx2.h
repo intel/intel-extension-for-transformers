@@ -258,7 +258,7 @@ static inline JBLAS_CODE remove_wei_zeropoint_bias(float* accptr, int ldacc, int
       _mm256_storeu_ps(&accptr[i * ldacc + j], vacc);
     }
     if (j < col) {
-      for (; j < col8; j++) {
+      for (; j < col; j++) {
         accptr[i * ldacc + j] -= static_cast<float>(zps[j]) * scales[j] * reduce[i * lds];
       }
     }
@@ -292,7 +292,7 @@ static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row
       _mm256_storeu_ps(&accptr[i * ldacc + j], vacc);
     }
     if (j < col) {
-      for (; j < col8; j++) {
+      for (; j < col; j++) {
         accptr[i * ldacc + j] -= static_cast<float>(zpb[j]) * scaleb[j] * reducea[i * lds];
         accptr[i * ldacc + j] -= zpaf * reduceb[j];
         accptr[i * ldacc + j] -= zpaf * static_cast<float>(zpb[j]) * scaleb[j] * k;

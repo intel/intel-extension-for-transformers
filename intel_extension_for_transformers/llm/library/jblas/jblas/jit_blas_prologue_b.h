@@ -31,22 +31,24 @@ static inline void transposeWeight(const int Row, const int Col, const WT* src, 
     _para.getIndex(thdp);
     if (thdp.valid) {
       kernel::wrapper::Transpose2D<WT>::template forward<ISA_T>(src + thdp.loc[0] * ld_src + thdp.loc[1],
-                                                                   dst + thdp.loc[0] + thdp.loc[1] * ld_dst,
-                                                                   thdp.size[0], thdp.size[1], ld_src, ld_dst);
+                                                                dst + thdp.loc[0] + thdp.loc[1] * ld_dst, thdp.size[0],
+                                                                thdp.size[1], ld_src, ld_dst);
     }
   });
 }
+template <typename WType>
+struct ParamWeightPack {
+  const WType* B;
+  const int ldb;
+  storage::gemm::StoragePackedWeight* packedW;
+};
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightPack {
  public:
   using WType = typename _GemmCore_T::BType;
   using StorageType = storage::gemm::StoragePackedWeight;
-  struct Param {
-    const WType* B;
-    const int ldb;
-    StorageType* packedW;
-  };
+  using Param = ParamWeightPack<WType>;
 
   StorageType createStorage(int n, int k) {
     int KPad = utils::padto(k, _GemmCore_T::KTILE);
@@ -101,14 +103,15 @@ class WeightPack {
   }
 };
 
+struct ParamWeightKBlockNInteger {
+  storage::gemm::StorageWeightKBlockNInteger* packedW;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightKBlockNInteger {
  public:
   using StorageWeight = storage::gemm::StorageWeightKBlockNInteger;
   using BType = typename _GemmCore_T::BType;
-  struct Param {
-    StorageWeight* packedW;
-  };
+  using Param = ParamWeightKBlockNInteger;
 
   static StorageWeight createStorage(int n, int k, int blocksize, JBLAS_DTYPE qtype, JBLAS_DTYPE scat, JBLAS_DTYPE redt,
                                      bool is_asym) {
@@ -1164,6 +1167,7 @@ class WeightKBlockS4 : public WeightKBlockS8<_GemmCore_T, ISA_T> {
     auto stor = reinterpret_cast<StorageWeight*>(ptr);
     auto tmp = utils::amalloc<float>(static_cast<size_t>(stor->mKPad) * stor->mNPad);
     auto blks = utils::updiv(K, stor->mBlockSize);
+    auto blks_padding2 = utils::padto(blks, 2);
     auto tmpscales = tmp;
     auto tmpzeropoints = reinterpret_cast<int8_t*>(tmpscales + N * blks);
     if (scales) {
@@ -1173,10 +1177,14 @@ class WeightKBlockS4 : public WeightKBlockS8<_GemmCore_T, ISA_T> {
       }
     }
     if (zero_points) {
-      for (size_t i = 0; i < N * blks; i += 2) {
-        auto tmpzp = *(zero_points + i / 2);
-        tmpzeropoints[i] = ((tmpzp & 0xf) - 8) << 4;
-        tmpzeropoints[i + 1] = (((tmpzp & 0xf0) >> 4) - 8) << 4;
+      for (size_t i = 0; i < N; i += 1) {
+        for (size_t ib = 0; ib < blks; ib += 2) {
+          auto tmpzp = *(zero_points + i * blks_padding2 / 2 + ib / 2);
+          tmpzeropoints[i * blks + ib] = ((tmpzp & 0xf) - 8) << 4;
+          if (ib + 1 < blks) {
+            tmpzeropoints[i * blks + ib + 1] = (((tmpzp & 0xf0) >> 4) - 8) << 4;
+          }
+        }
       }
     }
 
