@@ -259,7 +259,7 @@ Argument description of run.py:
 | Argument                    | Description                                                                                                   |
 | --------------              | ---------------------------------------------------------------------                                         |
 | model                       | Directory containing model file or model id: String                                                           |
-| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| --weight_dtype              | Data type of quantized weight: int4/int8/fp8(=fp8_e5m2)/fp8_e4m3 (default int4)                                                       |
 | --alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
 | --group_size                | Group size: Int (default: 32)                                                                                 |
 | --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
