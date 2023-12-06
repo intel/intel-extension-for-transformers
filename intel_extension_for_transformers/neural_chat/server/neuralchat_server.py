@@ -208,6 +208,23 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     except Exception as exc:
                         raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
                     self.chatbot = None
+                elif device == "cpu":
+                    hf_access_token = os.environ("HF_ACCESS_TOKEN", None)
+                    multi_cpu_server_file = os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), './multi_cpu_server.py'))
+                    launch_str = f"deepspeed hostfile ./config/hostfile {multi_cpu_server_file}"
+                    command_list = f"{launch_str} --use_kv_cache --task chat --base_model_path {model_name_or_path} \
+                        --host {host} --port {port} --hf_access_token {hf_access_token}"
+                    try:
+                        print(f"{self.__class__.__name__} init(): command = {command_list}")
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        subprocess.Popen(command_list, shell=True, executable="/bin/bash")   # nosec
+                        logger.info("waiting for server to start...")
+                        time.sleep(30)
+                    except Exception as exc:
+                        raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
+                    self.chatbot = None
             else:
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
