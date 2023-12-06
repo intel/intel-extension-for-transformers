@@ -406,6 +406,8 @@ class BaseModel(ABC):
             self.safety_checker = instance
         if plugin_name == "face_animation": # pragma: no cover
             self.face_animation = instance
+        if plugin_name == "image2image": # pragma: no cover
+            self.image2image = instance
 
 
 # A global registry for all model adapters

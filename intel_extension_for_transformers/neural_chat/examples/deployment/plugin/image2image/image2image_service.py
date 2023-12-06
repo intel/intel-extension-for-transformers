@@ -14,3 +14,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(
+        config_file="./image2image_service.yaml",
+        log_file="./image2image_service.log")
+
+
+if __name__ == "__main__":
+    main()
