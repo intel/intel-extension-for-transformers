@@ -20,8 +20,8 @@ static constexpr size_t wg_tile_m = 8;
 static constexpr size_t wg_tile_n = 64;
 static constexpr size_t sg_tile_m = 8;
 static constexpr size_t sg_tile_n = 16;
+static constexpr size_t sg_tile_k = 16;
 static constexpr size_t num_buffer = 64;
-static constexpr size_t local_kslicing = 8;
 static constexpr size_t global_kslicing = 1;
 static constexpr uint32_t periodic_sync_interval = 8;
 static constexpr uint32_t prefetch_distance = 3;
@@ -67,12 +67,12 @@ struct linear_param {
     }
 };
 
-template <typename T, int dequant_s, int sg_tile_k>
-void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix_m,
+template <int dequant_s, int LK>
+void xetla_linear(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C, uint32_t matrix_m,
                   uint32_t matrix_n, uint32_t matrix_k, void *workspace,
                   int64_t workspace_size) {
-    using data_type_a = T;
-    using data_type_c = T;
+    using data_type_a = fp16;
+    using data_type_c = fp16;
     linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
     auto context = queue.get_info<sycl::info::queue::context>();
     auto device = queue.get_info<sycl::info::queue::device>();
@@ -115,7 +115,7 @@ void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix_m,
             gpu::xetla::gpu_arch::Dg2>;
     using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    group_swizzle, global_kslicing, local_kslicing>,
+                    group_swizzle, global_kslicing, LK>,
             gemm_t, epilogue_t>;
     p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
     p.size_cnt = gemm_op_t::get_cnt_buf_size(p.matrix_m, p.matrix_n);
@@ -131,19 +131,19 @@ void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix_m,
         Cnt_d = static_cast<uint32_t *>(
           aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                   p.size_cnt * sizeof(uint32_t), device, context));
-        std::cout << "You can use gbits.set_workspace to reduce latency and please make sure workspace_size > " 
-                  << Cnt_d_need_size
-                  << std::endl;
+        if (initer.verbose) std::cout << "You can use gbits.set_workspace to reduce latency and please make sure workspace_size > " 
+                                      << Cnt_d_need_size
+                                      << std::endl;
     } else if (workspace_size < Cnt_d_need_size) {
         Acc_d = static_cast<data_type_acc *>(workspace);
         Cnt_d = static_cast<uint32_t *>(
           aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                   p.size_cnt * sizeof(uint32_t), device, context));
-        std::cout << "Workspace size should be larger than " 
-                  << Cnt_d_need_size
-                  << " to create all pointers, current size is "
-                  << workspace_size
-                  << std::endl;
+        if (initer.verbose) std::cout << "Workspace size should be larger than " 
+                                      << Cnt_d_need_size
+                                      << " to create all pointers, current size is "
+                                      << workspace_size
+                                      << std::endl;
     } else {
         Acc_d = static_cast<data_type_acc *>(workspace);
         Cnt_d = static_cast<uint32_t *>(static_cast<void *>(
@@ -183,13 +183,13 @@ void xetla_linear(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix_m,
     }
 }
 
-template <typename T, int dequant_s, int sg_tile_k>
-void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix_m,
-                       uint32_t matrix_n, uint32_t matrix_k, T *D, void *workspace,
+template <int dequant_s, int Lk>
+void xetla_linear_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C, uint32_t matrix_m,
+                       uint32_t matrix_n, uint32_t matrix_k, fp16 *D, void *workspace,
                        int64_t workspace_size) {
-    using data_type_a = T;
-    using data_type_c = T;
-    using data_type_bias = T;
+    using data_type_a = fp16;
+    using data_type_c = fp16;
+    using data_type_bias = fp16;
     linear_param p(matrix_m, matrix_n, matrix_k, dequant_s);
     auto context = queue.get_info<sycl::info::queue::context>();
     auto device = queue.get_info<sycl::info::queue::device>();
@@ -241,7 +241,7 @@ void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix
             gpu::xetla::gpu_arch::Dg2>;
     using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    group_swizzle, global_kslicing, local_kslicing>,
+                    group_swizzle, global_kslicing, Lk>,
             gemm_t, epilogue_t>;
 
     p.size_acc = gemm_op_t::get_acc_buf_size(p.matrix_m, p.matrix_n);
@@ -257,19 +257,19 @@ void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix
         Cnt_d = static_cast<uint32_t *>(
           aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                   p.size_cnt * sizeof(uint32_t), device, context));
-        std::cout << "You can use gbits.set_workspace to reduce latency and please make sure workspace_size > " 
-                  << Cnt_d_need_size
-                  << std::endl;
+        if (initer.verbose) std::cout << "You can use gbits.set_workspace to reduce latency and please make sure workspace_size > " 
+                                      << Cnt_d_need_size
+                                      << std::endl;
     } else if (workspace_size < Cnt_d_need_size) {
         Acc_d = static_cast<data_type_acc *>(workspace);
         Cnt_d = static_cast<uint32_t *>(
           aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                   p.size_cnt * sizeof(uint32_t), device, context));
-        std::cout << "Workspace size should be larger than " 
-                  << Cnt_d_need_size
-                  << " to create all pointers, current size is "
-                  << workspace_size
-                  << std::endl;
+        if (initer.verbose) std::cout << "Workspace size should be larger than " 
+                                      << Cnt_d_need_size
+                                      << " to create all pointers, current size is "
+                                      << workspace_size
+                                      << std::endl;
     } else {
         Acc_d = static_cast<data_type_acc *>(workspace);
         Cnt_d = static_cast<uint32_t *>(static_cast<void *>(
@@ -313,90 +313,88 @@ void xetla_linear_bias(sycl::queue queue, T *A, int8_t *B, T *C, uint32_t matrix
     }
 }
 
-template <typename T>
-void xetla_linear_base(sycl::queue queue, T *A, int8_t *B, T *C,
-        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
-        int dequant_s, void *workspace, int64_t workspace_size) {
-    switch (dequant_s) {
-        case 16:
-            return xetla_linear<T, 16, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 32:
-            return xetla_linear<T, 32, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 64:
-            return xetla_linear<T, 64, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 128:
-            return xetla_linear<T, 128, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 256:
-            return xetla_linear<T, 256, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 512:
-            return xetla_linear<T, 512, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 1024:
-            return xetla_linear<T, 1024, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        case 2048:
-            return xetla_linear<T, 2048, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
-        default:
-            std::cout << "blocksize must be divisible by 16 and in [16, 2048], "
-                         "but get "
-                      << dequant_s << std::endl;
-            exit(0);
-    }
-}
+#define LINEAR_NUM_POLICIES 14
+#define LINEAR_ENUMERATE_POLICIES_(_, T)  \
+  _(16, 8)T                               \
+  _(32, 8)T                               \
+  _(64, 8)T                               \
+  _(128, 8)T                              \
+  _(256, 8)T                              \
+  _(512, 8)T                              \
+  _(1024, 8)T                             \
+  _(16, 4)T                               \
+  _(32, 4)T                               \
+  _(64, 4)T                               \
+  _(128, 4)T                              \
+  _(256, 4)T                              \
+  _(512, 4)T                              \
+  _(1024, 4)T                                   
 
-template <typename T>
-void xetla_linear_bias_base(sycl::queue queue, T *A, int8_t *B, T *C,
-        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k, int dequant_s,
-        T *D, void *workspace, int64_t workspace_size) {
-    switch (dequant_s) {
-        case 16:
-            return xetla_linear_bias<T, 16, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 32:
-            return xetla_linear_bias<T, 32, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 64:
-            return xetla_linear_bias<T, 64, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 128:
-            return xetla_linear_bias<T, 128, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 256:
-            return xetla_linear_bias<T, 256, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 512:
-            return xetla_linear_bias<T, 512, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 1024:
-            return xetla_linear_bias<T, 1024, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        case 2048:
-            return xetla_linear_bias<T, 2048, 16>(
-                    queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
-        default:
-            std::cout << "blocksize must be divisible by 16 and in [16, 2048], "
-                         "but get "
-                      << dequant_s << std::endl;
-            exit(0);
-    }
-}
+#define LINEAR_COMMA ,
+#define LINEAR_ENUMERATE_POLICIES(_)     \
+  LINEAR_ENUMERATE_POLICIES_(_, )
 
-void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
-        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k, int dequant_s,
-        fp16 *bias, void *workspace, int64_t workspace_size) {
-    return xetla_linear_bias_base<fp16>(
-            queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s, bias, workspace, workspace_size);
-}
+#define LINEAR_ENUMERATE_POLICIES_COMMA(_)    \
+  LINEAR_ENUMERATE_POLICIES_(_, LINEAR_COMMA)
+
+#define HGEMM_IMPL_NAME(HEAD, BLK, LK) HEAD##_##BLK##_##LK
+#define XETLA_LINEAR_IMPL_NAME(BLK, LK) HGEMM_IMPL_NAME(xetla_linear, BLK, LK)
+#define XETLA_LINEAR_BIAS_IMPL_NAME(BLK, LK) HGEMM_IMPL_NAME(xetla_linear_bias, BLK, LK)
+#define HGEMM_ENUMERATE_IMPLS(BLK, LK) \
+    void XETLA_LINEAR_IMPL_NAME(BLK, LK)(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C, \
+                                        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k, \
+                                        void *workspace, int64_t workspace_size) { \
+        xetla_linear<BLK, LK>(queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size); \
+    } \
+    void XETLA_LINEAR_BIAS_IMPL_NAME(BLK, LK)(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C, \
+                                            uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k, \
+                                            fp16 *D, void *workspace, int64_t workspace_size) { \
+        xetla_linear_bias<BLK, LK>(queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size); \
+    }
+
+LINEAR_ENUMERATE_POLICIES(HGEMM_ENUMERATE_IMPLS)
+
+void (*linear_policies[LINEAR_NUM_POLICIES])(
+        sycl::queue,
+        fp16*,
+        int8_t*,
+        fp16*,
+        uint32_t,
+        uint32_t,
+        uint32_t,
+        void*,
+        int64_t) = {LINEAR_ENUMERATE_POLICIES_COMMA(XETLA_LINEAR_IMPL_NAME)};
+
+void (*linear_bias_policies[LINEAR_NUM_POLICIES])(
+        sycl::queue,
+        fp16*,
+        int8_t*,
+        fp16*,
+        uint32_t,
+        uint32_t,
+        uint32_t,
+        fp16*,
+        void*,
+        int64_t) = {LINEAR_ENUMERATE_POLICIES_COMMA(XETLA_LINEAR_BIAS_IMPL_NAME)};
 
 void xetla_linear_fp16(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
         uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
         int dequant_s, void *workspace, int64_t workspace_size) {
-    return xetla_linear_base<fp16>(
-            queue, A, B, C, matrix_m, matrix_n, matrix_k, dequant_s, workspace, workspace_size);
+    int policy_id = std::log2(dequant_s >> 4);
+    if (matrix_k / dequant_s > 8 && matrix_k % (dequant_s * 8) != 0) {
+        policy_id += (LINEAR_NUM_POLICIES / 2);
+    }
+    linear_policies[policy_id](
+      queue, A, B, C, matrix_m, matrix_n, matrix_k, workspace, workspace_size);
+}
+
+void xetla_linear_fp16_bias(sycl::queue queue, fp16 *A, int8_t *B, fp16 *C,
+        uint32_t matrix_m, uint32_t matrix_n, uint32_t matrix_k,
+        int dequant_s, fp16 *D, void *workspace, int64_t workspace_size) {
+    int policy_id = std::log2(dequant_s >> 4);
+    if (matrix_k / dequant_s > 8 && matrix_k % (dequant_s * 8) != 0) {
+        policy_id += (LINEAR_NUM_POLICIES / 2);
+    }
+    linear_bias_policies[policy_id](
+      queue, A, B, C, matrix_m, matrix_n, matrix_k, D, workspace, workspace_size);
 }
