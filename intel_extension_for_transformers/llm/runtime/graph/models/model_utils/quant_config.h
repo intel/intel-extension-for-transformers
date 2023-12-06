@@ -18,13 +18,19 @@
 #include "core/data_types.h"
 #include "jblas/jit_blas.h"
 
-enum class quant_bits : int { q4 = 0, q8, count };
+enum class quant_bits : int { q4 = 0, q8, fp4, nf4, count };
 static inline quant_bits parse_bits(const std::string& bits) {
   if (bits == "int4") {
     return quant_bits::q4;
   }
   if (bits == "int8") {
     return quant_bits::q8;
+  }
+  if (bits == "fp4") {
+    return quant_bits::fp4;
+  }
+  if (bits == "nf4") {
+    return quant_bits::nf4;
   }
   return quant_bits::count;
 }
@@ -93,7 +99,7 @@ static inline quant_comp parse_compute_type(std::string arg, bool ggml_arg) {
 }
 
 // without ggml
-inline constexpr ne_comp_type quant2ne_comp_type(const quant_comp& qc){
+inline constexpr ne_comp_type quant2ne_comp_type(const quant_comp& qc) {
   switch (qc) {
     case quant_comp::fp32:
       return NE_COMP_F32;
