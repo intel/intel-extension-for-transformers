@@ -194,8 +194,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     api_str = f"'{api_list[0]}'" if len(api_list) == 1 else ', '.join(f"'{item}'" for item in api_list)
                     multi_hpu_server_file = os.path.abspath(
                         os.path.join(os.path.dirname(__file__), './multi_hpu_server.py'))
-                    launch_str = f"deepspeed --num_nodes 1 --num_gpus {world_size} --no_local_rank --master_port {master_port} \
-                        {multi_hpu_server_file}"
+                    launch_str = f"deepspeed --num_nodes 1 --num_gpus {world_size} --no_local_rank \
+                                   --master_port {master_port} {multi_hpu_server_file}"
                     command_list = f"{launch_str} --habana --use_hpu_graphs --use_kv_cache --task chat \
                         --base_model_path {model_name_or_path} --host {host} --port {port} --api_list {api_str}"
                     try:
