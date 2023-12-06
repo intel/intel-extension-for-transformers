@@ -126,7 +126,9 @@ class TestChatbotBuilder(unittest.TestCase):
             self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../../README.md"
-        plugins.retrieval.args["embedding_model"] = "Intel/bge-base-en-v1.5-sts-int8-static"
+        # Intel/bge-base-en-v1.5-sts-int8-static is priavate now, so we need to load it from local.
+        plugins.retrieval.args["embedding_model"] = \
+            "/tf_dataset2/models/pytorch/bge-base-en-v1.5-sts-int8-static"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
