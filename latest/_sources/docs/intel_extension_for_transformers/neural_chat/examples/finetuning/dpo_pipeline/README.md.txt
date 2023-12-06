@@ -22,8 +22,13 @@ We select 12k examples from [Orca](https://arxiv.org/abs/2306.02707) style datas
 Follow install guidance in [optimum-habana](https://github.com/huggingface/optimum-habana)
 
 ```
-python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True --use_habana --use_lazy_mode --pad_max true
+python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True --use_habana --use_lazy_mode --pad_max true --report_to none --torch_dtype bfloat16 --use_hpu_graphs_for_training
 ```
+training in 8 habana cards
+```
+python ../instruction/gaudi_spawn.py --world_size 8 --use_mpi dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-chat-hf" --output_dir "llama" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --num_train_epochs 3  --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16  --use_auth_token True --use_habana --use_lazy_mode --pad_max true --report_to none --torch_dtype bfloat16 --use_hpu_graphs_for_training
+```
+
 
 ### Training on CPU (SPR)
 
