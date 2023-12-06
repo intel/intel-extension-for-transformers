@@ -221,8 +221,7 @@ def make_animation(
                 predictions.append(out["prediction"].to("cpu"))
         folder_name = "logs"
         file_name = f"{p_num}_{rank}.npz"
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
+        os.makedirs(folder_name, exist_ok=True)
         file_path = os.path.join(folder_name, file_name)
         f = open(file_path, "w")
         np.savez(file_path, *predictions)

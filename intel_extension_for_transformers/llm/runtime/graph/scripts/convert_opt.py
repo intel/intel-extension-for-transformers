@@ -28,9 +28,10 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -43,16 +44,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -68,7 +70,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
 
     tokenizer = AutoTokenizer.from_pretrained(dir_model)
@@ -76,7 +78,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = AutoModelForCausalLM.from_pretrained(dir_model, torch_dtype=torch.float16 if ftype == 1 else torch.float32)
     model.eval()
     hparams = model.config.to_dict()
-    
+
     print("Model loaded: ", dir_model)
     fout = open(fname_out, "wb")
 
@@ -84,7 +86,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # 0x67676d6c is unversioned ne
     # 0x67676d66 is versioned ggmf (requires token scores)
     ne_file_magic = 0x67676d6c
-    fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
+    fout.write(struct.pack("i", ne_file_magic))  # magic: ne in hex
 
     fout.write(struct.pack("i", hparams["vocab_size"]))  # n_vocab
     fout.write(struct.pack("i", hparams["hidden_size"]))  # n_embd
@@ -116,19 +118,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     encoder.update(tokenizer.get_added_vocab())
 
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
 
     counter = 0
     # sort by value
     for key in sorted(encoder, key=encoder.get):
         # workaround for key error when c not found
-        text=""
+        text = ""
         for c in key:
             if c not in byte_decoder:
                 text += c
             else:
-                text += chr(byte_decoder[c] )
-        text = bytearray( text, encoding="utf-8" )
+                text += chr(byte_decoder[c])
+        text = bytearray(text, encoding="utf-8")
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         counter += 1

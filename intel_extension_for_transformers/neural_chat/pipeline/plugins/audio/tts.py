@@ -29,6 +29,8 @@ from pydub import AudioSegment
 
 from .utils.english_normalizer import EnglishNormalizer
 from .utils.reduce_noise import NoiseReducer
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+
 class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
@@ -40,6 +42,8 @@ class TextToSpeech():
                  reduce_noise=False):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
+        if device == "auto":
+            device = get_device_type()
         self.device = device
         self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts").to(self.device)
         self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
@@ -218,6 +222,7 @@ class TextToSpeech():
     def post_llm_inference_actions(self, text_or_generator):
         from intel_extension_for_transformers.neural_chat.plugins import plugins
         self.voice = plugins.tts.args["voice"]
+        self.output_audio_path = plugins.tts.args['output_audio_path']
         if self.stream_mode: # pragma: no cover
             def cache_words_into_sentences():
                 buffered_texts = []

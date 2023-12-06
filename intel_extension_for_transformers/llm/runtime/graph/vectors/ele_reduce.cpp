@@ -61,7 +61,7 @@ void ne_vec_norm_inv_f32_(const int n, float* s, const float* x) {
 void ne_vec_sum_ggf_(const int n, double* s, const float* x) {
   float sum = 0.0;
   for (int i = 0; i < n; ++i) {
-    sum += (float)x[i];
+    sum += static_cast<float>(x[i]);
   }
   *s = sum;
 }

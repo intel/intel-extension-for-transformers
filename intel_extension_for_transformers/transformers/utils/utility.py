@@ -121,6 +121,8 @@ def generate_dummy_past_key_values(config, input_bs):
         new_shape = [input_bs, 0, num_key_value_heads, d_k]
     elif config.model_type == "chatglm":
         new_shape = [0, input_bs, num_key_value_heads, d_k]
+    elif config.model_type == "falcon":
+        new_shape = [input_bs, 1, 0, d_k]
     else:
         new_shape = [input_bs, num_key_value_heads, 0, d_k]
     past_key_values = [
@@ -180,6 +182,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     return tuple(past_key_values)
 
 
+IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon"}
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
@@ -191,4 +194,5 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
+    "falcon"
 }

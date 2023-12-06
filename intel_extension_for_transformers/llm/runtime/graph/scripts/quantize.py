@@ -21,8 +21,10 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+
 def is_win():
     return sys.platform.startswith('win')
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -34,27 +36,20 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Quantize weights of NE files")
     parser.add_argument("--model_name", type=str, help="model name", required=True)
-    parser.add_argument(
-        "--model_file", type=Path, help="Path to the fp32 model: String", required=True
-    )
-    parser.add_argument(
-        "--out_file", type=Path, help="Path to the quantized model: String", required=True
-    )
-    parser.add_argument(
-        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
-    )
+    parser.add_argument("--model_file", type=Path, help="Path to the fp32 model: String", required=True)
+    parser.add_argument("--out_file", type=Path, help="Path to the quantized model: String", required=True)
+    parser.add_argument("--build_dir", type=Path, help="Path to the build file: String", default=build_path)
     parser.add_argument(
         "--config",
         type=Path,
         help="Path to the configuration file: String (default: \"\")",
         default="",
     )
-    parser.add_argument(
-        "--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1
-    )
+    parser.add_argument("--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1)
     parser.add_argument(
         "--weight_dtype",
         choices=["int4", "int8"],
@@ -67,9 +62,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         help="Quantization algorithm to use: sym/asym (default: sym)",
         default="sym",
     )
-    parser.add_argument(
-        "--group_size", type=int, help="Group size: Int (default: 32)", default=32
-    )
+    parser.add_argument("--group_size", type=int, help="Group size: Int (default: 32)", default=32)
     parser.add_argument(
         "--scale_dtype",
         type=str,
@@ -100,17 +93,17 @@ def main(args_in: Optional[List[str]] = None) -> None:
         sys.exit(1)
 
     cmd = [path]
-    cmd.extend(["--model_file",     args.model_file])
-    cmd.extend(["--out_file",       args.out_file])
-    cmd.extend(["--nthread",        str(args.nthread)])
-    cmd.extend(["--weight_dtype",   str(args.weight_dtype)])
-    cmd.extend(["--alg",            args.alg])
-    cmd.extend(["--group_size",     str(args.group_size)])
-    cmd.extend(["--scale_dtype",    args.scale_dtype])
-    cmd.extend(["--compute_dtype",  args.compute_dtype])
+    cmd.extend(["--model_file", args.model_file])
+    cmd.extend(["--out_file", args.out_file])
+    cmd.extend(["--nthread", str(args.nthread)])
+    cmd.extend(["--weight_dtype", str(args.weight_dtype)])
+    cmd.extend(["--alg", args.alg])
+    cmd.extend(["--group_size", str(args.group_size)])
+    cmd.extend(["--scale_dtype", args.scale_dtype])
+    cmd.extend(["--compute_dtype", args.compute_dtype])
     if args.use_ggml:
         cmd.extend(["--use_ggml"])
-    
+
     print(cmd)
     subprocess.run(cmd)
 

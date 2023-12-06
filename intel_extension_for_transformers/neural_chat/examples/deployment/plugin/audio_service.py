@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -20,7 +20,10 @@ from intel_extension_for_transformers.neural_chat import NeuralChatServerExecuto
 
 def main():
     server_executor = NeuralChatServerExecutor()
-    server_executor(config_file="./textbot.yaml", log_file="./textbot.log")
+    server_executor(
+        config_file="./audio_service.yaml",
+        log_file="./audio_service.log")
+
 
 if __name__ == "__main__":
     main()

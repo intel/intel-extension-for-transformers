@@ -474,6 +474,5 @@ if __name__ == "__main__":
 
     trainer.train()
 
-    model = model.merge_and_unload()
-    if trainer.is_world_process_zero():
-        model.save_pretrained(training_args.output_dir)
+    trainer.model = trainer.model.merge_and_unload()
+    trainer.save_model()
