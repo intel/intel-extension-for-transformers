@@ -17,6 +17,19 @@ bash Miniconda*.sh
 source ~/.bashrc
 ```
 
+## Prepare Python Environment
+Create a python environment, optionally with autoconf for jemalloc support.
+```shell
+conda create -n image2image python=3.9.0
+conda activate image2image
+```
+>**Note**: Make sure pip <=23.2.2
+
+Check that `gcc` version is higher than 9.0.
+```shell
+gcc -v
+```
+
 ## Install numactl
 
 Next, install the numactl library:
@@ -44,6 +57,7 @@ Install other dependencies using pip:
 
 ```shell
 pip install -r requirements.txt
+pip install -r ../../../../requirements.txt
 pip install transformers==4.28.1
 pip install diffusers==0.12.1
 ```

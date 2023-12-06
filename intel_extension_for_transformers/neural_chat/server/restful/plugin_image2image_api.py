@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from io import BytesIO
 import time
 import json
@@ -24,7 +24,6 @@ import socket
 import threading
 import traceback
 import base64
-import request
 from PIL import Image
 from threading import Condition
 import queue
@@ -110,11 +109,10 @@ class TaskQueue():
         self.queue.join()
 
 class Worker(threading.Thread):
-    def __init__(self, queue, cond, graph, batch_size=1):
+    def __init__(self, queue, cond, batch_size=1):
         threading.Thread.__init__(self)
         self.queue = queue
         self.cond = cond
-        self.graph = graph
         self.batch_size = batch_size
 
     def get_batch_task(self):
@@ -174,17 +172,18 @@ class Image2ImageAPIRouter(APIRouter):
 
 router = Image2ImageAPIRouter()
 
-@router('/plugin/image2image', method=['POST'])
-def do_inference():
+
+@router.post("/plugin/image2image")
+async def do_inference(request: Request):
     start_time = time.time()
     try:
-        req = json.loads(request.body.read())
+        req = await request.json()
     except:
-        logger.error("failed to load json of request: {0}".format(request.body.read()))
-        return json.dumps(dict(ret_msg="load json failed: {0}".format(request.body.read()), ret_code=4001))
+        logger.error("failed to load json of request: {0}".format(request))
+        return json.dumps(dict(ret_msg="load json failed: {0}".format(request), ret_code=4001))
 
     if not req or not "prompt" in req:
-        logger.error("input data format error: {0}".format(request.body.read()))
+        logger.error("input data format error: {0}".format(request))
         return json.dumps(dict(ret_msg="input data format error", ret_code=4002))
 
     prompt = req["prompt"]

@@ -24,10 +24,10 @@ export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 
 # OMP
-export OMP_NUM_THREADS=52
+export OMP_NUM_THREADS=48
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
 # tc malloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
-nohup numactl -l -C 0-51 python -m audio_service 2>&1 &
+numactl -l -C 0-47 python -m image2image_service 2>&1 | tee run.log
