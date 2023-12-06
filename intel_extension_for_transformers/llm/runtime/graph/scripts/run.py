@@ -42,26 +42,35 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # quantization related arguments.
     parser.add_argument(
         "--weight_dtype",
-        choices=["int4", "int8"],
+        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4"],
         help="Data type of quantized weight: int4/int8 (default int4)",
         default="int4",
     )
     parser.add_argument(
         "--alg",
         type=str,
+        choices=["sym", "asym"],
         help="Quantization algorithm: sym/asym (default sym)",
         default="sym",
     )
-    parser.add_argument("--group_size", type=int, help="Group size: Int (default: 32)", default=32)
+    parser.add_argument(
+        "--group_size",
+        type=int,
+        choices=[-1, 32, 128],
+        help="Group size: Int (default: 32)",
+        default=32,
+    )
     parser.add_argument(
         "--scale_dtype",
         type=str,
+        choices=["fp32", "bf16"],
         help="Data type of scales: fp32/bf16 (dafault fp32)",
         default="fp32",
     )
     parser.add_argument(
         "--compute_dtype",
         type=str,
+        choices=["fp32", "fp16", "bf16", "int8"],
         help="Data type of Gemm computation: int8/bf16/fp32 (default: int8)",
         default="int8",
     )
