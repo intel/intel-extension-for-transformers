@@ -101,17 +101,18 @@ void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, const typename Laun
 }
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <class, JBLAS_ISA> class Act_T,
-          template <JBLAS_ISA> class Epi_T, typename... Epi_args>
+          template <JBLAS_ISA> class Epi_T1, template <JBLAS_ISA> class Epi_T2>
 void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1ptr,
                       jblas::storage::gemm::IWeightBase* w2ptr, float* tmp, float* output, int seq, int fin, int fmid,
-                      int fout, void* workspace, jblas::parallel::IThreading* th, Epi_args... epi_args) {
+                      int fout, void* workspace, jblas::parallel::IThreading* th,
+                      typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
+                      typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   if (seq <= 32) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
-                                                              jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T>;
+                                                              jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T1>;
     using Launcher = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
-                                                          jblas::epilogue::gemm::CompFp32BlockEpilogue,
-                                                          jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+                                                          jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T2>;
     static Launcher_epi kernel_epi;
     static Launcher kernel;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
@@ -125,7 +126,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher_epi::BEpiParam blkargs1{
         w1ptr_->template SPtr<int8_t>(), w1ptr_->SDtype(), w1ptr_->CStep(), w1ptr_->template ZPtr<int8_t>(),
         reduceA1.template RPtr<float>(), reduceA1.lda};
-    typename Launcher_epi::Param args1{gp1, {activation, fin, &reduceA1}, {w1ptr_}, blkargs1, {epi_args...}};
+    typename Launcher_epi::Param args1{gp1, {activation, fin, &reduceA1}, {w1ptr_}, blkargs1, {epi_prama1}};
 
     auto reduceA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
@@ -135,7 +136,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher::BEpiParam blkargs2{
         w2ptr_->template SPtr<int8_t>(), w2ptr_->SDtype(), w2ptr_->CStep(), w2ptr_->template ZPtr<int8_t>(),
         reduceA2.template RPtr<float>(), reduceA2.lda};
-    typename Launcher::Param args2{gp2, {tmp, fmid, &reduceA2}, {w2ptr_}, blkargs2, {output, fout}};
+    typename Launcher::Param args2{gp2, {tmp, fmid, &reduceA2}, {w2ptr_}, blkargs2, epi_prama2};
 
     if (w1ptr_->IsAsym()) {
       GemmRunWithA_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
@@ -145,34 +146,35 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T>;
-    using Launcher =
-        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, jblas::prologue_b::gemm::WeightKBlockS4,
-                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T1>;
+    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
+                                                        jblas::prologue_b::gemm::WeightKBlockS4, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     utils::GemmProblem gp1(1, seq, fmid, fin);
     utils::GemmProblem gp2(1, seq, fout, fmid);
     static Launcher_epi kernel_epi;
     static Launcher kernel;
-    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, {epi_args...}};
-    typename Launcher::Param args2{gp2, {tmp, fmid}, {w2ptr_}, {output, fout}};
+    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp, fmid}, {w2ptr_}, epi_prama2};
     GemmRun_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
   }
 }
 
-template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <JBLAS_ISA> class Epi_T,
-          typename... Epi_args>
+template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <JBLAS_ISA> class Epi_T1,
+          template <JBLAS_ISA> class Epi_T2>
 void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1ptr,
                        jblas::storage::gemm::IWeightBase* w2ptr, float* tmp, float* output, int seq, int fin, int fmid,
-                       int fout, void* workspace, jblas::parallel::IThreading* th, Epi_args... epi_args) {
+                       int fout, void* workspace, jblas::parallel::IThreading* th,
+                       typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
+                       typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher_epi =
       jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T>;
-  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-                                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T1>;
+  using Launcher =
+      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T2>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
@@ -183,8 +185,8 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   quanA1.assign(reinterpret_cast<int8_t*>(workspace));
   auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
   quanA2.assign(reinterpret_cast<int8_t*>(workspace));
-  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, {epi_args...}};
-  typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2}, {w2ptr_}, {output, fout}};
+  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
+  typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2}, {w2ptr_}, epi_prama2};
   GemmRunWithA_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
 }
 
@@ -212,9 +214,11 @@ bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin,
   return support;
 }
 
-template <template <JBLAS_ISA> class epilogue, typename... Epi_args>
+template <template <JBLAS_ISA> class epilogue1, template <JBLAS_ISA> class epilogue2, typename Epi_args1,
+          typename Epi_args2>
 void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp, float* output, int seq,
-                                     int fin, int fmid, int fout, void* workspace, Epi_args... epi_args) {
+                                     int fin, int fmid, int fout, void* workspace, Epi_args1 epi_args1,
+                                     Epi_args2 epi_args2) {
   GetCPUDevice();
   auto pth = get_threading();
   auto ptr1 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w1ptr);
@@ -230,22 +234,22 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                       fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin, fmid,
-                                                                    fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           } else {
-            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                        fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           }
         }
       }
@@ -253,41 +257,41 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
         if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
           if (seq <= tAVX512_VNNI_KBlock::MTILE) {
             static_assert(tAVX512_VNNI_KBlock::NTILE == tAMX_INT8_SS_KBlock::NTILE);
-            JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                       fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           } else {
-            JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                       fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           }
 
         } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
-          JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                     fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
-          JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin, fmid,
-                                                                  fout, workspace, pth, epi_args...);
+          JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         }
       }
     }
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                     fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin, fmid,
-                                                                  fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           } else {
-            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, tmp, output, seq, fin,
-                                                                        fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           }
         }
       }
@@ -380,21 +384,21 @@ void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& launcher
 }
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <class, JBLAS_ISA> class Act_T,
-          template <JBLAS_ISA> class Epi_T, typename... Epi_args>
+          template <JBLAS_ISA> class Epi_T1, template <JBLAS_ISA> class Epi_T2>
 void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1ptr,
                       jblas::storage::gemm::IWeightBase* w2ptr, jblas::storage::gemm::IWeightBase* w3ptr, float* tmp1,
                       float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
-                      jblas::parallel::IThreading* th, Epi_args... epi_args) {
+                      jblas::parallel::IThreading* th, typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
+                      typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   if (seq <= 32) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
-                                                              jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T>;
+                                                              jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T1>;
     using Launcher_mul =
         jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
                                              jblas::epilogue::gemm::CompFp32BlockEpilogue, custom::epilogue::MulFp32>;
     using Launcher = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
-                                                          jblas::epilogue::gemm::CompFp32BlockEpilogue,
-                                                          jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+                                                          jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T2>;
     static Launcher_epi kernel_epi;
     static Launcher_mul kernel_mul;
     static Launcher kernel;
@@ -410,7 +414,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher_epi::BEpiParam blkargs1{
         w1ptr_->template SPtr<int8_t>(), w1ptr_->SDtype(), w1ptr_->CStep(), w1ptr_->template ZPtr<int8_t>(),
         reduceA1.template RPtr<float>(), reduceA1.lda};
-    typename Launcher_epi::Param args1{gp1, {activation, fin, &reduceA1}, {w1ptr_}, blkargs1, {epi_args...}};
+    typename Launcher_epi::Param args1{gp1, {activation, fin, &reduceA1}, {w1ptr_}, blkargs1, epi_prama1};
 
     auto reduceA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
@@ -420,7 +424,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher::BEpiParam blkargs2{
         w2ptr_->template SPtr<int8_t>(), w2ptr_->SDtype(), w2ptr_->CStep(), w2ptr_->template ZPtr<int8_t>(),
         reduceA2.template RPtr<float>(), reduceA2.lda};
-    typename Launcher::Param args2{gp2, {tmp2, fmid, &reduceA2}, {w2ptr_}, blkargs2, {output, fout}};
+    typename Launcher::Param args2{gp2, {tmp2, fmid, &reduceA2}, {w2ptr_}, blkargs2, epi_prama2};
 
     utils::GemmProblem gp3(1, seq, fmid, fin, w3ptr_->mBlockSize);
     typename Launcher_mul::BEpiParam blkargs3{
@@ -436,13 +440,12 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T>;
+                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T1>;
     using Launcher_mul =
         jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, jblas::prologue_b::gemm::WeightKBlockS4,
                                            custom::epilogue::MulFp32>;
-    using Launcher =
-        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, jblas::prologue_b::gemm::WeightKBlockS4,
-                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
+                                                        jblas::prologue_b::gemm::WeightKBlockS4, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
@@ -452,29 +455,30 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     static Launcher_epi kernel_epi;
     static Launcher_mul kernel_mul;
     static Launcher kernel;
-    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, {epi_args...}};
-    typename Launcher::Param args2{gp2, {tmp2, fmid}, {w2ptr_}, {output, fout}};
+    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp2, fmid}, {w2ptr_}, epi_prama2};
     typename Launcher_mul::Param args3{gp3, {activation, fin}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
     GemmRun_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
   }
 }
 
-template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <JBLAS_ISA> class Epi_T,
-          typename... Epi_args>
+template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T, template <JBLAS_ISA> class Epi_T1,
+          template <JBLAS_ISA> class Epi_T2>
 void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1ptr,
                        jblas::storage::gemm::IWeightBase* w2ptr, jblas::storage::gemm::IWeightBase* w3ptr, float* tmp1,
                        float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
-                       jblas::parallel::IThreading* th, Epi_args... epi_args) {
+                       jblas::parallel::IThreading* th, typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
+                       typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher_epi =
       jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T>;
+                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T1>;
   using Launcher_mul = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
                                                                jblas::prologue_a::gemm::ActivationF32KBlockQuantize,
                                                                Wei_T, custom::epilogue::MulFp32>;
-  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-                                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+  using Launcher =
+      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T2>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
@@ -488,8 +492,8 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   quanA1.assign(reinterpret_cast<int8_t*>(workspace));
   auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
   quanA2.assign(reinterpret_cast<int8_t*>(workspace));
-  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, {epi_args...}};
-  typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, {output, fout}};
+  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
+  typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, epi_prama2};
   typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
   GemmRunWithA_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
 }
@@ -521,10 +525,11 @@ bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int 
   return support;
 }
 
-template <template <JBLAS_ISA> class epilogue, typename... Epi_args>
+template <template <JBLAS_ISA> class epilogue1, template <JBLAS_ISA> class epilogue2, typename Epi_args1,
+          typename Epi_args2>
 void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1, float* tmp2,
                                      float* output, int seq, int fin, int fmid, int fout, void* workspace,
-                                     Epi_args... epi_args) {
+                                     Epi_args1 epi_args1, Epi_args2 epi_args2) {
   GetCPUDevice();
   auto pth = get_threading();
   auto ptr1 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w1ptr);
@@ -541,22 +546,26 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32, epilogue>(
-              activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+              activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+              epi_args2);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32, epilogue>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
-                                                                    seq, fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1,
+                                                                                tmp2, output, seq, fin, fmid, fout,
+                                                                                workspace, pth, epi_args1, epi_args2);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           } else {
-            JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAMX_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           }
         }
       }
@@ -564,41 +573,49 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
         if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
           if (seq <= tAVX512_VNNI_KBlock::MTILE) {
             static_assert(tAVX512_VNNI_KBlock::NTILE == tAMX_INT8_SS_KBlock::NTILE);
-            JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           } else {
-            JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           }
 
         } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
-          JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
-                                                                     seq, fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1,
+                                                                                 tmp2, output, seq, fin, fmid, fout,
+                                                                                 workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
-          JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt, epilogue>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
-                                                                  fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
+                                                                              output, seq, fin, fmid, fout, workspace,
+                                                                              pth, epi_args1, epi_args2);
         }
       }
     }
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
-          JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output,
-                                                                     seq, fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1,
+                                                                                 tmp2, output, seq, fin, fmid, fout,
+                                                                                 workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
-          JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32, epilogue>(activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq,
-                                                                  fin, fmid, fout, workspace, pth, epi_args...);
+          JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1, tmp2,
+                                                                              output, seq, fin, fmid, fout, workspace,
+                                                                              pth, epi_args1, epi_args2);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           } else {
-            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue>(
-                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args...);
+            JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
+                activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
+                epi_args2);
           }
         }
       }
@@ -621,8 +638,11 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
                                           float* tmp2, float* output, int seq, int fin, int fmid, int fout,
                                           void* workspace) {
   float silu_alpha = -1.0f;
-  ffn_3w::jblas_fusion_ffn_f32f32_forward<jblas::epilogue::gemm::AccumulatorWriteBackWithSwishFp32>(
-      activation, w1ptr, w2ptr, w3ptr, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, tmp1, fmid, &silu_alpha);
+  jblas::epilogue::gemm::ParamAccumulatorWriteBack<float> epi_args1 = {tmp1, fmid, &silu_alpha};
+  jblas::epilogue::gemm::ParamAccumulatorWriteBack<float> epi_args2 = {output, fout};
+  ffn_3w::jblas_fusion_ffn_f32f32_forward<jblas::epilogue::gemm::AccumulatorWriteBackWithSwishFp32,
+                                          jblas::epilogue::gemm::AccumulatorWriteBackFp32>(
+      activation, w1ptr, w2ptr, w3ptr, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, epi_args1, epi_args2);
 };
 
 bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
@@ -631,14 +651,22 @@ bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int
 
 void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
                                           int seq, int fin, int fmid, int fout, void* workspace) {
-  ffn_2w::jblas_fusion_ffn_f32f32_forward<jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32>(
-      activation, w1ptr, w2ptr, tmp1, output, seq, fin, fmid, fout, workspace, tmp1, fmid);
+  jblas::epilogue::gemm::ParamAccumulatorWriteBack<float> epi_args1 = {tmp1, fmid, nullptr};
+  jblas::epilogue::gemm::ParamAccumulatorWriteBack<float> epi_args2 = {output, fout};
+  ffn_2w::jblas_fusion_ffn_f32f32_forward<jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32,
+                                          jblas::epilogue::gemm::AccumulatorWriteBackFp32>(
+      activation, w1ptr, w2ptr, tmp1, output, seq, fin, fmid, fout, workspace, epi_args1, epi_args2);
 }
 
 bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
-  return false;
+  return ffn_2w::jblas_fusion_ffn_f32f32_support(w1ptr, w2ptr, seq, fin, fmid, fout);
 }
 
 void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
-                                              bool broadcast_bias, void* workspace) {}
+                                              bool broadcast_bias, void* workspace) {
+  custom::epilogue::ParamAdd_Gelu<float> epi_args1 = {tmp1, b1ptr, fmid, broadcast_bias ? 0 : fmid};
+  custom::epilogue::ParamAdd<float> epi_args2 = {output, b2ptr, fout, broadcast_bias ? 0 : fout};
+  ffn_2w::jblas_fusion_ffn_f32f32_forward<custom::epilogue::Add_GeluFp32, custom::epilogue::AddFp32>(
+      activation, w1ptr, w2ptr, tmp1, output, seq, fin, fmid, fout, workspace, epi_args1, epi_args2);
+}
