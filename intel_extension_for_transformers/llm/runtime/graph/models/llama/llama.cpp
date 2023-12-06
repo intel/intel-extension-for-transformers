@@ -49,9 +49,10 @@
 //   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool llama_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool llama_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                       const int n_threads) {
-  // TODO static batching for now
+  model_context& lctx = *ctx;
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -150,7 +151,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 #ifdef NE_TP_MODEL
   if (enable_tp) {
     // need to broadcast the ids
-    broadcast(p_ctx, (float*)embd->data, N * ne_element_size(embd));
+    broadcast(p_ctx, reinterpret_cast<float*>(embd->data), N * ne_element_size(embd));
   }
 #endif
 
@@ -194,7 +195,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    const float attn_scale = 1.0f / sqrtf(float(head_size));
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_size));
     if (!run_mha_reordered) {
       // store key and value to memory
       {
@@ -409,11 +410,12 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -422,7 +424,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -446,13 +449,13 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!llama_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!llama_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

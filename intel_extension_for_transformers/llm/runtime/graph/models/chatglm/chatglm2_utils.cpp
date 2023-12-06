@@ -40,21 +40,23 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
+  model_context& lctx = *ctx;
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<CHATGLM2> ms(new CHATGLM2());
-  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
-  ms->load(lctx, progress_callback, progress_callback_user_data);
+  ms->init(fname.c_str(), ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  ms->load(ctx, progress_callback, progress_callback_user_data);
 
   lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM2::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+void CHATGLM2::init(const char* path_model, model_context* ctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
                     bool vocab_only_) {
+  model_context& lctx = *ctx;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -82,9 +84,10 @@ void CHATGLM2::init(const char* path_model, model_context& lctx, int n_gpu_layer
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void CHATGLM2::load(model_context* ctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+  model_context& lctx = *ctx;
   auto& model = lctx.model;
-  auto& ctx = model.ctx;
+  auto& ne_ctx = model.ctx;
 
   size_t ctx_size;
   size_t mmapped_size;
@@ -114,7 +117,7 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
     throw format("ne_init() failed");
   }
 
-  ml->ne_ctx = ctx;
+  ml->ne_ctx = ne_ctx;
 
   model.others[0] = ml->get_tensor("transformer.embedding.word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   model.others[1] = ml->get_tensor("transformer.encoder.final_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
@@ -124,7 +127,7 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
   model.layers.resize(n_layer);
   size_t vram_total = 0;
   for (uint32_t i = 0; i < n_layer; ++i) {
-    const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+    const ne_backend backend = static_cast<int>(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
     std::string layers_i = "transformer.encoder.layers." + std::to_string(i);
 
@@ -183,8 +186,7 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
 
 class chatglm2_quant_layer : public quant_layer_base {
  public:
-  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
-                                                 ne_type type) override {
+  quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne, ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
     if (layername == "transformer.embedding.word_embeddings.weight" ||
         layername == "transformer.word_embeddings.weight") {
