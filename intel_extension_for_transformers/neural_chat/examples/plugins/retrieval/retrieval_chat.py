@@ -28,7 +28,8 @@ logging.basicConfig(
 def main():
     plugins.retrieval.enable = True
     plugins.retrieval.args["input_path"] = "./Annual_Report.pdf"
-    pipeline_args = PipelineConfig(plugins=plugins)
+    pipeline_args = PipelineConfig(model_name_or_path="Intel/neural-chat-7b-v3-1",
+                                   plugins=plugins)
     chatbot = build_chatbot(pipeline_args)
 
     response = chatbot.predict(query="What is IDM 2.0?")

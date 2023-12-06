@@ -342,6 +342,10 @@ class FinetuningArguments:
         default=4,
         metadata={"help": "How many bits to use."}
     )
+    full_finetune: bool = field(
+        default=False,
+        metadata={"help": "Finetune the entire model without adapters."}
+    )
 
 @dataclass
 class TTSDatasetArguments:
@@ -433,7 +437,8 @@ class PipelineConfig:
             WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
-        self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else \
+            MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."

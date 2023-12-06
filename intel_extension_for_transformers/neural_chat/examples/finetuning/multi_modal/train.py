@@ -27,7 +27,7 @@ import transformers
 
 from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig
 from transformers.integrations.deepspeed import is_deepspeed_available
-from intel_extension_for_transformers.transformers.modeling import LlavaMistralForCausalLM
+from intel_extension_for_transformers.transformers.modeling.llava_models import LlavaMistralForCausalLM
 from llava_utils import *
 
 if is_optimum_habana_available():

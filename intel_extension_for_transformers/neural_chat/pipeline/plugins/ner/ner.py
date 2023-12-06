@@ -15,14 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Thread
-import re
 import time
-import torch
 import spacy
-from transformers import (
-    TextIteratorStreamer,
-)
 from .utils.utils import (
     enforce_stop_tokens,
     get_current_time

@@ -32,7 +32,6 @@ from ...server.restful.response import RetrievalResponse
 from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
-from .photoai_services import check_user_ip
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -89,8 +88,6 @@ async def retrieval_upload_link(request: Request):
 
     user_id = request.client.host
     logger.info(f'[askdoc - upload_link] user id is: {user_id}')
-    res = check_user_ip(user_id)
-    logger.info("[askdoc - upload_link] "+str(res))
 
     # append link into existed kb
     if 'knowledge_base_id' in params.keys():
@@ -133,7 +130,7 @@ async def retrieval_upload_link(request: Request):
             # get retrieval instance and reload db with new knowledge base
             print("[askdoc - upload_link] starting to create local db...")
             instance = plugins['retrieval']["instance"]
-            instance.create(input_path=link_list, persist_dir=user_persist_dir)
+            instance.create(input_path=link_list, persist_dir=str(user_persist_dir))
             print(f"[askdoc - upload_link] kb created successfully")
         except Exception as e:
             logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
@@ -169,7 +166,7 @@ async def retrieval_create(request: Request,
     print(f"[askdoc - create] upload path: {user_upload_dir}")
     
     # save file to local path
-    save_file_name = user_upload_dir + '/' + cur_time + '-' + filename
+    save_file_name = str(user_upload_dir) + '/' + cur_time + '-' + filename
     with open(save_file_name, 'wb') as fout:
         content = await file.read()
         fout.write(content)
@@ -179,7 +176,7 @@ async def retrieval_create(request: Request,
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - create] starting to create local db...")
         instance = plugins['retrieval']["instance"]
-        instance.create(input_path=user_upload_dir, persist_dir=user_persist_dir)
+        instance.create(input_path=str(user_upload_dir), persist_dir=str(user_persist_dir))
         print(f"[askdoc - create] kb created successfully")
     except Exception as e:
         logger.info(f"[askdoc - create] create knowledge base failes! {e}")

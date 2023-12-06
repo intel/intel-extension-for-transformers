@@ -7,4 +7,4 @@ protobuf
 torch==2.1.0
 onnx>=1.12
 onnxruntime==1.13.1
-
+optimum

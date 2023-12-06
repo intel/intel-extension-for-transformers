@@ -24,7 +24,7 @@ host: 127.0.0.1
 port: 8080
 
 model_name_or_path: "facebook/opt-125m"
-device: "cpu"
+device: "auto"
 
 # itrex int4 optimization
 optimization:

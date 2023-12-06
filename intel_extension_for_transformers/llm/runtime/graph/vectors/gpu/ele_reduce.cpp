@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include <iostream>
 #include "reduce.h"
 
 static sycl::queue q = sycl::queue();
@@ -34,7 +35,7 @@ void ne_vec_max_f32(const int n, float* s, const float* x) { reduce<float, sycl:
 //     ne_vec_norm_f32(n, s, x);
 //     *s = 1.f/(*s);
 // }
-#include <iostream>
+
 int main() {
   size_t n = 32 * 10;
   std::vector<float> h_src(n);
