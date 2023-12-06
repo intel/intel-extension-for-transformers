@@ -139,10 +139,17 @@ The table below displays the validated model list in NeuralChat for both inferen
 |Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
 |------------------------------------|---|---|--- | --- |
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
+|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅
 |LLaMA series| ✅| ✅|✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
-|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+|Mistral| ✅| ✅|✅| ✅
+|ChatGLM series| ✅| ✅|✅| ✅
+|Qwen series| ✅| ✅|✅| ✅
+|StarCoder series|   |   |   | ✅
+|CodeLLaMA series|   |   |   | ✅
+
+
 
 ## Selected Notebooks 
 
