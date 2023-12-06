@@ -50,7 +50,8 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             )
         if self.config.model_type == "falcon":
             device_to_beam_idx = {
-                past_state.device: beam_idx.to(past_state.device) for layer_past in past_key_values for past_state in layer_past
+                past_state.device: beam_idx.to(past_state.device) for layer_past in past_key_values \
+                for past_state in layer_past
             }
             return tuple(
                 (
