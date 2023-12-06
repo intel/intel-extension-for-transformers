@@ -144,9 +144,12 @@ class WeightOnlyQuantConfig:
             raise ValueError("llm_int8_skip_modules must be a list of strings")
         # MX-compliant format
         # https://arxiv.org/abs/2310.10537
-        self.runtime_supported_compute_dtype = ["fp32", "bf16", "int8"]
-        self.runtime_supported_weight_dtype = ["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3"]
-        self.runtime_supported_scale_dtype = ["fp32", "fp16"]
+        self.runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
+        self.runtime_supported_weight_dtype = ["int4", "int8",
+                                               "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
+                                               "fp4", "fp4_e2m1", "fp4_nf4",
+                                                ]
+        self.runtime_supported_scale_dtype = ["fp32", "bf16"]
         self.runtime_supported_group_size = [-1, 32, 128]
         self.runtime_supported_scheme = ["sym", "asym"]
 
@@ -161,6 +164,8 @@ class WeightOnlyQuantConfig:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "fp8":
             self.weight_dtype == "fp8_e5m2"
+        elif self.weight_dtype == "fp4":
+            self.weight_dtype = "fp4_e2m1"
         else:
             if self.weight_dtype not in self.runtime_supported_weight_dtype:
                 raise ValueError("weight_dtype must be in {}.".format(
@@ -176,6 +181,16 @@ class WeightOnlyQuantConfig:
 
         if self.scheme not in self.runtime_supported_scheme:
             raise ValueError("scheme must be in {}.".format(self.runtime_supported_scheme))
+
+        if self.weight_dtype[:3] in ["fp8", "fp4"]:
+            if self.compute_dtype in ["int8"]:
+                print("WARNING: int8 compute dtype is not be supported in float quant types! "\
+                      "Fall back to bf16.")
+                self.compute_dtype = "bf16"
+            if self.scheme in ["asym"]:
+                print("WARNING: asym alg is not be supported in float quant types! "\
+                      "Fall back to sym.");
+                self.scheme = "sym"
 
     def quantization_method(self):
         r"""
