@@ -205,8 +205,7 @@ async def code_chat_endpoint(chat_request: ChatCompletionRequest):
                 if responses[0]:
                     for chunk in responses[0].iter_lines(decode_unicode=False, delimiter=b"\0"):
                         if chunk:
-                            data = chunk.decode("utf-8")
-                            yield f"data: {data}\n\n"
+                            yield f"data: {chunk}\n\n"
                     yield f"data: [DONE]\n\n"
 
             return StreamingResponse(generate(), media_type="text/event-stream")

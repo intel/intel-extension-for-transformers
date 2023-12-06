@@ -282,22 +282,13 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
             if attr == "stream":
                 continue
             setattr(gen_config, attr, value)
-        buffered_texts = ""
         if request.stream:
             generator, _ = chatbot.predict_stream(query=request.prompt, config=gen_config)
             if not isinstance(generator, types.GeneratorType):
                 generator = (generator,)
             def stream_generator():
-                nonlocal buffered_texts
                 for output in generator:
-                    if isinstance(output, str):
-                        chunks = output.split()
-                        for chunk in chunks:
-                            buffered_texts += chunk + ' '
-                            yield chunk + "\0"
-                    else:
-                        buffered_texts += output + ' '
-                        yield output + "\0"
+                    yield output + "\0"
                 yield f"data: [DONE]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
