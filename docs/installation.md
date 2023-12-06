@@ -54,10 +54,8 @@ Intel® Extension for Transformers supports the following HWs:
 
 * Intel Xeon Scalable processor (Sapphire Rapids, Icelake, ...etc)
 * Intel Gaudi2
-* Core Processors
-* Xeon CPU Max Series
-* Data Center GPU Max Series
-* Arc Series
+* Intel Core Processors
+* Intel Xeon CPU Max Series
 
 ### Validated Software Environment
 
