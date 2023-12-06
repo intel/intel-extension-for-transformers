@@ -193,17 +193,19 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
   // from low precision to high precision
   switch (CompType) {
     case NE_COMP_INT8:
-      if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
-                                                                              isAsym);
-      }
-      if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-        return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
-                                                                              isAsym);
-      }
-      if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-        return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
-                                                                           isAsym);
+      if (!isAsym) {  // asym int8 is not optimized, so fall through to others.
+        if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
+          return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
+                                                                                ScaleDtype, isAsym);
+        }
+        if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
+                                                                                ScaleDtype, isAsym);
+        }
+        if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
+                                                                             isAsym);
+        }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
@@ -268,20 +270,22 @@ static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, 
   GetCPUDevice();
   switch (CompType) {
     case NE_COMP_INT8:
-      if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
-            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
-        return true;
-      }
-      if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
-            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
-        return true;
-      }
-      if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
-            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
-        return true;
+      if (!isAsym) {  // asym int8 is not optimized, so fall through to others.
+        if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
+          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
+              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          return true;
+        }
+        if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
+              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          return true;
+        }
+        if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
+          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
+              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          return true;
+        }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
