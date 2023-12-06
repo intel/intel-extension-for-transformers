@@ -73,7 +73,7 @@ void jit_softmax_Ab16a::generate() {
   mov(r15d, dword[reg_param + GET_OFF(QK_rescale)]);
   vpbroadcastd(zmm17, r15d); // zmm17 is vscale
   mov(r15d, bit_cast<uint32_t>(-10000.f));
-  vpbroadcastd(zmm18, r15d);
+  vpbroadcastd(zmm18, r15d); // zmm18 is -INF (psudo)
 
   if (param_.has_badd)
     mov(r11, qword[reg_param + GET_OFF(src_badd)]);
@@ -112,7 +112,7 @@ void jit_softmax_Ab16a::generate() {
       vmovaps(vreg_x, zmm18);
       vcvtdq2ps(vreg_x | mask, zword[r13 + i * 16 * 4]);
       if (!param_.has_badd) {
-        vmulps(vreg_x, vreg_x, zmm17);
+        vmulps(vreg_x | mask, vreg_x, zmm17);
       } else {
         if (i == 0)
           mov(r14, r11);
@@ -122,7 +122,7 @@ void jit_softmax_Ab16a::generate() {
         vfmadd213ps(vreg_x | mask, zmm17, zmm19);
       }
       vmovaps(zword[r13 + i * 16 * 4], vreg_x);
-      vmaxps(Zmm(i), Zmm(i), vreg_x);
+      vmaxps(Zmm(i) | mask, Zmm(i), vreg_x);
     }
   }
   vpxorq(zmm16, zmm16, zmm16);

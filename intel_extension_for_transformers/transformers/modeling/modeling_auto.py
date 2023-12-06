@@ -68,16 +68,9 @@ class _BaseQBitsAutoModelClass:
                 autocast,
             )
 
-            # This interface will switch the MHA fusion off.
-            pattern_config = {
-                "pattern_switch": {
-                    "MultiHeadAttention": False,
-                }
-            }
-
             cast_type = kwargs.get("cast_type", "native")
             with autocast(cast_type):
-                model = compile(pretrained_model_name_or_path, pattern_config)
+                model = compile(pretrained_model_name_or_path)
 
             return model
 

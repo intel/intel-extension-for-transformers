@@ -38,18 +38,12 @@ def set_log_file(log, log_file):
     file_handler.setFormatter(formatter)
     log.addHandler(file_handler)
 
-bge_pattern_config = {
-    'pattern_switch': {
-        'MultiHeadAttention': False,
-    }
-}
-
 class Neural_Engine_bge():
 
     def __init__(self, model_path, log_file, cast_type="native"):
         set_log_file(log, log_file)
         with autocast(cast_type):
-            self.graph = compile(model_path, bge_pattern_config)
+            self.graph = compile(model_path)
         self.log_file = log_file
 
     def accuracy(self, batch_size, seq_len, dataset_name, task_name, data_dir, tokenizer_dir):
