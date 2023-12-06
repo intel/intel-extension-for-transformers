@@ -31,7 +31,7 @@ DECODER_NAME = "decoder_model.bin"
 DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
 WEIGHTS_NAME = "pytorch_model.bin"
 QUANT_CONFIG = "quantization_config.json"
-SPARSITY_CONFIG = "sparse_config.json"
+SPARSITY_CONFIG = "sparsity_config.json"
 
 torch = LazyImport("torch")
 

@@ -20,9 +20,9 @@ import copy
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, Union
+from typing import Any, Dict, Tuple, Union
 from .utility import QUANT_CONFIG, SPARSITY_CONFIG, LazyImport, logger
-from transformers import PretrainedConfig
+from transformers import BitsAndBytesConfig, PretrainedConfig
 
 torch = LazyImport("torch")
 
@@ -516,3 +516,10 @@ class SparsityConfig(PretrainedConfig):
                 commit_message=commit_message,
                 token=kwargs.get("token", None),
             )
+
+    @classmethod
+    def get_config_dict(
+        cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=SPARSITY_CONFIG, **kwargs)
+    
