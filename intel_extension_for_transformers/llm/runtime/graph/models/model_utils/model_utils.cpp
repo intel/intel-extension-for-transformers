@@ -892,6 +892,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     if (params.alg == quant_alg::asym) {
       printf("Invalid alg for float quant types, will be igonred\n");
     }
+    if (params.compute_dtype == quant_comp::int8) {
+      printf("Compute Int8 is not supported by float quant types, will be igonred\n");
+    }
   }
   JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
   if (params.scale_dtype == quant_sdtype::fp32) {
