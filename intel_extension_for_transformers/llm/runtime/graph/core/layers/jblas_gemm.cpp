@@ -191,7 +191,7 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
                                       bool isAsym, ne_comp_type CompType) {
   GetCPUDevice();
   auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+      jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
   // from low precision to high precision
   switch (CompType) {
     case NE_COMP_INT8:
@@ -271,7 +271,7 @@ static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, 
                                           ne_comp_type CompType, void* ThreadPool) {
   GetCPUDevice();
   auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+      jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
   switch (CompType) {
     case NE_COMP_INT8:
       if (dtype_type == JBLAS_DTYPE::TypeInt && !isAsym) {  // asym int8 is not optimized, so fall through to others.
