@@ -178,13 +178,16 @@ class Gelu {
 template <JBLAS_ISA ISA_T>
 using GeluFp32 = Gelu<ISA_T, float>;
 
+template <typename _T>
+struct ParamAdd {
+  _T *C, *D;
+  int ldc, ldd;
+};
+
 template <JBLAS_ISA ISA_T, typename _T>
 class Add {
  public:
-  struct Param {
-    _T *C, *D;
-    int ldc, ldd;
-  };
+  using Param = ParamAdd<_T>;
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param, void* tmpcache, size_t cachesize) {
@@ -285,16 +288,19 @@ class DequantAdd : protected jblas::epilogue::gemm::DequantInt32ToFp32<ISA_T> {
 template <JBLAS_ISA ISA_T>
 using DequantAddFp32 = DequantAdd<ISA_T, float>;
 
+template <typename _T>
+struct ParamAdd_Gelu {
+  _T *C, *D;
+  int ldc, ldd;
+};
+
 template <JBLAS_ISA ISA_T, typename _T>
 class Add_Gelu {
  public:
-  struct Param {
-    _T *C, *D;
-    int ldc, ldd;
-  };
+  using Param = ParamAdd_Gelu<_T>;
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
-                     const int N, const Param& _param) {
+                     const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto DOffset = M_offset * _param.ldd + N_offset;
     auto cptr = _param.C + COffset;
@@ -306,7 +312,7 @@ class Add_Gelu {
     using GeluKernel = jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32<ISA_T>;
     static GeluKernel ker;
     typename GeluKernel::Param param{_param.C, _param.ldc, NULL};
-    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param, tmpcache, cachesize);
     return ret;
   }
 };
