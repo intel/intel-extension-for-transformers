@@ -266,6 +266,14 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
         # LLM inference
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 

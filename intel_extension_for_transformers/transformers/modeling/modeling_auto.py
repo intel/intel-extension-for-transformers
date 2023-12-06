@@ -68,16 +68,9 @@ class _BaseQBitsAutoModelClass:
                 autocast,
             )
 
-            # This interface will switch the MHA fusion off.
-            pattern_config = {
-                "pattern_switch": {
-                    "MultiHeadAttention": False,
-                }
-            }
-
             cast_type = kwargs.get("cast_type", "native")
             with autocast(cast_type):
-                model = compile(pretrained_model_name_or_path, pattern_config)
+                model = compile(pretrained_model_name_or_path)
 
             return model
 
@@ -234,8 +227,10 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
+            if 'falcon' in model_type and transformers.__version__ > "4.33":
+                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(model.eval())
+                quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
-
             # ipex.optimize_transformers
             if quantization_config.ipex_opt_llm is None:
                 if model_type in IPEX_OPT_LLM_SUPPORTED:
