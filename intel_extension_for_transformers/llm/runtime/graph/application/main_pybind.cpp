@@ -28,18 +28,15 @@
 #include <fstream>
 #include <random>
 #include <string>
-#include <thread>
+#include <thread>  // NOLINT
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
+
 #include "common.h"
 #include "core/layers/jblas_common.hpp"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
-#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -127,7 +124,7 @@ class Model {
   int n_ctx = 0;
   std::vector<std::vector<model_token>> last_n_tokens;
   bool token_eos = false;
-  long int generate_count = 0;
+  int64_t generate_count = 0;
   std::vector<uint32_t> padding_count;
   uint32_t n_prompt_tokens = 0;
   std::vector<float> times;
@@ -346,7 +343,7 @@ std::vector<std::vector<model_token>> Model::generate(const std::vector<std::vec
   std::vector<std::vector<model_token>> ret_next_tokens;
   for (int bs = 0; bs < next_token_ids.size(); ++bs) {
     // padding eos seq for continuous batched kv cache
-    // TODO batch reduction after for-loop attention implementation
+    // TODO(Zhentao): batch reduction after for-loop attention implementation
     if (curr_input_ids[bs].back() == ctx->vocab.eos_token_id || curr_input_ids[bs].back() == ctx->vocab.pad_token_id) {
       curr_input_ids[bs] = {ctx->vocab.pad_token_id};
       ret_next_tokens.push_back({ctx->vocab.pad_token_id});
@@ -493,7 +490,7 @@ std::vector<model_token> Model::post_greedy_search(const float* logits) {
 std::vector<std::vector<model_token>> Model::post_beam_search(model_context* lctx, const int& n_predict,
                                                               const std::vector<model_input>& inputs,
                                                               const int& n_threads) {
-  // TODO: to implement
+  // TODO(Zhentao): to implement
   static std::set<model_archs> supported_archs = {MODEL_GPTJ, MODEL_GPTNEOX};
   if (supported_archs.count(params.model_arch) != 0) {
     return beam_search(lctx, n_predict, inputs, n_threads);
@@ -514,7 +511,7 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
   float temp = params.temp;
   std::vector<model_token> ids(ctx->batch_size);
   // #pragma omp parallel for  // omp will affect sampling positions in batch infer
-  // TODO (make sample functions support batch processing)
+  // TODO(Zhentao): (make sample functions support batch processing)
   for (int bs = 0; bs < ctx->batch_size; ++bs) {
     std::vector<model_token_data> candidates;
     candidates.reserve(n_vocab);
@@ -525,7 +522,7 @@ std::vector<model_token> Model::post_sample_top_k_top_p_repeat(const float* logi
 
     // Apply penalties
     float nl_logit = logits[bs * n_vocab + model_token_nl()];
-    auto last_n_repeat = std::min(std::min((int)last_n_tokens[bs].size(), repeat_last_n), n_ctx);
+    auto last_n_repeat = std::min(std::min(static_cast<int>(last_n_tokens[bs].size()), repeat_last_n), n_ctx);
     model_sample_repetition_penalty(ctx, &candidates_p,
                                     last_n_tokens[bs].data() + last_n_tokens[bs].size() - last_n_repeat, last_n_repeat,
                                     params.repeat_penalty);
@@ -590,9 +587,9 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
 size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
                           const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
   using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
@@ -606,7 +603,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   std::copy(src_w, src_w + n * k, tmpq.data());
 
   int nk_scale = jblas::utils::updiv(k, packedw.mBlockSize);
-  auto ssize = (size_t)n * nk_scale;
+  auto ssize = static_cast<size_t>(n * nk_scale);
   jblas::utils::avector<float> Tscales(ssize);
   std::copy(src_scales, src_scales + ssize, Tscales.data());
 
@@ -621,9 +618,9 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
 size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
                              int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   // using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
   using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;

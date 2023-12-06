@@ -32,7 +32,7 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-void process_escapes(std::string& input) {
+void process_escapes(std::string& input) {  // NOLINT
   std::size_t input_len = input.length();
   std::size_t output_idx = 0;
 
@@ -70,7 +70,7 @@ void process_escapes(std::string& input) {
   input.resize(output_idx);
 }
 
-bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
+bool gpt_params_parse(int argc, char** argv, gpt_params& params) {  // NOLINT
   bool invalid_param = false;
   bool escape_prompt = false;
   std::string arg;
@@ -342,7 +342,7 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.input_suffix = argv[i];
-    } else if (arg == "--batch-size") {  // TODO ambiguous with batch-size-truncate (n_batch)
+    } else if (arg == "--batch-size") {  // ambiguous with batch-size-truncate (n_batch)
       if (++i >= argc) {
         invalid_param = true;
         break;
@@ -424,29 +424,30 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  -n N, --n-predict N   number of tokens to predict (default: %d, -1 = infinity)\n",
           params.n_predict);
   fprintf(stderr, "  --top-k N             top-k sampling (default: %d, 0 = disabled)\n", params.top_k);
-  fprintf(stderr, "  --top-p N             top-p sampling (default: %.1f, 1.0 = disabled)\n", (double)params.top_p);
+  fprintf(stderr, "  --top-p N             top-p sampling (default: %.1f, 1.0 = disabled)\n",
+          static_cast<double>(params.top_p));
   fprintf(stderr, "  --tfs N               tail free sampling, parameter z (default: %.1f, 1.0 = disabled)\n",
-          (double)params.tfs_z);
+          static_cast<double>(params.tfs_z));
   fprintf(stderr, "  --typical N           locally typical sampling, parameter p (default: %.1f, 1.0 = disabled)\n",
-          (double)params.typical_p);
+          static_cast<double>(params.typical_p));
   fprintf(stderr,
           "  --repeat-last-n N     last n tokens to consider for penalize (default: %d, 0 = disabled, -1 = ctx_size)\n",
           params.repeat_last_n);
   fprintf(stderr, "  --repeat-penalty N    penalize repeat sequence of tokens (default: %.1f, 1.0 = disabled)\n",
-          (double)params.repeat_penalty);
+          static_cast<double>(params.repeat_penalty));
   fprintf(stderr, "  --presence-penalty N  repeat alpha presence penalty (default: %.1f, 0.0 = disabled)\n",
-          (double)params.presence_penalty);
+          static_cast<double>(params.presence_penalty));
   fprintf(stderr, "  --frequency-penalty N repeat alpha frequency penalty (default: %.1f, 0.0 = disabled)\n",
-          (double)params.frequency_penalty);
+          static_cast<double>(params.frequency_penalty));
   fprintf(stderr, "  --mirostat N          use Mirostat sampling.\n");
   fprintf(stderr,
           "                        Top K, Nucleus, Tail Free and Locally Typical samplers are ignored if used.\n");
   fprintf(stderr, "                        (default: %d, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)\n",
           params.mirostat);
   fprintf(stderr, "  --mirostat-lr N       Mirostat learning rate, parameter eta (default: %.1f)\n",
-          (double)params.mirostat_eta);
+          static_cast<double>(params.mirostat_eta));
   fprintf(stderr, "  --mirostat-ent N      Mirostat target entropy, parameter tau (default: %.1f)\n",
-          (double)params.mirostat_tau);
+          static_cast<double>(params.mirostat_tau));
   fprintf(stderr, "  -l TOKEN_ID(+/-)BIAS, --logit-bias TOKEN_ID(+/-)BIAS\n");
   fprintf(stderr, "                        modifies the likelihood of token appearing in the completion,\n");
   fprintf(stderr, "                        i.e. `--logit-bias 15043+1` to increase likelihood of token ' Hello',\n");
@@ -458,7 +459,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  --memory-f32          use f32 for memory key+value\n");
   fprintf(stderr, "  --memory-f16          use f16 for memory key+value\n");
   fprintf(stderr, "  --memory-auto         use internal format for memory key+value\n");
-  fprintf(stderr, "  --temp N              temperature (default: %.1f)\n", (double)params.temp);
+  fprintf(stderr, "  --temp N              temperature (default: %.1f)\n", static_cast<double>(params.temp));
   fprintf(stderr, "  -b N, --batch-size-truncate N  batch size for prompt processing (default: %d)\n", params.n_batch);
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
   fprintf(stderr, "  --keep                number of tokens to keep from the initial prompt (default: %d, -1 = all)\n",

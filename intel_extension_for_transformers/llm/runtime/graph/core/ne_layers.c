@@ -3438,8 +3438,8 @@ static void ne_compute_forward_dump_tensor(const struct ne_compute_params* param
   const int64_t ne03 = src0->ne[3];
   const int64_t nr = ne_nrows(src0);
 
-  fprintf(file, "Total element is %d\n", ne_nelements(src0));
-  fprintf(file, "ne[0] size is %d ne[1] size is %d ne[2] size is %d ne[3] size is %d \n", ne00, ne01, ne02, ne03);
+  fprintf(file, "Total element is %ld\n", ne_nelements(src0));
+  fprintf(file, "ne[0] size is %ld ne[1] size is %ld ne[2] size is %ld ne[3] size is %ld \n", ne00, ne01, ne02, ne03);
   switch (src0->type) {
     case NE_TYPE_F32: {
       for (int64_t ir = 0; ir < nr; ++ir) {

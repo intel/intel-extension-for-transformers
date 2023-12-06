@@ -303,7 +303,7 @@ Most of our model examples only support single prompt processing. You need to ad
 ```diff
 +class new_quant_layer : public quant_layer_base {
 + public:
-+ virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
++ quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
 +                                                 ne_type type) override {
 +    bool quantize = layername.rfind("weight") == layername.size() - 6;  // size("weight") = 6
 +    if (layername == "model.embed_tokens.weight") {

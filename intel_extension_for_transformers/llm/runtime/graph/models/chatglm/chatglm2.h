@@ -42,9 +42,9 @@ class CHATGLM2 : public IModel {
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+  void init(const char* path_model, model_context* ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
             bool vocab_only_) override;
-  void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
+  void load(model_context* ctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
 #endif  // CHATGLM2_H
