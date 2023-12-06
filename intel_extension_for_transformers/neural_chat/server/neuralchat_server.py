@@ -105,6 +105,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         port = config.get("port", "80")
         use_deepspeed = config.get("use_deepspeed", False)
         world_size = config.get("world_size", 1)
+        master_port = config.get("master_port", 29500)
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
@@ -194,7 +195,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     multi_hpu_server_file = os.path.abspath(
                         os.path.join(os.path.dirname(__file__), './multi_hpu_server.py'))
                     launch_str = f"deepspeed --num_nodes 1 --num_gpus {world_size} --no_local_rank \
-                        {multi_hpu_server_file}"
+                                   --master_port {master_port} {multi_hpu_server_file}"
                     command_list = f"{launch_str} --habana --use_hpu_graphs --use_kv_cache --task chat \
                         --base_model_path {model_name_or_path} --host {host} --port {port} --api_list {api_str}"
                     try:
