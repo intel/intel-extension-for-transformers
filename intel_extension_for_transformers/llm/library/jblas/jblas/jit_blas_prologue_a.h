@@ -28,17 +28,18 @@
 namespace jblas {
 namespace prologue_a {
 namespace gemm {
+
+template <typename AType>
+struct ParamActivationBase {
+  const AType* A;
+  int lda;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class ActivationBase {
  public:
   using AType = typename _GemmCore_T::AType;
   using SRCType = AType;
-  struct Param {
-    const AType* A;
-    int lda;
-  };
-  ActivationBase() {}
-
+  using Param = ParamActivationBase<AType>;
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
     auto aptr = const_cast<AType*>(_param.A) + m_offset * _param.lda + k_offset;
@@ -63,12 +64,7 @@ class ActivationConverter : public ActivationBase<_GemmCore_T, ISA_T> {
  public:
   using AType = typename _GemmCore_T::AType;
   using SRCType = SRC_T;
-  struct Param {
-    const SRC_T* A;
-    int lda;
-  };
-  ActivationConverter() {}
-
+  using Param = ParamActivationBase<SRC_T>;
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
     auto aptr = const_cast<SRC_T*>(_param.A);
@@ -101,6 +97,10 @@ using ActivationConverterFp32 = ActivationConverter<_GemmCore_T, ISA_T, float>;
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 using ActivationConverterBf16 = ActivationConverter<_GemmCore_T, ISA_T, utils::bf16>;
 
+template <typename AType>
+struct ParamActivationKBlockQuantize : ParamActivationBase<AType> {
+  storage::gemm::StorageQuantActivation* quan;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ActivationKBlockQuantize {
  public:
@@ -108,11 +108,7 @@ class ActivationKBlockQuantize {
   using SType = float;
   using QParam = storage::gemm::StorageQuantActivation;
   using SRCType = SRC_T;
-  struct Param {
-    const SRC_T* A;
-    int lda;
-    QParam* quan;
-  };
+  using Param = ParamActivationKBlockQuantize<SRC_T>;
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
@@ -222,17 +218,17 @@ using ActivationF32KBlockQuantize = ActivationKBlockQuantize<_GemmCore_T, ISA_T,
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 using ActivationBf16KBlockQuantize = ActivationKBlockQuantize<_GemmCore_T, ISA_T, utils::bf16>;
 
+template <typename AType>
+struct ParamActivationKBlockBase : ParamActivationBase<AType> {
+  storage::gemm::StorageReduce* reduce;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_T> {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = storage::gemm::StorageReduce;
   using SRCType = SRC_T;
-  struct Param {
-    const SRCType* A;
-    int lda;
-    SType* reduce;
-  };
+  using Param = ParamActivationKBlockBase<SRC_T>;
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
@@ -294,19 +290,17 @@ class ActivationKBlockBase : public ActivationConverter<_GemmCore_T, ISA_T, SRC_
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 using ActivationKBlockBaseF32 = ActivationKBlockBase<_GemmCore_T, ISA_T, float>;
 
+template <typename AType>
+struct ParamShuffleActivationKBlockBase : ParamActivationKBlockBase<AType> {
+  int* indices = nullptr;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ShuffleActivationKBlockBase : public ActivationKBlockBase<_GemmCore_T, ISA_T, SRC_T> {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = storage::gemm::StorageReduce;
   using SRCType = SRC_T;
-  struct Param {
-    const SRCType* A;
-    int lda;
-    SType* reduce = nullptr;
-    int* indices = nullptr;
-  };
-
+  using Param = ParamShuffleActivationKBlockBase<SRC_T>;
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
     if (_param.indices == nullptr) {
@@ -340,6 +334,10 @@ class ShuffleActivationKBlockBase : public ActivationKBlockBase<_GemmCore_T, ISA
   }
 };
 
+template <typename AType>
+struct ParamShuffleActivationKBlockQuantize : ParamActivationKBlockQuantize<AType> {
+  int* indices = nullptr;
+};
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCore_T, ISA_T, SRC_T> {
  public:
@@ -347,12 +345,7 @@ class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCor
   using SType = float;
   using QParam = storage::gemm::StorageQuantActivation;
   using SRCType = SRC_T;
-  struct Param {
-    const SRC_T* A;
-    int lda;
-    QParam* quan;
-    int* indices;
-  };
+  using Param  = ParamShuffleActivationKBlockQuantize<SRC_T>;
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
