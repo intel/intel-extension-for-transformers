@@ -65,12 +65,28 @@ bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=dynamic_int8 --mode=th
 ```
 
 
-You could also compile the model to IR using python API as follows:
+You could also using python API as follows:
 ```python
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-graph = compile('./model_and_tokenizer/int8-model.onnx')
-graph.save('./ir')
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModel
+
+sentences_batch = ['sentence-1', 'sentence-2', 'sentence-3', 'sentence-4']
+
+tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-base-en-v1.5')
+encoded_input = tokenizer(sentences_batch,
+                            padding=True,
+                            truncation=True,
+                            max_length=512,
+                            return_tensors="np")
+
+engine_input = [encoded_input['input_ids'], encoded_input['token_type_ids'], encoded_input['attention_mask']]
+
+model = AutoModel.from_pretrained('./model_and_tokenizer/int8-model.onnx', use_embedding_runtime=True)
+sentence_embeddings = model.generate(engine_input)['last_hidden_state:0']
+
+print("Sentence embeddings:", sentence_embeddings)
 ```
+
 
 # Benchmark
 If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
