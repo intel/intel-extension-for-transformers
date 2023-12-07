@@ -18,7 +18,7 @@ evaluate
 wget
 git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c
 git+https://github.com/huggingface/optimum-intel.git
-peft
+peft==0.6.2
 tyro
 bitsandbytes
 tiktoken
