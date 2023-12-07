@@ -54,7 +54,12 @@ constexpr bool MHA_PREFER_AVX512FP16 = true;
 #endif
 
 namespace {
-using namespace jblas::utils;
+using jblas::utils::bf16;
+using jblas::utils::fp16;
+using jblas::utils::padto;
+using jblas::utils::padto_le;
+using jblas::utils::remainsize;
+using jblas::utils::updiv;
 namespace utils = jblas::utils;
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
@@ -720,7 +725,7 @@ class MHAInterface {
 
       // calculate mm + softmax + mm
       {
-        const int tmp_exp_size = M_TILE * padto(p.sl_kv, GemmQK::NTILE) * sizeof(ne_bf16_t);  // TODO
+        const int tmp_exp_size = M_TILE * padto(p.sl_kv, GemmQK::NTILE) * sizeof(ne_bf16_t);  // TODO(Yi): alignment?
         const auto tmp = p.tmp + tid * tmp_exp_size;
         ThreadProblem2D thdp{tid};
         parl.getIndex(thdp);
@@ -756,6 +761,7 @@ class MHAInterface {
               /* .stacksize = */ cb.mL2Cache,
               /* .tmpcachesize = */ cb.mL2Cache,
           };
+          const auto bf16_tmp = reinterpret_cast<bf16*>(tmp);
           l_expsum.run(  // QxK => S ==exp==> P
               QKArgs{
                   jblas::utils::GemmProblem{
@@ -768,8 +774,8 @@ class MHAInterface {
                   /* .paramB = */ QKProKArgs{nullptr, 0, &K_pack},
                   /* .paramC = */
                   QKEpiArgs{
-                      /* .dst = */ (bf16*)tmp - i_m * ld_tmp_exp,  // pretend that there is a whole exp mat
-                      /* .dst_sum = */ exp_sum - i_m,              // pretend that there is a whole exp sum
+                      /* .dst = */ bf16_tmp - i_m * ld_tmp_exp,  // pretend that there is a whole exp mat
+                      /* .dst_sum = */ exp_sum - i_m,            // pretend that there is a whole exp sum
                       /* .ld_dst = */ ld_tmp_exp,
                       /* .scale = */ p.QK_scale,
                       /* .causal_offset = */ is_causal ? sl_diff : -1,
@@ -1056,7 +1062,7 @@ class WeightBase {
   JBLAS_CODE getWeight(BType** dst_ptr, int* dst_step, const Param& p, int k_size, int n_size, int k_offset,
                        int n_offset, void* /* tmpcache */, size_t /* cachesize */) {
     if ((n_size % _GemmCore_T::NTILE == 0) && std::is_same<SType, BType>::value &&
-        0) {  // TODO: use a gemm core accept step for K or reorder at runtime
+        0) {  // TODO(Yi) : use a gemm core accept step for K or reorder at runtime
       *dst_ptr = const_cast<SType*>(p.B) + k_offset * p.ldb + n_offset;
       *dst_step = p.ldb;
       return JblasSuccess;
@@ -1802,7 +1808,7 @@ void jblas_fusion_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
 bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
 #if CompileBF16()
   GetCPUDevice();
-  // TODO check K V's layout
+  // TODO(Yi): check K V's layout
   return _cd->AMX_BF16();
 #endif
   return false;
@@ -1815,7 +1821,7 @@ void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp3
 bool jblas_fusion_attn_fp16_support(const attn_shape_t* params) {
 #if CompileFP16()
   GetCPUDevice();
-  // TODO check K V's layout
+  // TODO(Yi): check K V's layout
   return _cd->AMX_BF16();
 #endif
   return false;
@@ -1836,7 +1842,7 @@ size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params) {
 bool jblas_reordered_attn_fp32_support(const attn_shape_t* params) {
 #if CompileBF16()
   GetCPUDevice();
-  // TODO check K V's layout
+  // TODO(Yi): check K V's layout
   return _cd->AMX_BF16();
 #endif
   return false;
@@ -2111,7 +2117,7 @@ class TestMhaDese {
     printf("Test suit: %s\n", __FUNCTION__);
     CheckISA(AMX_BF16);
     GetCPUDevice();
-    jblas_set_threads(std::min(_cd->getThreads(), omp_get_max_threads()));
+    ne_jblas::ne_threading::get()->set_threads(std::min(_cd->getThreads(), omp_get_max_threads()));
     jblas::utils::request_perm_xtile_data();
 
 #if CompileFP16()
@@ -2185,7 +2191,6 @@ class TestMhaDese {
   bool test_case(const attn_shape_t& s, ne_attn_flags_t flags, bool k_trans = false,
                  ATTN_FWD_LAYOUT kv_layout = ATTN_FWD_LAYOUT_PLAIN) {
     assert(kv_layout == ATTN_FWD_LAYOUT_PLAIN || !k_trans);
-    using namespace jblas::utils;
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
     const auto heads_kv = s.heads_kv;
@@ -2318,7 +2323,6 @@ class TestMhaDese {
 
   template <class Q_T, class K_T, class V_T, class DST_T>
   bool test_reorder_pipe(const attn_shape_t& s, int sl_kv_max, ne_attn_flags_t flags) {
-    using namespace jblas::utils;
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
     const auto heads_kv = s.heads_kv;
@@ -2471,10 +2475,10 @@ class TestMhaDese {
       jblas_reordered_attn_fp32_update_v(&update_v_args);
 
       jblas_reordered_attn_fp32_fp32_fwd_args_t kern_args{
-          /* .Q = */ (float*)src_q.data(),
+          /* .Q = */ reinterpret_cast<float*>(src_q.data()),
           /* .K = */ k_cache.data(),
           /* .V = */ v_cache.data(),
-          /* .dst = */ (float*)dst.data(),
+          /* .dst = */ reinterpret_cast<float*>(dst.data()),
           /* .Q_sc = */ init_scale_val<Q_T>,
           /* .K_sc = */ init_scale_val<K_T>,
           /* .V_sc = */ init_scale_val<V_T>,
