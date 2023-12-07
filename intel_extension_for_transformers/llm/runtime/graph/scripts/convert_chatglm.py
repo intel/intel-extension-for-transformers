@@ -17,8 +17,8 @@ import json
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
-                    Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
 from sentencepiece import SentencePieceProcessor  # type: ignore
 import gguf
@@ -35,7 +35,11 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
+    bs = list(range(ord("!"),
+                    ord("~") + 1)) + list(range(
+                        ord("¡"),
+                        ord("¬") + 1)) + list(range(ord("®"),
+                                                    ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
@@ -50,8 +54,10 @@ def bytes_to_unicode():
 
 
 class SentencePieceVocab:
-    def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
-        self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
+    def __init__(self, fname_tokenizer: Path,
+                 fname_added_tokens: Optional[Path]) -> None:
+        self.sentencepiece_tokenizer = SentencePieceProcessor(
+            str(fname_tokenizer))
         added_tokens: Dict[str, int]
         if fname_added_tokens is not None:
             added_tokens = json.load(open(fname_added_tokens))
@@ -62,11 +68,13 @@ class SentencePieceVocab:
         actual_ids = sorted(added_tokens.values())
         if expected_ids != actual_ids:
             raise Exception(
-                f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
+                f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}"
+            )
         items = sorted(added_tokens.items(), key=lambda text_idx: text_idx[1])
         self.added_tokens_list = [text for (text, idx) in items]
         self.vocab_size_base: int = vocab_size
-        self.vocab_size: int = self.vocab_size_base + len(self.added_tokens_list)
+        self.vocab_size: int = self.vocab_size_base + len(
+            self.added_tokens_list)
         self.fname_tokenizer = fname_tokenizer
         self.fname_added_tokens = fname_added_tokens
 
@@ -85,7 +93,8 @@ class SentencePieceVocab:
                 byte_value = int(piece[3:-1], 16)
                 text = struct.pack("B", byte_value)
             else:
-                text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
+                text = tokenizer.id_to_piece(i).replace("\u2581",
+                                                        " ").encode("utf-8")
             score: float = tokenizer.get_score(i)
             yield text, score
 
@@ -118,11 +127,11 @@ def load_vocab_for_glm1(path: Path) -> SentencePieceVocab:
         else:
             raise FileNotFoundError(
                 f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, \
-                pass the directory as --vocab-dir"
-            )
+                pass the directory as --vocab-dir")
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
-    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+    return SentencePieceVocab(
+        path, added_tokens_path if added_tokens_path.exists() else None)
 
 
 def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
@@ -140,13 +149,15 @@ def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
         else:
             raise FileNotFoundError(
                 f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, \
-                pass the directory as --vocab-dir"
-            )
+                pass the directory as --vocab-dir")
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
-    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+    return SentencePieceVocab(
+        path, added_tokens_path if added_tokens_path.exists() else None)
 
-def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams):
+
+def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
+                          hparams):
     print("ChatGLM-2.gguf converting: ")
     list_vars = model.state_dict()
     for name in list_vars.keys():
@@ -161,11 +172,12 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams
 
     gguf_writer.add_uint32('magic', 0x67676d66)
     gguf_writer.add_uint32('version', 1)
-    gguf_writer.add_uint32('n_vocab',hparams["padded_vocab_size"])
+    gguf_writer.add_uint32('n_vocab', hparams["padded_vocab_size"])
     gguf_writer.add_uint32('n_embd', hparams["hidden_size"])
     gguf_writer.add_uint32('n_mult', 0)
     gguf_writer.add_uint32('n_head', hparams["num_attention_heads"])
-    gguf_writer.add_uint32('n_head_kv',0)
+    gguf_writer.add_uint32('n_head_kv', 0)
+
     # gguf_writer.add_uint32('n_layer', hparams["num_layers"])
     # gguf_writer.add_uint32('n_rot', 0)
     # gguf_writer.add_uint32('ftype', ftype)
@@ -185,16 +197,6 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams
     # gguf_writer.add_uint32('eos_token_id', 2)
     # gguf_writer.add_uint32('pad_token_id', 0)
     # gguf_writer.add_uint32('sep_token_id', 0)
-
-    print("gguf: write header")
-    gguf_writer.write_header_to_file()
-    print("gguf: write metadata")
-    gguf_writer.write_kv_data_to_file()
-    print("gguf: write tensors")
-    gguf_writer.write_tensors_to_file()
-
-    gguf_writer.close()
-    import pdb;pdb.set_trace()
 
     # fout.write(struct.pack("i", 0x67676d66))
     # fout.write(struct.pack("i", 1))
@@ -223,7 +225,7 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams
     # fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     # fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
     # fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
-  
+
     #gguf_writer.add_context_length(ctx_length)
     #gguf_writer.add_embedding_length(hparams["hidden_size"])
     #gguf_writer.add_block_count(block_count)
@@ -233,39 +235,156 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams
     # gguf_writer.add_head_count_kv(hparams["num_attention_heads"])
     #gguf_writer.add_layer_norm_rms_eps(hparams["rms_norm_eps"])
 
+    def write_vocab_gguf(dir_model):
+        print("gguf: get tokenizer metadata")
 
-    # if "bos_token_id" in hparams and hparams["bos_token_id"] != None:
-    #     gguf_writer.add_bos_token_id(hparams["bos_token_id"])
+        tokens: List[bytes] = []
+        scores: List[float] = []
+        toktypes: List[int] = []
 
-    # if "eos_token_id" in hparams and hparams["eos_token_id"] != None:
-    #     gguf_writer.add_eos_token_id(hparams["eos_token_id"])
+        if Path(dir_model + "/tokenizer.model").is_file():
+            # vocab type sentencepiece
+            print(
+                "gguf: get sentencepiece tokenizer vocab, scores and token types"
+            )
 
-    # if "unk_token_id" in hparams and hparams["unk_token_id"] != None:
-    #     gguf_writer.add_unk_token_id(hparams["unk_token_id"])
+            tokenizer = SentencePieceProcessor(dir_model + "/tokenizer.model")
 
-    # if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
-    #     gguf_writer.add_pad_token_id(hparams["pad_token_id"])
+            for i in range(tokenizer.vocab_size()):
+                text: bytes
+                score: float
 
-    # if "sep_token_id" in hparams and hparams["sep_token_id"] != None:
-    #     gguf_writer.add_sep_token_id(hparams["sep_token_id"])
+                piece = tokenizer.id_to_piece(i)
+                text = piece.encode("utf-8")
+                score = tokenizer.get_score(i)
 
+                toktype = 1  # defualt to normal token type
+                if tokenizer.is_unknown(i):
+                    toktype = 2
+                if tokenizer.is_control(i):
+                    toktype = 3
 
-    vocab = load_vocab_for_glm2(Path(dir_model))
-    counter = 0
-    for text, score in vocab.all_tokens():
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", score))
-        counter += 1
+                # toktype = 4 is user-defined = tokens from added_tokens.json
 
-    while counter < hparams["padded_vocab_size"]:
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", 0))
-        counter += 1
+                if tokenizer.is_unused(i):
+                    toktype = 5
+                if tokenizer.is_byte(i):
+                    toktype = 6
+
+                tokens.append(text)
+                scores.append(score)
+                toktypes.append(toktype)
+
+            if Path(dir_model + "/added_tokens.json").is_file():
+                with open(dir_model + "/added_tokens.json",
+                          "r",
+                          encoding="utf-8") as f:
+                    addtokens_json = json.load(f)
+
+                    print("gguf: get added tokens")
+
+                    for key in addtokens_json:
+                        tokens.append(key.encode("utf-8"))
+                        scores.append(-1000.0)
+                        toktypes.append(4)  # user-defined token type
+
+            gguf_writer.add_tokenizer_model("llama")
+            gguf_writer.add_token_list(tokens)
+            gguf_writer.add_token_scores(scores)
+            gguf_writer.add_token_types(toktypes)
+
+        print("gguf: get special token ids")
+
+        if Path(dir_model + "/tokenizer.json").is_file():
+            # Look for special tokens in tokenizer.json if it exists
+
+            with open(dir_model + "/tokenizer.json", "r",
+                      encoding="utf-8") as f:
+                tokenizer = json.load(f)
+
+            if "added_tokens" in tokenizer and Path(
+                    dir_model + "/tokenizer_config.json").is_file():
+
+                with open(dir_model + "/tokenizer_config.json",
+                          "r",
+                          encoding="utf-8") as f:
+                    tokenizer_config = json.load(f)
+
+                if "bos_token" in tokenizer_config and tokenizer_config[
+                        "bos_token"] != None:
+                    for key in tokenizer["added_tokens"]:
+                        if key["content"] == tokenizer_config["bos_token"][
+                                "content"]:
+                            gguf_writer.add_bos_token_id(key["id"])
+
+                if "eos_token" in tokenizer_config and tokenizer_config[
+                        "eos_token"] != None:
+                    for key in tokenizer["added_tokens"]:
+                        if key["content"] == tokenizer_config["eos_token"][
+                                "content"]:
+                            gguf_writer.add_eos_token_id(key["id"])
+
+                if "unk_token" in tokenizer_config and tokenizer_config[
+                        "unk_token"] != None:
+                    for key in tokenizer["added_tokens"]:
+                        if key["content"] == tokenizer_config["unk_token"][
+                                "content"]:
+                            gguf_writer.add_unk_token_id(key["id"])
+
+                if "sep_token" in tokenizer_config and tokenizer_config[
+                        "sep_token"] != None:
+                    for key in tokenizer["added_tokens"]:
+                        if key["content"] == tokenizer_config["sep_token"][
+                                "content"]:
+                            gguf_writer.add_sep_token_id(key["id"])
+
+                if "pad_token" in tokenizer_config and tokenizer_config[
+                        "pad_token"] != None:
+                    for key in tokenizer["added_tokens"]:
+                        if key["content"] == tokenizer_config["pad_token"][
+                                "content"]:
+                            gguf_writer.add_pad_token_id(key["id"])
+        else:
+            # If no tokenizer.json: Look for special tokens in config.json
+
+            if "bos_token_id" in hparams and hparams["bos_token_id"] != None:
+                gguf_writer.add_bos_token_id(hparams["bos_token_id"])
+
+            if "eos_token_id" in hparams and hparams["eos_token_id"] != None:
+                gguf_writer.add_eos_token_id(hparams["eos_token_id"])
+
+            if "unk_token_id" in hparams and hparams["unk_token_id"] != None:
+                gguf_writer.add_unk_token_id(hparams["unk_token_id"])
+
+            if "sep_token_id" in hparams and hparams["sep_token_id"] != None:
+                gguf_writer.add_sep_token_id(hparams["sep_token_id"])
+
+            if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
+                gguf_writer.add_pad_token_id(hparams["pad_token_id"])
+
+    write_vocab_gguf(dir_model)
+
+    # write vocab
+    # vocab = load_vocab_for_glm2(Path(dir_model))
+    # counter = 0
+    # for text, score in vocab.all_tokens():
+    #     fout.write(struct.pack("i", len(text)))
+    #     fout.write(text)
+    #     fout.write(struct.pack("f", score))
+    #     counter += 1
+
+    # while counter < hparams["padded_vocab_size"]:
+    #     fout.write(struct.pack("i", len(text)))
+    #     fout.write(text)
+    #     fout.write(struct.pack("f", 0))
+    #     counter += 1
+
+    # tensor info
+    print("gguf: get tensor metadata")
 
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
+
         print("Processing variable: " + name + " with shape: ", data.shape)
         if 'inv_freq' in name:
             continue
@@ -289,17 +408,55 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams
                 data = data.astype(np.float32)
                 ftype_cur = 0
 
-        # header
-        str = name.encode("utf-8")
-        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
-        for i in range(n_dims):
-            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
-        fout.write(str)
+        #print(f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} | type {lazy_tensor.data_type.name:4}")
 
-        # data
-        data.tofile(fout)
+        gguf_writer.add_tensor(name, data)
 
-    fout.close()
+    print("gguf: write header")
+    gguf_writer.write_header_to_file()
+    print("gguf: write metadata")
+    gguf_writer.write_kv_data_to_file()
+    print("gguf: write tensors")
+    gguf_writer.write_tensors_to_file()
+
+    gguf_writer.close()
+
+    # for name in list_vars.keys():
+    #     data = list_vars[name].squeeze().numpy()
+    #     print("Processing variable: " + name + " with shape: ", data.shape)
+    #     if 'inv_freq' in name:
+    #         continue
+
+    #     n_dims = len(data.shape)
+
+    #     # ftype == 0 -> float32, ftype == 1 -> float16
+    #     ftype_cur = 0
+    #     if ftype != 0:
+    #         if name[-7:] == ".weight" and n_dims == 2:
+    #             print("  Converting to float16")
+    #             data = data.astype(np.float16)
+    #             ftype_cur = 1
+    #         else:
+    #             print("  Converting to float32")
+    #             data = data.astype(np.float32)
+    #             ftype_cur = 0
+    #     else:
+    #         if data.dtype != np.float32:
+    #             print("  Converting to float32")
+    #             data = data.astype(np.float32)
+    #             ftype_cur = 0
+
+    #     # header
+    #     str = name.encode("utf-8")
+    #     fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+    #     for i in range(n_dims):
+    #         fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+    #     fout.write(str)
+
+    #     # data
+    #     data.tofile(fout)
+
+    # fout.close()
 
     print("Done. Output file: " + fname_out)
     print("")
@@ -338,10 +495,22 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
     fout.write(struct.pack("i", 0))
 
-    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
-    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
-    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
-    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.bos_token_id
+            if tokenizer.bos_token_id is not None else 1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.eos_token_id
+            if tokenizer.eos_token_id is not None else 2))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.pad_token_id
+            if tokenizer.pad_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.sep_token_id
+            if tokenizer.sep_token_id is not None else -1))
 
     # gguf_file = fname_out + '.gguf'
     # gguf_writer = gguf.GGUFWriter(gguf_file, "ITREX.test")
@@ -354,7 +523,6 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     # # gguf_writer.add_head_count(hparams["num_attention_heads"])
     # # gguf_writer.add_head_count_kv(hparams["num_attention_heads"])
     # #gguf_writer.add_layer_norm_rms_eps(hparams["rms_norm_eps"])
-
 
     # # if "bos_token_id" in hparams and hparams["bos_token_id"] != None:
     # #     gguf_writer.add_bos_token_id(hparams["bos_token_id"])
@@ -468,10 +636,22 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["inner_hidden_size"]))
 
-    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else -1))
-    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else -1))
-    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
-    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.bos_token_id
+            if tokenizer.bos_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.eos_token_id
+            if tokenizer.eos_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.pad_token_id
+            if tokenizer.pad_token_id is not None else -1))
+    fout.write(
+        struct.pack(
+            "i", tokenizer.sep_token_id
+            if tokenizer.sep_token_id is not None else -1))
 
     vocab = load_vocab_for_glm1(Path(dir_model))
     counter = 0
@@ -529,10 +709,17 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
 
 
 def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
-    parser.add_argument("--outtype", choices=["f32", "f16"], help="output format (default: based on input)")
-    parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
-    parser.add_argument("model", type=Path, help="directory containing model file")
+    parser = argparse.ArgumentParser(
+        description="Convert a model to a NE compatible file")
+    parser.add_argument("--outtype",
+                        choices=["f32", "f16"],
+                        help="output format (default: based on input)")
+    parser.add_argument("--outfile",
+                        type=Path,
+                        help="path to write to; default: based on input")
+    parser.add_argument("model",
+                        type=Path,
+                        help="directory containing model file")
     args = parser.parse_args(args_in)
 
     dir_model = args.model.as_posix()
@@ -548,14 +735,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype == "f16":
         ftype = 1
 
-    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
-    model = AutoModel.from_pretrained(dir_model, low_cpu_mem_usage=True, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(dir_model,
+                                              trust_remote_code=True)
+    model = AutoModel.from_pretrained(dir_model,
+                                      low_cpu_mem_usage=True,
+                                      trust_remote_code=True)
 
     if hasattr(model.config, "multi_query_attention"):
-        chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams)
+        chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
+                              hparams)
         #chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
     else:
-        chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+        chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype,
+                         hparams)
 
 
 if __name__ == '__main__':
