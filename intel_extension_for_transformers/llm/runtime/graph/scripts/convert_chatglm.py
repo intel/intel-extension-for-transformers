@@ -21,6 +21,7 @@ from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Lite
                     Union)
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
 from sentencepiece import SentencePieceProcessor  # type: ignore
+import gguf
 
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
@@ -145,6 +146,164 @@ def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
     print(f"Loading vocab file {path}")
     return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
 
+def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams):
+    print("ChatGLM-2.gguf converting: ")
+    list_vars = model.state_dict()
+    for name in list_vars.keys():
+        print(name, list_vars[name].shape, list_vars[name].dtype)
+
+    print(hparams)
+    fout = open(fname_out, "wb")
+
+    gguf_file = fname_out + '.gguf'
+    gguf_writer = gguf.GGUFWriter(gguf_file, "chatglm2-test.ggml")
+    gguf_writer.add_name('chatglm2-6b')
+
+    gguf_writer.add_uint32('magic', 0x67676d66)
+    gguf_writer.add_uint32('version', 1)
+    gguf_writer.add_uint32('n_vocab',hparams["padded_vocab_size"])
+    gguf_writer.add_uint32('n_embd', hparams["hidden_size"])
+    gguf_writer.add_uint32('n_mult', 0)
+    gguf_writer.add_uint32('n_head', hparams["num_attention_heads"])
+    gguf_writer.add_uint32('n_head_kv',0)
+    gguf_writer.add_uint32('n_layer', hparams["num_layers"])
+    gguf_writer.add_uint32('n_rot', 0)
+    gguf_writer.add_uint32('ftype', ftype)
+    gguf_writer.add_uint32('max_seq_len', hparams["seq_length"])
+    gguf_writer.add_uint32('alibi_bias_max', 0)
+    gguf_writer.add_uint32('clip_qkv', 0)
+    gguf_writer.add_uint32('par_res',0)
+
+    gguf_writer.add_uint32('word_embed_proj_dim', 0)
+    gguf_writer.add_uint32('do_layer_norm_before', 0)
+
+    gguf_writer.add_uint32('multi_query_group_num', hparams["multi_query_group_num"])
+    gguf_writer.add_uint32('ffn_hidden_size', hparams["ffn_hidden_size"])
+    gguf_writer.add_uint32('inner_hidden_size', 0)
+
+    gguf_writer.add_uint32('bos_token_id', 1)
+    gguf_writer.add_uint32('eos_token_id', 2)
+    gguf_writer.add_uint32('pad_token_id', 0)
+    gguf_writer.add_uint32('sep_token_id', 0)
+
+    print("gguf: write header")
+    gguf_writer.write_header_to_file()
+    print("gguf: write metadata")
+    gguf_writer.write_kv_data_to_file()
+    print("gguf: write tensors")
+    gguf_writer.write_tensors_to_file()
+
+    gguf_writer.close()
+    import pdb;pdb.set_trace()
+
+    # fout.write(struct.pack("i", 0x67676d66))
+    # fout.write(struct.pack("i", 1))
+
+    # fout.write(struct.pack("i", hparams["padded_vocab_size"]))
+    # fout.write(struct.pack("i", hparams["hidden_size"]))
+    # fout.write(struct.pack("i", 0))
+    # fout.write(struct.pack("i", hparams["num_attention_heads"]))
+    # fout.write(struct.pack("i", 0))
+    # fout.write(struct.pack("i", hparams["num_layers"]))
+    # fout.write(struct.pack("i", 0))
+    # fout.write(struct.pack("i", ftype))
+    # fout.write(struct.pack("i", hparams["seq_length"]))
+    # fout.write(struct.pack("f", 0))
+    # fout.write(struct.pack("f", 0))
+    # fout.write(struct.pack("i", 0))
+
+    # fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
+    # fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+
+    # fout.write(struct.pack("i", hparams["multi_query_group_num"]))
+    # fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
+    # fout.write(struct.pack("i", 0))
+
+    # fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    # fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    # fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    # fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
+  
+    #gguf_writer.add_context_length(ctx_length)
+    #gguf_writer.add_embedding_length(hparams["hidden_size"])
+    #gguf_writer.add_block_count(block_count)
+    #gguf_writer.add_feed_forward_length(hparams["intermediate_size"])
+    # gguf_writer.add_rope_dimension_count(hparams["hidden_size"] // hparams["num_attention_heads"])
+    # gguf_writer.add_head_count(hparams["num_attention_heads"])
+    # gguf_writer.add_head_count_kv(hparams["num_attention_heads"])
+    #gguf_writer.add_layer_norm_rms_eps(hparams["rms_norm_eps"])
+
+
+    # if "bos_token_id" in hparams and hparams["bos_token_id"] != None:
+    #     gguf_writer.add_bos_token_id(hparams["bos_token_id"])
+
+    # if "eos_token_id" in hparams and hparams["eos_token_id"] != None:
+    #     gguf_writer.add_eos_token_id(hparams["eos_token_id"])
+
+    # if "unk_token_id" in hparams and hparams["unk_token_id"] != None:
+    #     gguf_writer.add_unk_token_id(hparams["unk_token_id"])
+
+    # if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
+    #     gguf_writer.add_pad_token_id(hparams["pad_token_id"])
+
+    # if "sep_token_id" in hparams and hparams["sep_token_id"] != None:
+    #     gguf_writer.add_sep_token_id(hparams["sep_token_id"])
+
+
+    vocab = load_vocab_for_glm2(Path(dir_model))
+    counter = 0
+    for text, score in vocab.all_tokens():
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", score))
+        counter += 1
+
+    while counter < hparams["padded_vocab_size"]:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", 0))
+        counter += 1
+
+    for name in list_vars.keys():
+        data = list_vars[name].squeeze().numpy()
+        print("Processing variable: " + name + " with shape: ", data.shape)
+        if 'inv_freq' in name:
+            continue
+
+        n_dims = len(data.shape)
+
+        # ftype == 0 -> float32, ftype == 1 -> float16
+        ftype_cur = 0
+        if ftype != 0:
+            if name[-7:] == ".weight" and n_dims == 2:
+                print("  Converting to float16")
+                data = data.astype(np.float16)
+                ftype_cur = 1
+            else:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+        else:
+            if data.dtype != np.float32:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+
+        # header
+        str = name.encode("utf-8")
+        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(str)
+
+        # data
+        data.tofile(fout)
+
+    fout.close()
+
+    print("Done. Output file: " + fname_out)
+    print("")
+
 
 def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     print("ChatGLM-2 converting: ")
@@ -183,6 +342,43 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
     fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
+
+    # gguf_file = fname_out + '.gguf'
+    # gguf_writer = gguf.GGUFWriter(gguf_file, "ITREX.test")
+    # gguf_writer.add_name('chatglm2-6b')
+    # #gguf_writer.add_context_length(ctx_length)
+    # #gguf_writer.add_embedding_length(hparams["hidden_size"])
+    # #gguf_writer.add_block_count(block_count)
+    # #gguf_writer.add_feed_forward_length(hparams["intermediate_size"])
+    # # gguf_writer.add_rope_dimension_count(hparams["hidden_size"] // hparams["num_attention_heads"])
+    # # gguf_writer.add_head_count(hparams["num_attention_heads"])
+    # # gguf_writer.add_head_count_kv(hparams["num_attention_heads"])
+    # #gguf_writer.add_layer_norm_rms_eps(hparams["rms_norm_eps"])
+
+
+    # # if "bos_token_id" in hparams and hparams["bos_token_id"] != None:
+    # #     gguf_writer.add_bos_token_id(hparams["bos_token_id"])
+
+    # # if "eos_token_id" in hparams and hparams["eos_token_id"] != None:
+    # #     gguf_writer.add_eos_token_id(hparams["eos_token_id"])
+
+    # # if "unk_token_id" in hparams and hparams["unk_token_id"] != None:
+    # #     gguf_writer.add_unk_token_id(hparams["unk_token_id"])
+
+    # # if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
+    # #     gguf_writer.add_pad_token_id(hparams["pad_token_id"])
+
+    # # if "sep_token_id" in hparams and hparams["sep_token_id"] != None:
+    # #     gguf_writer.add_sep_token_id(hparams["sep_token_id"])
+
+    # print("gguf: write header")
+    # gguf_writer.write_header_to_file()
+    # print("gguf: write metadata")
+    # gguf_writer.write_kv_data_to_file()
+    # print("gguf: write tensors")
+    # gguf_writer.write_tensors_to_file()
+
+    # gguf_writer.close()
 
     vocab = load_vocab_for_glm2(Path(dir_model))
     counter = 0
@@ -356,7 +552,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = AutoModel.from_pretrained(dir_model, low_cpu_mem_usage=True, trust_remote_code=True)
 
     if hasattr(model.config, "multi_query_attention"):
-        chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+        chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype, hparams)
+        #chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
     else:
         chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
 
