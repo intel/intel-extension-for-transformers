@@ -249,8 +249,8 @@ size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantT
 }
 
 template <typename T>
-void JblaGemmQuantPackBTrans(void* PackedBuf, int BlkSize, const float* FpData, int N, int K, JBLAS_DTYPE QuantType,
-                             JBLAS_DTYPE ScaleDtype, bool IsAsym, int ldb, void* ThreadPool) {
+void JblaGemmQuantPackB(void* PackedBuf, int BlkSize, const float* FpData, int N, int K, JBLAS_DTYPE QuantType,
+                        JBLAS_DTYPE ScaleDtype, bool IsAsym, int ldb, bool IsTrans, void* ThreadPool) {
   static T launcher;
   using WType = typename T::PrologueB::StorageWeight;
   WType stor(0);
@@ -262,13 +262,17 @@ void JblaGemmQuantPackBTrans(void* PackedBuf, int BlkSize, const float* FpData, 
   }
   stor.assign((int8_t*)PackedBuf);
   auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
-  launcher.mProB.packTransposeWeight(N, K, FpData, ldb, &stor, pth);
+  if (IsTrans) {
+    launcher.mProB.packTransposeWeight(N, K, FpData, ldb, &stor, pth);
+  } else {
+    launcher.mProB.packWeight(N, K, FpData, ldb, &stor, pth);
+  }
 }
 
 template <template <class, JBLAS_ISA> class Wei_T>
-static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb,
-                                          size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
-                                          ne_comp_type CompType, void* ThreadPool) {
+static bool JblasGemmQuantPackBLocal(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb,
+                                     size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
+                                     ne_comp_type CompType, bool isTrans, void* ThreadPool) {
   GetCPUDevice();
   auto dtype_type = static_cast<JBLAS_DTYPE>(
       jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
@@ -276,38 +280,44 @@ static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, 
     case NE_COMP_INT8:
       if (dtype_type == JBLAS_DTYPE::TypeInt && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
+                                                                                int(K), QuantType, ScaleDtype, isAsym,
+                                                                                int(ldb), isTrans, ThreadPool);
           return true;
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
+                                                                                int(K), QuantType, ScaleDtype, isAsym,
+                                                                                int(ldb), isTrans, ThreadPool);
           return true;
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          JblaGemmQuantPackBTrans<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
+                                                                             int(K), QuantType, ScaleDtype, isAsym,
+                                                                             int(ldb), isTrans, ThreadPool);
           return true;
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
-            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
+                                                                  QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
+                                                                  ThreadPool);
         return true;
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(
-            PackedBuf, int(BlkSize), FpData, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
+                                                                 QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
+                                                                 ThreadPool);
         return true;
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        JblaGemmQuantPackBTrans<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
-                                                                   QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
+                                                              QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
+                                                              ThreadPool);
         return true;
       }
     default:
@@ -316,20 +326,20 @@ static bool JblasGemmQuantPackBTransLocal(void* PackedBuf, const float* FpData, 
   return false;
 }
 
-bool JblasGemmQuantPackBTrans(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb, size_t BlkSize,
-                              JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym, ne_comp_type CompType,
-                              void* ThreadPool) {
+bool JblasGemmQuantPackB(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb, size_t BlkSize,
+                         JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym, ne_comp_type CompType,
+                         bool isTrans, void* ThreadPool) {
   switch (QuantType) {
     case JBLAS_DTYPE::S4_CLIP:
     case JBLAS_DTYPE::S4_FULLRANGE:
     case JBLAS_DTYPE::S8:
-      return JblasGemmQuantPackBTransLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(
-          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+      return JblasGemmQuantPackBLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, isTrans, ThreadPool);
     case JBLAS_DTYPE::F4_BNB:
     case JBLAS_DTYPE::F4_E2M1:
     case JBLAS_DTYPE::F4_NF4:
-      return JblasGemmQuantPackBTransLocal<jblas::prologue_b::gemm::WeightKBlockF4>(
-          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+      return JblasGemmQuantPackBLocal<jblas::prologue_b::gemm::WeightKBlockF4>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, isTrans, ThreadPool);
     default:
       return false;
   }
