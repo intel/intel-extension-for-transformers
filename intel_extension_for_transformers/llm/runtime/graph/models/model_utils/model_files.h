@@ -220,21 +220,54 @@ struct model_file_loader {
 
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
-    read_gguf();
+    // read_gguf();
     read_magic();
     read_hparams();
     read_vocab();
     read_tensor_metadata(file_idx, tensors_map);
   }
+int gguf_get_n_kv(const struct gguf_context * ctx) {
+    return ctx->header.n_kv;
+}
 
+const char * gguf_get_key(const struct gguf_context * ctx, int key_id) {
+    NE_ASSERT(key_id >= 0 && key_id < gguf_get_n_kv(ctx));
+    return ctx->kv[key_id].key.data;
+}
 
-  void read_gguf() {
+uint32_t gguf_get_val_u32(const struct gguf_context * ctx, int key_id) {
+    NE_ASSERT(key_id >= 0 && key_id < gguf_get_n_kv(ctx));
+    NE_ASSERT(ctx->kv[key_id].type == GGUF_TYPE_UINT32);
+    return ctx->kv[key_id].value.uint32;
+}
+
+int gguf_find_key(const struct gguf_context * ctx, const char * key) {
+    // return -1 if key not found
+    int keyfound = -1;
+
+    const int n_kv = gguf_get_n_kv(ctx);
+
+    for (int i = 0; i < n_kv; ++i) {
+        if (strcmp(key, gguf_get_key(ctx, i)) == 0) {
+            keyfound = i;
+            break;
+        }
+    }
+
+    return keyfound;
+}
+
+int gguf_get_n_tensors(const struct gguf_context * ctx) {
+    return ctx->header.n_tensors;
+}
+
+  struct gguf_context *  read_gguf() {
     const char* name =
         "/root/zhenzhong/gguf/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/"
         "ne-chatglm2-fp32.bin.gguf";
     FILE* file_gguf = fopen(name, "rb");
     if (!file_gguf) {
-      return;
+      return nullptr;
     }
 
     size_t offset = 0;
@@ -400,10 +433,36 @@ struct model_file_loader {
         }
     }
       
-    return;
+    
+    ctx->alignment = GGUF_DEFAULT_ALIGNMENT;
+
+    int alignment_idx = gguf_find_key(ctx, "general.alignment");
+    if (alignment_idx != -1) {
+        ctx->alignment = gguf_get_val_u32(ctx, alignment_idx);
+    }
+
+
+
+
+
+    return ctx;
   }
 
   void read_magic() {
+
+    int n_kv      = 0;
+    int n_tensors = 0;
+    struct gguf_context * ctx_gguf = NULL;
+    struct ggml_context * ctx_meta = NULL;
+
+    ctx_gguf = read_gguf();
+    if (!ctx_gguf) {
+      throw std::runtime_error(format("%s: failed to load model\n", __func__));
+    }
+
+    n_kv      = gguf_get_n_kv(ctx_gguf);
+    n_tensors = gguf_get_n_tensors(ctx_gguf);
+
     uint32_t magic = file.read_u32();
 
     if (magic == MODEL_FILE_MAGIC_NE) {

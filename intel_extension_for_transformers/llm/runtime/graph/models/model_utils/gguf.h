@@ -133,6 +133,8 @@ struct gguf_context {
 #define GGML_MEM_ALIGN 16
 #endif
 
+#define GGUF_DEFAULT_ALIGNMENT 32
+
 static const size_t GGUF_TYPE_SIZE[GGUF_TYPE_COUNT] = {
     [GGUF_TYPE_UINT8]   = sizeof(uint8_t),
     [GGUF_TYPE_INT8]    = sizeof(int8_t),
@@ -229,5 +231,7 @@ inline static void* ggml_aligned_malloc(size_t size) {
       throw std::runtime_error(format("key not found in model: %s", skey.c_str()));                         \
     }                                                                                                       \
   } while (0)
+
+
 
 #endif  // GGUF_H
