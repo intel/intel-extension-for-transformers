@@ -417,6 +417,7 @@ class _BaseQBitsAutoModelClass:
             example_inputs = quantization_config.example_inputs
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                    example_inputs = inputs
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                         if model_type == "chatglm":
                             example_inputs = {
