@@ -28,8 +28,9 @@ unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void*
 void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo,
                           void* workspace) {
   auto ret = JblasRuntimeError;
-  JBLAS_GEMM_DATA_PACKED_PARAMS param{activation, weiptr, output, static_cast<size_t>(lda), static_cast<size_t>(ldo)};
-  if (!JblasGemmBatchDriver(_m, _n, _k, 1, &param, reinterpret_cast<int8_t*>(workspace), ne_jblas::ne_threading::get())) {
+  JBLAS_GEMM_DATA_PACKED_PARAMS param{activation, weiptr, output, lda, ldo};
+  if (!JblasGemmBatchDriver(_m, _n, _k, 1, &param, reinterpret_cast<int8_t*>(workspace),
+                            ne_jblas::ne_threading::get())) {
     printf("Err: invalid parameters\n");
     assert(0);
   }
@@ -80,23 +81,16 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                        jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, float* bias, bool broadcast_bias,
                        int8_t* WorkSpace, jblas::parallel::IThreading* th) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
-  using Launcher =
-      jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T,
-                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-                                           jblas::epilogue::gemm::CompInt8BlockEpilogue, custom::epilogue::AddFp32>;
+  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
+                                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
+                                                           custom::epilogue::AddFp32>;
 
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
   auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
-  typename Launcher::Param args{gp,
-                                {A, lda, &quanA},
-                                {B},
-                                {B->template SPtr<int8_t>(), B->SDtype(), B->CStep(), quanA.template SPtr<float>(),
-                                 quanA.CStep(), quanA.template ZPtr<uint8_t>(), B->template RPtr<float>(), B->RDtype(),
-                                 B->template ZPtr<int8_t>(), quanA.template RPtr<float>(), B->mBlockSize},
-                                {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+  typename Launcher::Param args{gp, {A, lda, &quanA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
   jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
 }
 }  // namespace ip_add
@@ -134,17 +128,19 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
     auto CType = jblas::gemm::CoreAttr::get_comp(ptr->mCoreId);
     auto btype = static_cast<jblas::gemm::CompType>(jblas::gemm::CompTypeHelper::get_B(CType));
     if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+      auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+      auto BlkSize = bptr->mBlockSize;
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
-        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+        if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
           ip_add::JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
                                                                      bias, broadcast_bias, workspace, pth);
-        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
           ip_add::JblasGemmCompF32<tAVX2, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                   broadcast_bias, workspace, pth);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
-        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
           if (_m <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
             ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
@@ -156,41 +152,43 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
         }
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
-        if (NTile == tAMX_INT8_SS::NTILE && _cd->AMX_INT8()) {
+        if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           static_assert(tAMX_INT8_SS_KBlock::NTILE == tAVX512_VNNI_KBlock::NTILE);
           if (_m <= tAVX512_VNNI_KBlock::MTILE) {
-            ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                              broadcast_bias, workspace, pth);
+            ip_add::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo,
+                                                                     bias, broadcast_bias, workspace, pth);
           } else {
-            ip_add::JblasGemmCompInt8<tAMX_INT8_SS, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                              broadcast_bias, workspace, pth);
+            ip_add::JblasGemmCompInt8<tAMX_INT8_SS_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo,
+                                                                     bias, broadcast_bias, workspace, pth);
           }
 
-        } else if (NTile == tAVX512_VNNI::NTILE && _cd->AVX512_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX512_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                            broadcast_bias, workspace, pth);
-        } else if (NTile == tAVX_VNNI::NTILE && _cd->AVX_VNNI()) {
-          ip_add::JblasGemmCompInt8<tAVX_VNNI, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
-                                                         broadcast_bias, workspace, pth);
+        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+          ip_add::JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+                                                                   broadcast_bias, workspace, pth);
+        } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
+          ip_add::JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
+                                                                broadcast_bias, workspace, pth);
         }
       }
     }
     if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
+      auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+      auto BlkSize = bptr->mBlockSize;
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
-        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+        if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
           ip_add::JblasGemmCompF32<tAVX512F, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                    broadcast_bias, workspace, pth);
-        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
           ip_add::JblasGemmCompF32<tAVX2, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo, bias,
                                                                 broadcast_bias, workspace, pth);
         }
       }
-      if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
+      if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2 && BlkSize % tAMX_BF16::KTILE == 0) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (_m <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
-                                                                           ldo, bias, broadcast_bias, workspace, pth);
+            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
+                                                                         bias, broadcast_bias, workspace, pth);
           } else {
             ip_add::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,
                                                                       bias, broadcast_bias, workspace, pth);

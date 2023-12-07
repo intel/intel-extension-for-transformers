@@ -96,17 +96,19 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
       auto CType = jblas::gemm::CoreAttr::get_comp(ptr->mCoreId);
       auto btype = static_cast<jblas::gemm::CompType>(jblas::gemm::CompTypeHelper::get_B(CType));
       if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+        auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+        auto BlkSize = bptr->mBlockSize;
         if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
-          if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+          if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
             JblasGemmCompF32<tAVX512F, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
                                                  DataParams[i].ldc, WorkSpace, pth);
-          } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+          } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
             JblasGemmCompF32<tAVX2, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
                                               DataParams[i].ldc, WorkSpace, pth);
           }
         }
         if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
-          if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
             if (M <= tAVX512_BF16::MTILE) {
               static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
               JblasGemmCompF32<tAVX512_BF16, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
@@ -119,7 +121,7 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
         }
         if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
           // Do we need US for AMX_INT8
-          if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
+          if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
             static_assert(tAMX_INT8_SS_KBlock::NTILE == tAVX512_VNNI_KBlock::NTILE);
             if (M <= tAVX512_VNNI_KBlock::MTILE) {
               JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
@@ -129,31 +131,33 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
                                                                DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
             }
 
-          } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
+          } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
             JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
                                                              DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
-          } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
+          } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
             JblasGemmCompInt8<tAVX_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
                                                           DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
           }
         }
       }
       if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
+        auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+        auto BlkSize = bptr->mBlockSize;
         if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
-          if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+          if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
             JblasGemmCompF32<tAVX512F, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
                                                DataParams[i].ldc, WorkSpace, pth);
-          } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+          } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
             JblasGemmCompF32<tAVX2, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
                                             DataParams[i].ldc, WorkSpace, pth);
           }
         }
         if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
-          if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
             if (M <= tAVX512_BF16::MTILE) {
               static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-              JblasGemmCompF32<tAVX512_BF16, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
-                                                       DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
+              JblasGemmCompF32<tAVX512_BF16, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
+                                                     DataParams[i].ldc, WorkSpace, pth);
             } else {
               JblasGemmCompF32<tAMX_BF16, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
                                                   DataParams[i].ldc, WorkSpace, pth);
