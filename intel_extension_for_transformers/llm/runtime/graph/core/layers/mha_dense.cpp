@@ -2011,8 +2011,8 @@ void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin
   for (int ibs = 0; ibs < batch_size; ++ibs)
     for (int ihn = 0; ihn < heads_kv; ++ihn) {
       const auto src = reinterpret_cast<bf16*>(cache) + ibs * cache_step_bs + ihn * cache_step_head_num;
-      jblas::kernel::jit::CScaleInterleavedBF16FP16::forward<48>(src, reinterpret_cast<const fp16*>(cossin), head_size,
-                                                                 pad_seq_max, pad_headsize, seq_keep);
+      jblas::kernel::jit::CScaleInterleavedBF16FP16::forward<48>(  // NOLINT [build/include_what_you_use]
+          src, reinterpret_cast<const fp16*>(cossin), head_size, pad_seq_max, pad_headsize, seq_keep);
     }
 }
 
