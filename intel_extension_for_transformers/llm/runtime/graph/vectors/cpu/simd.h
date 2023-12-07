@@ -70,7 +70,7 @@
     const __m128 t1 = _mm_hadd_ps(t0, t0);                                                      \
     res = _mm_cvtss_f32(_mm_hadd_ps(t1, t1));                                                   \
   }
-// TODO: is this optimal ?
+// TODO(Yucheng): is this optimal ?
 
 #define NE_F32_VEC NE_F32x8
 #define NE_F32_VEC_ZERO NE_F32x8_ZERO
@@ -148,7 +148,7 @@ static inline void __avx_f32cx8_store(ne_fp16_t* x, __m256 y) {
 #define NE_F32x4_LOAD _mm_loadu_ps
 #define NE_F32x4_STORE _mm_storeu_ps
 #if defined(__FMA__)
-// TODO: Does this work?
+// TODO(Yucheng): Does this work?
 #define NE_F32x4_FMA(a, b, c) _mm_fmadd_ps(b, c, a)
 #else
 #define NE_F32x4_FMA(a, b, c) _mm_add_ps(_mm_mul_ps(b, c), a)
@@ -169,7 +169,7 @@ static inline void __avx_f32cx8_store(ne_fp16_t* x, __m256 y) {
     const __m128 t0 = _mm_hadd_ps(x[0], x[0]);       \
     res = _mm_cvtss_f32(_mm_hadd_ps(t0, t0));        \
   }
-// TODO: is this optimal ?
+// TODO(Yucheng): is this optimal ?
 
 #define NE_F32_VEC NE_F32x4
 #define NE_F32_VEC_ZERO NE_F32x4_ZERO

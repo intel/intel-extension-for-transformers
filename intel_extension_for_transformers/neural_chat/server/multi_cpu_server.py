@@ -32,7 +32,7 @@ from intel_extension_for_transformers.neural_chat.cli.log import logger
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-app = FastAPI(title="NeuralChat Gaudi Serving Process", description="Serving", version="0.0.1")
+app = FastAPI(title="NeuralChat SPR Serving Process", description="Serving", version="0.0.1")
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -49,13 +49,6 @@ def parse_args():
         type=int,
         default=80,
         help="Server port number",
-    )
-    parser.add_argument(
-        "--api_list",
-        type=str,
-        nargs='+',
-        default=None,
-        help="Restful API support list",
     )
     # Add arguments for temperature, top_p, top_k and repetition_penalty
     parser.add_argument(
@@ -203,45 +196,27 @@ if not 32 <= args.max_new_tokens <= 1024:
         "The maximum number of new tokens must be between 32 and 1024."
     )
 
-# User can use DeepSpeed to speedup the inference On Habana Gaudi processors.
-# If the DeepSpeed launcher is used, the env variable _ will be equal to /usr/local/bin/deepspeed
-# For multi node, the value of the env variable WORLD_SIZE should be larger than 8
-use_deepspeed = (
-    "deepspeed" in os.environ["_"]
-    or ("WORLD_SIZE" in os.environ and int(os.environ["WORLD_SIZE"]) > 8)
-    and args.habana
-)
-
-if args.habana:
-    # Set seed before initializing model.
-    # pylint: disable=E0401
-    # pylint: disable=E0611
-    from optimum.habana.utils import set_seed
-
-    set_seed(args.seed)
-else:
-    from transformers import set_seed
-
-    set_seed(args.seed)
+from transformers import set_seed
+set_seed(args.seed)
 
 config = PipelineConfig(
     model_name_or_path=base_model_path,
     tokenizer_name_or_path=args.tokenizer_name,
     hf_access_token=args.hf_access_token,
-    device="hpu" if args.habana else "auto",
+    device="cpu",
     loading_config=LoadingModelConfig(
         use_hpu_graphs=args.use_hpu_graphs,
         cpu_jit=args.jit,
         ipex_int8=args.ipex_int8,
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
-        use_deepspeed=True if use_deepspeed and args.habana else False,
+        use_deepspeed=False,
     ),
     optimization_config=MixedPrecisionConfig(dtype=args.dtype)
 )
 chatbot = build_chatbot(config)
 gen_config = GenerationConfig(
-    device="hpu" if args.habana else "auto",
+    device="cpu",
     task=args.task,
     temperature=args.temperature,
     top_p=args.top_p,
@@ -256,13 +231,6 @@ gen_config = GenerationConfig(
     ipex_int8=args.ipex_int8
 )
 
-if args.habana:
-    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
-    world_size, rank, args.local_rank = initialize_distributed_hpu()
-
-if args.habana and rank in [-1, 0]:
-    print(f"Args: {args}")
-    print(f"n_hpu: {world_size}, bf16")
 
 # warmup, the first time inference take longer because of graph compilation
 for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config=gen_config)[0]:
@@ -270,7 +238,7 @@ for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon.", config
         print(new_text, end="", flush=True)
 print("\n"*3)
 
-@app.post("/v1/code_generation")
+@app.post("/v1/chat_completions")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
     ret = check_completion_request(request)
     if ret is not None:
@@ -282,13 +250,30 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
             if attr == "stream":
                 continue
             setattr(gen_config, attr, value)
+        buffered_texts = ""
         if request.stream:
             generator, _ = chatbot.predict_stream(query=request.prompt, config=gen_config)
             if not isinstance(generator, types.GeneratorType):
                 generator = (generator,)
             def stream_generator():
+                nonlocal buffered_texts
                 for output in generator:
-                    yield output + "\0"
+                    if isinstance(output, str):
+                        chunks = output.split()
+                        for chunk in chunks:
+                            ret = {
+                                "text": chunk,
+                                "error_code": 0,
+                            }
+                            buffered_texts += chunk + ' '
+                            yield json.dumps(ret).encode() + b"\0"
+                    else:
+                        ret = {
+                            "text": output,
+                            "error_code": 0,
+                        }
+                        buffered_texts += output + ' '
+                        yield json.dumps(ret).encode() + b"\0"
                 yield f"data: [DONE]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:

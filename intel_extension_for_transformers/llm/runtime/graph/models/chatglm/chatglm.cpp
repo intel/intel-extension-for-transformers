@@ -45,11 +45,12 @@
 //   - n_threads: number of threads to use
 //
 
-static bool chatglm_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool chatglm_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                         const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
-  // TODO static batching for now
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -303,11 +304,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * batch_size);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * batch_size);
     }
   }
 
@@ -319,7 +320,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
 #pragma omp parallel for
     for (int i = 0; i < batch_size; ++i) {
       memcpy(embedding_out.data() + (i * n_embd),
-             (float*)ne_get_data(embeddings) + (i * n_embd * N) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+             reinterpret_cast<float*>(ne_get_data(embeddings)) + (i * n_embd * N) + (n_embd * (N - 1)),
+             sizeof(float) * n_embd);
     }
   }
 
@@ -344,13 +346,13 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_input* 
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!chatglm_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!chatglm_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

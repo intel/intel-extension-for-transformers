@@ -50,7 +50,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data);
 
@@ -302,7 +302,7 @@ struct beam {
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
 
   void print() const {
-    printf("length: %d, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
+    printf("length: %ld, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
            score, eos(), request_idx, beam_idx, done);
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));

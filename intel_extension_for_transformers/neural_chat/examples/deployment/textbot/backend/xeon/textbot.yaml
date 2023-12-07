@@ -23,7 +23,7 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "./Llama-2-7b-chat-hf"
+model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
 device: "cpu"
 
 # users can choose one of the ipex int8, itrex int4, mix precision and
