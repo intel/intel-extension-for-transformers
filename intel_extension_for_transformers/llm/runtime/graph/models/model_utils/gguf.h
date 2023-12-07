@@ -27,9 +27,36 @@
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 
+#define GGML_MAX_DIMS           4
+#define GGUF_MAGIC "GGUF"
+
 struct gguf_str {
   uint64_t n;  // GGUFv2
   char* data;
+};
+
+enum ggml_type {
+    GGML_TYPE_F32  = 0,
+    GGML_TYPE_F16  = 1,
+    GGML_TYPE_Q4_0 = 2,
+    GGML_TYPE_Q4_1 = 3,
+    // GGML_TYPE_Q4_2 = 4, support has been removed
+    // GGML_TYPE_Q4_3 (5) support has been removed
+    GGML_TYPE_Q5_0 = 6,
+    GGML_TYPE_Q5_1 = 7,
+    GGML_TYPE_Q8_0 = 8,
+    GGML_TYPE_Q8_1 = 9,
+    // k-quantizations
+    GGML_TYPE_Q2_K = 10,
+    GGML_TYPE_Q3_K = 11,
+    GGML_TYPE_Q4_K = 12,
+    GGML_TYPE_Q5_K = 13,
+    GGML_TYPE_Q6_K = 14,
+    GGML_TYPE_Q8_K = 15,
+    GGML_TYPE_I8,
+    GGML_TYPE_I16,
+    GGML_TYPE_I32,
+    GGML_TYPE_COUNT,
 };
 
 enum gguf_type {
@@ -106,21 +133,37 @@ struct gguf_context {
 #define GGML_MEM_ALIGN 16
 #endif
 
-// static const size_t GGUF_TYPE_SIZE[GGUF_TYPE_COUNT] = {
-//     [GGUF_TYPE_UINT8]   = sizeof(uint8_t),
-//     [GGUF_TYPE_INT8]    = sizeof(int8_t),
-//     [GGUF_TYPE_UINT16]  = sizeof(uint16_t),
-//     [GGUF_TYPE_INT16]   = sizeof(int16_t),
-//     [GGUF_TYPE_UINT32]  = sizeof(uint32_t),
-//     [GGUF_TYPE_INT32]   = sizeof(int32_t),
-//     [GGUF_TYPE_FLOAT32] = sizeof(float),
-//     [GGUF_TYPE_BOOL]    = sizeof(bool),
-//     [GGUF_TYPE_STRING]  = sizeof(struct gguf_str),
-//     [GGUF_TYPE_UINT64]  = sizeof(uint64_t),
-//     [GGUF_TYPE_INT64]   = sizeof(int64_t),
-//     [GGUF_TYPE_FLOAT64] = sizeof(double),
-//     [GGUF_TYPE_ARRAY]   = 0, // undefined
-// };
+static const size_t GGUF_TYPE_SIZE[GGUF_TYPE_COUNT] = {
+    [GGUF_TYPE_UINT8]   = sizeof(uint8_t),
+    [GGUF_TYPE_INT8]    = sizeof(int8_t),
+    [GGUF_TYPE_UINT16]  = sizeof(uint16_t),
+    [GGUF_TYPE_INT16]   = sizeof(int16_t),
+    [GGUF_TYPE_UINT32]  = sizeof(uint32_t),
+    [GGUF_TYPE_INT32]   = sizeof(int32_t),
+    [GGUF_TYPE_FLOAT32] = sizeof(float),
+    [GGUF_TYPE_BOOL]    = sizeof(bool),
+    [GGUF_TYPE_STRING]  = sizeof(struct gguf_str),
+    [GGUF_TYPE_ARRAY]   = 0, // undefined
+    [GGUF_TYPE_UINT64]  = sizeof(uint64_t),
+    [GGUF_TYPE_INT64]   = sizeof(int64_t),
+    [GGUF_TYPE_FLOAT64] = sizeof(double),
+};
+static_assert(GGUF_TYPE_COUNT == 13, "GGUF_TYPE_COUNT != 13");
+
+struct gguf_tensor_info {
+    struct gguf_str name;
+
+    uint32_t n_dims;
+    uint64_t ne[GGML_MAX_DIMS];
+
+    enum ggml_type type;
+
+    uint64_t offset; // offset from start of `data`, must be a multiple of `ALIGNMENT`
+
+    // for writing API
+    const void * data;
+    size_t size;
+};
 
 static bool gguf_fread_el(FILE* file, void* dst, size_t size, size_t* offset) {
   const size_t n = fread(dst, 1, size, file);

@@ -227,6 +227,7 @@ struct model_file_loader {
     read_tensor_metadata(file_idx, tensors_map);
   }
 
+
   void read_gguf() {
     const char* name =
         "/root/zhenzhong/gguf/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/"
@@ -242,6 +243,7 @@ struct model_file_loader {
 
     struct gguf_context* ctx = reinterpret_cast<struct gguf_context*>(GGML_ALIGNED_MALLOC(sizeof(struct gguf_context)));
 
+    // read the header
     strncpy(ctx->header.magic, magic, 4);
 
     bool ok = true;
@@ -274,6 +276,7 @@ struct model_file_loader {
       struct gguf_kv* kv = &ctx->kv[i];
 
       ok = ok && gguf_fread_str(file_gguf, &kv->key, &offset);
+      std::cout << "key = " << kv->key.data << "  offset = " << offset << "  kv->type" << kv->type << std::endl;
       ok = ok && gguf_fread_el(file_gguf, &kv->type, sizeof(kv->type), &offset);
 
       switch (kv->type) {
@@ -328,20 +331,18 @@ struct model_file_loader {
             case GGUF_TYPE_UINT64:
             case GGUF_TYPE_INT64:
             case GGUF_TYPE_FLOAT64:
-              break;
-            // case GGUF_TYPE_BOOL:
-            //     {
-            //         // TODO BOOL
-            //         kv->value.arr.data = malloc(kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type]);
-            //         ok = ok && gguf_fread_el(file_gguf, kv->value.arr.data, kv->value.arr.n *
-            //         GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
-            //     } break;
-            case GGUF_TYPE_STRING: {
-              kv->value.arr.data = malloc(kv->value.arr.n * sizeof(struct gguf_str));
-              for (uint64_t j = 0; j < kv->value.arr.n; ++j) {
-                ok = ok && gguf_fread_str(file_gguf, &((struct gguf_str*)kv->value.arr.data)[j], &offset);
-              }
-            } break;
+            case GGUF_TYPE_BOOL:
+                {
+                    kv->value.arr.data = malloc(kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type]);
+                    ok = ok && gguf_fread_el(file_gguf, kv->value.arr.data, kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
+                } break;
+            case GGUF_TYPE_STRING:
+                {
+                    kv->value.arr.data = malloc(kv->value.arr.n * sizeof(struct gguf_str));
+                    for (uint64_t j = 0; j < kv->value.arr.n; ++j) {
+                        ok = ok && gguf_fread_str(file_gguf, &((struct gguf_str *) kv->value.arr.data)[j], &offset);
+                    }
+                } break;
             case GGUF_TYPE_ARRAY:
             case GGUF_TYPE_COUNT:
               printf("False && invalid type");
@@ -355,37 +356,37 @@ struct model_file_loader {
       if (!ok) {
         break;
       }
-
-      // read the tensor infos
-      // {
-      //     ctx->infos = reinterpret_cast<struct gguf_kv *>(malloc(ctx->header.n_tensors * sizeof(struct
-      //     gguf_tensor_info)));
-
-      //     for (uint64_t i = 0; i < ctx->header.n_tensors; ++i) {
-      //         struct gguf_tensor_info * info = &ctx->infos[i];
-
-      //         for (int j = 0; j < GGML_MAX_DIMS; ++j) {
-      //             info->ne[j] = 1;
-      //         }
-
-      //         ok = ok && gguf_fread_str(file, &info->name,                          &offset);
-      //         ok = ok && gguf_fread_el (file, &info->n_dims, sizeof(info->n_dims),  &offset);
-      //         for (uint32_t j = 0; j < info->n_dims; ++j) {
-      //             ok = ok && gguf_fread_el(file, &info->ne[j], sizeof(info->ne[j]), &offset);
-      //         }
-      //         ok = ok && gguf_fread_el (file, &info->type,   sizeof(info->type),    &offset);
-      //         ok = ok && gguf_fread_el (file, &info->offset, sizeof(info->offset),  &offset);
-
-      //         if (!ok) {
-      //             fprintf(stderr, "%s: failed to read tensor info\n", __func__);
-      //             fclose(file);
-      //             gguf_free(ctx);
-      //             return NULL;
-      //         }
-      //     }
-      // }
     }
 
+
+
+    // read the tensor infos
+    ctx->infos = reinterpret_cast<struct gguf_tensor_info *>(malloc(ctx->header.n_tensors * sizeof(struct gguf_tensor_info)));
+
+    for (uint64_t i = 0; i < ctx->header.n_tensors; ++i) {
+        struct gguf_tensor_info * info = &ctx->infos[i];
+
+        for (int j = 0; j < GGML_MAX_DIMS; ++j) {
+            info->ne[j] = 1;
+        }
+
+        ok = ok && gguf_fread_str(file_gguf, &info->name,                          &offset);
+        std::cout << info->name.data << std::endl;
+        ok = ok && gguf_fread_el (file_gguf, &info->n_dims, sizeof(info->n_dims),  &offset);
+        for (uint32_t j = 0; j < info->n_dims; ++j) {
+            ok = ok && gguf_fread_el(file_gguf, &info->ne[j], sizeof(info->ne[j]), &offset);
+        }
+        ok = ok && gguf_fread_el (file_gguf, &info->type,   sizeof(info->type),    &offset);
+        ok = ok && gguf_fread_el (file_gguf, &info->offset, sizeof(info->offset),  &offset);
+
+        if (!ok) {
+            fprintf(stderr, "%s: failed to read tensor info\n", __func__);
+            // fclose(file_gguf);
+            // gguf_free(ctx);
+            // return NULL;
+        }
+    }
+      
     return;
   }
 

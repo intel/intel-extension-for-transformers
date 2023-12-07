@@ -362,7 +362,7 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
             if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
                 gguf_writer.add_pad_token_id(hparams["pad_token_id"])
 
-    write_vocab_gguf(dir_model)
+    
 
     # write vocab
     # vocab = load_vocab_for_glm2(Path(dir_model))
@@ -411,6 +411,8 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
         #print(f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} | type {lazy_tensor.data_type.name:4}")
 
         gguf_writer.add_tensor(name, data)
+
+    write_vocab_gguf(dir_model)
 
     print("gguf: write header")
     gguf_writer.write_header_to_file()
