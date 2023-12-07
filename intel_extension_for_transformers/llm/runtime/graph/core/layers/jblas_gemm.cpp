@@ -190,12 +190,12 @@ template <template <class, JBLAS_ISA> class Wei_T>
 static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
                                       bool isAsym, ne_comp_type CompType) {
   GetCPUDevice();
-  auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+  auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
+  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
   // from low precision to high precision
   switch (CompType) {
     case NE_COMP_INT8:
-      if (dtype_type == JBLAS_DTYPE::TypeInt && !isAsym) {  // asym int8 is not optimized, so fall through to others.
+      if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
                                                                                 ScaleDtype, isAsym);
@@ -274,11 +274,11 @@ static bool JblasGemmQuantPackBLocal(void* PackedBuf, const float* FpData, size_
                                      size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
                                      ne_comp_type CompType, bool isTrans, void* ThreadPool) {
   GetCPUDevice();
-  auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+  auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
+  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
   switch (CompType) {
     case NE_COMP_INT8:
-      if (dtype_type == JBLAS_DTYPE::TypeInt && !isAsym) {  // asym int8 is not optimized, so fall through to others.
+      if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
                                                                                 int(K), QuantType, ScaleDtype, isAsym,
@@ -368,14 +368,14 @@ static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const floa
                                 size_t K, size_t ldb, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
                                 bool isAsym, ne_comp_type CompType, void* ThreadPool) {
   GetCPUDevice();
-  auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(QuantType, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
-  if (dtype_type == JBLAS_DTYPE::TypeFloat) {
+  auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
+  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
+  if (dtype_type != dtype_int) {
     return false;
   }
   switch (CompType) {
     case NE_COMP_INT8:
-      if (dtype_type == JBLAS_DTYPE::TypeInt && !isAsym) {  // asym int8 is not optimized, so fall through to others.
+      if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
               PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb),
