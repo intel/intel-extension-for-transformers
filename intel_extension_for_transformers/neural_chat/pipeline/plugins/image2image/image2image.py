@@ -32,4 +32,4 @@ class Image2Image:
                                  engine_graph=self.neural_engine_graph,
                                  num_inference_steps=num_inference_steps,
                                  guidance_scale=guidance_scale,
-                                 generator=generator).images[0]
+                                 generator=generator).images[0] # pylint: disable=E1102
