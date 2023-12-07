@@ -152,7 +152,7 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
           if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
             if (M <= tAVX512_BF16::MTILE) {
               static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-              JblasGemmCompF32<tAVX512_BF16, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
+              JblasGemmCompF32<tAVX512_BF16, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
                                                        DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
             } else {
               JblasGemmCompF32<tAMX_BF16, tWeiF4>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
