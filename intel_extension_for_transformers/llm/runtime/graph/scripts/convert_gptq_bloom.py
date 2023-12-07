@@ -195,11 +195,7 @@ for name in list_vars.keys():
 
     ftype_cur = 0
     if ".weight" in name and list_vars[name].dim() == 2:
-        if name.replace(".weight",
-                        "") in weight_config and weight_config[name.replace(".weight", "")]["dtype"] != "fp32":
-            ftype_cur = 2  # 13
-        else:
-            ftype_cur = 2  # 2
+        ftype_cur = 2  # TODO(Zhenwei) support jblas
 
     data = list_vars[src].squeeze().numpy()
     data = data.astype(np.float32)
