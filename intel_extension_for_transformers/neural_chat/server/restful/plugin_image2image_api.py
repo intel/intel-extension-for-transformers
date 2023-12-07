@@ -36,6 +36,7 @@ class Task():
     def __init__(self):
         self.cond = Condition()
         self.is_complete = False
+        self.response = None
 
     def done(self):
         """ function """
@@ -63,6 +64,12 @@ class Task():
 
     def set_seed(self, seed):
         self.seed = seed
+
+    def set_source_image(self, source_image):
+        self.source_image = source_image
+
+    def set_strength(self, strength):
+        self.strength = strength
 
     def set_task_type(self, task_type):
         """ set task type """
@@ -164,9 +171,9 @@ class Image2ImageAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
         self.chatbot = None
-        tq = TaskQueue()
-        cond = threading.Condition()
-        worker = Worker(queue = tq, cond = cond)
+        self.tq = TaskQueue()
+        self.cond = threading.Condition()
+        worker = Worker(queue = self.tq, cond = self.cond)
         logger.info("create main worker done...")
         worker.start()
 
@@ -203,19 +210,17 @@ async def do_inference(request: Request):
     task.set_steps(num_inference_steps)
     task.set_scale(guidance_scale)
     task.set_seed(seed)
-    task.source_img = source_img
-    task.strength = strength
+    task.set_source_image(source_img)
+    task.set_strength(strength)
 
-    global tq
-    tq.push(task)
+    router.tq.push(task)
 
-    global cond
     logger.info("producer get lock..............")
-    cond.acquire()
+    router.cond.acquire()
     logger.info("producer wake worker...................")
-    cond.notify()
+    router.cond.notify()
     logger.info("producer release lock............")
-    cond.release()
+    router.cond.release()
 
     task.wait_for_done()
     end_time = time.time()
