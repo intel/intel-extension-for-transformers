@@ -17,10 +17,12 @@
 
 from fastapi.routing import APIRouter
 from fastapi.responses import StreamingResponse
+from concurrent import futures
 # pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter
+import requests
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
@@ -52,9 +54,7 @@ def check_completion_request(request: BaseModel) -> Optional[str]:
 
     return None
 
-
-class TextChatAPIRouter(APIRouter):
-
+class CodeGenAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
 
@@ -76,7 +76,6 @@ class TextChatAPIRouter(APIRouter):
 
     def handle_completion_request(self, request: ChatCompletionRequest):
         return self.handle_chat_completion_request(request)
-
 
     def handle_chat_completion_request(self, request: ChatCompletionRequest):
         chatbot = self.get_chatbot()
@@ -130,27 +129,111 @@ class TextChatAPIRouter(APIRouter):
             logger.info(f"Chat completion finished.")
             return ChatCompletionResponse(response=response)
 
+router = CodeGenAPIRouter()
 
-router = TextChatAPIRouter()
+def filter_code_format(code):
+    language_prefixes = {
+        "go": "```go",
+        "c": "```c",
+        "cpp": "```cpp",
+        "java": "```java",
+        "python": "```python",
+        "typescript": "```typescript"
+    }
+    suffix = "\n```"
 
+    # Find the first occurrence of a language prefix
+    first_prefix_pos = len(code)
+    for prefix in language_prefixes.values():
+        pos = code.find(prefix)
+        if pos != -1 and pos < first_prefix_pos:
+            first_prefix_pos = pos + len(prefix) + 1
 
-@router.post("/v1/completions")
-async def completion_endpoint(request: ChatCompletionRequest):
-    ret = check_completion_request(request)
-    if ret is not None:
-        raise RuntimeError("Invalid parameter.")
-    return router.handle_completion_request(request)
+    # Find the first occurrence of the suffix after the first language prefix
+    first_suffix_pos = code.find(suffix, first_prefix_pos + 1)
 
+    # Extract the code block
+    if first_prefix_pos != -1 and first_suffix_pos != -1:
+        return code[first_prefix_pos:first_suffix_pos]
+    elif first_prefix_pos != -1:
+        return code[first_prefix_pos:]
 
-@router.post("/v1/chat/completions")
-async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
-    ret = check_completion_request(chat_request)
-    if ret is not None:
-        raise RuntimeError("Invalid parameter.")
-    return router.handle_chat_completion_request(chat_request)
+    return code
 
-@router.post("/v1/models")
-async def show_available_models():
-    models = []
-    models.append(router.get_chatbot().model_name)
-    return {"models": models}
+# router /v1/code_generation only supports non-streaming mode.
+@router.post("/v1/code_generation")
+async def code_generation_endpoint(chat_request: ChatCompletionRequest):
+    if router.use_deepspeed:
+        responses = []
+
+        def send_request(port):
+            try:
+                url = f'http://{router.host}:{port}/v1/code_generation'
+                response = requests.post(url, json=chat_request.dict())
+                response.raise_for_status()
+                json_response = json.loads(response.content)
+                cleaned_code = filter_code_format(json_response['response'])
+                chat_completion_response = ChatCompletionResponse(response=cleaned_code)
+                responses.append(chat_completion_response)
+            except requests.exceptions.RequestException as e:
+                print(f"Error sending/receiving on port {port}: {e}")
+
+        with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
+            worker_ports = [router.port + i + 1 for i in range(router.world_size)]
+            executor.map(send_request, worker_ports)
+        if responses:
+            return responses[0]
+    else:
+        ret = check_completion_request(chat_request)
+        if ret is not None:
+            raise RuntimeError("Invalid parameter.")
+        return router.handle_chat_completion_request(chat_request)
+
+# router /v1/code_chat supports both non-streaming and streaming mode.
+@router.post("/v1/code_chat")
+async def code_chat_endpoint(chat_request: ChatCompletionRequest):
+    if router.use_deepspeed:
+        if chat_request.stream:
+            responses = []
+            def generate_stream(port):
+                url = f'http://{router.host}:{port}/v1/code_generation'
+                response = requests.post(url, json=chat_request.dict(), stream=True, timeout=1000)
+                responses.append(response)
+            with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
+                worker_ports = [router.port + i + 1 for i in range(router.world_size)]
+                executor.map(generate_stream, worker_ports)
+
+            while not responses:
+                pass
+            def generate():
+                if responses[0]:
+                    for chunk in responses[0].iter_lines(decode_unicode=False, delimiter=b"\0"):
+                        if chunk:
+                            yield f"data: {chunk}\n\n"
+                    yield f"data: [DONE]\n\n"
+
+            return StreamingResponse(generate(), media_type="text/event-stream")
+        else:
+            responses = []
+
+            def send_request(port):
+                try:
+                    url = f'http://{router.host}:{port}/v1/code_generation'
+                    response = requests.post(url, json=chat_request.dict())
+                    response.raise_for_status()
+                    json_response = json.loads(response.content)
+                    chat_completion_response = ChatCompletionResponse(response=json_response['response'])
+                    responses.append(chat_completion_response)
+                except requests.exceptions.RequestException as e:
+                    print(f"Error sending/receiving on port {port}: {e}")
+
+            with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
+                worker_ports = [router.port + i + 1 for i in range(router.world_size)]
+                executor.map(send_request, worker_ports)
+            if responses:
+                return responses[0]
+    else:
+        ret = check_completion_request(chat_request)
+        if ret is not None:
+            raise RuntimeError("Invalid parameter.")
+        return router.handle_chat_completion_request(chat_request)
