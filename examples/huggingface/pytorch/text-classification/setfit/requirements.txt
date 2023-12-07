@@ -1,0 +1,8 @@
+accelerate
+datasets
+sentencepiece
+protobuf
+torch
+transformers==4.34.1
+wandb
+setfit
