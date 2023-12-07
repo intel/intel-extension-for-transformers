@@ -102,7 +102,6 @@ class QKVMerge(Pattern):
                 if ((v_matmul.attr.__contains__("output_dtype")
                         and q_matmul.attr.__contains__("output_dtype")
                         and k_matmul.attr.__contains__("output_dtype")
-                        and q_matmul.attr["output_dtype"] == v_matmul.attr["output_dtype"] 
                         and q_matmul.attr["output_dtype"] == v_matmul.attr["output_dtype"])
                         or (v_matmul.attr.__contains__("output_dtype") == False
                         and q_matmul.attr.__contains__("output_dtype") == False
