@@ -67,7 +67,6 @@
   const type prefix##3 = (pointer)->array[3];          \
   NE_UNUSED(prefix##3);
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -372,6 +371,13 @@ NE_API struct ne_tensor* ne_diag_mask_inf(struct ne_context* ctx, struct ne_tens
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_diag_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past);
 
+// set padding tokens to -INF
+// only support padding left for now
+NE_API struct ne_tensor* ne_padding_left_mask_inf(struct ne_context* ctx, struct ne_tensor* a, int* n_padding);
+
+// in-place, returns view(a)
+NE_API struct ne_tensor* ne_padding_left_mask_inf_inplace(struct ne_context* ctx, struct ne_tensor* a, int* n_padding);
+
 // set elements above the diagonal and padding tokens to -INF
 NE_API struct ne_tensor* ne_diag_mask_inf_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past,
                                                        int* n_padding);
@@ -411,6 +417,13 @@ NE_API struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne
 // rotary position embedding backward, i.e compute dx from dy
 // a - dy
 NE_API struct ne_tensor* ne_rope_back(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode);
+
+NE_API struct ne_tensor* ne_rope_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims,
+                                              int mode, int prompt_size, int* n_padding);
+
+// in-place, returns view(a)
+NE_API struct ne_tensor* ne_rope_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
+                                                      int n_dims, int mode, int prompt_size, int* n_padding);
 
 // alibi position embedding
 // in-place, returns view(a)

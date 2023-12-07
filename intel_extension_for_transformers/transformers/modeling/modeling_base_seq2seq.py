@@ -23,7 +23,7 @@ import torch
 from huggingface_hub import hf_hub_download
 from neural_compressor.model.torch_model import IPEXModel, PyTorchModel
 from neural_compressor.utils.pytorch import load
-from transformers import AutoConfig, AutoModel, PretrainedConfig
+from transformers import AutoModel, PretrainedConfig
 from transformers.file_utils import add_start_docstrings
 from transformers.modeling_utils import no_init_weights
 from transformers.models.auto.auto_factory import _get_model_class
@@ -410,7 +410,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         decoder_signature = inspect.signature(model.forward) \
             if hasattr(model, "forward") else inspect.signature(model.call)
         onnx_config_class = TasksManager.get_exporter_config_constructor(model=model, exporter="onnx", task=task)
-        onnx_config = onnx_config_class(model.config, use_past=use_cache)
+        onnx_config = onnx_config_class(model.config, use_past=use_cache, use_past_in_inputs=use_cache)
         encoder_onnx_config = onnx_config.with_behavior("encoder")
         decoder_onnx_config = onnx_config.with_behavior("decoder", use_past=False)
         encoder_dummy_inputs = encoder_onnx_config.generate_dummy_inputs(framework="pt")
@@ -436,7 +436,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
         torch.jit.save(encoder_traced_model, os.path.join(save_dir_path, encoder_file_name))
         torch.jit.save(decoder_traced_model, os.path.join(save_dir_path, decoder_file_name))
         if use_cache:
-            decoder_with_past_onnx_config = onnx_config.with_behavior("decoder", use_past=True)
+            decoder_with_past_onnx_config = onnx_config.with_behavior("decoder", use_past=True, use_past_in_inputs=True)
             decoder_with_past_dummy_inputs = decoder_with_past_onnx_config.generate_dummy_inputs(framework="pt")
             decoder_with_past_model_inputs = {
                 key: decoder_with_past_dummy_inputs[key] for key in decoder_signature.parameters \

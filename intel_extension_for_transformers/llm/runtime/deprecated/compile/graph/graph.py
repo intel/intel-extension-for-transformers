@@ -582,6 +582,10 @@ class Graph(object):
 
         return output_dict
 
+    def generate(self, input_data):
+        """The inference API of the neural engine."""
+        return self.inference(input_data)
+
     def graph_init(self, config, weight_data=None, load_weight=False):
         """The initialization of the neural engine graph.
 

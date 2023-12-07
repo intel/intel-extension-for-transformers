@@ -11,6 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
+* [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) for more details.
 * [2023/11] Demonstrated up to **3x LLM inference speedup** using **[Assisted Generation](https://huggingface.co/blog/assisted-generation)** (also called Speculative Decoding) from Hugging Face with Intel optimizations! Check out [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/assisted_generation/README.md).
 * [2023/11] Supported **LLM QLoRA on CPU**, first time enabling LLM fine-tuning on client CPUs (see [more details](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md)).
 * [2023/11] Refreshed **top-1 7B-sized LLM** by releasing [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
@@ -181,6 +182,11 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* NeurIPS'2023 on Efficient Natural Language and Speech Processing: [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) (Nov 2023)
+* NeurIPS'2023 on Diffusion Models: [Effective Quantization for Diffusion Models on CPUs](https://arxiv.org/pdf/2311.16133.pdf) (Nov 2023)
+* Blog published on datalearner: [Analysis of the top ten popular open source LLM of HuggingFace in the fourth week of November 2023 - the explosion of multi-modal large models and small-scale models](https://www.datalearner.com/blog/1051701014024122) (Nov 2023)
+* Blog published on zaker: [With this toolkit, the inference performance of large models can be accelerated by 40 times](https://app.myzaker.com/news/article.php?pk=656857148e9f0961d70ac3d3) (Nov 2023)
+* Blog published on geeky-gadgets: [New Intel Neural-Chat 7B LLM tops Hugging Face leaderboard beating original Mistral 7B] (https://www.geeky-gadgets.com/intel-neural-chat-7b-llm/) (Nov 2023)
 * Blog published on Huggingface: [Intel Neural-Chat 7b: Fine-Tuning on Gaudi2 for Top LLM Performance](https://huggingface.co/blog/Andyrasika/neural-chat-intel) (Nov 2023)
 * Video on YouTube: [Neural Chat 7B v3-1 Installation on Windows - Step by Step](https://www.youtube.com/watch?v=7_urstS-noU) (Nov 2023)
 * Video on YouTube: [Intel's Neural-Chat 7b: Most Powerful 7B Model! Beats GPT-4!?](https://www.youtube.com/watch?v=bWhZ1u_1rlc) (Nov 2023)

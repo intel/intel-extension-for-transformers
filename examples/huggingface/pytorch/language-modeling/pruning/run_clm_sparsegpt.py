@@ -6,7 +6,6 @@ import math
 import os
 import sys
 sys.path.insert(0, './')
-sys.path.insert(0, './neural-compressor/')
 import random
 import numpy as np
 from itertools import chain
@@ -28,10 +27,11 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import logging
 from datasets import load_dataset
+from huggingface_hub import Repository, create_repo
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.nn.functional import pad
-
+import transformers
 from transformers import (
     CONFIG_MAPPING,
     MODEL_MAPPING,
@@ -158,7 +158,7 @@ def parse_args():
     parser.add_argument(
         "--calibration_dataset_name",
         type=str,
-        default=None,
+        default="wikitext-2-raw-v1",
         help="The name of the pruning dataset to use (via the datasets library).",
     )
     parser.add_argument(
@@ -265,7 +265,7 @@ def parse_args():
     parser.add_argument(
         "--block_size",
         type=int,
-        default=512,
+        default=2048,
         help=(
             "Optional input sequence length after tokenization. The training dataset will be truncated in block of"
             " this size for training. Default to the model max input length for single sentence inputs (take into"
@@ -324,18 +324,14 @@ def parse_args():
             "If passed, LLM loading time and RAM consumption will be benefited."
         ),
     )
-    parser.add_argument(
-        "--trust_remote_code", default=True,
-        help="Transformers parameter: use the external repo"
-    )
     
-     ### DDP mode config
+    ### DDP mode config
     parser.add_argument(
         "--local_rank",
         type=int, default=-1,
         help="Automatic DDP Multi-GPU argument, do not modify")
     
-    # Pruning config
+    # pruning config
     parser.add_argument(
         "--do_prune", action="store_true",
         help="Whether or not to prune the model"
@@ -353,29 +349,27 @@ def parse_args():
     parser.add_argument(
         "--auto_slim", action="store_true",
         help="Whether or not to auto slim the model after pruning."
-    )
+    ) 
     parser.add_argument(
         "--auto_config", action="store_true",
         help="Whether to automatically generate pruning configs."
     )
     parser.add_argument(
         "--max_length",
-        type=int, default=512,
+        type=int, default=2048,
         help="Maximum data length the model can receive."
     )
+    parser.add_argument(
+        "--trust_remote_code", default=True,
+        help="Transformers parameter: use the external repo")
     
     # Evaluation config
     parser.add_argument("--tasks", default=["lambada_openai"],
         help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'"
     )
     parser.add_argument("--eval_fp16", action='store_true',
-        help=" fp16",
-    )
-    parser.add_argument(
-        "--cuda_eval",
-        type=int, default=-1,
-        help="Automatic DDP Multi-GPU argument, do not modify")
-    
+                    help=" fp16")
+
     
     args = parser.parse_args()
         
@@ -487,7 +481,7 @@ def main():
         if is_llama:
             tokenizer = transformers.LlamaTokenizer.from_pretrained(args.model_name_or_path)
         else :
-            tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer)
+            tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer, trust_remote_code=True)
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -541,6 +535,7 @@ def main():
             load_from_cache_file=not args.overwrite_cache,
             desc="Running tokenizer on dataset",
         )
+        tokenized_datasets.set_format(type="torch", columns=["input_ids"])
 
     if args.block_size is None:
         block_size = tokenizer.model_max_length
@@ -591,6 +586,7 @@ def main():
             load_from_cache_file=not args.overwrite_cache,
             desc=f"Grouping texts in chunks of {block_size}",
         )
+        
     train_dataset = lm_datasets["train"]
     
     # DataLoaders creation:
@@ -655,7 +651,7 @@ def main():
         tokenizer.save_pretrained(output_dir)
         logger.info(f"The model has been exported to {output_dir}")
         
-    if device != 'cpu': 
+    if device != 'cpu':
         model = model.to(device)
         logger.info(f"*****  Evaluation in GPU mode.  *****")
     else:
@@ -675,7 +671,7 @@ def main():
     def eval_func(model):
         acc, avg_latency = evaluator.evaluate(model)
         return acc, avg_latency
-    
+
     model_name = args.model_name_or_path
     if args.eval_fp16:
         model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float16'
@@ -714,5 +710,4 @@ def main():
     
 if __name__ == "__main__":
     main()
-
 

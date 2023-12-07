@@ -20,10 +20,13 @@ import os
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
+import torch
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
+        self.device = get_device_type()
         return super().setUp()
 
     def tearDown(self) -> None:
@@ -58,7 +61,8 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
-        plugins.tts.args["output_audio_path"]="./output_audio.wav"
+        plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"
+        plugins.tts.args["output_audio_path"] = "./output_audio.wav"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
@@ -106,10 +110,10 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
 
-        # # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceEmbeddings
+        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceInstructEmbeddings
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../../README.md"
-        plugins.retrieval.args["embedding_model"] = "Intel/bge-base-en-v1.5-sts-int8-static"
+        plugins.retrieval.args["embedding_model"] = "hkunlp/instructor-large"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
@@ -117,10 +121,14 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
 
-        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceInstructEmbeddings
+    def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
+        if self.device != "cpu":
+            self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../../../README.md"
-        plugins.retrieval.args["embedding_model"] = "hkunlp/instructor-large"
+        # Intel/bge-base-en-v1.5-sts-int8-static is private now, so we need to load it from local.
+        plugins.retrieval.args["embedding_model"] = \
+            "/tf_dataset2/inc-ut/bge-base-en-v1.5-sts-int8-static"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)

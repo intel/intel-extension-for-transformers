@@ -43,7 +43,8 @@
 #define WHISPER_HOP_LENGTH 160
 #define WHISPER_CHUNK_SIZE 30
 
-// command-line parameters; equivelent of `struct gpt_params` in models/model_utils/model_config.h
+// command-line parameters; equivelent of `struct gpt_params` in
+// models/model_utils/model_config.h
 struct whisper_params {
   std::string model_name;
 
@@ -94,7 +95,7 @@ struct whisper_params {
 
 void whisper_print_usage(int argc, char** argv, const whisper_params& params);
 
-bool whisper_params_parse(int argc, char** argv, whisper_params& params);
+bool whisper_params_parse(int argc, char** argv, whisper_params* params);
 
 struct whisper_print_user_data {
   const whisper_params* params;
@@ -115,8 +116,8 @@ extern "C" {
 //
 // C interface
 //
-// The following interface is thread-safe as long as the sample whisper_context is not used by multiple threads
-// concurrently.
+// The following interface is thread-safe as long as the sample whisper_context
+// is not used by multiple threads concurrently.
 //
 // Basic usage:
 //
@@ -124,7 +125,8 @@ extern "C" {
 //
 //     ...
 //
-//     struct whisper_context * ctx = whisper_init_from_file("/path/to/ggml-base.en.bin");
+//     struct whisper_context * ctx =
+//     whisper_init_from_file("/path/to/ggml-base.en.bin");
 //
 //     if (whisper_full(ctx, wparams, pcmf32.data(), pcmf32.size()) != 0) {
 //         fprintf(stderr, "failed to process audio\n");
@@ -144,8 +146,8 @@ extern "C" {
 // This is a demonstration of the most straightforward usage of the library.
 // "pcmf32" contains the RAW audio data in 32-bit floating point format.
 //
-// The interface also allows for more fine-grained control over the computation, but it requires a deeper
-// understanding of how the model works.
+// The interface also allows for more fine-grained control over the computation,
+// but it requires a deeper understanding of how the model works.
 //
 
 struct whisper_context;
@@ -185,8 +187,9 @@ MODEL_API struct whisper_context* whisper_init_from_file(const char* path_model)
 MODEL_API struct whisper_context* whisper_init_from_buffer(void* buffer, size_t buffer_size);
 MODEL_API struct whisper_context* whisper_init(struct whisper_model_loader* loader);
 
-// These are the same as the above, but the internal state of the context is not allocated automatically
-// It is the responsibility of the caller to allocate the state using whisper_init_state() (#523)
+// These are the same as the above, but the internal state of the context is not
+// allocated automatically It is the responsibility of the caller to allocate
+// the state using whisper_init_state() (#523)
 MODEL_API struct whisper_context* whisper_init_from_file_no_state(const char* path_model);
 MODEL_API struct whisper_context* whisper_init_from_buffer_no_state(void* buffer, size_t buffer_size);
 MODEL_API struct whisper_context* whisper_init_no_state(struct whisper_model_loader* loader);
@@ -199,45 +202,44 @@ MODEL_API void whisper_free_state(struct whisper_state* state);
 MODEL_API void whisper_free_params(struct whisper_full_params* params);
 
 // Convert RAW PCM audio to log mel spectrogram.
-// The resulting spectrogram is stored inside the default state of the provided whisper context.
-// Returns 0 on success
+// The resulting spectrogram is stored inside the default state of the provided
+// whisper context. Returns 0 on success
 MODEL_API int whisper_pcm_to_mel(struct whisper_context* ctx, const float* samples, int n_samples, int n_threads);
 
 MODEL_API int whisper_pcm_to_mel_with_state(struct whisper_context* ctx, struct whisper_state* state,
                                             const float* samples, int n_samples, int n_threads);
 
-// Convert RAW PCM audio to log mel spectrogram but applies a Phase Vocoder to speed up the audio x2.
-// The resulting spectrogram is stored inside the default state of the provided whisper context.
-// Returns 0 on success
+// Convert RAW PCM audio to log mel spectrogram but applies a Phase Vocoder to
+// speed up the audio x2. The resulting spectrogram is stored inside the default
+// state of the provided whisper context. Returns 0 on success
 MODEL_API int whisper_pcm_to_mel_phase_vocoder(struct whisper_context* ctx, const float* samples, int n_samples,
                                                int n_threads);
 
 MODEL_API int whisper_pcm_to_mel_phase_vocoder_with_state(struct whisper_context* ctx, struct whisper_state* state,
                                                           const float* samples, int n_samples, int n_threads);
 
-// This can be used to set a custom log mel spectrogram inside the default state of the provided whisper context.
-// Use this instead of whisper_pcm_to_mel() if you want to provide your own log mel spectrogram.
-// n_mel must be 80
-// Returns 0 on success
+// This can be used to set a custom log mel spectrogram inside the default state
+// of the provided whisper context. Use this instead of whisper_pcm_to_mel() if
+// you want to provide your own log mel spectrogram. n_mel must be 80 Returns 0
+// on success
 MODEL_API int whisper_set_mel(struct whisper_context* ctx, const float* data, int n_len, int n_mel);
 
 MODEL_API int whisper_set_mel_with_state(struct whisper_context* ctx, struct whisper_state* state, const float* data,
                                          int n_len, int n_mel);
 
-// Run the Whisper encoder on the log mel spectrogram stored inside the default state in the provided whisper context.
-// Make sure to call whisper_pcm_to_mel() or whisper_set_mel() first.
-// offset can be used to specify the offset of the first frame in the spectrogram.
-// Returns 0 on success
+// Run the Whisper encoder on the log mel spectrogram stored inside the default
+// state in the provided whisper context. Make sure to call whisper_pcm_to_mel()
+// or whisper_set_mel() first. offset can be used to specify the offset of the
+// first frame in the spectrogram. Returns 0 on success
 MODEL_API int whisper_encode(struct whisper_context* ctx, int offset, int n_threads);
 
 MODEL_API int whisper_encode_with_state(struct whisper_context* ctx, struct whisper_state* state, int offset,
                                         int n_threads);
 
-// Run the Whisper decoder to obtain the logits and probabilities for the next token.
-// Make sure to call whisper_encode() first.
-// tokens + n_tokens is the provided context for the decoder.
-// n_past is the number of tokens to use from previous decoder calls.
-// Returns 0 on success
+// Run the Whisper decoder to obtain the logits and probabilities for the next
+// token. Make sure to call whisper_encode() first. tokens + n_tokens is the
+// provided context for the decoder. n_past is the number of tokens to use from
+// previous decoder calls. Returns 0 on success
 // TODO: add support for multiple decoders
 MODEL_API int whisper_decode(struct whisper_context* ctx, const whisper_token* tokens, int n_tokens, int n_past,
                              int n_threads);
@@ -261,15 +263,16 @@ MODEL_API int whisper_lang_max_id();
 //   "german" -> 2
 MODEL_API int whisper_lang_id(const char* lang);
 
-// Return the short string of the specified language id (e.g. 2 -> "de"), returns nullptr if not found
+// Return the short string of the specified language id (e.g. 2 -> "de"),
+// returns nullptr if not found
 MODEL_API const char* whisper_lang_str(int id);
 
 // Use mel data at offset_ms to try and auto-detect the spoken language
 // Make sure to call whisper_pcm_to_mel() or whisper_set_mel() first
 // Returns the top language id or negative on failure
-// If not null, fills the lang_probs array with the probabilities of all languages
-// The array must be whisper_lang_max_id() + 1 in size
-// ref: https://github.com/openai/whisper/blob/main/whisper/decoding.py#L18-L69
+// If not null, fills the lang_probs array with the probabilities of all
+// languages The array must be whisper_lang_max_id() + 1 in size ref:
+// https://github.com/openai/whisper/blob/main/whisper/decoding.py#L18-L69
 MODEL_API int whisper_lang_auto_detect(struct whisper_context* ctx, int offset_ms, int n_threads, float* lang_probs);
 
 MODEL_API int whisper_lang_auto_detect_with_state(struct whisper_context* ctx, struct whisper_state* state,
@@ -359,30 +362,35 @@ typedef void (*whisper_logits_filter_callback)(struct whisper_context* ctx, stru
                                                void* user_data);
 
 // Parameters for the whisper_full() function
-// If you chnage the order or add new parameters, make sure to update the default values in whisper.cpp:
-// whisper_full_default_params()
+// If you chnage the order or add new parameters, make sure to update the
+// default values in whisper.cpp: whisper_full_default_params()
 struct whisper_full_params {
   enum whisper_sampling_strategy strategy;
 
   int n_threads;
-  int n_max_text_ctx;  // max tokens to use from past text as prompt for the decoder
+  int n_max_text_ctx;  // max tokens to use from past text as prompt for the
+                       // decoder
   int offset_ms;       // start offset in ms
   int duration_ms;     // audio duration to process in ms
 
   bool translate;
-  bool no_context;        // do not use past transcription (if any) as initial prompt for the decoder
+  bool no_context;        // do not use past transcription (if any) as initial prompt
+                          // for the decoder
   bool single_segment;    // force single segment output (useful for streaming)
   bool print_special;     // print special tokens (e.g. <SOT>, <EOT>, <BEG>, etc.)
   bool print_progress;    // print progress information
-  bool print_realtime;    // print results from within whisper.cpp (avoid it, use callback instead)
-  bool print_timestamps;  // print timestamps for each text segment when printing realtime
+  bool print_realtime;    // print results from within whisper.cpp (avoid it, use
+                          // callback instead)
+  bool print_timestamps;  // print timestamps for each text segment when
+                          // printing realtime
 
   // [EXPERIMENTAL] token-level timestamps
   bool token_timestamps;  // enable token-level timestamps
   float thold_pt;         // timestamp token probability threshold (~0.01)
   float thold_ptsum;      // timestamp token sum probability threshold (~0.01)
   int max_len;            // max segment length in characters
-  bool split_on_word;     // split on word rather than on token (when used with max_len)
+  bool split_on_word;     // split on word rather than on token (when used with
+                          // max_len)
   int max_tokens;         // max tokens per segment (0 = no limit)
 
   // [EXPERIMENTAL] speed-up techniques
@@ -405,16 +413,21 @@ struct whisper_full_params {
 
   // common decoding parameters:
 
-  // ref: https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py#L89
+  // ref:
+  // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py#L89
   bool suppress_blank;
-  // ref: https://github.com/openai/whisper/blob/7858aa9c08d98f75575035ecd6481f462d66ca27/whisper/tokenizer.py#L224-L253
+  // ref:
+  // https://github.com/openai/whisper/blob/7858aa9c08d98f75575035ecd6481f462d66ca27/whisper/tokenizer.py#L224-L253
   bool suppress_non_speech_tokens;
 
-  float temperature;  // initial decoding temperature, ref: https://ai.stackexchange.com/a/32478
+  float temperature;  // initial decoding temperature, ref:
+                      // https://ai.stackexchange.com/a/32478
 
-  // ref: https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py#L97
+  // ref:
+  // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py#L97
   float max_initial_ts;
-  // ref: https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L267
+  // ref:
+  // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L267
   float length_penalty;
 
   // fallback parameters
@@ -426,15 +439,18 @@ struct whisper_full_params {
   float no_speech_thold;  // TODO: not implemented
 
   struct {
-    // ref: https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L264
+    // ref:
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L264
     int best_of;
   } greedy;
 
   struct {
-    // ref: https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L265
+    // ref:
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L265
     int beam_size;
 
-    float patience;  // TODO: not implemented, ref: https://arxiv.org/pdf/2204.05424.pdf
+    float patience;  // TODO: not implemented, ref:
+                     // https://arxiv.org/pdf/2204.05424.pdf
   } beam_search;
 
   // called for every newly generated text segment
@@ -454,25 +470,25 @@ struct whisper_full_params {
   void* logits_filter_callback_user_data;
 };
 
-// NOTE: this function allocates memory, and it is the responsibility of the caller to free the pointer - see
-// whisper_free_params()
+// NOTE: this function allocates memory, and it is the responsibility of the
+// caller to free the pointer - see whisper_free_params()
 MODEL_API struct whisper_full_params* whisper_full_default_params_by_ref(enum whisper_sampling_strategy strategy);
 MODEL_API struct whisper_full_params whisper_full_default_params(enum whisper_sampling_strategy strategy);
 
-// Run the entire model: PCM -> log mel spectrogram -> encoder -> decoder -> text
-// Not thread safe for same context
-// Uses the specified decoding strategy to obtain the text.
+// Run the entire model: PCM -> log mel spectrogram -> encoder -> decoder ->
+// text Not thread safe for same context Uses the specified decoding strategy to
+// obtain the text.
 MODEL_API int whisper_full(struct whisper_context* ctx, struct whisper_full_params params, const float* samples,
                            int n_samples);
 
 MODEL_API int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* state,
                                       struct whisper_full_params params, const float* samples, int n_samples);
 
-// Split the input audio in chunks and process each chunk separately using whisper_full_with_state()
-// Result is stored in the default state of the context
-// Not thread safe if executed in parallel on the same context.
-// It seems this approach can offer some speedup in some cases.
-// However, the transcription accuracy can be worse at the beginning and end of each chunk.
+// Split the input audio in chunks and process each chunk separately using
+// whisper_full_with_state() Result is stored in the default state of the
+// context Not thread safe if executed in parallel on the same context. It seems
+// this approach can offer some speedup in some cases. However, the
+// transcription accuracy can be worse at the beginning and end of each chunk.
 MODEL_API int whisper_full_parallel(struct whisper_context* ctx, struct whisper_full_params params,
                                     const float* samples, int n_samples, int n_processors);
 

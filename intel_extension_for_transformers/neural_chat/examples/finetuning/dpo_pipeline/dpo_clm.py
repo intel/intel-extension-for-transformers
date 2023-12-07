@@ -32,7 +32,6 @@ from transformers import (
     HfArgumentParser,
     TrainingArguments,
     default_data_collator,
-    set_seed
 )
 
 from peft import (
@@ -202,11 +201,12 @@ def find_all_linear_names(model):
 if __name__ == "__main__":
 
     if not is_optimum_habana_available():
+        from transformers import set_seed
         parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, FinetuningArguments))
         load_in_4bit = True
     else:
         from optimum.habana import GaudiTrainingArguments
-
+        from optimum.habana.utils import set_seed
         parser = HfArgumentParser(
             (ModelArguments, DataTrainingArguments, GaudiTrainingArguments, FinetuningArguments)
         )
@@ -250,8 +250,8 @@ if __name__ == "__main__":
     def return_prompt_and_responses(samples) -> Dict[str, str]:
         return {
             "prompt": [system + question for system,question in zip(samples["system"], samples["question"])],
-            "chosen": samples["chatgpt"],
-            "rejected": samples["llama2-13b-chat"],
+            "chosen": samples["chosen"],
+            "rejected": samples["rejected"],
         }
 
     column_names = raw_datasets["train"].column_names
@@ -271,7 +271,6 @@ if __name__ == "__main__":
 
     # model config
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
-
     torch_dtype = (
             model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
             else getattr(torch, model_args.torch_dtype)
@@ -286,8 +285,7 @@ if __name__ == "__main__":
         load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-        trust_remote_code=True
+        use_auth_token=True if model_args.use_auth_token else None
     )
     model.config.use_cache = False
 
@@ -300,9 +298,9 @@ if __name__ == "__main__":
         load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-        trust_remote_code=True
+        use_auth_token=True if model_args.use_auth_token else None
     )
+    model_ref.config.use_cache = False
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -494,8 +492,6 @@ if __name__ == "__main__":
 
     # 6. train
     dpo_trainer.train()
-    dpo_trainer.save_model(training_args.output_dir)
 
-    # 7. save
-    output_dir = os.path.join(training_args.output_dir, "final_checkpoint")
-    dpo_trainer.model.save_pretrained(output_dir)
+    # 7. save the model
+    dpo_trainer.save_model(training_args.output_dir)

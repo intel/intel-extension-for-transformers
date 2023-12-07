@@ -75,11 +75,11 @@ class Model:
             model_type = "chatglm2"
         return model_type
 
-    def init(self, model_name, use_quant=True, use_cache=False, use_gptq=False, **quant_kwargs):
+    def init(self, model_name, use_quant=True, use_gptq=False, **quant_kwargs):
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        model_type = Model.get_model_type(self.config)
-        self.__import_package(model_type)
+        self.model_type = Model.get_model_type(self.config)
+        self.__import_package(self.model_type)
 
         # check cache and quantization
         if use_quant:
@@ -88,7 +88,7 @@ class Model:
                                  " is not currently supported. Please use other combinations.")
         output_path = "runtime_outs"
         os.makedirs(output_path, exist_ok=True)
-        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
+        fp32_bin = "{}/ne_{}_f32.bin".format(output_path, self.model_type)
         quant_desc = quant_kwargs['weight_dtype']
         if quant_kwargs['use_ggml']:
             quant_desc += "_ggml"
@@ -100,13 +100,16 @@ class Model:
                 quant_desc += "_g{}".format(quant_kwargs['group_size'])
         if use_gptq:
             quant_desc = "gptq"
-        quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, model_type, quant_desc)
+        quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, self.model_type, quant_desc)
 
         if not use_quant:
             self.bin_file = fp32_bin
         else:
             self.bin_file = quant_bin
-        if use_cache and os.path.exists(self.bin_file):
+
+        if os.path.exists(self.bin_file):
+            print("{} existed, will use cache file. Otherwise please remove the file".
+                  format(self.bin_file))
             return
 
         if use_gptq:
@@ -114,7 +117,7 @@ class Model:
             return
 
 
-        if not use_cache or not os.path.exists(fp32_bin):
+        if not os.path.exists(fp32_bin):
             convert_model(model_name, fp32_bin, "f32")
             assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
@@ -125,8 +128,7 @@ class Model:
         assert os.path.exists(quant_bin), "Fail to quantize model"
 
         # clean
-        if not use_cache:
-            os.remove(fp32_bin)
+        os.remove(fp32_bin)
 
     def init_from_bin(self, model_type, model_path, **generate_kwargs):
         self.__import_package(model_type)
@@ -143,10 +145,12 @@ class Model:
         self.__import_package(model_type)
         self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
-    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,
+                 **generate_kwargs):
         max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
+        self.batch_size = input_ids.shape[0]
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, batch_size=input_ids.shape[0],
+            self.init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
                                **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
@@ -160,9 +164,6 @@ class Model:
         beam_search = False
         if (generate_kwargs.get("num_beams", 1) > 1) and not generate_kwargs.get("do_sample", False):
             beam_search = True
-        if not beam_search:
-            # TODO support multi batch
-            assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
 
         if streamer:
             assert input_ids.shape[0] == 1, "Streamer only supports batch size 1."
@@ -190,9 +191,12 @@ class Model:
             if stopping_criteria is not None:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
-            elif ret[0][-1] == self.eos_token_id() or \
-                    (max_new_tokens != -1 and out_count >= max_new_tokens):
+            elif (max_new_tokens != -1 and out_count >= max_new_tokens):
                 break
+            else:
+                all_done = [(r[-1] in [self.eos_token_id(), self.pad_token_id()]) for r in ret]
+                if False not in all_done:
+                    break
         if streamer:
             streamer.end()
 
@@ -203,9 +207,18 @@ class Model:
         return self.model.is_token_end()
 
     def eos_token_id(self):
-        if self.tokenizer.eos_token_id == None:
+        if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
+    
+    def pad_token_id(self):
+        if self.tokenizer.pad_token_id == None:
+            if self.batch_size == 1:
+                return None
+            else:
+                raise ValueError("Please set pad_token_id when doing multi batch inference"\
+                                  " with padding!")
+        return self.tokenizer.pad_token_id
 
     def __call__(self, input_ids, reinit=False, **kwargs):
         if self.model is None:

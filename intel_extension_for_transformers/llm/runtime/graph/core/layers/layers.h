@@ -15,3 +15,4 @@
 #include "ele_reduce.h"
 
 #include "conv.h"
+#include "memory.h"

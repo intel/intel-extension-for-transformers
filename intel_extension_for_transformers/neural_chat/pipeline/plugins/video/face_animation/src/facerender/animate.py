@@ -20,6 +20,7 @@ import cv2
 import yaml
 import numpy as np
 import warnings
+import shlex
 from skimage import img_as_ubyte
 import safetensors
 import safetensors.torch
@@ -276,7 +277,7 @@ class AnimateFromCoeff:
                 ]
 
             video_name = x["video_name"] + ".mp4"
-            path = os.path.join(video_save_dir, "temp_" + video_name)
+            path = os.path.join(video_save_dir, "temp_" + shlex.quote(video_name))
 
             imageio.mimsave(path, result, fps=float(25))
 
@@ -285,7 +286,7 @@ class AnimateFromCoeff:
 
             audio_path = x["audio_path"]
             audio_name = os.path.splitext(os.path.split(audio_path)[-1])[0]
-            new_audio_path = os.path.join(video_save_dir, audio_name + ".wav")
+            new_audio_path = os.path.join(video_save_dir, shlex.quote(audio_name) + ".wav")
             start_time = 0
             # cog will not keep the .mp3 filename
             sound = AudioSegment.from_file(audio_path)
@@ -323,7 +324,7 @@ class AnimateFromCoeff:
         start_time = end_time
         if enhancer:
             video_name_enhancer = x["video_name"] + "_enhanced.mp4"
-            enhanced_path = os.path.join(video_save_dir, "temp_" + video_name_enhancer)
+            enhanced_path = os.path.join(video_save_dir, "temp_" + shlex.quote(video_name_enhancer))
             av_path_enhancer = os.path.join(video_save_dir, video_name_enhancer)
             return_path = av_path_enhancer
             enhanced_images = face_enhancer(
@@ -333,12 +334,12 @@ class AnimateFromCoeff:
             imageio.mimsave(enhanced_path, enhanced_images, fps=float(25))
             save_video_with_watermark(enhanced_path, new_audio_path, av_path_enhancer, watermark=False)
             print(f"The generated video is named {video_save_dir}/{video_name_enhancer}")
-            os.remove(enhanced_path)
+            os.remove(shlex.quote(enhanced_path))
             end_time = time.time()
             print(f"[***6/6***] enhancing takes: {end_time - start_time} sec")
         else:
             print(f"[***6/6***] no enhancing")
-        os.remove(path)
-        os.remove(new_audio_path)
+        os.remove(shlex.quote(path))
+        os.remove(shlex.quote(new_audio_path))
 
         return return_path

@@ -9,3 +9,4 @@ onnx>=1.12
 onnxruntime==1.13.1
 diffusers==0.12.1
 pytorch_fid
+optimum
