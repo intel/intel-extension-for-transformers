@@ -150,6 +150,18 @@ The table below displays the validated model list in NeuralChat for both inferen
 |CodeLLaMA series|   |   |   | ✅
 
 
+## Restful API
+
+### OpenAI-Compatible RESTful APIs & SDK
+NeuralChat provides OpenAI-compatible APIs for its supported models, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands.
+The following OpenAI APIs are supported:
+
+Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)
+Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)
+
+### Hugging Face Generation APIs
+
+
 
 ## Selected Notebooks 
 
