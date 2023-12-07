@@ -163,14 +163,11 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     write_header(fout, shape[::-1], dst_name, 13)
 
     dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*4), dtype=np.int8)
-    # if q_config['sym']:
+    int_weight = np.ascontiguousarray(((int_weight - 8) * 16).numpy())
+    gptq_scales = np.ascontiguousarray((gptq_scales.float() / 16).numpy())
+    gptq_zeros = np.ascontiguousarray(((gptq_zeros - 8) * 16).numpy())
     # import pdb; pdb.set_trace()
-    int_weight = int_weight - 8
-    int_weight = int_weight * 16
-    gptq_scales = gptq_scales / 16
-    gptq_zeros = (gptq_zeros - 8) * 16
-    import pdb; pdb.set_trace()
-    byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.float().numpy(), gptq_zeros.numpy(), dst,
+    byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales, gptq_zeros, dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
@@ -253,19 +250,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
 
     for i in range(n_layer):
-        convert_q4_1_tensor(f"model.layers.{i}.self_attn.q_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
                     f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head, permute=True)
-        convert_q4_1_tensor(f"model.layers.{i}.self_attn.k_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.k_proj",
                     f"layers.{i}.attention.wk.weight", list_vars, f, quantize_config, n_head, n_head_kv, permute=True)
-        convert_q4_1_tensor(f"model.layers.{i}.self_attn.v_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.v_proj",
                     f"layers.{i}.attention.wv.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_1_tensor(f"model.layers.{i}.self_attn.o_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.o_proj",
                     f"layers.{i}.attention.wo.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_1_tensor(f"model.layers.{i}.mlp.gate_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.gate_proj",
                     f"layers.{i}.feed_forward.w1.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_1_tensor(f"model.layers.{i}.mlp.down_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.down_proj",
                     f"layers.{i}.feed_forward.w2.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_1_tensor(f"model.layers.{i}.mlp.up_proj",
+        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.up_proj",
                     f"layers.{i}.feed_forward.w3.weight", list_vars, f, quantize_config, n_head)
 
         convert_fp32_tensor(f"model.layers.{i}.input_layernorm.weight",
