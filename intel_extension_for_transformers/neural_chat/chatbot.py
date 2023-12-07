@@ -24,8 +24,8 @@ from .config import DeviceOptions
 from .plugins import plugins
 
 from intel_extension_for_transformers.utils import logger
-from .constants import ErrorCodes, MEMORY_THRESHOLD_GB, STORAGE_THRESHOLD_GB, GPU_MEMORY_THRESHOLD_MB
-from .utils.error_manager import ErrorManager
+from .constants import ErrorCodes, STORAGE_THRESHOLD_GB
+from .utils.error_utils import set_latest_error
 import psutil
 import torch
 
@@ -44,21 +44,11 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
-    # Check for out of memory
-    available_memory = psutil.virtual_memory().available / (1024 ** 3)
-    if available_memory < MEMORY_THRESHOLD_GB: # The 4-bit 7B model requires a minimum of 7GB of memory
-        logger.error("LLM requires a minimum of 8GB of free system memory, \
-                   but the current available memory is insufficient.")
-        ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-        return
-
     # Check for out of storage
     available_storage = psutil.disk_usage('/').free
     available_storage_gb = available_storage / (1024 ** 3)
     if available_storage_gb < STORAGE_THRESHOLD_GB:
-        logger.error("LLM requires a minimum of 30GB of free system storage, \
-                     but the current available storage is insufficient.")
-        ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE, "the current available storage is insufficient.")
         return
 
     global plugins
@@ -66,22 +56,17 @@ def build_chatbot(config: PipelineConfig=None):
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
-        valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
-        logger.error(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
-        ErrorManager.set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED, f"invalid device value {config.device}")
         return
 
     if config.device == "cuda":
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-            remaining_memory = torch.cuda.get_device_properties(device).total_memory - \
-                               torch.cuda.memory_allocated(device)
-            remaining_memory_gb = remaining_memory / (1024 ** 3)
-            if remaining_memory_gb < GPU_MEMORY_THRESHOLD_MB:
-                logger.error("LLM requires a minimum of 6GB of free GPU memory, \
-                           but the current available GPU memory is insufficient.")
-                ErrorManager.set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-                return
+        if not torch.cuda.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, "cuda is not available")
+            return
+    elif config.device == "xpu":
+        if not torch.xpu.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, "hpu is not available")
+            return
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -110,9 +95,7 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        logger.error(f"NeuralChat Error: Unsupported model name or path {config.model_name_or_path}, \
-          only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
-        ErrorManager.set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
+        set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND, f"unsupported model name or path {config.model_name_or_path}")
         return
 
     # register plugin instance in model adaptor
@@ -141,15 +124,11 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
                     plugins[plugin_name]['class'] = NamedEntityRecognition
-                elif plugin_name == "ner_int":
-                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
-                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 elif plugin_name == "face_animation": # pragma: no cover
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
                 else: # pragma: no cover
-                    logger.error(f"Unsupported plugin: {plugin_name}")
-                    ErrorManager.set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED, "unsupported plugin {plugin_name}")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -173,13 +152,45 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
-    result = adapter.load_model(parameters)
-
-    if result == ErrorCodes.SUCCESS:
-        return adapter
-    else:
-        ErrorManager.set_latest_error(result)
+    try:
+        adapter.load_model(parameters)
+    except RuntimeError as e:
+        if "out of memory" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY, str(e))
+            return
+        elif "devices are busy or unavailable" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY, str(e))
+            return
+        elif "tensor does not have a device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, str(e))
+            return
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
+            return
+    except ValueError as e:
+        if "load_model: unsupported device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED, str(e))
+            return
+        elif "load_model: unsupported model" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED, str(e))
+            return
+        elif "load_model: tokenizer is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND, str(e))
+            return
+        elif "load_model: model name or path is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND, str(e))
+            return
+        elif "load_model: model config is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND, str(e))
+            return
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
+            return
+    except Exception as e:
+        set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
         return
+    return adapter
+
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -193,7 +204,7 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     res = finetuning.finetune()
     if res != ErrorCodes.SUCCESS:
-        ErrorManager.set_latest_error(res)
+        set_latest_error(res)
 
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
@@ -206,5 +217,5 @@ def optimize_model(model, config, use_llm_runtime=False):
     optimization = Optimization(optimization_config=config)
     res = optimization.optimize(model, use_llm_runtime)
     if isinstance(res, ErrorCodes):
-        ErrorManager.set_latest_error(res)
+        set_latest_error(res)
     return res

@@ -26,8 +26,8 @@
 #include <vector>
 #include <algorithm>
 #include <random>
-#include <regex>
-#include <thread>
+#include <regex>   // NOLINT
+#include <thread>  // NOLINT
 #include <unordered_map>
 #include <utility>
 #include <iostream>
@@ -67,7 +67,7 @@ void sigint_handler(int signo) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) {  // NOLINT
   gpt_params params;
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
@@ -212,7 +212,8 @@ int main(int argc, char** argv) {
       }
       session_tokens.resize(n_token_total_out);
 
-      fprintf(stderr, "%s: loaded a session with prompt size of %d tokens\n", __func__, (int)session_tokens.size());
+      fprintf(stderr, "%s: loaded a session with prompt size of %d tokens\n", __func__,
+              static_cast<int>(session_tokens.size()));
     } else {
       fprintf(stderr, "%s: session file does not exist, will create\n", __func__);
     }
@@ -241,8 +242,9 @@ int main(int argc, char** argv) {
 
   const int n_ctx = model_n_ctx(ctx);
 
-  if ((int)embd_inp.size() > n_ctx - 4) {
-    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, (int)embd_inp.size(), n_ctx - 4);
+  if (static_cast<int>(embd_inp.size()) > n_ctx - 4) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, static_cast<int>(embd_inp.size()),
+            n_ctx - 4);
     return 1;
   }
 
@@ -268,8 +270,8 @@ int main(int argc, char** argv) {
   }
 
   // number of tokens to keep when resetting context
-  if (params.n_keep < 0 || params.n_keep > (int)embd_inp.size() || params.instruct) {
-    params.n_keep = (int)embd_inp.size();
+  if (params.n_keep < 0 || params.n_keep > static_cast<int>(embd_inp.size()) || params.instruct) {
+    params.n_keep = static_cast<int>(embd_inp.size());
   }
 
   // prefix & suffix for instruct mode
@@ -294,7 +296,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "\n");
     fprintf(stderr, "%s: prompt: '%s'\n", __func__, params.prompt.c_str());
     fprintf(stderr, "%s: number of tokens in prompt = %zu\n", __func__, embd_inp.size());
-    for (int i = 0; i < (int)embd_inp.size(); i++) {
+    for (size_t i = 0; i < embd_inp.size(); i++) {
       fprintf(stderr, "%6d -> '%s'\n", embd_inp[i], model_token_to_str(ctx, embd_inp[i]));
     }
     if (params.n_keep > 0) {
@@ -346,7 +348,7 @@ int main(int argc, char** argv) {
           params.n_predict, params.n_keep);
   fprintf(stderr, "\n\n");
 
-  // TODO: replace with ring-buffer
+  // TODO(Bo): replace with ring-buffer
   std::vector<model_token> last_n_tokens(n_ctx);
   std::fill(last_n_tokens.begin(), last_n_tokens.end(), 0);
 
@@ -410,7 +412,7 @@ int main(int argc, char** argv) {
       // if we run out of context:
       // - take the n_keep first tokens from the original prompt (via n_past)
       // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
-      if (n_past + (int)embd.size() > n_ctx) {
+      if (n_past + static_cast<int>(embd.size()) > n_ctx) {
         // always keep the first token
         n_past = std::max(1, params.n_keep);
 
@@ -429,7 +431,7 @@ int main(int argc, char** argv) {
       }
 
       // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
-      if (n_session_consumed < (int)session_tokens.size()) {
+      if (n_session_consumed < static_cast<int>(session_tokens.size())) {
         size_t i = 0;
         for (; i < embd.size(); i++) {
           if (embd[i] != session_tokens[n_session_consumed]) {
@@ -441,7 +443,7 @@ int main(int argc, char** argv) {
           n_past++;
           n_session_consumed++;
 
-          if (n_session_consumed >= (int)session_tokens.size()) {
+          if (n_session_consumed >= static_cast<int>(session_tokens.size())) {
             ++i;
             break;
           }
@@ -453,8 +455,8 @@ int main(int argc, char** argv) {
 
       // evaluate tokens in batches
       // embd is typically prepared beforehand to fit within a batch, but not always
-      for (int i = 0; i < (int)embd.size(); i += params.n_batch) {
-        int n_eval = (int)embd.size() - i;
+      for (size_t i = 0; i < embd.size(); i += params.n_batch) {
+        int n_eval = static_cast<int>(embd.size() - i);
         if (n_eval > params.n_batch) {
           n_eval = params.n_batch;
         }
@@ -502,7 +504,7 @@ int main(int argc, char** argv) {
 #endif
         // Apply penalties
         float nl_logit = logits[model_token_nl()];
-        auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
+        auto last_n_repeat = std::min(std::min(static_cast<int>(last_n_tokens.size()), repeat_last_n), n_ctx);
         model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
                                         last_n_repeat, repeat_penalty);
         model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
@@ -545,7 +547,7 @@ int main(int argc, char** argv) {
 
       embd.clear();
 
-      if ((int)embd_inp.size() <= n_consumed && !is_interacting) {
+      if (static_cast<int>(embd_inp.size()) <= n_consumed && !is_interacting) {
         // optionally save the session on first sample (for faster prompt loading next time)
         if (!path_session.empty() && need_to_save_session) {
           need_to_save_session = false;
@@ -576,12 +578,12 @@ int main(int argc, char** argv) {
       --n_remain;
     } else {
       // some user input remains from prompt or interaction, forward it to processing
-      while ((int)embd_inp.size() > n_consumed) {
+      while (static_cast<int>(embd_inp.size()) > n_consumed) {
         embd.push_back(embd_inp[n_consumed]);
         last_n_tokens.erase(last_n_tokens.begin());
         last_n_tokens.push_back(embd_inp[n_consumed]);
         ++n_consumed;
-        if ((int)embd.size() >= params.n_batch) {
+        if (static_cast<int>(embd.size()) >= params.n_batch) {
           break;
         }
       }
@@ -613,12 +615,12 @@ int main(int argc, char** argv) {
     }
 
     // reset color to default if we there is no pending user input
-    if (input_echo && (int)embd_inp.size() == n_consumed) {
+    if (input_echo && static_cast<int>(embd_inp.size()) == n_consumed) {
       console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
     }
 
     // if not currently processing queued inputs;
-    if ((int)embd_inp.size() <= n_consumed) {
+    if (static_cast<int>(embd_inp.size()) <= n_consumed) {
       // check for reverse prompt
       if (params.antiprompt.size()) {
         std::string last_output;
@@ -730,4 +732,4 @@ int main(int argc, char** argv) {
   model_free(ctx);
 
   return 0;
-}
+}  // NOLINT

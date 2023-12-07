@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -15,19 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..constants import ErrorCodes
 
-class ErrorManager:
-    _latest_error = None
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
-    @classmethod
-    def set_latest_error(cls, error_code):
-        cls._latest_error = error_code
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./codegen.yaml", log_file="./codegen.log")
 
-    @classmethod
-    def get_latest_error(cls):
-        return cls._latest_error
-
-    @classmethod
-    def get_latest_error_string(cls):
-        return ErrorCodes.error_strings[cls._latest_error]
+if __name__ == "__main__":
+    main()

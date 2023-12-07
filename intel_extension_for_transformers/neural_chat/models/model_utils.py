@@ -20,6 +20,7 @@ from pathlib import Path
 import copy, time
 from datetime import datetime
 import torch
+import transformers
 import warnings
 from queue import Queue
 import re, os
@@ -45,9 +46,6 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
-
-from intel_extension_for_transformers.utils import logger
-from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
 
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
@@ -280,11 +278,8 @@ def load_model(
         device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
 
-    Returns:
-        ErrorCodes.ERROR_MODEL_NOT_SUPPORTED
-        ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED
-        ErrorCodes.SUCCESS
-        
+    Raises:
+        ValueError
     """
     print("Loading model {}".format(model_name))
     if device == "hpu":
@@ -325,16 +320,28 @@ def load_model(
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name,
-        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-        use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-            re.search("chatglm", model_name, re.IGNORECASE)) else False,
-    )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+            use_auth_token=hf_access_token,
+            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                re.search("chatglm", model_name, re.IGNORECASE)) else False,
+        )
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: tokenizer is not found")
+        else:
+            raise
+    try:
+        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                            if re.search("chatglm", model_name, re.IGNORECASE) else False)
+    except ValueError as e:
+        if "Unrecognized model in" in str(e):
+            raise ValueError("load_model: model config is not found")
+        else:
+            raise
     load_to_meta = model_on_meta(config)
     if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
@@ -346,106 +353,103 @@ def load_model(
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         print("Optimized Model loaded.")
-        return ErrorCodes.SUCCESS
+        return
 
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
 
-    if device == "hpu" and use_deepspeed and load_to_meta:
-        with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
-            model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModel.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                trust_remote_code=True)
-    elif ((
-        re.search("gpt", model_name, re.IGNORECASE)
-        or re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("bloom", model_name, re.IGNORECASE)
-        or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-        or re.search("qwen", model_name, re.IGNORECASE)
-        or re.search("starcoder", model_name, re.IGNORECASE)
-        or re.search("codellama", model_name, re.IGNORECASE)
-        or re.search("mistral", model_name, re.IGNORECASE)
-    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                use_auth_token=hf_access_token,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif (
-            (re.search("starcoder", model_name, re.IGNORECASE)
-             or re.search("codellama", model_name, re.IGNORECASE)
-            ) and ipex_int8
-        ):
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            try:
-                import intel_extension_for_pytorch as ipex
-            except ImportError:
-                warnings.warn(
-                    "Please install Intel Extension for PyTorch to accelerate the model inference."
-                )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            from optimum.intel.generation.modeling import TSModelForCausalLM
-            model = TSModelForCausalLM.from_pretrained(
+    try:
+        if device == "hpu" and use_deepspeed and load_to_meta:
+            with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
+                model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
+        elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
-                    file_name="best_model.pt",
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    quantization_config=bitsandbytes_quant_config,
                 )
-    elif(
-            (re.search("llama", model_name, re.IGNORECASE)
-             or re.search("opt", model_name, re.IGNORECASE)
-             or re.search("gpt_neox", model_name, re.IGNORECASE)
-             or re.search("gptj", model_name, re.IGNORECASE)
-            ) and ipex_int8
-    ):  
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            try:
-                import intel_extension_for_pytorch as ipex
-            except ImportError:
-                warnings.warn(
-                    "Please install Intel Extension for PyTorch to accelerate the model inference."
+        elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModel.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    trust_remote_code=True)
+        elif ((
+            re.search("gpt", model_name, re.IGNORECASE)
+            or re.search("mpt", model_name, re.IGNORECASE)
+            or re.search("bloom", model_name, re.IGNORECASE)
+            or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("qwen", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("codellama", model_name, re.IGNORECASE)
+            or re.search("mistral", model_name, re.IGNORECASE)
+        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config,
                 )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            torch._C._jit_set_texpr_fuser_enabled(False)
-            qconfig = ipex.quantization.default_static_qconfig_mapping
-            with ipex.OnDevice(dtype=torch.float, device="meta"):
-                model = AutoModelForCausalLM.from_pretrained(model_name)
-            model = ipex.optimize_transformers(
-                model.eval(),
-                dtype=torch.float,
-                inplace=True,
-                quantization_config=qconfig,
-                deployment_mode=False,
-            )
-            if not hasattr(model, "trace_graph"):
-                print("load_quantized_model")
-                self_jit = torch.jit.load(os.path.join(model_name, "best_model.pt"))
-                self_jit = torch.jit.freeze(self_jit.eval())
-                ipex._set_optimized_model_for_generation(model, optimized_model=self_jit)       
-    else:
-        logger.error(f"NeuralChat Error: Unsupported model name or path {model_name}, \
-          only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
-        return ErrorCodes.ERROR_MODEL_NOT_FOUND
+        elif (
+                (re.search("starcoder", model_name, re.IGNORECASE)
+                or re.search("codellama", model_name, re.IGNORECASE)
+                ) and ipex_int8
+            ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
+                    )
+        elif(
+                (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("opt", model_name, re.IGNORECASE)
+                or re.search("gpt_neox", model_name, re.IGNORECASE)
+                or re.search("gptj", model_name, re.IGNORECASE)
+                or re.search("falcon", model_name, re.IGNORECASE)
+                ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+                if re.search("falcon", model_name, re.IGNORECASE):
+                    assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
+                from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+                model = TSModelCausalLMForITREX.from_pretrained(
+                    model_name,
+                    file_name="best_model.pt"
+                )
+        else:
+            raise ValueError(f"unsupported model name or path {model_name}, \
+            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: model name or path is not found")
+        else:
+            raise
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -544,8 +548,9 @@ def load_model(
             if hasattr(model, "device") and model.device.type != device:
                 model = model.eval().to(device)
         else:
-            logger.error(f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now.")
-            return ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED
+            raise ValueError(
+                f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
+            )
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -563,7 +568,6 @@ def load_model(
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
     print("Model loaded.")
-    return ErrorCodes.SUCCESS
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -831,7 +835,7 @@ def predict_stream(**params):
         generation_thread.start()
     else:
         raise ValueError(
-            f"Unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
+            f"unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
         )
     output_word_len = 0
 

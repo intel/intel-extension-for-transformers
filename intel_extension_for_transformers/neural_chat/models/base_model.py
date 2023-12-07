@@ -109,7 +109,7 @@ class BaseModel(ABC):
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
         self.ipex_int8 = kwargs["ipex_int8"]
-        return load_model(model_name=kwargs["model_name"],
+        load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
@@ -266,6 +266,14 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
         # LLM inference
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 

@@ -20,13 +20,22 @@
 #################################################################################
 #                             SERVER SETTING                                    #
 #################################################################################
-host: 0.0.0.0
-port: 8000
+host: 127.0.0.1
+port: 6001
 
-model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
-device: "hpu"
-use_deepspeed: true
-world_size: 8
+model_name_or_path: "facebook/opt-125m"
+device: "auto"
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+retrieval:
+    enable: true
+    args:
+        input_path: "./askdoc"
+        persist_dir: "./out_persist"
+        response_template: "We cannot find suitable content to answer your query, please contact AskGM to find help. Mail: ask.gm.zizhu@intel.com."
+        append: True
+
+safety_checker:
+    enable: true
+
+tasks_list: ['retrieval']
+

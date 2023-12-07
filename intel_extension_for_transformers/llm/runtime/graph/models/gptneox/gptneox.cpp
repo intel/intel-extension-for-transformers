@@ -71,11 +71,12 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 //   - n_threads: number of threads to use
 //
 
-static bool gptneox_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool gptneox_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                         const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
-  // TODO static batching for now
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -238,7 +239,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
         struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
         // KQ_scaled = KQ / sqrt(n_embd/n_head)
-        struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+        struct ne_tensor* KQ_scaled =
+            ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>(n_embd) / n_head)));
 
         // KQ_masked = mask_past(KQ_scaled)
         struct ne_tensor* KQ_masked = ne_diag_mask_inf_with_padding_inplace(ctx0, KQ_scaled, n_past, n_padding.data());
@@ -376,13 +378,14 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
     size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
 #pragma omp parallel for
       for (int i = 0; i < batch_size; ++i) {
-        memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
+        memcpy(logits_out.data() + (i * n_vocab),
+               reinterpret_cast<float*>(ne_get_data(inpL)) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
       }
     }
@@ -393,7 +396,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -417,13 +421,12 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_input* 
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!gptneox_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!gptneox_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

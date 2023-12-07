@@ -18,7 +18,7 @@
 import unittest
 import os
 from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
+from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
