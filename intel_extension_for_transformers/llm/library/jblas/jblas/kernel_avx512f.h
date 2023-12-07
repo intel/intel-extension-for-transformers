@@ -106,7 +106,6 @@ template <int N, typename _DST_T, bool _IS_SYM>
 static inline void dequant_s8_N(_DST_T* dstptr, int8_t* srcptr, __m512* vscales, __m512i* vzps = nullptr) {
   static_assert(N % 16 == 0);
   int constexpr VLoop = N / 16;
-#pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv += 1) {
     auto src_s8 = _mm_loadu_si128(reinterpret_cast<__m128i*>(srcptr + iv * 16));
     auto zmm = _mm512_cvtepi8_epi32(src_s8);
@@ -138,7 +137,6 @@ static inline void dequant_f4_N(_DST_T* dstptr, int8_t* srcptr, __m512* vscales,
   } else if constexpr (F4_T == JBLAS_DTYPE::F4_E2M1) {
     LUT = fp4_e2m1_dequant_fp32_LUT;
   }
-#pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv += 1) {
     auto idx = _mm_loadu_si128(reinterpret_cast<__m128i*>(srcptr + iv * 16));
     idx = _mm_srli_epi32(idx, 4);
@@ -171,7 +169,6 @@ static inline void unpack_f4_N(_DST_T* dstptr, int8_t* srcptr) {
   } else if constexpr (F4_T == JBLAS_DTYPE::F4_E2M1) {
     LUT = fp4_e2m1_dequant_fp32_LUT;
   }
-#pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv += 1) {
     auto idx = _mm_loadu_si128(reinterpret_cast<__m128i*>(srcptr + iv * 16));
     idx = _mm_srli_epi32(idx, 4);
@@ -1736,13 +1733,11 @@ static inline void interleave_word(std::array<__m512i, 2>& dst) {  // NOLINT [ru
 static inline void tr_x16_dword(std::array<__m512i, 16>& dst) {  // NOLINT [runtime/references]
   __m512i tmp[16];
 
-#pragma unroll(8)
   for (int i = 0; i < 8; ++i) {
     tmp[2 * i] = _mm512_unpacklo_epi32(dst[2 * i], dst[2 * i + 1]);
     tmp[2 * i + 1] = _mm512_unpackhi_epi32(dst[2 * i], dst[2 * i + 1]);
   }
 
-#pragma unroll(4)
   for (int i = 0; i < 4; ++i) {
     dst[4 * i] = _mm512_unpacklo_epi64(tmp[4 * i], tmp[4 * i + 2]);
     dst[4 * i + 1] = _mm512_unpackhi_epi64(tmp[4 * i], tmp[4 * i + 2]);
@@ -1750,7 +1745,6 @@ static inline void tr_x16_dword(std::array<__m512i, 16>& dst) {  // NOLINT [runt
     dst[4 * i + 3] = _mm512_unpackhi_epi64(tmp[4 * i + 1], tmp[4 * i + 3]);
   }
 
-#pragma unroll(2)
   for (int i = 0; i < 2; ++i) {
     tmp[8 * i + 0] = _mm512_shuffle_i32x4(dst[8 * i + 0], dst[8 * i + 4], 0x88);
     tmp[8 * i + 1] = _mm512_shuffle_i32x4(dst[8 * i + 1], dst[8 * i + 5], 0x88);

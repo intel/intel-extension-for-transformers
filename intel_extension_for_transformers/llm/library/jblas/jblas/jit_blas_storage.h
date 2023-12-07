@@ -814,7 +814,8 @@ class StorageWeightKBlockS4 : public StorageWeightKBlockS8 {
                 bool IsAsym) {
     JBLAS_DTYPE zpt = JBLAS_DTYPE::S8;
     InfoType::resize(NPad, KPad, Block, N, K, s4t);
-    mQBuf.resize(static_cast<size_t>(NPad) * KPad);
+    auto bytes = utils::updiv(static_cast<size_t>(NPad) * KPad, 2);
+    mQBuf.resize(bytes);
     int nk_scale = utils::updiv(KPad, Block);
     auto gemm_comp = jblas::gemm::CoreAttr::get_comp(mCoreId);
     auto is_cint = jblas::gemm::CompTypeHelper::is_integer(gemm_comp);
@@ -833,7 +834,8 @@ class StorageWeightKBlockF4 : public StorageWeightKBlockS4 {
 
   size_t resize(int NPad, int KPad, int Block, int N, int K, JBLAS_DTYPE f4t, JBLAS_DTYPE scalet) {
     StorageWeightKBlockS4::InfoType::resize(NPad, KPad, Block, N, K, f4t);
-    StorageWeightKBlockS4::mQBuf.resize((size_t)NPad * KPad);
+    auto bytes = utils::updiv(static_cast<size_t>(NPad) * KPad, 2);
+    StorageWeightKBlockS4::mQBuf.resize(bytes);
     int nk_scale = utils::updiv(KPad, Block);
     StorageWeightKBlockS4::mCorrection.resize(nk_scale, NPad, scalet, JBLAS_DTYPE::S8, JBLAS_DTYPE::F32, false, false);
     mSize = StorageWeightKBlockS4::InfoType::getSerializedSize() + StorageWeightKBlockS4::mQBuf.getSerializedSize() +
