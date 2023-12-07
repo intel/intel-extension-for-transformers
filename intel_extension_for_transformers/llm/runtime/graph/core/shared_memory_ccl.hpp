@@ -56,7 +56,7 @@ void shared_close(const char* name, void* bytes, size_t nbytes) {
   }
 }
 
-#define MAX_BUF_SIZE 1048576 * 4
+#define MAX_BUF_SIZE 1048576
 struct ccl_buffer {
   enum ccl_state state;
   char data[MAX_BUF_SIZE];
@@ -171,6 +171,15 @@ void reduce_2_fp32_buffers(int num_elements, void* rank_0, void* rank_1) {
   }
 }
 
+static void parallel_memcpy(void* to, void* from, size_t n_bytes) __attribute__((target("avx512bw")));
+static void parallel_memcpy(void* to, void* from, size_t n_bytes) {
+#pragma omp parallel for
+  for (int i = 0; i < n_bytes; i += VECTOR_LENGTH_IN_BYTES) {
+    auto val = _mm256_loadu_si256((__m256i*)((char*)from + i));
+    _mm256_storeu_si256((__m256i*)((char*)to + i), val);
+  }
+}
+
 void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, size_t world_size) {
   for (int offset = 0; offset < count * sizeof(float); offset += MAX_BUF_SIZE) {
     auto send_ptr = (char*)sendBuf + offset;
@@ -178,7 +187,7 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
     size_t chunk_size = count * sizeof(float) - offset > MAX_BUF_SIZE ? MAX_BUF_SIZE : count * sizeof(float) - offset;
     size_t chunk_count = chunk_size / sizeof(float);
 
-    memcpy(cbuffer[rank].data, send_ptr, chunk_size);
+    parallel_memcpy(cbuffer[rank].data, send_ptr, chunk_size);
     cbuffer[rank].state = copy_in_done;
 
     if (rank == 0) {
@@ -189,11 +198,11 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
       }
       reduce_buffers(cbuffer, chunk_count, world_size);
       cbuffer[rank].state = reduce_done;
-      memcpy(recv_ptr, cbuffer[0].data, chunk_size);
+      parallel_memcpy(recv_ptr, cbuffer[0].data, chunk_size);
     }
     if (rank != 0) {
       wait_state_equal(0, reduce_done);
-      memcpy(recv_ptr, cbuffer[0].data, chunk_size);
+      parallel_memcpy(recv_ptr, cbuffer[0].data, chunk_size);
       cbuffer[rank].state = copy_out_done;
     }
     if (rank == 0) {
