@@ -27,9 +27,10 @@ class Image2Image:
         self.neural_engine_graph = neural_engine_init(bf16_ir_path)
 
     def image2image(self, prompt, image, num_inference_steps, guidance_scale, generator):
+        # pylint: disable=E1102
         return self.pipe_img2img(prompt=prompt,
                                  image=image,
                                  engine_graph=self.neural_engine_graph,
                                  num_inference_steps=num_inference_steps,
                                  guidance_scale=guidance_scale,
-                                 generator=generator).images[0] # pylint: disable=E1102
+                                 generator=generator).images[0]
