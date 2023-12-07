@@ -1,6 +1,6 @@
 Step-by-Step
 =======
-This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with Neural Engine backend.
+This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with LLM Runtime backend.
 
 Here we take the [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) as an example.
 
@@ -49,7 +49,7 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 
-Neural Engine can parse ONNX model and Neural Engine IR, and we support following dtype:
+LLM Runtime can parse ONNX model and LLM Runtime IR, and we support following dtype:
 | Model Name | FP32 | BF16 | Static INT8 | Dynamic INT8
 |---|:---:|:---:|:---:|:---:|
 |[BGE-Small](https://huggingface.co/BAAI/bge-small-en-v1.5), [BGE-Base](https://huggingface.co/BAAI/bge-base-en-v1.5), [BGE-Large](https://huggingface.co/BAAI/bge-large-en-v1.5)| ✅ | ✅ | ✅ | ✅
