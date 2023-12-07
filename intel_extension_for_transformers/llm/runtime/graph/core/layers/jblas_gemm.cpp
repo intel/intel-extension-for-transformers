@@ -191,7 +191,7 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
                                       bool isAsym, ne_comp_type CompType) {
   GetCPUDevice();
   auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
-  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
+  auto constexpr dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
   // from low precision to high precision
   switch (CompType) {
     case NE_COMP_INT8:
@@ -275,7 +275,7 @@ static bool JblasGemmQuantPackBLocal(void* PackedBuf, const float* FpData, size_
                                      ne_comp_type CompType, bool isTrans, void* ThreadPool) {
   GetCPUDevice();
   auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
-  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
+  auto constexpr dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
   switch (CompType) {
     case NE_COMP_INT8:
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
@@ -369,7 +369,7 @@ static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const floa
                                 bool isAsym, ne_comp_type CompType, void* ThreadPool) {
   GetCPUDevice();
   auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
-  auto dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
+  auto constexpr dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
   if (dtype_type != dtype_int) {
     return false;
   }
