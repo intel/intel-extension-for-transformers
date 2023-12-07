@@ -562,30 +562,32 @@ class OMPThreading : public IThreading {
 
 class StdThreading : public IThreading {
  public:
-  explicit StdThreading(int nthreads) : IThreading(nthreads) { }
+  explicit StdThreading(int nthreads) : IThreading(nthreads) {}
   void parallel_for(const thread_func& func) const override {
-    std::vector<std::thread> thdset(mThreadNum);
-    for (size_t i = 0; i < mThreadNum; i++) {
-      thdset[i] = std::thread([&](int tidx) { func(tidx); }, int(i));
-    }
-    for (size_t i = 0; i < mThreadNum; i++) {
-      thdset[i].join();
-    }
+    if (mThreadNum > 1) {
+      std::vector<std::thread> thdset(mThreadNum - 1);
+      for (size_t i = 0; i < mThreadNum - 1; i++) {
+        thdset[i] = std::thread([&](int tidx) { func(tidx); }, int(i + 1));
+      }
+      func(0);
+      for (size_t i = 0; i < mThreadNum - 1; i++) {
+        thdset[i].join();
+      }
+    } else {
+      func(0);
+	}
   }
 
-   void set_threads(int nthreads) override {
-    mThreadNum = nthreads;
-  }
+  void set_threads(int nthreads) override { mThreadNum = nthreads; }
 
   inline void sync() const override { assert(0); }
 
  private:
 };
 
-class SingleThread : public IThreading {
+class SingleThread : public StdThreading {
  public:
-  SingleThread() : IThreading(1) {}
-  void parallel_for(const thread_func& func) const override { func(0); }
+  SingleThread() : StdThreading(1) {}
 
   void set_threads(int nthreads) override { (void)(nthreads); }
 

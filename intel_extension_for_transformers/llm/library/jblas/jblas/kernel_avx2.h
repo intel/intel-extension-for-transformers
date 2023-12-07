@@ -82,7 +82,7 @@ static inline void convert_s4_s8_16_sse(int8_t* dstptr, int8_t* srcptr) {
 
 template <typename T>
 static inline void convert_s8_fp_v8(T* dstptr, int8_t* srcptr) {
-  auto xmm = _mm_loadu_si64(srcptr);
+  auto xmm = _mm_loadl_epi64(reinterpret_cast<__m128i*>(srcptr));
   auto ymm = _mm256_cvtepi8_epi32(xmm);
   auto ymm1 = _mm256_cvtepi32_ps(ymm);
   if constexpr (std::is_same_v<T, utils::bf16>) {
@@ -311,7 +311,6 @@ static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
     size_t elesize = static_cast<size_t>(row) * col;
     size_t ele16 = utils::padto_le(elesize, 16);
     size_t i = 0;
-#pragma unroll
     for (; i < ele16; i += 16) {
       convert_s4_s8_16_sse<S4_T>(dstptr + i, reinterpret_cast<int8_t*>(srcptr + i / 2));
     }
@@ -335,7 +334,6 @@ inline JBLAS_CODE decompress_kblock_s4_s8fp(utils::int4x2* srcptr, _DST_T* dstpt
     size_t ele16 = utils::padto_le(elesize, 16);
     size_t i = 0;
     assert(tmpsize >= 16);
-#pragma unroll
     for (; i < ele16; i += 16) {
       convert_s4_s8_16_sse<S4_T>(tmp, reinterpret_cast<int8_t*>(srcptr + i / 2));
       convert_s8_fp_v8(dstptr + i, tmp);
@@ -416,7 +414,6 @@ static inline void dequant_f4_N(_DST_T* dstptr, int8_t* srcptr, __m256* vscales,
     LUT = fp4_e2m1_dequant_fp32_LUT;
   }
   int constexpr VLoop = N / 8;
-#pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv++) {
     auto idx = _mm_loadl_epi64(reinterpret_cast<__m128i*>(srcptr + iv * 8));
     auto pad_idx = _mm256_cvtepu8_epi32(idx);
@@ -445,7 +442,6 @@ static inline void unpack_f4_N(_DST_T* dstptr, int8_t* srcptr) {
     LUT = fp4_e2m1_dequant_fp32_LUT;
   }
   int constexpr VLoop = N / 8;
-#pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv++) {
     auto idx = _mm_loadl_epi64(reinterpret_cast<__m128i*>(srcptr + iv * 8));
     auto pad_idx = _mm256_cvtepu8_epi32(idx);
@@ -469,7 +465,6 @@ inline JBLAS_CODE decompress_kblock_f4_fp_noscale(utils::f4x2* srcptr, DST_T* ds
     size_t ele16 = utils::padto_le(elesize, 16);
     size_t i = 0;
     assert(tmpsize >= 16);
-#pragma unroll
     for (; i < ele16; i += 16) {
       fp4_pad_4bit(tmp, reinterpret_cast<int8_t*>(srcptr + i / 2));
       unpack_f4_N<16, DST_T, F4_T>(dstptr + i, tmp);
@@ -511,7 +506,8 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
     for (int iv = 0; iv < NReg; iv++) {
       vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
       if constexpr (!_IS_SYM) {
-        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        auto tmp =
+            _mm_loadl_epi64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
         vzps[iv] = _mm256_cvtepi8_epi32(tmp);
       }
     }
@@ -538,7 +534,8 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
     for (int iv = 0; iv < NReg; iv++) {
       vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
       if constexpr (!_IS_SYM) {
-        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        auto tmp =
+            _mm_loadl_epi64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
         vzps[iv] = _mm256_cvtepi8_epi32(tmp);
       }
     }
@@ -553,7 +550,8 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
     for (int iv = 0; iv < NReg; iv++) {
       vscales[iv] = _mm256_loadu_ps(scales + (k_offset + irow) / kblock * NPad + iv * 8);
       if constexpr (!_IS_SYM) {
-        auto tmp = _mm_loadu_si64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
+        auto tmp =
+            _mm_loadl_epi64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
         vzps[iv] = _mm256_cvtepi8_epi32(tmp);
       }
     }
