@@ -1512,7 +1512,7 @@ void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf1
       WeightPackBatchBf16Bf16NonTr,                //
       ::ScaleWriteBackFp32Bf16>;
   static MHAInterface<GemmKernelBF16ExpSum, GemmKernelBF16> kernel;
-  const auto pth = get_threading();
+  const auto pth = ne_jblas::ne_threading::get();
   [[maybe_unused]] const auto ret = kernel.compute(p, *pth);
   assert(ret == JblasSuccess);
 }
@@ -1524,7 +1524,7 @@ using WeightPackBatchFp16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, fp1
 template <>
 void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>& params) {
   GetCPUDevice();
-  const auto pth = get_threading();
+  const auto pth = ne_jblas::ne_threading::get();
   if (MHA_PREFER_AVX512FP16 && _cd->AVX512_FP16() && params.step_k_sl == 1) {
     using GemmKernelFP16TrackMax = ::LauncherBaseWeight<   //
         JblasAVX512_FP16,                                  //
@@ -1583,7 +1583,7 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
 template <>
 void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16, fp16, fp16>& params) {
   GetCPUDevice();
-  const auto pth = get_threading();
+  const auto pth = ne_jblas::ne_threading::get();
   if (_cd->AMX_BF16()) {
     using GemmKernelFP16TrackMax = ::LauncherBaseWeight<  //
         JblasAVX512_FP16,                                 //
@@ -1609,7 +1609,7 @@ template <>
 void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
     const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>& params) {
   GetCPUDevice();
-  const auto pth = get_threading();
+  const auto pth = ne_jblas::ne_threading::get();
   if (/* params.sl_q > 4 &&  */ _cd->AMX_INT8()) {         // TODO(Yi): add vnni impl
     using GemmKernelInt32TrackMax = ::LauncherBaseWeight<  //
         JblasAMX_INT8,                                     //
@@ -1651,7 +1651,7 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
 template <>
 void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<float, bf16, bf16, float>& params) {
   GetCPUDevice();
-  const auto pth = get_threading();
+  const auto pth = ne_jblas::ne_threading::get();
   if (/* params.sl_q > 4 &&  */ _cd->AMX_BF16()) {         // TODO(Yi): add vdpbf16ps impl
     using GemmKernelBF16TrackMax = ::LauncherBaseWeight<   //
         JblasAMX_BF16,                                     //

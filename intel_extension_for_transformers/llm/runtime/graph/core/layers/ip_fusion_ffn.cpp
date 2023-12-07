@@ -146,9 +146,9 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T1>;
+                                                            jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T1>;
     using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                        jblas::prologue_b::gemm::WeightKBlockS4, Epi_T2>;
+                                                        jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     utils::GemmProblem gp1(1, seq, fmid, fin);
@@ -220,7 +220,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
                                      int fin, int fmid, int fout, void* workspace, Epi_args1 epi_args1,
                                      Epi_args2 epi_args2) {
   GetCPUDevice();
-  auto pth = get_threading();
+  auto pth = ne_jblas::ne_threading::get();
   auto ptr1 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w1ptr);
   auto ptr2 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w2ptr);
   auto _workspace = reinterpret_cast<int8_t*>(workspace);
@@ -440,12 +440,12 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockS4, Epi_T1>;
+                                                            jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T1>;
     using Launcher_mul =
-        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, jblas::prologue_b::gemm::WeightKBlockS4,
-                                           custom::epilogue::MulFp32>;
+        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
+                                           jblas::prologue_b::gemm::WeightKBlockNInteger, custom::epilogue::MulFp32>;
     using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                        jblas::prologue_b::gemm::WeightKBlockS4, Epi_T2>;
+                                                        jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
@@ -531,7 +531,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
                                      float* output, int seq, int fin, int fmid, int fout, void* workspace,
                                      Epi_args1 epi_args1, Epi_args2 epi_args2) {
   GetCPUDevice();
-  auto pth = get_threading();
+  auto pth = ne_jblas::ne_threading::get();
   auto ptr1 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w1ptr);
   auto ptr2 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w2ptr);
   auto ptr3 = jblas::storage::gemm::PackedWeightParser::deserialBuffer(w3ptr);

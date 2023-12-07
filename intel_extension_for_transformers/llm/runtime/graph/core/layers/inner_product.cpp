@@ -29,7 +29,7 @@ void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m
                           void* workspace) {
   auto ret = JblasRuntimeError;
   JBLAS_GEMM_DATA_PACKED_PARAMS param{activation, weiptr, output, static_cast<size_t>(lda), static_cast<size_t>(ldo)};
-  if (!JblasGemmBatchDriver(_m, _n, _k, 1, &param, reinterpret_cast<int8_t*>(workspace), get_threading())) {
+  if (!JblasGemmBatchDriver(_m, _n, _k, 1, &param, reinterpret_cast<int8_t*>(workspace), ne_jblas::ne_threading::get())) {
     printf("Err: invalid parameters\n");
     assert(0);
   }
@@ -123,7 +123,7 @@ bool jblas_fusion_add_f32f32_support(void* weiptr, int _m, int _n, int _k) {
 void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bias, float* output, int _m, int _n,
                                      int _k, int lda, int ldo, bool broadcast_bias, void* _workspace) {
   GetCPUDevice();
-  auto pth = get_threading();
+  auto pth = ne_jblas::ne_threading::get();
   auto ptr = jblas::storage::gemm::PackedWeightParser::deserialBuffer(const_cast<void*>(weiptr));
   auto workspace = reinterpret_cast<int8_t*>(_workspace);
   if (ptr) {
