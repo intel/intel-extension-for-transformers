@@ -350,7 +350,7 @@ if args.accuracy:
 
 if args.restore:
     from intel_extension_for_transformers.transformers.utils.utility import recover_model_from_json
-    recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
+    user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
 
     from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
     config = AutoConfig.from_pretrained(args.output_dir)
