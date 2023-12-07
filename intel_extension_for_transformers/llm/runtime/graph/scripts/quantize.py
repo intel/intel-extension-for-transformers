@@ -52,7 +52,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument("--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1)
     parser.add_argument(
         "--weight_dtype",
-        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4"],
+        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4", "fp4", "nf4"],
         help="Data type of quantized weight: int4/int8 (default: int4)",
         default="int4",
     )

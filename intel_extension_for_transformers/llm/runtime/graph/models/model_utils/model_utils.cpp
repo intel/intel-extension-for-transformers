@@ -874,11 +874,22 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
                       size_t k) {
   auto ctype = quant2ne_comp_type(params.compute_dtype);
+  if (ctype == NE_COMP_BF16) printf("bf16 compute dtype------\n");
   auto dstbptr = (int8_t*)dstpr;
   jblas::parallel::OMPThreading threading(nthread);
   JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
   if (params.bits == quant_bits::q8) {
     quant_type = JBLAS_DTYPE::S8;
+  }
+  if (params.bits == quant_bits::fp8_e5m2) {
+    printf("fp8_e5m2------\n");
+    quant_type = JBLAS_DTYPE::F8_E5M2;
+  }
+  if (params.bits == quant_bits::fp8_e4m3) {
+    quant_type = JBLAS_DTYPE::F8_E4M3;
+  }
+  if (params.bits == quant_bits::fp8_e3m4) {
+    quant_type = JBLAS_DTYPE::F8_E3M4;
   }
   if (params.bits == quant_bits::fp4) {
     quant_type = JBLAS_DTYPE::F4_E2M1;
@@ -900,6 +911,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.scale_dtype == quant_sdtype::fp32) {
     scale_type = JBLAS_DTYPE::F32;
   }
+  if (scale_type == JBLAS_DTYPE::BF16) printf("scale dtype bf16-----\n");
   if (params.scale_dtype == quant_sdtype::fp16) {
     printf("Current not support float16 scale, reset to bf16\n");
   }

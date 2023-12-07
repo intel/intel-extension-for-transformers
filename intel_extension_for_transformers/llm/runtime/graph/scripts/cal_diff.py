@@ -29,33 +29,52 @@ def cmpData(numa, numb):
     cos = np.dot(numa, numb) / (np.linalg.norm(numa) * np.linalg.norm(numb))
     return {"diff2": diff2, "cos": cos}
 
+def get_numpy(path):
+    raw_data = open(path, 'rb').read()
+    shape = (1, 50400)
+    lo = np.frombuffer(raw_data, dtype=np.float32).reshape(shape)
+    return lo
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate diff for a model")
-    parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
-    args = parser.parse_args()
+    
+    fp32_l = get_numpy("fp32_logits.raw").flatten()
+    int4_l = get_numpy("int4_logits.raw").flatten()
+    fp4_l = get_numpy("fp4_logits.raw").flatten()
+    nf4_l = get_numpy("nf4_logits.raw").flatten()
+    # import pdb; pdb.set_trace()
+    print(cmpData(fp32_l, int4_l))
+    print(cmpData(fp32_l, fp4_l))
+    print(cmpData(fp32_l, nf4_l))
 
-    woq_configs = {
-        "fp32": WeightOnlyQuantConfig(use_cache=True, use_quant=False),
-        "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
-        "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
-        "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
-    }
-    prompt = "What is the meaning of life?"
 
-    model_name = args.model_name
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    inputs = tokenizer(prompt, return_tensors="pt")
 
-    pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-    pt_model.eval()
-    pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
-    for config_type in woq_configs:
-        itrex_model = AutoModel.from_pretrained(model_name,
-                                                quantization_config=woq_configs[config_type],
-                                                use_llm_runtime=True,
-                                                trust_remote_code=True)
-        itrex_logits = itrex_model(inputs.input_ids)
 
-        print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
+    # parser = argparse.ArgumentParser(description="Evaluate diff for a model")
+    # parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
+    # args = parser.parse_args()
+
+    # woq_configs = {
+    #     "fp32": WeightOnlyQuantConfig(use_cache=True, use_quant=False),
+    #     "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
+    #     "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
+    #     "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
+    # }
+    # prompt = "What is the meaning of life?"
+
+    # model_name = args.model_name
+    # tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    # inputs = tokenizer(prompt, return_tensors="pt")
+
+    # pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+    # pt_model.eval()
+    # pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
+
+    # for config_type in woq_configs:
+    #     itrex_model = AutoModel.from_pretrained(model_name,
+    #                                             quantization_config=woq_configs[config_type],
+    #                                             use_llm_runtime=True,
+    #                                             trust_remote_code=True)
+    #     itrex_logits = itrex_model(inputs.input_ids)
+
+    #     print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
