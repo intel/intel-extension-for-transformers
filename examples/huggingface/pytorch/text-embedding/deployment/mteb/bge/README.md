@@ -1,6 +1,6 @@
 Step-by-Step
 =======
-This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with Neural Engine backend.
+This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with LLM Runtime backend.
 
 Here we take the [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) as an example.
 
@@ -49,7 +49,11 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 
-Neural Engine can parse ONNX model and Neural Engine IR.
+LLM Runtime can parse ONNX model and LLM Runtime IR, and we support following dtype:
+| Model Name | FP32 | BF16 | Static INT8 | Dynamic INT8
+|---|:---:|:---:|:---:|:---:|
+|[BGE-Small](https://huggingface.co/BAAI/bge-small-en-v1.5), [BGE-Base](https://huggingface.co/BAAI/bge-base-en-v1.5), [BGE-Large](https://huggingface.co/BAAI/bge-large-en-v1.5)| ✅ | ✅ | ✅ | ✅
+
 We provide with three `modes`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
@@ -65,12 +69,28 @@ bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=dynamic_int8 --mode=th
 ```
 
 
-You could also compile the model to IR using python API as follows:
+You could also using python API as follows:
 ```python
-from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
-graph = compile('./model_and_tokenizer/int8-model.onnx')
-graph.save('./ir')
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModel
+
+sentences_batch = ['sentence-1', 'sentence-2', 'sentence-3', 'sentence-4']
+
+tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-base-en-v1.5')
+encoded_input = tokenizer(sentences_batch,
+                            padding=True,
+                            truncation=True,
+                            max_length=512,
+                            return_tensors="np")
+
+engine_input = [encoded_input['input_ids'], encoded_input['token_type_ids'], encoded_input['attention_mask']]
+
+model = AutoModel.from_pretrained('./model_and_tokenizer/int8-model.onnx', use_embedding_runtime=True)
+sentence_embeddings = model.generate(engine_input)['last_hidden_state:0']
+
+print("Sentence embeddings:", sentence_embeddings)
 ```
+
 
 # Benchmark
 If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
