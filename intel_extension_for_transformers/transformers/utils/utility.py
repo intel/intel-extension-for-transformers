@@ -266,6 +266,7 @@ def recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
     # example_inputs
     example_inputs = get_example_inputs(user_model.config, tokenizer=tokenizer)
 
+    # pylint: disable=E0611
     from neural_compressor.utils.pytorch import recover_model_from_json as inc_recover_model_from_json
     user_model = inc_recover_model_from_json(user_model, json_file_path, example_inputs)
     return user_model
