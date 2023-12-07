@@ -65,8 +65,8 @@ class Task():
     def set_seed(self, seed):
         self.seed = seed
 
-    def set_source_image(self, source_image):
-        self.source_image = source_image
+    def set_source_image(self, source_img):
+        self.source_img = source_img
 
     def set_strength(self, strength):
         self.strength = strength

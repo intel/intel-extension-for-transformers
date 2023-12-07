@@ -17,14 +17,14 @@
 
 from .instructpix2pix_pipeline import StableDiffusionInstructPix2PixPipeline
 import torch
-import diffusion_utils
+from .diffusion_utils import neural_engine_init
 
 class Image2Image:
     def __init__(self, bf16_ir_path, device="cpu"):
         self.device = device
         self.pipe_img2img = StableDiffusionInstructPix2PixPipeline.from_pretrained(
                     "timbrooks/instruct-pix2pix", torch_dtype=torch.float32, use_auth_token=True)
-        self.neural_engine_graph = diffusion_utils.neural_engine_init(bf16_ir_path)
+        self.neural_engine_graph = neural_engine_init(bf16_ir_path)
 
     def image2image(self, prompt, image, num_inference_steps, guidance_scale, generator):
         return self.pipe_img2img(prompt=prompt,
