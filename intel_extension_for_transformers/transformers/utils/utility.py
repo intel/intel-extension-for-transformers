@@ -200,7 +200,7 @@ def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
     prompt = "Welcome to use Intel Extension for Transformers."
     prompt = [prompt] * batch_size
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-    if user_config.model_type in IPEX_OPT_LLM_SUPPORTED:
+    if model_config.model_type in IPEX_OPT_LLM_SUPPORTED:
         past_key_values = generate_dummy_past_key_values_for_opt_llm(
                                                                     config=model_config,
                                                                     input_bs=batch_size,
