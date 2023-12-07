@@ -184,7 +184,7 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
   for (int offset = 0; offset < count * sizeof(float); offset += MAX_BUF_SIZE) {
     auto send_ptr = (char*)sendBuf + offset;
     auto recv_ptr = (char*)recvBuf + offset;
-    size_t chunk_size = count * sizeof(float) - offset > MAX_BUF_SIZE ? MAX_BUF_SIZE : count * sizeof(float) - offset;
+    size_t chunk_size = std::min(count * sizeof(float) - offset, MAX_BUF_SIZE)
     size_t chunk_count = chunk_size / sizeof(float);
 
     parallel_memcpy(cbuffer[rank].data, send_ptr, chunk_size);
