@@ -48,22 +48,18 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                 )
                 for layer_past in past_key_values
             )
-        if self.config.model_type == "falcon":
-            device_to_beam_idx = {
-                past_state.device: beam_idx.to(past_state.device) for layer_past in past_key_values \
-                for past_state in layer_past
-            }
+        if len(past_key_values[0]) == 4:  # discrete kv_cache
+            for layer_past in past_key_values:
+                layer_past[3][layer_past[0].size(-2) - 1] = beam_idx
+            return past_key_values
+        else:
             return tuple(
-                (
-                    layer_past[0].index_select(0, device_to_beam_idx[layer_past[0].device]),
-                    layer_past[1].index_select(0, device_to_beam_idx[layer_past[0].device]),
+                tuple(
+                    past_state.index_select(0, beam_idx.to(past_state.device))
+                    for past_state in layer_past
                 )
                 for layer_past in past_key_values
             )
-        return tuple(
-            tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past)
-            for layer_past in past_key_values
-        )
 
     # Adapted from transformers.models.gpt2.modeling_gpt2.GPT2LMHeadModel.prepare_inputs_for_generation
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
