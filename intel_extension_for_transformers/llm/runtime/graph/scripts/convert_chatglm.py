@@ -745,7 +745,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     if hasattr(model.config, "multi_query_attention"):
         chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
-                              hparams)
+                             hparams)
         #chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
     else:
         chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype,

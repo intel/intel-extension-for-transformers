@@ -276,45 +276,57 @@ struct model_file_loader {
       struct gguf_kv* kv = &ctx->kv[i];
 
       ok = ok && gguf_fread_str(file_gguf, &kv->key, &offset);
-      std::cout << "key = " << kv->key.data << "  offset = " << offset << "  kv->type" << kv->type << std::endl;
+      std::cout << "key = " << kv->key.data << "  offset = " << offset << "  kv->type" << kv->type;
       ok = ok && gguf_fread_el(file_gguf, &kv->type, sizeof(kv->type), &offset);
 
       switch (kv->type) {
         case GGUF_TYPE_UINT8:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint8, sizeof(kv->value.uint8), &offset);
+          std::cout << "  kv->value.uint8 = " << kv->value.uint8 << std::endl;
           break;
         case GGUF_TYPE_INT8:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int8, sizeof(kv->value.int8), &offset);
+          std::cout << "  kv->value.int8 = " << kv->value.int8 << std::endl;
           break;
         case GGUF_TYPE_UINT16:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint16, sizeof(kv->value.uint16), &offset);
+          std::cout << "  kv->value.uint16 = " << kv->value.uint16 << std::endl;
           break;
         case GGUF_TYPE_INT16:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int16, sizeof(kv->value.int16), &offset);
+          std::cout << "  kv->value.int16 = " << kv->value.int16 << std::endl;
           break;
         case GGUF_TYPE_UINT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint32, sizeof(kv->value.uint32), &offset);
+          std::cout << "  kv->value.uint32 = " << kv->value.uint32 << std::endl;
           break;
         case GGUF_TYPE_INT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int32, sizeof(kv->value.int32), &offset);
+          std::cout << "  kv->value.int32 = " << kv->value.int32 << std::endl;
           break;
         case GGUF_TYPE_FLOAT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.float32, sizeof(kv->value.float32), &offset);
+          std::cout << "  kv->value.float32 = " << kv->value.float32 << std::endl;
           break;
         case GGUF_TYPE_UINT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint64, sizeof(kv->value.uint64), &offset);
+          std::cout << "  kv->value.uint64 = " << kv->value.uint64 << std::endl;
           break;
         case GGUF_TYPE_INT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int64, sizeof(kv->value.int64), &offset);
+          std::cout << "  kv->value.int64 = " << kv->value.int64 << std::endl;
           break;
         case GGUF_TYPE_FLOAT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.float64, sizeof(kv->value.float64), &offset);
+          std::cout << "  kv->value.float64 = " << kv->value.float64 << std::endl;
           break;
         case GGUF_TYPE_BOOL:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.bool_, sizeof(kv->value.bool_), &offset);
+          std::cout << "  kv->value.bool_ = " << kv->value.bool_ << std::endl;
           break;
         case GGUF_TYPE_STRING:
           ok = ok && gguf_fread_str(file_gguf, &kv->value.str, &offset);
+          std::cout<<std::endl;
           break;
         case GGUF_TYPE_ARRAY: {
           ok = ok && gguf_fread_el(file_gguf, &kv->value.arr.type, sizeof(kv->value.arr.type), &offset);
@@ -334,6 +346,7 @@ struct model_file_loader {
             case GGUF_TYPE_BOOL:
                 {
                     kv->value.arr.data = malloc(kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type]);
+                    std::cout << "  kv->value.arr.data = " << kv->value.arr.data << std::endl;
                     ok = ok && gguf_fread_el(file_gguf, kv->value.arr.data, kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
                 } break;
             case GGUF_TYPE_STRING:
@@ -358,8 +371,6 @@ struct model_file_loader {
       }
     }
 
-
-
     // read the tensor infos
     ctx->infos = reinterpret_cast<struct gguf_tensor_info *>(malloc(ctx->header.n_tensors * sizeof(struct gguf_tensor_info)));
 
@@ -371,11 +382,13 @@ struct model_file_loader {
         }
 
         ok = ok && gguf_fread_str(file_gguf, &info->name,                          &offset);
-        std::cout << info->name.data << std::endl;
+        std::cout << "tensor info: " << info->name.data << "  offset = " << offset << "  info->ne[j]:   " ;
         ok = ok && gguf_fread_el (file_gguf, &info->n_dims, sizeof(info->n_dims),  &offset);
         for (uint32_t j = 0; j < info->n_dims; ++j) {
             ok = ok && gguf_fread_el(file_gguf, &info->ne[j], sizeof(info->ne[j]), &offset);
+            std::cout << " " << info->ne[j];
         }
+        std::cout << std::endl;
         ok = ok && gguf_fread_el (file_gguf, &info->type,   sizeof(info->type),    &offset);
         ok = ok && gguf_fread_el (file_gguf, &info->offset, sizeof(info->offset),  &offset);
 
