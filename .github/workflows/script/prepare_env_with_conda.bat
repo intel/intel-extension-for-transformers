@@ -1,6 +1,8 @@
 SET conda_env_name=windows_build
 SET python_version=3.10
-
+cd ../../..
+echo "list curent directory"
+dir
 FOR /F %%i IN ('conda info -e ^| find /c "%conda_env_name%"') do SET CONDA_COUNT=%%i
 if %CONDA_COUNT% NEQ 0 (
     CALL conda env remove --name "%conda_env_name:"=%"

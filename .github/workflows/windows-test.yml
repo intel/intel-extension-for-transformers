@@ -21,23 +21,26 @@ concurrency:
     cancel-in-progress: true
   
 env:
-    SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
+    SCRIPT_PATH: ${{ github.workspace }}\.github\workflows\script
     WORKING_DIR: ${{ github.workspace }}
   
 jobs:
-    CPP-Graph-Workflow:
+    Windows-Binary-Test:
       runs-on: 'Windows'
       steps:
         - name: Checkout out Repo
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             submodules: "recursive"
             fetch-tags: true
+            path: "a"
   
         - name: Binary build
+          shell: cmd
           run: |
-            set HTTP_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
-            set HTTPS_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
-            cd ${{ github.workspace }}
-            ${{ github.workspace }}/.github/workflows/script/prepare_env_with_conda.bat
+            SET HTTP_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
+            SET HTTPS_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
+            cd ${{ github.workspace }}\a\.github\workflows\script
+            prepare_env_with_conda.bat
+
   
