@@ -417,7 +417,6 @@ class _BaseQBitsAutoModelClass:
             example_inputs = quantization_config.example_inputs
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
-                    example_inputs = inputs
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                         if model_type == "chatglm":
                             example_inputs = {
@@ -425,7 +424,7 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        if model_type == "falcon":
+                        elif model_type == "falcon":
                             input_bs, input_len = example_inputs["input_ids"].shape
                             outputs = model(example_inputs["input_ids"])
                             example_inputs["past_key_values"] = outputs[1]
@@ -438,6 +437,8 @@ class _BaseQBitsAutoModelClass:
                             example_inputs["input_ids"] = example_inputs["input_ids"][
                                 :, -1:
                             ]
+                        else:
+                            example_inputs = inputs
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],
