@@ -254,7 +254,8 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank, checkpoints_json, token)
+        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
+                               checkpoints_json, token)
 
     torch.distributed.barrier()
 
@@ -291,7 +292,8 @@ def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
             base_model_is_remote = False
 
     if base_model_is_local or base_model_is_remote:
-        model = AutoPeftModelForCausalLM.from_pretrained(peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True, use_auth_token=hf_access_token)
+        model = AutoPeftModelForCausalLM.from_pretrained(peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                         use_auth_token=hf_access_token)
     else:
         # Since the base model doesn't exist locally nor remotely, use `args.model_name_or_path` as the base model
         print(
@@ -301,8 +303,10 @@ def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
         )
         from peft import PeftModel
 
-        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=model_dtype, low_cpu_mem_usage=True, use_auth_token=hf_access_token)
-        model = PeftModel.from_pretrained(model, peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True, use_auth_token=hf_access_token)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                     use_auth_token=hf_access_token)
+        model = PeftModel.from_pretrained(model, peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                          use_auth_token=hf_access_token)
 
     return model.merge_and_unload()
 
