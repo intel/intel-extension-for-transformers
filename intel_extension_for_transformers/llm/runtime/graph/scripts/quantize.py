@@ -52,7 +52,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument("--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1)
     parser.add_argument(
         "--weight_dtype",
-        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4"],
+        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
+                 "fp4", "fp4_e2m1", "nf4"],
         help="Data type of quantized weight: int4/int8 (default: int4)",
         default="int4",
     )
@@ -106,7 +107,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--out_file", args.out_file])
     cmd.extend(["--nthread", str(args.nthread)])
     cmd.extend(["--weight_dtype", str(args.weight_dtype)])
-    if (str(args.weight_dtype))[:3] in ["fp8"] and str(args.algo) in ["asym"]:
+    if (str(args.weight_dtype))[:3] in ["fp8"] and str(args.alg) in ["asym"]:
         print("WARNING: asym alg is not be supported in float quant types. Fall back to sym.");
         cmd.extend(["--alg", "sym"])
     else:

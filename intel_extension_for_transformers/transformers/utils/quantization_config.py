@@ -147,7 +147,8 @@ class WeightOnlyQuantConfig:
         self.runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
         self.runtime_supported_weight_dtype = ["int4", "int8",
                                                "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
-                                               "fp4", "fp4_e2m1", "fp4_nf4",
+                                               "fp4", "fp4_e2m1",
+                                               "nf4",
                                                 ]
         self.runtime_supported_scale_dtype = ["fp32", "bf16"]
         self.runtime_supported_group_size = [-1, 32, 128]
@@ -182,7 +183,7 @@ class WeightOnlyQuantConfig:
         if self.scheme not in self.runtime_supported_scheme:
             raise ValueError("scheme must be in {}.".format(self.runtime_supported_scheme))
 
-        if self.weight_dtype[:3] in ["fp8", "fp4"]:
+        if self.weight_dtype[:3] in ["fp8", "fp4", "nf4"]:
             if self.compute_dtype in ["int8"]:
                 print("WARNING: int8 compute dtype is not be supported in float quant types! "\
                       "Fall back to bf16.")
