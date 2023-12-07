@@ -189,7 +189,7 @@ void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bia
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (_m <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
+            ip_add::JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output,
                                                                            ldo, bias, broadcast_bias, workspace, pth);
           } else {
             ip_add::JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32>(_m, _n, _k, activation, lda, ptr, output, ldo,

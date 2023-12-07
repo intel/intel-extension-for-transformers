@@ -245,7 +245,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+            JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
                 activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           } else {
             JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
@@ -287,7 +287,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+            JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
                 activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           } else {
             JblasGemmCompF32<tAMX_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
@@ -609,7 +609,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           if (seq <= tAVX512_BF16::MTILE) {
             static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
-            JblasGemmCompF32<tAVX512_BF16, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
+            JblasGemmCompF32<tAVX512_BF16, tWeiF4, tActKBaseF32, epilogue1, epilogue2>(
                 activation, ptr1, ptr2, ptr3, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, pth, epi_args1,
                 epi_args2);
           } else {
