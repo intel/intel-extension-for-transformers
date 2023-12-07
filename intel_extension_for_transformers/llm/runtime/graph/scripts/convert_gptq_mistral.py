@@ -162,18 +162,19 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     shape = int_weight.shape
     write_header(fout, shape[::-1], dst_name, 13)
 
-    dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*2), dtype=np.int8)
+    dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*4), dtype=np.int8)
     # if q_config['sym']:
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     int_weight = int_weight - 8
     int_weight = int_weight * 16
     gptq_scales = gptq_scales / 16
     gptq_zeros = (gptq_zeros - 8) * 16
+    import pdb; pdb.set_trace()
     byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.float().numpy(), gptq_zeros.numpy(), dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
-                                               compute_dtype="bf16")
+                                               compute_dtype="fp32")
     dst.flatten()[:byte_size].tofile(fout)
     print(f"converting {dst_name} qauntized tensor to jblas q4 block")
 
