@@ -49,7 +49,11 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 
-Neural Engine can parse ONNX model and Neural Engine IR.
+Neural Engine can parse ONNX model and Neural Engine IR, and we support following dtype:
+| Model Name | FP32 | BF16 | Static INT8 | Dynamic INT8
+|---|:---:|:---:|:---:|:---:|
+|[BGE-Small](https://huggingface.co/BAAI/bge-small-en-v1.5), [BGE-Base](https://huggingface.co/BAAI/bge-base-en-v1.5), [BGE-Large](https://huggingface.co/BAAI/bge-large-en-v1.5)| ✅ | ✅ | ✅ | ✅
+
 We provide with three `modes`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
