@@ -189,7 +189,7 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
   auto PackRow = jblas::gemm::CoreAttr::get_packrow(ptr->mCoreId);
   auto CType = jblas::gemm::CoreAttr::get_comp(ptr->mCoreId);
   auto btype = static_cast<jblas::gemm::CompType>(jblas::gemm::CompTypeHelper::get_B(CType));
-  auto pth = get_threading();
+  auto pth = ne_jblas::ne_threading::get();
   auto workspace = reinterpret_cast<int8_t*>(_workspace);
   if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
     if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
