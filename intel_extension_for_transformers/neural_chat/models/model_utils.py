@@ -21,6 +21,7 @@ import copy, time
 from datetime import datetime
 import sys
 import torch
+import transformers
 import warnings
 from queue import Queue
 import re, os
@@ -45,6 +46,7 @@ from transformers import (
     TextIteratorStreamer,
     StoppingCriteriaList,
     StoppingCriteria,
+    LlamaForCausalLM
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -274,7 +276,8 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False
+    use_llm_runtime=False,
+    assistant_model=None
 ):
     """
     Load the model and initialize the tokenizer.
@@ -283,6 +286,7 @@ def load_model(
         model_name (str): The name of the model.
         device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
+        assistant_model (str, optional): The assistant model name. Defaults to None.
 
     Returns:
         None
@@ -290,7 +294,7 @@ def load_model(
     Raises:
         ValueError: If the model is not supported, ValueError is raised.
     """
-    logging.info("Loading model {}".format(model_name))
+    print("Loading model {}".format(model_name))
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
@@ -329,6 +333,25 @@ def load_model(
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
+
+    # load assistant model
+    if assistant_model:
+        print("Loading assistant model...")
+        if 'llama' in assistant_model.lower():
+            assistant_model_class = LlamaForCausalLM
+        else:
+            assistant_model_class = AutoModelForCausalLM
+        print(f"Loading assistant model via {assistant_model_class}")
+        assis_model = assistant_model_class.from_pretrained(
+            assistant_model, 
+            low_cpu_mem_usage=True, 
+            torch_dtype=torch_dtype)
+        assis_model = assis_model.eval().to(device)
+        assis_model = assis_model.to(memory_format=torch.channels_last)
+        MODELS[model_name]["assistant_model"] = assis_model
+    else:
+        MODELS[model_name]["assistant_model"] = None
+
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
@@ -420,6 +443,7 @@ def load_model(
              or re.search("opt", model_name, re.IGNORECASE)
              or re.search("gpt_neox", model_name, re.IGNORECASE)
              or re.search("gptj", model_name, re.IGNORECASE)
+             or re.search("falcon", model_name, re.IGNORECASE)
             ) and ipex_int8
     ):  
         with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -430,22 +454,13 @@ def load_model(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
             assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            torch._C._jit_set_texpr_fuser_enabled(False)
-            qconfig = ipex.quantization.default_static_qconfig_mapping
-            with ipex.OnDevice(dtype=torch.float, device="meta"):
-                model = AutoModelForCausalLM.from_pretrained(model_name)
-            model = ipex.optimize_transformers(
-                model.eval(),
-                dtype=torch.float,
-                inplace=True,
-                quantization_config=qconfig,
-                deployment_mode=False,
+            if re.search("falcon", model_name, re.IGNORECASE):
+                assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
+            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+            model = TSModelCausalLMForITREX.from_pretrained(
+                model_name,
+                file_name="best_model.pt"
             )
-            if not hasattr(model, "trace_graph"):
-                print("load_quantized_model")
-                self_jit = torch.jit.load(os.path.join(model_name, "best_model.pt"))
-                self_jit = torch.jit.freeze(self_jit.eval())
-                ipex._set_optimized_model_for_generation(model, optimized_model=self_jit)       
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports "
@@ -559,7 +574,7 @@ def load_model(
                 model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    logging.info("Model loaded.")
+    print("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -595,7 +610,8 @@ def tokenization(prompt, tokenizer, device):
         input_token_len = input_tokens.input_ids.shape[-1]
     return input_tokens, input_token_len
 
-def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
+def get_generate_kwargs(
+        max_new_tokens, input_token_len, stop_token_id, assistant_model=None):
     generate_kwargs = {
         "stopping_criteria": StoppingCriteriaList(
             [
@@ -607,6 +623,9 @@ def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
             ]
         )
     }
+    if assistant_model:
+        generate_kwargs["assistant_model"] = assistant_model
+        generate_kwargs["use_cache"] = True
     return generate_kwargs
 
 def is_llm_runtime_model(model):
@@ -691,6 +710,7 @@ def predict_stream(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model = MODELS[model_name]["assistant_model"]
     errors_queue = Queue()
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
@@ -708,7 +728,9 @@ def predict_stream(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer),
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:
@@ -933,6 +955,7 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
@@ -946,7 +969,9 @@ def predict(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer), 
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:

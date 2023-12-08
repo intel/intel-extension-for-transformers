@@ -28,10 +28,13 @@ logging.basicConfig(
     datefmt="%d-%M-%Y %H:%M:%S",
     level=logging.INFO
 )
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class AudioSpeechRecognition():
     """Convert audio to text."""
     def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, language=None, device="cpu"):
+        if device == "auto":
+            device = get_device_type()
         self.device = device
         self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
         self.processor = WhisperProcessor.from_pretrained(model_name_or_path)

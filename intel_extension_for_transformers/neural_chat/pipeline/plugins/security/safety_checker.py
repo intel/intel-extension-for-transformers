@@ -17,6 +17,8 @@
 
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
+from .dict import defaultSensitiveWordSet
+from .stopword import defaultStopwords
 import os
 import logging
 logging.basicConfig(
@@ -41,22 +43,24 @@ def convert_fullwidth_to_halfwidth(query):
 class SafetyChecker:
     def __init__(self, dict_path=None, matchType=2):
         if dict_path == None or (not os.path.exists(dict_path)):
-            dict_path = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(dict_path, "stopword.txt")):
-            f = open(os.path.join(dict_path, "stopword.txt"), encoding="utf8")
-        elif os.path.exists(os.path.join(doc_path, "stopword.txt")):
-            f = open(os.path.join(doc_path, "stopword.txt"), encoding="utf8")
+            self.Stopwords = defaultStopwords
+            self.sensitiveWordSet = defaultSensitiveWordSet
         else:
-            logging.info("Can't find stopword.txt")
-        self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
-        if os.path.exists(os.path.join(dict_path, "dict.txt")):
-            f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
-        elif os.path.exists(os.path.join(doc_path, "dict.txt")):
-            f1 = open(os.path.join(doc_path, "dict.txt"), encoding="utf8")
-        else:
-            logging.info("Can't find dict.txt")
-        lst = f1.readlines()
-        self.sensitiveWordSet = [i.split("\n")[0].split("\t") for i in lst]
+            if os.path.exists(os.path.join(dict_path, "stopword.txt")):
+                f = open(os.path.join(dict_path, "stopword.txt"), encoding="utf8")
+            elif os.path.exists(os.path.join(doc_path, "stopword.txt")):
+                f = open(os.path.join(doc_path, "stopword.txt"), encoding="utf8")
+            else:
+                logging.info("Can't find stopword.txt")
+            self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
+            if os.path.exists(os.path.join(dict_path, "dict.txt")):
+                f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
+            elif os.path.exists(os.path.join(doc_path, "dict.txt")):
+                f1 = open(os.path.join(doc_path, "dict.txt"), encoding="utf8")
+            else:
+                logging.info("Can't find dict.txt")
+            lst = f1.readlines()
+            self.sensitiveWordSet = [i.split("\n")[0].split("\t") for i in lst]
         self.sensitiveWordMap = self._initSensitiveWordMap()
         self.matchType = matchType
 

@@ -55,16 +55,10 @@ class Optimization:
             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
-                trust_remote_code=True)
-        elif re.search("starcoder", model_name, re.IGNORECASE):
-            from intel_extension_for_transformers.transformers import GPTBigCodeForCausalLM
-            optimized_model = GPTBigCodeForCausalLM.from_pretrained(
                 model_name,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,

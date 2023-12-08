@@ -6,7 +6,7 @@ import os
 import time
 import uuid
 
-os.system("pip install gradio==3.28.0")
+os.system("pip install gradio==3.36.0")
 
 import gradio as gr
 import requests

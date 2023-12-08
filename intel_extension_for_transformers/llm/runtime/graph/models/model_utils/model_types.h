@@ -299,7 +299,7 @@ struct model_context {
   std::vector<float> logits;
   bool logits_all = false;
 
-  // input embedding (1-dimensional array: [n_embd])
+  // input embedding (1-dimensional array: [n_embd * batch_size])
   std::vector<float> embedding;
 
   // memory buffers used to evaluate the model

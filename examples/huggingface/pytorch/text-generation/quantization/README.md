@@ -5,7 +5,7 @@ We provide the inference benchmarking script `run_generation.py` for large langu
 
 # Prerequisite​
 ## 1. Create Environment​
-Pytorch and Intel-extension-for-pytorch version 2.1 are required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
+Pytorch and Intel-extension-for-pytorch version 2.1 are required, python version requests equal or higher than 3.9 due to [text evaluation library](https://github.com/EleutherAI/lm-evaluation-harness/tree/master) limitation, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
 pip install -r requirements.txt
@@ -40,6 +40,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --benchmark
 # smoothquant
 # [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+# --fallback_add option could be enabled to fallback all add-ops to FP32.
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --sq \
@@ -61,6 +62,14 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model EleutherAI/gpt-j-6b \
     --load_in_8bit True \
     --benchmark
+# restore the model optimized with smoothquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --int8 \
+    --restore \
+    --benchmark \
+    --tasks "lambada_openai"
 
 ```
 
@@ -91,6 +100,7 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --woq \
+    --woq_weight_dtype "nf4" \
     --accuracy \
     --tasks "lambada_openai"
 # load_in_4bit
@@ -103,6 +113,14 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --load_in_8bit True \
+    --accuracy \
+    --tasks "lambada_openai"
+# restore the model optimized with smoothquant
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --int8 \
+    --restore \
     --accuracy \
     --tasks "lambada_openai"
 

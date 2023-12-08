@@ -17,7 +17,7 @@
 """Configs for Neural Chat."""
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
@@ -342,6 +342,10 @@ class FinetuningArguments:
         default=4,
         metadata={"help": "How many bits to use."}
     )
+    full_finetune: bool = field(
+        default=False,
+        metadata={"help": "Finetune the entire model without adapters."}
+    )
 
 @dataclass
 class TTSDatasetArguments:
@@ -414,7 +418,8 @@ class PipelineConfig:
                  device="auto",
                  plugins=plugins,
                  loading_config=None,
-                 optimization_config=None):
+                 optimization_config=None,
+                 assistant_model=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -433,7 +438,9 @@ class PipelineConfig:
             WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
-        self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else \
+            MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        self.assistant_model = assistant_model

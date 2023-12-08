@@ -34,7 +34,6 @@
 #include "core/ne.h"
 #include "core/ne_layers.h"
 #include "core/ne_jblas.h"
-#include "core/layers/mha_dense.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
@@ -49,13 +48,14 @@
 //   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool gptj_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool gptj_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                      const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
   const int batch_size = lctx.batch_size;  // num of beams of all batches
   MODEL_ASSERT(batch_size == n_input);
-  // TODO static batching for now
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -149,7 +149,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 #ifdef NE_TP_MODEL
   if (enable_tp) {
     // need to broadcast the ids
-    broadcast(p_ctx, (float*)embd->data, N * batch_size * ne_element_size(embd));
+    broadcast(p_ctx, reinterpret_cast<float*>(embd->data), N * batch_size * ne_element_size(embd));
   }
 #endif
 
@@ -344,7 +344,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 
     struct ne_tensor* KQV_merged_contiguous;
 
-    const float attn_scale = 1.0f / sqrtf(float(head_size));
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_size));
     ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
     if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
     if (run_mha_reordered) {  // reordered kv-cache bf16 mha must be used if run_mha_reordered
@@ -498,13 +498,14 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
     size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
 #pragma omp parallel for
       for (int i = 0; i < batch_size; ++i) {
-        memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
+        memcpy(logits_out.data() + (i * n_vocab),
+               reinterpret_cast<float*>(ne_get_data(inpL)) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
       }
     }
@@ -515,7 +516,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -539,13 +541,13 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_input* inp
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!gptj_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!gptj_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

@@ -15,18 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
-model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
-device: "hpu"
-use_deepspeed: true
-world_size: 8
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(
+        config_file="./audio_service.yaml",
+        log_file="./audio_service.log")
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+
+if __name__ == "__main__":
+    main()

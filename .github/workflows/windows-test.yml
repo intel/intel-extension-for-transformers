@@ -1,0 +1,50 @@
+name: Windows Binary Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/windows-test.yml"
+      - "requirements.txt"
+      - "setup.py"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "intel_extension_for_transformers/llm/runtime/graph/**"
+      - '!intel_extension_for_transformers/llm/library/jblas/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/scripts/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/tests/**'
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+  
+env:
+    SCRIPT_PATH: ${{ github.workspace }}\.github\workflows\script
+    WORKING_DIR: ${{ github.workspace }}
+  
+jobs:
+    Windows-Binary-Test:
+      runs-on: 'Windows'
+      steps:
+        - name: Checkout out Repo
+          uses: actions/checkout@v4
+          with:
+            submodules: "recursive"
+            fetch-tags: true
+            path: "a"
+  
+        - name: Binary build
+          shell: cmd
+          run: |
+            SET HTTP_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
+            SET HTTPS_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
+            cd ${{ github.workspace }}\a\.github\workflows\script
+            prepare_env_with_conda.bat
+
+  

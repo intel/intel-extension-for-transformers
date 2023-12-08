@@ -22,16 +22,16 @@ from transformers import AutoTokenizer
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+
 def is_win():
     return sys.platform.startswith('win')
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="Model name: String", required=True)
     parser.add_argument("-m", "--model", type=Path, help="Path to the executed model: String", required=True)
-    parser.add_argument(
-        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
-    )
+    parser.add_argument("--build_dir", type=Path, help="Path to the build file: String", default=build_path)
     parser.add_argument(
         "-p",
         "--prompt",
@@ -70,7 +70,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "-c",
         "--ctx_size",
         type=int,
-        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
+        help=
+        "Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
@@ -131,15 +132,15 @@ def main(args_in: Optional[List[str]] = None) -> None:
         sys.exit(1)
 
     cmd = [path]
-    cmd.extend(["--model",          args.model])
-    cmd.extend(["--prompt",         args.prompt])
-    cmd.extend(["--n-predict",      str(args.n_predict)])
-    cmd.extend(["--threads",        str(args.threads)])
-    cmd.extend(["--batch-size-truncate",     str(args.batch_size_truncate)])
-    cmd.extend(["--ctx-size",       str(args.ctx_size)])
-    cmd.extend(["--seed",           str(args.seed)])
+    cmd.extend(["--model", args.model])
+    cmd.extend(["--prompt", args.prompt])
+    cmd.extend(["--n-predict", str(args.n_predict)])
+    cmd.extend(["--threads", str(args.threads)])
+    cmd.extend(["--batch-size-truncate", str(args.batch_size_truncate)])
+    cmd.extend(["--ctx-size", str(args.ctx_size)])
+    cmd.extend(["--seed", str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
-    cmd.extend(["--keep",           str(args.keep)])
+    cmd.extend(["--keep", str(args.keep)])
     if args.shift_roped_k:
         cmd.extend(["--shift-roped-k"])
     if args.color:
@@ -151,7 +152,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.memory_auto:
         cmd.extend(["--memory-auto"])
 
-
     if (args.model_name == "chatglm"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         token_ids_list = tokenizer.encode(args.prompt)
@@ -160,6 +160,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         cmd.extend(["--ids", token_ids_str])
     elif (args.model_name == "baichuan" or args.model_name == "qwen"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
+
         def truncate(ids, max_length):
             """Truncates a list of integers to a given length.
 

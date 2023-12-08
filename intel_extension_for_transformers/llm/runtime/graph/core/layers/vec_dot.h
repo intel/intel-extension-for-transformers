@@ -94,7 +94,8 @@ static void ne_vec_dot_f32(const int n, float* restrict s, const float* restrict
 static void ne_vec_dot_f16(const int n, float* restrict s, ne_fp16_t* restrict x, ne_fp16_t* restrict y) {
   ne_float sumf = 0.0;
 
-#if defined(NE_SIMD)
+// NE_SIMD_VEC_DOT_F16 (sum order may affect logits, like padding and no padding)
+#if defined(NE_SIMD) && defined(NE_SIMD_VEC_DOT_F16)
   const int np = (n & ~(NE_F16_STEP - 1));
 
   NE_F16_VEC sum[NE_F16_ARR] = {NE_F16_VEC_ZERO};

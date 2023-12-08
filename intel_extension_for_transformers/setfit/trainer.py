@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -15,12 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
-from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+setfit = LazyImport("setfit")
 
-def main():
-    server_executor = NeuralChatServerExecutor()
-    server_executor(config_file="./textbot.yaml", log_file="./textbot.log")
-
-if __name__ == "__main__":
-    main()
+class SetFitTrainer(setfit.SetFitTrainer):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)

@@ -15,20 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from threading import Thread
-import re
 import time
-import torch
 import spacy
-from transformers import (
-    TextIteratorStreamer,
-)
 from .utils.utils import (
     enforce_stop_tokens,
     get_current_time
 )
 from .utils.process_text import process_time, process_entities
-from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
+
 import logging
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",

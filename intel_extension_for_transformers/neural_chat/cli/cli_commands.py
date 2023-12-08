@@ -136,7 +136,7 @@ class HelpCommand:
             msg += '    {:<15}        {}\n'.format(command,
                                                    detail['description'])
 
-        logger.info(msg)
+        print(msg)
         return True
 
 
