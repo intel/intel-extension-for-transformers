@@ -201,7 +201,7 @@ class SchedulerBase : public Scheduler2D {
     mL2Use += static_cast<size_t>(mStep[0]) * mBlock[2] * mEleSize[0];
   }
   const float DensityThres = 32;
-  static size_t constexpr ReservedSize = 100ULL * 1024ULL;
+  static size_t constexpr ReservedSize = 32ULL * 1024ULL;
 
   virtual float calculate_score() {
     int tmpnstep = mThdSize[1] < _GemmCore_T::PREFERRED_N ? mThdSize[1] : _GemmCore_T::PREFERRED_N;
@@ -475,13 +475,14 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     mKBlock = config.problem.dims[4];
     BaseScheduler::update(config);
     auto blks = utils::updiv(this->mBlock[2], mKBlock);
-    mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mBlock[0]) * (sizeof(float) + sizeof(int8_t));
+    this->mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mBlock[0]) * (sizeof(float) + sizeof(int8_t));
   }
 
  protected:
   void cache_blocking_compute() override {
     BaseScheduler::cache_blocking_compute();  // no misc data
-    size_t valid_total = mL2Size - ReservedSize - this->mEleSize[2] * this->mBlock[0] * this->mBlock[1];
+    size_t valid_total =
+        this->mL2Size - BaseScheduler::ReservedSize - this->mEleSize[2] * this->mBlock[0] * this->mBlock[1];
     auto corK = static_cast<int>((valid_total) /
                                  (this->mBlock[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1] +
                                   (sizeof(float) + sizeof(int8_t)) * (this->mBlock[0] + this->mBlock[1]) / mKBlock));
