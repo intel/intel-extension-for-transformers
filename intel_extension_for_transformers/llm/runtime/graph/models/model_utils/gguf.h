@@ -35,6 +35,12 @@ struct gguf_str {
   char* data;
 };
 
+enum llama_fver {
+    GGUF_FILE_VERSION_V1 = 1,
+    GGUF_FILE_VERSION_V2 = 2,
+    GGUF_FILE_VERSION_V3 = 3,
+};
+
 enum ggml_type {
     GGML_TYPE_F32  = 0,
     GGML_TYPE_F16  = 1,
@@ -74,6 +80,22 @@ enum gguf_type {
   GGUF_TYPE_INT64 = 11,
   GGUF_TYPE_FLOAT64 = 12,
   GGUF_TYPE_COUNT,  // marks the end of the enum
+};
+
+static const char * GGUF_TYPE_NAME[GGUF_TYPE_COUNT] = {
+    [GGUF_TYPE_UINT8]   = "u8",
+    [GGUF_TYPE_INT8]    = "i8",
+    [GGUF_TYPE_UINT16]  = "u16",
+    [GGUF_TYPE_INT16]   = "i16",
+    [GGUF_TYPE_UINT32]  = "u32",
+    [GGUF_TYPE_INT32]   = "i32",
+    [GGUF_TYPE_FLOAT32] = "f32",
+    [GGUF_TYPE_BOOL]    = "bool",
+    [GGUF_TYPE_STRING]  = "str",
+    [GGUF_TYPE_ARRAY]   = "arr",
+    [GGUF_TYPE_UINT64]  = "u64",
+    [GGUF_TYPE_INT64]   = "i64",
+    [GGUF_TYPE_FLOAT64] = "f64",
 };
 
 union gguf_value {
@@ -186,6 +208,16 @@ static bool gguf_fread_str(FILE* file, struct gguf_str* p, size_t* offset) {
   return ok;
 }
 
+static const char * llama_file_version_name(llama_fver version) {
+    switch (version) {
+        case GGUF_FILE_VERSION_V1: return "GGUF V1 (support until nov 2023)";
+        case GGUF_FILE_VERSION_V2: return "GGUF V2";
+        case GGUF_FILE_VERSION_V3: return "GGUF V3 (latest)";
+    }
+
+    return "unknown";
+}
+
 inline static void* ggml_aligned_malloc(size_t size) {
   if (size == 0) {
     printf("WARNING: Behavior may be unexpected when allocating 0 bytes for ggml_aligned_malloc!\n");
@@ -232,6 +264,37 @@ inline static void* ggml_aligned_malloc(size_t size) {
     }                                                                                                       \
   } while (0)
 
+static void replace_all(std::string & s, const std::string & search, const std::string & replace) {
+    std::string result;
+    for (size_t pos = 0; ; pos += search.length()) {
+        auto new_pos = s.find(search, pos);
+        if (new_pos == std::string::npos) {
+            result += s.substr(pos, s.size() - pos);
+            break;
+        }
+        result += s.substr(pos, new_pos - pos) + replace;
+        pos = new_pos;
+    }
+    s = std::move(result);
+}
+
+
+static std::string gguf_data_to_str(enum gguf_type type, const void * data, int i) {
+    switch (type) {
+        case GGUF_TYPE_UINT8:   return std::to_string(((const uint8_t  *)data)[i]);
+        case GGUF_TYPE_INT8:    return std::to_string(((const int8_t   *)data)[i]);
+        case GGUF_TYPE_UINT16:  return std::to_string(((const uint16_t *)data)[i]);
+        case GGUF_TYPE_INT16:   return std::to_string(((const int16_t  *)data)[i]);
+        case GGUF_TYPE_UINT32:  return std::to_string(((const uint32_t *)data)[i]);
+        case GGUF_TYPE_INT32:   return std::to_string(((const int32_t  *)data)[i]);
+        case GGUF_TYPE_UINT64:  return std::to_string(((const uint64_t *)data)[i]);
+        case GGUF_TYPE_INT64:   return std::to_string(((const int64_t  *)data)[i]);
+        case GGUF_TYPE_FLOAT32: return std::to_string(((const float    *)data)[i]);
+        case GGUF_TYPE_FLOAT64: return std::to_string(((const double   *)data)[i]);
+        case GGUF_TYPE_BOOL:    return ((const bool *)data)[i] ? "true" : "false";
+        default:                return format("unknown type %d", type);
+    }
+}
 
 
 #endif  // GGUF_H
