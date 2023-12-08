@@ -156,38 +156,27 @@ def build_chatbot(config: PipelineConfig=None):
     except RuntimeError as e:
         if "out of memory" in str(e):
             set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-            return
         elif "devices are busy or unavailable" in str(e):
             set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
-            return
         elif "tensor does not have a device" in str(e):
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
-            return
     except ValueError as e:
         if "load_model: unsupported device" in str(e):
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-            return
         elif "load_model: unsupported model" in str(e):
             set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-            return
         elif "load_model: tokenizer is not found" in str(e):
             set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
-            return
         elif "load_model: model name or path is not found" in str(e):
             set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
-            return
         elif "load_model: model config is not found" in str(e):
             set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
-            return
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
-            return
     except Exception as e:
         set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
     return adapter
 
 def finetune_model(config: BaseFinetuningConfig):
@@ -235,7 +224,6 @@ def optimize_model(model, config, use_llm_runtime=False):
     optimization = Optimization(optimization_config=config)
     try:
         model = optimization.optimize(model, use_llm_runtime)
-        return model
     except Exception as e:
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
@@ -248,3 +236,4 @@ def optimize_model(model, config, use_llm_runtime=False):
             set_latest_error(ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
         elif type(config) == BitsAndBytesConfig:
             set_latest_error(ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)
+    return model
