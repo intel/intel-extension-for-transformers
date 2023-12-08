@@ -1697,9 +1697,11 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
 #else
   std::fill_n(p.tmp, workspace_size, 'f');
 #endif
-  const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
-                            std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
-                            (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
+  const bool IS_BF16_GEMM =
+      (std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value && std::is_same<V_T, fp16>::value &&
+       std::is_same<DST_T, float>::value && (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1))) ||
+      (std::is_same<Q_T, float>::value && std::is_same<K_T, bf16>::value && std::is_same<V_T, bf16>::value &&
+       std::is_same<DST_T, float>::value);
   assert(p.Q_layout == ATTN_FWD_LAYOUT_PLAIN);
   assert(p.dst_layout == ATTN_FWD_LAYOUT_PLAIN);
   assert((p.K_layout == ATTN_FWD_LAYOUT_PLAIN ||
@@ -1750,7 +1752,9 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
               const auto k_block = k - k_remain;
               const auto k_value =
                   static_cast<float>(k_curr[j_block * p.step_k_sl + k_block * NTILE + j_remain * ROWPACK + k_remain]);
-              curr_row[j] += k_value * static_cast<float>(q_curr[k]);
+              const auto q_value =
+                  IS_BF16_GEMM ? static_cast<float>(static_cast<bf16>(q_curr[k])) : static_cast<float>(q_curr[k]);
+              curr_row[j] += k_value * q_value;
             } else if (IS_BF16_GEMM) {
               curr_row[j] += static_cast<float>(static_cast<bf16>(q_curr[k])) *  // TODO(Yi) fp16 acc
                              static_cast<float>(static_cast<bf16>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]));
@@ -1775,6 +1779,9 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
           for (int j = 0; j < unmasked; ++j) curr_row[j] = roundf(curr_row[j] * UINT8_MAX) / UINT8_MAX / exp_sum;
         } else {
           for (int j = 0; j < unmasked; ++j) curr_row[j] /= exp_sum;
+        }
+        if (IS_BF16_GEMM) {
+          for (int j = 0; j < unmasked; ++j) curr_row[j] = static_cast<float>(static_cast<bf16>(curr_row[j]));
         }
 
         // P x V
@@ -2151,13 +2158,13 @@ class TestMhaDese {
     ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, s8layout);
     ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, s8layout);
 
-    const auto bf16layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
-    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, bf16layout);
-    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, bf16layout);
-    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, bf16layout);
-    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, bf16layout);
-    ret_ok &= test_case<float, bf16, bf16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, bf16layout);
-    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, bf16layout);
+    const auto BA48b2a = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, BA48b2a, 1e-3f);
+    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, BA48b2a, 1e-3f);
+    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, BA48b2a, 1e-3f);
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, BA48b2a, 1e-3f);
+    ret_ok &= test_case<float, bf16, bf16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, BA48b2a, 1e-3f);
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, BA48b2a, 1e-3f);
 
     ret_ok &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 32, 128, 64}, 64, NE_ATTN_FLAG_NONE);
     ret_ok &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 32, 64, 128}, 256, NE_ATTN_FLAG_NONE);
@@ -2189,7 +2196,7 @@ class TestMhaDese {
 
   template <class Q_T, class K_T, class V_T, class DST_T>
   bool test_case(const attn_shape_t& s, ne_attn_flags_t flags, bool k_trans = false,
-                 ATTN_FWD_LAYOUT kv_layout = ATTN_FWD_LAYOUT_PLAIN) {
+                 ATTN_FWD_LAYOUT kv_layout = ATTN_FWD_LAYOUT_PLAIN, float eps = 1e-2f) {
     assert(kv_layout == ATTN_FWD_LAYOUT_PLAIN || !k_trans);
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
@@ -2318,7 +2325,7 @@ class TestMhaDese {
     jblas_fusion_attn_forward(args);
 
     // Check result
-    return compare_data(dst.data(), ref.data(), dst.size(), 1e-2f);
+    return compare_data(dst.data(), ref.data(), dst.size(), eps);
   }
 
   template <class Q_T, class K_T, class V_T, class DST_T>
