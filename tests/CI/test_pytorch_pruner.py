@@ -6,9 +6,8 @@ sys.path.insert(0, './')
 
 import torch
 import numpy as np
-# from neural_compressor.config import WeightPruningConfig
-# from intel_extension_for_transformers.transformers.pruner.pruning import Pruning
 from intel_extension_for_transformers.transformers.pruner import WeightPruningConfig, Pruning
+from intel_extension_for_transformers.transformers.utils import SparsityConfig
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -191,6 +190,15 @@ class TestPruning(unittest.TestCase):
 
         dataset = remove_label({'labels': [], 'ids': []})
         dataset = remove_label({'start_positions': [], 'end_positions': [], 'ids': []})
+
+
+    def test_sparsity_config_loading(self):
+        config = SparsityConfig.from_pretrained("Intel/gpt-j-6b-sparse")
+        config.save_pretrained("sparsity_config_dir")
+        loaded_config = SparsityConfig.from_pretrained("sparsity_config_dir")
+        self.assertEqual(config.sparse_pattern, loaded_config.sparse_pattern)
+        self.assertEqual(config.dense_layers, loaded_config.dense_layers)
+
 
 
 if __name__ == "__main__":
