@@ -1220,7 +1220,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
     }
   }
 
-  wctx.t_load_us = model_time_us_whisper() - t_start_us;
+  wctx->t_load_us = model_time_us_whisper() - t_start_us;
 
   return true;
 }
@@ -1577,8 +1577,8 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
 
   ne_free(ctx0);
 
-  wstate.t_encode_us += model_time_us_whisper() - t_start_us;
-  wstate.n_encode++;
+  wstate->t_encode_us += model_time_us_whisper() - t_start_us;
+  wstate->n_encode++;
 
   return true;
 }
@@ -1931,8 +1931,8 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
 
   ne_free(ctx0);
 
-  wstate.t_decode_us += model_time_us_whisper() - t_start_us;
-  wstate.n_decode++;
+  wstate->t_decode_us += model_time_us_whisper() - t_start_us;
+  wstate->n_decode++;
 
   return true;
 }
@@ -2081,7 +2081,7 @@ static void log_mel_spectrogram_worker_thread(int ith, const std::vector<float>&
 static bool log_mel_spectrogram(whisper_state* wstate, const float* samples, const int n_samples,
                                 const int /*sample_rate*/, const int fft_size, const int fft_step, const int n_mel,
                                 const int n_threads, const whisper_filters& filters, const bool speed_up,
-                                whisper_mel& mel) {
+                                whisper_mel* mel) {
   const int64_t t_start_us = model_time_us_whisper();
 
   // Hanning window
@@ -2154,7 +2154,7 @@ static bool log_mel_spectrogram(whisper_state* wstate, const float* samples, con
     mel->data[i] = (mel->data[i] + 4.0) / 4.0;
   }
 
-  wstate.t_mel_us += model_time_us_whisper() - t_start_us;
+  wstate->t_mel_us += model_time_us_whisper() - t_start_us;
 
   // printf("mel.n_len() = %d, divided by 1500: %f, n_samples / fft_step: %d\n",
   // mel.n_len, mel.n_len / 1500.0, n_samples / fft_step);
