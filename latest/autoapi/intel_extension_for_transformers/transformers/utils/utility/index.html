@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+g0f91e1d documentation</title>
+  <title>intel_extension_for_transformers.transformers.utils.utility &mdash; Intel® Extension for Transformers 0.1.dev1+ge2ab81c documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -106,6 +106,12 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm" title="intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_dummy_past_key_values_for_opt_llm</span></code></a>(config, ...)</p></td>
 <td><p>Generate the dummy past_key_values.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs</span></code></a>(model_config[, batch_size, ...])</p></td>
+<td><p>Generate the dummy example inputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json" title="intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recover_model_from_json</span></code></a>(user_model, json_file_path[, ...])</p></td>
+<td><p>Recover ipex model from JSON file.</p></td>
+</tr>
 </tbody>
 </table>
 <dl class="py function">
@@ -126,6 +132,33 @@
 <dd><p>Generate the dummy past_key_values.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.get_example_inputs">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_beams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.get_example_inputs" title="Link to this definition"></a></dt>
+<dd><p>Generate the dummy example inputs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.utils.utility.</span></span><span class="sig-name descname"><span class="pre">recover_model_from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trust_remote_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/utils/utility.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json" title="Link to this definition"></a></dt>
+<dd><p>Recover ipex model from JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>object</em>) – fp32 model need to do quantization.</p></li>
+<li><p><strong>json_file_path</strong> (<em>json</em>) – configuration JSON file for ipex.</p></li>
+<li><p><strong>trust_remote_code</strong> (<em>bool</em>) – trust remote code.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>quantized model</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(object)</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 </section>
@@ -144,7 +177,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f8412906fe0> 
+   <jinja2.runtime.BlockReference object at 0x7fef6e69acb0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

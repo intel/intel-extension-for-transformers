@@ -21,6 +21,8 @@ Functions
    intel_extension_for_transformers.transformers.utils.utility.distributed_init
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm
+   intel_extension_for_transformers.transformers.utils.utility.get_example_inputs
+   intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json
 
 
 
@@ -37,5 +39,26 @@ Functions
 .. py:function:: generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1)
 
    Generate the dummy past_key_values.
+
+
+.. py:function:: get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4)
+
+   Generate the dummy example inputs.
+
+
+
+.. py:function:: recover_model_from_json(user_model, json_file_path, trust_remote_code=False)
+
+   Recover ipex model from JSON file.
+
+   :param model: fp32 model need to do quantization.
+   :type model: object
+   :param json_file_path: configuration JSON file for ipex.
+   :type json_file_path: json
+   :param trust_remote_code: trust remote code.
+   :type trust_remote_code: bool
+
+   :returns: quantized model
+   :rtype: (object)
 
 
