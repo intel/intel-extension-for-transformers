@@ -22,21 +22,8 @@ pip install -r requirements.txt
 
 ## Retrain-free Results
 
-The last token accuracy for channel pruning using [the retrain-free scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/language-modeling/pruning/scripts/run_gptj_pruning.sh) is presented in the following table.
-| Model | Calibration dataset | Evaluation dataset | Sparsity pattern | Over MLP block sparsity |Element-wise/matmul, Gemm, conv ratio | Dense last token accuracy | Sparse last token accuracy | Relative drop |
-|  :----: | :----: | :----: | :----: | :----: | :----: |:----: |:----:| :----: |
-| EleutherAI/gpt-j-6b | lambada | lambada | channelx1  | 0.1999 | 0.1242 | 0.7917 | 0.8038 | +1.50% |
-| EleutherAI/gpt-j-6b | the_pile | lambada |  channelx1  | 0.0999 | 0.0643 | 0.7917 | 0.7931 | +0.17% |
-| EleutherAI/gpt-j-6b | pile_10k | lambada | channelx1  | 0.0999 | 0.0643 | 0.7917 | 0.7901 | -0.20% |
-| facebook/opt-1.3b | pile_10k | lambada |  channelx1  | 0.0999 | 0.0614 | 0.7541 | 0.7498 | -0.57% |
-| facebook/opt-2.7b | pile_10k | lambada |  channelx1  | 0.0999 | 0.0634 | 0.7779 | 0.7778 | -0.01% |
-| decapoda-research/llama-7b-hf | pile_10k | lambada |  channelx1  | 0.0999 | 0.0654 | 0.8856 | 0.8815 | -0.46% |
-| bigscience/bloom-1b7 | pile_10k | lambada |  channelx1  | 0.0999 | 0.0466 | 0.7143 | 0.7141 | -0.03% |
-| bigscience/bloom-7b1 | pile_10k | lambada |  channelx1  | 0.0999 | 0.0568 | 0.7745 | 0.7742 | -0.04% |
+The last word acc of the channel-wise sparse model using [the retrain-free scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/language-modeling/pruning/scripts/run_gptj_pruning.sh) is shown in the following table. All the sparsity is 10% over MLP block.
 
-<br />
-
-The last word acc of the channel-wise sparse model is shown in the following table. All the sparsity is 10% over MLP block.
 | Model | Task | Calibration dataset | Evaluation dataset | Precision | Dense last word accuracy | Sparse last word accuracy | Relative drop |
 |  :----: | :----: | :----: | :----: | :----: | :----: |:----: |:----:|
 | EleutherAI/gpt-j-6b | CLM | pile_10k | lambada_openai | FP32 | 0.6831 | 0.6819 | -0.17% |
@@ -74,6 +61,8 @@ The last word acc of the 1x1 pattern sparse model using [the sparseGPT script](e
 | mosaicml/mpt-7b | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | BF16 | 0.6831 | 0.6856 | -2.83% |
 | mosaicml/mpt-7b-chat | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | FP32 | 0.6550 | 0.6561 | +0.17% |
 | mosaicml/mpt-7b-chat | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | BF16 | 0.6456 | 0.6451 | -1.51% |
+| meta-llama/Llama-2-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | FP32 | 0.7679 | 0.7629 | -0.65% |
+| meta-llama/Llama-2-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | BF16 | 0.7667 | 0.7601 | -1.02% |
 | decapoda-research/llama-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 50% | FP32 | 0.7627 | 0.7559 | -0.89% |
 | decapoda-research/llama-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 50% | BF16 | 0.7599 | 0.7559 | -0.89% |
 

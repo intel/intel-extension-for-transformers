@@ -10,9 +10,13 @@ on:
       - "intel_extension_for_transformers/llm/runtime/deprecated/**"
       - "intel_extension_for_transformers/llm/runtime/graph/**"
       - '!intel_extension_for_transformers/llm/library/jblas/**'
-      - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
+      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/scripts/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/tests/**'
       - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
       - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
