@@ -62,6 +62,14 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model EleutherAI/gpt-j-6b \
     --load_in_8bit True \
     --benchmark
+# restore the model optimized with smoothquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --int8 \
+    --restore \
+    --benchmark \
+    --tasks "lambada_openai"
 
 ```
 
@@ -111,7 +119,9 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --output_dir saved_results \
+    --int8 \
     --restore \
+    --accuracy \
     --tasks "lambada_openai"
 
 ```

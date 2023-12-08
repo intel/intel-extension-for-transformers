@@ -115,7 +115,6 @@ config = AutoConfig.from_pretrained(
         args.sq
         or args.woq_algo in ["AWQ", "TEQ"]
         or (args.int8 or args.int8_bf16_mixed)
-        or args.restore
     )
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
@@ -214,7 +213,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         revision=args.revision,
         use_llm_runtime=False,
     )
-elif not args.int8 and not args.int8_bf16_mixed:
+elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     if args.peft_model_id is not None:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
@@ -249,12 +248,16 @@ if args.int8 or args.int8_bf16_mixed:
     from intel_extension_for_transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
-
-    user_model = TSModelCausalLMForITREX.from_pretrained(
-        args.output_dir,
-        file_name="best_model.pt",
-        trust_remote_code=args.trust_remote_code,
-    )
+    if args.restore:
+        from intel_extension_for_transformers.transformers.utils.utility import recover_model_from_json
+        user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
+        user_model = TSModelCausalLMForITREX(user_model, config=config)
+    else:
+        user_model = TSModelCausalLMForITREX.from_pretrained(
+            args.output_dir,
+            file_name="best_model.pt",
+            trust_remote_code=args.trust_remote_code,
+        )
 
 if args.benchmark:
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
@@ -317,46 +320,6 @@ if args.accuracy:
     )
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
-    results = evaluate(
-        model="hf-causal",
-        model_args="pretrained="
-        + args.model
-        + ",tokenizer="
-        + args.model
-        + ",dtype=float32"
-        + ",revision="
-        + args.revision
-        + ",trust_remote_code="
-        + str(args.trust_remote_code),
-        user_model=user_model,
-        batch_size=args.batch_size,
-        tasks=args.tasks,
-    )
-    dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
-    for task_name in args.tasks:
-        if task_name == "wikitext":
-            print(
-                "Accuracy for %s is: %s"
-                % (task_name, results["results"][task_name]["word_perplexity"])
-            )
-        else:
-            print(
-                "Accuracy for %s is: %s"
-                % (task_name, results["results"][task_name]["acc"])
-            )
-
-if args.restore:
-    from intel_extension_for_transformers.transformers.utils.utility import recover_model_from_json
-    user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
-
-    from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
-    config = AutoConfig.from_pretrained(args.output_dir)
-    user_model = TSModelCausalLMForITREX(user_model, config=config)
-
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args="pretrained="
