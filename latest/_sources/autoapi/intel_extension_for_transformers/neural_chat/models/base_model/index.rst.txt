@@ -65,6 +65,7 @@ Functions
           "peft_path": "/path/to/peft",
           "use_deepspeed": False
           "hf_access_token": "user's huggingface access token"
+          "assistant_model": "assistant model name to speed up inference"
       }
 
 

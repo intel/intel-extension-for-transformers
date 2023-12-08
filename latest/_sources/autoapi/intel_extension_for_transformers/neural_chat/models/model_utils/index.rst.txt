@@ -52,7 +52,7 @@ Functions
    new input token_idx.
 
 
-.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, ipex_int8=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None, use_llm_runtime=False)
+.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, ipex_int8=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None, use_llm_runtime=False, assistant_model=None)
 
    Load the model and initialize the tokenizer.
 
@@ -62,6 +62,8 @@ Functions
    :type device: str, optional
    :param use_hpu_graphs: Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
    :type use_hpu_graphs: bool, optional
+   :param assistant_model: The assistant model name. Defaults to None.
+   :type assistant_model: str, optional
 
    :returns: None
 
