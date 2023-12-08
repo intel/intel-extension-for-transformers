@@ -1,4 +1,4 @@
-transformers>=4.32.0
+transformers>=4.35.2
 peft==0.6.2
 fschat==0.2.32
 torch==2.1.0
