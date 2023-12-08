@@ -18,7 +18,7 @@ namespace jblas_gemm {
 struct jblas_gemm_runtime_ctx {
   torch::Tensor *matA, *matB, *matC;
   bool matB_trans;
-  int64_t m, n, k;
+  int m, n, k;
 };
 
 void dispatch_jblas_gemm(jblas_gemm_runtime_ctx* ctx);
