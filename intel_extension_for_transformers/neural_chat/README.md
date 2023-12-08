@@ -136,7 +136,7 @@ chatbot = build_chatbot(pipeline_cfg)
 
 ## Validated Model List
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
-|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
+|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
 |------------------------------------|---|---|--- | --- |
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅
