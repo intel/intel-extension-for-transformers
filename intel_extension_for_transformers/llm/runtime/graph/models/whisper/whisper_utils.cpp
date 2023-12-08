@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "whisper.h"
-
+#include "models/model_utils/quant_utils.h"
 #define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 
@@ -247,3 +247,22 @@ void whisper_print_usage(int /*argc*/, char** argv, const whisper_params& params
   fprintf(stderr, "  -f FNAME,  --file FNAME        [%-7s] input WAV file path\n", "");
   fprintf(stderr, "\n");
 }
+
+class whisper_quant_layer : public quant_layer_base {
+ public:
+  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
+                                                 ne_type type) override {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    if (layername == "transformer.wte.weight") {
+      // special layer process, can be loaded by config file
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
+    }
+    quantize &= (ne.size() == 2);
+    if (quantize) {
+      return mGCfg;  // use global quant config
+    } else {
+      return quant_params_internal{quant_bits::count};  // non-quant
+    }
+  }
+};
+REGISTER_QUANT_LAYER_CLASS(whisper);

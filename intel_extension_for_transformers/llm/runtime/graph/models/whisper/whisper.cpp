@@ -44,8 +44,13 @@
 #define WHISPER_USE_SCRATCH
 #define WHISPER_MAX_SCRATCH_BUFFERS 16
 
+<<<<<<< HEAD
 // avoid dup code
 int64_t model_time_us() { return ne_time_us(); }
+=======
+// TODO: avoid dup code
+int64_t model_time_us_whisper() { return ne_time_us(); }
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
 // available whisper models
 enum e_model {
@@ -622,7 +627,7 @@ static void kv_cache_free(struct whisper_kv_cache* cache) {
 static bool whisper_model_load(struct whisper_model_loader* loader, whisper_context* wctx) {
   fprintf(stderr, "%s: loading model\n", __func__);
 
-  const int64_t t_start_us = model_time_us();
+  const int64_t t_start_us = model_time_us_whisper();
 
   wctx->t_start_us = t_start_us;
 
@@ -1219,7 +1224,11 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
     }
   }
 
+<<<<<<< HEAD
   wctx->t_load_us = model_time_us() - t_start_us;
+=======
+  wctx.t_load_us = model_time_us_whisper() - t_start_us;
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
   return true;
 }
@@ -1237,7 +1246,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 //
 static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate, const int mel_offset,
                                     const int n_threads) {
-  const int64_t t_start_us = model_time_us();
+  const int64_t t_start_us = model_time_us_whisper();
 
   const auto& model = wctx->model;
   const auto& mel_inp = wstate->mel;
@@ -1576,8 +1585,13 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
 
   ne_free(ctx0);
 
+<<<<<<< HEAD
   wstate->t_encode_us += model_time_us() - t_start_us;
   wstate->n_encode++;
+=======
+  wstate.t_encode_us += model_time_us_whisper() - t_start_us;
+  wstate.n_encode++;
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
   return true;
 }
@@ -1595,7 +1609,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
 static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate, whisper_decoder* decoder,
                                     const whisper_token* tokens, const int n_tokens, const int n_past,
                                     const int n_threads) {
-  const int64_t t_start_us = model_time_us();
+  const int64_t t_start_us = model_time_us_whisper();
 
   const auto& model = wctx->model;
   const auto& hparams = model.hparams;
@@ -1930,8 +1944,13 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
 
   ne_free(ctx0);
 
+<<<<<<< HEAD
   wstate->t_decode_us += model_time_us() - t_start_us;
   wstate->n_decode++;
+=======
+  wstate.t_decode_us += model_time_us_whisper() - t_start_us;
+  wstate.n_decode++;
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
   return true;
 }
@@ -2080,8 +2099,13 @@ static void log_mel_spectrogram_worker_thread(int ith, const std::vector<float>&
 static bool log_mel_spectrogram(whisper_state* wstate, const float* samples, const int n_samples,
                                 const int /*sample_rate*/, const int fft_size, const int fft_step, const int n_mel,
                                 const int n_threads, const whisper_filters& filters, const bool speed_up,
+<<<<<<< HEAD
                                 whisper_mel* mel) {
   const int64_t t_start_us = model_time_us();
+=======
+                                whisper_mel& mel) {
+  const int64_t t_start_us = model_time_us_whisper();
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
   // Hanning window
   std::vector<float> hann;
@@ -2153,7 +2177,11 @@ static bool log_mel_spectrogram(whisper_state* wstate, const float* samples, con
     mel->data[i] = (mel->data[i] + 4.0) / 4.0;
   }
 
+<<<<<<< HEAD
   wstate->t_mel_us += model_time_us() - t_start_us;
+=======
+  wstate.t_mel_us += model_time_us_whisper() - t_start_us;
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
   // printf("mel.n_len() = %d, divided by 1500: %f, n_samples / fft_step: %d\n",
   // mel.n_len, mel.n_len / 1500.0, n_samples / fft_step);
@@ -2764,7 +2792,7 @@ whisper_token whisper_token_translate(struct whisper_context* ctx) { return ctx-
 whisper_token whisper_token_transcribe(struct whisper_context* ctx) { return ctx->vocab.token_transcribe; }
 
 void whisper_print_timings(struct whisper_context* ctx) {
-  const int64_t t_end_us = model_time_us();
+  const int64_t t_end_us = model_time_us_whisper();
 
   fprintf(stderr, "\n");
   fprintf(stderr, "%s:     load time = %8.2f ms\n", __func__, ctx->t_load_us / 1000.0f);
@@ -3697,7 +3725,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
         }
 
         {
-          const int64_t t_start_sample_us = model_time_us();
+          const int64_t t_start_sample_us = model_time_us_whisper();
 
           whisper_process_logits(ctx, state, params, &state->decoders[0], t_cur);
 
@@ -3719,12 +3747,12 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
                    decoder.logprobs.size() * sizeof(decoder.logprobs[0]));
           }
 
-          state->t_sample_us += model_time_us() - t_start_sample_us;
+          state->t_sample_us += model_time_us_whisper() - t_start_sample_us;
         }
       }
 
       for (int i = 0, n_max = whisper_n_text_ctx(ctx) / 2 - 4; i < n_max; ++i) {
-        const int64_t t_start_sample_us = model_time_us();
+        const int64_t t_start_sample_us = model_time_us_whisper();
 
         // store the KV caches of all decoders when doing beam-search
         if (params.strategy == whisper_sampling_strategy::WHISPER_SAMPLING_BEAM_SEARCH) {
@@ -3923,7 +3951,7 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           }
         }
 
-        state->t_sample_us += model_time_us() - t_start_sample_us;
+        state->t_sample_us += model_time_us_whisper() - t_start_sample_us;
 
         // obtain logits for the next token
         for (int j = 0; j < n_decoders_cur; ++j) {
@@ -3947,13 +3975,13 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
           }
 
           {
-            const int64_t t_start_sample_us = model_time_us();
+            const int64_t t_start_sample_us = model_time_us_whisper();
 
             whisper_process_logits(ctx, state, params, &decoder, t_cur);
 
             ++decoder.kv_self.n;
 
-            state->t_sample_us += model_time_us() - t_start_sample_us;
+            state->t_sample_us += model_time_us_whisper() - t_start_sample_us;
           }
         }
       }

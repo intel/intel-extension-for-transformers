@@ -859,6 +859,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
   return result;
 }
 
+<<<<<<< HEAD
 //
 // quantization
 //
@@ -1135,6 +1136,9 @@ static void model_quantize_internal(const quant_params& params, std::shared_ptr<
   printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
 }
+=======
+
+>>>>>>> Split model_quantize out of the model_utils.cpp
 
 //
 // interface implementation
@@ -1262,15 +1266,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
-  try {
-    model_quantize_internal(params, quant_layer);
-    return 0;
-  } catch (const std::string& err) {
-    fprintf(stderr, "%s: failed to quantize: %s\n", __func__, err.c_str());
-    return 1;
-  }
-}
+
 
 int model_apply_lora_from_file_internal(struct model_context* ctx, const char* path_lora, const char* path_base_model,
                                         int n_threads) {
