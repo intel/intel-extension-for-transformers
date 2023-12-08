@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
                     Union)
-
+from transformers import AutoConfig
 import numpy as np
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
@@ -149,6 +149,7 @@ class Params:
     n_layer: int
     n_head_kv: int
     ffn_hidden_size: int
+    rms_norm_eps: float
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -184,6 +185,7 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
+            rms_norm_eps=1e-6,
         )
 
     # LLaMA v2 70B params.json
@@ -1056,13 +1058,12 @@ class OutputFile:
         self.fout.write(struct.pack("i", params.ffn_hidden_size))
         self.fout.write(struct.pack("i", 0))
 
-        self.fout.write(
-            struct.pack("i", 1)
-        )  
+        self.fout.write(struct.pack("f", params.rms_norm_eps))
+
         # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
         # but bos_token_id = 1 in llama.cpp
+        self.fout.write(struct.pack("i", 1))
         self.fout.write(struct.pack("i", 2))
-
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
 
@@ -1312,6 +1313,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         output_type = pick_output_type(model, args.outtype)
         model = convert_to_output_type(model, output_type)
         outfile = args.outfile or default_outfile(model_plus.paths, params)
+        config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+        params.rms_norm_eps = config.rms_norm_eps
         OutputFile.write_all(outfile, params, model, vocab, output_type)
         print(f"Wrote {outfile}")
 
