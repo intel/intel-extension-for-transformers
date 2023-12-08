@@ -147,7 +147,7 @@ class WeightOnlyQuantConfig:
         self.runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
         self.runtime_supported_weight_dtype = ["int4", "int8",
                                                "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
-                                               "fp4", "fp4_e2m1", "fp4_nf4",
+                                               "fp4", "fp4_e2m1", "nf4",
                                                 ]
         self.runtime_supported_scale_dtype = ["fp32", "bf16"]
         self.runtime_supported_group_size = [-1, 32, 128]
