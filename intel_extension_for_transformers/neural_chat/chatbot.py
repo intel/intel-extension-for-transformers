@@ -130,6 +130,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
+    parameters["assistant_model"] = config.assistant_model
 
     adapter.load_model(parameters)
 

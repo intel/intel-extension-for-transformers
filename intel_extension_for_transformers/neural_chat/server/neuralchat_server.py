@@ -110,6 +110,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
+        assistant_model = config.get("assistant_model", None)
 
         # plugin as service
         if plugin_as_service:
@@ -187,7 +188,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "device": device,
                 "plugins": plugins,
                 "loading_config": loading_config,
-                "optimization_config": optimization_config
+                "optimization_config": optimization_config,
+                "assistant_model": assistant_model
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:

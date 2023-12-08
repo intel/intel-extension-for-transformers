@@ -17,7 +17,7 @@
 """Configs for Neural Chat."""
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
@@ -418,7 +418,8 @@ class PipelineConfig:
                  device="auto",
                  plugins=plugins,
                  loading_config=None,
-                 optimization_config=None):
+                 optimization_config=None,
+                 assistant_model=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -442,3 +443,4 @@ class PipelineConfig:
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        self.assistant_model = assistant_model
