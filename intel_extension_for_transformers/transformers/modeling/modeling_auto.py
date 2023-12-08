@@ -424,19 +424,21 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        if model_type == "falcon":
-                            input_bs, input_len = example_inputs["input_ids"].shape
-                            outputs = model(example_inputs["input_ids"])
+                        elif model_type == "falcon":
+                            input_bs, input_len = inputs["input_ids"].shape
+                            outputs = model(inputs["input_ids"])
                             example_inputs["past_key_values"] = outputs[1]
                             example_inputs["attention_mask"] = torch.ones(
                                 input_bs, input_len
                             )
                             example_inputs["position_ids"] = (
-                                example_inputs["position_ids"][:, -1:] + 1
+                                inputs["position_ids"][:, -1:] + 1
                             )
-                            example_inputs["input_ids"] = example_inputs["input_ids"][
+                            example_inputs["input_ids"] = inputs["input_ids"][
                                 :, -1:
                             ]
+                        else:
+                            example_inputs = inputs
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],

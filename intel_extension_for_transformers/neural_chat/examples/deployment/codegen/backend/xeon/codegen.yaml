@@ -29,5 +29,5 @@ use_deepspeed: true
 world_size: 8
 
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
+tasks_list: ['codegen']
