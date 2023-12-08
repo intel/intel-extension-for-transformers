@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import re
+
 class Optimization:
     def __init__(
             self,

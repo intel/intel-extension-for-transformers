@@ -301,7 +301,8 @@ class Finetuning:
         elif config.architectures[0].endswith("ForConditionalGeneration"):
             self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
-            raise NotImplementedError("Unsupported architecture {}, only support CausalLM (CLM) \
+            raise NotImplementedError(
+                "Unsupported architecture {}, only support CausalLM (CLM) \
                     and ConditionalGeneration (Seq2seq) now.".format(
                     config.architectures[0]
                 )
@@ -468,6 +469,7 @@ class Finetuning:
         if training_args.do_eval:
             if "validation" not in tokenized_datasets:
                 raise ValueError("--do_eval requires a validation dataset")
+
             eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
@@ -475,7 +477,6 @@ class Finetuning:
         if training_args.do_train:
             if "train" not in tokenized_datasets:
                 raise ValueError("--do_train requires a train dataset")
-
             train_dataset = tokenized_datasets["train"]
             if data_args.max_train_samples is not None:
                 train_dataset = train_dataset.select(range(data_args.max_train_samples))
