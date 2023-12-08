@@ -476,6 +476,7 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     BaseScheduler::update(config);
     auto blks = utils::updiv(this->mBlock[2], mKBlock);
     this->mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mBlock[0]) * (sizeof(float) + sizeof(int8_t));
+    this->mL2Use += static_cast<size_t>(blks) * this->mBlock[1] * sizeof(float);
   }
 
  protected:
@@ -483,9 +484,11 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     BaseScheduler::cache_blocking_compute();  // no misc data
     size_t valid_total =
         this->mL2Size - BaseScheduler::ReservedSize - this->mEleSize[2] * this->mBlock[0] * this->mBlock[1];
-    auto corK = static_cast<int>((valid_total) /
-                                 (this->mBlock[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1] +
-                                  (sizeof(float) + sizeof(int8_t)) * (this->mBlock[0] + this->mBlock[1]) / mKBlock));
+    auto corK = static_cast<int>(
+        (valid_total) /
+        (this->mBlock[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1] +
+         (sizeof(float) * this->mBlock[1] + (sizeof(float) + sizeof(int8_t)) * (this->mBlock[0] + this->mBlock[1])) /
+             mKBlock));
     corK = std::min(corK, this->mSizePadded[2]);
     corK = utils::padto_le(corK, this->mStep[2]);
     if (corK > mKBlock) {
