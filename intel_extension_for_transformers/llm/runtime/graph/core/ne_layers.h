@@ -251,9 +251,9 @@ NE_API struct ne_tensor* ne_silu_back(struct ne_context* ctx, struct ne_tensor* 
 // TODO: eps is hardcoded to 1e-5 for now
 NE_API struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a);
 
-NE_API struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a);
+NE_API struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a, float eps);
 
-NE_API struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a);
+NE_API struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a, float eps);
 // a - x
 // b - dy
 NE_API struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);

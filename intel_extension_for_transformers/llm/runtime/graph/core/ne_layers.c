@@ -864,6 +864,12 @@ void ne_scratch_load(struct ne_context* ctx) { ctx->scratch = ctx->scratch_save;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static void ne_set_op_params(struct ne_tensor* tensor, const void* params, size_t params_size) {
+  NE_ASSERT(tensor != NULL);  // silence -Warray-bounds warnings
+  // assert(params_size <= NE_MAX_OP_PARAMS);
+  memcpy(tensor->op_params, params, params_size);
+}
+
 struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne,
                                      void* data, size_t size) {
   // always insert objects at the end of the context's memory pool
@@ -3200,12 +3206,6 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
   result->src1 = b;
 
   return result;
-}
-
-static void ne_set_op_params(struct ne_tensor* tensor, const void* params, size_t params_size) {
-  NE_ASSERT(tensor != NULL);  // silence -Warray-bounds warnings
-  // assert(params_size <= NE_MAX_OP_PARAMS);
-  memcpy(tensor->op_params, params, params_size);
 }
 
 // for ne_conv_1d
@@ -6072,7 +6072,7 @@ static void ne_compute_forward_norm(const struct ne_compute_params* params, cons
 }
 
 static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
-                                            struct ne_tensor* dst, float eps) {
+                                            struct ne_tensor* dst) {
   NE_ASSERT(ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
