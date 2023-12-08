@@ -474,14 +474,23 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
   void update(const Config& config) {
     mKBlock = config.problem.dims[4];
     BaseScheduler::update(config);
+    auto blks = utils::updiv(this->mBlock[2], mKBlock);
+    mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mBlock[0]) * (sizeof(float) + sizeof(int8_t));
   }
 
  protected:
   void cache_blocking_compute() override {
-    BaseScheduler::cache_blocking_compute();
-    if (this->mBlock[2] > this->mKBlock) {
-      this->mBlock[2] = utils::padto_le(this->mBlock[2], this->mKBlock);
+    BaseScheduler::cache_blocking_compute();  // no misc data
+    size_t valid_total = mL2Size - ReservedSize - this->mEleSize[2] * this->mBlock[0] * this->mBlock[1];
+    auto corK = static_cast<int>((valid_total) /
+                                 (this->mBlock[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1] +
+                                  (sizeof(float) + sizeof(int8_t)) * (this->mBlock[0] + this->mBlock[1]) / mKBlock));
+    corK = std::min(corK, this->mSizePadded[2]);
+    corK = utils::padto_le(corK, this->mStep[2]);
+    if (corK > mKBlock) {
+      corK = utils::padto_le(corK, mKBlock);
     }
+    this->mBlock[2] = corK;
   }
 
   void cache_block_memory() override {
@@ -489,11 +498,13 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     size_t startK = std::max(16, _GemmCore_T::KTILE);
     auto getMaxN = [&](size_t refk) {
       size_t sizeA = refk * this->mEleSize[0] * this->mBlock[0];
-      size_t maxN = (this->mL1Size - sizeA) / (this->mBlock[0] * this->mEleSize[2] * 2 + refk * this->mEleSize[1]);
+      auto blks = utils::updiv(refk, mKBlock);
+      sizeA += blks * this->mBlock[0] * (sizeof(float) + sizeof(uint8_t));
+      size_t maxN = (this->mL1Size - sizeA) / (this->mBlock[0] * this->mEleSize[2] + refk * this->mEleSize[1]);
       return maxN;
     };
     auto getMaxK = [&](size_t refN) {
-      size_t sizeC = refN * this->mEleSize[2] * this->mBlock[0] * 2;
+      size_t sizeC = refN * this->mEleSize[2] * this->mBlock[0];
       size_t maxK = (this->mL1Size - sizeC) / (this->mBlock[0] * this->mEleSize[0] + refN * this->mEleSize[1]);
       return maxK;
     };
@@ -575,7 +586,7 @@ class StdThreading : public IThreading {
       }
     } else {
       func(0);
-	}
+    }
   }
 
   void set_threads(int nthreads) override { mThreadNum = nthreads; }
