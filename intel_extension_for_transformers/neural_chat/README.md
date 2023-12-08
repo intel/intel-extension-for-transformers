@@ -153,11 +153,25 @@ The table below displays the validated model list in NeuralChat for both inferen
 ## Restful API
 
 ### OpenAI-Compatible RESTful APIs & SDK
-NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands.
+NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands. See [neuralchat_api.md](./docs/neuralchat_api.md).
+
 The following OpenAI APIs are supported:
 
 - Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)
 - Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)
+
+### Additional useful RESTful APIs
+In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
+NeuralChat supports the following RESTful APIs:
+- Finetuning
+- Audio Chat
+- Document Retrieval
+- Code Generation
+- Text to Image
+- Image to Image
+- Face animation
+
+For more details, refer to this [README](./server/README.md)
 
 
 ## Selected Notebooks 
