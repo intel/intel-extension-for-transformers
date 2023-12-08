@@ -94,8 +94,6 @@ class ErrorCodes:
         ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL: "LLAMA Adaptor finetuning failed",
         ERROR_PREFIX_FINETUNE_FAIL: "Prefix finetuning failed",
         ERROR_PROMPT_FINETUNE_FAIL: "Prompt finetuning failed",
-        ERROR_UNSUPPORTED_FINETUNE: "Finetuning method is not supported",
-        ERROR_SOFTWARE_PACKAGE_UNAVAILABLE: "Required software package is unavailable",
 
         ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL: "Weight-only quantization optimization failed",
         ERROR_AMP_OPTIMIZATION_FAIL: "AMP optimization failed",
