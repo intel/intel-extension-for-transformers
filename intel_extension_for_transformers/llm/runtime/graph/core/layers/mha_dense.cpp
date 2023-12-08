@@ -1181,12 +1181,19 @@ struct InplacePrecomputeMaxSoftmax<float, bf16> {
       {  // exp & sum
         int jj = 0;
         for (; jj < curr_n_size / 16 * 16; jj += 16) {
-          const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));
+          // const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));
+          float exp_ref[16]{};
+          for (int i = 0; i < 16; i++) exp_ref[i] = std::exp((i_src + jj)[i]);
+          const auto v_exp = _mm512_loadu_ps(exp_ref);
           v_sum = _mm512_add_ps(v_sum, v_exp);
           _mm512_storeu_ps(i_src + jj, v_exp);
         }
         if (jj < curr_n_size) {
-          const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));  // should be fine to load some extra
+          // const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));  // should be fine to load some extra
+          float exp_ref[16]{};
+          for (int i = 0; i < 16; i++) exp_ref[i] = std::exp((i_src + jj)[i]);
+          const auto v_exp = _mm512_loadu_ps(exp_ref);
+
           v_sum = _mm512_mask_add_ps(v_sum, v_mask, v_sum, v_exp);
           _mm512_storeu_ps(i_src + jj, v_exp);  // should be fine to store some extra
         }

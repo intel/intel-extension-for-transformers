@@ -15,7 +15,7 @@ on:
       - tests/**
       - .github/workflows/unit-test-optimize.yml
       - .github/workflows/script/unitTest/**
-      - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
+      - '!**/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

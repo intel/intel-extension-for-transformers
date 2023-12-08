@@ -71,7 +71,8 @@ def perplexity(model_name, dataset_name, **kwargs):
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     data = datasets.load_from_disk(dataset_name)
-    test_text = data['text']
+    test_column = 'article' if 'cnn_dailymail' in dataset_name else 'text'
+    test_text = data[test_column]
     if data_text_concat:
         test_text = ['\n\n'.join(test_text)]
 
@@ -242,7 +243,7 @@ def add_run_args(parser: argparse.ArgumentParser):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model givan a dataset")
+    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model given a dataset")
     parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
     parser.add_argument('--dataset_name', type=str, default="~/pg19-data-test")
     parser.add_argument('--ctx_size', type=int, default=256)

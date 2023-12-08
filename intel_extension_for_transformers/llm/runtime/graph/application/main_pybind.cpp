@@ -74,6 +74,7 @@ class Model {
   py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
     if (!check_input_and_count_padding(input_ids)) return py::array_t<float>();
     const auto& logits = evaluate_(input_ids);
+    for (auto& input_id : curr_input_ids) input_id.clear();  // clear curr_input_ids after eval
     return py::array_t<float, py::array::c_style>(logits.size(), logits.data())
         .reshape({py::ssize_t(-1), static_cast<py::ssize_t>(ctx->model.hparams.n_vocab)});
   }
