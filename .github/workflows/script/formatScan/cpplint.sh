@@ -11,6 +11,7 @@ cpplint --extensions cpp,hpp --filter=-build/include_subdir,-build/header_guard 
 cpplint --extensions cpp,hpp --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/deprecated/test 2>&1 | tee -a ${log_path}
 cpplint --extensions cpp,hpp --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/llm/runtime/graph 2>&1 | tee -a ${log_path}
 cpplint --extensions cpp,hpp --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/library/kernels 2>&1 | tee -a ${log_path}
+cpplint --extensions cpp,hpp --filter=-build/include_subdir,-build/header_guard --recursive --quiet --linelength=120 ${REPO_DIR}/intel_extension_for_transformers/operator/csrc 2>&1 | tee -a ${log_path}
 if [[ ! -f ${log_path} ]] || [[ $(grep -c "Total errors found:" ${log_path}) != 0 ]]; then
     exit 1
 fi

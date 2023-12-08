@@ -30,8 +30,8 @@
 namespace woq {
 
 inline void set_nk(woq_runtime_ctx* ctx, torch::Tensor* tensor) {
-  ctx->n = ctx->transpose ? int(tensor->sizes()[0]) : int(tensor->sizes()[1]);
-  ctx->k = ctx->transpose ? int(tensor->sizes()[1]) : int(tensor->sizes()[0]);
+  ctx->n = ctx->transpose ? static_cast<int>(tensor->sizes()[0]) : static_cast<int>(tensor->sizes()[1]);
+  ctx->k = ctx->transpose ? static_cast<int>(tensor->sizes()[1]) : static_cast<int>(tensor->sizes()[0]);
 }
 
 static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{{"s4clip_scalef32", JBLAS_DTYPE::S4_CLIP},
