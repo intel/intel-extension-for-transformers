@@ -165,7 +165,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
 
     // norm
     {
-      cur = ne_rms_norm(ctx0, inpL);
+      cur = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
       // cur = cur*attention_norm(broadcasted)
       cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
@@ -337,7 +337,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
     {
       // norm
       {
-        cur = ne_rms_norm(ctx0, inpFF);
+        cur = ne_rms_norm(ctx0, inpFF, hparams.rms_norm_eps);
 
         // cur = cur*ffn_norm(broadcasted)
         cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
@@ -374,7 +374,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
     // inpL = inpL*norm(broadcasted)
     inpL = ne_mul(ctx0, inpL, model.others[1]);

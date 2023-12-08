@@ -2065,7 +2065,7 @@ struct ne_tensor* ne_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
   return ne_norm_impl(ctx, a, true);
 }
 
-struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
+struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace, float eps) {
   bool is_node = false;
 
   if (!inplace && (a->grad)) {
@@ -2074,20 +2074,21 @@ struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, 
 
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
+  ne_set_op_params(result, &eps, sizeof(eps));
+
   result->op = NE_OP_RMS_NORM;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
-  result->src1 = NULL;  // TODO: maybe store epsilon here?
 
   return result;
 }
 
-struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a) {
-  return ne_rms_norm_impl(ctx, a, false);
+struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a, float eps) {
+  return ne_rms_norm_impl(ctx, a, false, eps);
 }
 
-struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
-  return ne_rms_norm_impl(ctx, a, true);
+struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a, float eps) {
+  return ne_rms_norm_impl(ctx, a, true, eps);
 }
 
 struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b) {
@@ -6071,7 +6072,7 @@ static void ne_compute_forward_norm(const struct ne_compute_params* params, cons
 }
 
 static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
-                                            struct ne_tensor* dst) {
+                                            struct ne_tensor* dst, float eps) {
   NE_ASSERT(ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
@@ -6096,7 +6097,8 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
 
-  const float eps = 1e-6f;  // TODO: make this a parameter
+  float eps;
+  memcpy(&eps, dst->op_params, sizeof(float));
 
   // TODO: optimize
   for (int64_t i03 = 0; i03 < ne03; i03++) {

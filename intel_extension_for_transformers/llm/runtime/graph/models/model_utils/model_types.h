@@ -132,6 +132,7 @@ struct model_hparams {
 
   // ChatGLM-1
   int32_t inner_hidden_size = 0;
+  float rms_norm_eps = 1e-6f;  // rms norm epsilon
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
