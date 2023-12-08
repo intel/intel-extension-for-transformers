@@ -860,6 +860,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     }
 
 
+
   
     uint32_t magic = file.read_u32();
 
