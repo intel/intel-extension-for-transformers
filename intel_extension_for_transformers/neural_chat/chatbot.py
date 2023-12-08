@@ -126,7 +126,7 @@ def build_chatbot(config: PipelineConfig=None):
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
                 else: # pragma: no cover
-                    set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED, "unsupported plugin {plugin_name}")
+                    set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -155,41 +155,40 @@ def build_chatbot(config: PipelineConfig=None):
         adapter.load_model(parameters)
     except RuntimeError as e:
         if "out of memory" in str(e):
-            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY, str(e))
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
             return
         elif "devices are busy or unavailable" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY, str(e))
+            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
             return
         elif "tensor does not have a device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, str(e))
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
             return
         else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
             return
     except ValueError as e:
         if "load_model: unsupported device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED, str(e))
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
             return
         elif "load_model: unsupported model" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED, str(e))
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
             return
         elif "load_model: tokenizer is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND, str(e))
+            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
             return
         elif "load_model: model name or path is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND, str(e))
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
             return
         elif "load_model: model config is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND, str(e))
+            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
             return
         else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
             return
     except Exception as e:
-        set_latest_error(ErrorCodes.ERROR_GENERIC, str(e))
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
         return
     return adapter
-
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -211,6 +210,19 @@ def finetune_model(config: BaseFinetuningConfig):
             set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
         elif "--do_train requires a train dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
+    except Exception as e:
+        if config.finetune_args.peft == "lora":
+            set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "llama_adapter":
+            set_latest_error(ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "ptun":
+            set_latest_error(ErrorCodes.ERROR_PTUN_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "prefix":
+            set_latest_error(ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "prompt":
+            set_latest_error(ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
 
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
@@ -221,7 +233,18 @@ def optimize_model(model, config, use_llm_runtime=False):
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    res = optimization.optimize(model, use_llm_runtime)
-    if isinstance(res, ErrorCodes):
-        set_latest_error(res)
-    return res
+    try:
+        model = optimization.optimize(model, use_llm_runtime)
+        return model
+    except Exception as e:
+        from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig
+        )
+        if type(config) == MixedPrecisionConfig:
+            set_latest_error(ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
+        elif type(config) == WeightOnlyQuantConfig:
+            set_latest_error(ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
+        elif type(config) == BitsAndBytesConfig:
+            set_latest_error(ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)

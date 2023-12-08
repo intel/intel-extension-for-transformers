@@ -24,6 +24,8 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..utils.error_utils import set_latest_error
+from ..errorcode import ErrorCodes
 
 
 def construct_parameters(query, model_name, device, assistant_model, config):
@@ -176,7 +178,12 @@ class BaseModel(ABC):
                             if response == "Response with template.":
                                 return plugin_instance.response_template, link
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:
@@ -192,8 +199,12 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
-        response = predict_stream(
-            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+
+        try:
+            response = predict_stream(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -280,8 +291,11 @@ class BaseModel(ABC):
             query = conv_template.get_prompt()
 
         # LLM inference
-        response = predict(
-            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        try:
+            response = predict(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
 
         # plugin post actions
         for plugin_name in get_registered_plugins():

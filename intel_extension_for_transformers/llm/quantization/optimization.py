@@ -38,48 +38,35 @@ class Optimization:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         config = self.optimization_config
-        try:
-            if re.search("flan-t5", model_name, re.IGNORECASE):
-                from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM
-                optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
-                        model_name,
-                        quantization_config=config,
-                        use_llm_runtime=use_llm_runtime,
-                        trust_remote_code=True)
-            elif (
-                re.search("gpt", model_name, re.IGNORECASE)
-                or re.search("mpt", model_name, re.IGNORECASE)
-                or re.search("bloom", model_name, re.IGNORECASE)
-                or re.search("llama", model_name, re.IGNORECASE)
-                or re.search("opt", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-                or re.search("starcoder", model_name, re.IGNORECASE)
-            ):
-                from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-                optimized_model = AutoModelForCausalLM.from_pretrained(
+        if re.search("flan-t5", model_name, re.IGNORECASE):
+            from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM
+            optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
                     quantization_config=config,
                     use_llm_runtime=use_llm_runtime,
                     trust_remote_code=True)
-            elif re.search("chatglm", model_name, re.IGNORECASE):
-                from intel_extension_for_transformers.transformers import AutoModel
-                optimized_model = AutoModel.from_pretrained(
-                    model_name,
-                    quantization_config=config,
-                    use_llm_runtime=use_llm_runtime,
-                    trust_remote_code=True)
-        except Exception as e:
-            from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
-            from intel_extension_for_transformers.utils import logger
-            if type(self.optimization_config) == MixedPrecisionConfig:
-                logger.error(f"Optimize model {model.config._name_or_path} with mixed precision failed, {e}")
-                return ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL
-            elif type(self.optimization_config) == WeightOnlyQuantConfig:
-                logger.error(f"Optimize model {model.config._name_or_path} with weight only quantization failed, {e}")
-                return ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL
-            elif type(self.optimization_config) == BitsAndBytesConfig:
-                logger.error(f"Optimize model {model.config._name_or_path} with bits and bytes failed, {e}")
-                return ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL
+        elif (
+            re.search("gpt", model_name, re.IGNORECASE)
+            or re.search("mpt", model_name, re.IGNORECASE)
+            or re.search("bloom", model_name, re.IGNORECASE)
+            or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("opt", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
+        ):
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+            optimized_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
+        elif re.search("chatglm", model_name, re.IGNORECASE):
+            from intel_extension_for_transformers.transformers import AutoModel
+            optimized_model = AutoModel.from_pretrained(
+                model_name,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
         return optimized_model

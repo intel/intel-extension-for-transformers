@@ -61,6 +61,7 @@ from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
 
+
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
 
@@ -298,11 +299,13 @@ class Finetuning:
             or config.architectures[0].endswith("QWenLMHeadModel"):
             self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            return self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
+            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
             raise NotImplementedError("Unsupported architecture {}, only support CausalLM (CLM) \
                     and ConditionalGeneration (Seq2seq) now.".format(
-                    config.architectures[0]))
+                    config.architectures[0]
+                )
+            )
 
     def find_all_linear_names(self, model):
         cls = torch.nn.Linear
@@ -330,7 +333,7 @@ class Finetuning:
         if finetune_args.device == 'hpu':
             if not is_optimum_habana_available():
                 raise ImportError(
-                      "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
+                    "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
                 )
 
         # Load pretrained model and tokenizer
@@ -465,7 +468,6 @@ class Finetuning:
         if training_args.do_eval:
             if "validation" not in tokenized_datasets:
                 raise ValueError("--do_eval requires a validation dataset")
-
             eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
