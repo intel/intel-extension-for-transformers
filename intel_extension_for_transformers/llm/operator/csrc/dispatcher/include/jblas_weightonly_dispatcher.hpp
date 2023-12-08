@@ -37,7 +37,7 @@ struct woq_config_param {
 struct woq_runtime_ctx {
   torch::Tensor *activation, *weight, *bias, *output;
   bool transpose;
-  int64_t blocksize, m, n, k, lda, ldo;
+  int blocksize, m, n, k, lda, ldo;
   float alpha, beta;
   jblas::storage::gemm::IWeightBase* deseries_wei;
 };
