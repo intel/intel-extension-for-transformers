@@ -15,15 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..constants import ErrorCodes
+from ..errorcode import ErrorCodes
 from intel_extension_for_transformers.utils import logger
 
 _latest_error = None
 
-def set_latest_error(error_code, exception_string):
+def set_latest_error(error_code):
     global _latest_error
     _latest_error = error_code
-    logger.error(f"neuralchat error: {exception_string}")
+    logger.error(f"neuralchat error: {ErrorCodes.error_strings[error_code]}")
 
 def get_latest_error():
     return _latest_error

@@ -16,12 +16,10 @@
 # limitations under the License.
 """Error code and constant value for Neural Chat."""
 
-from enum import IntEnum
-
 STORAGE_THRESHOLD_GB = 30
 GPU_MEMORY_THRESHOLD_MB = 6
 
-class ErrorCodes(IntEnum):
+class ErrorCodes:
     # General Service Error Code - System related
     ERROR_OUT_OF_MEMORY = 1001 # out of memory
     ERROR_DEVICE_BUSY = 1002 # device busy

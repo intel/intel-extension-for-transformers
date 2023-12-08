@@ -16,15 +16,13 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-import os
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
-from intel_extension_for_transformers.utils import logger
-from .constants import ErrorCodes, STORAGE_THRESHOLD_GB
+from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
 from .utils.error_utils import set_latest_error
 import psutil
 import torch
@@ -48,7 +46,7 @@ def build_chatbot(config: PipelineConfig=None):
     available_storage = psutil.disk_usage('/').free
     available_storage_gb = available_storage / (1024 ** 3)
     if available_storage_gb < STORAGE_THRESHOLD_GB:
-        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE, "the current available storage is insufficient.")
+        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
         return
 
     global plugins
@@ -56,16 +54,16 @@ def build_chatbot(config: PipelineConfig=None):
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
-        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED, f"invalid device value {config.device}")
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
         return
 
     if config.device == "cuda":
         if not torch.cuda.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, "cuda is not available")
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
             return
     elif config.device == "xpu":
         if not torch.xpu.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND, "hpu is not available")
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
             return
 
     # create model adapter
@@ -95,7 +93,7 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND, f"unsupported model name or path {config.model_name_or_path}")
+        set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
         return
 
     # register plugin instance in model adaptor
@@ -202,9 +200,16 @@ def finetune_model(config: BaseFinetuningConfig):
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
-    res = finetuning.finetune()
-    if res != ErrorCodes.SUCCESS:
-        set_latest_error(res)
+    try:
+        finetuning.finetune()
+    except FileNotFoundError as e:
+        if "Couldn't find a dataset script" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
+    except ValueError as e:
+        if "--do_eval requires a validation dataset" in str(e):
+            set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
+        elif "--do_train requires a train dataset" in str(e):
+            set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
 
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.

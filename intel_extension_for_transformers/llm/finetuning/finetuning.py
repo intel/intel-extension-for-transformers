@@ -60,8 +60,6 @@ from intel_extension_for_transformers.neural_chat.config import BaseFinetuningCo
 from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
-from intel_extension_for_transformers.neural_chat.constants import ErrorCodes
-from intel_extension_for_transformers.utils import logger
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
@@ -302,10 +300,9 @@ class Finetuning:
         elif config.architectures[0].endswith("ForConditionalGeneration"):
             return self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
-            logger.error("Unsupported architecture {}, only support CausalLM (CLM) \
+            raise NotImplementedError("Unsupported architecture {}, only support CausalLM (CLM) \
                     and ConditionalGeneration (Seq2seq) now.".format(
                     config.architectures[0]))
-            return ErrorCodes.ERROR_UNSUPPORTED_FINETUNE
 
     def find_all_linear_names(self, model):
         cls = torch.nn.Linear
@@ -332,8 +329,9 @@ class Finetuning:
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
         if finetune_args.device == 'hpu':
             if not is_optimum_habana_available():
-                logger.error("optimum habana is not installed. refer https://github.com/huggingface/optimum-habana")
-                return ErrorCodes.ERROR_SOFTWARE_PACKAGE_UNAVAILABLE
+                raise ImportError(
+                      "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
+                )
 
         # Load pretrained model and tokenizer
         #
@@ -395,8 +393,9 @@ class Finetuning:
                 re.search("starcoder", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
-            logger.error("Must provide model_name_or_path to load a pretrained CausalLM model.")
-            return ErrorCodes.ERROR_MODEL_NOT_FOUND
+            raise ValueError(
+                "Must provide model_name_or_path to load a pretrained CausalLM model."
+            )
         # add special tokens
         if data_args.special_tokens:
             additional_special_tokens = {
@@ -465,8 +464,7 @@ class Finetuning:
 
         if training_args.do_eval:
             if "validation" not in tokenized_datasets:
-                logger.error("--do_eval requires a validation dataset.")
-                return ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND
+                raise ValueError("--do_eval requires a validation dataset")
 
             eval_dataset = tokenized_datasets["validation"]
             if data_args.max_eval_samples is not None:
@@ -474,8 +472,7 @@ class Finetuning:
 
         if training_args.do_train:
             if "train" not in tokenized_datasets:
-                logger.error("--do_train requires a train dataset.")
-                return ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND
+                raise ValueError("--do_train requires a train dataset")
 
             train_dataset = tokenized_datasets["train"]
             if data_args.max_train_samples is not None:
@@ -640,8 +637,6 @@ class Finetuning:
                             training_args, gen_kwargs)
                     self.logger.info(results)
 
-        return ErrorCodes.SUCCESS
-
     def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args, config):
         # Detecting last checkpoint.
         last_checkpoint = None
@@ -698,8 +693,7 @@ class Finetuning:
 
         if training_args.do_train:
             if "train" not in raw_datasets:
-                logger.error("--do_train requires a train dataset.")
-                return ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND
+                raise ValueError("--do_train requires a train dataset")
             train_dataset = raw_datasets["train"]
             if data_args.max_train_samples is not None:
                 # We will select sample from whole data if argument is specified
@@ -759,8 +753,7 @@ class Finetuning:
 
         if training_args.do_eval:
             if "validation" not in raw_datasets:
-                logger.error("--do_eval requires a validation dataset.")
-                return ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND
+                raise ValueError("--do_eval requires a validation dataset")
             eval_examples = raw_datasets["validation"]
             if data_args.max_eval_samples is not None:
                 # We will select sample from whole data
@@ -819,8 +812,7 @@ class Finetuning:
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
-                logger.error("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
-                return ErrorCodes.ERROR_MODEL_NOT_FOUND
+                raise ValueError("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
 
             if finetune_args.qlora:
                 model = prepare_model_for_kbit_training(
@@ -926,4 +918,3 @@ class Finetuning:
 
             trainer.log_metrics("eval", metrics)
             trainer.save_metrics("eval", metrics)
-        return ErrorCodes.SUCCESS
