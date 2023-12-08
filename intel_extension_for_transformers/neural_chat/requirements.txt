@@ -1,5 +1,5 @@
 transformers>=4.32.0
-peft
+peft==0.6.2
 fschat==0.2.32
 torch==2.1.0
 torchaudio==2.1.0
