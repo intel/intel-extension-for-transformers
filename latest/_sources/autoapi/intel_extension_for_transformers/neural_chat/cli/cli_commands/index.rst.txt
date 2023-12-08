@@ -105,16 +105,4 @@ Classes
 
 
 
-.. py:class:: FinetuingExecutor
-
-
-
-
-   An abstract executor class of neuralchat server tasks.
-
-   .. py:method:: execute(argv: List[str]) -> bool
-
-      Command line entry.
-
-
 

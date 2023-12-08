@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.models.mpt_model &mdash; Intel® Extension for Transformers 0.1.dev1+gaa041e2 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.models.mpt_model &mdash; Intel® Extension for Transformers 0.1.dev1+gfbfcf67 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -90,59 +90,6 @@
              
   <section id="module-intel_extension_for_transformers.neural_chat.models.mpt_model">
 <span id="intel-extension-for-transformers-neural-chat-models-mpt-model"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.models.mpt_model" title="intel_extension_for_transformers.neural_chat.models.mpt_model"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.models.mpt_model</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.models.mpt_model" title="Link to this heading"></a></h1>
-<section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
-<section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel" title="intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MptModel</span></code></a></p></td>
-<td><p>A base class for LLM.</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.mpt_model.</span></span><span class="sig-name descname"><span class="pre">MptModel</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/mpt_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel" title="Link to this definition"></a></dt>
-<dd><p>A base class for LLM.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel.match">
-<span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/mpt_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel.match" title="Link to this definition"></a></dt>
-<dd><p>Check if the provided model_path matches the current model.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_path</strong> (<em>str</em>) – Path to a model.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if the model_path matches, False otherwise.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel.get_default_conv_template">
-<span class="sig-name descname"><span class="pre">get_default_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastchat.conversation.Conversation</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/mpt_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.mpt_model.MptModel.get_default_conv_template" title="Link to this definition"></a></dt>
-<dd><p>Get the default conversation template for the given model path.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>model_path</strong> (<em>str</em>) – Path to the model.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A default conversation template.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="../../../../conversation/index.html#conversation.Conversation" title="conversation.Conversation">Conversation</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-</section>
 </section>
 
 
@@ -159,7 +106,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fb072efa380> 
+   <jinja2.runtime.BlockReference object at 0x7f84a72706d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
