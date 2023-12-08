@@ -35,6 +35,8 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument(
+    "--restore", action="store_true", help="restore ipex quantized model from output_dir/best_configure.json")
+parser.add_argument(
     "--peft_model_id", type=str, default=None, help="model_name_or_path of peft model"
 )
 # ============Benchmark configs==============
@@ -211,7 +213,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         revision=args.revision,
         use_llm_runtime=False,
     )
-elif not args.int8 and not args.int8_bf16_mixed:
+elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     if args.peft_model_id is not None:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
@@ -246,12 +248,16 @@ if args.int8 or args.int8_bf16_mixed:
     from intel_extension_for_transformers.llm.evaluation.models import (
         TSModelCausalLMForITREX,
     )
-
-    user_model = TSModelCausalLMForITREX.from_pretrained(
-        args.output_dir,
-        file_name="best_model.pt",
-        trust_remote_code=args.trust_remote_code,
-    )
+    if args.restore:
+        from intel_extension_for_transformers.transformers.utils.utility import recover_model_from_json
+        user_model = recover_model_from_json(user_model, os.path.join(args.output_dir, "best_configure.json"), args.trust_remote_code)
+        user_model = TSModelCausalLMForITREX(user_model, config=config)
+    else:
+        user_model = TSModelCausalLMForITREX.from_pretrained(
+            args.output_dir,
+            file_name="best_model.pt",
+            trust_remote_code=args.trust_remote_code,
+        )
 
 if args.benchmark:
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
