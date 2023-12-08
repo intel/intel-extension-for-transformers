@@ -125,7 +125,7 @@ def load_vocab_for_baichuan(path: Path) -> SentencePieceVocab:
 
 
 def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
-    print("ChatGLM-1 converting: ")
+    print("Baichuan-13B converting: ")
     list_vars = model.state_dict()
     for name in list_vars.keys():
         print(name, list_vars[name].shape, list_vars[name].dtype)
