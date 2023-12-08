@@ -57,7 +57,8 @@ static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpo
                                   const std::string& compute_type, const std::string& weight_type) {
   torch::Tensor output;
   woq::woq_config_param p;
-  woq::woq_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose, block_size};
+  woq::woq_runtime_ctx ctx{nullptr,        const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose,
+                           int(block_size)};
   init_woq_config_param<woq::WOQ_QUANTIZE>(&p, &ctx, compute_type, weight_type);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_QUANTIZE);
   return output;
@@ -83,11 +84,11 @@ static void woq_linear(const torch::Tensor& activation, const torch::Tensor& wei
       rt_bias,
       &output,
   };
-  ctx.lda = activation.sizes()[1];
-  ctx.ldo = ldo;
-  ctx.m = activation.sizes()[0];
-  ctx.k = activation.sizes()[1];
-  ctx.n = ldo;
+  ctx.lda = int(activation.sizes()[1]);
+  ctx.ldo = int(ldo);
+  ctx.m = int(activation.sizes()[0]);
+  ctx.k = int(activation.sizes()[1]);
+  ctx.n = int(ldo);
   ctx.alpha = 1.f;
   ctx.beta = with_bias ? 1.f : 0.f;
   init_woq_config_param<woq::WOQ_LINEAR>(&p, &ctx, compute_type, weight_type);
@@ -107,9 +108,9 @@ static void jblasop_gemm(const torch::Tensor& matA, const torch::Tensor& matB, c
   ctx.matB = const_cast<torch::Tensor*>(&matB);
   ctx.matC = const_cast<torch::Tensor*>(&matC);
   ctx.matB_trans = matB_trans;
-  ctx.m = matA.sizes()[0];
-  ctx.n = matC.sizes()[1];
-  ctx.k = matA.sizes()[1];
+  ctx.m = int(matA.sizes()[0]);
+  ctx.n = int(matC.sizes()[1]);
+  ctx.k = int(matA.sizes()[1]);
   TORCH_CHECK(matB_trans ? ctx.k == matB.sizes()[1] : ctx.k == matB.sizes()[0],
               "QBits: input shape mismatch in jblas gemm op.");
   return jblas_gemm::dispatch_jblas_gemm(&ctx);
