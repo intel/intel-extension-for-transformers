@@ -61,9 +61,9 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
+  using namespace ne_jblas;  // NOLINT
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   cd->setThreads(nthread);
   if (params.scale_dtype != quant_sdtype::fp32) {
     // TODO(BesTLA): add unified scale type
@@ -130,7 +130,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     }
 
   } else if (params.bits == quant_bits::q8) {
-    // TODO add 8bit quantization
+    // add 8bit quantization
     if (params.compute_dtype == quant_comp::int8) {
       if (params.alg != quant_alg::sym) {
         printf("Current not support asymmetric int8 computation, reset to symmetric\n");
@@ -193,7 +193,6 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   return 0;
 }
 
-
 size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, int nthread, size_t nelements) {
   std::vector<int64_t> hist_cur(1 << 4, 0);
   std::vector<std::thread> workers;
@@ -216,7 +215,7 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
         counter += chunk_size;
         if (first >= nelements) {
           if (!local_hist.empty()) {
-            for (int j = 0; j < int(local_hist.size()); ++j) {
+            for (int j = 0; j < static_cast<int>(local_hist.size()); ++j) {
               hist_cur[j] += local_hist[j];
             }
             new_size += local_size;
@@ -231,7 +230,7 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
         local_size += ne_quantize_chunk(new_type, f32ptr, dstpr, first, last - first, local_hist.data());
       }
     };
-    if ((int)workers.size() < nthread_use - 1) {
+    if (static_cast<int>(workers.size()) < nthread_use - 1) {
       workers.resize(nthread_use - 1);
     }
     for (int it = 0; it < nthread_use - 1; ++it) {
@@ -245,9 +244,8 @@ size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, i
   return new_size;
 }
 
-
-void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,
-                        model_file_saver& saver, size_t& size_org, size_t& size_new) {
+void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,  // NOLINT
+                        model_file_saver& saver, size_t& size_org, size_t& size_new) {                      // NOLINT
   size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
   enum ne_type new_type = quant_params_to_type(params);
   model_buffer work;
@@ -257,10 +255,10 @@ void ne_common_quantize(const int nthread, const quant_params_internal& params, 
   float* f32_data = NULL;
   model_buffer f32_conv_buf;
   if (tensor.type == NE_TYPE_F32) {
-    f32_data = (float*)tensor.data;
+    f32_data = reinterpret_cast<float*>(tensor.data);
   } else if (tensor.type == NE_TYPE_F16) {
     f32_conv_buf.resize(nelements * sizeof(float));
-    f32_data = (float*)f32_conv_buf.addr;
+    f32_data = reinterpret_cast<float*>(f32_conv_buf.addr);
     const auto* f16_data = (const ne_fp16_t*)tensor.data;
     for (size_t i = 0; i < nelements; i++) {
       f32_data[i] = ne_fp16_to_fp32(f16_data[i]);
@@ -287,48 +285,6 @@ __WRITE_FILE:
   saver.write_tensor(tensor, new_type, new_data, new_size);
   printf("\n");
 }
-
-
-static void model_quantize_special(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer){
-  auto ftype = quant_params_to_ftype(params);
-  quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
-  int nthread = params.nthread;
-  if (nthread <= 0) {
-    nthread = std::thread::hardware_concurrency();
-  }
-  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
-                                                                          /*vocab_only*/ false));
-  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
-  size_t total_size_org = 0;
-  size_t total_size_new = 0;
-  size_t idx = 0;
-  for (model_load_tensor& tensor : model_loader->tensors_map.tensors) {
-    model_buffer read_data;
-    read_data.resize(tensor.size);
-    tensor.data = read_data.addr;
-    model_loader->load_data_for(tensor);
-    printf("[%4zu/%4zu] %36s - %16s, type = %6s, ", ++idx, model_loader->tensors_map.tensors.size(),
-           tensor.name.c_str(), model_format_tensor_shape(tensor.ne).c_str(), ne_type_name(tensor.type));
-    std::vector<int64_t> tmpne(tensor.ne.size());
-    for (size_t i = 0; i < tmpne.size(); i++) {
-      tmpne[i] = static_cast<int64_t>(tensor.ne[i]);
-    }
-    auto lconfig = quant_layer->get_layer_config(tensor.name, tmpne, tensor.type);
-    bool quantize = lconfig.valid();
-    printf("%s,", lconfig.getstr().c_str());
-    if (quantize) {
-      ne_common_quantize(nthread, lconfig, tensor, file_saver, total_size_org, total_size_new);
-    } else {
-      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
-      total_size_org += tensor.size;
-      total_size_new += tensor.size;
-      file_saver.write_tensor(tensor, tensor.type, tensor.data, tensor.size);
-      printf("\n");
-    }
-  }
-  printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
-  printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
-};
 
 static void model_quantize_internal(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   auto ftype = quant_params_to_ftype(params);
@@ -371,7 +327,46 @@ static void model_quantize_internal(const quant_params& params, std::shared_ptr<
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
 }
 
-
+static void model_quantize_special(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer){
+  auto ftype = quant_params_to_ftype(params);
+  quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
+  int nthread = params.nthread;
+  if (nthread <= 0) {
+    nthread = std::thread::hardware_concurrency();
+  }
+  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
+                                                                          /*vocab_only*/ false));
+  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
+  size_t total_size_org = 0;
+  size_t total_size_new = 0;
+  size_t idx = 0;
+  for (model_load_tensor& tensor : model_loader->tensors_map.tensors) {
+    model_buffer read_data;
+    read_data.resize(tensor.size);
+    tensor.data = read_data.addr;
+    model_loader->load_data_for(tensor);
+    printf("[%4zu/%4zu] %36s - %16s, type = %6s, ", ++idx, model_loader->tensors_map.tensors.size(),
+           tensor.name.c_str(), model_format_tensor_shape(tensor.ne).c_str(), ne_type_name(tensor.type));
+    std::vector<int64_t> tmpne(tensor.ne.size());
+    for (size_t i = 0; i < tmpne.size(); i++) {
+      tmpne[i] = static_cast<int64_t>(tensor.ne[i]);
+    }
+    auto lconfig = quant_layer->get_layer_config(tensor.name, tmpne, tensor.type);
+    bool quantize = lconfig.valid();
+    printf("%s,", lconfig.getstr().c_str());
+    if (quantize) {
+      ne_common_quantize(nthread, lconfig, tensor, file_saver, total_size_org, total_size_new);
+    } else {
+      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
+      total_size_org += tensor.size;
+      total_size_new += tensor.size;
+      file_saver.write_tensor(tensor, tensor.type, tensor.data, tensor.size);
+      printf("\n");
+    }
+  }
+  printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
+  printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
+};
 
 int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   if (params.model_arch==MODEL_WHISPER){
