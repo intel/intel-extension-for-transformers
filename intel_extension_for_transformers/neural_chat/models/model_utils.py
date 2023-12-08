@@ -38,6 +38,7 @@ from transformers import (
     TextIteratorStreamer,
     StoppingCriteriaList,
     StoppingCriteria,
+    LlamaForCausalLM
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -268,7 +269,8 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False
+    use_llm_runtime=False,
+    assistant_model=None
 ):
     """
     Load the model and initialize the tokenizer.
@@ -277,6 +279,7 @@ def load_model(
         model_name (str): The name of the model.
         device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
+        assistant_model (str, optional): The assistant model name. Defaults to None.
 
     Returns:
         None
@@ -323,6 +326,25 @@ def load_model(
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
+
+    # load assistant model
+    if assistant_model:
+        print("Loading assistant model...")
+        if 'llama' in assistant_model.lower():
+            assistant_model_class = LlamaForCausalLM
+        else:
+            assistant_model_class = AutoModelForCausalLM
+        print(f"Loading assistant model via {assistant_model_class}")
+        assis_model = assistant_model_class.from_pretrained(
+            assistant_model, 
+            low_cpu_mem_usage=True, 
+            torch_dtype=torch_dtype)
+        assis_model = assis_model.eval().to(device)
+        assis_model = assis_model.to(memory_format=torch.channels_last)
+        MODELS[model_name]["assistant_model"] = assis_model
+    else:
+        MODELS[model_name]["assistant_model"] = None
+
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
@@ -598,7 +620,8 @@ def tokenization(prompt, tokenizer, device):
         input_token_len = input_tokens.input_ids.shape[-1]
     return input_tokens, input_token_len
 
-def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
+def get_generate_kwargs(
+        max_new_tokens, input_token_len, stop_token_id, assistant_model=None):
     generate_kwargs = {
         "stopping_criteria": StoppingCriteriaList(
             [
@@ -610,6 +633,9 @@ def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
             ]
         )
     }
+    if assistant_model:
+        generate_kwargs["assistant_model"] = assistant_model
+        generate_kwargs["use_cache"] = True
     return generate_kwargs
 
 def is_llm_runtime_model(model):
@@ -694,6 +720,7 @@ def predict_stream(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model = MODELS[model_name]["assistant_model"]
     errors_queue = Queue()
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
@@ -711,7 +738,9 @@ def predict_stream(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer),
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:
@@ -936,6 +965,7 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
 
@@ -949,7 +979,9 @@ def predict(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer), 
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:
