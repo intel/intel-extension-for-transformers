@@ -1,11 +1,12 @@
-transformers>=4.32.0
-peft
+transformers>=4.35.2
+peft==0.6.2
 fschat==0.2.32
 torch==2.1.0
 torchaudio==2.1.0
 intel_extension_for_pytorch
 num2words
 speechbrain
+onnx>=1.15.0
 paddlepaddle
 paddlespeech
 shortuuid
@@ -40,6 +41,7 @@ git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2
 accelerate
 cchardet
 pymysql
+tensorflow>=2.13.0
 deepface
 exifread
 spacy

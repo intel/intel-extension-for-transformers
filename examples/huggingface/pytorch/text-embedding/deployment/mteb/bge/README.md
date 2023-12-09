@@ -49,7 +49,7 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 
-LLM Runtime can parse ONNX model and LLM Runtime IR, and we support following dtype:
+LLM Runtime can support the following data types:
 | Model Name | FP32 | BF16 | Static INT8 | Dynamic INT8
 |---|:---:|:---:|:---:|:---:|
 |[BGE-Small](https://huggingface.co/BAAI/bge-small-en-v1.5), [BGE-Base](https://huggingface.co/BAAI/bge-base-en-v1.5), [BGE-Large](https://huggingface.co/BAAI/bge-large-en-v1.5)| ✅ | ✅ | ✅ | ✅

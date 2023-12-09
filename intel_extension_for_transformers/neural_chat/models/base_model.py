@@ -24,9 +24,15 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
-def construct_parameters(query, model_name, device, config):
+def construct_parameters(query, model_name, device, assistant_model, config):
     params = {}
     params["prompt"] = query
     params["temperature"] = config.temperature
@@ -43,6 +49,7 @@ def construct_parameters(query, model_name, device, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["assistant_model"] = assistant_model
     params["device"] = device
     return params
 
@@ -101,6 +108,7 @@ class BaseModel(ABC):
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
             "hf_access_token": "user's huggingface access token"
+            "assistant_model": "assistant model name to speed up inference"
         }
         """
         self.model_name = kwargs["model_name"]
@@ -109,6 +117,7 @@ class BaseModel(ABC):
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
         self.ipex_int8 = kwargs["ipex_int8"]
+        self.assistant_model = kwargs["assistant_model"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -120,7 +129,8 @@ class BaseModel(ABC):
                    use_deepspeed=kwargs["use_deepspeed"],
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
-                   use_llm_runtime=kwargs["use_llm_runtime"])
+                   use_llm_runtime=kwargs["use_llm_runtime"],
+                   assistant_model=kwargs["assistant_model"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """
@@ -163,7 +173,7 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                print(f"Get response: {response} from cache")
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
@@ -188,7 +198,8 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
-        response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+        response = predict_stream(
+            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -244,7 +255,7 @@ class BaseModel(ABC):
                         if plugin_name == "cache":
                             response = plugin_instance.pre_llm_inference_actions(query)
                             if response:
-                                print(f"Get response: {response} from cache")
+                                logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
@@ -275,7 +286,8 @@ class BaseModel(ABC):
             query = conv_template.get_prompt()
 
         # LLM inference
-        response = predict(**construct_parameters(query, self.model_name, self.device, config))
+        response = predict(
+            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
 
         # plugin post actions
         for plugin_name in get_registered_plugins():

@@ -31,8 +31,10 @@ from huggingface_hub import Repository, create_repo
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.nn.functional import pad
+
 import transformers
 from transformers import (
+    AutoModelForCausalLM,
     CONFIG_MAPPING,
     MODEL_MAPPING,
     AutoConfig,
@@ -40,7 +42,7 @@ from transformers import (
     SchedulerType,
     default_data_collator,
 )
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+# from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
 from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
@@ -49,7 +51,7 @@ from intel_extension_for_transformers.transformers.pruner import (WeightPruningC
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
-from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate as lm_evaluate
+from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
 check_min_version("4.27.0.dev0")
 logger = logging.getLogger(__name__)
@@ -62,97 +64,6 @@ LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable
 RANK = int(os.getenv('RANK', -1))
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 
-class Evaluator:
-    def __init__(self, dataset, tokenizer, device, batch_size=16):
-        self.dataset = dataset
-        self.tokenizer = tokenizer
-        self.device = device
-        self.dataloader = INCDataloader(dataset, tokenizer, self.device, batch_size)
-
-    @torch.no_grad()
-    def evaluate(self, model):
-        model.eval()
-        # The task is to predict the last word of the input.
-        total, hit = 0, 0
-        if torch.cuda.is_available():
-            my_timer = GPUTimer(timelogs = [])
-        else:
-            my_timer = CPUTimer(timelogs = [])
-        warmup_steps = 10
-        step = 0
-        for input_ids, label, label_indices in tqdm(self.dataloader):
-            with torch.no_grad():
-                step += 1
-                # timing
-                if step > warmup_steps: my_timer.__enter__()
-                outputs = model(input_ids)
-                if step > warmup_steps: my_timer.__exit__()
-                last_token_logits = outputs[0][torch.arange(len(label_indices)), label_indices, :]
-                pred = last_token_logits.argmax(dim=-1)
-                total += label.size(0)
-                hit += (pred == label).sum().item()
-                if step % 100 == 0:
-                    logger.info(f"eval step:{step}  accuracy:{float(hit/total)}")
-        avg_latency = my_timer.get_avg_time()
-        del my_timer
-        accuracy = hit / total
-        return accuracy, avg_latency
-
-
-class INCDataloader():
-    def __init__(self, dataset, tokenizer, device, batch_size=1):
-        self.dataset = dataset
-        self.tokenizer = tokenizer
-        self.device = device
-        self.batch_size = batch_size
-        import math
-        self.length = math.ceil(len(dataset) / self.batch_size)
-        self.pad_len = 196
-
-        # tokenize the dataset
-        def tokenize_function(examples):
-            example = self.tokenizer(examples['text'])
-            return example
-
-        self.dataset = self.dataset.map(tokenize_function, batched=True)
-        self.dataset.set_format(type='torch', columns=['input_ids'])
-
-    def pad_input(self, input):
-        input_id = input['input_ids'].unsqueeze(0).to(self.device)
-        label = input_id[:, -1].to(self.device)
-        pad_len = self.pad_len - input_id.shape[1]
-        label_index = -2 - pad_len
-        input_id = pad(input_id, (0, pad_len), value=1)
-
-        return (input_id, label, label_index)
-
-    def __iter__(self):
-        input_ids = None
-        labels = None
-        label_indices = None
-        for idx, batch in enumerate(self.dataset):
-            input_id, label, label_index = self.pad_input(batch)
-
-            if input_ids is None:
-                input_ids = input_id
-                labels = label
-                label_indices = [label_index]
-            else:
-                input_ids = torch.cat((input_ids, input_id), 0).to(self.device)
-                labels = torch.cat((labels, label), 0).to(self.device)
-                label_indices.append(label_index)
-
-            if (idx + 1) % self.batch_size == 0:
-                yield (input_ids, labels, label_indices)
-                input_ids = None
-                labels = None
-                label_indices = None
-        if (idx + 1) % self.batch_size != 0:
-            yield (input_ids, labels, label_indices)
-
-    def __len__(self):
-        return self.length
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune a transformers model on a causal language modeling task")
     parser.add_argument(
@@ -160,12 +71,6 @@ def parse_args():
         type=str,
         default="wikitext-2-raw-v1",
         help="The name of the pruning dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--evaluation_dataset_name",
-        type=str,
-        default=None,
-        help="The name of the evaluation dataset to use (via the datasets library).",
     )
     parser.add_argument(
         "--dataset_config_name",
@@ -347,10 +252,6 @@ def parse_args():
         help="Target sparsity of the model."
     )
     parser.add_argument(
-        "--auto_slim", action="store_true",
-        help="Whether or not to auto slim the model after pruning."
-    ) 
-    parser.add_argument(
         "--auto_config", action="store_true",
         help="Whether to automatically generate pruning configs."
     )
@@ -365,11 +266,12 @@ def parse_args():
     
     # Evaluation config
     parser.add_argument("--tasks", default=["lambada_openai"],
-        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'"
+        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa']",
     )
     parser.add_argument("--eval_fp16", action='store_true',
-                    help=" fp16")
-
+        help=" fp16")
+    parser.add_argument("--use_accelerate", action='store_true',
+        help="Usually use to accelerate evaluation for large models")
     
     args = parser.parse_args()
         
@@ -611,7 +513,8 @@ def main():
         pruning_configs=[
             {
                 "pruning_type": "sparse_gpt",
-                "op_names": [".attn", "_proj", ".fc", "key", "dense", "_h"],
+                "op_names": [".*"],
+                "excluded_op_names": ["lm_head", "embed_out"],
             }
         ]
     else:
@@ -630,23 +533,23 @@ def main():
         target_sparsity=args.target_sparsity,
         pattern=args.pruning_pattern,
     )
-
+    
+    device = args.device
+    if device != 'cpu':
+        device = "cuda:"+str(device)
+        
     if args.do_prune:
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
         use_cache = model.config.use_cache
         model.config.use_cache = False
-        device = args.device
-        if device != 'cpu':
-            device = "cuda:"+str(device)
+       
         pruning = prepare_pruning(model, configs, dataloader=train_dataloader, device=device)
         model.config.use_cache = use_cache
         
     if args.output_dir is not None:
         ###TODO set ddp save method
         output_dir = args.output_dir
-        if args.auto_slim:
-            output_dir += "/before_slim"
         model.save_pretrained(output_dir)
         tokenizer.save_pretrained(output_dir)
         logger.info(f"The model has been exported to {output_dir}")
@@ -657,57 +560,27 @@ def main():
     else:
         logger.info(f"*****  Evaluation in CPU mode.  *****")
     model.eval()
-    if args.evaluation_dataset_name != None:
-        dataset_eval = load_dataset(
-            # for example:use the_pile's validation set for pruning, and lambada dataset for eval
-            args.evaluation_dataset_name,
-            args.dataset_config_name,
-            split=f"validation",
-        )
-    else:
-        dataset_eval = raw_datasets["validation"]
-    dataset_eval = dataset_eval.shuffle(seed=42)
-    evaluator = Evaluator(dataset_eval, tokenizer, model.device, batch_size=args.per_device_eval_batch_size)
-    def eval_func(model):
-        acc, avg_latency = evaluator.evaluate(model)
-        return acc, avg_latency
 
     model_name = args.model_name_or_path
+    dtype = 'float32'
     if args.eval_fp16:
-        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float16'
-    else:
-        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float32'
+        if (hasattr(model, 'config') and model.config.torch_dtype is torch.bfloat16):
+            dtype = 'bfloat16'
+        else:
+            dtype='float16'
+    model_args = f'pretrained={model_name},tokenizer={model_name},dtype={dtype},use_accelerate={args.use_accelerate}'
     eval_batch = args.per_device_eval_batch_size
-    
-    results = lm_evaluate(model="hf-causal",
-                        model_args=model_args,
-                        user_model=model, tasks=args.tasks,
-                        device=device,
-                        batch_size=eval_batch)
-
-    if not args.auto_slim:
-        # only eval
-        logger.info(f"***** Running Evaluation *****")
-        acc, _ = eval_func(model)
-        logger.info(f"pruned model accuracy:{acc}")
-    else:
-        logger.info(f"***** Running Evaluation before ffn auto slim*****")
-        accuracy, avg_latency = eval_func(model)
-        logger.info(f"accuracy:{accuracy}  avg_latency:{avg_latency}")
-        model = model_slim(model, round_multiplier=32)
-
-        logger.info(f"***** Running Evaluation after ffn auto_slim*****")
-        accuracy, avg_latency = eval_func(model)
-        logger.info(f"accuracy:{accuracy}  avg_latency:{avg_latency}")
-    
-    if RANK in {-1, 0}:
-        if args.output_dir is not None and args.auto_slim:
-            model.to('cpu')
-            torch.save(model, args.output_dir+"/slimed_model.pt")
-            tokenizer.save_pretrained(args.output_dir)
-            if args.push_to_hub:
-                repo.push_to_hub(commit_message="End of auto slim", auto_lfs_prune=True)
+    user_model = None if args.use_accelerate else model
+    results = evaluate(
+            model="hf-causal",
+            model_args=model_args,
+            user_model=user_model,
+            batch_size=eval_batch,
+            tasks=args.tasks,
+            device=device,
+    )
     
 if __name__ == "__main__":
     main()
+
 

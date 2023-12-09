@@ -26,6 +26,8 @@ from ..config import ModelArguments, DataArguments, FinetuningArguments
 from ..plugins import plugins
 from transformers import TrainingArguments
 from ..chatbot import build_chatbot, finetune_model
+from ..config_logging import configure_logging
+logger = configure_logging()
 
 __all__ = ['BaseCommand', 'HelpCommand', 'TextVoiceChatExecutor', 'FinetuingExecutor']
 
@@ -163,7 +165,7 @@ class VersionCommand:
         msg = 'Package Version:\n'
         msg += '    {}\n\n'.format(version)
 
-        print(msg)
+        logger.info(msg)
         return True
 
 
@@ -225,10 +227,10 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
         self.chatbot = build_chatbot(self.config)
         try:
             res = self(prompt)
-            print(res)
+            logger.info(res)
             return True
         except Exception as e:
-            print("TextVoiceChatExecutor Exception: ", e)
+            logger.info("TextVoiceChatExecutor Exception: {}".format(e))
             return False
 
     def __call__(
@@ -266,10 +268,10 @@ class FinetuingExecutor(BaseCommandExecutor):
         self.finetuneCfg = TextGenerationFinetuningConfig(model_args, data_args, training_args, finetune_args)
         try:
             res = self()
-            print(res)
+            logger.info(res)
             return True
         except Exception as e:
-            print("FinetuingExecutor Exception: ", e)
+            logger.info("FinetuingExecutor Exception: {}".format(e))
             return False
 
     def __call__(self):
