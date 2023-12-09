@@ -26,6 +26,8 @@ from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
 from .utils.error_utils import set_latest_error
 import psutil
 import torch
+from .config_logging import configure_logging
+logger = configure_logging()
 
 
 def build_chatbot(config: PipelineConfig=None):

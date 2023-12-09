@@ -17,7 +17,12 @@
 
 from num2words import num2words
 import re
-
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 class EnglishNormalizer:
     def __init__(self):
         self.correct_dict = {
@@ -94,7 +99,7 @@ class EnglishNormalizer:
                     else:
                         word = num2words(word)
                 except Exception as e:
-                    print(f"num2words fail with word: {word} and exception: {e}")
+                    logging.info("num2words fail with word: %s and exception: %s", word, e)
             else:
                 try:
                     val = int(word)
