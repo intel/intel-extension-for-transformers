@@ -23,5 +23,6 @@ Submodules
 
    chatbot/index.rst
    config/index.rst
+   config_logging/index.rst
 
 

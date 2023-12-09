@@ -1,0 +1,39 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.config_logging`
+=====================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.config_logging
+
+.. autoapi-nested-parse::
+
+   Neural Chat Python logging.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.config_logging.configure_logging
+
+
+
+.. py:function:: configure_logging(log_file='app.log', log_level=logging.INFO)
+
+   Configure logging for the application.
+
+   Parameters:
+   - log_file: str, optional, default: "app.log"
+       The name of the log file.
+   - log_level: int, optional, default: logging.INFO
+       The logging level.
+
+   Returns:
+   - logger: logging.Logger
+       The configured logger instance with specified handlers and formatters.
+
+
