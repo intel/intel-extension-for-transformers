@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 import copy, time
 from datetime import datetime
+import sys
 import torch
 import transformers
 import warnings
@@ -27,6 +28,13 @@ import re, os
 from threading import Thread
 import contextlib
 from huggingface_hub import snapshot_download
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO,
+    stream=sys.stdout
+)
 from typing import List
 from transformers import (
     GenerationConfig,
@@ -47,7 +55,6 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
-
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
 
@@ -82,7 +89,7 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
         # Checks if online or not
         if is_offline_mode():
             if local_rank == 0:
-                print("Offline mode: forcing local_files_only=True")
+                logging.info("Offline mode: forcing local_files_only=True")
 
         # Only download PyTorch weights by default
         allow_patterns = ["*.bin"]
@@ -207,7 +214,7 @@ def max_input_len(input_text_length):
     elif input_text_length <= 2048:
         return 2048
     else:
-        print("Max support length is 4096")
+        logging.info("Max support length is 4096")
         return 4096
 
 
@@ -230,7 +237,7 @@ def import_deepspeed():
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
-    print("DeepSpeed is enabled.")
+    logging.info("DeepSpeed is enabled.")
 
 
 def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
@@ -310,7 +317,7 @@ def load_model(
         if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
             bitsandbytes_quant_config = optimization_config
         else:
-            print(
+            logging.warning(
                 "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
                 + " library is available, ignoring bitsandbytes config now."
             )
@@ -322,7 +329,7 @@ def load_model(
     elif dtype == "float32":
         torch_dtype = torch.float32
     else:
-        print(f"Unsupported dtype {dtype}, using float32 now.")
+        logging.warning(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
@@ -356,7 +363,8 @@ def load_model(
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
-    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
+
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         if not model.config.is_encoder_decoder:
@@ -365,13 +373,12 @@ def load_model(
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
-        print("Optimized Model loaded.")
+        logging.info("Optimized Model loaded.")
         return
-    
-    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
-        load_to_meta = False
 
+    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
+        logging.warning("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
+        load_to_meta = False
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
@@ -492,14 +499,6 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if isinstance(optimization_config, WeightOnlyQuantConfig) and not re.search("llama", model_name, re.IGNORECASE):
-        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config, use_llm_runtime)
-
-        MODELS[model_name]["model"] = model
-        MODELS[model_name]["tokenizer"] = tokenizer
-        print("Optimized Model loaded.")
-        return
     if device == "hpu":
         if peft_path:
             from peft import PeftModel
@@ -529,18 +528,9 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            import intel_extension_for_pytorch as intel_ipex
-            if re.search("llama", model_name, re.IGNORECASE):
-                qconfig = None if ipex_int8 == False else intel_ipex.quantization.get_weight_only_quant_qconfig_mapping(
-                    weight_dtype=torch.quint4x2, lowp_mode=intel_ipex.quantization.WoqLowpMode.BF16
-                )
-                model = intel_ipex.optimize_transformers(model.eval(),
-                                                         dtype=torch_dtype,
-                                                         inplace=True,
-                                                         quantization_config=qconfig,
-                                                         deployment_mode=cpu_jit
-                                                        )
-            elif torch_dtype == torch.bfloat16 and not ipex_int8:
+            if torch_dtype == torch.bfloat16 and not ipex_int8:
+                import intel_extension_for_pytorch as intel_ipex
+
                 model = intel_ipex.optimize(
                     model.eval(),
                     dtype=torch_dtype,
@@ -807,7 +797,7 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len = len(output_token[0]) if is_llm_runtime_model(model) else \
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
                                       output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
