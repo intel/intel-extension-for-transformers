@@ -55,6 +55,9 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
+
+import shutil
+
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
 
@@ -240,11 +243,19 @@ def import_deepspeed():
     logging.info("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
+def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graphs, is_meta, token=None):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
 
     world_size, rank, local_rank = initialize_distributed_hpu()
+    merged_model_dir = None
+    if peft_path and is_meta:
+        merged_model_dir = "/tmp/text_generation_merged_peft_model"
+        if local_rank == 0:
+            if Path(merged_model_dir).is_dir():
+                shutil.rmtree(merged_model_dir)
+            peft_model(model_name_or_path, peft_path, torch.bfloat16, token).save_pretrained(merged_model_dir)
+        torch.distributed.barrier()
 
     model = model.eval()
     ds_inference_kwargs = {"dtype": torch.bfloat16}
@@ -253,7 +264,8 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta,
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token)
+        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
+                               checkpoints_json, token)
 
     torch.distributed.barrier()
 
@@ -263,6 +275,50 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta,
     ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
+
+
+def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
+    import importlib.util
+
+    if importlib.util.find_spec("peft") is None:
+        raise ImportError("The `peft` package is not installed, please run: `pip install peft`.")
+    from peft import AutoPeftModelForCausalLM
+    from peft.config import PeftConfigMixin
+
+    base_model_name = PeftConfigMixin.from_pretrained(
+        peft_model,
+        use_auth_token=hf_access_token,
+    ).base_model_name_or_path
+
+    base_model_is_local = Path(base_model_name).is_dir()
+    if not base_model_is_local:
+        # Check if the base model path to a remote repository on the HF Hub exists
+        from huggingface_hub import list_repo_files
+
+        try:
+            list_repo_files(base_model_name)
+            base_model_is_remote = True
+        except Exception:
+            base_model_is_remote = False
+
+    if base_model_is_local or base_model_is_remote:
+        model = AutoPeftModelForCausalLM.from_pretrained(peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                         use_auth_token=hf_access_token)
+    else:
+        # Since the base model doesn't exist locally nor remotely, use `args.model_name_or_path` as the base model
+        print(
+            f"The base model `{base_model_name}` of the LoRA configuration associated"
+            f" to `{peft_model}` does not exist locally or remotely. Using "
+            f"`--model_name_or_path {model_name}` as a fall back for the base model."
+        )
+        from peft import PeftModel
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                     use_auth_token=hf_access_token)
+        model = PeftModel.from_pretrained(model, peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                          use_auth_token=hf_access_token)
+
+    return model.merge_and_unload()
 
 def load_model(
     model_name,
@@ -376,9 +432,6 @@ def load_model(
         logging.info("Optimized Model loaded.")
         return
 
-    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        logging.warning("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
-        load_to_meta = False
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
@@ -500,7 +553,7 @@ def load_model(
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
     if device == "hpu":
-        if peft_path:
+        if peft_path and not (use_deepspeed and load_to_meta):
             from peft import PeftModel
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16)
@@ -516,6 +569,7 @@ def load_model(
             model = init_deepspeed_inference(
                 model=model,
                 model_name_or_path=model_name,
+                peft_path=peft_path,
                 use_hpu_graphs=use_hpu_graphs,
                 is_meta=load_to_meta,
                 token=hf_access_token,
