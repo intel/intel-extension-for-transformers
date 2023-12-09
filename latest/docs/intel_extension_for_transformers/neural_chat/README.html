@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+gff04655 documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g0b18d06 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
@@ -207,7 +207,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 <section id="validated-model-list">
 <h2>Validated Model List<a class="headerlink" href="#validated-model-list" title="Link to this heading"></a></h2>
 <p>The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
-|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
+|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation |
 |————————————|—|—|— | — |
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅
@@ -219,6 +219,33 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 |Qwen series| ✅| ✅|✅| ✅
 |StarCoder series|   |   |   | ✅
 |CodeLLaMA series|   |   |   | ✅</p>
+</section>
+<section id="restful-api">
+<h2>Restful API<a class="headerlink" href="#restful-api" title="Link to this heading"></a></h2>
+<section id="openai-compatible-restful-apis-sdk">
+<h3>OpenAI-Compatible RESTful APIs &amp; SDK<a class="headerlink" href="#openai-compatible-restful-apis-sdk" title="Link to this heading"></a></h3>
+<p>NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both <a class="reference external" href="https://github.com/openai/openai-python">openai-python library</a> and cURL commands. See <a class="reference external" href="./docs/neuralchat_api.html">neuralchat_api.html</a>.</p>
+<p>The following OpenAI APIs are supported:</p>
+<ul class="simple">
+<li><p>Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)</p></li>
+<li><p>Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)</p></li>
+</ul>
+</section>
+<section id="additional-useful-restful-apis">
+<h3>Additional useful RESTful APIs<a class="headerlink" href="#additional-useful-restful-apis" title="Link to this heading"></a></h3>
+<p>In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
+NeuralChat supports the following RESTful APIs:</p>
+<ul class="simple">
+<li><p>Finetuning</p></li>
+<li><p>Audio Chat</p></li>
+<li><p>Document Retrieval</p></li>
+<li><p>Code Generation</p></li>
+<li><p>Text to Image</p></li>
+<li><p>Image to Image</p></li>
+<li><p>Face animation</p></li>
+</ul>
+<p>For more details, refer to this <a class="reference external" href="./server/README.html">README</a></p>
+</section>
 </section>
 <section id="selected-notebooks">
 <h2>Selected Notebooks<a class="headerlink" href="#selected-notebooks" title="Link to this heading"></a></h2>
@@ -282,7 +309,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3acf30a380> 
+   <jinja2.runtime.BlockReference object at 0x7f33cdfa9150> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

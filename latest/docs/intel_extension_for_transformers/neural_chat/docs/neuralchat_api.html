@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building RESTful API Server &mdash; Intel® Extension for Transformers 0.1.dev1+g0b18d06 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Building RESTful API Server</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/docs/intel_extension_for_transformers/neural_chat/docs/neuralchat_api.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="building-restful-api-server">
+<h1>Building RESTful API Server<a class="headerlink" href="#building-restful-api-server" title="Link to this heading"></a></h1>
+<p>To utilize the RESTful API, the initial step involves launching the RESTful API server, easily achievable by running the rich examples found in the <a class="reference external" href="../examples/deployment/">examples</a> directory.</p>
+<p>NeuralChat provides support for the following RESTful API Servers:</p>
+<ul class="simple">
+<li><p>RESTful API Server for Text Chat</p></li>
+<li><p>RESTful API Server for Voice Chat</p></li>
+<li><p>RESTful API Server for Retrieval-Augmented Generation</p></li>
+<li><p>RESTful API Server for Image and Video Processing</p></li>
+<li><p>RESTful API Server for Code Generation</p></li>
+</ul>
+</section>
+<section id="openai-compatible-restful-apis">
+<h1>OpenAI-Compatible RESTful APIs<a class="headerlink" href="#openai-compatible-restful-apis" title="Link to this heading"></a></h1>
+<p>NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both <a class="reference external" href="https://github.com/openai/openai-python">openai-python library</a> and cURL commands.</p>
+<p>The following OpenAI APIs are supported:</p>
+<ul class="simple">
+<li><p>Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)</p></li>
+<li><p>Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)</p></li>
+</ul>
+</section>
+<section id="additional-useful-restful-apis">
+<h1>Additional useful RESTful APIs<a class="headerlink" href="#additional-useful-restful-apis" title="Link to this heading"></a></h1>
+<p>In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
+NeuralChat supports the following RESTful APIs:</p>
+<ul class="simple">
+<li><p>Finetuning</p></li>
+<li><p>Audio Chat</p></li>
+<li><p>Document Retrieval</p></li>
+<li><p>Code Generation</p></li>
+<li><p>Text to Image</p></li>
+<li><p>Image to Image</p></li>
+<li><p>Face animation</p></li>
+</ul>
+<p>TODO: Add a RESTful API table here.</p>
+</section>
+<section id="access-the-server-using-the-restful-api">
+<h1>Access the Server using the RESTful API<a class="headerlink" href="#access-the-server-using-the-restful-api" title="Link to this heading"></a></h1>
+<section id="openai-official-sdk">
+<h2>OpenAI Official SDK<a class="headerlink" href="#openai-official-sdk" title="Link to this heading"></a></h2>
+<p>The RESTful API Server can be used directly with <a class="reference external" href="https://github.com/openai/openai-python">openai-python library</a>.</p>
+<p>First, install openai-python:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>openai
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">openai</span>
+<span class="c1"># to get proper authentication, make sure to use a valid key that&#39;s listed in</span>
+<span class="c1"># the --api-keys flag. if no flag value is provided, the `api_key` will be ignored.</span>
+<span class="n">openai</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">&quot;EMPTY&quot;</span>
+<span class="n">openai</span><span class="o">.</span><span class="n">api_base</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:80/v1&quot;</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="s2">&quot;Intel/neural-chat-7b-v3-1&quot;</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time&quot;</span>
+
+<span class="c1"># create a completion</span>
+<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">Completion</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+<span class="c1"># print the completion</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">prompt</span> <span class="o">+</span> <span class="n">completion</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+<span class="c1"># create a chat completion</span>
+<span class="n">completion</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">ChatCompletion</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+  <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+  <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">}]</span>
+<span class="p">)</span>
+<span class="c1"># print the completion</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">completion</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="curl">
+<h2>cURL<a class="headerlink" href="#curl" title="Link to this heading"></a></h2>
+<p>cURL is another good tool for observing the output of the api.</p>
+<p>List Models:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://localhost:80/v1/models
+</pre></div>
+</div>
+<p>Chat Completions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://localhost:80/v1/chat/completions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;model&quot;: &quot;Intel/neural-chat-7b-v3-1&quot;,</span>
+<span class="s1">    &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Tell me about Intel Xeon Scalable Processors.&quot;}]</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p>Text Completions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>http://localhost:80/v1/completions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;model&quot;: &quot;Intel/neural-chat-7b-v3-1&quot;,</span>
+<span class="s1">    &quot;prompt&quot;: &quot;Once upon a time&quot;,</span>
+<span class="s1">    &quot;max_tokens&quot;: 41,</span>
+<span class="s1">    &quot;temperature&quot;: 0.5</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f33ce2b8100> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
