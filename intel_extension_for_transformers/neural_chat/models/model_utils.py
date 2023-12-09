@@ -387,10 +387,6 @@ def load_model(
         logging.info("Optimized Model loaded.")
         return
 
-    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        logging.warning("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
-        load_to_meta = False
-
     try:
         if device == "hpu" and use_deepspeed and load_to_meta:
             with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
