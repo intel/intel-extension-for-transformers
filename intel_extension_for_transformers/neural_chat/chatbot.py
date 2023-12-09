@@ -23,6 +23,10 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
+from .config_logging import configure_logging
+logger = configure_logging()
+
+
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
@@ -109,8 +113,8 @@ def build_chatbot(config: PipelineConfig=None):
                     plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
                     raise ValueError("NeuralChat Error: Unsupported plugin")
-                print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
+                logger.info("create %s plugin instance...", plugin_name)
+                logger.info("plugin parameters: %s", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 

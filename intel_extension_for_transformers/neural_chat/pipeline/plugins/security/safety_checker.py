@@ -20,6 +20,12 @@ from __future__ import division
 from .dict import defaultSensitiveWordSet
 from .stopword import defaultStopwords
 import os
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/security/"
 def convert_fullwidth_to_halfwidth(query):
@@ -45,14 +51,14 @@ class SafetyChecker:
             elif os.path.exists(os.path.join(doc_path, "stopword.txt")):
                 f = open(os.path.join(doc_path, "stopword.txt"), encoding="utf8")
             else:
-                print("Can't find stopword.txt")
+                logging.info("Can't find stopword.txt")
             self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
             if os.path.exists(os.path.join(dict_path, "dict.txt")):
                 f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
             elif os.path.exists(os.path.join(doc_path, "dict.txt")):
                 f1 = open(os.path.join(doc_path, "dict.txt"), encoding="utf8")
             else:
-                print("Can't find dict.txt")
+                logging.info("Can't find dict.txt")
             lst = f1.readlines()
             self.sensitiveWordSet = [i.split("\n")[0].split("\t") for i in lst]
         self.sensitiveWordMap = self._initSensitiveWordMap()
