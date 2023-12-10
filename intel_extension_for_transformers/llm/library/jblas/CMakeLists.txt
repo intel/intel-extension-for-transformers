@@ -23,7 +23,7 @@ if(WIN32)
 	#4702 unreachable code(false warning on constexpr condition)
 	#4100 unreferenced formal parameter
 
-	target_link_options(${PROJECT_NAME} INTERFACE /STACK:3145728) #Stack requires up to L2 cache size
+	target_link_options(${PROJECT_NAME} INTERFACE /STACK:5242880) #Stack requires up to L2 cache size
 endif(WIN32)
 
 set(CMAKE_CXX_STANDARD 17)
