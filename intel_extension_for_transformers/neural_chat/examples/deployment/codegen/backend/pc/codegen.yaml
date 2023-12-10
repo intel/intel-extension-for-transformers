@@ -31,7 +31,7 @@ device: "cpu"
 optimization:
     use_llm_runtime: true
     optimization_type: "weight_only"
-    compute_dtype: "fp32"
+    compute_dtype: "fp32" # currently the accuracy is not good when the compute_dtype is set to 'int8'.
     weight_dtype: "int4"
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
