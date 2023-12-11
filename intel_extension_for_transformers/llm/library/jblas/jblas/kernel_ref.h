@@ -691,11 +691,13 @@ static inline JBLAS_CODE memcpy2d(const _SRC_T* srcptr, _DST_T* dstptr, int row,
     } else if constexpr (std::is_same_v<_SRC_T, float> &&
                          (std::is_same_v<_DST_T, utils::bf16> || std::is_same_v<_DST_T, utils::fp16>)) {
       for (int j = 0; j < col; j += sizeof(_SRC_T))
-        dstptr[(i * dststride + j / 2) / sizeof(_DST_T)] = srcptr[(i * srcstride + j) / sizeof(_SRC_T)];
+        dstptr[(i * dststride + j / 2) / sizeof(_DST_T)] =
+            static_cast<_DST_T>(srcptr[(i * srcstride + j) / sizeof(_SRC_T)]);
     } else if constexpr ((std::is_same_v<_SRC_T, utils::bf16> ||
                           std::is_same_v<_SRC_T, utils::fp16>)&&std::is_same_v<_DST_T, float>) {
       for (int j = 0; j < col; j += sizeof(_SRC_T))
-        dstptr[(i * dststride + j * 2) / sizeof(_DST_T)] = srcptr[(i * srcstride + j) / sizeof(_SRC_T)];
+        dstptr[(i * dststride + j * 2) / sizeof(_DST_T)] =
+            static_cast<_DST_T>(srcptr[(i * srcstride + j) / sizeof(_SRC_T)]);
     } else {
       assert(0);
     }
