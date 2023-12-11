@@ -221,7 +221,7 @@ struct model_file_loader {
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     // read_gguf();
-    read_magic();
+    read_magic(tensors_map);
     read_hparams();
     read_vocab();
     read_tensor_metadata(file_idx, tensors_map);
@@ -467,6 +467,15 @@ std::string gguf_kv_to_str(struct gguf_context * ctx_gguf, int i) {
     }
 }
 
+size_t file_offset(const struct gguf_context * ctx_gguf, const char * name) {
+    const int idx = gguf_find_tensor(ctx_gguf, name);
+
+    if (idx < 0) {
+        throw std::runtime_error(format("%s: tensor '%s' not found in the file", __func__, name));
+    }
+
+    return gguf_get_data_offset(ctx_gguf) + gguf_get_tensor_offset(ctx_gguf, idx);
+}
 
 void gguf_set_val_u8(struct gguf_context * ctx, const char * key, uint8_t val) {
     const int idx = gguf_get_or_add_key(ctx, key);
@@ -544,6 +553,32 @@ void gguf_set_val_bool(struct gguf_context * ctx, const char * key, bool val) {
     ctx->kv[idx].type        = GGUF_TYPE_BOOL;
     ctx->kv[idx].value.bool_ = val;
 }
+
+// struct ne_tensor * ne_get_tensor(struct ne_context * ctx, const char * name) {
+//     struct ne_object * obj = ctx->objects_begin;
+
+    
+//     char * const mem_buffer = reinterpret_cast<char*>(ctx->mem_buffer);
+
+//     while (obj != NULL) {
+//         // if (obj->type == GGML_OBJECT_TENSOR) {
+//         //     struct ggml_tensor * cur = (struct ggml_tensor *)(mem_buffer + obj->offs);
+//         //     if (strcmp(cur->name, name) == 0) {
+//         //         return cur;
+//         //     }
+//         // }
+//         struct ne_tensor * cur = (struct ne_tensor *)(mem_buffer + obj->offs);
+//         if (strcmp(cur->name, name) == 0) {
+//             return cur;
+//         }
+//         obj = obj->next;
+//     }
+
+//     return NULL;
+// }
+
+
+
 
 void gguf_set_val_str(struct gguf_context * ctx, const char * key, const char * val) {
     const int idx = gguf_get_or_add_key(ctx, key);
@@ -806,7 +841,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
 //       return tensor->ne[0]*tensor->ne[1]*tensor->ne[2]*tensor->ne[3];
 //   }
 
-  void read_magic() {
+  void read_magic(model_load_tensors_map& tensors_map) {
 
     int n_kv      = 0;
     int n_tensors = 0;
@@ -928,7 +963,7 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
             break;
         }
     }
-    std::cout << std::hex << "magic = " << magic << " version = " << version << std::endl;
+    std::cout << "magic = " << magic << " version = " << version << std::endl;
     //throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
 
       hparams.n_vocab = ctx_gguf->kv[3].value.uint32;
@@ -996,8 +1031,41 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
     // $2 = 65024
     // NE_ASSERT(vocab.id_to_token.size() == vocab.token_to_id.size());
 
-    std::cout << "HAPPEND" << std::endl;
+   
+    for (int i = 0; i < gguf_get_n_tensors(ctx_gguf); i++) {
+      // model_load_tensor_shard shard;
+      // uint32_t n_dims = file.read_u32();
+      // uint32_t name_len = file.read_u32();
+      // shard.type = (enum ne_type)file.read_u32();
+      // shard.ne.resize(n_dims);
+      // file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+      // std::string name = file.read_string(name_len);
 
+        model_load_tensor_shard shard;
+        std::string name = gguf_get_tensor_name(ctx_gguf, i);
+        uint32_t n_dims = 2;
+        uint32_t name_len = name.length();
+        shard.type = (enum ne_type)0;
+        shard.ne.resize(n_dims);
+        std::cout << " name_len = " << name_len << "  shard.type = " << shard.type << "  name = " << name << std::endl;
+        
+        const size_t offs = file_offset(ctx_gguf, name.c_str());
+        file.seek(offs, SEEK_SET);
+        file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+
+        auto it = tensors_map.name_to_idx.find(name);
+        size_t idx;
+        if (it != tensors_map.name_to_idx.end()) {
+          idx = it->second;
+        } else {
+          tensors_map.tensors.emplace_back(name);
+          idx = tensors_map.tensors.size() - 1;
+          tensors_map.name_to_idx.emplace(name, idx);
+        }
+        tensors_map.tensors.at(idx).shards.push_back(shard);
+    }
+
+    std::cout << "HAPPYEND" << std::endl;
   }
 
   void read_hparams() {
