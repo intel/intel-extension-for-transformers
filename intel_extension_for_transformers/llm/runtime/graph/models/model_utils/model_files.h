@@ -138,6 +138,13 @@ struct model_load_tensor {
           name.find(".attn.k_proj.weight") != std::string::npos ||
           name.find(".attn.v_proj.weight") != std::string::npos ||
           name.find(".mlp.fc_in.weight") != std::string::npos ||
+          // for baichuan
+          name.find(".self_attn.W_pack.weight") != std::string::npos ||
+          name.find(".mlp.gate_proj.weight") != std::string::npos ||
+          name.find(".mlp.up_proj.weight") != std::string::npos ||
+          // for chatglm2
+          name.find(".self_attention.query_key_value.weight") != std::string::npos ||
+          name.find(".mlp.dense_h_to_4h.weight") != std::string::npos ||
           // for llama model
           name.find(".attention.wq.weight") != std::string::npos ||
           name.find(".attention.wk.weight") != std::string::npos ||
@@ -148,6 +155,13 @@ struct model_load_tensor {
       }
       if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos ||
           name.find(".attn.out_proj.weight") != std::string::npos ||
+          name.find(".self_attention.dense.weight") != std::string::npos ||
+          // for baichuan
+          name.find(".self_attn.o_proj.weight") != std::string::npos ||
+          name.find(".mlp.down_proj.weight") != std::string::npos ||
+          // for chatglm2
+          name.find(".mlp.dense_4h_to_h.weight") != std::string::npos ||
+          name.find(".self_attention.query_key_value.bias") != std::string::npos ||
           // TODO check if this part should be column
           name.find(".attention.wo.weight") != std::string::npos ||
           name.find(".feed_forward.w2.weight") != std::string::npos) {

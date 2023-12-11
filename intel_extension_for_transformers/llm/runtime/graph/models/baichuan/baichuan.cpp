@@ -71,11 +71,25 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
   const bool is_ring_full = shift_roped_k && n_total > n_past;
   NE_ASSERT(("Shift-RoPE-K to be implemented for AliBi!", !is_ring_full));
 
-  const int n_head = hparams.n_head;
+  int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int head_size = n_embd / n_head;
   const int n_rot = n_embd / n_head / 2;
   const float attn_scale = 1.f / std::sqrt(head_size);
+
+  bool enable_tp = false;
+#ifdef NE_TP_MODEL
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  int32_t rank = get_tp_rank(p_ctx);
+  enable_tp = world_size > 1 ? true : false;
+
+  // after TP the Q K n_head will become 1/world_size
+  if (enable_tp) {
+    n_head /= world_size;
+  }
+#endif
+  int hidden_size = head_size * n_head;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -122,7 +136,6 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
   }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
-  int hidden_size = inpL->ne[0];
   NE_ASSERT(N == inpL->ne[1]);
 
   for (int il = 0; il < n_layer; ++il) {
@@ -229,12 +242,18 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
         ne_attn_flags_t attn_flags = NE_ATTN_FLAG_IS_ALIBI8;
         if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, query_layer, key_layer, value_layer, attn_scale, attn_flags);
-        cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
+        cur = ne_view_2d(ctx0, KQV_Out, hidden_size, N, hidden_size * ne_element_size(KQV_Out), 0);
 
         // F32 mul_mat
         cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur);
       }
     }
+
+#ifdef NE_TP_MODEL
+    if (enable_tp) {
+      cur = ne_all_reduce(ctx0, cur);
+    }
+#endif
 
     lctx.use_buf(ctx0, 1);
     cur = ne_add_inplace(ctx0, cur, residual);
@@ -258,6 +277,11 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
       mlp_output = ne_mul(ctx0, gate, up);
       mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
     }
+#ifdef NE_TP_MODEL
+    if (enable_tp) {
+      mlp_output = ne_all_reduce(ctx0, mlp_output);
+    }
+#endif
 
     inpL = ne_add_inplace(ctx0, mlp_output, residual);
   }
@@ -273,7 +297,7 @@ static bool baichuan_model_eval_internal(model_context* ctx, const model_input* 
 
   lctx.use_buf(ctx0, -1);
   if (embd->ne[0] > 1) {
-    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+    inpL = ne_view_1d(ctx0, inpL, n_embd, (embd->ne[0] - 1) * n_embd * ne_element_size(inpL));
   }
 
   // lm_head

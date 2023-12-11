@@ -65,14 +65,16 @@ struct ccl_buffer* cbuffer;
 
 void wait_state_equal(int index, enum ccl_state state) {
   volatile enum ccl_state* state_ptr = &(cbuffer[index].state);
-  while (*state_ptr != state)
-    ;
+  while (*state_ptr != state) {
+    _mm_pause();
+  }
 }
 
 void wait_state_change(int index, enum ccl_state state) {
   volatile enum ccl_state* state_ptr = &(cbuffer[index].state);
-  while (*state_ptr == state)
-    ;
+  while (*state_ptr == state) {
+    _mm_pause();
+  }
 }
 
 void reduce_2_fp32_buffers(int num_elements, void* rank_0, void* rank_1) __attribute__((target("avx512bw")));
@@ -184,7 +186,7 @@ void shm_all_reduce(float* sendBuf, float* recvBuf, size_t count, size_t rank, s
   for (int offset = 0; offset < count * sizeof(float); offset += MAX_BUF_SIZE) {
     auto send_ptr = (char*)sendBuf + offset;
     auto recv_ptr = (char*)recvBuf + offset;
-    size_t chunk_size = std::min(count * sizeof(float) - offset, MAX_BUF_SIZE)
+    size_t chunk_size = std::min(count * sizeof(float) - offset, (size_t)MAX_BUF_SIZE);
     size_t chunk_count = chunk_size / sizeof(float);
 
     parallel_memcpy(cbuffer[rank].data, send_ptr, chunk_size);

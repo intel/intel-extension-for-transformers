@@ -72,14 +72,28 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
   const bool shift_roped_k = lctx.shift_roped_k;
   const bool is_ring_full = shift_roped_k && n_total > n_past;
   const int n_cached = shift_roped_k ? std::min(n_total + N, n_ctx) : (n_past + N);  // #tokens cached after kv-append
-  const int n_head = hparams.n_head;
+  int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int head_size = n_embd / n_head;
   const int n_rot = head_size / 2;
   const int mqa_scale = n_head / hparams.multi_query_group_num;
-  const int num_kv_heads = hparams.multi_query_group_num;
+  int num_kv_heads = hparams.multi_query_group_num;
 
-  const int hidden_size = n_embd;
+  bool enable_tp = false;
+#ifdef NE_TP_MODEL
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  int32_t rank = get_tp_rank(p_ctx);
+  enable_tp = world_size > 1 ? true : false;
+
+  // after TP the Q K n_head will become 1/world_size
+  if (enable_tp) {
+    n_head /= world_size;
+    num_kv_heads /= world_size;
+  }
+#endif
+
+  const int hidden_size = head_size * n_head;
   const int num_attention_heads = n_head;
 
   auto& mem_per_token = lctx.mem_per_token;
@@ -265,10 +279,15 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
         ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
         if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, query_layer, key_layer, value_layer, attn_scale, attn_flags);
-        cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
+        cur = ne_view_2d(ctx0, KQV_Out, hidden_size, N, hidden_size * ne_element_size(KQV_Out), 0);
       }
       cur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
+#ifdef NE_TP_MODEL
+    if (enable_tp) {
+      cur = ne_all_reduce(ctx0, cur);
+    }
+#endif
 
     lctx.use_buf(ctx0, 1);
 
@@ -290,6 +309,12 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
     mlp_output = ne_mul(ctx0, x0, x1);
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
 
+#ifdef NE_TP_MODEL
+    if (enable_tp) {
+      mlp_output = ne_all_reduce(ctx0, mlp_output);
+    }
+#endif
+
     inpL = ne_add(ctx0, hidden_states, mlp_output);
   }
 
@@ -306,7 +331,7 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
 
   lctx.use_buf(ctx0, -1);
   if (embd->ne[0] > 1) {
-    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+    inpL = ne_view_1d(ctx0, inpL, n_embd, (embd->ne[0] - 1) * n_embd * ne_element_size(inpL));
   }
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
