@@ -6,21 +6,18 @@ This code-generating chatbot demonstrates how to deploy it specifically on a Lap
 
 First, you need to install and configure the Conda environment:
 
-```shell
-# Download and install Miniconda
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda*.sh
-source ~/.bashrc
-```
+Visit the [Miniconda download page](https://docs.conda.io/projects/miniconda/en/latest/) and download the installer suitable for your Windows system.
+Locate the downloaded installer file (e.g., Miniconda3-latest-Windows-x86_64.exe for Miniconda). Double-click the installer to launch it. 
+To create a new Conda environment, use the command: "conda create -n myenv python=3.9.0"
 
 # Install Python dependencies
 
 Install dependencies using pip
 
->**Note**: Please make sure transformers version is 4.34.1
 ```bash
 pip install ../../../../../requirements_pc.txt
-pip install transformers==4.34.1
+# make sure you install the latest version of transformers
+pip install transformers==4.35.2
 ```
 
 # Configure the codegen.yaml
