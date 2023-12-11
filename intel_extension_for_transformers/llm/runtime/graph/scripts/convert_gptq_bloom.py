@@ -170,6 +170,7 @@ f.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 f.write(struct.pack("i", 0))
 f.write(struct.pack("i", 0))
 f.write(struct.pack("i", 0))
+fout.write(struct.pack("f", 1e-6))  # rms norm eps
 
 f.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
 f.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
