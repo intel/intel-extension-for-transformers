@@ -125,6 +125,8 @@ struct model_hparams {
   int32_t par_res = 1;                // for neox 1 = true, 0 = false
   uint32_t word_embed_proj_dim = 0;   // for opt
   bool do_layer_norm_before = false;  // for opt
+  float rms_norm_eps = 1e-6f;  // rms norm epsilon
+  float freq_base = 10000.0f;
 
   // ChatGLM-2
   int32_t multi_query_group_num = 0;
@@ -132,7 +134,6 @@ struct model_hparams {
 
   // ChatGLM-1
   int32_t inner_hidden_size = 0;
-  float rms_norm_eps = 1e-6f;  // rms norm epsilon
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));

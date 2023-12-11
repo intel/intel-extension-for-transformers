@@ -146,14 +146,14 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
           ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                      0);  // [N, heads, head_size]
       ne_set_name(query_layer, "query_layer");
-      query_layer = ne_rope_inplace(ctx0, query_layer, std::max(n_cached - N, n_past), n_rot, 0, 0);
+      query_layer = ne_rope_inplace(ctx0, query_layer, std::max(n_cached - N, n_past), n_rot, 0, 0, hparams.freq_base);
 
       struct ne_tensor* key_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
                      hidden_size * ne_element_size(cur));  // [N, kv_heads, head_size]
       ne_set_name(key_layer, "key_layer");
       key_layer = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
-          ctx0, key_layer, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
+          ctx0, key_layer, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0, hparams.freq_base);
 
       struct ne_tensor* value_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
@@ -198,7 +198,7 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
           // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N
           // in a single eval execution
           if (N == 1) cossin_cache = kv_self.cossin;
-          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache);
+          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
           key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);  // perm back
         }
 
@@ -253,7 +253,7 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
           // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N
           // in a single eval execution
           if (N == 1) cossin_cache = kv_self.cossin;
-          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache);
+          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
         }
         value_layer =
             ne_view_3d(ctx0, model.layers[il].v_cache,                                      // tensor
