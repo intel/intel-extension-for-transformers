@@ -69,3 +69,4 @@ ffmpeg-python==0.2.0
 zhconv
 urllib3
 langid
+diffusers==0.12.1
