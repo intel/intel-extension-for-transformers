@@ -67,21 +67,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>✔</td>
 			<td>✔</td>
 			<td>WIP (FP8)</td>
-			<td>WIP</td>
-		</tr>
-		<tr>
-			<td>Intel Data Center GPU Max Series</td>
-			<td>WIP</td>
-			<td>WIP</td>
-			<td>WIP</td>
-			<td>WIP</td>
-		</tr>
-		<tr>
-			<td>Intel Arc GPU Series</td>
-			<td>WIP</td>
-			<td>WIP</td>
-			<td>WIP</td>
-			<td>WIP</td>
+			<td>-</td>
 		</tr>
 		<tr>
 			<td>Intel Xeon Scalable Processors</td>
@@ -106,7 +92,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 	</tbody>
 </table>
-
+:memo: **Note:** - means not applicable or not started
 Intel Gaudi2 details: Driver version 1.13.0-ee32e42, synpase AI v1.13.0
 
 ## 🌱Getting Started
