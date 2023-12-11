@@ -112,6 +112,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    
     fout.write(struct.pack("i", tokenizer.special_tokens['<|endoftext|>']))
     fout.write(struct.pack("i", tokenizer.special_tokens['<|endoftext|>']))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
