@@ -2414,3 +2414,5 @@ leaderboard
 synapse
 datalearner
 zaker
+gaudi
+hpu

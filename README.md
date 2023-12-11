@@ -96,7 +96,58 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 
 ## Validated Software
-TBD: Add a table
+<table>
+	<tbody>
+		<tr>
+			<td rowspan="2">Software</td>
+			<td colspan="2">Fine-Tuning</td>
+			<td colspan="2">Inference</td>
+		</tr>
+		<tr>
+			<td>Full</td>
+			<td>PEFT</td>
+			<td>8-bit</td>
+			<td>4-bit</td>
+		</tr>
+		<tr>
+			<td>PyTorch</td>
+			<td>2.0.1+cpu</td>
+			<td>2.0.1+cpu</td>
+			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu</td>
+		</tr>
+		<tr>
+			<td>Transformers</td>
+			<td>4.35.2</td>
+			<td>4.35.2</td>
+			<td>4.35.2</td>
+			<td>4.35.2</td>
+		</tr>
+		<tr>
+			<td>GCC/C++</td>
+			<td>-</td>
+			<td>-</td>
+			<td>12.1.0</td>
+			<td>12.1.0</td>
+		</tr>
+		<tr>
+			<td>Synapse AI</td>
+			<td>1.13.0</td>
+			<td>1.13.0</td>
+			<td>1.13.0</td>
+			<td>1.13.0</td>
+		</tr>
+		<tr>
+			<td>Gaudi2 driver</td>
+			<td>1.13.0-ee32e42</td>
+			<td>1.13.0-ee32e42</td>
+			<td>1.13.0-ee32e42</td>
+			<td>1.13.0-ee32e42</td>
+		</tr>
+
+	</tbody>
+</table>
+
 
 
 > Please refer to software requirements in [fine-tuning cpu](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [fine-tuning gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [cpu inference with llm runtime](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/requirements.txt) for more details.

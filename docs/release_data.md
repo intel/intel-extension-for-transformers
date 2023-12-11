@@ -313,6 +313,6 @@ PyTorch: 2.0.1+cpu
 
 Intel Gaudi2 Environments: 
 
-Driver version 1.13.0-ee32e42, synpase AI v1.13.0
+Driver version 1.13.0-ee32e42, synapse AI v1.13.0
 
 We will release data soon.
