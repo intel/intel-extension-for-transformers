@@ -149,6 +149,7 @@ class Params:
     n_head_kv: int
     ffn_hidden_size: int
     rms_norm_eps: float
+    rope_theta: float
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -176,6 +177,7 @@ class Params:
         n_head_kv = config["num_key_value_heads"] if "num_key_value_heads" in config else n_head
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
+        rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
 
         return Params(
             n_vocab=n_vocab,
@@ -186,6 +188,7 @@ class Params:
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
+            rope_theta=rope_theta,
         )
 
     # LLaMA v2 70B params.json
@@ -1059,6 +1062,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
 
         self.fout.write(struct.pack("f", params.rms_norm_eps))
+        self.fout.write(struct.pack("f", params.rope_theta))
 
         # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
         # but bos_token_id = 1 in llama.cpp
