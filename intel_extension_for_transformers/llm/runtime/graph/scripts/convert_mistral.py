@@ -149,6 +149,7 @@ class Params:
     n_layer: int
     n_head_kv: int
     ffn_hidden_size: int
+    rms_norm_eps: float
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -175,6 +176,7 @@ class Params:
         n_head = config["num_attention_heads"]
         n_head_kv = config["num_key_value_heads"] if "num_key_value_heads" in config else n_head
         ffn_hidden_size = config["intermediate_size"]
+        rms_norm_eps = config["rms_norm_eps"]
 
         return Params(
             n_vocab=n_vocab,
@@ -184,6 +186,7 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
+            rms_norm_eps=rms_norm_eps,
         )
 
     # LLaMA v2 70B params.json
@@ -1049,7 +1052,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", params.ffn_hidden_size))
         self.fout.write(struct.pack("i", 0))
-        fout.write(struct.pack("f", 1e-6))  # rms norm eps
+        self.fout.write(struct.pack("f", params.rms_norm_eps))
 
         self.fout.write(
             struct.pack("i", 1)

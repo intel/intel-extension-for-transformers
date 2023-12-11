@@ -33,7 +33,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
                     Union)
-from transformers import AutoConfig
 import numpy as np
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
@@ -176,6 +175,7 @@ class Params:
         n_head = config["num_attention_heads"]
         n_head_kv = config["num_key_value_heads"] if "num_key_value_heads" in config else n_head
         ffn_hidden_size = config["intermediate_size"]
+        rms_norm_eps = config["rms_norm_eps"]
 
         return Params(
             n_vocab=n_vocab,
@@ -185,7 +185,7 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
-            rms_norm_eps=1e-6,
+            rms_norm_eps=rms_norm_eps,
         )
 
     # LLaMA v2 70B params.json
@@ -1313,8 +1313,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
         output_type = pick_output_type(model, args.outtype)
         model = convert_to_output_type(model, output_type)
         outfile = args.outfile or default_outfile(model_plus.paths, params)
-        config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
-        params.rms_norm_eps = config.rms_norm_eps
         OutputFile.write_all(outfile, params, model, vocab, output_type)
         print(f"Wrote {outfile}")
 
