@@ -34,11 +34,11 @@ inline void set_nk(woq_runtime_ctx* ctx, torch::Tensor* tensor) {
   ctx->k = ctx->transpose ? static_cast<int>(tensor->sizes()[1]) : static_cast<int>(tensor->sizes()[0]);
 }
 
-static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{{"s4clip_scalef32", JBLAS_DTYPE::S4_CLIP},
-                                                          {"s4fullrange_scalef32", JBLAS_DTYPE::S4_FULLRANGE},
-                                                          {"nf4_scalef32", JBLAS_DTYPE::F4_NF4},
-                                                          {"fp4bnb_scalef32", JBLAS_DTYPE::F4_BNB},
-                                                          {"fp4e2m1_scalef32", JBLAS_DTYPE::F4_E2M1}};
+static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{
+    {"s4clip_scalef32", JBLAS_DTYPE::S4_CLIP},  {"s4fullrange_scalef32", JBLAS_DTYPE::S4_FULLRANGE},
+    {"nf4_scalef32", JBLAS_DTYPE::F4_NF4},      {"fp4bnb_scalef32", JBLAS_DTYPE::F4_BNB},
+    {"fp4e2m1_scalef32", JBLAS_DTYPE::F4_E2M1}, {"fp8e4m3_scalef8", JBLAS_DTYPE::F8_E4M3},
+    {"fp8e5m2_scalef8", JBLAS_DTYPE::F8_E5M2}};
 static void* woq_workspace = nullptr;
 static int64_t workspace_size = 0;
 
@@ -78,6 +78,9 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF4>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
                                            jblas::utils::jblas_dtype<float>);
+  } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF8>) {
+    packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
+                                           JBLAS_DTYPE::F8_E8M0);
   } else {
     assert(0);
   }
@@ -250,6 +253,10 @@ void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (p->weight_type == "nf4_scalef32" || p->weight_type == "fp4bnb_scalef32" || p->weight_type == "fp4e2m1_scalef32") {
     if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
       return parse_activation<TASK, GemmCore, WeightKBlockF4>(p, ctx);
+  }
+  if (p->weight_type == "fp8e4m3_scalef8" || p->weight_type == "fp8e5m2_scalef8") {
+    if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
+      return parse_activation<TASK, GemmCore, WeightKBlockF8>(p, ctx);
   }
   TORCH_CHECK(false,
               "Qbits: unsupported jblas_config, compute_type==" + p->compute_type + " weight_type==" + p->weight_type);

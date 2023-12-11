@@ -160,6 +160,10 @@ class SchedulerBase : public Scheduler2D {
       return;
     }
     schedule();
+    assert(this->mL2Use <= this->mL2Size - ReservedSize);
+    assert(this->mBlock[0] > 0);
+    assert(this->mBlock[1] > 0);
+    assert(this->mBlock[2] > 0);
   }
 
   constexpr int valid_theads() { return mThdValid; }
@@ -227,7 +231,7 @@ class SchedulerBase : public Scheduler2D {
   // A Access = N/mNStep
   virtual void update_cache_blocking() {
     if (mDensity <= DensityThres) {
-      return cache_block_memory();
+      return cache_blocking_memory();
     } else {
       return cache_blocking_compute();
     }
@@ -236,7 +240,8 @@ class SchedulerBase : public Scheduler2D {
   virtual void cache_blocking_compute() {
     int constexpr KRef = 256;
     size_t valid_total = mL2Size - ReservedSize;
-    size_t csize_total = valid_total - _GemmCore_T::PREFERRED_N * KRef * mEleSize[1];
+    auto asize = mStep[0] * KRef * mEleSize[0];
+    size_t csize_total = valid_total - _GemmCore_T::PREFERRED_N * KRef * mEleSize[1] - asize;
     int maxM = static_cast<int>(csize_total / _GemmCore_T::PREFERRED_N / mEleSize[2]);
     maxM = utils::downdiv(maxM, mStep[0]);
     int nthdm = mThdSize[0] / mStep[0];
@@ -246,7 +251,7 @@ class SchedulerBase : public Scheduler2D {
     } else {
       mBlock[0] = mThdSize[0];
     }
-    int maxN = static_cast<int>(valid_total / (mBlock[0] * mEleSize[2] + KRef * mEleSize[1]));
+    int maxN = static_cast<int>((valid_total - asize) / (mBlock[0] * mEleSize[2] + KRef * mEleSize[1]));
     maxN = utils::downdiv(maxN, mStep[1]);
     int nthdn = mThdSize[1] / mStep[1];
     if (maxN < nthdn) {
@@ -256,12 +261,12 @@ class SchedulerBase : public Scheduler2D {
       mBlock[1] = mThdSize[1];
     }
     auto rawk = static_cast<int>((valid_total - mBlock[0] * mBlock[1] * mEleSize[2]) /
-                                 (mBlock[0] * mEleSize[0] + mBlock[1] * mEleSize[1]));
+                                 (mStep[0] * mEleSize[0] + mBlock[1] * mEleSize[1]));
     rawk = std::min(rawk, mSizePadded[2]);
     mBlock[2] = utils::padto_le(rawk, mStep[2]);
   }
 
-  virtual void cache_block_memory() {
+  virtual void cache_blocking_memory() {
     mBlock[0] = mThdSize[0];
     mBlock[1] = mStep[1];
     size_t reservsize = static_cast<size_t>(mBlock[0]) * mBlock[1] * mEleSize[2];
@@ -315,6 +320,10 @@ class SchedulerKBlock : public Scheduler2D {
       return;
     }
     schedule();
+    assert(this->mL2Use <= this->mL2Size);
+    assert(this->mBlock[0] > 0);
+    assert(this->mBlock[1] > 0);
+    assert(this->mBlock[2] > 0);
   }
 
   constexpr int valid_theads() { return mThdValid; }
@@ -380,7 +389,7 @@ class SchedulerKBlock : public Scheduler2D {
   // A=MTILE*KBlock
   void update_cache_blocking() {
     if (mDensity <= DensityThres) {
-      return cache_block_memory();
+      return cache_blocking_memory();
     } else {
       return cache_blocking_compute();
     }
@@ -394,7 +403,9 @@ class SchedulerKBlock : public Scheduler2D {
     int BlkNum = utils::updiv(mSize[2], mKBlock);
     int KSplitSize = utils::padto(utils::updiv(mSize[2], KSplitStage), mStep[2]);
     mBlock[1] = NRef < mThdSize[1] ? NRef : mThdSize[1];
-    if (KSplitSize >= mKBlock) {
+    if (KSplitStage * mStep[2] >= mSize[2]) {
+      mBlock[2] = mSize[2];
+    } else if (KSplitSize >= mKBlock) {
       mBlock[2] = mKBlock;
     } else {
       int scale = utils::downdiv(KSplitStage, BlkNum);
@@ -419,7 +430,7 @@ class SchedulerKBlock : public Scheduler2D {
     }
   }
 
-  void cache_block_memory() {
+  void cache_blocking_memory() {
     mBlock[0] = _GemmCore_T::MTILE;
     size_t startK = std::max(16, _GemmCore_T::KTILE);
     auto getMaxN = [&](size_t refk) {
@@ -475,29 +486,57 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     mKBlock = config.problem.dims[4];
     BaseScheduler::update(config);
     auto blks = utils::updiv(this->mBlock[2], mKBlock);
-    this->mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mBlock[0]) * (sizeof(float) + sizeof(int8_t));
-    this->mL2Use += static_cast<size_t>(blks) * this->mBlock[1] * sizeof(float);
+    this->mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mStep[0]) *
+                    (sizeof(float) + sizeof(int8_t) + sizeof(float));  // scale+zp+reduce
+    assert(this->mL2Use <= this->mL2Size - ReservedSize);
+    assert(this->mBlock[0]>0);
+    assert(this->mBlock[1]>0);
+    assert(this->mBlock[2]>0);
   }
 
  protected:
+  const float DensityThres = 32;
+  static size_t constexpr ReservedSize = 32ULL * 1024ULL;
+
   void cache_blocking_compute() override {
-    BaseScheduler::cache_blocking_compute();  // no misc data
-    size_t valid_total =
-        this->mL2Size - BaseScheduler::ReservedSize - this->mEleSize[2] * this->mBlock[0] * this->mBlock[1];
-    auto corK = static_cast<int>(
-        (valid_total) /
-        (this->mBlock[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1] +
-         (sizeof(float) * this->mBlock[1] + (sizeof(float) + sizeof(int8_t)) * (this->mBlock[0] + this->mBlock[1])) /
-             mKBlock));
-    corK = std::min(corK, this->mSizePadded[2]);
-    corK = utils::padto_le(corK, this->mStep[2]);
-    if (corK > mKBlock) {
-      corK = utils::padto_le(corK, mKBlock);
+    int constexpr KRef = 256;
+    int constexpr CorSize = sizeof(float) + sizeof(int8_t) + sizeof(float);
+    size_t valid_total = this->mL2Size - ReservedSize;
+    auto blks = utils::updiv(KRef, this->mKBlock);
+    auto asize = this->mStep[0] * KRef * this->mEleSize[0] + this->mStep[0] * blks * CorSize;
+    auto bsize = _GemmCore_T::PREFERRED_N * KRef * this->mEleSize[1] + _GemmCore_T::PREFERRED_N * blks * CorSize;
+    size_t csize_total = valid_total - asize - bsize;
+    int maxM = static_cast<int>(csize_total / _GemmCore_T::PREFERRED_N / this->mEleSize[2]);
+    maxM = utils::downdiv(maxM, this->mStep[0]);
+    int nthdm = this->mThdSize[0] / this->mStep[0];
+    if (maxM < nthdm) {
+      int niter = utils::updiv(nthdm, maxM);
+      this->mBlock[0] = utils::updiv(nthdm, niter) * this->mStep[0];
+    } else {
+      this->mBlock[0] = this->mThdSize[0];
     }
-    this->mBlock[2] = corK;
+    int maxN = static_cast<int>((valid_total - asize) /
+                                (this->mBlock[0] * this->mEleSize[2] + KRef * this->mEleSize[1] + blks * CorSize));
+    maxN = utils::downdiv(maxN, this->mStep[1]);
+    int nthdn = this->mThdSize[1] / this->mStep[1];
+    if (maxN < nthdn) {
+      int niter = utils::updiv(nthdn, maxN);
+      this->mBlock[1] = utils::updiv(nthdn, niter) * this->mStep[1];
+    } else {
+      this->mBlock[1] = this->mThdSize[1];
+    }
+    auto rawk = static_cast<int>((valid_total - this->mBlock[0] * this->mBlock[1] * this->mEleSize[2]) /
+                                 (this->mStep[0] * this->mEleSize[0] +
+                                  float(CorSize * (this->mStep[0] + this->mBlock[1])) / this->mKBlock +
+                                  this->mBlock[1] * this->mEleSize[1]));
+    rawk = std::min(rawk, this->mSizePadded[2]);
+    this->mBlock[2] = utils::padto_le(rawk, this->mStep[2]);
+    if (this->mBlock[2] > this->mKBlock) {
+      this->mBlock[2] = utils::padto_le(this->mBlock[2], this->mKBlock);
+    }
   }
 
-  void cache_block_memory() override {
+  void cache_blocking_memory() override {
     this->mBlock[0] = _GemmCore_T::MTILE;
     size_t startK = std::max(16, _GemmCore_T::KTILE);
     auto getMaxN = [&](size_t refk) {

@@ -18,7 +18,9 @@
 from ut_utils import *
 
 configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", "bf16"}, "s4fullrange_scalef32": {
-    "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"}}
+    "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"},
+    "fp8e5m2_scalef8": {"fp32", "bf16"}, "fp8e4m3_scalef8": {"fp32", "bf16"}
+}
 
 
 @capture_args
@@ -26,8 +28,8 @@ configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", 
 @pytest.mark.parametrize("n", (1024,))
 @pytest.mark.parametrize("k", (512,))
 @pytest.mark.parametrize("blocksize", (128, -1))
-@pytest.mark.parametrize("compute_type", ["int8", "fp32", "bf16"])
-@pytest.mark.parametrize("weight_type", ["s8_scalef32", "s4clip_scalef32", "s4fullrange_scalef32", "nf4_scalef32", "fp4bnb_scalef32", "fp4e2m1_scalef32"])
+@pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
+@pytest.mark.parametrize("weight_type", ["s8_scalef32", "s4clip_scalef32", "s4fullrange_scalef32", "nf4_scalef32", "fp4bnb_scalef32", "fp4e2m1_scalef32", "fp8e5m2_scalef8", "fp8e4m3_scalef8"])
 @pytest.mark.parametrize("transpose", (True, False))
 @pytest.mark.parametrize("add_bias", (True, False))
 @pytest.mark.parametrize("dt", ("fp32", "bf16"))

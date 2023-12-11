@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#include <cassert>
+#include <type_traits>
 #include <vector>
 #include <algorithm>
 #include <limits>
@@ -118,8 +120,9 @@ static inline JBLAS_CODE dt_cvt_2D_write_back(const void* raw_srcptr, void* raw_
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE dequan_s8_f32(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
-                                       float* scales) {
+template <typename _DST_T>
+static inline JBLAS_CODE dequan_s8_fp(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                      float* scales) {
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
       dstptr[i * ld_dst + j] = static_cast<float>(srcptr[i * ld_src + j]) * scales[j];
@@ -260,9 +263,48 @@ inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int ro
   return JblasSuccess;
 }
 
+inline float f8_to_fp32(utils::f8 v, JBLAS_DTYPE f8_t) {
+  uint32_t sign_revert = v.x;
+  uint32_t e_revert = v.x;
+  uint32_t mantissa_revert = v.x;
+  sign_revert <<= 24;
+  sign_revert &= 0x80000000;
+  auto ebits = utils::jblas_dtype_get_f8_ebits(f8_t);
+  auto mantissabit = 7 - ebits;
+  e_revert &= 0x7f;
+  e_revert >>= mantissabit;
+  e_revert = e_revert - std::pow(2, ebits - 1) + 1 + 127;
+  e_revert <<= 23;
+  mantissa_revert <<= (23 - mantissabit);
+  mantissa_revert &= 0x007fffff;
+  uint32_t revert = sign_revert | e_revert | mantissa_revert;
+  float* fp_v = reinterpret_cast<float*>(&revert);
+  return *fp_v;
+}
+
 template <typename _DST_T, int _PACK_ROW, typename _S_T>
-inline JBLAS_CODE decompress_kblock_s8_f32(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
-                                           _S_T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad) {
+inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                          _S_T* scales, int k_offset, int kblock, int NPad, JBLAS_DTYPE src_f8_type) {
+  for (int i = 0; i < row; i++) {
+    int kpos = (k_offset + i) / kblock;
+    auto sptr = scales + kpos * NPad;
+    for (int j = 0; j < col; j++) {
+      auto fp_v = f8_to_fp32(srcptr[i * ld_src + j], src_f8_type);
+      if constexpr (std::is_same_v<_S_T, utils::f8>) {
+        int shared_exp = sptr[j / _PACK_ROW].x;
+        float scale = std::pow(2, shared_exp);
+        dstptr[i * ld_dst + j] = fp_v * scale;
+      } else {
+        assert(0);
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
+template <typename _DST_T, int _PACK_ROW, typename _S_T>
+inline JBLAS_CODE decompress_kblock_s8_fp(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                          _S_T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad) {
   for (int i = 0; i < row; i++) {
     int kpos = (k_offset + i) / kblock;
     auto sptr = scales + kpos * NPad;
@@ -614,6 +656,17 @@ inline JBLAS_CODE decompress_kblock_f4_fp_noscale(utils::f4x2* srcptr, _DST_T* d
   return JblasSuccess;
 }
 
+template <typename _DST_T>
+inline JBLAS_CODE decompress_kblock_f8_fp_noscale(utils::f8* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
+                                                  int ld_dst, JBLAS_DTYPE src_f8_t) {
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col; j++) {
+      dstptr[i * ld_dst + j] = f8_to_fp32(srcptr[i * ld_src + j], src_f8_t);
+    }
+  }
+  return JblasSuccess;
+}
+
 static inline JBLAS_CODE memcpy2d_dw2highw(const void* srcptr, void* dstptr, int row, int col, int srcstride,
                                            int dststride) {
   auto bsrcptr = (char*)srcptr;
@@ -627,11 +680,64 @@ static inline JBLAS_CODE memcpy2d_dw2highw(const void* srcptr, void* dstptr, int
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE memcpy2d(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+template <typename _SRC_T, typename _DST_T>
+static inline JBLAS_CODE memcpy2d(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstride,
+                                  int dststride) {
   auto bsrcptr = (const char*)srcptr;
   auto bdstptr = (char*)dstptr;
   for (int i = 0; i < row; i++) {
-    std::memcpy(bdstptr + i * dststride, bsrcptr + i * srcstride, col);
+    if constexpr (std::is_same_v<_SRC_T, _DST_T>) {
+      std::memcpy(bdstptr + i * dststride, bsrcptr + i * srcstride, col);
+    } else if constexpr (std::is_same_v<_SRC_T, float> &&
+                         (std::is_same_v<_DST_T, utils::bf16> || std::is_same_v<_DST_T, utils::fp16>)) {
+      for (int j = 0; j < col; j += sizeof(_SRC_T))
+        dstptr[(i * dststride + j / 2) / sizeof(_DST_T)] = srcptr[(i * srcstride + j) / sizeof(_SRC_T)];
+    } else if constexpr ((std::is_same_v<_SRC_T, utils::bf16> ||
+                          std::is_same_v<_SRC_T, utils::fp16>)&&std::is_same_v<_DST_T, float>) {
+      for (int j = 0; j < col; j += sizeof(_SRC_T))
+        dstptr[(i * dststride + j * 2) / sizeof(_DST_T)] = srcptr[(i * srcstride + j) / sizeof(_SRC_T)];
+    } else {
+      assert(0);
+    }
+  }
+  return JblasSuccess;
+}
+
+static float postop(float x, JBLAS_ELTWISEOP op, void* const_elt_v) {
+  if (op == GELU) {
+    return 0.5f * x * (1.f + tanhf(0.7978845834732056f * (x + 0.044714998453855515f * x * x * x)));
+  }
+  if (op == SWISH) {
+    return x / (1 + exp(-x));
+  }
+  assert(0);
+  return std::numeric_limits<float>::infinity();
+}
+
+template <typename _SRC_T, typename _DST_T, JBLAS_ELTWISEOP OP_T>
+static inline JBLAS_CODE memcpy2d_withop(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstride,
+                                         int dststride, void* const_elt_v) {
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col; j += sizeof(_SRC_T)) {
+      float v = srcptr[(i * srcstride + j) / sizeof(_SRC_T)];
+      v = postop(v, OP_T, const_elt_v);
+      dstptr[(i * srcstride + j) / sizeof(_DST_T)] = v;
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE get2d_e8m0_scale(const void* srcptr, void* dstptr, int row, int col, int srcstride,
+                                          int dststride) {
+  auto f8_v = (const utils::f8*)srcptr;
+  auto f32_v = (float*)dstptr;
+  auto f8_stride = srcstride / sizeof(utils::f8);
+  auto f32_stride = dststride / sizeof(float);
+  auto col_elt = col / sizeof(utils::f8);
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col_elt; j++) {
+      f32_v[i * f32_stride + j] = std::pow(2, f8_v[i * f8_stride + j].x);
+    }
   }
   return JblasSuccess;
 }
@@ -741,6 +847,73 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
   }
   return JblasSuccess;
 }
+
+template <JBLAS_DTYPE F8_T>
+int8_t f8_mx_quantize(float v, float shared_exp) {
+  v /= std::pow(2, shared_exp);
+  auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
+  auto mantissa_bits = 7 - ebits;
+  auto private_exp = std::floor(std::log2(std::abs(v == 0 ? v + 1 : v)));
+  auto min_exp = -1 * (std::pow(2, ebits - 1)) + 2;
+  private_exp = private_exp < min_exp ? min_exp : private_exp;
+
+  // Scale up so appropriate number of bits are in the integer portion of the number
+  v = v / std::pow(2, private_exp) * std::pow(2, mantissa_bits - 2);
+  auto sign = v > 0 ? 1 : -1;
+  v = sign * std::floor(std::abs(v) + 0.5);
+  // Undo scaling
+  v = v / std::pow(2, mantissa_bits - 2) * std::pow(2, private_exp);
+
+  // saturate normals.
+  auto max_norm = utils::get_mxfp_maxnorm(F8_T, ebits, mantissa_bits);
+  std::clamp(v, -1 * max_norm, max_norm);
+
+  uint32_t* shift_v = reinterpret_cast<uint32_t*>(&v);
+  // get sign;
+  char* p = reinterpret_cast<char*>(&v);
+  uint8_t store_signbit = (*(p + 3) & 0x80);
+  *shift_v <<= 1;
+  uint8_t store_ebit = (*(p + 3) & 0xFF);
+  store_ebit = store_ebit - 127 + std::pow(2, ebits - 1) - 1;
+  store_ebit <<= mantissa_bits;
+  *shift_v <<= 8;
+  int8_t ox80_shift = -128 >> (mantissa_bits - 1);
+  uint8_t store_mantissabit = (*(p + 3) & ox80_shift);
+  store_mantissabit >>= (1 + ebits);
+  auto ret = store_signbit | store_ebit | store_mantissabit;
+  return ret;
+}
+
+template <JBLAS_DTYPE F8_T>
+inline JBLAS_CODE quantize_f32_f8_rowblock_mxscale(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
+                                                   int ld_dst, float* scales, int blocksize) {
+  for (int i = 0; i < col; i++) {
+    int align_row_loop = row / blocksize * blocksize;
+    int j = 0;
+    auto f8_blk_quant = [&](int blksize) {
+      float shared_exp = std::numeric_limits<float>::min();
+      for (size_t ij = 0; ij < blksize; ij++) {
+        shared_exp = std::max(shared_exp, std::abs(srcptr[(j + ij) * ld_src + i]));
+      }
+      if (shared_exp == 0) shared_exp += std::abs(std::numeric_limits<float>::min());
+      shared_exp = std::floor(std::log2(shared_exp));
+      auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
+      auto emax = std::pow(2, ebits - 1) - 1;
+      shared_exp = shared_exp < (-1 * emax) ? (-1 * emax) : shared_exp;
+      shared_exp -= emax;
+      auto scale_max = std::pow(2, 7) - 1;  // e8m0 scale type.
+      shared_exp = shared_exp < (-1 * scale_max) ? (-1 * scale_max) : shared_exp;
+      scales[j / blocksize * ld_dst + i] = shared_exp;
+      for (size_t ij = 0; ij < blksize; ij++) {
+        dstptr[(j + ij) * ld_dst + i] = f8_mx_quantize<F8_T>(srcptr[(j + ij) * ld_src + i], shared_exp);
+      }
+    };
+    for (; j < align_row_loop; j += blocksize) f8_blk_quant(blocksize);
+    if (j < row) f8_blk_quant(row - align_row_loop);
+  }
+  return JblasSuccess;
+}
+
 template <JBLAS_DTYPE F4_T>
 inline JBLAS_CODE quantize_f32_f4_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
                                            int ld_dst, float* scales, int8_t* zero_points, int blocksize) {
@@ -915,7 +1088,12 @@ static inline JBLAS_CODE accum_alphaN_f32_f32(const SCA_T* alpha, const float* s
                                               const int dststep, const int M, const int N) {
   for (size_t i = 0; i < M; i++) {
     for (size_t j = 0; j < N; j++) {
-      dstptr[i * dststep + j] = static_cast<float>(alpha[j]) * srcptr[i * srcstep + j] + dstptr[i * dststep + j];
+      if constexpr (!std::is_same_v<SCA_T, utils::f8>) {
+        dstptr[i * dststep + j] = static_cast<float>(alpha[j]) * srcptr[i * srcstep + j] + dstptr[i * dststep + j];
+      } else {
+        dstptr[i * dststep + j] =
+            std::pow(2, alpha[j].x) * srcptr[i * srcstep + j] + dstptr[i * dststep + j];  // e8m0 scale.
+      }
     }
   }
   return JblasSuccess;

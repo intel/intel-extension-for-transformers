@@ -50,6 +50,7 @@ enum class JBLAS_DTYPE : uint32_t {
   SubType0 = 0 << SubTypeShift,
   SubType1 = 1 << SubTypeShift,
   SubType2 = 2 << SubTypeShift,
+  SubType3 = 3 << SubTypeShift,
   F64 = EleBits64 | TypeFloat,
   F32 = EleBits32 | TypeFloat,
   F16 = EleBits16 | TypeFloat,
@@ -57,6 +58,7 @@ enum class JBLAS_DTYPE : uint32_t {
   F8_E4M3 = EleBits8 | TypeFloat,
   F8_E5M2 = EleBits8 | TypeFloat | SubType1,
   F8_E3M4 = EleBits8 | TypeFloat | SubType2,
+  F8_E8M0 = EleBits8 | TypeFloat | SubType3,
   S8 = EleBits8 | TypeInt,
   U8 = EleBits8 | TypeInt | SubType1,
   S4_CLIP = EleBits4 | TypeInt,
@@ -74,15 +76,7 @@ enum JBLAS_TRANSPOSE {
   JblasTrans = 112,
   JblasConjTrans = 113,
 };
-enum JBLAS_ELTWISEOP {
-  GELU,
-  SWISH,
-  TANH,
-  EXP,
-  LOW_PRECISION_EXP,
-  RELU,
-  LINEAR,
-};
+enum JBLAS_ELTWISEOP { GELU, SWISH, TANH, EXP, LOW_PRECISION_EXP, RELU, LINEAR };
 
 enum class JBLAS_PROLOGUEB_IDS : uint32_t {
   Undef = (uint32_t)-1,
@@ -96,6 +90,7 @@ enum class JBLAS_PROLOGUEB_IDS : uint32_t {
   WeightKBlockS8,
   WeightKBlockS4,
   WeightKBlockF4,
+  WeightKBlockF8,
   KBlockEnd,
   End,
 };

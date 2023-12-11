@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#include <type_traits>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -104,6 +105,11 @@ struct bf16 {
     return tmp.f32;
   }
 
+  bf16& operator=(float val) {
+    fromfloat(val);
+    return *this;
+  }
+
   operator float() const { return tofloat(); }
 
   static bf16 from_bin(const uint16_t x) {
@@ -119,6 +125,15 @@ struct bf16 {
     const auto lsb = tmp.bf16[1] & 1;
     tmp.u += 0x7fff + lsb;
     x = tmp.bf16[1];
+  }
+};
+
+struct f8 {
+  int8_t x;
+  explicit f8(int8_t v) { x = v; }
+  f8& operator=(int8_t v) {
+    x = v;
+    return *this;
   }
 };
 
@@ -234,6 +249,8 @@ inline constexpr JBLAS_DTYPE jblas_dtype = std::is_same_v<T, double>        ? JB
                                            : std::is_same_v<T, utils::fp16> ? JBLAS_DTYPE::F16
                                            : std::is_same_v<T, int8_t>      ? JBLAS_DTYPE::S8
                                            : std::is_same_v<T, uint8_t>     ? JBLAS_DTYPE::U8
+                                           : std::is_same_v<T, int>         ? JBLAS_DTYPE::S32
+                                           : std::is_same_v<T, f8>          ? JBLAS_DTYPE::F8_E8M0
                                                                             : (assert(0), JBLAS_DTYPE::F32);
 template <typename T>
 inline constexpr const char* type_str = std::is_same_v<T, double>    ? "double"
@@ -242,6 +259,7 @@ inline constexpr const char* type_str = std::is_same_v<T, double>    ? "double"
                                         : std::is_same_v<T, fp16>    ? "fp16"
                                         : std::is_same_v<T, int8_t>  ? "int8_t"
                                         : std::is_same_v<T, uint8_t> ? "uint8_t"
+                                        : std::is_same_v<T, f8>      ? "f8"  // TODO(zhe): more f8 cases?
                                                                      : (assert(0), "undef");
 
 inline const char* jblas_dtype_str(JBLAS_DTYPE dtype) {
@@ -304,6 +322,32 @@ inline constexpr size_t jblas_dtype_type(const JBLAS_DTYPE t) {
 inline constexpr size_t jblas_dtype_size(const JBLAS_DTYPE t) {
   auto bits = jblas_dtype_get_mask_val(t, JBLAS_DTYPE::EleBitsMask, JBLAS_DTYPE::EleBitsShift);
   return bits >> 3;  // bits to bytes
+}
+
+inline int jblas_dtype_get_f8_ebits(const JBLAS_DTYPE t) {
+  int ret = -1;
+  switch (t) {
+    case JBLAS_DTYPE::F8_E4M3:
+      ret = 4;
+      break;
+    case JBLAS_DTYPE::F8_E5M2:
+      ret = 5;
+      break;
+    default:
+      assert(0);
+  }
+  return ret;
+}
+
+inline float get_mxfp_maxnorm(const JBLAS_DTYPE t, int ebits, int mantissa_bits) {
+  auto emax = std::pow(2, ebits - 1);
+  auto max_norm = std::pow(2, emax);
+  if (t != JBLAS_DTYPE::F8_E4M3) {
+    max_norm *= 1.75;
+  } else {
+    max_norm *= ((std::pow(2, mantissa_bits - 1) - 1) / std::pow(2, mantissa_bits - 2));
+  }
+  return max_norm;
 }
 
 #ifndef _WIN32
