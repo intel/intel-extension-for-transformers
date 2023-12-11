@@ -93,9 +93,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 	</tbody>
 </table>
-> **Notes**: - means not applicable or not started
-
-Intel Gaudi2 details: Driver version 1.13.0-ee32e42, synpase AI v1.13.0
+**Notes**:  - means not applicable or not started
 
 ## 🌱Getting Started
 You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.
