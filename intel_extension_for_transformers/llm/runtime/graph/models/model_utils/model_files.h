@@ -899,6 +899,7 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
     // uint32_t magic = file.read_u32();
 
     if (magic == MODEL_FILE_MAGIC_NE) {
+      std::cout << "?????????????????????" << std::endl;
       file_version = MODEL_FILE_VERSION_NE;
       return;
     }
@@ -911,24 +912,24 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
         switch (version) {
           case 1:
             file_version = MODEL_FILE_VERSION_GGMF_V1;
-            return;
+            break;
         }
         break;
       case MODEL_FILE_MAGIC_GGJT:
         switch (version) {
           case 1:
             file_version = MODEL_FILE_VERSION_GGJT_V1;
-            return;
+            break;
           case 2:
             file_version = MODEL_FILE_VERSION_GGJT_V2;
-            return;
+            break;
           case 3:
             file_version = MODEL_FILE_VERSION_GGJT_V3;
-            return;
+            break;
         }
     }
-
-    throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
+    std::cout << std::hex << "magic = " << magic << " version = " << version << std::endl;
+    //throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
 
       hparams.n_vocab = ctx_gguf->kv[3].value.uint32;
       hparams.n_embd = ctx_gguf->kv[4].value.uint32;
@@ -956,6 +957,46 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
       vocab.eos_token_id = ctx_gguf->kv[21].value.uint32;
       vocab.pad_token_id = ctx_gguf->kv[22].value.uint32;
       vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
+
+
+      // load vocab
+      std::string tokens = "tokenizer.ggml.tokens";
+      const int token_idx = gguf_find_key(ctx_gguf, tokens.c_str());
+      if (token_idx == -1) {
+          throw std::runtime_error("cannot find tokenizer vocab in model file\n");
+      }
+
+      
+      const float * scores = nullptr;
+      std::string scores_name = "tokenizer.ggml.scores";
+      const int score_idx = gguf_find_key(ctx_gguf, scores_name.c_str());
+      if (score_idx != -1) {
+          scores = (const float * ) gguf_get_arr_data(ctx_gguf, score_idx);
+      }
+      
+    const uint32_t n_vocab = gguf_get_arr_n(ctx_gguf, token_idx);
+    
+    vocab.id_to_token.resize(hparams.n_vocab);
+    for (uint32_t i = 0; i < n_vocab; i++) {
+        std::string word = gguf_get_arr_str(ctx_gguf, token_idx, i);
+        // NE_ASSERT(codepoints_from_utf8(word).size() > 0);
+        
+        vocab.token_to_id[word] = i;
+
+        auto& tok_score = vocab.id_to_token[i];
+        tok_score.tok = std::move(word);
+        tok_score.score = scores ? scores[i] : 0.0f;
+        
+    }
+
+    // hparams.n_vocab and n_vocab may be different
+    // (gdb) p n_vocab
+    // $1 = 64789
+    // (gdb) p hparams.n_vocab
+    // $2 = 65024
+    // NE_ASSERT(vocab.id_to_token.size() == vocab.token_to_id.size());
+
+    std::cout << "HAPPEND" << std::endl;
 
   }
 
@@ -986,28 +1027,30 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
   }
 
   void read_vocab() {
-    vocab.id_to_token.resize(hparams.n_vocab);
+    
     // file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
     // file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
     // file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
     // file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
 
-    for (uint32_t i = 0; i < hparams.n_vocab; i++) {
-      uint32_t len = file.read_u32();
-      std::string word = file.read_string(len);
+  
+    // vocab.id_to_token.resize(hparams.n_vocab);
+    // for (uint32_t i = 0; i < hparams.n_vocab; i++) {
+    //   uint32_t len = file.read_u32();
+    //   std::string word = file.read_string(len);
 
-      float score = 0.0f;
-      if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
-        file.read_raw(&score, sizeof(score));
-      }
+    //   float score = 0.0f;
+    //   if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
+    //     file.read_raw(&score, sizeof(score));
+    //   }
 
-      vocab.token_to_id[word] = i;
+    //   vocab.token_to_id[word] = i;
 
-      auto& tok_score = vocab.id_to_token[i];
-      tok_score.tok = std::move(word);
-      tok_score.score = score;
-    }
-    
+    //   auto& tok_score = vocab.id_to_token[i];
+    //   tok_score.tok = std::move(word);
+    //   tok_score.score = score;
+    // }
+
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
