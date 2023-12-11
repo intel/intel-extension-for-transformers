@@ -859,17 +859,52 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
 
     }
 
-
+    // 需要一个load的函数, 将参数load进去
+  /*
+  read_magic: loaded meta data with 30 key-value pairs and 199 tensors (version GGUF V3 (latest))
+read_magic: - kv   0:                       general.architecture str              = chatglm2-test.ggml
+read_magic: - kv   1:                                      magic u32              = 1734831462
+read_magic: - kv   2:                                    version u32              = 1
+read_magic: - kv   3:                                    n_vocab u32              = 65024
+read_magic: - kv   4:                                     n_embd u32              = 4096
+read_magic: - kv   5:                                     n_mult u32              = 0
+read_magic: - kv   6:                                     n_head u32              = 32
+read_magic: - kv   7:                                  n_head_kv u32              = 0
+read_magic: - kv   8:                                    n_layer u32              = 28
+read_magic: - kv   9:                                      n_rot u32              = 0
+read_magic: - kv  10:                                      ftype u32              = 0
+read_magic: - kv  11:                                max_seq_len u32              = 32768
+read_magic: - kv  12:                             alibi_bias_max u32              = 0
+read_magic: - kv  13:                                   clip_qkv u32              = 0
+read_magic: - kv  14:                                    par_res u32              = 0
+read_magic: - kv  15:                        word_embed_proj_dim u32              = 0
+read_magic: - kv  16:                       do_layer_norm_before u32              = 0
+read_magic: - kv  17:                      multi_query_group_num u32              = 2
+read_magic: - kv  18:                            ffn_hidden_size u32              = 13696
+read_magic: - kv  19:                          inner_hidden_size u32              = 0
+read_magic: - kv  20:                               bos_token_id u32              = 1
+read_magic: - kv  21:                               eos_token_id u32              = 2
+read_magic: - kv  22:                               pad_token_id u32              = 0
+read_magic: - kv  23:                               sep_token_id u32              = 0
+read_magic: - kv  24:                       tokenizer.ggml.model str              = llama
+read_magic: - kv  25:                      tokenizer.ggml.tokens arr[str,64789]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+read_magic: - kv  26:                      tokenizer.ggml.scores arr[f32,64789]   = [0.000000, 0.000000, 0.000000, 0.0000...
+read_magic: - kv  27:                  tokenizer.ggml.token_type arr[i32,64789]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+read_magic: - kv  28:                tokenizer.ggml.eos_token_id u32              = 2
+read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32              = 0
 
   
-    uint32_t magic = file.read_u32();
+  */
+    uint32_t magic = ctx_gguf->kv[1].value.uint32;
+    // uint32_t magic = file.read_u32();
 
     if (magic == MODEL_FILE_MAGIC_NE) {
       file_version = MODEL_FILE_VERSION_NE;
       return;
     }
 
-    uint32_t version = file.read_u32();
+    uint32_t version = ctx_gguf->kv[2].value.uint32;
+    // uint32_t version = file.read_u32();
 
     switch (magic) {
       case MODEL_FILE_MAGIC_GGMF:
@@ -894,39 +929,68 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     }
 
     throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
+
+      hparams.n_vocab = ctx_gguf->kv[3].value.uint32;
+      hparams.n_embd = ctx_gguf->kv[4].value.uint32;
+      hparams.n_mult =ctx_gguf->kv[5].value.uint32;
+      hparams.n_head = ctx_gguf->kv[6].value.uint32;
+      hparams.n_head_kv = ctx_gguf->kv[7].value.uint32;
+      hparams.n_layer = ctx_gguf->kv[8].value.uint32;
+      hparams.n_rot = ctx_gguf->kv[9].value.uint32;
+      hparams.ftype = (enum ne_ftype)ctx_gguf->kv[10].value.uint32;
+      hparams.max_seq_len = ctx_gguf->kv[11].value.uint32;
+      hparams.alibi_bias_max = ctx_gguf->kv[12].value.uint32;
+      hparams.clip_qkv = ctx_gguf->kv[13].value.uint32;
+      hparams.par_res = ctx_gguf->kv[14].value.uint32;
+
+      hparams.word_embed_proj_dim = ctx_gguf->kv[15].value.uint32;
+      hparams.do_layer_norm_before = bool(ctx_gguf->kv[16].value.uint32);
+
+      // For ChatGLM-2
+      hparams.multi_query_group_num = ctx_gguf->kv[17].value.uint32;
+      hparams.ffn_hidden_size = ctx_gguf->kv[18].value.uint32;
+
+      // For ChatGLM-2
+      hparams.inner_hidden_size = ctx_gguf->kv[19].value.uint32;
+      vocab.bos_token_id = ctx_gguf->kv[20].value.uint32;
+      vocab.eos_token_id = ctx_gguf->kv[21].value.uint32;
+      vocab.pad_token_id = ctx_gguf->kv[22].value.uint32;
+      vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
+
   }
 
   void read_hparams() {
-    hparams.n_vocab = file.read_u32();
-    hparams.n_embd = file.read_u32();
-    hparams.n_mult = file.read_u32();
-    hparams.n_head = file.read_u32();
-    hparams.n_head_kv = file.read_u32();
-    hparams.n_layer = file.read_u32();
-    hparams.n_rot = file.read_u32();
-    hparams.ftype = (enum ne_ftype)file.read_u32();
-    hparams.max_seq_len = file.read_u32();
-    file.read_raw(&hparams.alibi_bias_max, sizeof(float));
-    file.read_raw(&hparams.clip_qkv, sizeof(float));
-    hparams.par_res = file.read_u32();
+      
+    // hparams.n_vocab = file.read_u32();
+    // hparams.n_embd = file.read_u32();
+    // hparams.n_mult = file.read_u32();
+    // hparams.n_head = file.read_u32();
+    // hparams.n_head_kv = file.read_u32();
+    // hparams.n_layer = file.read_u32();
+    // hparams.n_rot = file.read_u32();
+    // hparams.ftype = (enum ne_ftype)file.read_u32();
+    // hparams.max_seq_len = file.read_u32();
+    // file.read_raw(&hparams.alibi_bias_max, sizeof(float));
+    // file.read_raw(&hparams.clip_qkv, sizeof(float));
+    // hparams.par_res = file.read_u32();
 
-    hparams.word_embed_proj_dim = file.read_u32();
-    hparams.do_layer_norm_before = bool(file.read_u32());
+    // hparams.word_embed_proj_dim = file.read_u32();
+    // hparams.do_layer_norm_before = bool(file.read_u32());
 
-    // For ChatGLM-2
-    hparams.multi_query_group_num = file.read_u32();
-    hparams.ffn_hidden_size = file.read_u32();
+    // // For ChatGLM-2
+    // hparams.multi_query_group_num = file.read_u32();
+    // hparams.ffn_hidden_size = file.read_u32();
 
-    // For ChatGLM-2
-    hparams.inner_hidden_size = file.read_u32();
+    // // For ChatGLM-2
+    // hparams.inner_hidden_size = file.read_u32();
   }
 
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
-    file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
-    file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
-    file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
-    file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
+    // file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
+    // file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
+    // file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
+    // file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
@@ -943,6 +1007,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
       tok_score.tok = std::move(word);
       tok_score.score = score;
     }
+    
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
