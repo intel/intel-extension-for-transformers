@@ -246,6 +246,11 @@ size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantT
     case JBLAS_DTYPE::F4_NF4:
       return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF4>(N, K, BlkSize, QuantType, ScaleDtype,
                                                                               isAsym, CompType);
+    case JBLAS_DTYPE::F8_E4M3:
+    case JBLAS_DTYPE::F8_E3M4:
+    case JBLAS_DTYPE::F8_E5M2:
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF8>(N, K, BlkSize, QuantType, ScaleDtype,
+                                                                              isAsym, CompType);
     default:
       return 0;
   }
