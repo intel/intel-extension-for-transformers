@@ -16,6 +16,7 @@
 #include "kernel_ref.h"
 
 #include <array>
+#include <cmath>
 #include <cstring>
 #include <type_traits>
 #if CompileAVX512F()
@@ -541,6 +542,60 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, 
     return JblasSuccess;
   }
   return JblasNotSupport;
+}
+
+template <bool WITH_SCALE, typename _DST_T, int _PACK_ROW, typename _S_T>
+inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                          _S_T* scales, int k_offset, int kblock, int NPad, JBLAS_DTYPE src_f8_type) {
+  int align_col = col / 16 * 16;
+  int col_tail = col - align_col;
+  auto ebits = utils::jblas_dtype_get_f8_ebits(src_f8_type);
+  auto mantissabit = 7 - ebits;
+  auto sign_revert_and_mask = _mm512_set1_epi32(0x80000000);
+  auto e_revert_and_mask = _mm512_set1_epi32(0x0000007f);
+  auto e_revert_shift = _mm512_set1_epi32(1);
+  e_revert_shift = _mm512_slli_epi32(e_revert_shift, ebits - 1);
+  e_revert_shift = _mm512_sub_epi32(e_revert_shift, _mm512_set1_epi32(128));
+  auto mantissa_revert_and_mask = _mm512_set1_epi32(0x007fffff);
+  auto packrow2_permute_idx = _mm512_setr_epi32(0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7);
+  for (int i = 0; i < row; i++) {
+    int kpos = (k_offset + i) / kblock;
+    auto sptr = scales + kpos * NPad;
+    int j = 0;
+    auto quant = [&](__mmask16 mask) {
+      __m128i f8_src;
+      auto sign_revert =
+          _mm512_cvtepi8_epi32(_mm_mask_loadu_epi8(f8_src, mask, reinterpret_cast<__m128i*>(srcptr + i * ld_src + j)));
+      auto e_revert = sign_revert;
+      auto mantissa_revert = sign_revert;
+      sign_revert = _mm512_slli_epi32(sign_revert, 24);
+      sign_revert = _mm512_and_epi32(sign_revert, sign_revert_and_mask);
+      e_revert = _mm512_and_epi32(e_revert, e_revert_and_mask);
+      e_revert = _mm512_srli_epi32(e_revert, mantissabit);
+      e_revert = _mm512_sub_epi32(e_revert, e_revert_shift);
+      if constexpr (WITH_SCALE) {
+        auto scale = _mm512_cvtepi8_epi32(_mm_loadu_si128(reinterpret_cast<__m128i*>(sptr + j / _PACK_ROW)));
+        if constexpr (_PACK_ROW == 2) scale = _mm512_permutexvar_epi32(packrow2_permute_idx, scale);
+        e_revert = _mm512_add_epi32(e_revert, scale);
+      }
+      e_revert = _mm512_slli_epi32(e_revert, 23);
+      mantissa_revert = _mm512_slli_epi32(mantissa_revert, 23 - mantissabit);
+      mantissa_revert = _mm512_and_epi32(mantissa_revert, mantissa_revert_and_mask);
+      auto fp_v = _mm512_or_ps(_mm512_castsi512_ps(sign_revert), _mm512_castsi512_ps(e_revert));
+      fp_v = _mm512_or_ps(fp_v, _mm512_castsi512_ps(mantissa_revert));
+      if constexpr (std::is_same_v<_DST_T, float>) {
+        _mm512_mask_storeu_ps(dstptr + i * ld_dst + j, mask, fp_v);
+      } else if constexpr (std::is_same_v<_DST_T, utils::bf16>) {
+        auto bf16_v = zmm_cvt_fp32_bf16(fp_v);
+        _mm256_mask_storeu_epi16(reinterpret_cast<__m256i*>(dstptr + i * ld_dst + j), mask, bf16_v);
+      } else {
+        assert(0);
+      }
+    };
+    for (; j < align_col; j += 16) quant(_cvtu32_mask16(0xffff));
+    if (col_tail > 0) quant(_cvtu32_mask16(0xffff >> (16 - col_tail)));
+  }
+  return JblasSuccess;
 }
 
 template <JBLAS_DTYPE S4_T, typename _DST_T, int _PACK_ROW, typename _ST>
@@ -1276,6 +1331,10 @@ static inline JBLAS_CODE accum_alphaN_f32_f32(const SCA_T* alpha, const float* s
     } else if constexpr (std::is_same_v<SCA_T, utils::bf16>) {
       auto tmp = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(alpha + j));
       valpha = zmm_cvt_bf16_fp32(tmp);
+    } else if constexpr (std::is_same_v<SCA_T, utils::f8>) {
+      valpha = _mm512_scalef_ps(
+          _mm512_set1_ps(1),
+          _mm512_cvtepi32_ps(_mm512_cvtepi8_epi32(_mm_loadu_si128(reinterpret_cast<const __m128i*>(alpha + j)))));
     }
     for (size_t i = 0; i < M; i++) {
       auto vsrc = _mm512_loadu_ps(srcptr + i * srcstep + j);
@@ -1286,7 +1345,11 @@ static inline JBLAS_CODE accum_alphaN_f32_f32(const SCA_T* alpha, const float* s
   }
   for (; j < N; j += 1) {
     for (size_t i = 0; i < M; i++) {
-      dstptr[i * dststep + j] += static_cast<float>(alpha[j]) * srcptr[i * srcstep + j];
+      if constexpr (!std::is_same_v<SCA_T, utils::f8>) {
+        dstptr[i * dststep + j] += static_cast<float>(alpha[j]) * srcptr[i * srcstep + j];
+      } else {
+        dstptr[i * dststep + j] += std::pow(2, alpha[j].x) * srcptr[i * srcstep + j];
+      }
     }
   }
   return JblasSuccess;

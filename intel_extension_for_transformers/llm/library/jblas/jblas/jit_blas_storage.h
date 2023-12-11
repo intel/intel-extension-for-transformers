@@ -826,6 +826,24 @@ class StorageWeightKBlockS4 : public StorageWeightKBlockS8 {
   }
 };
 
+class StorageWeightKBlockF8 : public StorageWeightKBlockS8 {
+ public:
+  StorageWeightKBlockF8(uint64_t _type) : StorageWeightKBlockS8(_type) {
+    mPrologueID = JBLAS_PROLOGUEB_IDS::WeightKBlockF8;
+  }
+
+  size_t resize(int NPad, int KPad, int Block, int N, int K, JBLAS_DTYPE f8t, JBLAS_DTYPE scalet) {
+    StorageWeightKBlockF8::InfoType::resize(NPad, KPad, Block, N, K, f8t);
+    StorageWeightKBlockF8::mQBuf.resize((size_t)NPad * KPad);
+    int nk_scale = utils::updiv(KPad, Block);
+    StorageWeightKBlockF8::mCorrection.resize(nk_scale, NPad, scalet, JBLAS_DTYPE::S8, JBLAS_DTYPE::F32, false, false);
+    mSize = StorageWeightKBlockF8::InfoType::getSerializedSize() + StorageWeightKBlockF8::mQBuf.getSerializedSize() +
+            StorageWeightKBlockF8::mCorrection.getSerializedSize();
+    mSize = utils::padto(mSize, Alignment);
+    return mSize;
+  }
+};
+
 class StorageWeightKBlockF4 : public StorageWeightKBlockS4 {
  public:
   StorageWeightKBlockF4(uint64_t _type) : StorageWeightKBlockS4(_type) {
@@ -884,6 +902,9 @@ class PackedWeightParser {
           break;
         case JBLAS_PROLOGUEB_IDS::WeightKBlockS8:
           ptr = new gemm::StorageWeightKBlockS8(0);
+          break;
+        case JBLAS_PROLOGUEB_IDS::WeightKBlockF8:
+          ptr = new gemm::StorageWeightKBlockF8(0);
           break;
         case JBLAS_PROLOGUEB_IDS::WeightKBlockS4:
           ptr = new gemm::StorageWeightKBlockS4(0);

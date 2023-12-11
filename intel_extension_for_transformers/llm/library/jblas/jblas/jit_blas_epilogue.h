@@ -37,25 +37,12 @@ class AccumulatorWriteBack {
   using DType = _DST_T;
   using Param = ParamAccumulatorWriteBack<DType>;
 
-  template <typename... Eltops>
   JBLAS_CODE forward(const _SRC_T* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
-                     const int N, const Param& _param, void* tmpcache, size_t cachesize, Eltops... ops) {
+                     const int N, const Param& _param, void* tmpcache, size_t cachesize) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    bool constexpr Valid = !std::is_same<DType, utils::bf16>::value || std::is_same<SType, float>::value;
-    static_assert(Valid, "fp32 to bf16 conversion only.");
-    if constexpr (std::is_same<DType, utils::bf16>::value) {
-      return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
-          const_cast<_SRC_T*>(cacheptr), cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
-    } else if constexpr (std::is_same<std::tuple<SType, DType>, std::tuple<utils::fp16, float>>::value) {
-      return kernel::wrapper::Memcpy2DFp16CvtFp32::template forward<ISA_T>(
-          const_cast<_SRC_T*>(cacheptr), cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
-    } else if constexpr (sizeof(SType) == sizeof(DType)) {
-      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(cacheptr, cptr, M, N, cachestep,
-                                                                              _param.ldc, _param.elt_const_v, ops...);
-    } else {
-      assert(false);
-    }
+    return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(cacheptr, cptr, M, N, cachestep, _param.ldc,
+                                                                            _param.elt_const_v);
   }
 };
 
@@ -83,6 +70,8 @@ template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackBf16 = AccumulatorWriteBack<ISA_T, utils::bf16, utils::bf16>;
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackFp16 = AccumulatorWriteBack<ISA_T, utils::fp16, utils::fp16>;
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackBf16Fp32 = AccumulatorWriteBack<ISA_T, utils::bf16, float>;
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackFp16Fp32 = AccumulatorWriteBack<ISA_T, utils::fp16, float>;
 template <JBLAS_ISA ISA_T>
@@ -154,6 +143,13 @@ class CompFp32BlockEpilogue {
       }
       assert(ret == JblasSuccess);
       return ret;
+    } else if (_param.scaledtype == JBLAS_DTYPE::F8_E8M0) {
+      ret = kernel::wrapper::CompFp32BlockScale::template forward<ISA_T>(
+          reinterpret_cast<utils::f8*>(_param.scales) + K_offset * _param.ldsb + N_offset, srcptr, cachestep, dstptr,
+          cachestep, M, N);
+      if (_param.zps != nullptr) {
+        assert(0);
+      }
     }
     return JblasNotSupport;
   }
