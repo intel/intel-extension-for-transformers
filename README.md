@@ -36,7 +36,7 @@ pip install intel-extension-for-transformers
 > For more installation methods, please refer to [Installation Page](./docs/installation.md)
 
 ## 🌟Introduction
-Intel® Extension for Transformers is an innovative toolkit designed to accelerate GenAI/LLM everywhere with the optimal performance of Transformer-based models on various Intel platforms, including Intel Gaudi2, Intel CPU, and Intel GPU (TBD). The toolkit provides the below key features and examples:
+Intel® Extension for Transformers is an innovative toolkit designed to accelerate GenAI/LLM everywhere with the optimal performance of Transformer-based models on various Intel platforms, including Intel Gaudi2, Intel CPU, and Intel GPU. The toolkit provides the below key features and examples:
 
 *  Seamless user experience of model compressions on Transformer-based models by extending [Hugging Face transformers](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
 
@@ -48,7 +48,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels for Intel CPU and Intel GPU (TBD), supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj), and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox). Support AMX, VNNI, AVX512F and AVX2 instruction set. We've boosted the performance of Intel CPUs, with a particular focus on the 4th generation Intel Xeon Scalable processor, codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html).
 
-## 🔓Supported Hardware
+## 🔓Validated Hardware
 <table>
 	<tbody>
 		<tr>
@@ -85,19 +85,21 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>Intel Core Processors</td>
-			<td>n/a</td>
+			<td>-</td>
 			<td>✔</td>
 			<td>✔ (INT8)</td>
 			<td>✔ (INT4)</td>
 		</tr>
 	</tbody>
 </table>
-**Notes**: - means not applicable or not started
+> "-" means not applicable or not started yet. 
 
-[Validated software configurations](intel_extension_for_transformers/docs/release_data.md)
-</br>
-You can refer to software requirements in [fine-tuning cpu](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [fine-tuning gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [cpu inference with llm runtime](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/requirements.txt)
 
+## Validated Software
+TBD: Add a table
+
+
+> Please refer to software requirements in [fine-tuning cpu](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [fine-tuning gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [cpu inference with llm runtime](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/requirements.txt) for more details.
 
 ## 🌱Getting Started
 You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.

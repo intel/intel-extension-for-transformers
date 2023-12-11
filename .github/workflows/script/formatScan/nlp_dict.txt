@@ -2411,6 +2411,6 @@ dalvishruti
 NormalFloat
 backpropagates
 leaderboard
-synpase
+synapse
 datalearner
 zaker
