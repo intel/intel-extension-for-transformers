@@ -64,6 +64,9 @@ def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, w
             api_router = api_router_mapping[lower_api_name]
             if enable_llm:
                 api_router.set_chatbot(chatbot, use_deepspeed, world_size, host, port)
+            if lower_api_name == "plugin_image2image":
+                api_router.worker.start()
+                logger.info("create main worker done...")
             _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")
