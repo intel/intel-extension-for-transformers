@@ -412,7 +412,8 @@ NE_API struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tenso
 // shift all tokens by a give p (n_shift)
 // Optionally give a 1d tensor of precomputed interleaved cos/sin value of n_shift*scale^k for k \in [0, n_dims)
 NE_API struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims,
-                                               int mode, int prompt_size, int n_keep, struct ne_tensor* cossin, float freq_base);
+                                               int mode, int prompt_size, int n_keep, struct ne_tensor* cossin,
+                                               float freq_base);
 
 // rotary position embedding backward, i.e compute dx from dy
 // a - dy
@@ -423,7 +424,8 @@ NE_API struct ne_tensor* ne_rope_with_padding(struct ne_context* ctx, struct ne_
 
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_rope_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past,
-                                                      int n_dims, int mode, int prompt_size, int* n_padding, float freq_base);
+                                                      int n_dims, int mode, int prompt_size, int* n_padding,
+                                                      float freq_base);
 
 // alibi position embedding
 // in-place, returns view(a)
