@@ -35,7 +35,7 @@ class UnitTest(unittest.TestCase):
                                     --config_file ./askdoc.yaml \
                                     --log_file "./neuralchat.log"'
         else:
-            command = 'sed -i "s|askdoc|nightly/server/askdoc|g" ./nightly/server/askdoc.yaml && neuralchat_server start \
+            command = 'sed -i "s|askdoc|ci/server/askdoc|g" ./nightly/server/askdoc.yaml && neuralchat_server start \
                         --config_file "./nightly/server/askdoc.yaml" \
                         --log_file "./neuralchat.log"'
         try:

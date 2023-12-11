@@ -109,11 +109,11 @@ class Audio2Coeff:
             coeffs_pred_numpy = coeffs_pred[0].clone().detach().cpu().numpy()
 
             savemat(
-                os.path.join(coeff_save_dir, "%s##%s.mat" % (batch["pic_name"], batch["audio_name"])),
+                os.path.join(coeff_save_dir, "%s-%s.mat" % (batch["pic_name"], batch["audio_name"])),
                 {"coeff_3dmm": coeffs_pred_numpy},
             )
 
-            return os.path.join(coeff_save_dir, "%s##%s.mat" % (batch["pic_name"], batch["audio_name"]))
+            return os.path.join(coeff_save_dir, "%s-%s.mat" % (batch["pic_name"], batch["audio_name"]))
 
     def using_refpose(self, coeffs_pred_numpy, ref_pose_coeff_path):
         num_frames = coeffs_pred_numpy.shape[0]
