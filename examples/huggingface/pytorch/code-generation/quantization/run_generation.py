@@ -86,7 +86,7 @@ parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 # ============Harness configs============
 parser.add_argument(
-    "--tasks", default=None, help="Evaluation tasks", choices=["mbpp", "humaneval"]
+    "--tasks", default="humaneval", help="Evaluation tasks", choices=["mbpp", "humaneval"]
 )
 parser.add_argument("--n_samples", default=200, type=int)
 parser.add_argument(
