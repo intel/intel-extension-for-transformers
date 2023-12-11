@@ -117,6 +117,7 @@ Pytorch: 2.0.1+cpu
 ## LLM Runtime (GGML-Compatible)
 Environment:
 GCC / G++:  12.1.0
+Transformers version: 4.35.2 
 
 
 ### MPT-7B
@@ -308,3 +309,10 @@ PyTorch: 2.0.1+cpu
 | PyTorch  | 4096        | 13K               | Yes           | 1     | 1   | BF16      | Yes  | 8/16            | 3       | 3.2 Hour   | 9.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
 | PyTorch  | 4096        | 13K               | Yes           | 2     | 2   | BF16      | Yes  | 8/16            | 3       | 1.2 Hour   | 3.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
 | PyTorch  | 4096        | 13K               | Yes           | 4     | 2   | BF16      | Yes  | 8/16            | 3       | 0.67 Hour  | 2 Hours    | 0.30/0.45            | 128               | 1.00E-04      |
+
+
+Intel Gaudi2 Environments: 
+
+Driver version 1.13.0-ee32e42, synpase AI v1.13.0
+
+We will release data soon.
