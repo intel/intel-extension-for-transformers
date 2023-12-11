@@ -1,0 +1,63 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline`
+============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline
+
+.. autoapi-nested-parse::
+
+   Pipline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image.instructpix2pix_pipeline.StableDiffusionInstructPix2PixPipeline
+
+
+
+
+.. py:class:: StableDiffusionInstructPix2PixPipeline(vae: diffusers.models.AutoencoderKL, text_encoder: transformers.CLIPTextModel, tokenizer: transformers.CLIPTokenizer, unet: diffusers.models.UNet2DConditionModel, scheduler: diffusers.schedulers.KarrasDiffusionSchedulers, safety_checker: diffusers.pipelines.stable_diffusion.safety_checker.StableDiffusionSafetyChecker, feature_extractor: transformers.CLIPFeatureExtractor, requires_safety_checker: bool = True)
+
+
+
+
+   Pipeline for pixel-level image editing by following text instructions. Based on Stable Diffusion.
+
+   This model inherits from [`DiffusionPipeline`]. Check the superclass documentation for the generic methods the
+   library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
+
+   :param vae: Variational Auto-Encoder (VAE) Model to encode and decode images to and from latent representations.
+   :type vae: [`AutoencoderKL`]
+   :param text_encoder: Frozen text-encoder. Stable Diffusion uses the text portion of
+                        [CLIP](https://huggingface.co/docs/transformers/model_doc/clip#transformers.CLIPTextModel), specifically
+                        the [clip-vit-large-patch14](https://huggingface.co/openai/clip-vit-large-patch14) variant.
+   :type text_encoder: [`CLIPTextModel`]
+   :param tokenizer: Tokenizer of class
+                     [CLIPTokenizer]
+                     (https://huggingface.co/docs/transformers/v4.21.0/en/model_doc/clip#transformers.CLIPTokenizer).
+   :type tokenizer: `CLIPTokenizer`
+   :param unet: Conditional U-Net architecture to denoise the encoded image latents.
+   :type unet: [`UNet2DConditionModel`]
+   :param scheduler: A scheduler to be used in combination with `unet` to denoise the encoded image latents. Can be one of
+                     [`DDIMScheduler`], [`LMSDiscreteScheduler`], or [`PNDMScheduler`].
+   :type scheduler: [`SchedulerMixin`]
+   :param safety_checker: Classification module that estimates whether generated images could be considered offensive or harmful.
+                          Please, refer to the [model card](https://huggingface.co/runwayml/stable-diffusion-v1-5) for details.
+   :type safety_checker: [`StableDiffusionSafetyChecker`]
+   :param feature_extractor: Model that extracts features from generated images to be used as inputs for the `safety_checker`.
+   :type feature_extractor: [`CLIPFeatureExtractor`]
+
+   .. py:method:: enable_sequential_cpu_offload(gpu_id=0)
+
+      Offloads all models to CPU using accelerate, significantly reducing memory usage. When called, unet,
+      text_encoder, vae and safety checker have their state dicts saved to CPU and then are moved to a
+      `torch.device('meta') and loaded to GPU only when their specific submodule has its `forward` method called.
+
+
+

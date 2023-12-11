@@ -1,0 +1,114 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.server.restful.plugin_image2image_api`
+============================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.server.restful.plugin_image2image_api
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.plugin_image2image_api.Task
+   intel_extension_for_transformers.neural_chat.server.restful.plugin_image2image_api.TaskQueue
+   intel_extension_for_transformers.neural_chat.server.restful.plugin_image2image_api.Worker
+
+
+
+
+.. py:class:: Task
+
+
+   task class
+
+   .. py:method:: done()
+
+      function
+
+
+   .. py:method:: wait_for_done()
+
+      function
+
+
+   .. py:method:: set_prompt(prompt)
+
+      function
+
+
+   .. py:method:: set_steps(num_inference_steps)
+
+      function
+
+
+   .. py:method:: set_task_type(task_type)
+
+      set task type
+
+
+   .. py:method:: set_start_time(time)
+
+      set_start_time for time-out
+
+
+
+.. py:class:: TaskQueue
+
+
+   TaskQueue
+
+   .. py:method:: push(task)
+
+      function
+
+
+   .. py:method:: pop()
+
+      function
+
+
+   .. py:method:: batch_pop(batch_size)
+
+      function
+
+
+   .. py:method:: empty()
+
+      function
+
+
+   .. py:method:: join()
+
+      function
+
+
+
+.. py:class:: Worker(queue, cond, batch_size=1)
+
+
+
+
+   A class that represents a thread of control.
+
+   This class can be safely subclassed in a limited fashion. There are two ways
+   to specify the activity: by passing a callable object to the constructor, or
+   by overriding the run() method in a subclass.
+
+
+   .. py:method:: run()
+
+      Method representing the thread's activity.
+
+      You may override this method in a subclass. The standard run() method
+      invokes the callable object passed to the object's constructor as the
+      target argument, if any, with sequential and keyword arguments taken
+      from the args and kwargs arguments, respectively.
+
+
+
+
