@@ -21,28 +21,16 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 8888
+port: 8000
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
-device: "cpu"
+device: "auto"
+plugin_as_service: true
 
-asr:
+image2image:
     enable: true
     args:
-        # support cpu, hpu, xpu, cuda
+        # Nerual Engine BF16 IR path
+        bf16_ir_path: "./bf16_ir"
         device: "cpu"
-        # support openai/whisper series
-        model_name_or_path: "openai/whisper-small"
-        # only can be set to true when the device is set to "cpu"
-        bf16: false
 
-tts:
-    enable: true
-    args:
-        device: "cpu"
-        voice: "default"
-        stream_mode: true
-        output_audio_path: "./output_audio"
-
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['voicechat']
+tasks_list: ['plugin_image2image']

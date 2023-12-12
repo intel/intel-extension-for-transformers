@@ -165,7 +165,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
 
     // norm
     {
-      cur = ne_rms_norm(ctx0, inpL);
+      cur = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
       // cur = cur*attention_norm(broadcasted)
       cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
@@ -187,10 +187,10 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
       Kcur = ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size, n_head_kv, N);
       Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
-    Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0);
+    Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0, hparams.freq_base);
     ne_set_name(Qcur, "Qcur");
     Kcur = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
-        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
+        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0, hparams.freq_base);
     ne_set_name(Kcur, "Kcur");
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
@@ -221,7 +221,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
-        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
       }
       K = ne_permute(ctx0, K, 0, 2, 1, 3);
       ne_set_name(K, "K");
@@ -301,7 +301,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
-        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
       }
       ne_set_name(K, "K");
 
@@ -337,7 +337,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
     {
       // norm
       {
-        cur = ne_rms_norm(ctx0, inpFF);
+        cur = ne_rms_norm(ctx0, inpFF, hparams.rms_norm_eps);
 
         // cur = cur*ffn_norm(broadcasted)
         cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
@@ -374,7 +374,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
     // inpL = inpL*norm(broadcasted)
     inpL = ne_mul(ctx0, inpL, model.others[1]);

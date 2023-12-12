@@ -108,6 +108,9 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "face_animation": # pragma: no cover
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
+                elif plugin_name == "image2image": # pragma: no cover
+                    from .pipeline.plugins.image2image.image2image import Image2Image
+                    plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 logger.info("create %s plugin instance...", plugin_name)
