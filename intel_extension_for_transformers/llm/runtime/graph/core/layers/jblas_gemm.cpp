@@ -24,6 +24,7 @@ Abstract:
 --*/
 
 #include "jblas_gemm.h"
+#include <cstdint>
 
 #include "jblas_defs.h"
 
@@ -202,30 +203,33 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
     case NE_COMP_INT8:
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
-                                                                                ScaleDtype, isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(static_cast<int>(BlkSize), N, K,
+                                                                                QuantType, ScaleDtype, isAsym);
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
-                                                                                ScaleDtype, isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(static_cast<int>(BlkSize), N, K,
+                                                                                QuantType, ScaleDtype, isAsym);
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
-                                                                             isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType,
+                                                                             ScaleDtype, isAsym);
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_BF16, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_BF16, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType,
+                                                                    ScaleDtype, isAsym);
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        return JblasBuSize<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype,
+                                                                 isAsym);
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        return JblasBuSize<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype,
+                                                              isAsym);
       }
       break;
     default:
@@ -265,7 +269,7 @@ void JblaGemmQuantPackB(void* PackedBuf, int BlkSize, const float* FpData, int N
   } else {
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype);
   }
-  stor.assign((int8_t*)PackedBuf);
+  stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
   auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
   if (IsTrans) {
     launcher.mProB.packTransposeWeight(N, K, FpData, ldb, &stor, pth);
@@ -285,44 +289,44 @@ static bool JblasGemmQuantPackBLocal(void* PackedBuf, const float* FpData, size_
     case NE_COMP_INT8:
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
-                                                                                int(K), QuantType, ScaleDtype, isAsym,
-                                                                                int(ldb), isTrans, ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
+              PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+              ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
           return true;
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
-                                                                                int(K), QuantType, ScaleDtype, isAsym,
-                                                                                int(ldb), isTrans, ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
+              PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+              ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
           return true;
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N),
-                                                                             int(K), QuantType, ScaleDtype, isAsym,
-                                                                             int(ldb), isTrans, ThreadPool);
+          JblaGemmQuantPackB<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
+              PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+              ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
           return true;
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
-                                                                  QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
-                                                                  ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+            ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
         return true;
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
-                                                                 QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
-                                                                 ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+            ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
         return true;
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), FpData, int(N), int(K),
-                                                              QuantType, ScaleDtype, isAsym, int(ldb), isTrans,
-                                                              ThreadPool);
+        JblaGemmQuantPackB<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), FpData, static_cast<int>(N), static_cast<int>(K), QuantType,
+            ScaleDtype, isAsym, static_cast<int>(ldb), isTrans, ThreadPool);
         return true;
       }
     default:
@@ -363,7 +367,7 @@ void JblaGemmPackBImpl(void* PackedBuf, int BlkSize, const int8_t* QData, const 
   } else {
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype);
   }
-  stor.assign((int8_t*)PackedBuf);
+  stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
   auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
   launcher.mProB.packQWeight(N, K, QData, ldb, Scales, IsAsym ? Zp : nullptr, &stor, pth);
 }
@@ -383,42 +387,43 @@ static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const floa
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-              ThreadPool);
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
           return true;
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
           JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-              ThreadPool);
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
           return true;
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp,
-                                                                            int(N), int(K), QuantType, ScaleDtype,
-                                                                            isAsym, int(ldb), ThreadPool);
+          JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
           return true;
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N),
-                                                                 int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-                                                                 ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+            QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
         return true;
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N),
-                                                                int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-                                                                ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp,
+                                                                static_cast<int>(N), static_cast<int>(K), QuantType,
+                                                                ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
         return true;
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K),
-                                                             QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp,
+                                                             static_cast<int>(N), static_cast<int>(K), QuantType,
+                                                             ScaleDtype, isAsym, static_cast<int>(ldb), ThreadPool);
         return true;
       }
     default:
@@ -462,28 +467,28 @@ bool JblasGemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, 
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAVX512F, tAVX512F::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAVX2, tAVX2::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         }
       }
       if (btype == jblas::gemm::CompType::tS8 && PackRow == 4) {
         if (NTile == tAMX_INT8_SS_KBlock::NTILE && _cd->AMX_INT8()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAMX_INT8_SS_KBlock, tAMX_INT8_SS_KBlock::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAVX512_VNNI_KBlock, tAVX512_VNNI_KBlock::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAVX_VNNI_KBlock, tAVX_VNNI_KBlock::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           static jblas::prologue_b::gemm::WeightKBlockNInteger<tAMX_BF16, tAMX_BF16::ISA> proB;
-          proB.unpackWeight(int(N), int(K), sptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), sptr, FpData, static_cast<int>(ldb), pth);
         }
       }
     }
@@ -491,16 +496,16 @@ bool JblasGemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, 
       if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
           static jblas::prologue_b::gemm::WeightKBlockF4<tAVX512F, tAVX512F::ISA> proB;
-          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
         } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
           static jblas::prologue_b::gemm::WeightKBlockF4<tAVX2, tAVX2::ISA> proB;
-          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
         }
       }
       if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
         if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
           static jblas::prologue_b::gemm::WeightKBlockF4<tAMX_BF16, tAMX_BF16::ISA> proB;
-          proB.unpackWeight(int(N), int(K), ptr, FpData, int(ldb), pth);
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
         }
       }
     }

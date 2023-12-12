@@ -20,7 +20,7 @@ using namespace ne_jblas;
 namespace ip_qkv {
 
 template <class Parallel_T, class Launch_T>
-void GemmRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+void GemmRun_QKV(Launch_T* launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para({th->num_threads(), args[0].problem, cb.mL2Cache, cb.mL1Cache});
   static bool flag = false;
@@ -34,18 +34,18 @@ void GemmRun_QKV(Launch_T& launcher, const typename Launch_T::Param* args, paral
     para.getIndex(thdp);
     if (thdp.valid) {
       for (size_t i = 0; i < 3; i++) {
-        launcher.run(args[i], thdp);
+        launcher->run(args[i], thdp);
       }
     }
   });
 }
 
 template <class Parallel_T, class Launch_T>
-void GemmRunWithA_QKV(Launch_T& launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
+void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para({th->num_threads(), args[0].problem, cb.mL2Cache, cb.mL1Cache});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  auto apara = launcher.mProA.createParallel(th->num_threads(), args[0].problem);
+  auto apara = launcher->mProA.createParallel(th->num_threads(), args[0].problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -56,14 +56,14 @@ void GemmRunWithA_QKV(Launch_T& launcher, const typename Launch_T::Param* args, 
     typename AParall::ThreadProblem thdpA{tidx};
     apara.getIndex(thdpA);
     if (thdpA.valid) {
-      launcher.mProA.run(args[0].paramA, thdpA);
+      launcher->mProA.run(args[0].paramA, thdpA);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp{tidx};
     para.getIndex(thdp);
     if (thdp.valid) {
       for (size_t i = 0; i < 3; i++) {
-        launcher.run(args[i], thdp);
+        launcher->run(args[i], thdp);
       }
     }
   });
@@ -97,9 +97,9 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                                      {gp, {A, lda, &reduceA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
                                      {gp, {A, lda, &reduceA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
     if (BQ->IsAsym()) {
-      GemmRunWithA_QKV<Parallel>(kernel, args, th);
+      GemmRunWithA_QKV<Parallel>(&kernel, args, th);
     } else {
-      GemmRun_QKV<Parallel>(kernel, args, th);
+      GemmRun_QKV<Parallel>(&kernel, args, th);
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
@@ -115,7 +115,7 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     typename Launcher::Param args[3]{{gp, {A, K}, {BQ}, {C, ldc}},
                                      {gp, {A, K}, {BK}, {C + M * ldc, ldc}},
                                      {gp, {A, K}, {BV}, {C + M * ldc * 2, ldc}}};
-    GemmRun_QKV<Parallel>(kernel, args, th);
+    GemmRun_QKV<Parallel>(&kernel, args, th);
   }
 }
 
@@ -136,15 +136,15 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   typename Launcher::Param args[3]{{gp, {A, K, &quanA}, {BQ}, {C, N}},
                                    {gp, {A, K, &quanA}, {BK}, {C + M * ldc, N}},
                                    {gp, {A, K, &quanA}, {BV}, {C + M * ldc * 2, N}}};
-  GemmRunWithA_QKV<Parallel>(kernel, args, th);
+  GemmRunWithA_QKV<Parallel>(&kernel, args, th);
 }
 }  // namespace ip_qkv
 
-unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, int _k, void* w1ptr) {
+unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, int _k, void* w1ptr) {  // NOLINT
   // maximum padding
   // we can parse w1ptr to get a accurate size, but not necessary
   int constexpr padding = 128;
-  size_t s = size_t(_m) * utils::padto((size_t)_k, padding) * 4;
+  size_t s = static_cast<size_t>(_m) * utils::padto(static_cast<size_t>(_k), padding) * 4;
   return s;
 }
 

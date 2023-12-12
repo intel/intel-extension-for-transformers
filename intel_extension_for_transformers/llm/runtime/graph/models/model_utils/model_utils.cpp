@@ -874,7 +874,7 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
                       size_t k) {
   auto ctype = quant2ne_comp_type(params.compute_dtype);
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   jblas::parallel::OMPThreading threading(nthread);
   JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
   if (params.bits == quant_bits::q8) {
