@@ -72,7 +72,13 @@ parser.add_argument(
     "--woq_weight_dtype",
     type=str,
     default="int8",
-    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
+    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4", "fp8_e5m2", "fp8_e4m3"],
+)
+parser.add_argument(
+    "--woq_scale_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "fp8"],
 )
 parser.add_argument(
     "--woq_compute_dtype",
@@ -181,6 +187,7 @@ elif args.sq:
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
         compute_dtype=args.woq_compute_dtype,
+        double_quant_scale_dtype=args.woq_scale_dtype,
         weight_dtype=args.woq_weight_dtype,
         scheme=args.woq_scheme,
         group_size=args.woq_group_size,
