@@ -886,10 +886,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     quant_type = JBLAS_DTYPE::F8_E5M2;
   }
   if (params.bits == quant_bits::fp8_e4m3) {
+    printf("fp8_e4m3------\n");
     quant_type = JBLAS_DTYPE::F8_E4M3;
-  }
-  if (params.bits == quant_bits::fp8_e3m4) {
-    quant_type = JBLAS_DTYPE::F8_E3M4;
   }
   if (params.bits == quant_bits::fp4) {
     quant_type = JBLAS_DTYPE::F4_E2M1;
@@ -897,9 +895,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.bits == quant_bits::nf4) {
     quant_type = JBLAS_DTYPE::F4_NF4;
   }
-  if (params.bits == quant_bits::fp8) {
-    quant_type = JBLAS_DTYPE::F8_E4M3;
-  }
+  // if (params.bits == quant_bits::fp8) {
+  //   quant_type = JBLAS_DTYPE::F8_E4M3;
+  // }
   auto dtype_type = static_cast<JBLAS_DTYPE>(
       jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
   if (dtype_type == JBLAS_DTYPE::TypeFloat) {
@@ -913,6 +911,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
   if (params.scale_dtype == quant_sdtype::fp32) {
     scale_type = JBLAS_DTYPE::F32;
+  }
+  if (params.scale_dtype == quant_sdtype::fp8) {
+    scale_type = JBLAS_DTYPE::F8_E8M0;
   }
   if (params.scale_dtype == quant_sdtype::fp16) {
     printf("Current not support float16 scale, reset to bf16\n");
