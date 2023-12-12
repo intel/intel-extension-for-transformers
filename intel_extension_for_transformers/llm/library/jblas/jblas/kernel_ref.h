@@ -854,22 +854,22 @@ template <JBLAS_DTYPE F8_T>
 int8_t f8_mx_quantize(float v, float shared_exp) {
   v /= std::pow(2, shared_exp);
   auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
-  auto mantissa_bits = 7 - ebits;
+  auto quant_mantissa = utils::jblas_dtype_get_f8_quant_mbits(F8_T);
+  auto store_mantissa = 7 - ebits;
   auto private_exp = std::floor(std::log2(std::abs(v == 0 ? v + 1 : v)));
   auto min_exp = -1 * (std::pow(2, ebits - 1)) + 2;
   private_exp = private_exp < min_exp ? min_exp : private_exp;
 
   // Scale up so appropriate number of bits are in the integer portion of the number
-  v = v / std::pow(2, private_exp) * std::pow(2, mantissa_bits - 2);
+  v = v / std::pow(2, private_exp) * std::pow(2, quant_mantissa - 2);
   auto sign = v > 0 ? 1 : -1;
   v = sign * std::floor(std::abs(v) + 0.5);
   // Undo scaling
-  v = v / std::pow(2, mantissa_bits - 2) * std::pow(2, private_exp);
+  v = v / std::pow(2, quant_mantissa - 2) * std::pow(2, private_exp);
 
   // saturate normals.
-  auto max_norm = utils::get_mxfp_maxnorm(F8_T, ebits, mantissa_bits);
+  auto max_norm = utils::get_mxfp_maxnorm(F8_T, ebits, quant_mantissa);
   std::clamp(v, -1 * max_norm, max_norm);
-
   uint32_t* shift_v = reinterpret_cast<uint32_t*>(&v);
   // get sign;
   char* p = reinterpret_cast<char*>(&v);
@@ -877,9 +877,9 @@ int8_t f8_mx_quantize(float v, float shared_exp) {
   *shift_v <<= 1;
   uint8_t store_ebit = (*(p + 3) & 0xFF);
   store_ebit = store_ebit - 127 + std::pow(2, ebits - 1) - 1;
-  store_ebit <<= mantissa_bits;
+  store_ebit <<= store_mantissa;
   *shift_v <<= 8;
-  int8_t ox80_shift = -128 >> (mantissa_bits - 1);
+  int8_t ox80_shift = -128 >> (store_mantissa - 1);
   uint8_t store_mantissabit = (*(p + 3) & ox80_shift);
   store_mantissabit >>= (1 + ebits);
   auto ret = store_signbit | store_ebit | store_mantissabit;
@@ -900,8 +900,7 @@ inline JBLAS_CODE quantize_f32_f8_rowblock_mxscale(const float* srcptr, int8_t* 
       if (shared_exp == 0) shared_exp += std::abs(std::numeric_limits<float>::min());
       shared_exp = std::floor(std::log2(shared_exp));
       auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
-      auto emax = std::pow(2, ebits - 1) - 1;
-      shared_exp = shared_exp < (-1 * emax) ? (-1 * emax) : shared_exp;
+      auto emax = std::pow(2, ebits - 1);
       shared_exp -= emax;
       auto scale_max = std::pow(2, 7) - 1;  // e8m0 scale type.
       shared_exp = shared_exp < (-1 * scale_max) ? (-1 * scale_max) : shared_exp;
