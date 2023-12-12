@@ -17,10 +17,10 @@
 using namespace jblas;
 using namespace ne_jblas;
 
-unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr) {
+unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr) {  // NOLINT
   // maximum padding
   int constexpr padding = 128;
-  size_t s = size_t(_m) * utils::padto((size_t)_k, padding) * 4;
+  size_t s = static_cast<size_t>(_m) * utils::padto(static_cast<size_t>(_k), padding) * 4;
   return s;
 }
 

@@ -17,27 +17,27 @@
 using namespace jblas;
 using namespace ne_jblas;
 
-unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, int fmid, int fout, void* w1ptr,
-                                                              void* w2ptr) {
+unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, int fmid, int fout,  // NOLINT
+                                                              void* w1ptr, void* w2ptr) {
   // lazy size: maximum padding
   int constexpr padding = 128;
-  size_t s = size_t(seq) * utils::padto((size_t)fin, padding) * 4;
-  s += size_t(seq) * utils::padto((size_t)fmid, padding) * 4;
+  size_t s = static_cast<size_t>(seq) * utils::padto(static_cast<size_t>(fin), padding) * 4;
+  s += static_cast<size_t>(seq) * utils::padto(static_cast<size_t>(fmid), padding) * 4;
   return s;
 }
 
 namespace ffn_2w {
 
 template <class Parallel_T, class Launch_T1, class Launch_T2>
-void GemmRunWithA_ffn(Launch_T1& launcher1, Launch_T2& launcher2, const typename Launch_T1::Param& args1,
+void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1,
                       const typename Launch_T2::Param& args2, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
   Parallel_T para2({th->num_threads(), args2.problem, cb.mL2Cache, cb.mL1Cache});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall2 = typename Launch_T2::PrologueA::Parallel;
-  auto apara1 = launcher1.mProA.createParallel(th->num_threads(), args1.problem);
-  auto apara2 = launcher2.mProA.createParallel(th->num_threads(), args2.problem);
+  auto apara1 = launcher1->mProA.createParallel(th->num_threads(), args1.problem);
+  auto apara2 = launcher2->mProA.createParallel(th->num_threads(), args2.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -49,31 +49,31 @@ void GemmRunWithA_ffn(Launch_T1& launcher1, Launch_T2& launcher2, const typename
     typename AParall1::ThreadProblem thdpA1{tidx};
     apara1.getIndex(thdpA1);
     if (thdpA1.valid) {
-      launcher1.mProA.run(args1.paramA, thdpA1);
+      launcher1->mProA.run(args1.paramA, thdpA1);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp1{tidx};
     para1.getIndex(thdp1);
     if (thdp1.valid) {
-      launcher1.run(args1, thdp1);
+      launcher1->run(args1, thdp1);
     }
     th->sync();
     typename AParall2::ThreadProblem thdpA2{tidx};
     apara2.getIndex(thdpA2);
     if (thdpA2.valid) {
-      launcher2.mProA.run(args2.paramA, thdpA2);
+      launcher2->mProA.run(args2.paramA, thdpA2);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp2{tidx};
     para2.getIndex(thdp2);
     if (thdp2.valid) {
-      launcher2.run(args2, thdp2);
+      launcher2->run(args2, thdp2);
     }
   });
 }
 
 template <class Parallel_T, class Launch_T1, class Launch_T2>
-void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, const typename Launch_T1::Param& args1,
+void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1,
                  const typename Launch_T2::Param& args2, parallel::IThreading* th) {
   device::CpuBase cb;
   Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
@@ -89,13 +89,13 @@ void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, const typename Laun
     typename Parallel_T::ThreadProblem thdp1{tidx};
     para1.getIndex(thdp1);
     if (thdp1.valid) {
-      launcher1.run(args1, thdp1);
+      launcher1->run(args1, thdp1);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp2{tidx};
     para2.getIndex(thdp2);
     if (thdp2.valid) {
-      launcher2.run(args2, thdp2);
+      launcher2->run(args2, thdp2);
     }
   });
 }
@@ -139,9 +139,9 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher::Param args2{gp2, {tmp, fmid, &reduceA2}, {w2ptr_}, blkargs2, epi_prama2};
 
     if (w1ptr_->IsAsym()) {
-      GemmRunWithA_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
+      GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
     } else {
-      GemmRun_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
+      GemmRun_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
@@ -157,7 +157,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     static Launcher kernel;
     typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
     typename Launcher::Param args2{gp2, {tmp, fmid}, {w2ptr_}, epi_prama2};
-    GemmRun_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
+    GemmRun_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
   }
 }
 
@@ -187,7 +187,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   quanA2.assign(reinterpret_cast<int8_t*>(workspace));
   typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
   typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2}, {w2ptr_}, epi_prama2};
-  GemmRunWithA_ffn<Parallel>(kernel_epi, kernel, args1, args2, th);
+  GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
 }
 
 bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
@@ -313,7 +313,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
 namespace ffn_3w {
 
 template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
-void GemmRunWithA_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& launcher3,
+void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* launcher3,
                       const typename Launch_T1::Param& args1, const typename Launch_T2::Param& args2,
                       const typename Launch_T3::Param& args3, parallel::IThreading* th) {
   device::CpuBase cb;
@@ -321,8 +321,8 @@ void GemmRunWithA_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& lau
   Parallel_T para3({th->num_threads(), args3.problem, cb.mL2Cache, cb.mL1Cache});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall3 = typename Launch_T3::PrologueA::Parallel;
-  auto apara1 = launcher1.mProA.createParallel(th->num_threads(), args1.problem);
-  auto apara3 = launcher3.mProA.createParallel(th->num_threads(), args3.problem);
+  auto apara1 = launcher1->mProA.createParallel(th->num_threads(), args1.problem);
+  auto apara3 = launcher3->mProA.createParallel(th->num_threads(), args3.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -334,32 +334,32 @@ void GemmRunWithA_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& lau
     typename AParall1::ThreadProblem thdpA1{tidx};
     apara1.getIndex(thdpA1);
     if (thdpA1.valid) {
-      launcher1.mProA.run(args1.paramA, thdpA1);
+      launcher1->mProA.run(args1.paramA, thdpA1);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp1{tidx};
     para1.getIndex(thdp1);
     if (thdp1.valid) {
-      launcher1.run(args1, thdp1);
-      launcher2.run(args2, thdp1);
+      launcher1->run(args1, thdp1);
+      launcher2->run(args2, thdp1);
     }
     th->sync();
     typename AParall3::ThreadProblem thdpA3{tidx};
     apara3.getIndex(thdpA3);
     if (thdpA3.valid) {
-      launcher3.mProA.run(args3.paramA, thdpA3);
+      launcher3->mProA.run(args3.paramA, thdpA3);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp3{tidx};
     para3.getIndex(thdp3);
     if (thdp3.valid) {
-      launcher3.run(args3, thdp3);
+      launcher3->run(args3, thdp3);
     }
   });
 }
 
 template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
-void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& launcher3,
+void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* launcher3,
                  const typename Launch_T1::Param& args1, const typename Launch_T2::Param& args2,
                  const typename Launch_T3::Param& args3, parallel::IThreading* th) {
   device::CpuBase cb;
@@ -376,14 +376,14 @@ void GemmRun_ffn(Launch_T1& launcher1, Launch_T2& launcher2, Launch_T3& launcher
     typename Parallel_T::ThreadProblem thdp1{tidx};
     para1.getIndex(thdp1);
     if (thdp1.valid) {
-      launcher1.run(args1, thdp1);
-      launcher2.run(args2, thdp1);
+      launcher1->run(args1, thdp1);
+      launcher2->run(args2, thdp1);
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp3{tidx};
     para3.getIndex(thdp3);
     if (thdp3.valid) {
-      launcher3.run(args3, thdp3);
+      launcher3->run(args3, thdp3);
     }
   });
 }
@@ -438,9 +438,9 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher_mul::Param args3{gp3, {activation, fin, &reduceA1}, {w3ptr_}, blkargs3, {tmp2, tmp1, fmid, fmid}};
 
     if (w1ptr_->IsAsym()) {
-      GemmRunWithA_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
+      GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
     } else {
-      GemmRun_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
+      GemmRun_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
@@ -463,7 +463,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
     typename Launcher::Param args2{gp2, {tmp2, fmid}, {w2ptr_}, epi_prama2};
     typename Launcher_mul::Param args3{gp3, {activation, fin}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
-    GemmRun_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
+    GemmRun_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
   }
 }
 
@@ -500,7 +500,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
   typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, epi_prama2};
   typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
-  GemmRunWithA_ffn<Parallel>(kernel_epi, kernel_mul, kernel, args1, args3, args2, th);
+  GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
 }
 
 bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int seq, int fin, int fmid, int fout) {
@@ -653,7 +653,7 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
   ffn_3w::jblas_fusion_ffn_f32f32_forward<jblas::epilogue::gemm::AccumulatorWriteBackWithSwishFp32,
                                           jblas::epilogue::gemm::AccumulatorWriteBackFp32>(
       activation, w1ptr, w2ptr, w3ptr, tmp1, tmp2, output, seq, fin, fmid, fout, workspace, epi_args1, epi_args2);
-};
+}
 
 bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
   return ffn_2w::jblas_fusion_ffn_f32f32_support(w1ptr, w2ptr, seq, fin, fmid, fout);
