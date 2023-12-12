@@ -73,7 +73,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--scale_dtype",
         type=str,
-        choices=["fp32", "bf16"],
+        choices=["fp32", "bf16", "fp8"],
         help="Data type of scales: bf16/fp32 (default: fp32)",
         default="fp32",
     )

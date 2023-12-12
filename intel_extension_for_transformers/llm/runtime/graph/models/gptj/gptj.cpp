@@ -509,17 +509,17 @@ static bool gptj_model_eval_internal(model_context* ctx, const model_input* inpu
                sizeof(float) * n_vocab);
       }
     }
-    if (N >1 ) {
-      printf("\n==== first tokens logits: =====\n");
-      for (int i = 0; i < 100; ++i) {
-        printf("%6.6f, ", logits_out[i]);
-      }
-      printf("\n");
-      FILE *fp;
-      fp = fopen("logits.raw", "wb");
-      fwrite(logits_out.data(), sizeof(float), n_vocab, fp);
-      fclose(fp);
-    }
+    // if (N >1 ) {
+    //   printf("\n==== first tokens logits: =====\n");
+    //   for (int i = 0; i < 100; ++i) {
+    //     printf("%6.6f, ", logits_out[i]);
+    //   }
+    //   printf("\n");
+    //   FILE *fp;
+    //   fp = fopen("logits.raw", "wb");
+    //   fwrite(logits_out.data(), sizeof(float), n_vocab, fp);
+    //   fclose(fp);
+    // }
   }
 
   // extract embeddings
