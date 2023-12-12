@@ -28,7 +28,7 @@ Abstract:
 
 #include "jblas_defs.h"
 
-using namespace jblas;
+using namespace jblas;  // NOLINT
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,

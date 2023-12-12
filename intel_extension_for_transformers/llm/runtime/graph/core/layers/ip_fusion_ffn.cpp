@@ -14,8 +14,8 @@
 
 #include "jblas_common.hpp"
 
-using namespace jblas;
-using namespace ne_jblas;
+using namespace jblas;     // NOLINT
+using namespace ne_jblas;  // NOLINT
 
 unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, int fmid, int fout,  // NOLINT
                                                               void* w1ptr, void* w2ptr) {

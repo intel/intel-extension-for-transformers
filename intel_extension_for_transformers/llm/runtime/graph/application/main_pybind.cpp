@@ -608,7 +608,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   WType packedW = launcher.mProB.createStorage(N, K, blocksize, JBLAS_DTYPE::S4_CLIP, jblas::utils::jblas_dtype<float>,
                                                jblas::utils::jblas_dtype<float>, isAsym);
 
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   packedW.assign(dstbptr);
 
   auto tmpq = jblas::utils::amalloc<int8_t>(static_cast<size_t>(N) * K);
@@ -643,7 +643,7 @@ size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params
   WType packedW = launcher.mProB.createStorage(N, K, blocksize, JBLAS_DTYPE::S4_CLIP, jblas::utils::jblas_dtype<float>,
                                                jblas::utils::jblas_dtype<float>, isAsym);
 
-  auto dstbptr = (int8_t*)dstpr;
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
   packedW.assign(dstbptr);
 
   auto tmpq = jblas::utils::amalloc<float>(static_cast<size_t>(N) * K);

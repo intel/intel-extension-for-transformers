@@ -14,8 +14,8 @@
 #include "jblas_common.hpp"
 #include "jblas_gemm.h"
 
-using namespace jblas;
-using namespace ne_jblas;
+using namespace jblas;     // NOLINT
+using namespace ne_jblas;  // NOLINT
 
 unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr) {  // NOLINT
   // maximum padding
