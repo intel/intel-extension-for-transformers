@@ -59,7 +59,7 @@ class UnitTest(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["append"] = True
         plugins.retrieval.args["input_path"] = "../assets/docs/"
-        plugins.retrieval.args["persist_dir"] = "./check_append"
+        plugins.retrieval.args["persist_directory"] = "./check_append"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -75,7 +75,7 @@ class UnitTest(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["persist_dir"] = "./output"
+        plugins.retrieval.args["persist_directory"] = "./output"
         plugins.retrieval.enable = False
 
     def test_voice_chat(self):

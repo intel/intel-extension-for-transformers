@@ -25,12 +25,8 @@ from bs4 import BeautifulSoup
 import os
 import re
 from .context_utils import uni_pro
-import logging
-logging.basicConfig(
-    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
-    datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
-)
+
+
 urllib3.disable_warnings()
 
 class Crawler:
@@ -87,15 +83,15 @@ class Crawler:
         while max_times:
             if not url.startswith('http') or not url.startswith('https'):
                 url = 'http://' + url
-            logging.info('start fetch %s...', url)
+            print(f'start fetch {url}...')
             try:
                 response = requests.get(url, headers=headers, verify=True)
                 if response.status_code != 200:
-                    logging.error('fail to fetch %s, response status code: %s', url, response.status_code)
+                    print(f'fail to fetch {url}, respose status code: {response.status_code}')
                 else:
                     return response
             except Exception as e:
-                logging.error('fail to fetch %s, caused by %s', url, e)
+                print(f'fail to fetch {url}, cased by {e}')
             max_times -= 1
         return None
 
@@ -122,7 +118,7 @@ class Crawler:
             url_pool.update(sublinks)
             depth = 0
             while len(url_pool) > 0 and depth < max_depth:
-                logging.info('current depth %s...', depth)
+                print(f'current depth {depth} ...')
                 mp = multiprocessing.Pool(processes=workers)
                 results = []
                 for sub_url in url_pool:
@@ -141,7 +137,7 @@ class Crawler:
         return soup
 
     def download(self, url, file_name):
-        logging.info('download %s into %s...', url, file_name)
+        print(f'download {url} into {file_name}...')
         try:
             r = requests.get(url, stream=True, headers=self.headers, verify=True)
             f = open(file_name, "wb")
@@ -149,7 +145,7 @@ class Crawler:
                 if chunk:
                     f.write(chunk)
         except Exception as e:
-            logging.error('fail to download %s, caused by %s', url, e)
+            print(f'fail to download {url}, cased by {e}')
 
     def get_base_url(self, url):
         result = urlparse(url)
