@@ -131,7 +131,8 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
                                                                DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
             }
 
-          } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+          } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() &&
+                     BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
             JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr,
                                                              DataParams[i].C, DataParams[i].ldc, WorkSpace, pth);
           } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
