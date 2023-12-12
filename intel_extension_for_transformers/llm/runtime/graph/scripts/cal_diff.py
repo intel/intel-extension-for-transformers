@@ -47,13 +47,14 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     inputs = tokenizer(prompt, return_tensors="pt")
 
-    pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-    pt_model.eval()
-    pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
     for config_type in woq_configs:
-        itrex_model = AutoModel.from_pretrained("/mnt/disk1/data2/zhenweil/models/mistral/neural-chat-7b-v3-1-GPTQ", quantization_config=woq_configs[config_type], 
+        itrex_model = AutoModel.from_pretrained("/mnt/disk1/data2/zhenweil/models/mistral/neural-chat-7b-v3-1-GPTQ2", quantization_config=woq_configs[config_type], 
                                                 use_llm_runtime=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
+
+        pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+        pt_model.eval()
+        pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
         print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))

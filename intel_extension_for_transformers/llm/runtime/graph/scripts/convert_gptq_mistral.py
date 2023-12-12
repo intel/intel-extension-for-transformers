@@ -149,7 +149,25 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     int_weight = int_weight.view(-1,int_weight.shape[-1])
     # gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1])
     # gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])
-    
+    # order = torch.argsort(g_idx)
+    # import pdb; pdb.set_trace()
+    # int_weight=int_weight[order]
+
+    int_weight2 = int_weight.clone()
+    group_size=q_config['group_size']
+    group_dict = {}
+    for i in range(len(g_idx)):
+        # int_weight2[32*i:32*(i+1)] = int_weight[g_idx==i]
+        group_idx = g_idx[i].item()
+        if group_idx not in group_dict:
+            target_idx = group_idx * group_size
+            group_dict[group_idx] = 0
+        else:
+            group_dict[group_idx] = group_dict[group_idx] + 1
+            target_idx = group_idx * group_size + group_dict[group_idx]
+        int_weight2[target_idx] = int_weight[i]
+    int_weight = int_weight2
+
     if permute:
         int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
         gptq_scales = permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
@@ -164,9 +182,10 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     int_weight = np.ascontiguousarray(((int_weight - 8) * 16).numpy())
     gptq_scales = np.ascontiguousarray((gptq_scales.float() / 16).numpy())
     gptq_zeros = np.ascontiguousarray(((gptq_zeros - 8) * 16).numpy())
+    g_idx = np.ascontiguousarray(g_idx.numpy())
     # import pdb; pdb.set_trace()
 
-    byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales, gptq_zeros, dst,
+    byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales, gptq_zeros, g_idx, dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
@@ -228,6 +247,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     f.write(struct.pack("i", ffn_hidden_size))
     f.write(struct.pack("i", 0))
 
+    f.write(struct.pack("f", 1e-5))
+    f.write(struct.pack("f", 10000.0))
+
     f.write(struct.pack("i", 1)) # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
     f.write(struct.pack("i", 2))
 
@@ -249,17 +271,17 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
 
     for i in range(n_layer):
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.self_attn.q_proj",
                     f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head, permute=True)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.k_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.self_attn.k_proj",
                     f"layers.{i}.attention.wk.weight", list_vars, f, quantize_config, n_head, n_head_kv, permute=True)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.v_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.self_attn.v_proj",
                     f"layers.{i}.attention.wv.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.o_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.self_attn.o_proj",
                     f"layers.{i}.attention.wo.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.gate_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.mlp.gate_proj",
                     f"layers.{i}.feed_forward.w1.weight", list_vars, f, quantize_config, n_head)
-        convert_q4_jblas_tensor(f"model.layers.{i}.mlp.down_proj",
+        convert_q4_f32_tensor(f"model.layers.{i}.mlp.down_proj",
                     f"layers.{i}.feed_forward.w2.weight", list_vars, f, quantize_config, n_head)
         convert_q4_jblas_tensor(f"model.layers.{i}.mlp.up_proj",
                     f"layers.{i}.feed_forward.w3.weight", list_vars, f, quantize_config, n_head)
