@@ -441,7 +441,7 @@ void ne_compute_forward_conv_1d(const struct ne_compute_params* params, const st
     ne_compute_forward_conv_1d_s2_ph(params, src0, src1, dst);
   } else {
     NE_ASSERT(false);  // only stride 1 and 2 supported
-  };
+  }
 }
 
 // ne_compute_forward_conv_1d_1s
@@ -504,11 +504,12 @@ static void ne_compute_forward_conv_1d_1s_f16_f32(const struct ne_compute_params
 
     // prepare kernel data (src0)
     {
-      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + 0;
+      ne_fp16_t* const wdata = reinterpret_cast<ne_fp16_t*>(params->wdata) + 0;
 
       for (int64_t i02 = 0; i02 < ne02; i02++) {
         for (int64_t i01 = 0; i01 < ne01; i01++) {
-          const ne_fp16_t* const src = (ne_fp16_t*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          const ne_fp16_t* const src =
+              reinterpret_cast<ne_fp16_t*>(reinterpret_cast<char*>(src0->data) + i02 * nb02 + i01 * nb01);
           ne_fp16_t* dst_data = wdata + i02 * ew0 * ne00;
           for (int64_t i00 = 0; i00 < ne00; i00++) {
             dst_data[i00 * ew0 + i01] = src[i00];
@@ -519,7 +520,7 @@ static void ne_compute_forward_conv_1d_1s_f16_f32(const struct ne_compute_params
 
     // prepare source data (src1)
     {
-      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00;
+      ne_fp16_t* const wdata = reinterpret_cast<ne_fp16_t*>(params->wdata) + ne02 * ew0 * ne00;
 
       for (int64_t i11 = 0; i11 < ne11; i11++) {
         const float* const src = reinterpret_cast<float*>(reinterpret_cast<char*>(src1->data) + i11 * nb11);
@@ -553,8 +554,8 @@ static void ne_compute_forward_conv_1d_1s_f16_f32(const struct ne_compute_params
       dst_data[i0] = 0;
       for (int k = -nh; k <= nh; k++) {
         float v = 0.0f;
-        ne_vec_dot_f16(ew0, &v, (ne_fp16_t*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
-                       (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+        ne_vec_dot_f16(ew0, &v, reinterpret_cast<ne_fp16_t*>(params->wdata) + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       reinterpret_cast<ne_fp16_t*>(params->wdata) + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
 
         dst_data[i0] += v;
       }
@@ -754,11 +755,12 @@ static void ne_compute_forward_conv_1d_2s_f16_f32(const struct ne_compute_params
 
     // prepare kernel data (src0)
     {
-      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + 0;
+      ne_fp16_t* const wdata = reinterpret_cast<ne_fp16_t*>(params->wdata) + 0;
 
       for (int64_t i02 = 0; i02 < ne02; i02++) {
         for (int64_t i01 = 0; i01 < ne01; i01++) {
-          const ne_fp16_t* const src = (ne_fp16_t*)((char*)src0->data + i02 * nb02 + i01 * nb01);
+          const ne_fp16_t* const src =
+              reinterpret_cast<ne_fp16_t*>(reinterpret_cast<char*>(src0->data) + i02 * nb02 + i01 * nb01);
           ne_fp16_t* dst_data = wdata + i02 * ew0 * ne00;
           for (int64_t i00 = 0; i00 < ne00; i00++) {
             dst_data[i00 * ew0 + i01] = src[i00];
@@ -769,7 +771,7 @@ static void ne_compute_forward_conv_1d_2s_f16_f32(const struct ne_compute_params
 
     // prepare source data (src1)
     {
-      ne_fp16_t* const wdata = (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00;
+      ne_fp16_t* const wdata = reinterpret_cast<ne_fp16_t*>(params->wdata) + ne02 * ew0 * ne00;
 
       for (int64_t i11 = 0; i11 < ne11; i11++) {
         const float* const src = reinterpret_cast<float*>(reinterpret_cast<char*>(src1->data) + i11 * nb11);
@@ -803,8 +805,8 @@ static void ne_compute_forward_conv_1d_2s_f16_f32(const struct ne_compute_params
       dst_data[i0 / 2] = 0;
       for (int k = -nh; k <= nh; k++) {
         float v = 0.0f;
-        ne_vec_dot_f16(ew0, &v, (ne_fp16_t*)params->wdata + i1 * ew0 * ne00 + (nh + k) * ew0,
-                       (ne_fp16_t*)params->wdata + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
+        ne_vec_dot_f16(ew0, &v, reinterpret_cast<ne_fp16_t*>(params->wdata) + i1 * ew0 * ne00 + (nh + k) * ew0,
+                       reinterpret_cast<ne_fp16_t*>(params->wdata) + ne02 * ew0 * ne00 + (i0 + nh + k) * ew0);
 
         dst_data[i0 / 2] += v;
       }
@@ -860,12 +862,12 @@ static void ne_compute_forward_conv_1d_2s_f32(const struct ne_compute_params* pa
 
   const int ew0 = ne_up32(ne01);
 
-  NE_ASSERT(ne00 % 2 == 1);  // TODO: support even kernel sizes
+  NE_ASSERT(ne00 % 2 == 1);  // TODO(Bo): support even kernel sizes
   NE_ASSERT(nb00 == sizeof(float));
   NE_ASSERT(nb10 == sizeof(float));
 
   if (params->type == NE_TASK_INIT) {
-    // TODO: fix this memset (wsize is overestimated)
+    // TODO(Bo): fix this memset (wsize is overestimated)
     memset(params->wdata, 0, params->wsize);
 
     // prepare kernel data (src0)
