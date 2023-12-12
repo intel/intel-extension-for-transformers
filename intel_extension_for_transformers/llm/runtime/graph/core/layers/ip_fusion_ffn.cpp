@@ -107,7 +107,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
                       int fout, void* workspace, jblas::parallel::IThreading* th,
                       typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
                       typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
-  if (seq <= 32) {
+  if (seq <= 16) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
                                                               jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T1>;
@@ -421,7 +421,7 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
                       float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
                       jblas::parallel::IThreading* th, typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
                       typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
-  if (seq <= 32) {
+  if (seq <= 16) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
                                                               jblas::epilogue::gemm::CompFp32BlockEpilogue, Epi_T1>;

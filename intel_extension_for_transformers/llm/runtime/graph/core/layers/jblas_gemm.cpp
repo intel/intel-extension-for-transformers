@@ -33,7 +33,7 @@ template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
                       jblas::storage::gemm::IWeightBase* _B, float* C, const int ldc, int8_t* WorkSpace,
                       jblas::parallel::IThreading* th) {
-  if (M <= 32) {
+  if (M <= 16) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher = tLauncher_Fp_F32F32<GemmCore_T, Wei_T>;
     static Launcher kernel;
