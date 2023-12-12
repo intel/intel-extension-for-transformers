@@ -821,6 +821,8 @@ class Finetuning:
                 model = prepare_model_for_kbit_training(
                     model, use_gradient_checkpointing=training_args.gradient_checkpointing
                 )
+            if training_args.gradient_checkpointing:
+                model.gradient_checkpointing_enable()
 
             if not finetune_args.full_finetune:
                 # PEFT settings

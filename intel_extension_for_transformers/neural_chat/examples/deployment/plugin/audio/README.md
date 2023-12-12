@@ -2,7 +2,7 @@
 This README is intended to guide you through setting up the service of audio plugins using the NeuralChat framework. You can deploy it on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
 
 # Introduction
-NeuralChat provides services not only based on LLM, but also support single service of plugin such as audio. This example introduce our sulution to build a plugin-as-service server. Though few lines of code, our api could help the user build a audio plugin service, which is able to transfer between texts and audios.
+NeuralChat provides services not only based on LLM, but also support single service of plugin such as audio. This example introduce our solution to build a plugin-as-service server. Though few lines of code, our api could help the user build a audio plugin service, which is able to transfer between texts and audios.
 
 Before deploying this example, please follow the instructions in the [README](../../README.md) to install the necessary dependencies.
 

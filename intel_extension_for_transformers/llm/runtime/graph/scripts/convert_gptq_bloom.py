@@ -170,6 +170,7 @@ f.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 f.write(struct.pack("i", 0))
 f.write(struct.pack("i", 0))
 f.write(struct.pack("i", 0))
+fout.write(struct.pack("f", 1e-6))  # rms norm eps
 
 f.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
 f.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
@@ -195,11 +196,7 @@ for name in list_vars.keys():
 
     ftype_cur = 0
     if ".weight" in name and list_vars[name].dim() == 2:
-        if name.replace(".weight",
-                        "") in weight_config and weight_config[name.replace(".weight", "")]["dtype"] != "fp32":
-            ftype_cur = 2  # 13
-        else:
-            ftype_cur = 2  # 2
+        ftype_cur = 2  # TODO(Zhenwei) support jblas
 
     data = list_vars[src].squeeze().numpy()
     data = data.astype(np.float32)

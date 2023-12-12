@@ -23,6 +23,10 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
+from .config_logging import configure_logging
+logger = configure_logging()
+
+
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
@@ -104,10 +108,13 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "face_animation": # pragma: no cover
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
+                elif plugin_name == "image2image": # pragma: no cover
+                    from .pipeline.plugins.image2image.image2image import Image2Image
+                    plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
                     raise ValueError("NeuralChat Error: Unsupported plugin")
-                print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
+                logger.info("create %s plugin instance...", plugin_name)
+                logger.info("plugin parameters: %s", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
@@ -127,6 +134,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
+    parameters["assistant_model"] = config.assistant_model
 
     adapter.load_model(parameters)
 
