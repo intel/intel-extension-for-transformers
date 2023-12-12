@@ -157,7 +157,7 @@ static bool qwen_model_eval_internal(model_context* ctx, const model_input* inpu
     {
       // RMS
       {
-        cur = ne_rms_norm(ctx0, inpL);
+        cur = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
         // cur = cur*attention_norm(broadcasted)
         cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
@@ -180,9 +180,9 @@ static bool qwen_model_eval_internal(model_context* ctx, const model_input* inpu
                                                         fused_qkv_row_nb, 2 * sizeof(float) * n_embd));
 
       // using mode = 2 for GPT-NeoX mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0, hparams.freq_base);
       ne_set_name(Qcur, "Qcur");
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0, hparams.freq_base);
       ne_set_name(Kcur, "kcur");
       const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
       // store key and value to memory
@@ -310,7 +310,7 @@ static bool qwen_model_eval_internal(model_context* ctx, const model_input* inpu
     // this is independent of the self-attention result, so it could be done in parallel to the self-attention
     // note here we pass inpL instead of cur
     {
-      cur = ne_rms_norm(ctx0, cur);
+      cur = ne_rms_norm(ctx0, cur, hparams.rms_norm_eps);
 
       cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
     }
@@ -325,7 +325,7 @@ static bool qwen_model_eval_internal(model_context* ctx, const model_input* inpu
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
     inpL = ne_mul(ctx0, inpL, model.others[1]);
   }
   lctx.use_buf(ctx0, -1);

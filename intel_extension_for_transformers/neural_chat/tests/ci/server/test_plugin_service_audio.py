@@ -41,12 +41,6 @@ class UnitTest(unittest.TestCase):
                 '--log_file', log_file_path
             ]
         else:
-            with open("./ci/server/plugin_as_service.yaml", "r+") as file:
-                content = file.read()
-                content = content.replace("plugin_as_service", "ci/server/plugin_as_service")
-                file.seek(0)
-                file.write(content)
-                file.truncate()
             command = [
                 'neuralchat_server', 'start', 
                 '--config_file', "./ci/server/plugin_as_service.yaml", 
