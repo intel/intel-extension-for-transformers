@@ -405,13 +405,14 @@ void JblaGemmPackBImpl(void* PackedBuf, int BlkSize, const int8_t* QData, const 
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, IsAsym);
     if (shuffle_indice != nullptr) {
       launcher.mProB.enableShuffle(&stor);
+      stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
       launcher.mProB.setShuffleIndices(shuffle_indice, &stor, pth);
     }
   } else {
     (void)(shuffle_indice);
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype);
+    stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
   }
-  stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
   launcher.mProB.packQWeight(N, K, QData, ldb, Scales, IsAsym ? Zp : nullptr, &stor, pth);
 }
 
