@@ -67,7 +67,7 @@ Functions
 
    :returns: None
 
-   :raises ValueError: If the model is not supported, ValueError is raised.
+   :raises ValueError:
 
 
 .. py:function:: predict_stream(**params)

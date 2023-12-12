@@ -1,0 +1,86 @@
+:py:mod:`intel_extension_for_transformers.utils.logger`
+=======================================================
+
+.. py:module:: intel_extension_for_transformers.utils.logger
+
+.. autoapi-nested-parse::
+
+   Logger: handles logging functionalities.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.utils.logger.Logger
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.utils.logger.log
+   intel_extension_for_transformers.utils.logger.debug
+   intel_extension_for_transformers.utils.logger.error
+   intel_extension_for_transformers.utils.logger.fatal
+   intel_extension_for_transformers.utils.logger.info
+   intel_extension_for_transformers.utils.logger.warn
+   intel_extension_for_transformers.utils.logger.warning
+
+
+
+.. py:class:: Logger
+
+
+
+
+   Logger class.
+
+   .. py:method:: get_logger()
+
+      Get the logger.
+
+
+
+.. py:function:: log(level, msg, *args, **kwargs)
+
+   Output log with the level as a parameter.
+
+
+.. py:function:: debug(msg, *args, **kwargs)
+
+   Output log with the debug level.
+
+
+.. py:function:: error(msg, *args, **kwargs)
+
+   Output log with the error level.
+
+
+.. py:function:: fatal(msg, *args, **kwargs)
+
+   Output log with the fatal level.
+
+
+.. py:function:: info(msg, *args, **kwargs)
+
+   Output log with the info level.
+
+
+.. py:function:: warn(msg, *args, **kwargs)
+
+   Output log with the warning level.
+
+
+.. py:function:: warning(msg, *args, **kwargs)
+
+   Output log with the warning level (Alias of the method warn).
+
+

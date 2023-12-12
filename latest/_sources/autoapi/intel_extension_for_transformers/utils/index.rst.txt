@@ -13,6 +13,7 @@ Submodules
    :maxdepth: 1
 
    data_augmentation/index.rst
+   logger/index.rst
    utils/index.rst
 
 
