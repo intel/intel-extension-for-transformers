@@ -77,7 +77,7 @@ class DocumentParser:
             chuck = load_structured_data(input, self.process, \
                                          self.max_chuck_size, self.min_chuck_size)
         else:
-            print("This file {} is ignored. Will support this file format soon.".format(filename))
+            print("This file {} is ignored. Will support this file format soon.".format(input))
         return chuck
 
     def parse_html(self, input):
