@@ -162,9 +162,13 @@ bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int 
         support = contains(wqtmp->mCoreId, AllKBlockCores, EleNum);
         support &= hasISA(AllKBlockCores, EleNum);
       } else if (wqtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF4) {
-        constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
-        support = contains(wqtmp->mCoreId, AllKBlockCores, EleNum);
-        support &= hasISA(AllKBlockCores, EleNum);
+        constexpr size_t EleNum = sizeof(FloatCores) / sizeof(FloatCores[0]);
+        support = contains(wqtmp->mCoreId, FloatCores, EleNum);
+        support &= hasISA(FloatCores, EleNum);
+      } else if (wqtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF8) {
+        constexpr size_t EleNum = sizeof(FloatCores) / sizeof(FloatCores[0]);
+        support = contains(wqtmp->mCoreId, FloatCores, EleNum);
+        support &= hasISA(FloatCores, EleNum);
       }
     }
   }
@@ -256,6 +260,31 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
                                                          workspace, pth);
         } else {
           ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiF4>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                      workspace, pth);
+        }
+      }
+    }
+  }
+  if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF8) {
+    auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+    auto BlkSize = bptr->mBlockSize;
+    if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
+      if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
+        ip_qkv::JblasGemmCompF32<tAVX512F, tWeiF8>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                   workspace, pth);
+      } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
+        ip_qkv::JblasGemmCompF32<tAVX2, tWeiF8>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                workspace, pth);
+      }
+    }
+    if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
+      if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
+        if (_m <= tAVX512_BF16::MTILE) {
+          static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+          ip_qkv::JblasGemmCompF32<tAVX512_BF16, tWeiF8>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
+                                                         workspace, pth);
+        } else {
+          ip_qkv::JblasGemmCompF32<tAMX_BF16, tWeiF8>(_m, _n, _k, activation, lda, wqtmp, wktmp, wvtmp, output, ldo,
                                                       workspace, pth);
         }
       }
