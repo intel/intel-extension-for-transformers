@@ -674,7 +674,7 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {  // NOLIN
     } else if (arg == "--weight_dtype") {
       params.weight_dtype = argv[++i];
       if (params.weight_dtype == "fp8") {
-        params.weight_dtype = "fp8_e5m2";
+        params.weight_dtype = "fp8_e4m3";
       }
     } else if (arg == "--alg") {
       params.alg = argv[++i];

@@ -42,7 +42,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # quantization related arguments.
     parser.add_argument(
         "--weight_dtype",
-        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
+        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3",
                  "fp4", "fp4_e2m1", "nf4"],
         help="Data type of quantized weight: int4/int8 (default int4)",
         default="int4",
@@ -64,7 +64,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--scale_dtype",
         type=str,
-        choices=["fp32", "bf16"],
+        choices=["fp32", "bf16", "fp8"],
         help="Data type of scales: fp32/bf16 (dafault fp32)",
         default="fp32",
     )

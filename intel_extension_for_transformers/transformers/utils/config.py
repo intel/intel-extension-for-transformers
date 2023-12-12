@@ -144,11 +144,11 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         # https://arxiv.org/abs/2310.10537
         runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
         runtime_supported_weight_dtype = ["int4", "int8",
-                                          "fp8", "fp8_e5m2", "fp8_e4m3", "fp8_e3m4",
+                                          "fp8", "fp8_e5m2", "fp8_e4m3",
                                           "fp4", "fp4_e2m1",
                                           "nf4",
                                             ]
-        runtime_supported_scale_dtype = ["fp32", "bf16"]
+        runtime_supported_scale_dtype = ["fp32", "bf16", "fp8"]
         runtime_supported_group_size = [-1, 32, 128]
         runtime_supported_scheme = ["sym", "asym"]
 
@@ -162,7 +162,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
         elif self.weight_dtype == "fp8":
-            self.weight_dtype == "fp8_e5m2"
+            self.weight_dtype == "fp8_e4m3"
         elif self.weight_dtype == "fp4":
             self.weight_dtype = "fp4_e2m1"
         else:
@@ -184,12 +184,16 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.weight_dtype[:3] in ["fp8", "fp4", "nf4"]:
             if self.compute_dtype in ["int8"]:
                 print("WARNING: int8 compute dtype is not be supported in float quant types! "\
-                      "Fall back to bf16.")
-                self.compute_dtype = "bf16"
+                      "Fall back to fp32.")
+                self.compute_dtype = "fp32"
             if self.scheme in ["asym"]:
                 print("WARNING: asym alg is not be supported in float quant types! "\
                       "Fall back to sym.");
                 self.scheme = "sym"
+            if self.scale_dtype in ["fp8"] and self.weight_dtype[:3] not in ["fp8"] :
+                print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
+                      "Fall back to fp32.")
+                self.scale_dtype = "fp32"
 
     def quantization_method(self):
         r"""

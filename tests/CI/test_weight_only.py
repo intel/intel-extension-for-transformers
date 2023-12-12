@@ -72,12 +72,14 @@ class TestWeightOnly(unittest.TestCase):
         print(config)
 
     def test_woq_config_post_init_runtime(self):
-        config = WeightOnlyQuantConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym")
+        config = WeightOnlyQuantConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym",
+                                       scale_dtype="fp8")
         config.post_init_runtime()
         config_dict = config.to_dict()
         self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
         self.assertEqual(config_dict["compute_dtype"], "bf16")
         self.assertEqual(config_dict["scheme"], "sym")
+        self.assertEqual(config_dict["scale_dtype"], "fp32")
         config.to_json_file(f"{self.workspace}/config_post_init_runtime.json")
         print(config)
 
