@@ -36,7 +36,7 @@ struct JBLAS_GEMM_DATA_PACKED_PARAMS {
 };
 
 size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
-                          bool isAsym, ne_comp_type CompType);
+                          bool isAsym, ne_comp_type CompType, int* shuffle_indice);
 
 bool JblasGemmQuantPackB(void* PackedBuf, const float* FpData, size_t N, size_t K, size_t ldb, size_t BlkSize,
                          JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym, ne_comp_type CompType,
@@ -47,7 +47,7 @@ bool JblasGemmQuantPackB(void* PackedBuf, const float* FpData, size_t N, size_t 
 // Zp:     K/BlkSize * N zero points
 bool JblasGemmPackB(void* PackedBuf, const int8_t* QData, const float* Scales, const int8_t* Zp, size_t N, size_t K,
                     size_t ldb, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
-                    ne_comp_type CompType, void* ThreadPool);
+                    ne_comp_type CompType, int* shuffle_indice, void* ThreadPool);
 
 bool JblasGemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, size_t ldb, void* ThreadPool);
 

@@ -913,7 +913,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     scale_type = JBLAS_DTYPE::F8_E8M0;
   }
   auto gsize = params.group_size == -1 ? k : params.group_size;
-  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype);
+  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype, nullptr);
   bool constexpr IsTrans_TorchWeight = true;
   if (size) {
     if (!JblasGemmQuantPackB(dstpr, f32ptr, n, k, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym,
