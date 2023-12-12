@@ -47,7 +47,6 @@ class UnitTest(unittest.TestCase):
             prompt="Tell me about Intel Xeon processors.",
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
-        print(response)
         assert response.status_code == 200
 
 

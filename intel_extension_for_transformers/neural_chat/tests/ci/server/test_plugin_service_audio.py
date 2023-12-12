@@ -18,7 +18,6 @@
 import unittest
 import os
 import base64
-import wave
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from intel_extension_for_transformers.neural_chat import plugins
