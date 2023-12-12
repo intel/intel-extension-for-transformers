@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger()
 DEFAULT_K = 4  # Number of Documents to return.
+_DEFAULT_PERSIST_DIR = './output'
 
 
 def _results_to_docs(results: Any) -> List[Document]:
@@ -94,7 +95,7 @@ class Chroma(VectorStore):
     """
 
     _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
-    _DEFAULT_PERSIST_DIR = './output'
+    
 
     def __init__(
         self,
@@ -910,6 +911,7 @@ class Chroma(VectorStore):
 
     @classmethod
     def reload(
+            cls: Type[Chroma],
             collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
             embedding_function: Optional[Embeddings] = None,
             persist_directory: Optional[str] = None,

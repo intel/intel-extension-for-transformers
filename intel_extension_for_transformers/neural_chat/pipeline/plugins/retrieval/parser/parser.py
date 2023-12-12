@@ -72,9 +72,10 @@ class DocumentParser:
                 chuck = get_chuck_data(content, self.max_chuck_size, self.min_chuck_size, input)
             else:
                 chuck = [[content.strip(),input]]
-        elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv") or \
-                filename.endswith("json"):
-            chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_chuck_size, self.min_chuck_size)
+        elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv") or \
+                input.endswith("json"):
+            chuck = load_structured_data(input, self.process, \
+                                         self.max_chuck_size, self.min_chuck_size)
         else:
             print("This file {} is ignored. Will support this file format soon.".format(filename))
         return chuck
@@ -117,7 +118,8 @@ class DocumentParser:
                     paragraphs += chuck
                 elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv") or \
                         filename.endswith("json"):
-                    chuck = load_structured_data(os.path.join(dirpath, filename), self.process, self.max_chuck_size, self.min_chuck_size)
+                    chuck = load_structured_data(os.path.join(dirpath, filename), \
+                                                 self.process, self.max_chuck_size, self.min_chuck_size)
                     paragraphs += chuck
                 else:
                     print("This file {} is ignored. Will support this file format soon.".format(filename))

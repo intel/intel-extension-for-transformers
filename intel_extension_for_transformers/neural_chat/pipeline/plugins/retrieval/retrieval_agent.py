@@ -23,6 +23,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
+from langchain.embeddings import GooglePalmEmbeddings
 from intel_extension_for_transformers.langchain.retrievers import Retriever
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
 
@@ -103,13 +104,13 @@ class Agent_QA():
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=knowledge_base, **kwargs)
 
 
-    def reload_localdb(self, **kwargs):
+    def reload_localdb(self, local_persist_dir, **kwargs):
         """
         Reload the local existed knowledge base.
         """
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
             "Please check the local knowledge base was built!"
-        knowledge_base = self.database.reload(**kwargs)
+        knowledge_base = self.database.reload(persist_directory=local_persist_dir, **kwargs)
         if "retrieval_type" in kwargs:
             self.retrieval_type = kwargs['retrieval_type']
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=knowledge_base, **kwargs)
@@ -133,8 +134,7 @@ class Agent_QA():
         if "retrieval_type" in kwargs:
             self.retrieval_type = kwargs['retrieval_type']
         knowledge_base = self.database.from_collection(content=data_collection, **kwargs)
-        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
-                           search_type=self.search_type, search_kwargs=self.search_kwargs)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=knowledge_base, **kwargs)
 
 
     def pre_llm_inference_actions(self, model_name, query):
