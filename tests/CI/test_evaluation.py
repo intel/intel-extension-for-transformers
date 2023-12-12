@@ -186,20 +186,25 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
         
         # test evaluate model exported with optimum >= 1.14.0
-        if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
+        if Version(optimum.version.__version__) < OPTIMUM114_VERSION:
+            cmd = 'pip install optimum==1.14.0'
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE, shell=True) # nosec
+            p.communicate()
+            
             cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
+            p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE, shell=True) # nosec
+            p.communicate()
 
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
-            tasks=["piqa"],
-            limit=5,
-            model_format="onnx"
-        )
-        self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
+            results = evaluate(
+                model="hf-causal",
+                model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
+                tasks=["piqa"],
+                limit=5,
+                model_format="onnx"
+            )
+            self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
 
 if __name__ == "__main__":
     unittest.main()
