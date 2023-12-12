@@ -358,9 +358,9 @@ inline float get_mxfp_maxnorm(const JBLAS_DTYPE t, int ebits, int mantissa_bits)
   auto emax = std::pow(2, ebits - 1);
   auto max_norm = std::pow(2, emax);
   if (t != JBLAS_DTYPE::F8_E4M3) {
-    max_norm *= 1.75;
-  } else {
     max_norm *= ((std::pow(2, mantissa_bits - 1) - 1) / std::pow(2, mantissa_bits - 2));
+  } else {
+    max_norm *= 1.75;
   }
   return max_norm;
 }
