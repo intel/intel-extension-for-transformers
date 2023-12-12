@@ -23,7 +23,7 @@
 host: 0.0.0.0
 port: 8888
 
-model_name_or_path: "Intel/neural-chat-7b-v3-1"
+model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
 device: "cpu"
 
 asr:
