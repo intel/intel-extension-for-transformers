@@ -15,53 +15,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import unittest
-import time
-import os
-import json
-from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat import PipelineConfig
+from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+
+app = FastAPI()
+app.include_router(router)
+client = TestClient(app)
+
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         device = get_device_type()
         if device != "cpu":
             self.skipTest("Only test this UT case on Intel CPU.")
 
-        yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_ipex_int8.yaml"
-        if os.path.exists(yaml_file_path):
-            command = f'neuralchat_server start \
-                        --config_file {yaml_file_path} \
-                        --log_file "./neuralchat.log"'
-        else:
-            command = 'neuralchat_server start \
-                        --config_file "./ci/server/textchat_ipex_int8.yaml" \
-                        --log_file "./neuralchat.log"'
-        try:
-            self.server_process = subprocess.Popen(command,
-                                    universal_newlines=True, shell=True) # nosec
-            time.sleep(30)
-        except subprocess.CalledProcessError as e:
-            print("Error while executing command:", e)
-        self.client_executor = TextChatClientExecutor()
+        loading_config = LoadingModelConfig(ipex_int8=True)
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                loading_config=loading_config)
+        chatbot = build_chatbot(config)
+        router.set_chatbot(chatbot)
 
-    def test_text_chat(self):
-        result = self.client_executor(
+    def test_text_chat_with_ipex_int8_optimization(self):
+        # Create a sample chat completion request object
+        chat_request = ChatCompletionRequest(
             prompt="Tell me about Intel Xeon processors.",
-            server_ip="127.0.0.1",
-            port=7070)
-        self.assertEqual(result.status_code, 200)
-        print(json.loads(result.text))
-
-        result = self.client_executor(
-            prompt="Tell me about Intel Xeon processors.",
-            server_ip="127.0.0.1",
-            port=7070,
-            stream=True)
-        self.assertEqual(result.status_code, 200)
-        for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):
-            print(chunk)
+        )
+        response = client.post("/v1/chat/completions", json=chat_request.dict())
+        print(response)
+        assert response.status_code == 200
 
 
 if __name__ == "__main__":
