@@ -869,7 +869,8 @@ int8_t f8_mx_quantize(float v, float shared_exp) {
 
   // saturate normals.
   auto max_norm = utils::get_mxfp_maxnorm(F8_T, ebits, quant_mantissa);
-  std::clamp(v, -1 * max_norm, max_norm);
+  v = std::clamp(v, -1 * max_norm, max_norm);
+
   uint32_t* shift_v = reinterpret_cast<uint32_t*>(&v);
   // get sign;
   char* p = reinterpret_cast<char*>(&v);
@@ -877,6 +878,7 @@ int8_t f8_mx_quantize(float v, float shared_exp) {
   *shift_v <<= 1;
   uint8_t store_ebit = (*(p + 3) & 0xFF);
   store_ebit = store_ebit - 127 + std::pow(2, ebits - 1) - 1;
+  if (store_ebit > 15) store_ebit = 0;
   store_ebit <<= store_mantissa;
   *shift_v <<= 8;
   int8_t ox80_shift = -128 >> (store_mantissa - 1);
