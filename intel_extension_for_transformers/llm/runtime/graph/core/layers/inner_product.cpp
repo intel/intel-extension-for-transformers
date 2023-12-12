@@ -66,8 +66,7 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher =
-        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, jblas::prologue_b::gemm::WeightKBlockS4,
-                                           custom::epilogue::AddFp32>;
+        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, custom::epilogue::AddFp32>;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     utils::GemmProblem gp(1, M, N, K);
     static Launcher kernel;
