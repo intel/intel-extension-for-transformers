@@ -339,6 +339,21 @@ inline int jblas_dtype_get_f8_ebits(const JBLAS_DTYPE t) {
   return ret;
 }
 
+inline int jblas_dtype_get_f8_quant_mbits(const JBLAS_DTYPE t) {
+  int ret = -1;
+  switch (t) {
+    case JBLAS_DTYPE::F8_E4M3:
+      ret = 5;
+      break;
+    case JBLAS_DTYPE::F8_E5M2:
+      ret = 4;
+      break;
+    default:
+      assert(0);
+  }
+  return ret;
+}
+
 inline float get_mxfp_maxnorm(const JBLAS_DTYPE t, int ebits, int mantissa_bits) {
   auto emax = std::pow(2, ebits - 1);
   auto max_norm = std::pow(2, emax);
