@@ -201,15 +201,19 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
 
 template <typename T>
 static size_t JblasBuSize(int block_size, size_t N, size_t K, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
-                          bool isAsym) {
+                          bool isAsym, int* shuffle_indice) {
   static T launcher;
   using WType = typename T::PrologueB::StorageWeight;
   WType stor(0);
   if constexpr (std::is_same_v<typename T::PrologueB,
                                jblas::prologue_b::gemm::WeightKBlockNInteger<typename T::GemmCore, T::ISA>>) {
     stor = launcher.mProB.createStorage(N, K, block_size, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, isAsym);
+    if (shuffle_indice != nullptr) {
+      launcher.mProB.enableShuffle(&stor);
+    }
   } else {
     stor = launcher.mProB.createStorage(N, K, block_size, QuantType, ScaleDtype);
+    (void)(shuffle_indice);
   }
 
   // Reduce dtype set to bf16
@@ -217,7 +221,7 @@ static size_t JblasBuSize(int block_size, size_t N, size_t K, JBLAS_DTYPE QuantT
 }
 template <template <class, JBLAS_ISA> class Wei_T>
 static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
-                                      bool isAsym, ne_comp_type CompType) {
+                                      bool isAsym, ne_comp_type CompType, int* shuffle_indice) {
   GetCPUDevice();
   auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
   auto constexpr dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
@@ -226,30 +230,33 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
     case NE_COMP_INT8:
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
-                                                                                ScaleDtype, isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
+              static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype, isAsym, shuffle_indice);
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType,
-                                                                                ScaleDtype, isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
+              static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype, isAsym, shuffle_indice);
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype,
-                                                                             isAsym);
+          return JblasBuSize<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType,
+                                                                             ScaleDtype, isAsym, shuffle_indice);
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_BF16, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Int8_F32F32<tAMX_BF16, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType,
+                                                                    ScaleDtype, isAsym, shuffle_indice);
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        return JblasBuSize<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype,
+                                                                 isAsym, shuffle_indice);
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        return JblasBuSize<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(int(BlkSize), N, K, QuantType, ScaleDtype, isAsym);
+        return JblasBuSize<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(static_cast<int>(BlkSize), N, K, QuantType, ScaleDtype,
+                                                              isAsym, shuffle_indice);
       }
       break;
     default:
@@ -259,22 +266,22 @@ static size_t JblasGemmPackBSizeLocal(size_t N, size_t K, size_t BlkSize, JBLAS_
 }
 
 size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
-                          bool isAsym, ne_comp_type CompType) {
+                          bool isAsym, ne_comp_type CompType, int* shuffle_indice) {
   switch (QuantType) {
     case JBLAS_DTYPE::S4_CLIP:
     case JBLAS_DTYPE::S4_FULLRANGE:
     case JBLAS_DTYPE::S8:
-      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(N, K, BlkSize, QuantType,
-                                                                                    ScaleDtype, isAsym, CompType);
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(
+          N, K, BlkSize, QuantType, ScaleDtype, isAsym, CompType, shuffle_indice);
     case JBLAS_DTYPE::F8_E4M3:
     case JBLAS_DTYPE::F8_E5M2:
-      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF8>(N, K, BlkSize, QuantType,
-                                                                                    ScaleDtype, isAsym, CompType);
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF8>(N, K, BlkSize, QuantType, ScaleDtype,
+                                                                              isAsym, CompType, shuffle_indice);
     case JBLAS_DTYPE::F4_BNB:
     case JBLAS_DTYPE::F4_E2M1:
     case JBLAS_DTYPE::F4_NF4:
       return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF4>(N, K, BlkSize, QuantType, ScaleDtype,
-                                                                              isAsym, CompType);
+                                                                              isAsym, CompType, shuffle_indice);
     default:
       return 0;
   }
@@ -385,25 +392,31 @@ bool JblasGemmQuantPackB(void* PackedBuf, const float* FpData, size_t N, size_t 
 
 template <typename T>
 void JblaGemmPackBImpl(void* PackedBuf, int BlkSize, const int8_t* QData, const float* Scales, const int8_t* Zp, int N,
-                       int K, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool IsAsym, int ldb, void* ThreadPool) {
+                       int K, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool IsAsym, int ldb, int* shuffle_indice,
+                       void* ThreadPool) {
   static T launcher;
   using WType = typename T::PrologueB::StorageWeight;
+  auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
   WType stor(0);
   if constexpr (std::is_same_v<typename T::PrologueB,
                                jblas::prologue_b::gemm::WeightKBlockNInteger<typename T::GemmCore, T::ISA>>) {
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype, JBLAS_DTYPE::BF16, IsAsym);
+    if (shuffle_indice != nullptr) {
+      launcher.mProB.enableShuffle(&stor);
+      launcher.mProB.setShuffleIndices(shuffle_indice, &stor, pth);
+    }
   } else {
+    (void)(shuffle_indice);
     stor = launcher.mProB.createStorage(N, K, BlkSize, QuantType, ScaleDtype);
   }
-  stor.assign((int8_t*)PackedBuf);
-  auto pth = reinterpret_cast<jblas::parallel::IThreading*>(ThreadPool);
+  stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
   launcher.mProB.packQWeight(N, K, QData, ldb, Scales, IsAsym ? Zp : nullptr, &stor, pth);
 }
 
 template <template <class, JBLAS_ISA> class Wei_T>
 static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const float* Scales, const int8_t* Zp, size_t N,
                                 size_t K, size_t ldb, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype,
-                                bool isAsym, ne_comp_type CompType, void* ThreadPool) {
+                                bool isAsym, ne_comp_type CompType, int* shuffle_indice, void* ThreadPool) {
   GetCPUDevice();
   auto dtype_type = jblas::utils::jblas_dtype_type(QuantType);
   auto constexpr dtype_int = jblas::utils::jblas_dtype_type(JBLAS_DTYPE::TypeInt);
@@ -415,42 +428,43 @@ static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const floa
       if (dtype_type == dtype_int && !isAsym) {  // asym int8 is not optimized, so fall through to others.
         if (_cd->AMX_INT8() && BlkSize % tAMX_INT8_SS_KBlock::KTILE == 0) {
           JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAMX_INT8_SS_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-              ThreadPool);
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
           return true;
         }
         if (_cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
           JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX512_VNNI_KBlock, Wei_T>>(
-              PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-              ThreadPool);
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
           return true;
         }
         if (_cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
-          JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp,
-                                                                            int(N), int(K), QuantType, ScaleDtype,
-                                                                            isAsym, int(ldb), ThreadPool);
+          JblaGemmPackBImpl<tLauncher_Int8_F32F32<tAVX_VNNI_KBlock, Wei_T>>(
+              PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+              QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
           return true;
         }
       }
     case NE_COMP_F16:
     case NE_COMP_BF16:
       if (_cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N),
-                                                                 int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-                                                                 ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAMX_BF16, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+            QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
         return true;
       }
     case NE_COMP_F32:
     case NE_COMP_UNDEF:  // currently only f32 activation
       if (_cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N),
-                                                                int(K), QuantType, ScaleDtype, isAsym, int(ldb),
-                                                                ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX512F, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+            QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
         return true;
       }
       if (_cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
-        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(PackedBuf, int(BlkSize), QData, Scales, Zp, int(N), int(K),
-                                                             QuantType, ScaleDtype, isAsym, int(ldb), ThreadPool);
+        JblaGemmPackBImpl<tLauncher_Fp_F32F32<tAVX2, Wei_T>>(
+            PackedBuf, static_cast<int>(BlkSize), QData, Scales, Zp, static_cast<int>(N), static_cast<int>(K),
+            QuantType, ScaleDtype, isAsym, static_cast<int>(ldb), shuffle_indice, ThreadPool);
         return true;
       }
     default:
@@ -461,18 +475,15 @@ static bool JblasGemmPackBLocal(void* PackedBuf, const int8_t* QData, const floa
 
 bool JblasGemmPackB(void* PackedBuf, const int8_t* QData, const float* Scales, const int8_t* Zp, size_t N, size_t K,
                     size_t ldb, size_t BlkSize, JBLAS_DTYPE QuantType, JBLAS_DTYPE ScaleDtype, bool isAsym,
-                    ne_comp_type CompType, void* ThreadPool) {
+                    ne_comp_type CompType, int* shuffle_indice, void* ThreadPool) {
+  // only for integer quant
   switch (QuantType) {
     case JBLAS_DTYPE::S4_CLIP:
     case JBLAS_DTYPE::S4_FULLRANGE:
     case JBLAS_DTYPE::S8:
-      return JblasGemmPackBLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(
-          PackedBuf, QData, Scales, Zp, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
-    // case JBLAS_DTYPE::F4_BNB:
-    // case JBLAS_DTYPE::F4_E2M1:
-    // case JBLAS_DTYPE::F4_NF4:
-    //   return JblasGemmPackBLocal<jblas::prologue_b::gemm::WeightKBlockF4>(
-    //       PackedBuf, QData, Scales, Zp, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, ThreadPool);
+      return JblasGemmPackBLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(PackedBuf, QData, Scales, Zp, N, K, ldb,
+                                                                                BlkSize, QuantType, ScaleDtype, isAsym,
+                                                                                CompType, shuffle_indice, ThreadPool);
     default:
       return false;
   }
