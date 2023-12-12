@@ -48,7 +48,7 @@ def read_pdf(pdf_path):
 
 def read_html(html_path):
     """Read the html file."""
-    with open(html_path, 'r') as file:
+    with open(html_path, 'r', encoding="utf-8") as file:
         html = file.read()
     soup = BeautifulSoup(html, 'html.parser')
     text = soup.get_text(strip=True)
