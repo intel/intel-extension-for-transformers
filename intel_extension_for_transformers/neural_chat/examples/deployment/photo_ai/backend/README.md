@@ -83,7 +83,7 @@ You can customize the configuration file `photoai.yaml` to match your environmen
 | ------------------- | ---------------------------------------|
 | host                | 127.0.0.1                              |
 | port                | 9000                                   |
-| model_name_or_path  | "./Llama-2-7b-chat-hf"        |
+| model_name_or_path  | "./neural-chat-7b-v3-1"        |
 | device              | "auto"                                  |
 | asr.enable          | true                                   |
 | tts.enable          | true                                   |
