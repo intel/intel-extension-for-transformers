@@ -74,7 +74,7 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                       jblas::storage::gemm::IWeightBase* _BQ, jblas::storage::gemm::IWeightBase* _BK,
                       jblas::storage::gemm::IWeightBase* _BV, float* C, const int ldc, int8_t* WorkSpace,
                       jblas::parallel::IThreading* th) {
-  if (M <= 32) {
+  if (M <= 16) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher = tLauncher_Fp_F32F32<GemmCore_T, Wei_T>;
     static Launcher kernel;
