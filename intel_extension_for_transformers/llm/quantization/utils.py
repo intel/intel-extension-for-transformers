@@ -249,7 +249,7 @@ def convert_to_quantized_model(model, config):
             + "the calibration dataset is NeelNanda/pile-10k,"
             + "batchsize is 1 and calibration iteration is 100."
         )
-    if config.weight_dtype not in ["fp8_e4m3", "fp8_e5m2"]:
+    if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config)
     else:
         bits = 1  # only for int8
