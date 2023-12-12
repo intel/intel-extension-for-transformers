@@ -15,11 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import unittest
-import time
 import os
-import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from intel_extension_for_transformers.neural_chat import build_chatbot
