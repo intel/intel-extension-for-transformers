@@ -30,6 +30,7 @@ from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol
 app = FastAPI()
 app.include_router(router)
 client = TestClient(app)
+
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         device = get_device_type()
