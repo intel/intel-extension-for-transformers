@@ -77,7 +77,7 @@ class TestWeightOnly(unittest.TestCase):
         config.post_init_runtime()
         config_dict = config.to_dict()
         self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
-        self.assertEqual(config_dict["compute_dtype"], "bf16")
+        self.assertEqual(config_dict["compute_dtype"], "fp32")
         self.assertEqual(config_dict["scheme"], "sym")
         self.assertEqual(config_dict["scale_dtype"], "fp32")
         config.to_json_file(f"{self.workspace}/config_post_init_runtime.json")

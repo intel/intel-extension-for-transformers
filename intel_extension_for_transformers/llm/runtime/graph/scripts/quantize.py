@@ -113,11 +113,16 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         cmd.extend(["--alg", args.alg])
     cmd.extend(["--group_size", str(args.group_size)])
-    if (str(args.weight_dtype))[:3] not in ["fp8"] and str(args.scale_dtype) in ["fp8"]:
-        print("WARNING: fp8 scale is only be supported in fp8 weight type. Fall back to fp32.");
-        cmd.extend(["--scale_dtype", "fp32"])
+    if (str(args.weight_dtype))[:3] not in ["fp8"]:
+        sdtype = str(args.scale_dtype)
+        if str(args.scale_dtype) in ["fp8"]:
+            print("WARNING: fp8 scale is only be supported in fp8 weight type. Fall back to fp32.");
+            sdtype = "fp32"
+        cmd.extend(["--scale_dtype", sdtype])
     else:
-        cmd.extend(["--scale_dtype", args.scale_dtype])
+        if str(args.scale_dtype) != "fp8":
+            print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+        cmd.extend(["--scale_dtype", "fp8"])
     if (str(args.weight_dtype))[:3] in ["fp8", "fp4", "nf4"] and str(args.compute_dtype) in ["int8"]:
         print("WARNING: int8 compute dtype is not be supported in float quant types! "\
                       "Fall back to fp32.")

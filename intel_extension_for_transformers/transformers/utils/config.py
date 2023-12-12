@@ -194,6 +194,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
                       "Fall back to fp32.")
                 self.scale_dtype = "fp32"
+            if self.weight_dtype[:3] == "fp8" and self.scale_dtype != "fp8":
+                print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+                self.scale_dtype = "fp8"
 
     def quantization_method(self):
         r"""
