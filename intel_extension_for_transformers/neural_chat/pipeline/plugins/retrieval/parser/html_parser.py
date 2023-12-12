@@ -25,9 +25,15 @@ from bs4 import BeautifulSoup
 import os
 import re
 from .context_utils import uni_pro
+import logging
 
-
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 urllib3.disable_warnings()
+
 
 class Crawler:
     def __init__(self, pool=None):
@@ -41,7 +47,7 @@ class Crawler:
             'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, \
             like Gecko) Chrome/113.0.0.0 Safari/537.36'
-            }
+        }
         self.fetched_pool = set()
 
     def get_sublinks(self, soup):
@@ -70,11 +76,11 @@ class Crawler:
                 sublinks.append(link)
             else:
                 sublinks.append(urlunparse((base_url_parse.scheme,
-                                           base_url_parse.netloc,
-                                           link_parse.path,
-                                           link_parse.params,
-                                           link_parse.query,
-                                           link_parse.fragment)))
+                                            base_url_parse.netloc,
+                                            link_parse.path,
+                                            link_parse.params,
+                                            link_parse.query,
+                                            link_parse.fragment)))
         return sublinks
 
     def fetch(self, url, headers=None, max_times=5):
@@ -83,15 +89,15 @@ class Crawler:
         while max_times:
             if not url.startswith('http') or not url.startswith('https'):
                 url = 'http://' + url
-            print(f'start fetch {url}...')
+            logging.info('start fetch %s...', url)
             try:
                 response = requests.get(url, headers=headers, verify=True)
                 if response.status_code != 200:
-                    print(f'fail to fetch {url}, respose status code: {response.status_code}')
+                    logging.error('fail to fetch %s, response status code: %s', url, response.status_code)
                 else:
                     return response
             except Exception as e:
-                print(f'fail to fetch {url}, cased by {e}')
+                logging.error('fail to fetch %s, caused by %s', url, e)
             max_times -= 1
         return None
 
@@ -118,7 +124,7 @@ class Crawler:
             url_pool.update(sublinks)
             depth = 0
             while len(url_pool) > 0 and depth < max_depth:
-                print(f'current depth {depth} ...')
+                logging.info('current depth %s...', depth)
                 mp = multiprocessing.Pool(processes=workers)
                 results = []
                 for sub_url in url_pool:
@@ -137,7 +143,7 @@ class Crawler:
         return soup
 
     def download(self, url, file_name):
-        print(f'download {url} into {file_name}...')
+        logging.info('download %s into %s...', url, file_name)
         try:
             r = requests.get(url, stream=True, headers=self.headers, verify=True)
             f = open(file_name, "wb")
@@ -145,7 +151,7 @@ class Crawler:
                 if chunk:
                     f.write(chunk)
         except Exception as e:
-            print(f'fail to download {url}, cased by {e}')
+            logging.error('fail to download %s, caused by %s', url, e)
 
     def get_base_url(self, url):
         result = urlparse(url)
@@ -157,9 +163,6 @@ class Crawler:
         text = re.sub('\n+', '\n', text)
         text = text.split('\n')
         return '\n'.join([i for i in text if i and i != ' '])
-
-
-
 
 
 def load_html_data(url):
@@ -182,12 +185,12 @@ def load_html_data(url):
                 if text not in main_content:
                     main_content += f'\n{text}'
             main_content = crawler.clean_text(main_content)
-    
+
     main_content = main_content.replace('\n', '')
     main_content = main_content.replace('\n\n', '')
     main_content = uni_pro(main_content)
     main_content = re.sub(r'\s+', ' ', main_content)
-    
+
     # {'text': all_text, 'main_content': main_content}
-    
+
     return main_content
