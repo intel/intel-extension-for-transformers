@@ -24,7 +24,8 @@ void ne_attention_padding_mask_f32_forward(const int bs, const int nr_qk, const 
       for (int j = ith; j < qlen; j += nth) {
         // it will not affect next token if don't mask the pad_token row
         ne_vec_set_f32(n_padding,
-                       reinterpret_cast<float*>((char*)dst->data + b * dst->nb[3] + k * dst->nb[2] + j * dst->nb[1]),
+                       reinterpret_cast<float*>(reinterpret_cast<char*>(dst->data) + b * dst->nb[3] + k * dst->nb[2] +
+                                                j * dst->nb[1]),
                        p_value);
       }
     }

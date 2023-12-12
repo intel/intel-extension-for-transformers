@@ -13,8 +13,8 @@
 //  limitations under the License.
 #include "jblas_common.hpp"
 #include "jblas_gemm.h"
-using namespace jblas;
-using namespace ne_jblas;
+using namespace jblas;     // NOLINT
+using namespace ne_jblas;  // NOLINT
 
 void jblas_init() {
   GetCPUDevice();

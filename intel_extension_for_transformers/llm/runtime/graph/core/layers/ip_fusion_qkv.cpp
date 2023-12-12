@@ -14,8 +14,8 @@
 
 #include "jblas_common.hpp"
 
-using namespace jblas;
-using namespace ne_jblas;
+using namespace jblas;     // NOLINT
+using namespace ne_jblas;  // NOLINT
 
 namespace ip_qkv {
 

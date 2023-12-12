@@ -16,7 +16,7 @@
 #include <memory>
 #include <random>
 #include <limits>
-#include <vector> 
+#include <vector>
 #include <algorithm>
 
 #include "jblas/jit_blas_utils.h"
