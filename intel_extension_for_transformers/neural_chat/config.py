@@ -412,7 +412,7 @@ class LoadingModelConfig:
 
 class PipelineConfig:
     def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-7b-chat-hf",
+                 model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
