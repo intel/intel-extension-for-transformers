@@ -145,10 +145,8 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
-    using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T1>;
-    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                        jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T2>;
+    using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, Epi_T1>;
+    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     utils::GemmProblem gp1(1, seq, fmid, fin);
@@ -472,13 +470,10 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
-    using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                            jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T1>;
+    using Launcher_epi = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, Epi_T1>;
     using Launcher_mul =
-        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                           jblas::prologue_b::gemm::WeightKBlockNInteger, custom::epilogue::MulFp32>;
-    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T,
-                                                        jblas::prologue_b::gemm::WeightKBlockNInteger, Epi_T2>;
+        jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, custom::epilogue::MulFp32>;
+    using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T, Epi_T2>;
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
