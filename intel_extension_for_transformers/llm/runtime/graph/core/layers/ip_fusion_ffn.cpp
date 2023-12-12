@@ -234,7 +234,7 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
     if (ptr1->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
       auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr1);
       auto BlkSize = bptr->mBlockSize;
-      if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1 ) {
+      if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
         if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
           JblasGemmCompF32<tAVX512F, tWeiNInt, tActKBaseF32, epilogue1, epilogue2>(
               activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
@@ -266,7 +266,8 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
                 activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
           }
 
-        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() &&
+                   BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
           JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(
               activation, ptr1, ptr2, tmp, output, seq, fin, fmid, fout, workspace, pth, epi_args1, epi_args2);
         } else if (NTile == tAVX_VNNI_KBlock::NTILE && _cd->AVX_VNNI() && BlkSize % tAVX_VNNI_KBlock::KTILE == 0) {
@@ -588,7 +589,8 @@ void jblas_fusion_ffn_f32f32_forward(float* activation, void* w1ptr, void* w2ptr
                 epi_args2);
           }
 
-        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() && BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
+        } else if (NTile == tAVX512_VNNI_KBlock::NTILE && _cd->AVX512_VNNI() &&
+                   BlkSize % tAVX512_VNNI_KBlock::KTILE == 0) {
           JblasGemmCompInt8<tAVX512_VNNI_KBlock, tWeiNInt, epilogue1, epilogue2>(activation, ptr1, ptr2, ptr3, tmp1,
                                                                                  tmp2, output, seq, fin, fmid, fout,
                                                                                  workspace, pth, epi_args1, epi_args2);
