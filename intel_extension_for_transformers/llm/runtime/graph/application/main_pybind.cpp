@@ -604,7 +604,7 @@ size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const in
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>;
   Launcher launcher;
   int blocksize = params.group_size;
-  bool isAsym = params.alg == quant_alg::asym;
+  bool isAsym = src_zps == nullptr;
   int kblks = jblas::utils::updiv(K, blocksize);
   using WType = typename Launcher::PrologueB::StorageWeight;
   WType packedW =
