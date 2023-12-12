@@ -18,7 +18,7 @@
 #include "core/data_types.h"
 #include "jblas/jit_blas.h"
 
-enum class quant_bits : int { q4 = 0, q8, fp4, nf4, count };
+enum class quant_bits : int { q4 = 0, q8, fp4, nf4, fp8, count };
 static inline quant_bits parse_bits(const std::string& bits) {
   if (bits == "int4") {
     return quant_bits::q4;
@@ -31,6 +31,9 @@ static inline quant_bits parse_bits(const std::string& bits) {
   }
   if (bits == "nf4") {
     return quant_bits::nf4;
+  }
+  if (bits == "fp8") {
+    return quant_bits::fp8;
   }
   return quant_bits::count;
 }
@@ -55,6 +58,7 @@ enum class quant_sdtype : int {
   fp16 = 0,
   fp32,
   bf16,
+  fp8,
   count,
 };
 
@@ -67,6 +71,9 @@ static inline quant_sdtype parse_scale_dtype(std::string arg) {
   }
   if (arg == "bf16") {
     return quant_sdtype::bf16;
+  }
+  if (arg == "fp8") {
+    return quant_sdtype::fp8;
   }
   return quant_sdtype::count;
 }

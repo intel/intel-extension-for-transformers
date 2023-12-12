@@ -167,6 +167,31 @@ bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const 
           }
         }
       }
+      if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF8) {
+        auto bptr = reinterpret_cast<jblas::storage::gemm::IWeightKBlockBase*>(ptr);
+        auto BlkSize = bptr->mBlockSize;
+        if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
+          if (NTile == tAVX512F::NTILE && _cd->AVX512F() && BlkSize % tAVX512F::KTILE == 0) {
+            JblasGemmCompF32<tAVX512F, tWeiF8>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
+                                               DataParams[i].ldc, WorkSpace, pth);
+          } else if (NTile == tAVX2::NTILE && _cd->AVX2() && BlkSize % tAVX2::KTILE == 0) {
+            JblasGemmCompF32<tAVX2, tWeiF8>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
+                                            DataParams[i].ldc, WorkSpace, pth);
+          }
+        }
+        if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
+          if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16() && BlkSize % tAMX_BF16::KTILE == 0) {
+            if (M <= tAVX512_BF16::MTILE) {
+              static_assert(tAVX512_BF16::NTILE == tAMX_BF16::NTILE);
+              JblasGemmCompF32<tAVX512_BF16, tWeiF8>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
+                                                     DataParams[i].ldc, WorkSpace, pth);
+            } else {
+              JblasGemmCompF32<tAMX_BF16, tWeiF8>(M, N, K, DataParams[i].A, DataParams[i].lda, ptr, DataParams[i].C,
+                                                  DataParams[i].ldc, WorkSpace, pth);
+            }
+          }
+        }
+      }
       delete ptr;
     } else {
       processed = false;
@@ -245,6 +270,10 @@ size_t JblasGemmPackBSize(size_t N, size_t K, size_t BlkSize, JBLAS_DTYPE QuantT
     case JBLAS_DTYPE::S4_FULLRANGE:
     case JBLAS_DTYPE::S8:
       return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(N, K, BlkSize, QuantType,
+                                                                                    ScaleDtype, isAsym, CompType);
+    case JBLAS_DTYPE::F8_E4M3:
+    case JBLAS_DTYPE::F8_E5M2:
+      return JblasGemmPackBSizeLocal<jblas::prologue_b::gemm::WeightKBlockF8>(N, K, BlkSize, QuantType,
                                                                                     ScaleDtype, isAsym, CompType);
     case JBLAS_DTYPE::F4_BNB:
     case JBLAS_DTYPE::F4_E2M1:
@@ -343,6 +372,10 @@ bool JblasGemmQuantPackB(void* PackedBuf, const float* FpData, size_t N, size_t 
     case JBLAS_DTYPE::S4_FULLRANGE:
     case JBLAS_DTYPE::S8:
       return JblasGemmQuantPackBLocal<jblas::prologue_b::gemm::WeightKBlockNInteger>(
+          PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, isTrans, ThreadPool);
+    case JBLAS_DTYPE::F8_E5M2:
+    case JBLAS_DTYPE::F8_E4M3:
+      return JblasGemmQuantPackBLocal<jblas::prologue_b::gemm::WeightKBlockF8>(
           PackedBuf, FpData, N, K, ldb, BlkSize, QuantType, ScaleDtype, isAsym, CompType, isTrans, ThreadPool);
     case JBLAS_DTYPE::F4_BNB:
     case JBLAS_DTYPE::F4_E2M1:

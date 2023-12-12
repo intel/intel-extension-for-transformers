@@ -886,6 +886,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.bits == quant_bits::nf4) {
     quant_type = JBLAS_DTYPE::F4_NF4;
   }
+  if (params.bits == quant_bits::fp8) {
+    quant_type = JBLAS_DTYPE::F8_E4M3;
+  }
   auto dtype_type = static_cast<JBLAS_DTYPE>(
       jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
   if (dtype_type == JBLAS_DTYPE::TypeFloat) {
