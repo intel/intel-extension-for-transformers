@@ -62,9 +62,12 @@ static std::string model_format_tensor_shape(const std::vector<uint32_t>& ne) {
 
 static size_t model_calc_tensor_size(const std::vector<uint32_t>& ne, enum ne_type type) {
   size_t size = ne_type_size(type);
+  std::cout << "  ne.size() = " << ne.size();
   for (uint32_t dim : ne) {
     size = checked_mul<size_t>(size, dim);
+    std::cout << "  dim = " << dim << "  size = " << size;
   }
+  std::cout << "   size / ne_blck_size(type) = " << size / ne_blck_size(type) << std::endl << std::endl << std::endl;
   return size / ne_blck_size(type);
 }
 
@@ -222,9 +225,9 @@ struct model_file_loader {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     // read_gguf();
     read_magic(tensors_map);
-    read_hparams();
-    read_vocab();
-    read_tensor_metadata(file_idx, tensors_map);
+    //read_hparams();
+    //read_vocab();
+    //read_tensor_metadata(file_idx, tensors_map);
   }
 
 const char * gguf_type_name(enum gguf_type type) {
@@ -612,7 +615,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     }
 }
 
-  struct gguf_context *  read_gguf() {
+  struct gguf_context *  read_gguf(model_load_tensors_map& tensors_map) {
     const char* name =
         "/root/zhenzhong/gguf/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/"
         "ne-chatglm2-fp32.bin.gguf";
@@ -624,6 +627,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     size_t offset = 0;
     char magic[4];
     gguf_fread_el(file_gguf, &magic, sizeof(magic), &offset);
+    std::cout << "magic = " << magic << "  offset = " << offset << std::endl;
 
     struct gguf_context* ctx = reinterpret_cast<struct gguf_context*>(GGML_ALIGNED_MALLOC(sizeof(struct gguf_context)));
 
@@ -636,8 +640,11 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     ctx->data = NULL;
 
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.version, sizeof(ctx->header.version), &offset);
+    std::cout << "ctx->header.version = " << ctx->header.version << "  offset = " << offset << std::endl;
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.n_tensors, sizeof(ctx->header.n_tensors), &offset);
+    std::cout << "ctx->header.n_tensors, = " << ctx->header.n_tensors << "  offset = " << offset << std::endl;
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.n_kv, sizeof(ctx->header.n_kv), &offset);
+    std::cout << "ctx->header.n_kv = " << ctx->header.n_kv << "  offset = " << offset << std::endl;
 
     if (ctx->header.version == 1) {
       fprintf(stderr, "%s: GGUFv1 is no longer supported. please use a more up-to-date version\n", __func__);
@@ -753,6 +760,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
       if (!ok) {
         break;
       }
+
     }
 
     // read the tensor infos
@@ -782,6 +790,59 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
             // gguf_free(ctx);
             // return NULL;
         }
+
+        model_load_tensor_shard shard;
+        std::string name = gguf_get_tensor_name(ctx, i);
+        uint32_t name_len = name.length();
+        shard.type = (enum ne_type)0;
+        
+
+        // 不是都等于2的，兄弟呀。
+        std::cout << "                     ";
+        uint32_t n_dims = info->n_dims;
+        shard.ne.resize(n_dims);
+        for (uint32_t j = 0; j < info->n_dims; ++j) {
+          shard.ne[j] = info->ne[j];
+          std::cout << " n_dims " << n_dims << "   shard.ne[j] = " << shard.ne[j]  << "  ";
+        }
+                
+        if (n_dims < 1 || n_dims > 2) {
+        throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
+        }
+        switch (shard.type) {
+          case NE_TYPE_F32:
+          case NE_TYPE_F16:
+          case NE_TYPE_Q4_0:
+          case NE_TYPE_Q4_1:
+          case NE_TYPE_Q5_0:
+          case NE_TYPE_Q5_1:
+          case NE_TYPE_Q8_0:
+          case NE_TYPE_JBLAS:
+            break;
+          default: {
+            throw format("unrecognized tensor type %u\n", shard.type);
+          }
+        }
+        shard.file_idx = 0;
+        const size_t offs = file_offset(ctx, name.c_str());
+        std::cout << " name_len = " << name_len << " offs = " << offs << "  name = " << name << std::endl << std::endl << std::endl;
+
+        // 这段代码有点问题，因为data读取load不在这里
+        // file.seek(offs, SEEK_SET);
+        // file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+
+        auto it = tensors_map.name_to_idx.find(name);
+        size_t idx;
+        if (it != tensors_map.name_to_idx.end()) {
+          idx = it->second;
+        } else {
+          tensors_map.tensors.emplace_back(name);
+          idx = tensors_map.tensors.size() - 1;
+          tensors_map.name_to_idx.emplace(name, idx);
+        }
+        tensors_map.tensors.at(idx).shards.push_back(shard);
+
+
     }
       
     
@@ -851,7 +912,7 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
     // struct ggml_context * ctx_meta = NULL;
     struct ne_context * ctx_meta = NULL;
 
-    ctx_gguf = read_gguf();
+    ctx_gguf = read_gguf(tensors_map);
     if (!ctx_gguf) {
       throw std::runtime_error(format("%s: failed to load model\n", __func__));
     }
@@ -894,42 +955,6 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
 
     }
 
-    // 需要一个load的函数, 将参数load进去
-  /*
-  read_magic: loaded meta data with 30 key-value pairs and 199 tensors (version GGUF V3 (latest))
-read_magic: - kv   0:                       general.architecture str              = chatglm2-test.ggml
-read_magic: - kv   1:                                      magic u32              = 1734831462
-read_magic: - kv   2:                                    version u32              = 1
-read_magic: - kv   3:                                    n_vocab u32              = 65024
-read_magic: - kv   4:                                     n_embd u32              = 4096
-read_magic: - kv   5:                                     n_mult u32              = 0
-read_magic: - kv   6:                                     n_head u32              = 32
-read_magic: - kv   7:                                  n_head_kv u32              = 0
-read_magic: - kv   8:                                    n_layer u32              = 28
-read_magic: - kv   9:                                      n_rot u32              = 0
-read_magic: - kv  10:                                      ftype u32              = 0
-read_magic: - kv  11:                                max_seq_len u32              = 32768
-read_magic: - kv  12:                             alibi_bias_max u32              = 0
-read_magic: - kv  13:                                   clip_qkv u32              = 0
-read_magic: - kv  14:                                    par_res u32              = 0
-read_magic: - kv  15:                        word_embed_proj_dim u32              = 0
-read_magic: - kv  16:                       do_layer_norm_before u32              = 0
-read_magic: - kv  17:                      multi_query_group_num u32              = 2
-read_magic: - kv  18:                            ffn_hidden_size u32              = 13696
-read_magic: - kv  19:                          inner_hidden_size u32              = 0
-read_magic: - kv  20:                               bos_token_id u32              = 1
-read_magic: - kv  21:                               eos_token_id u32              = 2
-read_magic: - kv  22:                               pad_token_id u32              = 0
-read_magic: - kv  23:                               sep_token_id u32              = 0
-read_magic: - kv  24:                       tokenizer.ggml.model str              = llama
-read_magic: - kv  25:                      tokenizer.ggml.tokens arr[str,64789]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
-read_magic: - kv  26:                      tokenizer.ggml.scores arr[f32,64789]   = [0.000000, 0.000000, 0.000000, 0.0000...
-read_magic: - kv  27:                  tokenizer.ggml.token_type arr[i32,64789]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
-read_magic: - kv  28:                tokenizer.ggml.eos_token_id u32              = 2
-read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32              = 0
-
-  
-  */
     uint32_t magic = ctx_gguf->kv[1].value.uint32;
     // uint32_t magic = file.read_u32();
 
@@ -1031,39 +1056,59 @@ read_magic: - kv  29:            tokenizer.ggml.padding_token_id u32            
     // $2 = 65024
     // NE_ASSERT(vocab.id_to_token.size() == vocab.token_to_id.size());
 
+
    
-    for (int i = 0; i < gguf_get_n_tensors(ctx_gguf); i++) {
-      // model_load_tensor_shard shard;
-      // uint32_t n_dims = file.read_u32();
-      // uint32_t name_len = file.read_u32();
-      // shard.type = (enum ne_type)file.read_u32();
-      // shard.ne.resize(n_dims);
-      // file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
-      // std::string name = file.read_string(name_len);
+    // for (int i = 0; i < gguf_get_n_tensors(ctx_gguf); i++) {
+    //   // model_load_tensor_shard shard;
+    //   // uint32_t n_dims = file.read_u32();
+    //   // uint32_t name_len = file.read_u32();
+    //   // shard.type = (enum ne_type)file.read_u32();
+    //   // shard.ne.resize(n_dims);
+    //   // file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+    //   // std::string name = file.read_string(name_len);
 
-        model_load_tensor_shard shard;
-        std::string name = gguf_get_tensor_name(ctx_gguf, i);
-        uint32_t n_dims = 2;
-        uint32_t name_len = name.length();
-        shard.type = (enum ne_type)0;
-        shard.ne.resize(n_dims);
-        std::cout << " name_len = " << name_len << "  shard.type = " << shard.type << "  name = " << name << std::endl;
+    //     model_load_tensor_shard shard;
+    //     std::string name = gguf_get_tensor_name(ctx_gguf, i);
+    //     uint32_t n_dims = 2;
+    //     uint32_t name_len = name.length();
+    //     shard.type = (enum ne_type)0;
+    //     shard.ne.resize(n_dims);
         
-        const size_t offs = file_offset(ctx_gguf, name.c_str());
-        file.seek(offs, SEEK_SET);
-        file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+    //     if (n_dims < 1 || n_dims > 2) {
+    //     throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
+    //     }
+    //     switch (shard.type) {
+    //       case NE_TYPE_F32:
+    //       case NE_TYPE_F16:
+    //       case NE_TYPE_Q4_0:
+    //       case NE_TYPE_Q4_1:
+    //       case NE_TYPE_Q5_0:
+    //       case NE_TYPE_Q5_1:
+    //       case NE_TYPE_Q8_0:
+    //       case NE_TYPE_JBLAS:
+    //         break;
+    //       default: {
+    //         throw format("unrecognized tensor type %u\n", shard.type);
+    //       }
+    //     }
 
-        auto it = tensors_map.name_to_idx.find(name);
-        size_t idx;
-        if (it != tensors_map.name_to_idx.end()) {
-          idx = it->second;
-        } else {
-          tensors_map.tensors.emplace_back(name);
-          idx = tensors_map.tensors.size() - 1;
-          tensors_map.name_to_idx.emplace(name, idx);
-        }
-        tensors_map.tensors.at(idx).shards.push_back(shard);
-    }
+    //     const size_t offs = file_offset(ctx_gguf, name.c_str());
+    //     std::cout << " name_len = " << name_len << "  shard.type = " << shard.type << "  shard.ne[0] = " << shard.ne[0] << "  shard.ne[1] = " << shard.ne[1] << "  name = " << name << std::endl;
+
+    //     file.seek(offs, SEEK_SET);
+    //     file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+
+    //     auto it = tensors_map.name_to_idx.find(name);
+    //     size_t idx;
+    //     if (it != tensors_map.name_to_idx.end()) {
+    //       idx = it->second;
+    //     } else {
+    //       tensors_map.tensors.emplace_back(name);
+    //       idx = tensors_map.tensors.size() - 1;
+    //       tensors_map.name_to_idx.emplace(name, idx);
+    //     }
+    //     tensors_map.tensors.at(idx).shards.push_back(shard);
+    // }
 
     std::cout << "HAPPYEND" << std::endl;
   }
@@ -1282,6 +1327,7 @@ struct model_model_loader {
       use_mmap = false;
     }
     this->use_mmap = use_mmap;
+    // 这一部分代码，是重新再算一遍tensor的大小。
     for (model_load_tensor& lt : tensors_map.tensors) {
       lt.calc_all();
     }
