@@ -604,7 +604,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                     session = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                         os.path.join(pretrained, "model.onnx"),
                         session_options=sess_options)
-                    inputs_names = [input.name for input in session.get_inputs()]
+                    inputs_names = [input.name for input in session.get_inputs()] # pylint: disable=E1101
                     key_value_input_names = [key for key in inputs_names if (".key" in key) or (".value" in key)]
                     use_cache = len(key_value_input_names) > 0
 
