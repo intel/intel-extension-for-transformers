@@ -417,7 +417,8 @@ def load_model(
             re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
+                                        if re.search("chatglm", model_name, re.IGNORECASE) or \
+                                           re.search("qwen", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
@@ -472,6 +473,7 @@ def load_model(
                 torch_dtype=torch_dtype,
                 low_cpu_mem_usage=True,
                 quantization_config=bitsandbytes_quant_config,
+                trust_remote_code=True if re.search("qwen", model_name, re.IGNORECASE) else False
             )
     elif (
             (re.search("starcoder", model_name, re.IGNORECASE)
