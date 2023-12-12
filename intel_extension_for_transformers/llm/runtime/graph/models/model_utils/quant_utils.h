@@ -46,5 +46,10 @@
 
 
 QUANT_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
-// MODEL_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
+QUANT_API bool model_quantize_special(
+        std::ifstream & finp,
+        std::ofstream & fout,
+        const ne_ftype ftype,
+        const std::vector<std::string> & to_quant,
+        const std::vector<std::string> & to_skip);
 #endif  // MODEL_H

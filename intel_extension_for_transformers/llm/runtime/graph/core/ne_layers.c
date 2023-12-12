@@ -638,6 +638,9 @@ enum ne_type ne_ftype_to_ne_type(enum ne_ftype ftype) {
     case NE_FTYPE_MOSTLY_Q4_1_SOME_F16:
       wtype = NE_TYPE_COUNT;
       break;
+    case NE_FTYPE_MOSTLY_Q_JBLAS:
+      wtype = NE_TYPE_JBLAS;
+      break;
   }
 
   NE_ASSERT(wtype != NE_TYPE_COUNT);

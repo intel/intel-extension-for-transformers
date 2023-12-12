@@ -68,7 +68,7 @@ compile_quant(quant_chatglm2  quant_model.cpp chatglm2  chatglm2 0)
 compile_quant(quant_baichuan  quant_model.cpp baichuan  baichuan 0)
 compile_quant(quant_mistral   quant_model.cpp mistral   llama 0)
 compile_quant(quant_qwen   quant_model.cpp qwen   qwen 0)
-compile_quant(quant_whisper   quant_model.cpp whisper   whisper 1)
+compile_quant(quant_whisper   quant_whisper.cpp whisper   whisper 1)
 # all models running
 if (NE_PYTHON_API)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})

@@ -327,52 +327,204 @@ static void model_quantize_internal(const quant_params& params, std::shared_ptr<
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
 }
 
-static void model_quantize_special(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer){
-  auto ftype = quant_params_to_ftype(params);
-  quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
-  int nthread = params.nthread;
-  if (nthread <= 0) {
-    nthread = std::thread::hardware_concurrency();
-  }
-  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
-                                                                          /*vocab_only*/ false));
-  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
-  size_t total_size_org = 0;
-  size_t total_size_new = 0;
-  size_t idx = 0;
-  for (model_load_tensor& tensor : model_loader->tensors_map.tensors) {
-    model_buffer read_data;
-    read_data.resize(tensor.size);
-    tensor.data = read_data.addr;
-    model_loader->load_data_for(tensor);
-    printf("[%4zu/%4zu] %36s - %16s, type = %6s, ", ++idx, model_loader->tensors_map.tensors.size(),
-           tensor.name.c_str(), model_format_tensor_shape(tensor.ne).c_str(), ne_type_name(tensor.type));
-    std::vector<int64_t> tmpne(tensor.ne.size());
-    for (size_t i = 0; i < tmpne.size(); i++) {
-      tmpne[i] = static_cast<int64_t>(tensor.ne[i]);
-    }
-    auto lconfig = quant_layer->get_layer_config(tensor.name, tmpne, tensor.type);
-    bool quantize = lconfig.valid();
-    printf("%s,", lconfig.getstr().c_str());
-    if (quantize) {
-      ne_common_quantize(nthread, lconfig, tensor, file_saver, total_size_org, total_size_new);
-    } else {
-      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
-      total_size_org += tensor.size;
-      total_size_new += tensor.size;
-      file_saver.write_tensor(tensor, tensor.type, tensor.data, tensor.size);
-      printf("\n");
-    }
-  }
-  printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
-  printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
-};
+size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, int nthread, int n, int k){
+  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
+  using namespace ne_jblas;
+  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+  auto dstbptr = (int8_t*)dstpr;
+  cd->setThreads(nthread);
+  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+  using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
+  static Kernel kernel;
+  static KernelRef kernelref;
+  auto packedw = kernel.createStorage(n, k, group_size);
+  packedw.assign(dstbptr);
+  if (cd->AVX512F()) {
+      kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      } else {
+        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
+      }
+  return packedw.mSize;
 
+
+}
+bool model_quantize_special(
+        std::ifstream & finp,
+        std::ofstream & fout,
+        const ne_ftype ftype,
+        const std::vector<std::string> & to_quant,
+        const std::vector<std::string> & to_skip) {
+
+    ne_type qtype = NE_TYPE_F32;
+
+    switch (ftype) {
+        case NE_FTYPE_MOSTLY_Q4_0: qtype = NE_TYPE_Q4_0; break;
+        case NE_FTYPE_MOSTLY_Q_JBLAS: qtype = NE_TYPE_JBLAS; break;
+        case NE_FTYPE_MOSTLY_F16:
+                {
+                    fprintf(stderr, "%s: invalid model type %d\n", __func__, ftype);
+                    return false;
+                }
+    };
+    if (!ne_is_quantized(qtype)) {
+        fprintf(stderr, "%s: invalid quantization type %d (%s)\n", __func__, qtype, ne_type_name(qtype));
+        return false;
+    }
+
+    size_t total_size_org = 0;
+    size_t total_size_new = 0;
+
+    std::vector<float> work;
+
+    std::vector<uint8_t>     data_u8;
+    std::vector<ne_fp16_t>   data_f16;
+    std::vector<float>       data_f32;
+
+    std::vector<int64_t> hist_all(1 << 4, 0);
+
+    while (true) {
+        int32_t n_dims;
+        int32_t length;
+        int32_t ttype;
+
+        finp.read(reinterpret_cast<char *>(&n_dims), sizeof(n_dims));
+        finp.read(reinterpret_cast<char *>(&length), sizeof(length));
+        finp.read(reinterpret_cast<char *>(&ttype),  sizeof(ttype));
+
+        if (finp.eof()) {
+            break;
+        }
+
+        int32_t nelements = 1;
+        int32_t ne[4] = { 1, 1, 1, 1 };
+        for (int i = 0; i < n_dims; ++i) {
+            finp.read (reinterpret_cast<char *>(&ne[i]), sizeof(ne[i]));
+            nelements *= ne[i];
+        }
+
+        std::string name(length, 0);
+        finp.read (&name[0], length);
+
+        printf("%64s - [%5d, %5d, %5d], type = %6s ", name.data(), ne[0], ne[1], ne[2], ne_type_name((ne_type) ttype));
+
+        bool quantize = false;
+
+        // check if we should quantize this tensor
+        for (const auto & s : to_quant) {
+            if (std::regex_match(name, std::regex(s))) {
+                quantize = true;
+                break;
+            }
+        }
+
+        // check if we should skip this tensor
+        for (const auto & s : to_skip) {
+            if (std::regex_match(name, std::regex(s))) {
+                quantize = false;
+                break;
+            }
+        }
+
+        // quantize only 2D tensors
+        quantize &= (n_dims == 2);
+
+        if (quantize) {
+            if (ttype != NE_TYPE_F32 && ttype != NE_TYPE_F16) {
+                fprintf(stderr, "%s: unsupported ttype %d (%s) for integer quantization\n", __func__, ttype, ne_type_name((ne_type) ttype));
+                return false;
+            }
+
+            if (ttype == NE_TYPE_F16) {
+                data_f16.resize(nelements);
+                finp.read(reinterpret_cast<char *>(data_f16.data()), nelements * sizeof(ne_fp16_t));
+                data_f32.resize(nelements);
+                for (int i = 0; i < nelements; ++i) {
+                    data_f32[i] = ne_fp16_to_fp32(data_f16[i]);
+                }
+            } else {
+                data_f32.resize(nelements);
+                finp.read(reinterpret_cast<char *>(data_f32.data()), nelements * sizeof(float));
+            }
+
+            ttype = qtype;
+        } else {
+            const int bpe = (ttype == 0) ? sizeof(float) : sizeof(uint16_t);
+
+            data_u8.resize(nelements*bpe);
+            finp.read(reinterpret_cast<char *>(data_u8.data()), nelements * bpe);
+        }
+
+        fout.write(reinterpret_cast<char *>(&n_dims), sizeof(n_dims));
+        fout.write(reinterpret_cast<char *>(&length), sizeof(length));
+        fout.write(reinterpret_cast<char *>(&ttype),  sizeof(ttype));
+        for (int i = 0; i < n_dims; ++i) {
+            fout.write(reinterpret_cast<char *>(&ne[i]), sizeof(ne[i]));
+        }
+        fout.write(&name[0], length);
+
+        if (quantize) {
+            work.resize(nelements); // for quantization
+
+            size_t cur_size = 0;
+            std::vector<int64_t> hist_cur(1 << 4, 0);
+
+            switch ((ne_type) ttype) {
+                case NE_TYPE_Q4_0:
+                    {
+                        cur_size = ne_quantize_chunk((ne_type) ttype, data_f32.data(), work.data(), 0, nelements, hist_cur.data());
+                    } break;
+                case NE_TYPE_JBLAS:
+                    {
+                        cur_size = jblas_special_quantize(data_f32.data(), work.data(), 32, 1, ne[0], ne[1]);
+                        printf("JBLAS");
+                    } break;
+                case NE_TYPE_F32:
+                    {
+                        fprintf(stderr, "%s: unsupported quantization type %d (%s)\n", __func__, ttype, ne_type_name((ne_type) ttype));
+                        return false;
+                    }
+            }
+
+            fout.write(reinterpret_cast<char *>(work.data()), cur_size);
+            total_size_new += cur_size;
+
+            printf("size = %8.2f MB -> %8.2f MB | hist: ", nelements * sizeof(float)/1024.0/1024.0, cur_size/1024.0/1024.0);
+            for (int i = 0; i < (int) hist_cur.size(); ++i) {
+                hist_all[i] += hist_cur[i];
+            }
+
+            for (int i = 0; i < (int) hist_cur.size(); ++i) {
+                printf("%5.3f ", hist_cur[i] / (float)nelements);
+            }
+            printf("\n");
+        } else {
+            printf("size = %8.3f MB\n", data_u8.size()/1024.0/1024.0);
+            fout.write(reinterpret_cast<char *>(data_u8.data()), data_u8.size());
+            total_size_new += data_u8.size();
+        }
+
+        total_size_org += nelements * sizeof(float);
+    }
+
+    printf("%s: model size  = %8.2f MB\n", __func__, total_size_org/1024.0/1024.0);
+    printf("%s: quant size  = %8.2f MB | ftype = %d (%s)\n", __func__, total_size_new/1024.0/1024.0, ftype, ne_type_name(qtype));
+
+    {
+        int64_t sum_all = 0;
+        for (int i = 0; i < (int) hist_all.size(); ++i) {
+            sum_all += hist_all[i];
+        }
+
+        printf("%s: hist: ", __func__);
+        for (int i = 0; i < (int) hist_all.size(); ++i) {
+            printf("%5.3f ", hist_all[i] / (float)sum_all);
+        }
+        printf("\n");
+    }
+
+    return true;
+}
 int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
-  if (params.model_arch==MODEL_WHISPER){
-    model_quantize_special(params, quant_layer);
-    return 0;
-  }
   try {
     model_quantize_internal(params, quant_layer);
     return 0;
@@ -381,3 +533,5 @@ int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base>
     return 1;
   }
 }
+
+
