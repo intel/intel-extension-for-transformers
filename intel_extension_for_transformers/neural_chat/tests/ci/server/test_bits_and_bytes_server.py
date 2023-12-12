@@ -24,7 +24,7 @@ from intel_extension_for_transformers.neural_chat import PipelineConfig
 from transformers.utils import is_bitsandbytes_available
 from intel_extension_for_transformers.transformers import BitsAndBytesConfig
 from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 
 app = FastAPI()
 app.include_router(router)

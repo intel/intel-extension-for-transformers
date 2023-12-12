@@ -15,11 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import unittest
-import time
 import os
-import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from intel_extension_for_transformers.neural_chat import build_chatbot
@@ -28,7 +25,7 @@ from intel_extension_for_transformers.neural_chat.config import LoadingModelConf
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 
 app = FastAPI()
 app.include_router(router)

@@ -23,7 +23,7 @@ from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 
 app = FastAPI()
 app.include_router(router)
