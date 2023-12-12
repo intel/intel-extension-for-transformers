@@ -20,7 +20,7 @@ from intel_extension_for_transformers.neural_chat import build_chatbot, Pipeline
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
 
-class TestChatQwenModel(unittest.TestCase):
+class TestQwenModel(unittest.TestCase):
     def setUp(self):
         self.device = get_device_type()
         return super().setUp()
