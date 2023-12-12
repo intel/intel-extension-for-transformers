@@ -918,6 +918,12 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.scale_dtype == quant_sdtype::fp16) {
     printf("Current not support float16 scale, reset to bf16\n");
   }
+  if (quant_type == JBLAS_DTYPE::F8_E4M3) {
+    if (params.scale_dtype != quant_sdtype::fp8) {
+      printf("Warning: fp8 weight only supports fp8 scale now\n");
+    }
+    scale_type == JBLAS_DTYPE::F8_E8M0;
+  }
   auto gsize = params.group_size == -1 ? k : params.group_size;
   auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype);
   bool constexpr IsTrans_TorchWeight = true;

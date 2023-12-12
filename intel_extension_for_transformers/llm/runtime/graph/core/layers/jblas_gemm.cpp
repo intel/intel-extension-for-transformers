@@ -536,6 +536,23 @@ bool JblasGemmUnPackB(float* FpData, const void* PackedBuf, size_t N, size_t K, 
         }
       }
     }
+    if (ptr->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockF8) {
+      if (btype == jblas::gemm::CompType::tFP32 && PackRow == 1) {
+        if (NTile == tAVX512F::NTILE && _cd->AVX512F()) {
+          static jblas::prologue_b::gemm::WeightKBlockF8<tAVX512F, tAVX512F::ISA> proB;
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
+        } else if (NTile == tAVX2::NTILE && _cd->AVX2()) {
+          static jblas::prologue_b::gemm::WeightKBlockF8<tAVX2, tAVX2::ISA> proB;
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
+        }
+      }
+      if (btype == jblas::gemm::CompType::tBF16 && PackRow == 2) {
+        if (NTile == tAMX_BF16::NTILE && _cd->AMX_BF16()) {
+          static jblas::prologue_b::gemm::WeightKBlockF8<tAMX_BF16, tAMX_BF16::ISA> proB;
+          proB.unpackWeight(static_cast<int>(N), static_cast<int>(K), ptr, FpData, static_cast<int>(ldb), pth);
+        }
+      }
+    }
     delete ptr;
     return true;
   }
