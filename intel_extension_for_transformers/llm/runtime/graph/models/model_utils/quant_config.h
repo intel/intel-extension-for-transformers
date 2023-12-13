@@ -16,14 +16,24 @@
 #include <string>
 #include <memory>
 #include "core/data_types.h"
+#include "jblas/jit_blas.h"
 
-enum class quant_bits : int { q4 = 0, q8, count };
+enum class quant_bits : int { q4 = 0, q8, fp4, nf4, fp8, count };
 static inline quant_bits parse_bits(const std::string& bits) {
   if (bits == "int4") {
     return quant_bits::q4;
   }
   if (bits == "int8") {
     return quant_bits::q8;
+  }
+  if (bits == "fp4") {
+    return quant_bits::fp4;
+  }
+  if (bits == "nf4") {
+    return quant_bits::nf4;
+  }
+  if (bits == "fp8") {
+    return quant_bits::fp8;
   }
   return quant_bits::count;
 }
@@ -33,6 +43,7 @@ enum class quant_alg : int {
   asym,
   count,
 };
+
 static inline quant_alg parse_alg(std::string arg) {
   if (arg == "sym") {
     return quant_alg::sym;
@@ -47,8 +58,10 @@ enum class quant_sdtype : int {
   fp16 = 0,
   fp32,
   bf16,
+  fp8,
   count,
 };
+
 static inline quant_sdtype parse_scale_dtype(std::string arg) {
   if (arg == "fp16") {
     return quant_sdtype::fp16;
@@ -59,6 +72,9 @@ static inline quant_sdtype parse_scale_dtype(std::string arg) {
   if (arg == "bf16") {
     return quant_sdtype::bf16;
   }
+  if (arg == "fp8") {
+    return quant_sdtype::fp8;
+  }
   return quant_sdtype::count;
 }
 
@@ -67,6 +83,7 @@ enum class quant_comp : int {
   int8,      // jblas int8
   fp32,      // jblas fp32
   bf16,      // jblas bf16
+  fp16,      // jblas fp16
   count,
 };
 static inline quant_comp parse_compute_type(std::string arg, bool ggml_arg) {
@@ -82,7 +99,26 @@ static inline quant_comp parse_compute_type(std::string arg, bool ggml_arg) {
   if (arg == "bf16") {
     return quant_comp::bf16;
   }
+  if (arg == "fp16") {
+    return quant_comp::fp16;
+  }
   return quant_comp::count;
+}
+
+// without ggml
+inline constexpr ne_comp_type quant2ne_comp_type(const quant_comp& qc) {
+  switch (qc) {
+    case quant_comp::fp32:
+      return NE_COMP_F32;
+    case quant_comp::fp16:
+      return NE_COMP_F16;
+    case quant_comp::bf16:
+      return NE_COMP_BF16;
+    case quant_comp::int8:
+      return NE_COMP_INT8;
+    default:
+      return NE_COMP_UNDEF;
+  }
 }
 
 struct quant_params_internal {

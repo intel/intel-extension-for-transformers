@@ -2411,7 +2411,10 @@ dalvishruti
 NormalFloat
 backpropagates
 leaderboard
+synapse
 datalearner
 zaker
 EEA
 GOVINDH
+gaudi
+hpu

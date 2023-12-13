@@ -1,0 +1,208 @@
+
+User settings:
+
+   KMP_AFFINITY=granularity=fine,compact,1,0
+   KMP_BLOCKTIME=1
+   KMP_SETTINGS=1
+   OMP_NUM_THREADS=48
+
+Effective settings:
+
+   KMP_ABORT_DELAY=0
+   KMP_ADAPTIVE_LOCK_PROPS='1,1024'
+   KMP_ALIGN_ALLOC=64
+   KMP_ALL_THREADPRIVATE=768
+   KMP_ATOMIC_MODE=2
+   KMP_BLOCKTIME=1
+   KMP_CPUINFO_FILE: value is not defined
+   KMP_DETERMINISTIC_REDUCTION=false
+   KMP_DEVICE_THREAD_LIMIT=2147483647
+   KMP_DISP_NUM_BUFFERS=7
+   KMP_DUPLICATE_LIB_OK=false
+   KMP_ENABLE_TASK_THROTTLING=true
+   KMP_FORCE_MONOTONIC_DYNAMIC_SCHEDULE=false
+   KMP_FORCE_REDUCTION: value is not defined
+   KMP_FOREIGN_THREADS_THREADPRIVATE=true
+   KMP_FORKJOIN_BARRIER='2,2'
+   KMP_FORKJOIN_BARRIER_PATTERN='hyper,hyper'
+   KMP_FORKJOIN_FRAMES=true
+   KMP_FORKJOIN_FRAMES_MODE=3
+   KMP_GTID_MODE=3
+   KMP_HANDLE_SIGNALS=false
+   KMP_HOT_TEAMS_MAX_LEVEL=1
+   KMP_HOT_TEAMS_MODE=0
+   KMP_INIT_AT_FORK=true
+   KMP_ITT_PREPARE_DELAY=0
+   KMP_LIBRARY=throughput
+   KMP_LOCK_KIND=queuing
+   KMP_MALLOC_POOL_INCR=1M
+   KMP_MWAIT_HINTS=0
+   KMP_NESTING_MODE=0
+   KMP_NUM_LOCKS_IN_BLOCK=1
+   KMP_PLAIN_BARRIER='2,2'
+   KMP_PLAIN_BARRIER_PATTERN='hyper,hyper'
+   KMP_REDUCTION_BARRIER='1,1'
+   KMP_REDUCTION_BARRIER_PATTERN='hyper,hyper'
+   KMP_SCHEDULE='static,balanced;guided,iterative'
+   KMP_SETTINGS=true
+   KMP_SPIN_BACKOFF_PARAMS='4096,100'
+   KMP_STACKOFFSET=64
+   KMP_STACKPAD=0
+   KMP_STACKSIZE=8M
+   KMP_STORAGE_MAP=false
+   KMP_TASKING=2
+   KMP_TASKLOOP_MIN_TASKS=0
+   KMP_TASK_STEALING_CONSTRAINT=1
+   KMP_TEAMS_PROC_BIND=spread
+   KMP_TEAMS_THREAD_LIMIT=192
+   KMP_TOPOLOGY_METHOD=all
+   KMP_TPAUSE=0
+   KMP_USER_LEVEL_MWAIT=false
+   KMP_USE_YIELD=1
+   KMP_VERSION=false
+   KMP_WARNINGS=true
+   LIBOMP_NUM_HIDDEN_HELPER_THREADS=8
+   LIBOMP_USE_HIDDEN_HELPER_TASK=true
+   OMP_AFFINITY_FORMAT='OMP: pid %P tid %i thread %n bound to OS proc set {%A}'
+   OMP_ALLOCATOR=omp_default_mem_alloc
+   OMP_CANCELLATION=false
+   OMP_DEFAULT_DEVICE=0
+   OMP_DISPLAY_AFFINITY=false
+   OMP_DISPLAY_ENV=false
+   OMP_DYNAMIC=false
+   OMP_MAX_ACTIVE_LEVELS=1
+   OMP_MAX_TASK_PRIORITY=0
+   OMP_NESTED: deprecated; max-active-levels-var=1
+   OMP_NUM_TEAMS=0
+   OMP_NUM_THREADS='48'
+   OMP_PLACES='threads'
+   OMP_PROC_BIND='intel'
+   OMP_SCHEDULE='static'
+   OMP_STACKSIZE=8M
+   OMP_TARGET_OFFLOAD=DEFAULT
+   OMP_TEAMS_THREAD_LIMIT=0
+   OMP_THREAD_LIMIT=2147483647
+   OMP_TOOL=enabled
+   OMP_TOOL_LIBRARIES: value is not defined
+   OMP_TOOL_VERBOSE_INIT: value is not defined
+   OMP_WAIT_POLICY=PASSIVE
+   KMP_AFFINITY='noverbose,warnings,respect,granularity=thread,compact,1,0'
+
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/image2image/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/root/miniconda3/envs/image2image/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/itrex/lvl/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/plugin/image2image/image2image_service.py", line 19, in <module>
+    from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/__init__.py", line 29, in <module>
+    from .server.neuralchat_server import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/server/__init__.py", line 22, in <module>
+    from .neuralchat_server import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/server/neuralchat_server.py", line 26, in <module>
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+
+User settings:
+
+   KMP_AFFINITY=granularity=fine,compact,1,0
+   KMP_BLOCKTIME=1
+   KMP_SETTINGS=1
+   OMP_NUM_THREADS=48
+
+Effective settings:
+
+   KMP_ABORT_DELAY=0
+   KMP_ADAPTIVE_LOCK_PROPS='1,1024'
+   KMP_ALIGN_ALLOC=64
+   KMP_ALL_THREADPRIVATE=768
+   KMP_ATOMIC_MODE=2
+   KMP_BLOCKTIME=1
+   KMP_CPUINFO_FILE: value is not defined
+   KMP_DETERMINISTIC_REDUCTION=false
+   KMP_DEVICE_THREAD_LIMIT=2147483647
+   KMP_DISP_NUM_BUFFERS=7
+   KMP_DUPLICATE_LIB_OK=false
+   KMP_ENABLE_TASK_THROTTLING=true
+   KMP_FORCE_MONOTONIC_DYNAMIC_SCHEDULE=false
+   KMP_FORCE_REDUCTION: value is not defined
+   KMP_FOREIGN_THREADS_THREADPRIVATE=true
+   KMP_FORKJOIN_BARRIER='2,2'
+   KMP_FORKJOIN_BARRIER_PATTERN='hyper,hyper'
+   KMP_FORKJOIN_FRAMES=true
+   KMP_FORKJOIN_FRAMES_MODE=3
+   KMP_GTID_MODE=3
+   KMP_HANDLE_SIGNALS=false
+   KMP_HOT_TEAMS_MAX_LEVEL=1
+   KMP_HOT_TEAMS_MODE=0
+   KMP_INIT_AT_FORK=true
+   KMP_ITT_PREPARE_DELAY=0
+   KMP_LIBRARY=throughput
+   KMP_LOCK_KIND=queuing
+   KMP_MALLOC_POOL_INCR=1M
+   KMP_MWAIT_HINTS=0
+   KMP_NESTING_MODE=0
+   KMP_NUM_LOCKS_IN_BLOCK=1
+   KMP_PLAIN_BARRIER='2,2'
+   KMP_PLAIN_BARRIER_PATTERN='hyper,hyper'
+   KMP_REDUCTION_BARRIER='1,1'
+   KMP_REDUCTION_BARRIER_PATTERN='hyper,hyper'
+   KMP_SCHEDULE='static,balanced;guided,iterative'
+   KMP_SETTINGS=true
+   KMP_SPIN_BACKOFF_PARAMS='4096,100'
+   KMP_STACKOFFSET=64
+   KMP_STACKPAD=0
+   KMP_STACKSIZE=8M
+   KMP_STORAGE_MAP=false
+   KMP_TASKING=2
+   KMP_TASKLOOP_MIN_TASKS=0
+   KMP_TASK_STEALING_CONSTRAINT=1
+   KMP_TEAMS_PROC_BIND=spread
+   KMP_TEAMS_THREAD_LIMIT=192
+   KMP_TOPOLOGY_METHOD=all
+   KMP_TPAUSE=0
+   KMP_USER_LEVEL_MWAIT=false
+   KMP_USE_YIELD=1
+   KMP_VERSION=false
+   KMP_WARNINGS=true
+   LIBOMP_NUM_HIDDEN_HELPER_THREADS=8
+   LIBOMP_USE_HIDDEN_HELPER_TASK=true
+   OMP_AFFINITY_FORMAT='OMP: pid %P tid %i thread %n bound to OS proc set {%A}'
+   OMP_ALLOCATOR=omp_default_mem_alloc
+   OMP_CANCELLATION=false
+   OMP_DEFAULT_DEVICE=0
+   OMP_DISPLAY_AFFINITY=false
+   OMP_DISPLAY_ENV=false
+   OMP_DYNAMIC=false
+   OMP_MAX_ACTIVE_LEVELS=1
+   OMP_MAX_TASK_PRIORITY=0
+   OMP_NESTED: deprecated; max-active-levels-var=1
+   OMP_NUM_TEAMS=0
+   OMP_NUM_THREADS='48'
+   OMP_PLACES='threads'
+   OMP_PROC_BIND='intel'
+   OMP_SCHEDULE='static'
+   OMP_STACKSIZE=8M
+   OMP_TARGET_OFFLOAD=DEFAULT
+   OMP_TEAMS_THREAD_LIMIT=0
+   OMP_THREAD_LIMIT=2147483647
+   OMP_TOOL=enabled
+   OMP_TOOL_LIBRARIES: value is not defined
+   OMP_TOOL_VERBOSE_INIT: value is not defined
+   OMP_WAIT_POLICY=PASSIVE
+   KMP_AFFINITY='noverbose,warnings,respect,granularity=thread,compact,1,0'
+
+Traceback (most recent call last):
+  File "/root/miniconda3/envs/image2image/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/root/miniconda3/envs/image2image/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/itrex/lvl/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/deployment/plugin/image2image/image2image_service.py", line 19, in <module>
+    from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/__init__.py", line 29, in <module>
+    from .server.neuralchat_server import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/server/__init__.py", line 22, in <module>
+    from .neuralchat_server import NeuralChatServerExecutor
+  File "/root/miniconda3/envs/image2image/lib/python3.9/site-packages/intel_extension_for_transformers/neural_chat/server/neuralchat_server.py", line 29, in <module>
+    from yacs.config import CfgNode
+ModuleNotFoundError: No module named 'yacs'
