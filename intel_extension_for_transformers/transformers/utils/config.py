@@ -33,7 +33,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         llm_int8_skip_modules=None,
         compute_dtype=None,
         weight_dtype=None,
-        scale_dtype="fp32"
+        scale_dtype="fp32",
         mse_range=False,
         use_double_quant=False,
         double_quant_dtype="int8",  # reserve for double quant
