@@ -149,13 +149,12 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>1.13.0-ee32e42</td>
 			<td>1.13.0-ee32e42</td>
 		</tr>
-
 	</tbody>
 </table>
 
 
 
-> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt)
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
 
 ## 🌱Getting Starteed
 Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
