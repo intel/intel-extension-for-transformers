@@ -763,9 +763,11 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
 
     }
 
+    std::cout << "offset = " <<  offset << std::endl;
+
     // read the tensor infos
     ctx->infos = reinterpret_cast<struct gguf_tensor_info *>(malloc(ctx->header.n_tensors * sizeof(struct gguf_tensor_info)));
-
+    
     for (uint64_t i = 0; i < ctx->header.n_tensors; ++i) {
         struct gguf_tensor_info * info = &ctx->infos[i];
 
@@ -825,11 +827,17 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
         }
         shard.file_idx = 0;
         const size_t offs = file_offset(ctx, name.c_str());
-        std::cout << " name_len = " << name_len << " offs = " << offs << "  name = " << name << std::endl << std::endl << std::endl;
+        int length = info->ne[0] * info->ne[1] * info->ne[2] * info->ne[3] * 4;
+        std::cout << " name_len = " << name_len << " offs = " << offs << " length = " << length << "  name = " << name << std::endl << std::endl << std::endl;
 
         // 这段代码有点问题，因为data读取load不在这里
         // file.seek(offs, SEEK_SET);
-        // file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
+        shard.file_off = offs;
+        
+        // 目前就是这个offs，算的有点问题。
+        
+        // file.read_raw(shard.ne.data(), length);
+        
 
         auto it = tensors_map.name_to_idx.find(name);
         size_t idx;
@@ -841,10 +849,11 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
           tensors_map.name_to_idx.emplace(name, idx);
         }
         tensors_map.tensors.at(idx).shards.push_back(shard);
-
-
     }
       
+  
+    
+
     
     ctx->alignment = GGUF_DEFAULT_ALIGNMENT;
 
@@ -853,8 +862,19 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
         ctx->alignment = gguf_get_val_u32(ctx, alignment_idx);
     }
 
+    const size_t offset_pad = offset % ctx->alignment;
+
+    if (offset_pad != 0) {
+        offset += ctx->alignment - offset_pad;
+        // fseek(file, offset, SEEK_SET);
+    }
+
+    ctx->offset = offset;
+
+
     return ctx;
   }
+
 
 
 // struct ggml_tensor * ggml_get_tensor(struct ggml_context * ctx, const char * name) {
@@ -876,24 +896,29 @@ void gguf_set_arr_str(struct gguf_context * ctx, const char * key, const char **
 //     return NULL;
 // }
 
-// size_t ggml_nbytes(const struct ggml_tensor * tensor) {
-//     size_t nbytes;
-//     size_t blck_size = ggml_blck_size(tensor->type);
-//     if (blck_size == 1) {
-//         nbytes = ggml_type_size(tensor->type);
-//         for (int i = 0; i < GGML_MAX_DIMS; ++i) {
-//             nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
-//         }
-//     }
-//     else {
-//         nbytes = tensor->ne[0]*tensor->nb[0]/blck_size;
-//         for (int i = 1; i < GGML_MAX_DIMS; ++i) {
-//             nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
-//         }
-//     }
+size_t ggml_nbytes(const struct ne_tensor * tensor) {
+    size_t nbytes;
+    
+    // bloc_size of FP32 == 1
+    size_t  blck_size = 1;
+    //size_t blck_size = ggml_blck_size(tensor->type);
+    if (blck_size == 1) {
+        // fp32 nbytes = 4;
+        nbytes = 4;
+        //nbytes = ggml_type_size(tensor->type);
+        for (int i = 0; i < GGML_MAX_DIMS; ++i) {
+            nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
+        }
+    }
+    else {
+        nbytes = tensor->ne[0]*tensor->nb[0]/blck_size;
+        for (int i = 1; i < GGML_MAX_DIMS; ++i) {
+            nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
+        }
+    }
 
-//     return nbytes;
-// }
+    return nbytes;
+}
 
 //   int64_t ggml_nelements(const struct ggml_tensor * tensor) {
 
@@ -1499,7 +1524,10 @@ struct model_model_loader {
       lt.data = (uint8_t*)mapping->addr + lt.shards.at(0).file_off;
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
-      file.seek(lt.shards.at(0).file_off, SEEK_SET);
+      file.seek(lt.shards.at(0).file_off + 1490912, SEEK_SET);
+      // size就是tensor的长度
+      // file_off， 看一下值。
+      std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off + 1490912 << " lt.size =  " << lt.size << std::endl;
       file.read_raw(lt.data, lt.size);
     } else if (lt.split_type == SPLIT_BY_ROWS) {
       size_t offset = 0;
