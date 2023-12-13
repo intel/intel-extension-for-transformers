@@ -52,7 +52,7 @@ def amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) ->
 
 
 @torch.no_grad()
-def temperature_sigmoid(x: torch.Tensor, x0: float, temp_coeff: float) -> torch.Tensor: # pragma: no cover
+def temperature_sigmoid(x: torch.Tensor, x0: float, temp_coeff: float) -> torch.Tensor:
     """
     Apply a sigmoid function with temperature scaling.
 
@@ -171,7 +171,7 @@ class TorchGate(torch.nn.Module):
             bins to smooth and n_grad_time is the number of time frames to smooth.
             If both self.freq_mask_smooth_hz and self.time_mask_smooth_ms are None, returns None.
         """
-        if self.freq_mask_smooth_hz is None and self.time_mask_smooth_ms is None: # pragma: no cover
+        if self.freq_mask_smooth_hz is None and self.time_mask_smooth_ms is None:
             return None
 
         n_grad_freq = (
@@ -179,7 +179,7 @@ class TorchGate(torch.nn.Module):
             if self.freq_mask_smooth_hz is None
             else int(self.freq_mask_smooth_hz / (self.sr / (self.n_fft / 2)))
         )
-        if n_grad_freq < 1: # pragma: no cover
+        if n_grad_freq < 1:
             raise ValueError(
                 f"freq_mask_smooth_hz needs to be at least {int((self.sr / (self._n_fft / 2)))} Hz"
             )
@@ -189,12 +189,12 @@ class TorchGate(torch.nn.Module):
             if self.time_mask_smooth_ms is None
             else int(self.time_mask_smooth_ms / ((self.hop_length / self.sr) * 1000))
         )
-        if n_grad_time < 1: # pragma: no cover
+        if n_grad_time < 1:
             raise ValueError(
                 f"time_mask_smooth_ms needs to be at least {int((self.hop_length / self.sr) * 1000)} ms"
             )
 
-        if n_grad_time == 1 and n_grad_freq == 1: # pragma: no cover
+        if n_grad_time == 1 and n_grad_freq == 1:
             return None
 
         v_f = torch.cat(
@@ -255,7 +255,7 @@ class TorchGate(torch.nn.Module):
         return sig_mask
 
     @torch.no_grad()
-    def _nonstationary_mask(self, X_abs: torch.Tensor) -> torch.Tensor: # pragma: no cover
+    def _nonstationary_mask(self, X_abs: torch.Tensor) -> torch.Tensor:
         """
         Computes a non-stationary binary mask to filter out noise in a log-magnitude spectrogram.
 
@@ -302,11 +302,11 @@ class TorchGate(torch.nn.Module):
             torch.Tensor: The denoised audio signal, with the same shape as the input signal.
         """
         assert x.ndim == 2
-        if x.shape[-1] < self.win_length * 2: # pragma: no cover
+        if x.shape[-1] < self.win_length * 2:
             raise Exception(f"x must be bigger than {self.win_length * 2}")
 
         assert xn is None or xn.ndim == 1 or xn.ndim == 2
-        if xn is not None and xn.shape[-1] < self.win_length * 2: # pragma: no cover
+        if xn is not None and xn.shape[-1] < self.win_length * 2:
             raise Exception(f"xn must be bigger than {self.win_length * 2}")
 
         # Compute short-time Fourier transform (STFT)
@@ -322,7 +322,7 @@ class TorchGate(torch.nn.Module):
         )
 
         # Compute signal mask based on stationary or nonstationary assumptions
-        if self.nonstationary: # pragma: no cover
+        if self.nonstationary:
             sig_mask = self._nonstationary_mask(X.abs())
         else:
             sig_mask = self._stationary_mask(amp_to_db(X), xn)
@@ -354,9 +354,9 @@ class TorchGate(torch.nn.Module):
         return y.to(dtype=x.dtype)
 
 class NoiseReducer:
-    def __init__(self):
-        self.sr = 16000
-        self.tg = TorchGate(self.sr)
+    def __init__(self, sr=16000, nonstationary=False):
+        self.sr = sr
+        self.tg = TorchGate(sr=self.sr, nonstationary=nonstationary)
 
     def reduce_audio_amplify(self, output_audio_path, y):
         original_sound = AudioSegment.from_file(output_audio_path, format="wav")
