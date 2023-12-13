@@ -140,35 +140,6 @@ class HelpCommand:
         return True
 
 
-@cli_register(name='neuralchat.version', description='Show version of current neuralchat package.')
-class VersionCommand:
-    """
-    VersionCommand class for displaying the package version.
-
-    This class provides the functionality to display the version of the neuralchat
-    package either through the command-line interface or programmatically. It utilizes
-    the __version__ attribute to determine the package version.
-
-    Attributes:
-        None
-
-    Methods:
-        execute(argv): Executes the version display and returns a success status.
-    """
-    def execute(self, argv: List[str]) -> bool:
-        try:
-            from ..version import __version__
-            version = __version__
-        except ImportError:
-            version = 'Not an official release'
-
-        msg = 'Package Version:\n'
-        msg += '    {}\n\n'.format(version)
-
-        logger.info(msg)
-        return True
-
-
 class TextVoiceChatExecutor(BaseCommandExecutor):
     """
     TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.

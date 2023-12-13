@@ -40,11 +40,11 @@ class BaseCommandExecutor(ABC):
         Returns:
             int: Result of the command execution. `True` for a success and `False` for a failure.
         """
-        pass
+        pass # pragma: no cover
 
     @abstractmethod
     def __call__(self, *arg, **kwargs):
         """
         Python API to call an executor.
         """
-        pass
+        pass # pragma: no cover
