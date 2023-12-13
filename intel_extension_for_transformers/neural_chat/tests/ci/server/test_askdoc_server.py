@@ -58,23 +58,27 @@ Performance increases of 10% and 4%, respectively, for BERT and ResNet models as
 Gaudi2 results were submitted “out of the box,” meaning customers can achieve comparable performance results when implementing Gaudi2 on premise or in the cloud.
 """
 
+
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        chatbot = build_chatbot(config)
-        router.set_chatbot(chatbot)
         self.oneapi_doc = "oneapi.txt"
         self.gaudi2_doc = "gaudi2.txt"
-        with open(self.oneapi_doc, "w") as file:
-            file.write(oneapi_content)
-        print(f"File created at {self.oneapi_doc}")
-        with open(self.gaudi2_doc, "w") as file:
-            file.write(gaudi2_content)
-        print(f"File created at {self.gaudi2_doc}")
-        plugins["retrieval"]['class'] = Agent_QA
-        plugins["retrieval"]["instance"] = plugins["retrieval"]['class'](input_path="./oneapi.txt")
+        if not os.path.exists("./oneapi.txt"):
+            with open(self.oneapi_doc, "w") as file:
+                file.write(oneapi_content)
+            print(f"File created at {self.oneapi_doc}")
+        if not os.path.exists("./gaudi2.txt"):
+            with open(self.gaudi2_doc, "w") as file:
+                file.write(gaudi2_content)
+            print(f"File created at {self.gaudi2_doc}")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"]="./oneapi.txt"
+        chatbot = build_chatbot(config)
+        router.set_chatbot(chatbot)
 
-    def tearDown(self) -> None:
+    @classmethod
+    def tearDownClass(cls) -> None:
         # delete created resources
         import shutil
         if os.path.exists("./out_persist"):
