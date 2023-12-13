@@ -61,9 +61,9 @@ class parallel_class {
     if (rank == 0) {
       kvs = ccl::create_main_kvs();
       main_addr = kvs->get_address();
-      MPI_Bcast((void*)main_addr.data(), main_addr.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
+      MPI_Bcast(reinterpret_cast<void*>(main_addr.data()), main_addr.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
     } else {
-      MPI_Bcast((void*)main_addr.data(), main_addr.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
+      MPI_Bcast(reinterpret_cast<void*>(main_addr.data()), main_addr.size(), MPI_BYTE, 0, MPI_COMM_WORLD);
       kvs = ccl::create_kvs(main_addr);
     }
 
