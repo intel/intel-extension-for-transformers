@@ -902,7 +902,8 @@ inline JBLAS_CODE quantize_f32_f8_rowblock_mxscale(const float* srcptr, int8_t* 
       if (shared_exp == 0) shared_exp += std::abs(std::numeric_limits<float>::min());
       shared_exp = std::floor(std::log2(shared_exp));
       auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
-      auto emax = std::pow(2, ebits - 1) - 1;
+      auto emax = std::pow(2, ebits - 1);
+      if (F8_T == JBLAS_DTYPE::F8_E5M2) emax -= 1;
       shared_exp -= emax;
       auto scale_max = std::pow(2, 7) - 1;  // e8m0 scale type.
       shared_exp = shared_exp < (-1 * scale_max) ? (-1 * scale_max) : shared_exp;
