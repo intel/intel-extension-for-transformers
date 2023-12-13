@@ -27,6 +27,14 @@ from intel_extension_for_transformers.neural_chat.config import (
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+from intel_extension_for_transformers.neural_chat.config_logging import configure_logging
+logger = configure_logging()
+
+def is_optimum_habana_available():
+    import importlib
+    from transformers.utils.import_utils import is_optimum_available
+    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
+
 
 json_data = \
 """
@@ -44,6 +52,39 @@ class TestFinetuning(unittest.TestCase):
         with open(test_data_file, mode='w') as f:
             f.write(json_data)
 
+        if is_optimum_habana_available():
+            from optimum.habana import GaudiTrainingArguments, GaudiSeq2SeqTrainingArguments
+            self.training_args = GaudiTrainingArguments(
+                    output_dir='./tmp',
+                    do_train=True,
+                    max_steps=3,
+                    overwrite_output_dir=True,
+                    use_habana=True,
+                    use_lazy_mode=True,
+                    bf16=True)
+
+            self.seq2seq_training_args = GaudiSeq2SeqTrainingArguments(
+                    output_dir='./tmp',
+                    do_train=True,
+                    max_steps=3,
+                    overwrite_output_dir=True,
+                    use_habana=True,
+                    use_lazy_mode=True,
+                    bf16=True)
+        else:
+            self.training_args = TrainingArguments(
+                    output_dir='./tmp',
+                    do_train=True,
+                    max_steps=3,
+                    overwrite_output_dir=True)
+
+            self.seq2seq_training_args = Seq2SeqTrainingArguments(
+                    output_dir='./tmp',
+                    do_train=True,
+                    max_steps=3,
+                    overwrite_output_dir=True)
+
+
     @classmethod
     def tearDownClass(self):
         shutil.rmtree('./tmp', ignore_errors=True)
@@ -52,35 +93,27 @@ class TestFinetuning(unittest.TestCase):
     def test_finetune_clm_lora(self):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = TrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device=self.device)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
-            finetune_args=finetune_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
         )
         finetune_model(finetune_cfg)
 
     def test_finetune_clm_qlora(self):
+        if self.device == "hpu" and is_optimum_habana_available():
+            logger.info("hpu pass")
+            return
+
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = TrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device=self.device, qlora=True)
+        finetune_args = FinetuningArguments(device=self.device, qlora=True, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.training_args,
             finetune_args=finetune_args,
         )
         finetune_model(finetune_cfg)
@@ -88,18 +121,12 @@ class TestFinetuning(unittest.TestCase):
     def test_finetune_clm_full_finetuning(self):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = TrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device='cpu', full_finetune=True,
+        finetune_args = FinetuningArguments(device=self.device, full_finetune=True,
                 bits=16, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.training_args,
             finetune_args=finetune_args,
         )
         finetune_model(finetune_cfg)
@@ -107,79 +134,59 @@ class TestFinetuning(unittest.TestCase):
     def test_finetune_clm_value1(self):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = TrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device='cpu', full_finetune=True, do_lm_eval=False)
+        finetune_args = FinetuningArguments(device=self.device, full_finetune=True, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.training_args,
             finetune_args=finetune_args,
         )
         # finetune_model(finetune_cfg)
         try:
             finetune_model(finetune_cfg)
         except ValueError:
-            print("code pass")
+            logger.info("code pass")
 
     def test_finetune_clm_value2(self):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = TrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device='cpu', qlora=True,
+        finetune_args = FinetuningArguments(device=self.device, qlora=True,
                 full_finetune=True, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.training_args,
             finetune_args=finetune_args,
         )
         try:
             finetune_model(finetune_cfg)
         except ValueError:
-            print("code pass")
+            logger.info("code pass")
 
     def test_finetune_seq2seq_lora(self):
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = Seq2SeqTrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
         finetune_args = FinetuningArguments(device=self.device)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.seq2seq_training_args,
             finetune_args=finetune_args,
         )
         finetune_model(finetune_cfg)
 
     def test_finetune_seq2seq_qlora(self):
+        if self.device == "hpu" and is_optimum_habana_available():
+            logger.info("hpu pass")
+            return
+
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = Seq2SeqTrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device='cpu', qlora=True)
+        finetune_args = FinetuningArguments(device=self.device, qlora=True)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.seq2seq_training_args,
             finetune_args=finetune_args,
         )
         finetune_model(finetune_cfg)
@@ -187,18 +194,12 @@ class TestFinetuning(unittest.TestCase):
     def test_finetune_seq2seq_full_finetuning(self):
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
         data_args = DataArguments(train_file=test_data_file)
-        training_args = Seq2SeqTrainingArguments(
-            output_dir='./tmp',
-            do_train=True,
-            max_steps=3,
-            overwrite_output_dir=True
-        )
-        finetune_args = FinetuningArguments(device='cpu', full_finetune=True,
+        finetune_args = FinetuningArguments(device=self.device, full_finetune=True,
                 bits=16, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
-            training_args=training_args,
+            training_args=self.seq2seq_training_args,
             finetune_args=finetune_args,
         )
         finetune_model(finetune_cfg)

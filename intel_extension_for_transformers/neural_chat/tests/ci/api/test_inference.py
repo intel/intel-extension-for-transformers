@@ -34,7 +34,7 @@ class UnitTest(unittest.TestCase):
         return super().tearDown()
 
     def test_text_chat(self):
-        self.skipTest(self, "skip before fix the issue")
+        self.skipTest("skip before fix the issue")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
@@ -57,7 +57,7 @@ class UnitTest(unittest.TestCase):
         plugins.retrieval.enable = False
     
     def test_retrieval_append(self):
-        self.skipTest(self, "skip before fix the issue")
+        self.skipTest("skip before fix the issue")
         plugins.retrieval.enable = True
         plugins.retrieval.args["append"] = True
         plugins.retrieval.args["input_path"] = "../assets/docs/"
@@ -81,7 +81,7 @@ class UnitTest(unittest.TestCase):
         plugins.retrieval.enable = False
 
     def test_voice_chat(self):
-        self.skipTest(self, "skip before fix the issue")
+        self.skipTest("skip before fix the issue")
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"] = "./response.wav"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
@@ -103,7 +103,7 @@ class UnitTest(unittest.TestCase):
         optimize_model(model=model, config=config)
 
     def test_text_chat_stream(self):
-        self.skipTest(self, "skip before fix the issue")
+        self.skipTest("skip before fix the issue")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""

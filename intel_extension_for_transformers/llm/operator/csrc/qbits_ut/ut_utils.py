@@ -18,6 +18,7 @@
 import torch
 import inspect
 import time
+import pytest
 from functools import wraps
 torch.ops.load_library("../build/libqbits.so")
 
