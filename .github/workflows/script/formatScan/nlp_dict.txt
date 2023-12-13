@@ -2411,5 +2411,8 @@ dalvishruti
 NormalFloat
 backpropagates
 leaderboard
+synapse
 datalearner
 zaker
+gaudi
+hpu
