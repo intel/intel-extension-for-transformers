@@ -61,6 +61,9 @@ parser.add_argument("--mixed_precision", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============WeightOnlyQuant configs============
+parser.add_argument("--bitsandbytes", action="store_true")
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
