@@ -2414,5 +2414,7 @@ leaderboard
 synapse
 datalearner
 zaker
+EEA
+GOVINDH
 gaudi
 hpu
