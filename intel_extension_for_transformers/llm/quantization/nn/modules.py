@@ -34,7 +34,7 @@ torch.ops.load_library(
 class DropoutQBits_(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, probability):
-        mask = torch.ops.qbits_customop.qbits_dropout_fwd(input, probability)
+        mask = torch.ops.qbits_customop.dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
             ctx.tensors = (mask, )
         else:
@@ -47,7 +47,7 @@ class DropoutQBits_(torch.autograd.Function):
         mask = ctx.tensors[0]
         grad_input = None
 
-        if req_grad_input: grad_input = torch.ops.qbits_customop.qbits_dropout_bwd(grad_output, mask)
+        if req_grad_input: grad_input = torch.ops.qbits_customop.dropout_bwd(grad_output, mask)
 
         return grad_input, None
 
@@ -126,7 +126,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
-        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+        weight = torch.ops.jblasop.woq_quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
@@ -168,7 +168,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         qbits_customop_available = True
         try:
-            torch.ops.qbits_customop.qbits_dropout_fwd
+            torch.ops.qbits_customop.dropout_fwd
         except:
             qbits_customop_available = False
         if lora_dropout > 0 and qbits_customop_available:
@@ -190,7 +190,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 f"You are now additionally merging {','.join(self.active_adapters)}."
             )
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
+        torch.ops.jblasop.woq_dequantize(
             self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
         w_data = w_dequant
         for active_adapter in self.active_adapters:
@@ -209,7 +209,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                     w_data = orig_weights
                 else:
                     w_data += self.get_delta_weight(active_adapter)
-        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+        weight = torch.ops.jblasop.woq_quantize(
             w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
@@ -221,14 +221,14 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             print("Already unmerged. Nothing to do.")
             return
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
+        torch.ops.jblasop.woq_dequantize(
             self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
         w_data = w_dequant
         while len(self.merged_adapters) > 0:
             active_adapter = self.merged_adapters.pop()
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
-        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+        weight = torch.ops.jblasop.woq_quantize(
             w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
