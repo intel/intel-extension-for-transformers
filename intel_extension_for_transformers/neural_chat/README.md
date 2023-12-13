@@ -137,17 +137,17 @@ chatbot = build_chatbot(pipeline_cfg)
 ## Validated Model List
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
 |Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
-|------------------------------------|:---:|:---:|:---:| --- |
-|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
-|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅
-|LLaMA series| ✅| ✅|✅| ✅
-|LLaMA2 series| ✅| ✅|✅| ✅
-|MPT series| ✅| ✅|✅| ✅
-|Mistral| ✅| ✅|✅| ✅
-|ChatGLM series| ✅| ✅|✅| ✅
-|Qwen series| ✅| ✅|✅| ✅
-|StarCoder series|   |   |   | ✅
-|CodeLLaMA series|   |   |   | ✅
+|------------------------------------|:---:|:---:|:---:|:---:|
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
+|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
+|LLaMA series| ✅| ✅|✅| ✅    |
+|LLaMA2 series| ✅| ✅|✅| ✅    |
+|MPT series| ✅| ✅|✅| ✅    |
+|Mistral| ✅| ✅|✅| ✅    |
+|ChatGLM series| ✅| ✅|✅| ✅    |
+|Qwen series| ✅| ✅|✅| ✅    |
+|StarCoder series|   |   |   | ✅ |
+|CodeLLaMA series|   |   |   | ✅ |
 
 
 ## Restful API
