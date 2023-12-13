@@ -125,7 +125,7 @@ Argument description of WeightOnlyQuantConfig:
 | weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
 | alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
 | group_size        | Int         | Group size: Int (default: 32)                                                           |
-| double_quant_scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
 | use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 

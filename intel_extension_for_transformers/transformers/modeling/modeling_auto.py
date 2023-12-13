@@ -174,7 +174,7 @@ class _BaseQBitsAutoModelClass:
                     weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
                     group_size=quantization_config.group_size,
-                    scale_dtype=quantization_config.double_quant_scale_dtype,
+                    scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
                     use_quant=quantization_config.use_quant,

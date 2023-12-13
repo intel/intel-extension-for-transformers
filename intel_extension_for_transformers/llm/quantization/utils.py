@@ -48,45 +48,45 @@ def replace_linear(model, modules_to_not_convert=None, current_key_name=None, qu
 
 def get_weight_type_from_config(config):
     if config.weight_dtype == "int8":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "s8_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "int4_fullrange":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "s4fullrange_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "int4_clip":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "s4clip_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "fp4_e2m1_bnb":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "fp4bnb_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "fp4_e2m1":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "fp4e2m1_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "nf4":
-        if config.double_quant_scale_dtype == "fp32":
+        if config.scale_dtype == "fp32":
             weight_type = "nf4_scalef32"
         else:
-            raise Exception("double_quant_scale_dtype only support fp32 now!")
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "fp8_e5m2":
-        if config.double_quant_scale_dtype == "fp8":
+        if config.scale_dtype == "fp8":
             weight_type = "fp8e5m2_scalef8"
         else:
-            raise Exception("double_quant_scale_dtype only support fp8 now!")
+            raise Exception("scale_dtype only support fp8 now!")
     elif config.weight_dtype == "fp8_e4m3":
-        if config.double_quant_scale_dtype == "fp8":
+        if config.scale_dtype == "fp8":
             weight_type = "fp8e4m3_scalef8"
         else:
-            raise Exception("double_quant_scale_dtype only support fp8 now!")
+            raise Exception("scale_dtype only support fp8 now!")
     return weight_type
 
 

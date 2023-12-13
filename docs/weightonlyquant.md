@@ -68,7 +68,7 @@ input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 ```bash
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 # weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1/fp8_e5m2/fp8_e4m3
-# double_quant_scale_dtype: fp32/fp8, fp8 only used for weight_dtype "fp8_e5m2", "fp8_e4m3"
+# scale_dtype: fp32/fp8, fp8 only used for weight_dtype "fp8_e5m2", "fp8_e4m3"
 woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
 woq_model = AutoModelForCausalLM.from_pretrained(
                                                     model_name_or_path,

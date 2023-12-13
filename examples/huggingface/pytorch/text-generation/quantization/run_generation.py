@@ -206,7 +206,7 @@ elif args.sq:
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
         compute_dtype=args.woq_compute_dtype,
-        double_quant_scale_dtype=args.woq_scale_dtype,
+        scale_dtype=args.woq_scale_dtype,
         weight_dtype=args.woq_weight_dtype,
         scheme=args.woq_scheme,
         group_size=args.woq_group_size,
