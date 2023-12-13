@@ -35,10 +35,10 @@ inline void set_nk(woq_runtime_ctx* ctx, torch::Tensor* tensor) {
 }
 
 static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{
-    {"s4clip_scalef32", JBLAS_DTYPE::S4_CLIP},  {"s4fullrange_scalef32", JBLAS_DTYPE::S4_FULLRANGE},
-    {"nf4_scalef32", JBLAS_DTYPE::F4_NF4},      {"fp4bnb_scalef32", JBLAS_DTYPE::F4_BNB},
-    {"fp4e2m1_scalef32", JBLAS_DTYPE::F4_E2M1}, {"fp8e4m3_scalef8", JBLAS_DTYPE::F8_E4M3},
-    {"fp8e5m2_scalef8", JBLAS_DTYPE::F8_E5M2}};
+    {"s4clip", JBLAS_DTYPE::S4_CLIP}, {"s4fullrange", JBLAS_DTYPE::S4_FULLRANGE}, {"nf4", JBLAS_DTYPE::F4_NF4},
+    {"fp4bnb", JBLAS_DTYPE::F4_BNB},  {"fp4e2m1", JBLAS_DTYPE::F4_E2M1},          {"fp8e4m3", JBLAS_DTYPE::F8_E4M3},
+    {"fp8e5m2", JBLAS_DTYPE::F8_E5M2}};
+static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"f32", JBLAS_DTYPE::F32}, {"f8", JBLAS_DTYPE::F8_E8M0}};
 static void* woq_workspace = nullptr;
 static int64_t workspace_size = 0;
 
@@ -63,6 +63,7 @@ void woq_dequantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   }
 }
 
+// TODO(zhe): weight+scale combination check.
 template <class Launcher>
 void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
@@ -80,7 +81,7 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
                                            jblas::utils::jblas_dtype<float>);
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF8>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
-                                           JBLAS_DTYPE::F8_E8M0);
+                                           scale2jblasdt_map[p->scale_type]);
   } else {
     assert(0);
   }
@@ -244,17 +245,17 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore>
 void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace jblas::prologue_b::gemm;
-  if (p->weight_type == "s8_scalef32") {
+  if (p->weight_type == "s8") {
     return parse_activation<TASK, GemmCore, WeightKBlockS8>(p, ctx);
   }
-  if (p->weight_type == "s4clip_scalef32" || p->weight_type == "s4fullrange_scalef32") {
+  if (p->weight_type == "s4clip" || p->weight_type == "s4fullrange") {
     return parse_activation<TASK, GemmCore, WeightKBlockS4>(p, ctx);
   }
-  if (p->weight_type == "nf4_scalef32" || p->weight_type == "fp4bnb_scalef32" || p->weight_type == "fp4e2m1_scalef32") {
+  if (p->weight_type == "nf4" || p->weight_type == "fp4bnb" || p->weight_type == "fp4e2m1") {
     if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
       return parse_activation<TASK, GemmCore, WeightKBlockF4>(p, ctx);
   }
-  if (p->weight_type == "fp8e4m3_scalef8" || p->weight_type == "fp8e5m2_scalef8") {
+  if (p->weight_type == "fp8e4m3" || p->weight_type == "fp8e5m2") {
     if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
       return parse_activation<TASK, GemmCore, WeightKBlockF8>(p, ctx);
   }

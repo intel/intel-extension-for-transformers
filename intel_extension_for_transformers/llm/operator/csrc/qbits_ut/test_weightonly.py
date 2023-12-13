@@ -17,10 +17,13 @@
 
 from ut_utils import *
 
-configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", "bf16"}, "s4fullrange_scalef32": {
-    "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"},
-    "fp8e5m2_scalef8": {"fp32", "bf16"}, "fp8e4m3_scalef8": {"fp32", "bf16"}
+cmpt_configs = {"s8": {"int8", "fp32"}, "s4clip": {"int8", "fp32", "bf16"}, "s4fullrange": {
+    "int8", "fp32", "bf16"}, "fp4bnb": {"fp32", "bf16"}, "fp4e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
+    "fp8e5m2": {"fp32", "bf16"}, "fp8e4m3": {"fp32", "bf16"}
 }
+
+scale_configs = {"s8": {"f32"}, "s4clip": {"f32"}, "s4fullrange": {"f32"}, "fp4bnb": {"f32"}, "fp4e2m1": {"f32"}, "nf4": {"f32"},
+                 "fp8e5m2": {"f32", "f8"}, "fp8e4m3": {"f32", "f8"}}
 
 
 @capture_args
@@ -29,12 +32,13 @@ configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", 
 @pytest.mark.parametrize("k", (512,))
 @pytest.mark.parametrize("blocksize", (128, -1))
 @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
-@pytest.mark.parametrize("weight_type", ["s8_scalef32", "s4clip_scalef32", "s4fullrange_scalef32", "nf4_scalef32", "fp4bnb_scalef32", "fp4e2m1_scalef32", "fp8e5m2_scalef8", "fp8e4m3_scalef8"])
+@pytest.mark.parametrize("weight_type", ["s8", "s4clip", "s4fullrange", "nf4", "fp4bnb", "fp4e2m1", "fp8e5m2", "fp8e4m3"])
+@pytest.mark.parametrize("scale_type", ["f32", "f8"])
 @pytest.mark.parametrize("transpose", (True, False))
 @pytest.mark.parametrize("add_bias", (True, False))
 @pytest.mark.parametrize("dt", ("fp32", "bf16"))
-def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dt, dump_tensor_info=True):
-    if compute_type not in configs[weight_type]:
+def test(m, n, k, blocksize, compute_type, weight_type, scale_type, transpose, add_bias, dt, dump_tensor_info=True):
+    if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
@@ -49,10 +53,10 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dt,
     if dump_tensor_info:
         print(raw_wei)
     compress_wei = torch.ops.jblasop.woq_quantize(
-        raw_wei, transpose, blocksize, compute_type, weight_type)
+        raw_wei, transpose, blocksize, compute_type, weight_type, scale_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
     torch.ops.jblasop.woq_dequantize(
-        compress_wei, revert_wei, transpose, compute_type, weight_type)
+        compress_wei, revert_wei, transpose, compute_type, weight_type, scale_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
@@ -63,7 +67,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dt,
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
     torch.ops.jblasop.woq_linear(
-        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
+        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, scale_type)
     if dt == "bf16":
         tar_dst = tar_dst.to(torch.float)
     if add_bias:

@@ -35,9 +35,11 @@ static dispatcher_utils::QBITS_DT get_qbits_dt(torch::Tensor* tensor) {
 
 template <woq::WOQ_TASK TASK>
 static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runtime_ctx* ctx,
-                                         const std::string& compute_type, const std::string& weight_type) {
+                                         const std::string& compute_type, const std::string& weight_type,
+                                         const std::string& scale_type) {
   p->compute_type = compute_type;
   p->weight_type = weight_type;
+  p->scale_type = scale_type;
   switch (TASK) {
     case woq::WOQ_QUANTIZE:
     case woq::WOQ_DEQUANTIZE:
@@ -54,28 +56,30 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
 }
 
 static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t block_size,
-                                  const std::string& compute_type, const std::string& weight_type) {
+                                  const std::string& compute_type, const std::string& weight_type,
+                                  const std::string& scale_type) {
   torch::Tensor output;
   woq::woq_config_param p;
   woq::woq_runtime_ctx ctx{
       nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose, static_cast<int>(block_size)};
-  init_woq_config_param<woq::WOQ_QUANTIZE>(&p, &ctx, compute_type, weight_type);
+  init_woq_config_param<woq::WOQ_QUANTIZE>(&p, &ctx, compute_type, weight_type, scale_type);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_QUANTIZE);
   return output;
 }
 
 static void woq_dequantize(const torch::Tensor& compressed_weight, torch::Tensor& dequantize_weight, bool transpose,
-                           const std::string& compute_type, const std::string& weight_type) {
+                           const std::string& compute_type, const std::string& weight_type,
+                           const std::string& scale_type) {
   woq::woq_config_param p;
   woq::woq_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&compressed_weight), nullptr, &dequantize_weight,
                            transpose};
-  init_woq_config_param<woq::WOQ_DEQUANTIZE>(&p, &ctx, compute_type, weight_type);
+  init_woq_config_param<woq::WOQ_DEQUANTIZE>(&p, &ctx, compute_type, weight_type, scale_type);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_DEQUANTIZE);
 }
 
 static void woq_linear(const torch::Tensor& activation, const torch::Tensor& weight, const torch::Tensor& bias,
                        torch::Tensor& output, int64_t ldo, bool with_bias, const std::string& compute_type,
-                       const std::string& weight_type) {
+                       const std::string& weight_type, const std::string& scale_type) {
   woq::woq_config_param p;
   torch::Tensor* rt_bias = with_bias ? const_cast<torch::Tensor*>(&bias) : &output;
   woq::woq_runtime_ctx ctx{
@@ -91,7 +95,7 @@ static void woq_linear(const torch::Tensor& activation, const torch::Tensor& wei
   ctx.n = static_cast<int>(ldo);
   ctx.alpha = 1.f;
   ctx.beta = with_bias ? 1.f : 0.f;
-  init_woq_config_param<woq::WOQ_LINEAR>(&p, &ctx, compute_type, weight_type);
+  init_woq_config_param<woq::WOQ_LINEAR>(&p, &ctx, compute_type, weight_type, scale_type);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_LINEAR);
 }
 
