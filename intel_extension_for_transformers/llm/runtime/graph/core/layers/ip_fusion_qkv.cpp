@@ -93,9 +93,10 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                                             {BV->template SPtr<int8_t>(), BV->SDtype(), cstep,
                                              BV->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda}};
     utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
-    typename Launcher::Param args[3]{{gp, {A, lda, &reduceA}, {BQ}, blkargs[0], {C, ldc}},
-                                     {gp, {A, lda, &reduceA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
-                                     {gp, {A, lda, &reduceA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
+    typename Launcher::Param args[3]{
+        {gp, {A, lda, &reduceA, BQ->ShfIndice()}, {BQ}, blkargs[0], {C, ldc}},
+        {gp, {A, lda, &reduceA, BK->ShfIndice()}, {BK}, blkargs[1], {C + M * ldc, ldc}},
+        {gp, {A, lda, &reduceA, BV->ShfIndice()}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
     if (BQ->IsAsym()) {
       GemmRunWithA_QKV<Parallel>(&kernel, args, th);
     } else {
@@ -104,7 +105,7 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T,
-                                                        jblas::prologue_a::gemm::ActivationKBlockBaseF32, Wei_T,
+                                                        jblas::prologue_a::gemm::ShuffleActivationKBlockBaseF32, Wei_T,
                                                         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
     static Launcher kernel;
     auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
@@ -112,9 +113,9 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
 
     utils::GemmProblem gp(1, M, N, K);
-    typename Launcher::Param args[3]{{gp, {A, K}, {BQ}, {C, ldc}},
-                                     {gp, {A, K}, {BK}, {C + M * ldc, ldc}},
-                                     {gp, {A, K}, {BV}, {C + M * ldc * 2, ldc}}};
+    typename Launcher::Param args[3]{{gp, {A, K, nullptr, BQ->ShfIndice()}, {BQ}, {C, ldc}},
+                                     {gp, {A, K, nullptr, BK->ShfIndice()}, {BK}, {C + M * ldc, ldc}},
+                                     {gp, {A, K, nullptr, BV->ShfIndice()}, {BV}, {C + M * ldc * 2, ldc}}};
     GemmRun_QKV<Parallel>(&kernel, args, th);
   }
 }
@@ -133,9 +134,9 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
   quanA.assign(WorkSpace);
   utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
-  typename Launcher::Param args[3]{{gp, {A, K, &quanA}, {BQ}, {C, N}},
-                                   {gp, {A, K, &quanA}, {BK}, {C + M * ldc, N}},
-                                   {gp, {A, K, &quanA}, {BV}, {C + M * ldc * 2, N}}};
+  typename Launcher::Param args[3]{{gp, {A, K, &quanA, BQ->ShfIndice()}, {BQ}, {C, N}},
+                                   {gp, {A, K, &quanA, BK->ShfIndice()}, {BK}, {C + M * ldc, N}},
+                                   {gp, {A, K, &quanA, BV->ShfIndice()}, {BV}, {C + M * ldc * 2, N}}};
   GemmRunWithA_QKV<Parallel>(&kernel, args, th);
 }
 }  // namespace ip_qkv

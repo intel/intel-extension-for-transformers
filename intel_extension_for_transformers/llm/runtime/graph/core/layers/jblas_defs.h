@@ -19,15 +19,14 @@
 
 namespace jblas {
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
-using tLauncher_Fp_F32F32 =
-    jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ActivationKBlockBaseF32,
-                                         Wei_T, jblas::epilogue::gemm::CompFp32BlockEpilogue,
-                                         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using tLauncher_Fp_F32F32 = jblas::wrapper::gemm::LauncherKBlock<
+    GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockBaseF32, Wei_T,
+    jblas::epilogue::gemm::CompFp32BlockEpilogue, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
 
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 using tLauncher_Int8_F32F32 =
     jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                            jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
+                                            jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T,
                                             jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
 
 using tAVX2 = jblas::gemm::SCoreRowNAvx2<24, 4>;
@@ -57,7 +56,7 @@ template <class GC_T, JBLAS_ISA ISA_T>
 using tWeiF8 = jblas::prologue_b::gemm::WeightKBlockF8<GC_T, ISA_T>;
 
 template <class GC_T, JBLAS_ISA ISA_T>
-using tActKBaseF32 = jblas::prologue_a::gemm::ActivationKBlockBaseF32<GC_T, ISA_T>;
+using tActKBaseF32 = jblas::prologue_a::gemm::ShuffleActivationKBlockBaseF32<GC_T, ISA_T>;
 
 constexpr uint64_t Fp32Cores[] = {tAVX2::ID, tAVX512F::ID};
 constexpr uint64_t Bf16Cores[] = {tAMX_BF16::ID};

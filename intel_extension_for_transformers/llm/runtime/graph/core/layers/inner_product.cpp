@@ -57,7 +57,8 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
         B->template SPtr<int8_t>(),     B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
         reduceA.template RPtr<float>(), reduceA.lda};
 
-    typename Launcher::Param args{gp, {A, lda, &reduceA}, {B}, blkargs, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+    typename Launcher::Param args{
+        gp, {A, lda, &reduceA, B->ShfIndice()}, {B}, blkargs, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
     if (B->IsAsym()) {
       jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
     } else {
@@ -70,7 +71,7 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     utils::GemmProblem gp(1, M, N, K);
     static Launcher kernel;
-    typename Launcher::Param args{gp, {A, lda}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+    typename Launcher::Param args{gp, {A, lda, nullptr, B->ShfIndice()}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
     jblas::parallel::GemmRun<Parallel>(kernel, args, th);
   }
 }
@@ -81,15 +82,15 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                        int8_t* WorkSpace, jblas::parallel::IThreading* th) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                                           jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T,
-                                                           custom::epilogue::AddFp32>;
+                                                           jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32,
+                                                           Wei_T, custom::epilogue::AddFp32>;
 
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
   auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
-  typename Launcher::Param args{gp, {A, lda, &quanA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+  typename Launcher::Param args{gp, {A, lda, &quanA, B->ShfIndice()}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
   jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
 }
 }  // namespace ip_add
