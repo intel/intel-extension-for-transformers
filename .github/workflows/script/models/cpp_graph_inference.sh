@@ -25,7 +25,7 @@ function main() {
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
         input_model="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
-        precision_list=("q4_j_b128" "q4_j_b32" "q4_0")
+        precision_list=("q4_j_b128" "q4_j_b32" "q4_0" "q8_e4m3" "q4_e2m1")
     elif [[ "${model}" == "gpt-neox-20b" ]]; then
         convert_script="${working_dir}/scripts/convert_gptneox.py"
         quant_script="./build/bin/quant_gptneox"
@@ -120,6 +120,10 @@ function main() {
                         # deprecated since bfloat16 scale not mature    
                         # elif [[ ${precision} == "q4_j_vnni_bf16_b32" ]]; then
                         #     ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype bf16 --compute_dtype int8 --alg sym
+                        elif [[ ${precision} == "q8_e4m3" ]]; then
+                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp8 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
+                        elif [[ ${precision} == "q4_e2m1" ]]; then
+                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp4 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "q4_j_vnni_b32" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_dtype int8 --alg sym
                         elif [[ ${precision} == "q4_j_b32" ]]; then
