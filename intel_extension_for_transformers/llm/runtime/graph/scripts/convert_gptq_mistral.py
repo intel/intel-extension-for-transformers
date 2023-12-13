@@ -29,37 +29,12 @@ def permute_func(weights, n_head: int, n_head_kv: int):
                 .swapaxes(1, 2)
                 .reshape(weights.shape))
 
-# def unpack_weight(qweight, scales, qzeros, permute=False, group_size=32, bits=4):
-#     wf = torch.tensor([[ 0,  4,  8, 12, 16, 20, 24, 28]], dtype=torch.int32)
-#     zeros = torch.bitwise_right_shift(torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits), wf.unsqueeze(0)).to(torch.int16 if bits == 8 else torch.int8)
-#     torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
-#     # import pdb; pdb.set_trace()
-#     zeros = zeros + 1
-#     zeros[zeros == 16] = 0
-#     zeros = zeros.reshape(-1, 1, zeros.shape[1] * zeros.shape[2])
-
-#     scales = scales
-#     scales = scales.reshape(-1, 1, scales.shape[-1])
-        
-#     weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1), wf.unsqueeze(-1)).to(torch.int16 if bits == 8 else torch.int8)
-#     torch.bitwise_and(weight,(2 ** bits) - 1, out=weight)
-#     int_weight = weight.reshape(-1, group_size, weight.shape[2])
-
-#     return int_weight, scales, zeros
-    # weight = (scales * (weight - zeros))
-    # weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
-    # return weight.t(), pack_tensor
-
 def convert_q4_tensor(src_name, dst_name, model, fout, n_head, n_head2=0, permute=False):
     qzeros = model[f"{src_name}.qzeros"]
     zeros = qzeros_to_zeros(qzeros)
     scales = model[f"{src_name}.scales"]
-    # g_idx = model[f"{src_name}.g_idx"]
     qweight = model[f"{src_name}.qweight"]
-    # import pdb; pdb.set_trace()
     int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, permute)
-    # shape = int_weight.view(-1, int_weight.shape[-1]).shape
-    # write_header(fout, shape, dst_name, 2)
 
     int_weight = int_weight.view(-1,int_weight.shape[-1]).t()
     gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1]).t()

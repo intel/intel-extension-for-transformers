@@ -91,8 +91,6 @@ class Model {
     generate_count = 0;
   }
 
-  static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                            const quant_params_internal params, int nthread, int n, int k, int* g_idx);
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros, py::array_t<int32_t> g_idx, 
                                py::array_t<int8_t> dst, const std::string& weight_dtype, const std::string& alg,
                                int group_size, const std::string& scale_dtype, const std::string& compute_dtype,
@@ -109,7 +107,7 @@ class Model {
     q_params.compute_dtype = parse_compute_type(compute_dtype, /*ggml_arg=*/0);
     q_params.alg = parse_alg(alg);
     q_params.group_size = group_size;
-    return Model::jblas_qpack(w_ptr, scales_ptr, zeros_ptr, dst_ptr, q_params, threads, src_w.shape(1), src_w.shape(0), g_idx_ptr);
+    return jblas_qpack(w_ptr, scales_ptr, zeros_ptr, dst_ptr, q_params, threads, src_w.shape(1), src_w.shape(0), g_idx_ptr);
   }
 
   static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst, const std::string& weight_dtype,
@@ -590,56 +588,6 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   if (model_quantize(q_params, quant_layer)) {
     fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, q_params.model_file.c_str());
     return 1;
-  }
-  return 0;
-}
-
-size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                          const quant_params_internal params, int nthread, int n, int k, int* g_idx) {
-  
-  auto ctype = quant2ne_comp_type(params.compute_dtype);
-  auto dstbptr = (int8_t*)dstpr;
-  jblas::parallel::OMPThreading threading(nthread);
-  JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
-  if (params.bits == quant_bits::q8) {
-    quant_type = JBLAS_DTYPE::S8;
-  }
-  if (params.bits == quant_bits::fp4) {
-    quant_type = JBLAS_DTYPE::F4_E2M1;
-  }
-  if (params.bits == quant_bits::nf4) {
-    quant_type = JBLAS_DTYPE::F4_NF4;
-  }
-  auto dtype_type = static_cast<JBLAS_DTYPE>(
-      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
-  if (dtype_type == JBLAS_DTYPE::TypeFloat) {
-    if (params.alg == quant_alg::asym) {
-      printf("Invalid alg for float quant types, will be igonred\n");
-    }
-    if (params.compute_dtype == quant_comp::int8) {
-      printf("Compute Int8 is not supported by float quant types, will be igonred\n");
-    }
-  }
-  JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
-  if (params.scale_dtype == quant_sdtype::fp32) {
-    scale_type = JBLAS_DTYPE::F32;
-  }
-  if (params.scale_dtype == quant_sdtype::fp16) {
-    printf("Current not support float16 scale, reset to bf16\n");
-  }
-  auto gsize = params.group_size == -1 ? k : params.group_size;
-  for (int i = 0; i < 20; i++) {
-    printf("%d ", g_idx[i]);
-  }
-  printf("\n");
-  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype, g_idx);
-  if (size) {
-    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type, params.alg == quant_alg::asym,
-                                  ctype, g_idx, &threading)) {
-      printf("Failed to quant this weight\n");
-      return 0;
-    }
-    return size;
   }
   return 0;
 }
