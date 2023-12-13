@@ -92,8 +92,13 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 	</tbody>
 </table>
-> "-" means not applicable or not started yet. 
 
+
+
+
+
+
+> "-" means not applicable or not started yet.
 
 ## Validated Software
 <table>
@@ -150,11 +155,10 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 
 
-> Please refer to software requirements in [fine-tuning cpu](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [fine-tuning gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [cpu inference with llm runtime](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/requirements.txt) for more details.
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt)
 
-## 🌱Getting Started
-You have the choice to initiate your journey with the Chatbot using either Intel Gaudi2 or an Intel CPU.
-Below is the sample code to enable the chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
+## 🌱Getting Starteed
+Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 
 ### Chatbot 
 ```python
