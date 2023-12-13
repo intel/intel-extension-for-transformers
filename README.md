@@ -98,7 +98,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 
 
-> "-" means not applicable or not started yet.
+> In the table above, "-" means not applicable or not started yet.
 
 ## Validated Software
 <table>
@@ -122,18 +122,18 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>2.1.0+cpu</td>
 		</tr>
 		<tr>
+			<td>Intel® Extension for PyTorch</td>
+			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu</td>
+		</tr>
+		<tr>
 			<td>Transformers</td>
 			<td>4.35.2</td>
 			<td>4.35.2</td>
 			<td>4.35.2</td>
 			<td>4.35.2</td>
-		</tr>
-		<tr>
-			<td>GCC/C++</td>
-			<td>-</td>
-			<td>-</td>
-			<td>12.1.0</td>
-			<td>12.1.0</td>
 		</tr>
 		<tr>
 			<td>Synapse AI</td>
