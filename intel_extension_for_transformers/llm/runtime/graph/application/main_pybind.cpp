@@ -100,25 +100,8 @@ class Model {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
     int8_t* zeros_ptr = src_zeros.mutable_data();
-    // printf("######qpack######\n");
     int32_t* g_idx_ptr = g_idx.mutable_data();
-    // printf("w_ptr: %p\n", w_ptr);
-    // printf("scales_ptr: %p\n", scales_ptr);
-    // printf("zeros_ptr: %p\n", zeros_ptr);
-    
-    // for (int i = 0; i < 20; i++) {
-    //   printf("%f ", scales_ptr[i]);
-    // }
-    // printf("\n");
-    // py::buffer_info buf1 = g_idx.request();
-    // int32_t *g_idx_ptr = static_cast<int32_t *>(buf1.ptr);
-    // printf("g_idx_ptr: %p\n", g_idx_ptr);
-    // for (int i = 0; i < 4096; i++) {
-    //   printf("%d ", g_idx_ptr[i]);
-    // }
-    
     int8_t* dst_ptr = dst.mutable_data();
-
 
     quant_params_internal q_params;
     q_params.bits = parse_bits(weight_dtype);
@@ -126,7 +109,6 @@ class Model {
     q_params.compute_dtype = parse_compute_type(compute_dtype, /*ggml_arg=*/0);
     q_params.alg = parse_alg(alg);
     q_params.group_size = group_size;
-    // return -1;
     return Model::jblas_qpack(w_ptr, scales_ptr, zeros_ptr, dst_ptr, q_params, threads, src_w.shape(1), src_w.shape(0), g_idx_ptr);
   }
 
