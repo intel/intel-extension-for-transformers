@@ -592,10 +592,7 @@ struct model_file_loader {
   }
 
   struct gguf_context* read_gguf(model_load_tensors_map& tensors_map) {
-    const char* name =
-        "/root/zhenzhong/gguf/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/"
-        "ne-chatglm2-fp32.bin.gguf";
-    FILE* file_gguf = fopen(name, "rb");
+    FILE* file_gguf = file.fp;
     if (!file_gguf) {
       return nullptr;
     }
@@ -896,6 +893,22 @@ struct model_file_loader {
   //   }
 
   void read_magic(model_load_tensors_map& tensors_map) {
+    std::string gguf = "GGUF";
+    char gguf_magic[4];
+    const size_t n = fread(&gguf_magic, 1, sizeof(gguf_magic), file.fp);   
+    if (strcmp(gguf.c_str(), gguf_magic) == 0) {
+      std::cout << "loading the bin file with GGUF format." << std::endl;
+      fseek(file.fp, 0, SEEK_SET);
+    } else {
+      uint32_t ne_magic = file.read_u32();
+      if (ne_magic == MODEL_FILE_MAGIC_NE) {
+        file_version = MODEL_FILE_VERSION_NE;
+        std::cout << "loading the bin file with NE format.";
+      }
+
+      throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", ne_magic, file_version);
+    }
+
     int n_kv = 0;
     int n_tensors = 0;
     llama_fver fver;
