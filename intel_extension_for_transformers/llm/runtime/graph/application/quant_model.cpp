@@ -34,10 +34,8 @@ std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_
 
 int main(int argc, char** argv) {
 
-#if defined (MODEL_TYPE)&&(MODEL_TYPE==0)
-  model_init_backend();
-#endif
-  quant_params q_params;
+model_init_backend();
+quant_params q_params;
 #ifdef MODEL_NAME
   q_params.model_name = MODEL_NAME;
 #endif

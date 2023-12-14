@@ -91,8 +91,8 @@ bool whisper_model_quantize(const std::string & fname_inp, const std::string & f
         finp.read((char *) &hparams.n_mels,        sizeof(hparams.n_mels));
         finp.read((char *) &hparams.ftype,         sizeof(hparams.ftype));
 
-        const int32_t qntvr_src =    hparams.ftype / 1000; //GGML_QNT_VERSION_FACTOR
-        const int32_t ftype_dst = 2 * 1000 + ftype; //GGML_QNT_VERSION * GGML_QNT_VERSION_FACTOR
+        const int32_t qntvr_src = hparams.ftype / NE_QNT_VERSION_FACTOR;
+        const int32_t ftype_dst = NE_QNT_VERSION * NE_QNT_VERSION_FACTOR + ftype;
 
         fprintf(stderr, "%s: n_vocab       = %d\n", __func__, hparams.n_vocab);
         fprintf(stderr, "%s: n_audio_ctx   = %d\n", __func__, hparams.n_audio_ctx);
@@ -107,7 +107,7 @@ bool whisper_model_quantize(const std::string & fname_inp, const std::string & f
         fprintf(stderr, "%s: ftype (src)   = %d\n", __func__, hparams.ftype);
         fprintf(stderr, "%s: qntvr (src)   = %d\n", __func__, qntvr_src);
         fprintf(stderr, "%s: ftype (dst)   = %d\n", __func__, ftype_dst);
-        fprintf(stderr, "%s: qntvr (dst)   = %d\n", __func__, 2);
+        fprintf(stderr, "%s: qntvr (dst)   = %d\n", __func__, NE_QNT_VERSION);
 
         fout.write((const char *) &hparams.n_vocab,       sizeof(hparams.n_vocab));
         fout.write((const char *) &hparams.n_audio_ctx,   sizeof(hparams.n_audio_ctx));
@@ -201,8 +201,12 @@ int main(int argc, char ** argv) {
     const std::string fname_out = q_params.out_file;
     // printf("input_model_file:%s \n",fname_inp.c_str());
 
-    const ne_ftype ftype = NE_FTYPE_MOSTLY_Q_JBLAS;
-    // printf("*****model_ftype:%s \n*****",ftype); 
+    const ne_ftype ftype = quant_params_to_ftype(q_params);
+    if (ftype != NE_FTYPE_MOSTLY_Q4_0) {
+      fprintf(stderr, "%s: ITREX now only support quantize model to q4_0 \n", __func__);
+      return 1;
+    }
+
 
     const int64_t t_main_start_us = common_time_us();
 
