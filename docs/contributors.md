@@ -98,8 +98,25 @@
     <td><a href="https://github.com/Sandesh-Pyakurel">Sandesh Pyakurel</a></td>
     <td> <img src="https://avatars.githubusercontent.com/u/97780892"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/sudhanshu-77">Sudhanshu Tripathi</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/69961360"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/bearn01d">Benedikt Imbusch</a></td>
   </tr>
 
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/31226269"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/LucasHBG">Lucas Guimarães</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/14088817"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/arthw">Neo Zhang</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/65897012"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/mzyczyns">Mikołaj Życzyński</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/32893314"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/danielkorat">Daniel Korat</a></td>
+  </tr>
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/17159645"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/Liangliang-Ma">Liangliang-Ma</a></td>
+  </tr>
 
 
 </table>

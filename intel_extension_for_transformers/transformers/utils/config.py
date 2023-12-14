@@ -33,11 +33,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         llm_int8_skip_modules=None,
         compute_dtype=None,
         weight_dtype=None,
-        scale_dtype="fp32",  # Now only fp32
+        scale_dtype="fp32",
         mse_range=False,
         use_double_quant=False,
         double_quant_dtype="int8",  # reserve for double quant
-        double_quant_scale_dtype="fp32",  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
@@ -54,11 +53,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             llm_int8_skip_modules if llm_int8_skip_modules else []
         )
         self.weight_dtype = weight_dtype
-        self.scale_dtype = scale_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
         self.double_quant_dtype = double_quant_dtype
-        self.double_quant_scale_dtype = double_quant_scale_dtype
+        self.scale_dtype = scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
         self.group_size = group_size
@@ -100,14 +98,19 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             "nf4",
             "fp4_e2m1_bnb",
             "fp4_e2m1",
+            "fp8_e5m2",
+            "fp8_e4m3",
+
         ]:
             raise ValueError(
                 f"weight_dtype must be a string in "
-                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'"
+                f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
-        if self.scale_dtype not in ["fp32"]:
-            raise ValueError("scale_dtype must be a string in 'fp32'")
+        if self.scale_dtype not in ["fp32", "fp8"]:
+            raise ValueError(
+                f"scale_dtype must be a string in 'fp32', 'fp8' "
+                f"and fp8 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'")
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")
@@ -118,8 +121,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if self.use_double_quant and not isinstance(self.double_quant_dtype, str):
             raise ValueError("double_quant_dtype must be a string")
 
-        if self.use_double_quant and not isinstance(self.double_quant_scale_dtype, str):
-            raise ValueError("double_quant_scale_dtype must be a string")
+        if self.use_double_quant and not isinstance(self.scale_dtype, str):
+            raise ValueError("scale_dtype must be a string")
 
         if not isinstance(self.group_size, int):
             raise ValueError("group_size must be a int")

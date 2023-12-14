@@ -70,28 +70,16 @@ def cut_video(args, outdir):
                     end_hour = t_hour
                 if end_min > t_min and end_hour >= t_hour:
                     end_min = t_min
-                if end_sec > t_second and end_min >= t_min and end_hour >= t_hour:
+
+                if i == t_min:
                     end_sec = t_second  
 
-                start_hour = str(start_hour)
-                start_min = str(start_min)
-                start_sec = str(start_sec)
-                end_hour = str(end_hour)
-                end_min = str(end_min)
-                end_sec = str(end_sec)
-                # crop video
-                if len(str(start_hour)) == 1:
-                    start_hour = '0'+str(start_hour)
-                if len(str(start_min)) == 1:
-                    start_min = '0'+str(start_min)
-                if len(str(start_sec)) == 1:
-                    start_sec = '0'+str(start_sec)
-                if len(str(end_hour)) == 1:
-                    end_hour = '0'+str(end_hour)
-                if len(str(end_min)) == 1:
-                    end_min = '0'+str(end_min)
-                if len(str(end_sec)) == 1:
-                    end_sec = '0'+str(end_sec)
+                start_hour = '0' + str(start_hour) if len(str(start_hour)) == 1 else str(start_hour)
+                start_min = '0' + str(start_min) if len(str(start_min)) == 1 else str(start_min)
+                start_sec = '0' + str(start_sec) if len(str(start_sec)) == 1 else str(start_sec)
+                end_hour = '0' + str(end_hour) if len(str(end_hour)) == 1 else str(end_hour)
+                end_min = '0' + str(end_min) if len(str(end_min)) == 1 else str(end_min)
+                end_sec = '0' + str(end_sec) if len(str(end_sec)) == 1 else str(end_sec)
 
                 name, _ = os.path.splitext(file_name)
                 name = str(name) + "_" + str(mark)

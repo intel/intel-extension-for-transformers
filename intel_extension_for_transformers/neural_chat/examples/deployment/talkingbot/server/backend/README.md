@@ -46,7 +46,7 @@ You can customize the configuration file 'textbot.yaml' to match your environmen
 | --------------------- | --------------------------------------- |
 | host                  | 127.0.0.1                                |
 | port                  | 8888                                     |
-| model_name_or_path    | "meta-llama/Llama-2-7b-chat-hf"          |
+| model_name_or_path    | "Intel/neural-chat-7b-v3-1"          |
 | device                | "cpu"                                    |
 | asr.enable            | true                                     |
 | asr.args.device       | "cpu"                                    |
