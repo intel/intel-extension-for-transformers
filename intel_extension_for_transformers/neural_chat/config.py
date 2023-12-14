@@ -81,7 +81,7 @@ class ModelArguments:
         },
     )
     use_fast_tokenizer: bool = field(
-        default=False,
+        default=True,
         metadata={
             "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
         },
@@ -309,7 +309,7 @@ class FinetuningArguments:
         },
     )
     lora_all_linear: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
     task: Optional[str] = field(
@@ -319,7 +319,7 @@ class FinetuningArguments:
             },
     )
     do_lm_eval: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
     )
     lm_eval_tasks: Optional[List[str]] = field(
