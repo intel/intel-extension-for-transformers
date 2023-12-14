@@ -15,23 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
-import inspect
-import time
-import pytest
-from functools import wraps
-torch.ops.load_library("../build/libqbits.so")
+from ..errorcode import ErrorCodes
+from intel_extension_for_transformers.utils import logger
 
-def capture_args(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        sig = inspect.signature(f)
-        bound_args = sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arg_strs = []
-        for name, value in bound_args.arguments.items():
-            arg_strs.append(f'{name}={value}')
-        result = ', '.join(arg_strs)
-        print(result)
-        return f(*args, **kwargs)
-    return wrapper
+_latest_error = None
+
+def set_latest_error(error_code):
+    global _latest_error
+    _latest_error = error_code
+    logger.error(f"neuralchat error: {ErrorCodes.error_strings[error_code]}")
+
+def get_latest_error():
+    return _latest_error
+
+def get_latest_error_string():
+    return ErrorCodes.error_strings[_latest_error] if _latest_error is not None else None
+
