@@ -34,17 +34,34 @@ class UnitTest(unittest.TestCase):
             shutil.rmtree("./MagicMock")
 
     def test_find_GPS_image(self):
-        res = find_GPS_image('./photoai_images/img_bird.JPG')
+        img_file_path = "/intel-extension-for-transformers/" + \
+            "intel_extension_for_transformers/neural_chat/tests" + \
+                "/ci/server/test_images/img_bird.JPG"
+        if os.path.exists(img_file_path):
+            res = find_GPS_image(img_file_path)
+        else:
+            res = find_GPS_image("./ci/server/test_images/img_bird.JPG")
         self.assertIn('2019:06:18', res['date_information'])
         self.assertEqual(122.63912222222223, res['GPS_information']['GPSLongitude'])
 
     def test_generate_caption(self):
-        res = generate_caption(img_path='./photoai_images/img_bird.JPG')
+        img_file_path = "/intel-extension-for-transformers/" + \
+            "intel_extension_for_transformers/neural_chat/tests" + \
+                "/ci/server/test_images/img_bird.JPG"
+        if os.path.exists(img_file_path):
+            res = generate_caption(img_file_path)
+        else:
+            res = generate_caption("./ci/server/test_images/img_bird.JPG")
         self.assertIn('seagulls', res)
 
     def test_image_byte64(self):
-        image_path = './photoai_images/img_bird.JPG'
-        img_b64 = image_to_byte64(image_path)
+        img_file_path = "/intel-extension-for-transformers/" + \
+            "intel_extension_for_transformers/neural_chat/tests" + \
+                "/ci/server/test_images/img_bird.JPG"
+        if os.path.exists(img_file_path):
+            img_b64 = image_to_byte64(img_file_path)
+        else:
+            img_b64 = image_to_byte64("./ci/server/test_images/img_bird.JPG")
         self.assertIn('79qt3Sr5Y9utCKR//Z', str(img_b64))
 
         img = byte64_to_image(img_b64)
