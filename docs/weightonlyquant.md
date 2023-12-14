@@ -67,7 +67,8 @@ input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 4-bit/8-bit inference with `WeightOnlyQuantConfig` on CPU device.
 ```bash
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-# weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1
+# weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1/fp8_e5m2/fp8_e4m3
+# scale_dtype: fp32/fp8, fp8 only used for weight_dtype "fp8_e5m2", "fp8_e4m3"
 woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
 woq_model = AutoModelForCausalLM.from_pretrained(
                                                     model_name_or_path,
@@ -78,7 +79,7 @@ gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
 print(gen_text)
 ```
-4-bit/8-bit inference with Huggingface Transformers `BitsAndBytesConfig` is also supported on CUDA GPU device.
+4-bit/8-bit inference with Huggingface Transformers `BitsAndBytesConfig` on CUDA GPU device.
 ```bash
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, BitsAndBytesConfig
 woq_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4")

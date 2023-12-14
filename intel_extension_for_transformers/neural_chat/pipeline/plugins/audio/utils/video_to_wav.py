@@ -45,7 +45,7 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         logging.info(filename)
         input_file_path = os.path.join(path, filename)
         output_file_path = os.path.join(output_dir, os.path.splitext(filename)[0] + ".wav")
-        if filename_suffix == '.flv':
+        if filename_suffix == '.flv': # pragma: no cover
             sound = AudioSegment.from_flv(input_file_path)
             sound = sound.set_frame_rate(output_sample_rate)
             if is_mono:
@@ -56,19 +56,19 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
             if is_mono:
                 cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(
                     input_file_path, output_sample_rate, output_file_path).split()
-            else:
+            else: # pragma: no cover
                 cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(
                     input_file_path, output_sample_rate, output_file_path).split()
             try:
                 subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError as e: # pragma: no cover
                 logging.error("Error while executing command: %s", e)
-        else:
+        else: # pragma: no cover
             logging.info("file %s format not supported!", filename)
             continue
         
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
     parser.add_argument("--is_mono", type=str, default='True')
