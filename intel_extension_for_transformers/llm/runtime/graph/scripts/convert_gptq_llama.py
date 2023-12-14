@@ -115,7 +115,7 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
         int_weight = int_weight - 8
     int_weight = int_weight * 16
     gptq_scales = gptq_scales / 16
-    byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.numpy(), gptq_zeros.numpy(), dst,
+    byte_size = cpp_model.Model.np_jblas_qpack(int_weight.numpy(), gptq_scales.numpy(), gptq_zeros.numpy(), g_idx, dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
@@ -135,19 +135,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
     out_path = args.outfile.as_posix()
     model_path = args.model.as_posix()
 
-    model, quantize_config = load_gptq_model(model_path)
+    model, config, quantize_config = load_gptq_model(model_path)
     f = open(out_path, "wb")
 
     # 1. write hparams
-    n_vocab, n_embd = model['model.embed_tokens.weight'].shape
-    layer_re = r'model\.layers\.([0-9]+)'
-    n_layer = 1 + max(int(re.match(layer_re, name).group(1)) for name in model
-                        if re.match(layer_re, name))
-    ffn_hidden_size = model['model.layers.0.mlp.up_proj.qweight'].shape[1]
+    n_vocab = config["vocab_size"]
+    n_embd = config["hidden_size"]
+    n_layer = config["num_hidden_layers"]
+    n_head = config["num_attention_heads"]
+    ffn_hidden_size = config["intermediate_size"]
 
     # hardcoded:
     n_mult = 256
-    n_head = {32: 32, 40: 40, 60: 52, 80: 64}[n_layer]
 
     # 1. write head and params
     f.write(b"ggjt"[::-1])  # magic
@@ -177,11 +176,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
     f.write(struct.pack("i", ffn_hidden_size))
     f.write(struct.pack("i", 0))
 
-    f.write(
-        struct.pack("i", 1)
-    )  
+    f.write(struct.pack("f", config["rms_norm_eps"]))
+    f.write(struct.pack("f", config["rope_theta"] if "rope_theta" in config else 10000))
+
     # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
     # but bos_token_id = 1 in llama.cpp
+    f.write(struct.pack("i", 1))  
     f.write(struct.pack("i", 2))
 
     f.write(struct.pack("i", 0))

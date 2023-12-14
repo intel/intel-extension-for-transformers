@@ -219,10 +219,13 @@ def load_gptq_model(model_path):
         model = load_file(input_path)
     else:
         print("unknown input model path, only support .safetensors or .pt file.")
-    
+
+    with open(model_path + '/config.json', "r", encoding="utf-8") as f:
+        config = json.load(f)
+
     with open(model_path + '/quantize_config.json', "r", encoding="utf-8") as f:
         quantize_config = json.load(f)
-    return model, quantize_config
+    return model, config, quantize_config
 
 
 def convert_fp32_tensor(src_name, dst_name, model, fout):
