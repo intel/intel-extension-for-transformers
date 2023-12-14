@@ -47,6 +47,14 @@ enum ne_type {
   NE_TYPE_COUNT,
 };
 
+enum ne_comp_type {
+  NE_COMP_UNDEF = 0,  // infer from activation dtype
+  NE_COMP_F32 = 1,    // input f32, accumulator f32
+  NE_COMP_BF16 = 2,   // input bf16, accumulator f32
+  NE_COMP_F16 = 3,    // input f16, accumulator f16
+  NE_COMP_INT8 = 4,   // input int8, accumulator int32 (fp32 for intra block)
+};
+
 // model file types
 enum ne_ftype {
   NE_FTYPE_UNKNOWN = -1,
