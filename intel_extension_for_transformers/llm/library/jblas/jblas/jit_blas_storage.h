@@ -552,6 +552,41 @@ class StorageReduce : public ISerializable {
   }
 };
 
+class StorageReorderActivation : public IActivationKBlockBase {
+ public:
+  ObjectAlignedBuffer<Alignment> mABuf;
+  StorageReorderActivation(uint64_t _id) : IActivationKBlockBase(_id) { mPrologueID = JBLAS_PROLOGUEB_IDS::WeightPack; }
+
+  size_t resize(int MPad, int KPad, int M, int K, int KBlock, JBLAS_DTYPE dtype) {
+    IActivationKBlockBase::resize(MPad, KPad, KBlock, M, K, dtype);
+    auto bsize = static_cast<size_t>(MPad) * KPad * jblas::utils::jblas_dtype_size(dtype);
+    mABuf.resize(bsize);
+    mSize = IActivationKBlockBase::getSerializedSize() + mABuf.getSerializedSize();
+    mSize = utils::padto(mSize, Alignment);
+    return mSize;
+  }
+
+  template <typename T>
+  inline constexpr T* APtr() const {
+    return mABuf.get<T>();
+  }
+
+  virtual void assign(int8_t* buf) override {
+    IActivationKBlockBase::deserializeBuffer(buf, true);
+    mABuf.deserializeBuffer(buf, true);
+  }
+
+  virtual void serialize(int8_t* wptr) {
+    IActivationKBlockBase::serializeToBuffer(wptr);
+    mABuf.serializeToBuffer(wptr);
+  }
+
+  virtual void deserialize(int8_t* rptr) override {
+    IActivationKBlockBase::deserializeBuffer(rptr, false);
+    mABuf.deserializeBuffer(rptr, false);
+  }
+};
+
 class StorageQuantActivation : public IActivationKBlockBase {
  public:
   using CorrectionType = ObjectQuantCorrection;
