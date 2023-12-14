@@ -81,7 +81,7 @@ def build_chatbot(config: PipelineConfig=None):
     elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path.lower():
+    elif "qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
     elif "mistral" in config.model_name_or_path.lower():
