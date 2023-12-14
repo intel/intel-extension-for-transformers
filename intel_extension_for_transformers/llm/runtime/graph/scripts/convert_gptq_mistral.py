@@ -115,33 +115,26 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     qzeros = model[f"{src_name}.qzeros"]
     zeros = qzeros_to_zeros(qzeros)
     scales = model[f"{src_name}.scales"]
-    # import pdb; pdb.set_trace()
+    qweight = model[f"{src_name}.qweight"]
+
+    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
+    int_weight = int_weight.view(-1,int_weight.shape[-1])
+
     if q_config['desc_act']:
         g_idx = model[f"{src_name}.g_idx"]
-    qweight = model[f"{src_name}.qweight"]
-    int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
-    # import pdb; pdb.set_trace()
-    int_weight = int_weight.view(-1,int_weight.shape[-1])
-    # gptq_scales = gptq_scales.view(-1,gptq_scales.shape[-1])
-    # gptq_zeros = gptq_zeros.view(-1,gptq_zeros.shape[-1])
-    # order = torch.argsort(g_idx)
-    # import pdb; pdb.set_trace()
-    # int_weight=int_weight[order]
-
-    int_weight2 = int_weight.clone()
-    group_size=q_config['group_size']
-    group_dict = {}
-    for i in range(len(g_idx)):
-        # int_weight2[32*i:32*(i+1)] = int_weight[g_idx==i]
-        group_idx = g_idx[i].item()
-        if group_idx not in group_dict:
-            target_idx = group_idx * group_size
-            group_dict[group_idx] = 0
-        else:
-            group_dict[group_idx] = group_dict[group_idx] + 1
-            target_idx = group_idx * group_size + group_dict[group_idx]
-        int_weight2[target_idx] = int_weight[i]
-    int_weight = int_weight2
+        int_weight2 = int_weight.clone()
+        group_size=q_config['group_size']
+        group_dict = {}
+        for i in range(len(g_idx)):
+            group_idx = g_idx[i].item()
+            if group_idx not in group_dict:
+                target_idx = group_idx * group_size
+                group_dict[group_idx] = 0
+            else:
+                group_dict[group_idx] = group_dict[group_idx] + 1
+                target_idx = group_idx * group_size + group_dict[group_idx]
+            int_weight2[target_idx] = int_weight[i]
+        int_weight = int_weight2
 
     if permute:
         int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
@@ -149,16 +142,19 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
         gptq_zeros = permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
 
     shape = int_weight.shape
-    write_header(fout, shape[::-1], dst_name, 13)
-
-    # import pdb; pdb.set_trace()
+    write_header(fout, shape[::-1], dst_name, GGML_QJBLAS_TYPE)
 
     dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*4), dtype=np.int8)
     int_weight = np.ascontiguousarray(((int_weight - 8) * 16).numpy())
     gptq_scales = np.ascontiguousarray((gptq_scales.float() / 16).numpy())
-    gptq_zeros = np.ascontiguousarray(((gptq_zeros - 8) * 16).numpy())
-    g_idx = np.ascontiguousarray(g_idx.numpy())
-    # import pdb; pdb.set_trace()
+    if q_config['sym']:
+        gptq_zeros = np.empty(0, dtype=np.int8)
+    else:
+        gptq_zeros = np.ascontiguousarray(((gptq_zeros - 8) * 16).numpy())
+    if q_config['desc_act']:
+        g_idx = np.ascontiguousarray(g_idx.numpy())
+    else:
+        g_idx = np.empty(0, dtype=np.int)
 
     byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales, gptq_zeros, g_idx, dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
