@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ColorImg from "$lib/assets/chat/svelte/ColorImg.svelte";
 	import Add from "$lib/assets/image-info/svelte/Add.svelte";
 	import { handleImageUpload } from "$lib/network/image/UploadImage";
 	import UploadImageBlobs from "$lib/shared/components/upload/UploadImageBlobs.svelte";
@@ -11,10 +12,12 @@
 	import HintBubble from "$lib/shared/components/hint/HintBubble.svelte";
 	import { createEventDispatcher, onMount } from "svelte";
 	import { getNotificationsContext } from "svelte-notifications";
+	import ImageIcon from "$lib/assets/chat/svelte/ImageIcon.svelte";
 
+	export let extraClass = "";
 	const { addNotification } = getNotificationsContext();
 	const dispatch = createEventDispatcher();
-
+	// let progress = 0.0;
 	function handleUploadClick(e) {
 		hintUploadImg.set(false);
 		isLoading.set(true);
@@ -23,12 +26,6 @@
 			handleImageUpload(e, resolve);
 		}).then(() => {
 			isLoading.set(false);
-			addNotification({
-				text: "Uploaded successfully",
-				position: "bottom-center",
-				type: "success",
-				removeAfter: 1000,
-			});
 			dispatch("uploadEnd");
 		});
 		newUploadNum.set(1);
@@ -37,14 +34,6 @@
 
 </script>
 
-<div class="relative">
-	<div
-		class="relative top-0 flex h-full w-full flex-col items-center justify-center bg-gray-300 p-4 opacity-95 sm:p-6"
-	>
-		<div class="absolute h-full w-full opacity-0">
-			<UploadImageBlobs on:upload={handleUploadClick} />
-		</div>
-		<Add extraClass="h-7 w-7" />
-		<p class="text-xs font-bold text-gray-500">Upload</p>
-	</div>
+<div class="block shrink-0 border-dashed border-4 border-indigo-500">
+	<UploadImageBlobs on:upload={handleUploadClick} />
 </div>
