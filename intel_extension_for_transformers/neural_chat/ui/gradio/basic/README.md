@@ -61,7 +61,7 @@ This will run the chatbot application in the background on your server.
 Once the application is running, you can find the access URL in the trace log:
 
 ```log
-INFO | gradio_web_server | Models: meta-llama/Llama-2-7b-chat-hf
+INFO | gradio_web_server | Models: Intel/neural-chat-7b-v3-1
 INFO | stdout | Running on local URL:  http://0.0.0.0:7860
 ```
 The URL to access the chatbot frontend is http://{SERVER_IP_ADDRESS}:80. Please remember to replace {SERVER_IP_ADDRESS} with your server's actual IP address.

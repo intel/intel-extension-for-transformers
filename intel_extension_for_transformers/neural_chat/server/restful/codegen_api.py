@@ -100,22 +100,7 @@ class CodeGenAPIRouter(APIRouter):
                 def stream_generator():
                     nonlocal buffered_texts
                     for output in generator:
-                        if isinstance(output, str):
-                            chunks = output.split()
-                            for chunk in chunks:
-                                ret = {
-                                    "text": chunk,
-                                    "error_code": 0,
-                                }
-                                buffered_texts += chunk + ' '
-                                yield json.dumps(ret).encode() + b"\0"
-                        else:
-                            ret = {
-                                "text": output,
-                                "error_code": 0,
-                            }
-                            buffered_texts += output + ' '
-                            yield json.dumps(ret).encode() + b"\0"
+                        yield f"data: {output}\n\n"
                     yield f"data: [DONE]\n\n"
                     if is_plugin_enabled("cache") and \
                        not plugins["cache"]["instance"].pre_llm_inference_actions(request.prompt):

@@ -356,6 +356,7 @@ inline int jblas_dtype_get_f8_quant_mbits(const JBLAS_DTYPE t) {
 
 inline float get_mxfp_maxnorm(const JBLAS_DTYPE t, int ebits, int mantissa_bits) {
   auto emax = std::pow(2, ebits - 1);
+  if (t == JBLAS_DTYPE::F8_E5M2) emax -= 1;
   auto max_norm = std::pow(2, emax);
   if (t != JBLAS_DTYPE::F8_E4M3) {
     max_norm *= ((std::pow(2, mantissa_bits - 1) - 1) / std::pow(2, mantissa_bits - 2));
