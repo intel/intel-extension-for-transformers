@@ -115,7 +115,7 @@ function run_benchmark {
     elif [ "${topology}" = "chatglm2_6b" ]; then
         model_name_or_path="THUDM/chatglm2-6b"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-    elif [ "${topology}" = "chatglm_6b" ]; thens
+    elif [ "${topology}" = "chatglm_6b" ]; then
         model_name_or_path="THUDM/chatglm-6b"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         pip install transformers==4.33
