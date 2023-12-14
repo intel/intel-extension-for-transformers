@@ -407,6 +407,8 @@ void JblaGemmPackBImpl(void* PackedBuf, int BlkSize, const int8_t* QData, const 
       launcher.mProB.enableShuffle(&stor);
       stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
       launcher.mProB.setShuffleIndices(shuffle_indice, &stor, pth);
+    } else {
+      stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
     }
   } else {
     (void)(shuffle_indice);
