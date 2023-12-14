@@ -19,6 +19,7 @@ import unittest
 import torch
 import os
 import shutil
+import spacy
 from unittest.mock import MagicMock, patch
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 
@@ -131,6 +132,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
 
     def test_enable_plugin_ner(self):
         # Test enabling Named Entity Recognition plugin
+        spacy.cli.download("en_core_web_sm")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.plugins = {"ner": {"enable": True, "args": {}}}
         result = build_chatbot(config)
