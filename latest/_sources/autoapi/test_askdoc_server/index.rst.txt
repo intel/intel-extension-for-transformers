@@ -60,9 +60,10 @@ Classes
       Hook method for setting up the test fixture before exercising it.
 
 
-   .. py:method:: tearDown() -> None
+   .. py:method:: tearDownClass() -> None
+      :classmethod:
 
-      Hook method for deconstructing the test fixture after testing it.
+      Hook method for deconstructing the class fixture after running all tests in the class.
 
 
 
