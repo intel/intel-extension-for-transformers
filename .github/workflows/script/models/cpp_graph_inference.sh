@@ -127,7 +127,7 @@ function main() {
                         elif [[ ${precision} == "q4_e2m1" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp4 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "nf4" ]]; then
-                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp4 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
+                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype nf4 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "q4_j_vnni_b32" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_dtype int8 --alg sym
                         elif [[ ${precision} == "q4_j_b32" ]]; then
