@@ -97,8 +97,14 @@ class Model {
                                int threads) {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
-    int8_t* zeros_ptr = src_zeros.mutable_data();
-    int32_t* g_idx_ptr = g_idx.mutable_data();
+    int8_t* zeros_ptr = nullptr;
+    if (src_zeros.size() != 0) {
+      zeros_ptr = src_zeros.mutable_data();
+    }
+    int32_t* g_idx_ptr = nullptr;
+    if (g_idx.size() != 0) {
+      g_idx_ptr = g_idx.mutable_data();
+    }
     int8_t* dst_ptr = dst.mutable_data();
 
     quant_params_internal q_params;
