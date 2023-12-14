@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 #pragma once
-
 #include "jblas/jit_blas_prologue_b.h"
 #include "jblas/jit_blas_wrapper.h"
 

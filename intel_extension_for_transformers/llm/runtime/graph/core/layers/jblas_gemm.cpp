@@ -39,16 +39,21 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     using Launcher = tLauncher_Fp_F32F32<GemmCore_T, Wei_T>;
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-    auto reduceA = kernel.mProA.createStorage(M, K, B->mBlockSize);
+    auto reduceA = kernel.mProA.createReduceStorage(M, K, B->mBlockSize);
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
     if (B->IsAsym()) {
       reduceA.assign(WorkSpace);
+      WorkSpace += reduceA.mSize;
+    }
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
     }
     typename Launcher::BEpiParam blkargs{
         B->template SPtr<int8_t>(),     B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
         reduceA.template RPtr<float>(), reduceA.lda};
     utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
-    typename Launcher::Param args{gp, {A, K, &reduceA, B->ShfIndice()}, {B}, blkargs, {C, N}};
-    if (B->IsAsym()) {
+    typename Launcher::Param args{gp, {A, K, &reduceA, B->ShfIndice(), &reordA}, {B}, blkargs, {C, N}};
+    if (B->IsAsym() || B->ShfIndice()) {
       jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
     } else {
       jblas::parallel::GemmRun<Parallel>(kernel, args, th);
@@ -61,8 +66,11 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     utils::GemmProblem gp(1, M, N, K);
-
-    typename Launcher::Param args{gp, {A, K, nullptr, B->ShfIndice()}, {B}, {C, N}};
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
+    }
+    typename Launcher::Param args{gp, {A, K, nullptr, B->ShfIndice(), &reordA}, {B}, {C, N}};
     jblas::parallel::GemmRun<Parallel>(kernel, args, th);
   }
 }

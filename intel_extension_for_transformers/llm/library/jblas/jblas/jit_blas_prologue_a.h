@@ -303,7 +303,8 @@ class ShuffleActivationKBlockBase : public ActivationKBlockBase<_GemmCore_T, ISA
   using RAType = storage::gemm::StorageReorderActivation;
   using SRCType = SRC_T;
   using Param = ParamShuffleActivationKBlockBase<SRC_T>;
-
+  using Parallel = jblas::parallel::Scheduler2D;
+  using ThreadProblem = jblas::parallel::ThreadProblem2D;
   inline RAType createReorderStorage(int m, int k, int kblock) {
     RAType tmp(_GemmCore_T::ID);
     int kpad = utils::padto(k, _GemmCore_T::KTILE);
