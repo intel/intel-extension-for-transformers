@@ -58,7 +58,7 @@ class TextChatAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
 
-    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
         self.chatbot = chatbot
         self.use_deepspeed = use_deepspeed
         self.world_size = world_size
