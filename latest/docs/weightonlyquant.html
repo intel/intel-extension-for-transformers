@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g1685652 documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g9f96ae7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -186,7 +186,8 @@ from<span class="w"> </span>transformers<span class="w"> </span>import<span clas
 </div>
 <p>4-bit/8-bit inference with <code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code> on CPU device.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>WeightOnlyQuantConfig
-<span class="c1"># weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1</span>
+<span class="c1"># weight_dtype: int8/int4_fullrange/int4_clip/nf4/fp4_e2m1_bnb/fp4_e2m1/fp8_e5m2/fp8_e4m3</span>
+<span class="c1"># scale_dtype: fp32/fp8, fp8 only used for weight_dtype &quot;fp8_e5m2&quot;, &quot;fp8_e4m3&quot;</span>
 <span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>WeightOnlyQuantConfig<span class="o">(</span><span class="nv">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4_fullrange&quot;</span>,<span class="w"> </span><span class="nv">group_size</span><span class="o">=</span><span class="m">32</span><span class="o">)</span>
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
 <span class="w">                                                    </span>model_name_or_path,
@@ -198,7 +199,7 @@ from<span class="w"> </span>transformers<span class="w"> </span>import<span clas
 print<span class="o">(</span>gen_text<span class="o">)</span>
 </pre></div>
 </div>
-<p>4-bit/8-bit inference with Huggingface Transformers <code class="docutils literal notranslate"><span class="pre">BitsAndBytesConfig</span></code> is also supported on CUDA GPU device.</p>
+<p>4-bit/8-bit inference with Huggingface Transformers <code class="docutils literal notranslate"><span class="pre">BitsAndBytesConfig</span></code> on CUDA GPU device.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoModelForCausalLM,<span class="w"> </span>BitsAndBytesConfig
 <span class="nv">woq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>BitsAndBytesConfig<span class="o">(</span><span class="nv">load_in_4bit</span><span class="o">=</span>True,<span class="w"> </span><span class="nv">bnb_4bit_quant_type</span><span class="o">=</span><span class="s2">&quot;nf4&quot;</span><span class="o">)</span>
 <span class="nv">woq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span><span class="w">  </span>
@@ -252,7 +253,7 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fb8ca4382e0> 
+   <jinja2.runtime.BlockReference object at 0x7f07500f71c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
