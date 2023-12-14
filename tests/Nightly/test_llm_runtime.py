@@ -66,14 +66,14 @@ class TestLLMRUNTIME(unittest.TestCase):
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_4bit: ", cmp)
-        self.assertTrue(cmp["diff2"] < 0.5)
+        self.assertTrue(cmp["diff2"] < 0.29)
 
         itrex_model = AutoModel.from_pretrained(model_name, load_in_8bit=True, 
                                                 use_llm_runtime=True, trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_8bit: ", cmp)
-        self.assertTrue(cmp["diff2"] < 0.5)
+        self.assertTrue(cmp["diff2"] < 0.25)
 
 if __name__ == "__main__":
     unittest.main()
