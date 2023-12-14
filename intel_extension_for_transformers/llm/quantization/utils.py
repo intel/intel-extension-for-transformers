@@ -77,6 +77,16 @@ def get_weight_type_from_config(config):
             weight_type = "nf4_scalef32"
         else:
             raise Exception("scale_dtype only support fp32 now!")
+    elif config.weight_dtype == "fp8_e5m2":
+        if config.scale_dtype == "fp8":
+            weight_type = "fp8e5m2_scalef8"
+        else:
+            raise Exception("scale_dtype only support fp8 now!")
+    elif config.weight_dtype == "fp8_e4m3":
+        if config.scale_dtype == "fp8":
+            weight_type = "fp8e4m3_scalef8"
+        else:
+            raise Exception("scale_dtype only support fp8 now!")
     return weight_type
 
 
@@ -239,38 +249,42 @@ def convert_to_quantized_model(model, config):
             + "the calibration dataset is NeelNanda/pile-10k,"
             + "batchsize is 1 and calibration iteration is 100."
         )
-    bits = 1  # only for int8
-    if config.weight_dtype == "int8":
-        dtype = "int8"
-        bits = 8
-    elif "int4" in config.weight_dtype:
-        dtype = "int4"
+    if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
+        return replace_linear(model, None, None, config)
     else:
-        dtype = config.weight_dtype
-    conf = PostTrainingQuantConfig(
-        approach="weight_only",
-        op_type_dict={
-            ".*":{
-                "weight": {
-                    "bits": bits,
-                    "dtype":dtype,
-                    "group_size": config.group_size,  # -1 (per-channel)
-                    "scheme": config.scheme,
-                    "algorithm": config.algorithm, 
+        bits = 1  # only for int8
+        if config.weight_dtype == "int8":
+            dtype = "int8"
+            bits = 8
+        elif "int4" in config.weight_dtype:
+            dtype = "int4"
+        else:
+            dtype = config.weight_dtype
+        conf = PostTrainingQuantConfig(
+            approach="weight_only",
+            op_type_dict={
+                ".*":{
+                    "weight": {
+                        "bits": bits,
+                        "dtype":dtype,
+                        "group_size": config.group_size,  # -1 (per-channel)
+                        "scheme": config.scheme,
+                        "algorithm": config.algorithm, 
+                    },
                 },
             },
-        },
-        recipes={
-            "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
-                        "enable_mse_search": config.mse_range},
-        },
-    )
-    # TEQ: set calib_func=None, use default training func as calib_func
-    # RTN: doesn't need calib_func
-    if config.algorithm in ['TEQ','RTN']:
-        calib_func=None
-    inc_model = quantization.fit(model,
-                                conf,
-                                calib_func=calib_func,
-                                calib_dataloader=calib_dataloader)
-    return replace_linear(inc_model.model, None, None, config)
+            recipes={
+                "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                            "enable_mse_search": config.mse_range},
+            },
+        )
+        # TEQ: set calib_func=None, use default training func as calib_func
+        # RTN: doesn't need calib_func
+        if config.algorithm in ['TEQ','RTN']:
+            calib_func=None
+        inc_model = quantization.fit(model,
+                                    conf,
+                                    calib_func=calib_func,
+                                    calib_dataloader=calib_dataloader)
+        return replace_linear(inc_model.model, None, None, config)
+
