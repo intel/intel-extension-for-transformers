@@ -132,7 +132,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
 
     def test_enable_plugin_ner(self):
         # Test enabling Named Entity Recognition plugin
-        spacy.cli.download("en_core_web_sm")
+        spacy.cli.download("en_core_web_lg")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.plugins = {"ner": {"enable": True, "args": {}}}
         result = build_chatbot(config)
