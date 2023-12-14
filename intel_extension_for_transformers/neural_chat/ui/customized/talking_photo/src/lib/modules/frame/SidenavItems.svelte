@@ -5,16 +5,16 @@
 
 	const style = {
 		title: `mx-4 text-sm`,
-		inactive: `hover:bg-[#005594]`,
-		active: `font-medium bg-[#005594] hover:bg-[#005594]`,
-		link: `flex items-center justify-start  p-6 w-full text-white`,
+		inactive: `hover:bg-[#252e47]`,
+		active: `font-medium bg-[#ffffff1a] hover:bg-[#ffffff1a] text-[#ffffffe6] hover:text-[#ffffffe6] rounded-lg`,
+		link: `flex items-center justify-start  p-6 w-full text-white  my-3`,
 		close: `sm:duration-700 sm:ease-out sm:invisible sm:opacity-0 sm:transition-all`,
 		open: `sm:duration-500 sm:ease-in sm:h-auto sm:opacity-100 sm:transition-all sm:w-auto`
 	};
 </script>
 
 <ul class="sm:pl-3 pr-3">
-	<li class="divide-blue-400 divide-y">
+	<li class="">
 		{#each data as item, i (item.title)}
 			<a
 				href={item.link}
