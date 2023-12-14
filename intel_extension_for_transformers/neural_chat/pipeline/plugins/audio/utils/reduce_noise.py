@@ -228,7 +228,7 @@ class TorchGate(torch.nn.Module):
             sig_mask (torch.Tensor): Binary mask of the same shape as X_db, where values greater than the threshold
             are set to 1, and the rest are set to 0.
         """
-        if xn is not None:
+        if xn is not None: # pragma: no cover
             XN = torch.stft(
                 xn,
                 n_fft=self.n_fft,
@@ -354,9 +354,9 @@ class TorchGate(torch.nn.Module):
         return y.to(dtype=x.dtype)
 
 class NoiseReducer:
-    def __init__(self):
-        self.sr = 16000
-        self.tg = TorchGate(self.sr)
+    def __init__(self, sr=16000, nonstationary=False):
+        self.sr = sr
+        self.tg = TorchGate(sr=self.sr, nonstationary=nonstationary)
 
     def reduce_audio_amplify(self, output_audio_path, y):
         original_sound = AudioSegment.from_file(output_audio_path, format="wav")
