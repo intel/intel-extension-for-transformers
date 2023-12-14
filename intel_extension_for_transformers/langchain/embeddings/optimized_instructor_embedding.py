@@ -53,18 +53,27 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
         """Initialize the OptimizedInstructor."""
         super().__init__(*args, **kwargs)
 
-    def _load_auto_model(self, model_name_or_path, token: Optional[Union[bool, str]], cache_folder: Optional[str]): # pragma: no cover
+    def _load_auto_model(self, 
+                         model_name_or_path, 
+                         token: Optional[Union[bool, str]], 
+                         cache_folder: Optional[str]): # pragma: no cover
         """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
-        transformer_model = OptimzedTransformer(model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
-        pooling_model = sentence_transformers.models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
+        transformer_model = OptimzedTransformer(
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+        pooling_model = sentence_transformers.models.Pooling(
+            transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
     
-    def _load_sbert_model(self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
+    def _load_sbert_model(self, 
+                          model_name_or_path: str, 
+                          token: Optional[Union[bool, str]], 
+                          cache_folder: Optional[str]):
         """Loads a full sentence-transformers model."""
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
-        config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(model_name_or_path, 'config_sentence_transformers.json', token=token, cache_folder=cache_folder)
+        config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'config_sentence_transformers.json', token=token, cache_folder=cache_folder)
         if config_sentence_transformers_json_path is not None:
             with open(config_sentence_transformers_json_path) as fIn:
                 self._model_config = json.load(fIn)
@@ -72,13 +81,16 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
             if '__version__' in self._model_config and \
                 'sentence_transformers' in self._model_config['__version__'] and \
                     self._model_config['__version__']['sentence_transformers'] > sentence_transformers.__version__:
-                logger.warning("You try to use a model that was created with version {}, however, your version is {}. "\
-                               "This might cause unexpected behavior or errors. In that case, try to update to the "\
-                                "latest version.\n\n\n".format(self._model_config['__version__']['sentence_transformers'],
-                                                               sentence_transformers.__version__))
+                logger.warning("You try to use a model that was created with version {}, "\
+                               "however, your version is {}. This might cause unexpected "\
+                               "behavior or errors. In that case, try to update to the "\
+                               "latest version.\n\n\n".format(
+                                    self._model_config['__version__']['sentence_transformers'],
+                                    sentence_transformers.__version__))
 
         # Check if a readme exists
-        model_card_path = sentence_transformers.util.load_file_path(model_name_or_path, 'README.md', token=token, cache_folder=cache_folder)
+        model_card_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'README.md', token=token, cache_folder=cache_folder)
         if model_card_path is not None:
             try:
                 with open(model_card_path, encoding='utf8') as fIn:
@@ -87,7 +99,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 pass
 
         # Load the modules of sentence transformer
-        modules_json_path = sentence_transformers.util.load_file_path(model_name_or_path, 'modules.json', token=token, cache_folder=cache_folder)
+        modules_json_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'modules.json', token=token, cache_folder=cache_folder)
         with open(modules_json_path) as fIn:
             modules_config = json.load(fIn)
 
@@ -100,7 +113,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                                     'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
                                     'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
                                     'sentence_xlnet_config.json']:
-                    config_path = sentence_transformers.util.load_file_path(model_name_or_path, config_name, token=token, cache_folder=cache_folder)
+                    config_path = sentence_transformers.util.load_file_path(
+                        model_name_or_path, config_name, token=token, cache_folder=cache_folder)
                     if config_path is not None:
                         with open(config_path) as fIn:
                             kwargs = json.load(fIn)
@@ -112,11 +126,13 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
-                module_path = sentence_transformers.util.load_dir_path(model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = sentence_transformers.util.load_dir_path(
+                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
                 module = module_class.load(module_path)
             else:
                 module_class = InstructorEmbedding.import_from_string(module_config['type'])
-                module_path = sentence_transformers.util.load_dir_path(model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = sentence_transformers.util.load_dir_path(
+                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
                 module = module_class.load(module_path)
             modules[module_config['name']] = module
         
