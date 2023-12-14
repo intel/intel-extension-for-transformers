@@ -207,10 +207,10 @@ template <WOQ_TASK TASK, class GemmCore, template <class _T, JBLAS_ISA> class Pr
           template <class _T, JBLAS_ISA> class PrologueA, dispatcher_utils::QBITS_DT ACT_DT>
 void parse_store(woq_config_param* p, woq_runtime_ctx* ctx) {
   auto constexpr ISA = GemmCore::ISA;
-  if constexpr (ACT_DT == dispatcher_utils::QBITS_FP32) {  // DT of output always equal to ACT
+  if (p->dst_dt == dispatcher_utils::QBITS_FP32) {
     return parse_launcher<TASK, GemmCore, PrologueB, PrologueA, AlphaBetaProcessStoreFp32>(p, ctx);
   }
-  if constexpr (ACT_DT == dispatcher_utils::QBITS_BF16) {
+  if (p->dst_dt == dispatcher_utils::QBITS_BF16) {
     return parse_launcher<TASK, GemmCore, PrologueB, PrologueA, AlphaBetaProcessStoreBf16>(p, ctx);
   }
 }

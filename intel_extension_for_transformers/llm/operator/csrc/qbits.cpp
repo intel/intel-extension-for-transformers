@@ -50,7 +50,6 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
     case woq::WOQ_LINEAR:
       p->src_dt = get_qbits_dt(ctx->activation);
       p->dst_dt = get_qbits_dt(ctx->output);
-      TORCH_CHECK(p->src_dt == p->dst_dt, "Qbits: data_type of activation and output must be equal in woq_linear");
       break;
   }
 }
