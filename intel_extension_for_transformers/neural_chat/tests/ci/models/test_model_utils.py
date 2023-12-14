@@ -19,6 +19,7 @@ import unittest
 import torch
 from unittest import mock
 from intel_extension_for_transformers.neural_chat.models.model_utils import load_model, MODELS
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig, BitsAndBytesConfig
 
 class TestModelUtils(unittest.TestCase):
 
@@ -77,12 +78,32 @@ class TestModelUtils(unittest.TestCase):
         with self.assertRaises(ValueError):
             load_model("non-existent-model", "non-existent-model", device="cpu")
 
-    def test_model_optimization_on_cpu(self):
-        config = MixedPrecisionConfig(dtype="float16")
-        load_model("gpt2", "gpt2", device="cpu", optimization_config=config)
-        self.assertTrue("gpt2" in MODELS)
-        self.assertTrue(MODELS["gpt2"]["model"] is not None)
+    def test_model_optimization_mix_precision(self):
+        config = MixedPrecisionConfig(dtype="bfloat16")
+        load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m", device="cpu", optimization_config=config)
+        self.assertTrue("facebook/opt-125m" in MODELS)
+        self.assertTrue(MODELS["facebook/opt-125m"]["model"] is not None)
 
+    def test_model_optimization_bitsandbytes(self):
+            with mock.patch('torch.cuda.is_available', return_value=True):
+                with mock.patch('torch.load', return_value={'model_state_dict': {}}):
+                    with mock.patch('transformers.AutoModelForCausalLM.from_pretrained') as mock_from_pretrained:
+                        model_mock = mock.Mock()
+                        model_mock.eval.return_value = model_mock
+                        model_mock.to.return_value = model_mock
+                        model_mock.config = mock.Mock()
+                        model_mock.config.architectures = ['OPTForCausalLM']
+                        model_mock.generation_config.pad_token_id = 1
+                        model_mock.generation_config.eos_token_id = 2
+                        model_mock.generation_config.bos_token_id = 2
+                        # Mock the convert_ids_to_tokens method
+                        model_mock.tokenizer.convert_ids_to_tokens.return_value = "some_token"
+                        mock_from_pretrained.return_value = model_mock
+                        load_model(model_name="facebook/opt-125m", tokenizer_name="facebook/opt-125m",
+                                   device="cuda", optimization_config=BitsAndBytesConfig())
+                        mock_from_pretrained.assert_called_once()
+                        model_mock.eval.assert_called_once()
+                        model_mock.to.assert_called_once_with('cuda')
 
 if __name__ == '__main__':
     unittest.main()
