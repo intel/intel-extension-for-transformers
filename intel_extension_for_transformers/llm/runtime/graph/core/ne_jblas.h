@@ -22,6 +22,8 @@ void jblas_timer(bool _init);
 
 int jblas_set_threads(int _nth);
 
+void* jblas_get_thread_handle();
+
 void jblas_init();
 
 unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr);

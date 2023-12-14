@@ -44,7 +44,9 @@
 #include "core/layers/jblas_common.hpp"
 #include "core/layers/mha_dense.h"
 #include "core/ne_layers.h"
-// #include "jblas/jblas/jit_blas_weight_compression.h"
+#include "core/layers/jblas_gemm.h"
+#include "jblas/jit_blas_parallel.h"
+
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_utils.h"

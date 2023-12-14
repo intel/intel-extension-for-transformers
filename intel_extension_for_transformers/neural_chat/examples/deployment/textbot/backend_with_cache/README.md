@@ -40,13 +40,13 @@ pip install -r ../../../requirements.txt
 You can customize the configuration file 'textbot.yaml' to match your environment setup. Here's a table to help you understand the configurable options:
 
 |  Item              | Value                                      |
-| ------------------- | --------------------------------------- |
-| host                | 127.0.0.1                              |
-| port                | 8000                                   |
-| model_name_or_path  | "meta-llama/Llama-2-7b-chat-hf"        |
-| device              | "cpu"                                  |
-| cache.enable        | true                                  |
-| tasks_list          | ['textchat']                           |
+| ------------------- | ----------------------------------------- |
+| host                | 127.0.0.1                                 |
+| port                | 8000                                      |
+| model_name_or_path  | "Intel/neural-chat-7b-v3-1"               |
+| device              | "cpu"                                     |
+| cache.enable        | true                                      |
+| tasks_list          | ['textchat']                              |
 
 
 

@@ -348,7 +348,7 @@ def load_model(
         None
 
     Raises:
-        ValueError: If the model is not supported, ValueError is raised.
+        ValueError
     """
     print("Loading model {}".format(model_name))
     if device == "hpu":
@@ -408,16 +408,31 @@ def load_model(
     else:
         MODELS[model_name]["assistant_model"] = None
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name,
-        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-        use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-            re.search("chatglm", model_name, re.IGNORECASE)) else False,
-    )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+            use_auth_token=hf_access_token,
+            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                re.search("chatglm", model_name, re.IGNORECASE)) else False,
+        )
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: tokenizer is not found")
+        else:
+            raise
+
+    try:
+        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+    except ValueError as e:
+        if "Unrecognized model in" in str(e):
+            raise ValueError("load_model: model config is not found")
+        else:
+            raise
+
     load_to_meta = model_on_meta(config)
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
@@ -432,93 +447,98 @@ def load_model(
         logging.info("Optimized Model loaded.")
         return
 
-    if device == "hpu" and use_deepspeed and load_to_meta:
-        with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
-            model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModel.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                trust_remote_code=True)
-    elif ((
-        re.search("gpt", model_name, re.IGNORECASE)
-        or re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("bloom", model_name, re.IGNORECASE)
-        or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-        or re.search("qwen", model_name, re.IGNORECASE)
-        or re.search("starcoder", model_name, re.IGNORECASE)
-        or re.search("codellama", model_name, re.IGNORECASE)
-        or re.search("mistral", model_name, re.IGNORECASE)
-    ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                use_auth_token=hf_access_token,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif (
-            (re.search("starcoder", model_name, re.IGNORECASE)
-             or re.search("codellama", model_name, re.IGNORECASE)
-            ) and ipex_int8
-        ):
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            try:
-                import intel_extension_for_pytorch as ipex
-            except ImportError:
-                warnings.warn(
-                    "Please install Intel Extension for PyTorch to accelerate the model inference."
-                )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            from optimum.intel.generation.modeling import TSModelForCausalLM
-            model = TSModelForCausalLM.from_pretrained(
+    try:
+        if device == "hpu" and use_deepspeed and load_to_meta:
+            with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
+                model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
+        elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_name,
-                    file_name="best_model.pt",
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    quantization_config=bitsandbytes_quant_config,
                 )
-    elif(
-            (re.search("llama", model_name, re.IGNORECASE)
-             or re.search("opt", model_name, re.IGNORECASE)
-             or re.search("gpt_neox", model_name, re.IGNORECASE)
-             or re.search("gptj", model_name, re.IGNORECASE)
-             or re.search("falcon", model_name, re.IGNORECASE)
-            ) and ipex_int8
-    ):  
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            try:
-                import intel_extension_for_pytorch as ipex
-            except ImportError:
-                warnings.warn(
-                    "Please install Intel Extension for PyTorch to accelerate the model inference."
+        elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModel.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    trust_remote_code=True)
+        elif ((
+            re.search("gpt", model_name, re.IGNORECASE)
+            or re.search("mpt", model_name, re.IGNORECASE)
+            or re.search("bloom", model_name, re.IGNORECASE)
+            or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("qwen", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("codellama", model_name, re.IGNORECASE)
+            or re.search("mistral", model_name, re.IGNORECASE)
+        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config,
+                    trust_remote_code=True if re.search("qwen", model_name, re.IGNORECASE) else False
                 )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
-            if re.search("falcon", model_name, re.IGNORECASE):
-                assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
-            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
-            model = TSModelCausalLMForITREX.from_pretrained(
-                model_name,
-                file_name="best_model.pt"
-            )
-    else:
-        raise ValueError(
-            f"Unsupported model {model_name}, only supports "
-            "FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now."
-        )
+        elif (
+                (re.search("starcoder", model_name, re.IGNORECASE)
+                or re.search("codellama", model_name, re.IGNORECASE)
+                ) and ipex_int8
+            ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
+                    )
+        elif(
+                (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("opt", model_name, re.IGNORECASE)
+                or re.search("gpt_neox", model_name, re.IGNORECASE)
+                or re.search("gptj", model_name, re.IGNORECASE)
+                or re.search("falcon", model_name, re.IGNORECASE)
+                ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+                if re.search("falcon", model_name, re.IGNORECASE):
+                    assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
+                from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+                model = TSModelCausalLMForITREX.from_pretrained(
+                    model_name,
+                    file_name="best_model.pt"
+                )
+        else:
+            raise ValueError(f"unsupported model name or path {model_name}, \
+            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: model name or path is not found")
+        else:
+            raise
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -610,7 +630,7 @@ def load_model(
                 model = model.eval().to(device)
         else:
             raise ValueError(
-                f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
+                f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
             )
 
     if not model.config.is_encoder_decoder:
@@ -724,7 +744,7 @@ def predict_stream(**params):
         `num_beams` (int): Controls the number of beams used in beam search.
                            Higher values increase the diversity but also the computation time.
         `model_name` (string): Specifies the name of the pre-trained model to use for text generation.
-                               If not provided, the default model is "mosaicml/mpt-7b-chat".
+                               If not provided, the default model is "Intel/neural-chat-7b-v3-1".
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
@@ -750,7 +770,7 @@ def predict_stream(**params):
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
-        params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
+        params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
     num_return_sequences = (
         params["num_return_sequences"] if "num_return_sequences" in params else 1
@@ -771,7 +791,9 @@ def predict_stream(**params):
 
     if is_llm_runtime_model(model):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -903,7 +925,7 @@ def predict_stream(**params):
         generation_thread.start()
     else:
         raise ValueError(
-            f"Unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
+            f"unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
         )
     output_word_len = 0
 
@@ -1015,7 +1037,9 @@ def predict(**params):
 
     if is_llm_runtime_model(model):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     if num_beams == 0:
         num_beams = 1

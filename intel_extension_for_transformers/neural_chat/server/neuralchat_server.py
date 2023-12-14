@@ -214,7 +214,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                         raise RuntimeError(f"Error in {self.__class__.__name__} init()") from exc
                     self.chatbot = None
                 elif device == "cpu":
-                    hf_access_token = os.environ("HF_ACCESS_TOKEN", None)
+                    hf_access_token = os.environ.get("HF_ACCESS_TOKEN", None)
                     multi_cpu_server_file = os.path.abspath(
                         os.path.join(os.path.dirname(__file__), './multi_cpu_server.py'))
                     launch_str = f"deepspeed hostfile ./config/hostfile {multi_cpu_server_file}"
