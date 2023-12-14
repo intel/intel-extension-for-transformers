@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>conversation &mdash; Intel® Extension for Transformers 0.1.dev1+g7e02efa documentation</title>
+  <title>conversation &mdash; Intel® Extension for Transformers 0.1.dev1+gab43c74 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
@@ -90,9 +90,16 @@
              
   <section id="module-conversation">
 <span id="conversation"></span><h1><a class="reference internal" href="#module-conversation" title="conversation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">conversation</span></code></a><a class="headerlink" href="#module-conversation" title="Link to this heading"></a></h1>
-<p>Conversation prompt templates.
-We kindly request that you import fastchat instead of copying this file if you want to use it.
-You can contribute back the changes you want to make.</p>
+<p>Conversation prompt template.</p>
+<p>Now we support
+- Vicuna
+- Koala
+- OpenAssistant/oasst-sft-1-pythia-12b
+- StabilityAI/stablelm-tuned-alpha-7b
+- databricks/dolly-v2-12b
+- THUDM/chatglm-6b
+- project-baize/baize-lora-7B
+- Alpaca/LLaMa</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 <section id="classes">
@@ -100,86 +107,23 @@ You can contribute back the changes you want to make.</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#conversation.SeparatorStyle" title="conversation.SeparatorStyle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SeparatorStyle</span></code></a></p></td>
-<td><p>Separator styles.</p></td>
+<td><p>Different separator style.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#conversation.Conversation" title="conversation.Conversation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Conversation</span></code></a></p></td>
-<td><p>A class that manages prompt templates and keeps all conversation history.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#conversation.register_conv_template" title="conversation.register_conv_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_conv_template</span></code></a>(template[, override])</p></td>
-<td><p>Register a new conversation template.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#conversation.get_conv_template" title="conversation.get_conv_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_conv_template</span></code></a>(→ Conversation)</p></td>
-<td><p>Get a conversation template.</p></td>
+<td><p>A class that keeps all conversation history.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="conversation.SeparatorStyle">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conversation.</span></span><span class="sig-name descname"><span class="pre">SeparatorStyle</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.SeparatorStyle" title="Link to this definition"></a></dt>
-<dd><p>Separator styles.</p>
+<dd><p>Different separator style.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="conversation.Conversation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conversation.</span></span><span class="sig-name descname"><span class="pre">Conversation</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation" title="Link to this definition"></a></dt>
-<dd><p>A class that manages prompt templates and keeps all conversation history.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.get_prompt">
-<span class="sig-name descname"><span class="pre">get_prompt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.get_prompt" title="Link to this definition"></a></dt>
-<dd><p>Get the prompt for generation.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.set_system_message">
-<span class="sig-name descname"><span class="pre">set_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system_message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.set_system_message" title="Link to this definition"></a></dt>
-<dd><p>Set the system message.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.append_message">
-<span class="sig-name descname"><span class="pre">append_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.append_message" title="Link to this definition"></a></dt>
-<dd><p>Append a new message.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.update_last_message">
-<span class="sig-name descname"><span class="pre">update_last_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.update_last_message" title="Link to this definition"></a></dt>
-<dd><p>Update the last output.
-The last message is typically set to be None when constructing the prompt,
-so we need to update it in-place after getting the response from a model.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.to_gradio_chatbot">
-<span class="sig-name descname"><span class="pre">to_gradio_chatbot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.to_gradio_chatbot" title="Link to this definition"></a></dt>
-<dd><p>Convert the conversation to gradio chatbot format.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="conversation.Conversation.to_openai_api_messages">
-<span class="sig-name descname"><span class="pre">to_openai_api_messages</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.Conversation.to_openai_api_messages" title="Link to this definition"></a></dt>
-<dd><p>Convert the conversation to OpenAI chat completion format.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="conversation.register_conv_template">
-<span class="sig-prename descclassname"><span class="pre">conversation.</span></span><span class="sig-name descname"><span class="pre">register_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#conversation.Conversation" title="conversation.Conversation"><span class="pre">Conversation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.register_conv_template" title="Link to this definition"></a></dt>
-<dd><p>Register a new conversation template.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="conversation.get_conv_template">
-<span class="sig-prename descclassname"><span class="pre">conversation.</span></span><span class="sig-name descname"><span class="pre">get_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#conversation.Conversation" title="conversation.Conversation"><span class="pre">Conversation</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#conversation.get_conv_template" title="Link to this definition"></a></dt>
-<dd><p>Get a conversation template.</p>
+<dd><p>A class that keeps all conversation history.</p>
 </dd></dl>
 
 </section>
@@ -200,7 +144,7 @@ so we need to update it in-place after getting the response from a model.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f58106d28c0> 
+   <jinja2.runtime.BlockReference object at 0x7ff6ea65ec80> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

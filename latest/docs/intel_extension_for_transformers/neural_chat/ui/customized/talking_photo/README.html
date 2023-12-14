@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; Intel® Extension for Transformers 0.1.dev1+g7e02efa documentation</title>
+  <title>&lt;no title&gt; &mdash; Intel® Extension for Transformers 0.1.dev1+gab43c74 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -88,37 +88,51 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px">AI Talking Photo</h1><p><h2>📸 Project Screenshots:</h2></p>
-<img src="https://imgur.com/w6A4cgy.png" alt="project-screenshot" width="400" height="400/"><img src="https://imgur.com/nriEzQV.png" alt="project-screenshot" width="400" height="400/"><img src="https://imgur.com/lwVVC5y.png" alt="project-screenshot" width="400" height="400/"><p><h2>🧐 Features</h2></p>
+  <h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Neural Chat</h1><p><h2>🚀 Demo</h2></p>
+<p><a class="reference external" href="http://neuralstudio.intel.com/NeuralChat">http://neuralstudio.intel.com/NeuralChat</a></p>
+<p><h2>📸 Project Screenshots:</h2></p>
+<img src="https://imgur.com/04qfWb8.png" alt="project-screenshot" width="800" height="400/"><img src="https://imgur.com/yZ5AjWE.png" alt="project-screenshot" width="800" height="400/"><img src="https://imgur.com/OgNJ0cM.png" alt="project-screenshot" width="800" height="400/"><p><h2>🧐 Features</h2></p>
 <p>Here’re some of the project’s features:</p>
 <ul class="simple">
-<li><p>Basic chat: Enter the main page to engage in textual conversations through messaging.</p></li>
-<li><p>Upload images: Click the ‘Upload’ button to select an image from your gallery for uploading. Once the upload is successful, you can simply drag and drop the image into the chat box to start a conversation.</p></li>
-<li><p>Photo classify: Successfully uploaded images will be  automatically categorize uploaded images by people, time, and location. Easily access and view different image categories. Customize image information as needed.</p></li>
-<li><p>Photo manipulation: You can perform various actions on a single image, such as deleting it, enlarging it, downloading it, resizing it, and rotating it.</p></li>
-<li><p>Hint：Automatically identify image details and show them in a pop-up box. You can then chat with the chatbot using the information and relevant images.</p></li>
-<li><p>Txt2Img: Enhance the selected images with artistic transformations, such as creating portraits reminiscent of Van Gogh’s style.</p></li>
-<li><p>Chat history: The current session will be saved within the specified time frame. If the user closes the window or navigates to other pages, they can resume the conversation from where they left off when they return.</p></li>
-<li><p>Talking bot: Supporting voice chat, it allows for the substitution of text with voice in interactions with chatbots, enabling the completion of the aforementioned tasks.</p></li>
-<li><p>settings:
-To protect user privacy, we automatically delete stored data in our database every 30 minutes. Users can also manually clear their history or choose not to keep it.</p></li>
+<li><p>Basic mode：Choose the best model from different domains to chat.</p></li>
+<li><p>Advanced mode：Select different models/different knowledge base chats, and you can customize the corresponding parameters.</p></li>
+<li><p>hint：Start a chat according to the prompt, which is the first sentence of the chat.</p></li>
+<li><p>New Topic: Clear the current context and restart the chat.</p></li>
+<li><p>Txt2Img: Generate an image based on the current answer, and you can hover to zoom in the image.</p></li>
+<li><p>ChatGPT: Integrated with ChatGPT, you can directly access the relevant functionalities of OpenAI chat by entering your OpenAI API key.</p></li>
+<li><p>Chat History: View chat history.</p></li>
+<li><p>Regenerate: Regenerates the current conversation.</p></li>
 </ul>
 <p><h2>🛠️ Get it Running:</h2></p>
 <ol>
 <li><p>Clone the repo.</p></li>
 <li><p>cd command to the current folder.</p></li>
 <li><p>Modify the required .env variables.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">GETIMAGELIST_URL</span><span class="o">=</span>
-<span class="n">UPLOAD_IMAGE_URL</span><span class="o">=</span>
-<span class="n">BASE_URL</span><span class="o">=</span>
-<span class="n">TALKING_URL</span><span class="o">=</span>
-<span class="n">AUDIO_URL</span><span class="o">=</span>
-<span class="n">TRAFFIC_URL</span><span class="o">=</span><span class="w"> </span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">LLMA_URL</span><span class="o">=</span>
+<span class="n">GPT_J_6B_URL</span><span class="o">=</span>
+<span class="n">KNOWLEDGE_URL</span><span class="o">=</span>
+<span class="n">TXT2IMG</span><span class="o">=</span>
 </pre></div>
 </div>
 </li>
 <li><p>Execute <code class="docutils literal notranslate"><span class="pre">npm</span> <span class="pre">install</span></code> to install the corresponding dependencies.</p></li>
 <li><p>Execute <code class="docutils literal notranslate"><span class="pre">npm</span> <span class="pre">run</span> <span class="pre">dev</span></code> in both enviroments</p></li>
+</ol>
+<p><h2>📕Instructions for using OpenAI:</h2></p>
+<ol class="simple">
+<li><p>Switch to the ChatGPT tab.</p></li>
+</ol>
+<img src="https://imgur.com/8hJW8hh.png" alt="project-screenshot" width="200" height="200/"><ol class="simple">
+<li><p>Enter OpenAI API key in the left sidebar.[Obtain it from https://openai.com/. Without entering the OpenAI API key, you will not be able to use it properly.]</p></li>
+</ol>
+<img src="https://imgur.com/Iu7CmSa.png" alt="project-screenshot" width="200" height="200/"><ol class="simple">
+<li><p>Once you have entered the API key, the input box will be ready for use. All the questions will be answered by ChatGPT.</p></li>
+</ol>
+<p><h2>Disclaimer</h2>
+This project is to provide instructions and guidance on how to use OpenAI. However, please note the following:</p>
+<ol class="simple">
+<li><p>OpenAI Policies: OpenAI may have its own policies and regulations, such as API usage limits, pricing plans, service agreements, etc. Please make sure you are aware of and comply with OpenAI’s relevant policies to avoid any violations.</p></li>
+<li><p>If you have any questions or issues related to OpenAI while using this service, we take no responsibility for them..</p></li>
 </ol>
 
 
@@ -135,7 +149,7 @@ To protect user privacy, we automatically delete stored data in our database eve
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5826650520> 
+   <jinja2.runtime.BlockReference object at 0x7ff700fdf460> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
