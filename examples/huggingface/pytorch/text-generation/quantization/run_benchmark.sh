@@ -119,6 +119,9 @@ function run_benchmark {
         model_name_or_path="THUDM/chatglm-6b"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         pip install transformers==4.33
+    elif [ "${topology}" = "falcon_7b" ]; then
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        pip install transformers==4.33
     fi
 
     if [[ ${int8} == "true" ]]; then

@@ -140,6 +140,12 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         pip install transformers==4.33
+    elif [ "${topology}" = "falcon_7b" ]; then
+        alpha=0.7
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        pip install transformers==4.33
     fi
 
     if [ ${script} = "run_generation.py" ];then
