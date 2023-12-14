@@ -101,7 +101,7 @@ Functions
                        Higher values increase the diversity but also the computation time.
    :type `num_beams`: int
    :param `model_name`: Specifies the name of the pre-trained model to use for text generation.
-                        If not provided, the default model is "mosaicml/mpt-7b-chat".
+                        If not provided, the default model is "Intel/neural-chat-7b-v3-1".
    :type `model_name`: string
    :param `num_return_sequences`: Specifies the number of alternative sequences to generate.
    :type `num_return_sequences`: int

@@ -108,7 +108,7 @@ NeuralChat supports fine-tuning the pretrained large language model (LLM) for te
 
 ```shell
 # Command line
-neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+neuralchat finetune --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/finetuning/config/finetuning.yaml
 ```
 
 ```python
@@ -124,7 +124,7 @@ NeuralChat provides typical model optimization technologies, like `Automatic Mix
 
 ```shell
 # Command line
-neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.yaml
+neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
 ```
 
 ```python

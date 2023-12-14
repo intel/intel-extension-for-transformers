@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Environment &mdash; Intel® Extension for Transformers 0.1.dev1+g3562889 documentation</title>
+  <title>Setup Environment &mdash; Intel® Extension for Transformers 0.1.dev1+g0f0bf22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -127,8 +127,8 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w
 <section id="install-models">
 <h2>Install Models<a class="headerlink" href="#install-models" title="Link to this heading"></a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git-lfs<span class="w"> </span>install
-<span class="c1"># download llama-2 model for NER plugin</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
+<span class="c1"># download neural-chat-7b-v3-1 model for NER plugin</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/Intel/neural-chat-7b-v3-1
 <span class="c1"># download spacy model for NER post process</span>
 python<span class="w"> </span>-m<span class="w"> </span>spacy<span class="w"> </span>download<span class="w"> </span>en_core_web_lg
 </pre></div>
@@ -184,7 +184,7 @@ mysql
 </tr>
 <tr>
 <td>model_name_or_path</td>
-<td>"./Llama-2-7b-chat-hf"</td>
+<td>"./neural-chat-7b-v3-1"</td>
 </tr>
 <tr>
 <td>device</td>
@@ -279,7 +279,7 @@ mysql
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f91583f8730> 
+   <jinja2.runtime.BlockReference object at 0x7f4b11997d00> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

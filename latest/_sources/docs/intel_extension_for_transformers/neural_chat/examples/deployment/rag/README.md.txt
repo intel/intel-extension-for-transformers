@@ -46,7 +46,7 @@ pip install -r ../../../requirements.txt
 ## Download Models
 ```shell
 git-lfs install
-git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
+git clone https://huggingface.co/Intel/neural-chat-7b-v3-1
 ```
 
 
@@ -58,7 +58,7 @@ You can customize the configuration file 'askdoc.yaml' to match your environment
 | --------------------------------- | ---------------------------------------|
 | host                              | 127.0.0.1                              |
 | port                              | 8000                                   |
-| model_name_or_path                | "./Llama-2-7b-chat-hf"                 |
+| model_name_or_path                | "./neural-chat-7b-v3-1"                 |
 | device                            | "auto"                                 |
 | retrieval.enable                  | true                                   |
 | retrieval.args.input_path         | "./docs"                               |

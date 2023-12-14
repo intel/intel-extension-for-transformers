@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g3562889 documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g0f0bf22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=eafc0fe6" />
@@ -179,7 +179,7 @@ neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span cl
 <h3>Fine-tuning<a class="headerlink" href="#fine-tuning" title="Link to this heading"></a></h3>
 <p>NeuralChat supports fine-tuning the pretrained large language model (LLM) for text-generation, summarization, code generation tasks, and even TTS model, for user to create the customized chatbot.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
-neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v3-1&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
@@ -193,7 +193,7 @@ neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<s
 <h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
 <p>NeuralChat provides typical model optimization technologies, like <code class="docutils literal notranslate"><span class="pre">Automatic</span> <span class="pre">Mixed</span> <span class="pre">Precision</span> <span class="pre">(AMP)</span></code> and <code class="docutils literal notranslate"><span class="pre">Weight</span> <span class="pre">Only</span> <span class="pre">Quantization</span></code>, to allow user to define a customized chatbot.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
-neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/optimization/config/optimization.yaml
+neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v3-1&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/optimization/config/optimization.yaml
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
@@ -309,7 +309,7 @@ NeuralChat supports the following RESTful APIs:</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9158424940> 
+   <jinja2.runtime.BlockReference object at 0x7f4af8607730> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

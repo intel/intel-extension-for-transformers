@@ -19,7 +19,7 @@ Classes
 
 
 
-.. py:class:: NamedEntityRecognitionINT(model_path='meta-llama/Llama-2-7b-chat-hf', spacy_model='en_core_web_lg', compute_dtype='fp32', weight_dtype='int8', device='cpu')
+.. py:class:: NamedEntityRecognitionINT(model_path='Intel/neural-chat-7b-v3-1', spacy_model='en_core_web_lg', compute_dtype='fp32', weight_dtype='int8', device='cpu')
 
 
    Initialize spacy model and llm model
