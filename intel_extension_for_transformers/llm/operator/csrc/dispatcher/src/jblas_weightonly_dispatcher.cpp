@@ -39,7 +39,8 @@ static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{
     {"nf4", JBLAS_DTYPE::F4_NF4},        {"fp4_e2m1_bnb", JBLAS_DTYPE::F4_BNB},
     {"fp4_e2m1", JBLAS_DTYPE::F4_E2M1},  {"fp8_e4m3", JBLAS_DTYPE::F8_E4M3},
     {"fp8_e5m2", JBLAS_DTYPE::F8_E5M2}};
-static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"f32", JBLAS_DTYPE::F32}, {"f8", JBLAS_DTYPE::F8_E8M0}};
+static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"fp32", JBLAS_DTYPE::F32},
+                                                            {"fp8_e8m0", JBLAS_DTYPE::F8_E8M0}};
 static void* woq_workspace = nullptr;
 static int64_t workspace_size = 0;
 

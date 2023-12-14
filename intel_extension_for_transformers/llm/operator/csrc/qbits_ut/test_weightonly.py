@@ -22,8 +22,8 @@ cmpt_configs = {"int8": {"int8", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"},
     "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
 }
 
-scale_configs = {"int8": {"f32"}, "int4_clip": {"f32"}, "int4_fullrange": {"f32"}, "fp4_e2m1_bnb": {"f32"}, "fp4_e2m1": {"f32"}, "nf4": {"f32"},
-                 "fp8_e5m2": {"f32", "f8"}, "fp8_e4m3": {"f32", "f8"}}
+scale_configs = {"int8": {"fp32"}, "int4_clip": {"fp32"}, "int4_fullrange": {"fp32"}, "fp4_e2m1_bnb": {"fp32"}, "fp4_e2m1": {"fp32"}, "nf4": {"fp32"},
+                 "fp8_e5m2": {"fp32", "fp8_e8m0"}, "fp8_e4m3": {"fp32", "fp8_e8m0"}}
 
 
 @capture_args
@@ -33,7 +33,7 @@ scale_configs = {"int8": {"f32"}, "int4_clip": {"f32"}, "int4_fullrange": {"f32"
 @pytest.mark.parametrize("blocksize", [128, -1])
 @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
 @pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int4_fullrange", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
-@pytest.mark.parametrize("scale_type", ["f32", "f8"])
+@pytest.mark.parametrize("scale_type", ["fp32", "fp8_e8m0"])
 @pytest.mark.parametrize("transpose", [True, False])
 @pytest.mark.parametrize("add_bias", [True, False])
 @pytest.mark.parametrize("dt", ["fp32", "bf16"])
