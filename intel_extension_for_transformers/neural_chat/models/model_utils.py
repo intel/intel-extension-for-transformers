@@ -744,7 +744,7 @@ def predict_stream(**params):
         `num_beams` (int): Controls the number of beams used in beam search.
                            Higher values increase the diversity but also the computation time.
         `model_name` (string): Specifies the name of the pre-trained model to use for text generation.
-                               If not provided, the default model is "mosaicml/mpt-7b-chat".
+                               If not provided, the default model is "Intel/neural-chat-7b-v3-1".
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
@@ -770,7 +770,7 @@ def predict_stream(**params):
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
-        params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
+        params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
     num_return_sequences = (
         params["num_return_sequences"] if "num_return_sequences" in params else 1
@@ -791,7 +791,9 @@ def predict_stream(**params):
 
     if is_llm_runtime_model(model):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -1035,7 +1037,9 @@ def predict(**params):
 
     if is_llm_runtime_model(model):
         prompt = remove_prompt_history(model_name, prompt)
-        max_new_tokens = max_new_tokens if max_new_tokens > 1024 else 1024
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     if num_beams == 0:
         num_beams = 1
