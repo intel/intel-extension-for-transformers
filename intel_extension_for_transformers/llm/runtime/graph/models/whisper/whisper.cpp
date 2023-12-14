@@ -42,7 +42,7 @@
 #define WHISPER_MAX_DECODERS 16
 
 #define WHISPER_USE_SCRATCH
-#define WHISPER_MAX_SCRATCH_BUFFERS 16
+#define WHISPER_MAX_SCRATCH_BUFFERS 64
 
 
 // avoid dup code
@@ -352,7 +352,7 @@ struct whisper_kv_cache {
 
   struct ne_context* ctx;
 
-  std::vector<uint8_t> buf;
+  model_ctx_buffer buf;
 
   int n;  // number of tokens currently in the cache
 };
@@ -395,7 +395,7 @@ struct whisper_model {
   struct ne_context* ctx;
 
   // the model memory buffer is read-only and can be shared between processors
-  std::vector<uint8_t>* buf;
+  model_ctx_buffer buf;
 
   // tensors
   int n_loaded;
@@ -462,7 +462,7 @@ struct whisper_state {
   whisper_decoder decoders[WHISPER_MAX_DECODERS] = {};
 
   // memory buffers used by encode / decode contexts
-  std::vector<uint8_t> buf_compute;
+  model_ctx_buffer buf_compute;
   std::vector<uint8_t> buf_scratch[WHISPER_MAX_SCRATCH_BUFFERS];
 
   int buf_last = 0;
@@ -548,8 +548,8 @@ static bool kv_cache_init(const struct whisper_hparams& hparams, const size_t me
   cache->buf.resize(mem_bytes);
 
   struct ne_init_params params = {
-      /*.mem_size   =*/cache->buf.size(),
-      /*.mem_buffer =*/cache->buf.data(),
+      /*.mem_size   =*/cache->buf.size,
+      /*.mem_buffer =*/cache->buf.addr,
       /*.no_alloc   =*/false,
   };
 
@@ -581,11 +581,11 @@ static bool kv_cache_reinit(struct whisper_kv_cache* cache) {
   const ne_type wtype = cache->k->type;
   NE_ASSERT(wtype == cache->v->type);
 
-  NE_ASSERT(cache->buf.size() >= 2 * n_elements * ne_type_sizef(wtype));
+  NE_ASSERT(cache->buf.size >= 2 * n_elements * ne_type_sizef(wtype));
 
   struct ne_init_params params = {
-      /*.mem_size   =*/cache->buf.size(),
-      /*.mem_buffer =*/cache->buf.data(),
+      /*.mem_size   =*/cache->buf.size,
+      /*.mem_buffer =*/cache->buf.addr,
       /*.no_alloc   =*/false,
   };
 
@@ -717,8 +717,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
     // initialize all memory buffers
     // always have at least one decoder
 
-    wctx->model.buf = new std::vector<uint8_t>();
-    wctx->model.buf->resize(scale * MEM_REQ_MODEL.at(wctx->wtype).at(model.type));
+    wctx->model.buf.resize(scale * MEM_REQ_MODEL.at(wctx->wtype).at(model.type));
 
     // we skip initialization of the state until it is needed
     // because it might be that state will always be provided externally.
@@ -932,8 +931,8 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
   // create the ggml context
   {
     struct ne_init_params params = {
-        /*.mem_size   =*/wctx->model.buf->size(),
-        /*.mem_buffer =*/wctx->model.buf->data(),
+        /*.mem_size   =*/wctx->model.buf.size,
+        /*.mem_buffer =*/wctx->model.buf.addr,
         /*.no_alloc   =*/false,
     };
 
@@ -1253,8 +1252,8 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
   assert(mel_inp.n_mel == n_mels);
 
   struct ne_init_params params = {
-      /*.mem_size   =*/wstate->buf_compute.size(),
-      /*.mem_buffer =*/wstate->buf_compute.data(),
+      /*.mem_size   =*/wstate->buf_compute.size,
+      /*.mem_buffer =*/wstate->buf_compute.addr,
       /*.no_alloc   =*/false,
   };
 
@@ -1502,6 +1501,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
     // run the computation
     {
       struct ne_cgraph gf = {};
+      gf.n_threads = n_threads;
 
       ne_build_forward_expand(&gf, cur);
       ne_graph_compute(ctx0, &gf);
@@ -1527,6 +1527,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
   // pre-compute cross-attention memory
   {
     struct ne_cgraph gf = {};
+      gf.n_threads = n_threads;
 
     // hack to disconnect the encoded features from the previous graph
     cur->op = NE_OP_NONE;
@@ -1621,14 +1622,15 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
   // n_past, N, M, n_ctx);
 
   struct ne_init_params params = {
-      /*.mem_size   =*/wstate->buf_compute.size(),
-      /*.mem_buffer =*/wstate->buf_compute.data(),
+      /*.mem_size   =*/wstate->buf_compute.size,
+      /*.mem_buffer =*/wstate->buf_compute.addr,
       /*.no_alloc   =*/false,
   };
 
   struct ne_context* ctx0 = ne_init(params);
 
   struct ne_cgraph gf = {};
+      gf.n_threads = n_threads;
 
   struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   memcpy(embd->data, tokens, N * ne_element_size(embd));
@@ -2435,9 +2437,9 @@ void whisper_free(struct whisper_context* ctx) {
     if (ctx->model.ctx) {
       ne_free(ctx->model.ctx);
     }
-    if (ctx->model.buf) {
-      delete ctx->model.buf;
-    }
+    // if (ctx->model.buf) {
+    //   delete ctx->model.buf;
+    // }
 
     whisper_free_state(ctx->state);
 
@@ -3489,7 +3491,13 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
     auto& decoder = state->decoders[j];
 
     if (decoder.kv_self.ctx == nullptr) {
-      decoder.kv_self = state->decoders[0].kv_self;
+      // decoder.kv_self = state->decoders[0].kv_self;
+decoder.kv_self.k = state->decoders[0].kv_self.k;
+decoder.kv_self.v = state->decoders[0].kv_self.v;
+decoder.kv_self.ctx = state->decoders[0].kv_self.ctx;
+decoder.kv_self.n = state->decoders[0].kv_self.n;
+  decoder.kv_self.buf.resize(state->decoders[0].kv_self.buf.size);
+
       if (!kv_cache_reinit(&decoder.kv_self)) {
         fprintf(stderr, "%s: kv_cache_reinit() failed for self-attention, decoder %d\n", __func__, j);
         return -4;
