@@ -365,6 +365,16 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))
+        # fp8
+        woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8")
+        woq_model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
+        )
+        output = woq_model(dummy_input)
+        self.assertTrue(
+            isclose(float(output[0][0][0][0]), -6.790275573730469, rel_tol=1e-04)
+        )
+
         # amp
         amp_config = MixedPrecisionConfig() 
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
