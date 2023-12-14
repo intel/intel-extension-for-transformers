@@ -268,7 +268,7 @@ class WeightKBlockNInteger {
         auto siptr = stor->ShfIndice();
         for (size_t i = 0; i < stor->mK; i++) {
           if (groupindices[i] >= thdp.loc[1] && groupindices[i] < thdp.loc[1] + thdp.size[1]) {
-            siptr[i] = groupindices[i] * stor->mBlockSize + countptr[groupindices[i]];
+            siptr[groupindices[i] * stor->mBlockSize + countptr[groupindices[i]]] = i;
             countptr[groupindices[i]]++;
           }
         }

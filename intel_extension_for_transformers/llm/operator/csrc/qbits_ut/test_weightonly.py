@@ -17,26 +17,26 @@
 
 from ut_utils import *
 
-cmpt_configs = {"s8": {"int8", "fp32"}, "s4clip": {"int8", "fp32", "bf16"}, "s4fullrange": {
-    "int8", "fp32", "bf16"}, "fp4bnb": {"fp32", "bf16"}, "fp4e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
-    "fp8e5m2": {"fp32", "bf16"}, "fp8e4m3": {"fp32", "bf16"}
+cmpt_configs = {"int8": {"int8", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"}, "int4_fullrange": {
+    "int8", "fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
+    "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
 }
 
-scale_configs = {"s8": {"f32"}, "s4clip": {"f32"}, "s4fullrange": {"f32"}, "fp4bnb": {"f32"}, "fp4e2m1": {"f32"}, "nf4": {"f32"},
-                 "fp8e5m2": {"f32", "f8"}, "fp8e4m3": {"f32", "f8"}}
+scale_configs = {"int8": {"f32"}, "int4_clip": {"f32"}, "int4_fullrange": {"f32"}, "fp4_e2m1_bnb": {"f32"}, "fp4_e2m1": {"f32"}, "nf4": {"f32"},
+                 "fp8_e5m2": {"f32", "f8"}, "fp8_e4m3": {"f32", "f8"}}
 
 
 @capture_args
-@pytest.mark.parametrize("m", (256,))
-@pytest.mark.parametrize("n", (1024,))
-@pytest.mark.parametrize("k", (512,))
-@pytest.mark.parametrize("blocksize", (128, -1))
+@pytest.mark.parametrize("m", [256])
+@pytest.mark.parametrize("n", [1024])
+@pytest.mark.parametrize("k", [512])
+@pytest.mark.parametrize("blocksize", [128, -1])
 @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
-@pytest.mark.parametrize("weight_type", ["s8", "s4clip", "s4fullrange", "nf4", "fp4bnb", "fp4e2m1", "fp8e5m2", "fp8e4m3"])
+@pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int4_fullrange", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
 @pytest.mark.parametrize("scale_type", ["f32", "f8"])
-@pytest.mark.parametrize("transpose", (True, False))
-@pytest.mark.parametrize("add_bias", (True, False))
-@pytest.mark.parametrize("dt", ("fp32", "bf16"))
+@pytest.mark.parametrize("transpose", [True, False])
+@pytest.mark.parametrize("add_bias", [True, False])
+@pytest.mark.parametrize("dt", ["fp32", "bf16"])
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, transpose, add_bias, dt, dump_tensor_info=True):
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
