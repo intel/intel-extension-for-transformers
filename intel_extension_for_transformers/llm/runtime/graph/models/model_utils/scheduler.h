@@ -18,34 +18,58 @@
 #include "models/model_utils/pool.h"
 #include "models/model_utils/model_utils.h"
 
-class worker {
+// iteration-level worker
+class il_worker {
  public:
-  void step(model_input* inputs, const int& n_input);
-  void steps(model_input* inputs, const int& n_input, const int& n_step);
-  void model_forward();
-  void post_process();
-  void greedy_search();
+  explicit il_worker(const gpt_params& params);
+  il_worker(const gpt_params& params, const int& n_threads);
+  virtual ~il_worker();
+
+  virtual const int step(sequence* seqs, const int& n_input) = 0;
+  virtual const int steps(sequence* seqs, const int& n_input, const int& n_step) = 0;
+  // virtual const int greedy_search_step(sequence* seqs, const int& n_input) = 0;
+  virtual const int beam_search_step(sequence* seqs, const int& n_input) = 0;
+  virtual const int prepare_inputs(sequence* seqs, const int& n_input, model_input* inputs) = 0;
+  void set_threads(const int& n_threads);
 
  protected:
-  model_context* ctx = nullptr;
+  model_context* m_ctx = NULL;
   int threads;
-  beam_search_flow bsf;
+  beam_search_flow* bsf = nullptr;
+  std::vector<int> request_done_ids;
 };
 
 // iteration-level scheduler
 class il_scheduler {
  public:
-  void step();
-  void steps();
+  void add_request(const sequence& seq);
+  const int step();
+  const int steps();
+  std::vector<sequence> pop_completed_requests();
   void print_progress();
+  virtual void prepare_inputs();
 
  protected:
   serve_policy policy;
   serve_pool waiting_pool;
   serve_pool running_pool;
-  worker wr;
-  model_context* ctx;
-  std::vector<sequence> results;
+  serve_pool holding_pool;
+  serve_pool finished_pool;
+  gpt_params params;
+};
+
+// single-prompt-batched-generation worker
+class spbg_worker : public il_worker {
+ public:
+  explicit spbg_worker(const gpt_params& params);
+  spbg_worker(const gpt_params& params, const int& n_threads);
+  ~spbg_worker();
+
+  const int step(sequence* seqs, const int& n_input) override;
+  const int steps(sequence* seqs, const int& n_input, const int& n_step) override;
+  // const int greedy_search_step(sequence* seqs, const int& n_input) override;
+  const int beam_search_step(sequence* seqs, const int& n_input) override;
+  const int prepare_inputs(sequence* seqs, const int& n_input, model_input* inputs) override;
 };
 
 // single-prompt-batched-generation scheduler
@@ -54,8 +78,9 @@ class spbg_scheduler : public il_scheduler {
   void steps_decoding_for_next_prefill();
 
  protected:
-  int max_batch_size = 32;
+  int max_requests = 32;
   int cur_decoding_size = -1;
+  spbg_worker wr;
 };
 
 #endif  // SCHEDULER_H

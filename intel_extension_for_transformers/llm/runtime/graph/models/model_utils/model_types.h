@@ -242,6 +242,8 @@ struct model_vocab {
   id sep_token_id = -1;
 };
 
+typedef model_vocab::id model_token;
+
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
 struct generation_config {
   uint32_t max_new_tokens;  // n_predict there
@@ -279,7 +281,7 @@ struct model_context {
   model_struct model;
   model_vocab vocab;
   // maximum num of bearable requests in current env
-  int max_request_bs = 32;  // TODO
+  int max_request_num = 32;  // TODO
   // num of current execution prompts
   int request_running_bs = 1;
   // length of current execution tokens list
@@ -355,8 +357,6 @@ struct model_context {
   }
 };
 
-typedef model_vocab::id model_token;
-
 typedef struct model_token_data {
   model_token id;  // token id
   float logit;     // log-odds of the token
@@ -413,6 +413,7 @@ struct model_context_params {
   bool beam_search;     // beam search or not
   int beam_size;        // number of beams for beam search
   bool shift_roped_k;   // whether to store non-RoPEd K cache
+  int max_request_num;  // maximum num of bearable requests in current env
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;

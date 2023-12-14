@@ -185,6 +185,7 @@ struct model_context_params model_context_default_params() {
       /*.beam_search                 =*/false,
       /*.beam_size                   =*/1,
       /*.shift_roped_k               =*/false,
+      /*.max_request_num             =*/1,
       /*.progress_callback           =*/nullptr,
       /*.progress_callback_user_data =*/nullptr,
   };
@@ -1146,6 +1147,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   } else {
     ctx->kv_n_ctx_block = ctx->batch_size;
   }
+  ctx->max_request_num = params.max_request_num;
   const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
@@ -1519,6 +1521,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   lparams.batch_size = params.batch_size;
   lparams.beam_search = params.beam_search;
   lparams.beam_size = params.beam_size;
+  lparams.max_request_num = params.max_request_num;
   NE_ASSERT(("non-RoPEd K cache is not supported by this model!",  //
              !lparams.shift_roped_k || lparams.arch == MODEL_LLAMA));
   lparams.shift_roped_k = params.shift_roped_k;

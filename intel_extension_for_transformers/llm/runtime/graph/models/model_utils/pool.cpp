@@ -41,7 +41,7 @@ const int fcfs_pool::size() { return context.size(); }
 
 // serve_pool
 serve_pool::serve_pool(const pool_property& property) {
-  // default policy = SPY_FCFS
+  // default policy = FCFS
   std::lock_guard<std::mutex> lock(mtx);
   if (internel_pool != nullptr) return;
   internel_pool = new fcfs_pool(property);
@@ -51,7 +51,7 @@ serve_pool::serve_pool(const serve_policy& policy, const pool_property& property
   std::lock_guard<std::mutex> lock(mtx);
   if (internel_pool != nullptr) return;
   switch (policy) {
-    case SPY_FCFS:
+    case serve_policy::FCFS:
       internel_pool = new fcfs_pool(property);
     default:
       NE_ASSERT(false);
@@ -60,8 +60,9 @@ serve_pool::serve_pool(const serve_policy& policy, const pool_property& property
 
 serve_pool::~serve_pool() {
   std::lock_guard<std::mutex> lock(mtx);
-  if (internel_pool != nullptr) return;
-  delete internel_pool;
+  if (internel_pool != nullptr) {
+    delete internel_pool;
+  }
 }
 
 const bool serve_pool::add(const sequence& seq) {

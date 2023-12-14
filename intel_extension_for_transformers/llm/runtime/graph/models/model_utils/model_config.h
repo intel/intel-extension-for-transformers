@@ -95,6 +95,7 @@ struct gpt_params {
   int batch_size = 1;           // number batch of prompt
   bool beam_search = false;     // use beam_search or not
   int beam_size = 1;            // only valid if use beam search
+  int max_request_num = 32;     // TODO maximum num of bearable requests in current env
 };
 
 bool gpt_params_parse(int argc, char** argv, gpt_params& params);

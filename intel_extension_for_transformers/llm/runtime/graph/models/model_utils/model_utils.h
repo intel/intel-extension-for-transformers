@@ -424,7 +424,7 @@ class beam_search_kv_cache_reorder {
 
 class beam_search_flow {
  public:
-  explicit beam_search_flow(model_context* lctx, const int batch_size = 1)
+  beam_search_flow(model_context* lctx, const int batch_size = 1)
       : ctx(lctx), beam_size(lctx->beam_size), request_bs(batch_size), lp(logits_processor(lctx)) {
     cur_beams.resize(batch_size * beam_size);
     next_beams.resize(batch_size * beam_size);
@@ -448,7 +448,9 @@ class beam_search_flow {
   // static batching (padding inputs or batch = 1)
   const std::vector<std::vector<model_token>>& loop(const std::vector<model_input>& inputs, const int& n_threads);
   // continuous batching (scheduling from the outside)
-  void step(model_token* dst);  // TODO one step
+  const int step_prefill(const model_input& input);
+  const int step_decoding();
+  const std::vector<int> request_done_ids();
 
  private:
   std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const std::vector<float>& beams_score,

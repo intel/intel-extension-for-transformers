@@ -19,42 +19,38 @@
 
 #include "models/model_utils/model_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-enum seq_status {
-  SEQ_UNKNOWN,
-  SEQ_WAITING,
-  SEQ_PREFILL,
-  SEQ_DECODING,
-  SEQ_FINISHED,
+enum class seq_status : int {
+  UNKNOWN = 0,
+  WAITING,
+  PREFILL,
+  DECODING,
+  FINISHED,
 };
 
-enum pool_property {
-  POOL_WAITING,
-  POOL_RUNNING,
+enum class pool_property : int {
+  WAITING = 0,
+  HOLDING,
+  RUNNING,
+  FINISHED,
 };
 
-enum serve_policy {
-  SPY_FCFS,  // first come first serve
+enum class serve_policy : int {
+  FCFS = 0,  // first come first serve
 };
 
 struct sequence {
-  int request_id = -1;  // -1 means unknown
+  int request_idx = -1;  // -1 means unknown
   int64_t receive_time;
   int64_t end_time;
   model_token* prompt_ids = NULL;
+  std::vector<model_token> generated_ids;
   uint32_t n_prompt_tokens;
-  model_token* generated_ids = NULL;
-  uint32_t n_generated_tokens;
+  uint32_t n_past;
+  uint32_t n_total;
+  uint32_t n_tokens;
   generation_config* gen_conf = NULL;
-  seq_status status = SEQ_UNKNOWN;
+  seq_status status = seq_status::UNKNOWN;
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 // abstract class
 class pool {
