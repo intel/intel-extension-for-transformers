@@ -1,28 +1,30 @@
-<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px">AI Talking Photo</h1>
+<h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Neural Chat</h1>
+
+<h2>🚀 Demo</h2>
+
+[http://neuralstudio.intel.com/NeuralChat](http://neuralstudio.intel.com/NeuralChat)
 
 <h2>📸 Project Screenshots:</h2>
 
-<img src="https://imgur.com/w6A4cgy.png" alt="project-screenshot" width="400" height="400/">
+<img src="https://imgur.com/04qfWb8.png" alt="project-screenshot" width="800" height="400/">
 
-<img src="https://imgur.com/nriEzQV.png" alt="project-screenshot" width="400" height="400/">
+<img src="https://imgur.com/yZ5AjWE.png" alt="project-screenshot" width="800" height="400/">
 
-<img src="https://imgur.com/lwVVC5y.png" alt="project-screenshot" width="400" height="400/">
+<img src="https://imgur.com/OgNJ0cM.png" alt="project-screenshot" width="800" height="400/">
 
 
 <h2>🧐 Features</h2>
 
 Here're some of the project's features:
 
-- Basic chat: Enter the main page to engage in textual conversations through messaging.
-- Upload images: Click the 'Upload' button to select an image from your gallery for uploading. Once the upload is successful, you can simply drag and drop the image into the chat box to start a conversation.
-- Photo classify: Successfully uploaded images will be  automatically categorize uploaded images by people, time, and location. Easily access and view different image categories. Customize image information as needed.
-- Photo manipulation: You can perform various actions on a single image, such as deleting it, enlarging it, downloading it, resizing it, and rotating it. 
-- Hint：Automatically identify image details and show them in a pop-up box. You can then chat with the chatbot using the information and relevant images.
-- Txt2Img: Enhance the selected images with artistic transformations, such as creating portraits reminiscent of Van Gogh's style.
-- Chat history: The current session will be saved within the specified time frame. If the user closes the window or navigates to other pages, they can resume the conversation from where they left off when they return.
-- Talking bot: Supporting voice chat, it allows for the substitution of text with voice in interactions with chatbots, enabling the completion of the aforementioned tasks.
-- settings: 
-To protect user privacy, we automatically delete stored data in our database every 30 minutes. Users can also manually clear their history or choose not to keep it.
+- Basic mode：Choose the best model from different domains to chat.
+- Advanced mode：Select different models/different knowledge base chats, and you can customize the corresponding parameters.
+- hint：Start a chat according to the prompt, which is the first sentence of the chat.
+- New Topic: Clear the current context and restart the chat.
+- Txt2Img: Generate an image based on the current answer, and you can hover to zoom in the image.
+- ChatGPT: Integrated with ChatGPT, you can directly access the relevant functionalities of OpenAI chat by entering your OpenAI API key.
+- Chat History: View chat history.
+- Regenerate: Regenerates the current conversation.
 
 <h2>🛠️ Get it Running:</h2>
 
@@ -32,14 +34,29 @@ To protect user privacy, we automatically delete stored data in our database eve
 
 3. Modify the required .env variables.
     ```
-    GETIMAGELIST_URL=
-    UPLOAD_IMAGE_URL=
-    BASE_URL=
-    TALKING_URL=
-    AUDIO_URL=
-    TRAFFIC_URL= 
+    LLMA_URL=
+    GPT_J_6B_URL=
+    KNOWLEDGE_URL=
+    TXT2IMG=
 
     ```
 4. Execute `npm install` to install the corresponding dependencies.
 
 5. Execute `npm run dev` in both enviroments
+
+<h2>📕Instructions for using OpenAI:</h2> 
+
+1. Switch to the ChatGPT tab.
+<img src="https://imgur.com/8hJW8hh.png" alt="project-screenshot" width="200" height="200/">
+
+2. Enter OpenAI API key in the left sidebar.[Obtain it from https://openai.com/. Without entering the OpenAI API key, you will not be able to use it properly.]
+<img src="https://imgur.com/Iu7CmSa.png" alt="project-screenshot" width="200" height="200/">
+
+3. Once you have entered the API key, the input box will be ready for use. All the questions will be answered by ChatGPT.
+
+<h2>Disclaimer</h2> 
+This project is to provide instructions and guidance on how to use OpenAI. However, please note the following:
+
+1. OpenAI Policies: OpenAI may have its own policies and regulations, such as API usage limits, pricing plans, service agreements, etc. Please make sure you are aware of and comply with OpenAI's relevant policies to avoid any violations.
+
+2. If you have any questions or issues related to OpenAI while using this service, we take no responsibility for them..
