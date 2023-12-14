@@ -202,7 +202,6 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
-        calib_iters=4
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
