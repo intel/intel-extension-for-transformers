@@ -60,13 +60,11 @@ from intel_extension_for_transformers.neural_chat.config import BaseFinetuningCo
 from transformers.integrations.deepspeed import (
     is_deepspeed_available,
 )
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 
 if is_bitsandbytes_available():
     import bitsandbytes as bnb # pylint: disable=E0401
-
-def is_optimum_habana_available():
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 
 class Finetuning:
@@ -332,7 +330,7 @@ class Finetuning:
 
     def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
         if finetune_args.device == 'hpu':
-            if not is_optimum_habana_available():
+            if not is_hpu_available:
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
                 )

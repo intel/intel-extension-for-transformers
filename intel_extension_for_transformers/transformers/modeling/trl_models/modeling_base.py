@@ -32,6 +32,7 @@ from huggingface_hub.utils import (
 from safetensors.torch import load_file as safe_load_file
 from transformers import PreTrainedModel
 import importlib
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 
 def is_peft_available():
@@ -43,14 +44,7 @@ def is_transformers_greater_than(version: str) -> bool:
     return _transformers_version > version
 
 
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
-
-
-if is_optimum_habana_available():
+if is_hpu_available:
     from optimum.habana.accelerate import GaudiAccelerator as Accelerator # pylint: disable=E0611, E0401
     from optimum.habana.utils import to_device_dtype # pylint: disable=E0611, E0401
 else:

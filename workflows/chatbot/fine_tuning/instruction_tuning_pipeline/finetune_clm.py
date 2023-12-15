@@ -25,13 +25,13 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
-from intel_extension_for_transformers.llm.finetuning.finetuning import is_optimum_habana_available
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-    if not is_optimum_habana_available():
+    if not is_hpu_available:
         parser = HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments, FinetuningArguments)
         )

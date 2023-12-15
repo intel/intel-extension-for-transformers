@@ -34,6 +34,7 @@ from transformers import (
 )
 import logging
 import sys
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 logger = logging.getLogger(__name__)
 # Setup logging
@@ -42,13 +43,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-
-
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 
 @dataclass
@@ -280,7 +274,7 @@ def compute_loss(self, model, inputs, return_outputs=False):
 
 
 if __name__ == "__main__":
-    if not is_optimum_habana_available():
+    if not is_hpu_available:
         from transformers import set_seed
 
         parser = HfArgumentParser(

@@ -25,12 +25,7 @@ import json
 import os
 import copy
 import conversation_utils
-
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
+from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
 
 # Model Constants
 IGNORE_INDEX = -100
