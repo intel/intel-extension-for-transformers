@@ -15,11 +15,12 @@
 #include <map>
 #include <vector>
 #include <thread>
-#include <sched.h>
 #include "jit_blas.h"
 #include "xbyak/xbyak_util.h"
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <sched.h>
 #endif
 namespace jblas {
 
@@ -290,7 +291,8 @@ class CpuDevice {
     }
     if (mHybrid) {
       int total_cores = numcores * _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::SmtLevel);
-      int core_type[total_cores], core_id[total_cores], L1[total_cores], L2[total_cores];
+      int *core_type = new int[total_cores], *core_id = new int[total_cores], *L1 = new int[total_cores],
+          *L2 = new int[total_cores];
       std::map<int, int> core_id_count;
 
       {
@@ -346,6 +348,10 @@ class CpuDevice {
         L2Cache = L2[P_core[0]];
         E_L2Cache = L2[E_core[0]];
       }
+      delete[] core_type;
+      delete[] core_id;
+      delete[] L1;
+      delete[] L2;
     }
     numthreads = numcores;
   }
