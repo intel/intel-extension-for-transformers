@@ -40,6 +40,49 @@ LLM Runtime supports the following models:
 |[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | ✅ | 4.34.0 or newer |
 |[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |    |  Latest |
 
+<style type="text/css">
+.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-jbyd{background-color:#ffffff;border-color:#000000;text-align:center;vertical-align:top}
+.tg .tg-iks7{background-color:#ffffff;border-color:#000000;text-align:left;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-jbyd" rowspan="2"><br>Model Name</th>
+    <th class="tg-jbyd" colspan="2">INT8</th>
+    <th class="tg-jbyd" colspan="2">INT4</th>
+    <th class="tg-jbyd" rowspan="2"><br>Transformer Version</th>
+  </tr>
+  <tr>
+    <th class="tg-iks7">RTN</th>
+    <th class="tg-iks7">GPTQ</th>
+    <th class="tg-iks7">RTN</th>
+    <th class="tg-iks7">GPTQ</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-iks7">Llama</td>
+    <td class="tg-iks7">yes</td>
+    <td class="tg-iks7">yes</td>
+    <td class="tg-iks7">yes</td>
+    <td class="tg-iks7">yes</td>
+    <td class="tg-iks7">Latest</td>
+  </tr>
+  <tr>
+    <td class="tg-iks7"></td>
+    <td class="tg-iks7"></td>
+    <td class="tg-iks7"></td>
+    <td class="tg-iks7"></td>
+    <td class="tg-iks7"></td>
+    <td class="tg-iks7"></td>
+  </tr>
+</tbody>
+</table>
 
 ### Code Generation
 | Model Name | INT8 | INT4 | GTPQ | Transformer Version |
