@@ -334,6 +334,12 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
 
     int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
     int_weight = int_weight.view(-1,int_weight.shape[-1])
+
+    if permute_func:
+        int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
+        gptq_scales = permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
+        gptq_zeros = permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
+
     if q_config['desc_act']:
         g_idx = model[f"{src_name}.g_idx"]
         int_weight2 = int_weight.clone()
@@ -349,11 +355,6 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
                 target_idx = group_idx * group_size + group_dict[group_idx]
             int_weight2[target_idx] = int_weight[i]
         int_weight = int_weight2
-
-    if permute_func:
-        int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
-        gptq_scales = permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
-        gptq_zeros = permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
 
     shape = int_weight.shape
     write_header(fout, shape[::-1], dst_name, GGML_QJBLAS_TYPE)
