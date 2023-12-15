@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gc02dd7b documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gf49f2d9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -351,11 +351,11 @@ ninja
 | Argument                    | Description                                                                                                   |
 | ————–              | ———————————————————————                                         |
 | model                       | Directory containing model file or model id: String                                                           |
-| –weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| –weight_dtype              | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4e2m1)/nf4 (default int4)                                                       |
 | –alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
-| –group_size                | Group size: Int (default: 32)                                                                                 |
-| –scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
-| –compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                                                 |
+| –group_size                | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                                                 |
+| –scale_dtype               | Data type of scales: fp32/bf16/fp8 (dafault fp32)                                                                 |
+| –compute_dtype             | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: int8)                                                 |
 | –use_ggml                  | Enable ggml for quantization and inference                                                                    |
 | -p / –prompt               | Prompt to start generation with: String (default: empty)                                                      |
 | -n / –n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
@@ -517,7 +517,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9e5b688e50> 
+   <jinja2.runtime.BlockReference object at 0x7fc785ede770> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
