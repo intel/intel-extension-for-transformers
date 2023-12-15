@@ -105,9 +105,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     for i in range(n_layer):
         convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
-                    f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head, permute_func=permute_func)
+                    f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head,
+                    permute_func=permute_func)
         convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.k_proj",
-                    f"layers.{i}.attention.wk.weight", list_vars, f, quantize_config, n_head, n_head_kv, permute_func=permute_func)
+                    f"layers.{i}.attention.wk.weight", list_vars, f, quantize_config, n_head, n_head_kv,
+                    permute_func=permute_func)
         convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.v_proj",
                     f"layers.{i}.attention.wv.weight", list_vars, f, quantize_config, n_head)
         convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.o_proj",
