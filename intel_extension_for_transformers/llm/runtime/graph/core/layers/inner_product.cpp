@@ -85,12 +85,29 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                                                            custom::epilogue::AddFp32>;
 
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-  utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
-  quanA.assign(WorkSpace);
-  typename Launcher::Param args{gp, {A, lda, &quanA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
-  jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = M - int(M / (1 + cb.PE));
+    utils::GemmProblem gp_P(1, offset, N, K, B->mBlockSize);
+    utils::GemmProblem gp_E(1, M - offset, N, K, B->mBlockSize);
+    auto quanA_P = kernel.mProA.createStorage(offset, K, B->mBlockSize, B->IsAsym());
+    auto quanA_E = kernel.mProA.createStorage(M - offset, K, B->mBlockSize, B->IsAsym());
+    quanA_P.assign(WorkSpace);
+    quanA_E.assign(WorkSpace + quanA_P.mSize);
+    int ldbias = broadcast_bias ? 0 : ldc;
+    typename Launcher::Param args_P{gp_P, {A, lda, &quanA_P}, {B}, {C, bias, ldc, ldbias}};
+    typename Launcher::Param args_E{
+        gp_E, {A + offset * lda, lda, &quanA_E}, {B}, {C + offset * ldc, bias + offset * ldbias, ldc, ldbias}};
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args_P,args_E, th);
+  } else {
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
+    quanA.assign(WorkSpace);
+    typename Launcher::Param args{gp, {A, lda, &quanA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  }
 }
 }  // namespace ip_add
 

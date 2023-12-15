@@ -583,7 +583,10 @@ using thread_func = std::function<void(int tid)>;
 
 class IThreading {
  public:
-  explicit IThreading(int nthreads) : mThreadNum(nthreads) {}
+  explicit IThreading(int nthreads) : mThreadNum(nthreads) {
+    GetCPUDevice();
+    _cd->setThreads(nthreads);
+  }
   virtual void parallel_for(const thread_func& func) const = 0;
   virtual inline void sync() const = 0;
   virtual int num_threads() const { return mThreadNum; };
@@ -604,6 +607,8 @@ class OMPThreading : public IThreading {
     }
   }
   virtual void set_threads(int nthreads) override {
+    GetCPUDevice();
+    _cd->setThreads(nthreads);
     mThreadNum = nthreads;
     omp_set_num_threads(nthreads);
   }
@@ -632,7 +637,11 @@ class StdThreading : public IThreading {
     }
   }
 
-  void set_threads(int nthreads) override { mThreadNum = nthreads; }
+  void set_threads(int nthreads) override {
+    GetCPUDevice();
+    _cd->setThreads(nthreads);
+    mThreadNum = nthreads;
+  }
 
   inline void sync() const override { assert(0); }
 
@@ -690,6 +699,67 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, para
     para.getIndex(thdp);
     if (thdp.valid) {
       launcher.run(args, thdp);
+    }
+  });
+}
+
+template <class Parallel_T, class Launch_T>
+void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, const typename Launch_T::Param& args_E,
+                  parallel::IThreading* th) {
+  device::CpuHybrid cb;
+  Parallel_T para_P({th->num_threads() - cb.E_core_num, args_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para_E({cb.E_core_num, args_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  using AParall = typename Launch_T::PrologueA::Parallel;
+  auto apara_P = launcher.mProA.createParallel(th->num_threads() - cb.E_core_num, args_P.problem);
+  auto apara_E = launcher.mProA.createParallel(cb.E_core_num, args_E.problem);
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para_P.print();
+    para_E.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    cb.core_bond(tidx);
+    if (tidx < cb.P_core_num) {
+      // run on P-core
+      typename AParall::ThreadProblem thdpA{tidx};
+      apara_P.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher.mProA.run(args_P.paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx};
+      para_P.getIndex(thdp);
+      if (thdp.valid) {
+        launcher.run(args_P, thdp);
+      }
+    } else if (tidx < cb.P_core_num + cb.E_core_num) {
+      // run on E-core
+      typename AParall::ThreadProblem thdpA{tidx};
+      apara_E.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher.mProA.run(args_E.paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx};
+      para_E.getIndex(thdp);
+      if (thdp.valid) {
+        launcher.run(args_E, thdp);
+      }
+    } else {
+      // run on SMT
+      typename AParall::ThreadProblem thdpA{tidx - cb.E_core_num};
+      apara_P.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher.mProA.run(args_P.paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx - cb.E_core_num};
+      para_P.getIndex(thdp);
+      if (thdp.valid) {
+        launcher.run(args_P, thdp);
+      }
     }
   });
 }
