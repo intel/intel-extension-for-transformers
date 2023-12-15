@@ -82,8 +82,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "--compute_dtype",
         type=str,
         choices=["fp32", "fp16", "bf16", "int8"],
-        help="Data type of Gemm computation: int8/bf16/fp32 (default: int8)",
-        default="int8",
+        help="Data type of Gemm computation: int8/bf16/fp32 (default: fp32)",
+        default="fp32",
     )
     parser.add_argument(
         "--use_ggml",
