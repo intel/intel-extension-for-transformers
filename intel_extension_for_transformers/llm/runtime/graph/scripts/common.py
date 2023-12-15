@@ -375,6 +375,6 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
-                                               compute_dtype="fp32")
+                                               compute_dtype="int8")
     dst.flatten()[:byte_size].tofile(fout)
     print(f"converting {dst_name} qauntized tensor to jblas q4 block")

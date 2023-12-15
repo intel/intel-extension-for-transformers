@@ -36,25 +36,26 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     woq_configs = {
-        "fp32": WeightOnlyQuantConfig(use_gptq=True),
-        # "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
-        # "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
-        # "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
-        }
+        "fp32": WeightOnlyQuantConfig(use_cache=True, use_quant=False),
+        "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
+        "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
+        "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
+    }
     prompt = "What is the meaning of life?"
 
-    model_name = "/mnt/disk1/data2/zhenweil/models/mistral/neural-chat-7b-v3-1"
+    model_name = args.model_name
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     inputs = tokenizer(prompt, return_tensors="pt")
 
+    pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+    pt_model.eval()
+    pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
     for config_type in woq_configs:
-        itrex_model = AutoModel.from_pretrained("/mnt/disk1/data2/zhenweil/models/mistral/neural-chat-7b-v3-1-GPTQ2", quantization_config=woq_configs[config_type], 
-                                                use_llm_runtime=True, trust_remote_code=True)
+        itrex_model = AutoModel.from_pretrained(model_name,
+                                                quantization_config=woq_configs[config_type],
+                                                use_llm_runtime=True,
+                                                trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
-
-        pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-        pt_model.eval()
-        pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
         print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
