@@ -147,7 +147,7 @@ struct quant_params {
   // [fp32, bf16, fp8]
   std::string scale_dtype = "fp32";
   // [fp32, fp16, bf16, int8]
-  std::string compute_dtype = "int8";
+  std::string compute_dtype = "fp32";
   std::string model_name = "unknown";
   bool use_ggml = false;
   // set by model_name automatically

@@ -648,11 +648,13 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
           "  --config              path to the configuration file (default: "
           ")\n");
   fprintf(stderr, "  --nthread             number of threads to use (default: 1)\n");
-  fprintf(stderr, "  --weight_dtype        number of bits to use for quantization (default: int4)\n");
+  fprintf(stderr,
+          "  --weight_dtype        number of bits to use for quantization: int4/int8/fp8_e4m3/fp8_e5m2/"
+          "fp4_e2m1/nf4 (default: int4)\n");
   fprintf(stderr, "  --alg                 quantization algorithm to use: sym/asym (default: sym)\n");
-  fprintf(stderr, "  --group_size          group size (default: 32)\n");
-  fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
-  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
+  fprintf(stderr, "  --group_size          group size: 32/128/-1 (per channel) (default: 32)\n");
+  fprintf(stderr, "  --scale_dtype         fp32/bf16/fp8 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)\n");
   fprintf(stderr, "  --use_ggml            enable ggml for quantization and inference\n");
   fprintf(stderr,
           "  --model_name          model name like falcon / llama (default: "
