@@ -26,7 +26,7 @@ LLM Runtime supports the following models:
 ### Text Generation
 | Model Name | INT8 | INT4 | GTPQ | Transformer Version |
 |---|:---:|:---:|:---:|:---:|
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ | ✅ | Latest |
+|| ✅ | ✅ | ✅ | Latest |
 |[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ |  ✅ | Latest |
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ |    | Latest |
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ |    |  Latest |
@@ -41,45 +41,45 @@ LLM Runtime supports the following models:
 |[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |    |  Latest |
 
 <style type="text/css">
-.tg  {border-collapse:collapse;border-color:#ccc;border-spacing:0;}
-.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
-  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:1px;color:#333;
-  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg .tg-jbyd{background-color:#ffffff;border-color:#000000;text-align:center;vertical-align:top}
-.tg .tg-iks7{background-color:#ffffff;border-color:#000000;text-align:left;vertical-align:top}
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
+  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-gvcd{background-color:#ffffff;border-color:#000000;color:#000000;text-align:left;vertical-align:top}
+.tg .tg-v0nz{background-color:#ffffff;border-color:#000000;color:#000000;text-align:center;vertical-align:top}
 </style>
 <table class="tg">
 <thead>
   <tr>
-    <th class="tg-jbyd" rowspan="2"><br>Model Name</th>
-    <th class="tg-jbyd" colspan="2">INT8</th>
-    <th class="tg-jbyd" colspan="2">INT4</th>
-    <th class="tg-jbyd" rowspan="2"><br>Transformer Version</th>
+    <th class="tg-v0nz" rowspan="2"><br>Model Name</th>
+    <th class="tg-v0nz" colspan="2">INT8</th>
+    <th class="tg-v0nz" colspan="2">INT4</th>
+    <th class="tg-v0nz" rowspan="2"><br>Transformer Version</th>
   </tr>
   <tr>
-    <th class="tg-iks7">RTN</th>
-    <th class="tg-iks7">GPTQ</th>
-    <th class="tg-iks7">RTN</th>
-    <th class="tg-iks7">GPTQ</th>
+    <th class="tg-gvcd">RTN</th>
+    <th class="tg-gvcd">GPTQ</th>
+    <th class="tg-gvcd">RTN</th>
+    <th class="tg-gvcd">GPTQ</th>
   </tr>
 </thead>
 <tbody>
   <tr>
-    <td class="tg-iks7">Llama</td>
-    <td class="tg-iks7">yes</td>
-    <td class="tg-iks7">yes</td>
-    <td class="tg-iks7">yes</td>
-    <td class="tg-iks7">yes</td>
-    <td class="tg-iks7">Latest</td>
+    <td class="tg-gvcd"><a href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-7B</a></td>
+    <td class="tg-gvcd">✅</td>
+    <td class="tg-gvcd">✅</td>
+    <td class="tg-gvcd">✅</td>
+    <td class="tg-gvcd">✅</td>
+    <td class="tg-gvcd">Latest</td>
   </tr>
   <tr>
-    <td class="tg-iks7"></td>
-    <td class="tg-iks7"></td>
-    <td class="tg-iks7"></td>
-    <td class="tg-iks7"></td>
-    <td class="tg-iks7"></td>
-    <td class="tg-iks7"></td>
+    <td class="tg-gvcd"></td>
+    <td class="tg-gvcd"></td>
+    <td class="tg-gvcd"></td>
+    <td class="tg-gvcd"></td>
+    <td class="tg-gvcd"></td>
+    <td class="tg-gvcd"></td>
   </tr>
 </tbody>
 </table>
