@@ -3,6 +3,7 @@ cmake>=3.16
 py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
+wheel
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
 accelerate

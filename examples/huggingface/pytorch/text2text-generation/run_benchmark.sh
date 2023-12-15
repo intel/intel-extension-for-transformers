@@ -98,7 +98,7 @@ function run_benchmark {
         elif [[ ${int8} == "true" ]]; then
             model_name_or_path=${tuned_checkpoint}
         else
-            model_name_or_path="fabiochiu/t5-base-tag-generation"
+            model_name_or_path="t5-base-tag"
         fi
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
