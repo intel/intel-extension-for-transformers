@@ -242,7 +242,7 @@ def add_run_args(parser: argparse.ArgumentParser):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model givan a dataset")
+    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model given a dataset")
     parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
     parser.add_argument('--dataset_name', type=str, default="~/pg19-data-test")
     parser.add_argument('--ctx_size', type=int, default=256)

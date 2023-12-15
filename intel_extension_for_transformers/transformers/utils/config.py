@@ -153,7 +153,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         runtime_supported_scheme = ["sym", "asym"]
 
         if self.compute_dtype is None:
-            self.compute_dtype = "int8"
+            self.compute_dtype = "fp32"
         else:
             if self.compute_dtype not in runtime_supported_compute_dtype:
                 raise ValueError("compute_dtype must be in {}.".format(
