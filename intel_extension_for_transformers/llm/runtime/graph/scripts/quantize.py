@@ -52,26 +52,36 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument("--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1)
     parser.add_argument(
         "--weight_dtype",
-        choices=["int4", "int8"],
+        choices=["int4", "int8", "fp8", "fp8_e5m2", "fp8_e4m3",
+                 "fp4", "fp4_e2m1", "nf4"],
         help="Data type of quantized weight: int4/int8 (default: int4)",
         default="int4",
     )
     parser.add_argument(
         "--alg",
         type=str,
+        choices=["sym", "asym"],
         help="Quantization algorithm to use: sym/asym (default: sym)",
         default="sym",
     )
-    parser.add_argument("--group_size", type=int, help="Group size: Int (default: 32)", default=32)
+    parser.add_argument(
+        "--group_size",
+        type=int,
+        choices=[-1, 32, 128],
+        help="Group size: Int (default: 32)",
+        default=32,
+    )
     parser.add_argument(
         "--scale_dtype",
         type=str,
+        choices=["fp32", "bf16", "fp8"],
         help="Data type of scales: bf16/fp32 (default: fp32)",
         default="fp32",
     )
     parser.add_argument(
         "--compute_dtype",
         type=str,
+        choices=["fp32", "fp16", "bf16", "int8"],
         help="Data type of Gemm computation: int8/bf16/fp32 (default: int8)",
         default="int8",
     )
@@ -97,10 +107,28 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--out_file", args.out_file])
     cmd.extend(["--nthread", str(args.nthread)])
     cmd.extend(["--weight_dtype", str(args.weight_dtype)])
-    cmd.extend(["--alg", args.alg])
+    if (str(args.weight_dtype))[:3] in ["fp8", "fp4", "nf4"] and str(args.alg) in ["asym"]:
+        print("WARNING: asym alg is not be supported in float quant types. Fall back to sym.");
+        cmd.extend(["--alg", "sym"])
+    else:
+        cmd.extend(["--alg", args.alg])
     cmd.extend(["--group_size", str(args.group_size)])
-    cmd.extend(["--scale_dtype", args.scale_dtype])
-    cmd.extend(["--compute_dtype", args.compute_dtype])
+    if (str(args.weight_dtype))[:3] not in ["fp8"]:
+        sdtype = str(args.scale_dtype)
+        if str(args.scale_dtype) in ["fp8"]:
+            print("WARNING: fp8 scale is only be supported in fp8 weight type. Fall back to fp32.");
+            sdtype = "fp32"
+        cmd.extend(["--scale_dtype", sdtype])
+    else:
+        if str(args.scale_dtype) != "fp8":
+            print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+        cmd.extend(["--scale_dtype", "fp8"])
+    if (str(args.weight_dtype))[:3] in ["fp8", "fp4", "nf4"] and str(args.compute_dtype) in ["int8"]:
+        print("WARNING: int8 compute dtype is not be supported in float quant types! "\
+                      "Fall back to fp32.")
+        cmd.extend(["--compute_dtype", "fp32"])
+    else:
+        cmd.extend(["--compute_dtype", args.compute_dtype])
     if args.use_ggml:
         cmd.extend(["--use_ggml"])
 

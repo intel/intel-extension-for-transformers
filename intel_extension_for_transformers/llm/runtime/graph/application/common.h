@@ -138,10 +138,15 @@ struct quant_params {
   std::string config = "";
   int nthread = 1;
 
+  // [int4, int8, fp8_e5m2, fp8_e4m3, fp4_e2m1, nf4]
   std::string weight_dtype = "int4";
+  // [sym, asym]
   std::string alg = "sym";
+  // [-1, 32, 128]
   int32_t group_size = 32;
+  // [fp32, bf16, fp8]
   std::string scale_dtype = "fp32";
+  // [fp32, fp16, bf16, int8]
   std::string compute_dtype = "int8";
   std::string model_name = "unknown";
   bool use_ggml = false;

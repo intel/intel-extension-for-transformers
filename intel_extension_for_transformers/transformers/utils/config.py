@@ -140,24 +140,63 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         ):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
+        # MX-compliant format
+        # https://arxiv.org/abs/2310.10537
+        runtime_supported_compute_dtype = ["fp32", "fp16", "bf16", "int8"]
+        runtime_supported_weight_dtype = ["int4", "int8",
+                                          "fp8", "fp8_e5m2", "fp8_e4m3",
+                                          "fp4", "fp4_e2m1",
+                                          "nf4",
+                                            ]
+        runtime_supported_scale_dtype = ["fp32", "bf16", "fp8"]
+        runtime_supported_group_size = [-1, 32, 128]
+        runtime_supported_scheme = ["sym", "asym"]
+
         if self.compute_dtype is None:
             self.compute_dtype = "int8"
-        elif self.compute_dtype not in ["int8", "bf16", "fp32"]:
-            raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
+        else:
+            if self.compute_dtype not in runtime_supported_compute_dtype:
+                raise ValueError("compute_dtype must be in {}.".format(
+                    runtime_supported_compute_dtype))
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
-        elif self.weight_dtype not in ["int4", "int8"]:
-            raise ValueError(f"weight_dtype must be 'int4', 'int8'.")
+        elif self.weight_dtype == "fp8":
+            self.weight_dtype == "fp8_e4m3"
+        elif self.weight_dtype == "fp4":
+            self.weight_dtype = "fp4_e2m1"
+        else:
+            if self.weight_dtype not in runtime_supported_weight_dtype:
+                raise ValueError("weight_dtype must be in {}.".format(
+                    runtime_supported_weight_dtype))
 
-        if self.scale_dtype not in ["fp32", "fp16"]:
-            raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
+        if self.scale_dtype not in runtime_supported_scale_dtype:
+            raise ValueError("scale_dtype must be in {}.".format(
+                runtime_supported_scale_dtype))
 
-        if self.group_size not in [-1, 32, 128]:
-            raise ValueError("group_size must be an integer in [-1, 32, 128]")
+        if self.group_size not in runtime_supported_group_size:
+            raise ValueError("group_size must be an integer in {}.".format(
+                runtime_supported_group_size))
 
-        if self.scheme not in ["sym", "asym"]:
-            raise ValueError("scheme must be 'sym', 'asym'.")
+        if self.scheme not in runtime_supported_scheme:
+            raise ValueError("scheme must be in {}.".format(runtime_supported_scheme))
+
+        if self.weight_dtype[:3] in ["fp8", "fp4", "nf4"]:
+            if self.compute_dtype in ["int8"]:
+                print("WARNING: int8 compute dtype is not be supported in float quant types! "\
+                      "Fall back to fp32.")
+                self.compute_dtype = "fp32"
+            if self.scheme in ["asym"]:
+                print("WARNING: asym alg is not be supported in float quant types! "\
+                      "Fall back to sym.");
+                self.scheme = "sym"
+            if self.scale_dtype in ["fp8"] and self.weight_dtype[:3] not in ["fp8"] :
+                print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
+                      "Fall back to fp32.")
+                self.scale_dtype = "fp32"
+            if self.weight_dtype[:3] == "fp8" and self.scale_dtype != "fp8":
+                print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+                self.scale_dtype = "fp8"
 
     def quantization_method(self):
         r"""

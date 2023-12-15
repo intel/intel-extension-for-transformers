@@ -673,6 +673,12 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {  // NOLIN
       params.nthread = std::stoi(argv[++i]);
     } else if (arg == "--weight_dtype") {
       params.weight_dtype = argv[++i];
+      if (params.weight_dtype == "fp8") {
+        params.weight_dtype = "fp8_e4m3";
+      }
+      if (params.weight_dtype == "fp4") {
+        params.weight_dtype = "fp4_e2m1";
+      }
     } else if (arg == "--alg") {
       params.alg = argv[++i];
     } else if (arg == "--group_size") {
