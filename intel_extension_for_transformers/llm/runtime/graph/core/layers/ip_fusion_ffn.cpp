@@ -457,7 +457,6 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
                       float* tmp2, float* output, int seq, int fin, int fmid, int fout, void* workspace,
                       jblas::parallel::IThreading* th, typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
                       typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
-
   if (seq <= 16) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore_T>;
     using Launcher_epi = jblas::wrapper::gemm::LauncherKBlock<GemmCore_T::ISA, GemmCore_T, Act_T, Wei_T,
@@ -586,7 +585,7 @@ bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int 
       if (w1tmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
         auto w1ptr = reinterpret_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(w1tmp);
         if (w1ptr->ShfIndice()) {
-          return false; // Do not support 3w ffn fusion for activation shuffle
+          return false;  // Do not support 3w ffn fusion for activation shuffle
         }
         constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
         support = contains(w1tmp->mCoreId, AllKBlockCores, EleNum);

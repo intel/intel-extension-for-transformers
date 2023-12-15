@@ -871,7 +871,7 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
 }
 
 size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                          const quant_params_internal params, int nthread, int n, int k, int* g_idx) {
+                   const quant_params_internal params, int nthread, int n, int k, int* g_idx) {
   auto ctype = quant2ne_comp_type(params.compute_dtype);
   auto dstbptr = (int8_t*)dstpr;
   jblas::parallel::OMPThreading threading(nthread);
@@ -905,8 +905,8 @@ size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* s
   auto gsize = params.group_size == -1 ? k : params.group_size;
   auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype, g_idx);
   if (size) {
-    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type, params.alg == quant_alg::asym,
-                                  ctype, g_idx, &threading)) {
+    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type,
+                        params.alg == quant_alg::asym, ctype, g_idx, &threading)) {
       printf("Failed to quant this weight\n");
       return 0;
     }
