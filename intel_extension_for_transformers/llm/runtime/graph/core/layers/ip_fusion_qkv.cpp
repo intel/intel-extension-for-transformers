@@ -84,6 +84,11 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto reduceA = kernel.mProA.createStorage(M, K, BQ->mBlockSize);
     if (BQ->IsAsym()) {
       reduceA.assign(WorkSpace);
+      WorkSpace += reduceA.mSize;
+    }
+    auto reordA = kernel.mProA.createReorderStorage(M, K, BQ->mBlockSize);
+    if (BQ->ShfIndice()) {
+      reordA.assign(WorkSpace);
     }
     auto cstep = static_cast<int>(BQ->CStep());
     typename Launcher::BEpiParam blkargs[3]{{BQ->template SPtr<int8_t>(), BQ->SDtype(), cstep,
@@ -94,10 +99,10 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
                                              BV->template ZPtr<int8_t>(), reduceA.template RPtr<float>(), reduceA.lda}};
     utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
     typename Launcher::Param args[3]{
-        {gp, {A, lda, &reduceA, BQ->ShfIndice()}, {BQ}, blkargs[0], {C, ldc}},
-        {gp, {A, lda, &reduceA, BK->ShfIndice()}, {BK}, blkargs[1], {C + M * ldc, ldc}},
-        {gp, {A, lda, &reduceA, BV->ShfIndice()}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
-    if (BQ->IsAsym()) {
+        {gp, {A, lda, &reduceA, BQ->ShfIndice(), &reordA}, {BQ}, blkargs[0], {C, ldc}},
+        {gp, {A, lda, &reduceA, BK->ShfIndice(), &reordA}, {BK}, blkargs[1], {C + M * ldc, ldc}},
+        {gp, {A, lda, &reduceA, BV->ShfIndice(), &reordA}, {BV}, blkargs[2], {C + M * ldc * 2, ldc}}};
+    if (BQ->IsAsym() || BQ->ShfIndice()) {
       GemmRunWithA_QKV<Parallel>(&kernel, args, th);
     } else {
       GemmRun_QKV<Parallel>(&kernel, args, th);
@@ -111,12 +116,17 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto BQ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BQ);
     auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
     auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
-
-    utils::GemmProblem gp(1, M, N, K);
-    typename Launcher::Param args[3]{{gp, {A, K, nullptr, BQ->ShfIndice()}, {BQ}, {C, ldc}},
-                                     {gp, {A, K, nullptr, BK->ShfIndice()}, {BK}, {C + M * ldc, ldc}},
-                                     {gp, {A, K, nullptr, BV->ShfIndice()}, {BV}, {C + M * ldc * 2, ldc}}};
-    GemmRun_QKV<Parallel>(&kernel, args, th);
+    auto reordA = kernel.mProA.createReorderStorage(M, K, BQ->mBlockSize);
+    utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);
+    typename Launcher::Param args[3]{{gp, {A, K, nullptr, BQ->ShfIndice(), &reordA}, {BQ}, {C, ldc}},
+                                     {gp, {A, K, nullptr, BK->ShfIndice(), &reordA}, {BK}, {C + M * ldc, ldc}},
+                                     {gp, {A, K, nullptr, BV->ShfIndice(), &reordA}, {BV}, {C + M * ldc * 2, ldc}}};
+    if (BQ->ShfIndice()) {
+      reordA.assign(WorkSpace);
+      GemmRunWithA_QKV<Parallel>(&kernel, args, th);
+    } else {
+      GemmRun_QKV<Parallel>(&kernel, args, th);
+    }
   }
 }
 
@@ -133,10 +143,12 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   static Launcher kernel;
   auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
   quanA.assign(WorkSpace);
+  WorkSpace += quanA.mSize;
+  auto reordA = kernel.mProA.createReorderStorage(M, K, BQ->mBlockSize);
   utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
-  typename Launcher::Param args[3]{{gp, {A, K, &quanA, BQ->ShfIndice()}, {BQ}, {C, N}},
-                                   {gp, {A, K, &quanA, BK->ShfIndice()}, {BK}, {C + M * ldc, N}},
-                                   {gp, {A, K, &quanA, BV->ShfIndice()}, {BV}, {C + M * ldc * 2, N}}};
+  typename Launcher::Param args[3]{{gp, {A, K, &quanA, BQ->ShfIndice(), &reordA}, {BQ}, {C, N}},
+                                   {gp, {A, K, &quanA, BK->ShfIndice(), &reordA}, {BK}, {C + M * ldc, N}},
+                                   {gp, {A, K, &quanA, BV->ShfIndice(), &reordA}, {BV}, {C + M * ldc * 2, N}}};
   GemmRunWithA_QKV<Parallel>(&kernel, args, th);
 }
 }  // namespace ip_qkv
@@ -159,6 +171,10 @@ bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int 
     storage::gemm::IWeightBase* wset[] = {wqtmp, wktmp, wvtmp};
     if (samePackedWeight(wset, 3)) {
       if (wqtmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+        auto wqptr = reinterpret_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(wqtmp);
+        if (wqptr->ShfIndice()) {
+          return false;  // Do not support QKV fusion for activation shuffle
+        }
         constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
         support = contains(wqtmp->mCoreId, AllKBlockCores, EleNum);
         support &= hasISA(AllKBlockCores, EleNum);

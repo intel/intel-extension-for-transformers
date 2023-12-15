@@ -41,11 +41,11 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
     auto reduceA = kernel.mProA.createReduceStorage(M, K, B->mBlockSize);
-    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
     if (B->IsAsym()) {
       reduceA.assign(WorkSpace);
       WorkSpace += reduceA.mSize;
     }
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
     if (B->ShfIndice()) {
       reordA.assign(WorkSpace);
     }
@@ -66,16 +66,14 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
     utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    typename Launcher::Param args{gp, {A, K, nullptr, B->ShfIndice(), &reordA}, {B}, {C, N}};
     if (B->ShfIndice()) {
-      auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
       reordA.assign(WorkSpace);
-      typename Launcher::Param args{gp, {A, K, nullptr, B->ShfIndice(), &reordA}, {B}, {C, N}};
-      jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+      jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
     } else {
-      typename Launcher::Param args{gp, {A, K, nullptr}, {B}, {C, N}};
       jblas::parallel::GemmRun<Parallel>(kernel, args, th);
     }
-
   }
 }
 
@@ -91,13 +89,13 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
   WorkSpace += quanA.mSize;
+  auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+  typename Launcher::Param args{gp, {A, K, &quanA, B->ShfIndice(), &reordA}, {B}, {C, N}};
   if (B->ShfIndice()) {
-    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
     reordA.assign(WorkSpace);
-    typename Launcher::Param args{gp, {A, K, &quanA, B->ShfIndice(), &reordA}, {B}, {C, N}};
-    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    kernel.mProA.quantize({A, K, &quanA, B->ShfIndice(), &reordA}, M, K, th);
+    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
   } else {
-    typename Launcher::Param args{gp, {A, K, &quanA}, {B}, {C, N}};
     jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
   }
 }
