@@ -97,20 +97,38 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
                                                            Wei_T, custom::epilogue::AddFp32>;
 
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-  utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
-  quanA.assign(WorkSpace);
-  WorkSpace += quanA.mSize;
-  auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
-  typename Launcher::Param args{
-      gp, {A, lda, &quanA, B->ShfIndice(), &reordA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
-  if (B->ShfIndice()) {
-    reordA.assign(WorkSpace);
-    kernel.mProA.quantize({A, lda, &quanA, B->ShfIndice(), &reordA}, M, K, th);
-    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = M - int(M / (1 + cb.PE));
+    utils::GemmProblem gp_P(1, offset, N, K, B->mBlockSize);
+    utils::GemmProblem gp_E(1, M - offset, N, K, B->mBlockSize);
+    auto quanA_P = kernel.mProA.createStorage(offset, K, B->mBlockSize, B->IsAsym());
+    auto quanA_E = kernel.mProA.createStorage(M - offset, K, B->mBlockSize, B->IsAsym());
+    quanA_P.assign(WorkSpace);
+    quanA_E.assign(WorkSpace + quanA_P.mSize);
+    int ldbias = broadcast_bias ? 0 : ldc;
+    typename Launcher::Param args_P{gp_P, {A, lda, &quanA_P}, {B}, {C, bias, ldc, ldbias}};
+    typename Launcher::Param args_E{
+        gp_E, {A + offset * lda, lda, &quanA_E}, {B}, {C + offset * ldc, bias + offset * ldbias, ldc, ldbias}};
+    assert(B->ShfIndice() == nullptr);
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args_P, args_E, th);
   } else {
-    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
+    quanA.assign(WorkSpace);
+    WorkSpace += quanA.mSize;
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    typename Launcher::Param args{
+        gp, {A, lda, &quanA, B->ShfIndice(), &reordA}, {B}, {C, bias, ldc, broadcast_bias ? 0 : ldc}};
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
+      kernel.mProA.quantize({A, lda, &quanA, B->ShfIndice(), &reordA}, M, K, th);
+      jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+    } else {
+      jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    }
   }
 }
 }  // namespace ip_add
