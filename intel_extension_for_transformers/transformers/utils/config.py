@@ -36,7 +36,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         scale_dtype="fp32",
         mse_range=False,
         use_double_quant=False,
-        double_quant_dtype="int8",  # reserve for double quant
+        double_quant_scale_dtype="fp32",  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
@@ -55,7 +55,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.weight_dtype = weight_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
-        self.double_quant_dtype = double_quant_dtype
+        self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scale_dtype = scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
