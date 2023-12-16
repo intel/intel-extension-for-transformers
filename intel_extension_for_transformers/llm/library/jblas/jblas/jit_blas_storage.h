@@ -785,6 +785,8 @@ class StorageWeightKBlockS8 : public IWeightKBlockBase {
     return mQBuf.size<T>();
   }
 
+  inline constexpr int* ShfIndice() { return nullptr; }
+
   virtual void assign(int8_t* buf) override {
     InfoType::deserializeBuffer(buf, true);
     mQBuf.deserializeBuffer(buf, true);

@@ -387,7 +387,7 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
       sign_revert = _mm256_and_si256(sign_revert, sign_revert_and_mask);
       e_revert = _mm256_and_si256(e_revert, e_revert_and_mask);
       e_revert = _mm256_srli_epi32(e_revert, mantissabit);
-      if constexpr (WITH_SCALE) {
+      if constexpr (WITH_SCALE && std::is_same_v<_S_T, utils::f8>) {
         auto scale = _mm256_cvtepi8_epi32(_mm_loadu_si128(reinterpret_cast<__m128i*>(sptr + j / _PACK_ROW)));
         if constexpr (_PACK_ROW == 2) scale = _mm256_permutexvar_epi32(packrow2_permute_idx, scale);
         e_revert = _mm256_add_epi32(e_revert, scale);
@@ -398,6 +398,11 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
       mantissa_revert = _mm256_and_si256(mantissa_revert, mantissa_revert_and_mask);
       auto fp_v = _mm256_or_ps(_mm256_castsi256_ps(sign_revert), _mm256_castsi256_ps(e_revert));
       fp_v = _mm256_or_ps(fp_v, _mm256_castsi256_ps(mantissa_revert));
+      if constexpr (WITH_SCALE && std::is_same_v<_S_T, float>) {
+        auto scale = _mm256_loadu_ps(sptr + j / _PACK_ROW);
+        if constexpr (_PACK_ROW == 2) scale = _mm256_permutexvar_ps(packrow2_permute_idx, scale);
+        fp_v = _mm256_mul_ps(fp_v, scale);
+      }
       if constexpr (std::is_same_v<_DST_T, float>) {
         _mm256_storeu_ps(dstptr + i * ld_dst + j, fp_v);
       } else {
@@ -407,7 +412,11 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
     for (; j < align_col; j += 8) quant();
     for (; j < col; j++) {
       auto fp_v = ref::f8_to_fp32(srcptr[i * ld_src + j], src_f8_type);
-      dstptr[i * ld_dst + j] = fp_v * std::pow(2, sptr[j / _PACK_ROW].x);
+      if constexpr (std::is_same_v<_S_T, utils::f8>) {
+        dstptr[i * ld_dst + j] = fp_v * std::pow(2, sptr[j / _PACK_ROW].x);
+      } else if constexpr (std::is_same_v<_S_T, float>) {
+        dstptr[i * ld_dst + j] = fp_v * sptr[j / _PACK_ROW];
+      }
     }
   }
   return JblasSuccess;

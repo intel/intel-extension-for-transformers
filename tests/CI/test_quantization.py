@@ -292,7 +292,7 @@ class TestQuantization(unittest.TestCase):
             if 'MatMul' in tensor.name:
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
-    
+
     @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
             "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
@@ -366,11 +366,12 @@ class TestQuantization(unittest.TestCase):
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))
         # fp8
-        woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8")
+        woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
         woq_model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
         )
         output = woq_model(dummy_input)
+        print(float(output[0][0][0][0]))
         self.assertTrue(
             isclose(float(output[0][0][0][0]), -6.790275573730469, rel_tol=1e-04)
         )

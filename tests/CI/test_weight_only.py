@@ -59,7 +59,7 @@ class TestWeightOnly(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
         shutil.rmtree('tmp', ignore_errors=True)
-    
+
     def test_woq_config(self):
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
         diff_res = config.to_diff_dict()
@@ -86,15 +86,15 @@ class TestWeightOnly(unittest.TestCase):
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = torch.ops.jblasop.woq_quantize(
-            raw_wei, True, 32, "fp32", "s8_scalef32")
+            raw_wei, True, 32, "fp32", "int8", "fp32")
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
         torch.ops.jblasop.woq_dequantize(
-            compress_wei, revert_wei, True, "fp32", "s8_scalef32")
+            compress_wei, revert_wei, True, "fp32", "int8", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(revert_wei)
-            activation = torch.rand(1,32, dtype=torch.float)
+            activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
             config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
@@ -107,10 +107,10 @@ class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = torch.ops.jblasop.woq_quantize(
-            raw_wei, True, 32, "fp32", "s4fullrange_scalef32")
+            raw_wei, True, 32, "fp32", "int4_fullrange", "fp32")
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
         torch.ops.jblasop.woq_dequantize(
-            compress_wei, revert_wei, True, "fp32", "s4fullrange_scalef32")
+            compress_wei, revert_wei, True, "fp32", "int4_fullrange", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -197,7 +197,7 @@ class TestWeightOnly(unittest.TestCase):
         model.print_trainable_parameters()
         lora_weights = {}
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+            if isinstance(module, QuantizedLoraLinearQBits) and "int8" in module.weight_dtype:
                 lora_weights[name] = [
                     getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
                     getattr(module.lora_B, module.active_adapter[0]).weight.clone()
@@ -212,7 +212,7 @@ class TestWeightOnly(unittest.TestCase):
         )
         trainer.train()
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+            if isinstance(module, QuantizedLoraLinearQBits) and "int8" in module.weight_dtype:
                 self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
                 self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
 
