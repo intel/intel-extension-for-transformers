@@ -1,6 +1,8 @@
 # Step-by-Step
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
->**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
+>**Note**: 
+> 1.  default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
+> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 with use_llm_runtime=False.
 
 
 # Prerequisite​

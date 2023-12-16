@@ -18,7 +18,7 @@
 #include "core/data_types.h"
 #include "jblas/jit_blas.h"
 
-enum class quant_bits : int { q4 = 0, q8, fp4, nf4, fp8, count };
+enum class quant_bits : int { q4 = 0, q8, fp4_e2m1, nf4, fp8_e4m3, fp8_e5m2, count };
 static inline quant_bits parse_bits(const std::string& bits) {
   if (bits == "int4") {
     return quant_bits::q4;
@@ -26,14 +26,17 @@ static inline quant_bits parse_bits(const std::string& bits) {
   if (bits == "int8") {
     return quant_bits::q8;
   }
-  if (bits == "fp4") {
-    return quant_bits::fp4;
+  if (bits == "fp4_e2m1" || bits == "fp4") {
+    return quant_bits::fp4_e2m1;
   }
   if (bits == "nf4") {
     return quant_bits::nf4;
   }
-  if (bits == "fp8") {
-    return quant_bits::fp8;
+  if (bits == "fp8_e4m3" || bits == "fp8") {
+    return quant_bits::fp8_e4m3;
+  }
+  if (bits == "fp8_e5m2") {
+    return quant_bits::fp8_e5m2;
   }
   return quant_bits::count;
 }

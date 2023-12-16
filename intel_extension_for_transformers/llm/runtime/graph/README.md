@@ -118,14 +118,14 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
-Argument description of WeightOnlyQuantConfig:
+Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
-| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                           |
-| weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
+| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                           |
+| weight_dtype      | String      | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default int4)                                 |
 | alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
-| group_size        | Int         | Group size: Int (default: 32)                                                           |
-| scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
+| group_size        | Int         | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16/fp8 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
 | use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 
@@ -255,15 +255,15 @@ You can run LLM with one-click python script including conversion, quantization 
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
-Argument description of run.py:
+Argument description of run.py ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument                    | Description                                                                                                   |
 | --------------              | ---------------------------------------------------------------------                                         |
 | model                       | Directory containing model file or model id: String                                                           |
-| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| --weight_dtype              | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4e2m1)/nf4 (default int4)                                                       |
 | --alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
-| --group_size                | Group size: Int (default: 32)                                                                                 |
-| --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
-| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                                                 |
+| --group_size                | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                                                 |
+| --scale_dtype               | Data type of scales: fp32/bf16/fp8 (dafault fp32)                                                                 |
+| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                                                 |
 | --use_ggml                  | Enable ggml for quantization and inference                                                                    |
 | -p / --prompt               | Prompt to start generation with: String (default: empty)                                                      |
 | -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
@@ -306,7 +306,7 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
-Argument description of quantize.py:
+Argument description of quantize.py ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument        | Description                                                  |
 | --------------  | -----------------------------------------------------------  |
 | --model_file    | Path to the fp32 model: String                               |
@@ -314,12 +314,26 @@ Argument description of quantize.py:
 | --build_dir     | Path to the build file: String                               |
 | --config        | Path to the configuration file: String (default: "")         |
 | --nthread       | Number of threads to use: Int (default: 1)                   |
-| --weight_dtype  | Data type of quantized weight: int4/int8 (default: int4)     |
+| --weight_dtype  | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default: int4)     |
 | --alg           | Quantization algorithm to use: sym/asym (default: sym)       |
-| --group_size    | Group size: Int (default: 32)                                |
-| --scale_dtype   | Data type of scales: bf16/fp32 (default: fp32)               |
-| --compute_dtype | Data type of Gemm computation: int8/bf16/fp32 (default: int8)|
+| --group_size    | Group size: Int 32/128/-1 (per channel) (default: 32)                                |
+| --scale_dtype   | Data type of scales: bf16/fp32/fp8 (default: fp32)               |
+| --compute_dtype | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)|
 | --use_ggml      | Enable ggml for quantization and inference                   |
+
+#### Supported Matrix Multiplication Data Types Combinations
+
+Our LLM runtime supports  INT4 / INT8 / FP8 (E4M3, E5M2) / FP4 (E2M1) / NF4 weight-only quantization and FP32 / FP16 / BF16 / INT8 computation forward matmul on the Intel platforms. Here are the all supported data types combinations for matmul operations (quantization and forward).
+> This table will be updated frequently due to active development
+
+| Weight dtype | Compute dtype (default value if missing or wrong setting) | Scale dtype (default if missing or wrong setting) | algo (default if missing or wrong setting) |
+|---|:---:|:---:|:---:|
+| FP32 | FP32 | NA | NA |
+| INT8 | INT8 / BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym / asym (sym) |
+| INT4 | INT8 / BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym / asym (sym) |
+| FP8 (E4M3, E5M2) | BF16 / FP16 / FP32 (FP32) | FP8 (FP8) | sym (sym) |
+| FP4 (E2M1) | BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym (sym) |
+| NF4 | BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym (sym) |
 
 
 ### 2. Inference LLM

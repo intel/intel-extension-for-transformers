@@ -47,8 +47,6 @@ export async function trafficHint() {
 
             if (match) {
                 const waitingValue = parseInt(match[1], 10);
-                // console.log('Waiting:', waitingValue);
-
                 return waitingValue;
             } else {
                 console.error('could not find "Waiting" value');

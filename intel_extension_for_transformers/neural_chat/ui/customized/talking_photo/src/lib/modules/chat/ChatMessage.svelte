@@ -7,6 +7,7 @@
 	import ImageListMessage from "./ImageListMessage.svelte";
 	import SingleImageMessage from "./SingleImageMessage.svelte";
 	import AudioListMessage from "./AudioListMessage.svelte";
+	import VideoMessage from './VideoMessage.svelte'
 
 	export let msg: Message;
 	export let time: string = ''
@@ -26,7 +27,7 @@
 	class:flex-row-reverse={msg.role === MessageRole.User}
 >
 	<div
-		class="flex aspect-square h-[30px] items-center justify-center rounded bg-[#0068B5] max-sm:hidden"
+		class="flex aspect-square h-10 items-center justify-center rounded bg-[#0068B5] max-sm:hidden"
 	>
 		<MessageAvatar role={msg.role} />
 	</div>
@@ -44,8 +45,10 @@
 				<AudioListMessage content={convertTypeAudioList(msg.content)} />
 			{:else if msg.type === MessageType.SingleAudio}
 				<ChatAudio src={convertTypeString(msg.content)} />
+			{:else if msg.type === MessageType.singleVideo}
+				<VideoMessage src={convertTypeString(msg.content)}/>
 			{:else}
-				<p class="whitespace-pre-line text-sm">{msg.content}</p>
+				<p class="sm:max-w-[32rem] max-w-[60vw] whitespace-pre-line text-[0.8rem] break-keep leading-5">{@html msg.content}</p>
 			{/if}
 		</div>
 	</div>

@@ -144,7 +144,7 @@ class Finetuning:
                 data_args.dataset_name,
                 data_args.dataset_config_name,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 streaming=data_args.streaming,
             )
 
@@ -154,7 +154,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -162,7 +162,7 @@ class Finetuning:
                     data_args.dataset_config_name,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     streaming=data_args.streaming,
                 )
         else:
@@ -184,7 +184,7 @@ class Finetuning:
                 extension,
                 data_files=data_files,
                 cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 **dataset_args,
             )
 
@@ -195,7 +195,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[:{data_args.validation_split_percentage}%]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
                 raw_datasets["train"] = load_dataset(
@@ -203,7 +203,7 @@ class Finetuning:
                     data_files=data_files,
                     split=f"train[{data_args.validation_split_percentage}%:]",
                     cache_dir=model_args.cache_dir,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     **dataset_args,
                 )
         return raw_datasets
@@ -212,7 +212,7 @@ class Finetuning:
         config_kwargs = {
             "cache_dir": model_args.cache_dir,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
             "trust_remote_code": True if model_args.trust_remote_code else None,
         }
         if model_args.config_name:
@@ -230,7 +230,7 @@ class Finetuning:
             "cache_dir": model_args.cache_dir,
             "use_fast": model_args.use_fast_tokenizer,
             "revision": model_args.model_revision,
-            "use_auth_token": True if model_args.use_auth_token else None,
+            "token": model_args.token,
             "trust_remote_code": model_args.trust_remote_code,
         }
         if model_args.tokenizer_name:
@@ -378,7 +378,7 @@ class Finetuning:
                 device_map=self.device_map,
                 quantization_config=self.bitsandbytes_quant_config,
                 revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
+                token=model_args.token,
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=low_cpu_mem_usage,
@@ -807,7 +807,7 @@ class Finetuning:
                     device_map=self.device_map,
                     quantization_config=self.bitsandbytes_quant_config,
                     revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
+                    token=model_args.token,
                     torch_dtype=model_dtype,
                     load_in_4bit=self.load_in_4bit,
                     load_in_8bit=self.load_in_8bit,
