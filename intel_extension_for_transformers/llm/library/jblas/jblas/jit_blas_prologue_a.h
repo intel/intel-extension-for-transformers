@@ -334,6 +334,9 @@ class ShuffleActivationKBlockBase : public ActivationKBlockBase<_GemmCore_T, ISA
   }
 };
 
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ShuffleActivationKBlockBaseF32 = ShuffleActivationKBlockBase<_GemmCore_T, ISA_T, float>;
+
 template <typename AType>
 struct ParamShuffleActivationKBlockQuantize : ParamActivationKBlockQuantize<AType> {
   int* indices = nullptr;
@@ -345,7 +348,7 @@ class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCor
   using SType = float;
   using QParam = storage::gemm::StorageQuantActivation;
   using SRCType = SRC_T;
-  using Param  = ParamShuffleActivationKBlockQuantize<SRC_T>;
+  using Param = ParamShuffleActivationKBlockQuantize<SRC_T>;
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
@@ -364,6 +367,8 @@ class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCor
   }
 };
 
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ShuffleActivationKBlockQuantizeF32 = ShuffleActivationKBlockQuantize<_GemmCore_T, ISA_T, float>;
 }  // namespace gemm
 }  // namespace prologue_a
 }  // namespace jblas

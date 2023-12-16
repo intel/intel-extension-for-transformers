@@ -25,7 +25,7 @@ function main() {
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
         input_model="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
-        precision_list=("q4_j_b128" "q4_j_b32" "q4_0" "q8e4m3_j_f32_g128_fp8" "q8e5m2_j_f32_g128_fp8" "q4e2m1_j_f32_g128" "nf4_j_f32_g128")
+        precision_list=("q4_j_b128" "q4_j_b32" "q4_0" "q8e4m3_j_f32_g128_fp8" "q8e5m2_j_f32_g128_fp8" "q8e4m3_j_f32_g128_fp32" "q8e5m2_j_f32_g128_fp32" "q4e2m1_j_f32_g128" "nf4_j_f32_g128")
     elif [[ "${model}" == "gpt-neox-20b" ]]; then
         convert_script="${working_dir}/scripts/convert_gptneox.py"
         quant_script="./build/bin/quant_gptneox"
@@ -124,6 +124,10 @@ function main() {
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp8 --group_size 128 --scale_dtype fp8 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "q8e5m2_j_f32_g128_fp8" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp8_e5m2 --group_size 128 --scale_dtype fp8 --compute_dtype fp32 --alg sym
+                         elif [[ ${precision} == "q8e4m3_j_f32_g128_fp32" ]]; then
+                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp8 --group_size 128 --scale_dtype fp32 --compute_dtype fp32 --alg sym
+                        elif [[ ${precision} == "q8e5m2_j_f32_g128_fp32" ]]; then
+                            ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp8_e5m2 --group_size 128 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "q4e2m1_j_f32_g128" ]]; then
                             ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --nthread $cores_per_instance --weight_dtype fp4 --group_size 128 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                         elif [[ ${precision} == "nf4_j_f32_g128" ]]; then

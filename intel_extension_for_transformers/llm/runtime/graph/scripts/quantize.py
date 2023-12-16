@@ -120,8 +120,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
             sdtype = "fp32"
         cmd.extend(["--scale_dtype", sdtype])
     else:
-        if str(args.scale_dtype) != "fp8":
-            print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+        if str(args.scale_dtype) not in ["fp8", "fp32"]:
+            print("WARNING: fp8 weight type only supports fp8 / fp32 scale now. Fall back to fp8.")
         cmd.extend(["--scale_dtype", "fp8"])
     if (str(args.weight_dtype))[:3] in ["fp8", "fp4", "nf4"] and str(args.compute_dtype) in ["int8"]:
         print("WARNING: int8 compute dtype is not be supported in float quant types! "\

@@ -290,13 +290,16 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j++) {
       auto fp_v = f8_to_fp32(srcptr[i * ld_src + j], src_f8_type);
+      float scale;
       if constexpr (std::is_same_v<_S_T, utils::f8>) {
         int shared_exp = sptr[j / _PACK_ROW].x;
-        float scale = std::pow(2, shared_exp);
-        dstptr[i * ld_dst + j] = fp_v * scale;
+        scale = std::pow(2, shared_exp);
+      } else if constexpr (std::is_same_v<_S_T, float>) {
+        scale = scales[j / _PACK_ROW];
       } else {
         assert(0);
       }
+      dstptr[i * ld_dst + j] = fp_v * scale;
     }
   }
   return JblasSuccess;
@@ -851,8 +854,12 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
 }
 
 template <JBLAS_DTYPE F8_T>
-int8_t f8_mx_quantize(float v, float shared_exp) {
-  v /= std::pow(2, shared_exp);
+int8_t f8_mx_quantize(float v, float scale, JBLAS_DTYPE scale_dtype) {
+  if (scale_dtype == JBLAS_DTYPE::F8_E8M0) {
+    v /= std::pow(2, scale);
+  } else {
+    v /= scale;
+  }
   auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
   auto quant_mantissa = utils::jblas_dtype_get_f8_quant_mbits(F8_T);
   auto store_mantissa = 7 - ebits;
@@ -890,26 +897,33 @@ int8_t f8_mx_quantize(float v, float shared_exp) {
 
 template <JBLAS_DTYPE F8_T>
 inline JBLAS_CODE quantize_f32_f8_rowblock_mxscale(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                                   int ld_dst, float* scales, int blocksize) {
+                                                   int ld_dst, float* scales, int blocksize, JBLAS_DTYPE scale_dtype) {
   for (int i = 0; i < col; i++) {
     int align_row_loop = row / blocksize * blocksize;
     int j = 0;
     auto f8_blk_quant = [&](int blksize) {
-      float shared_exp = std::numeric_limits<float>::min();
+      float scale = std::numeric_limits<float>::min();
       for (size_t ij = 0; ij < blksize; ij++) {
-        shared_exp = std::max(shared_exp, std::abs(srcptr[(j + ij) * ld_src + i]));
+        scale = std::max(scale, std::abs(srcptr[(j + ij) * ld_src + i]));
       }
-      if (shared_exp == 0) shared_exp += std::abs(std::numeric_limits<float>::min());
-      shared_exp = std::floor(std::log2(shared_exp));
-      auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
-      auto emax = std::pow(2, ebits - 1);
-      if (F8_T == JBLAS_DTYPE::F8_E5M2) emax -= 1;
-      shared_exp -= emax;
-      auto scale_max = std::pow(2, 7) - 1;  // e8m0 scale type.
-      shared_exp = shared_exp < (-1 * scale_max) ? (-1 * scale_max) : shared_exp;
-      scales[j / blocksize * ld_dst + i] = shared_exp;
+      if (scale_dtype == JBLAS_DTYPE::F8_E8M0) {
+        if (scale == 0) scale += std::abs(std::numeric_limits<float>::min());
+        scale = std::floor(std::log2(scale));
+        auto ebits = utils::jblas_dtype_get_f8_ebits(F8_T);
+        auto emax = std::pow(2, ebits - 1);
+        if (F8_T == JBLAS_DTYPE::F8_E5M2) emax -= 1;
+        scale -= emax;
+        auto scale_max = std::pow(2, 7) - 1;  // e8m0 scale type.
+        scale = scale < (-1 * scale_max) ? (-1 * scale_max) : scale;
+      } else if (scale_dtype == JBLAS_DTYPE::F32) {
+        scale /= utils::get_mxfp_maxnorm(F8_T, utils::jblas_dtype_get_f8_ebits(F8_T),
+                                         utils::jblas_dtype_get_f8_quant_mbits(F8_T));
+      } else {
+        assert(0);
+      }
+      scales[j / blocksize * ld_dst + i] = scale;
       for (size_t ij = 0; ij < blksize; ij++) {
-        dstptr[(j + ij) * ld_dst + i] = f8_mx_quantize<F8_T>(srcptr[(j + ij) * ld_src + i], shared_exp);
+        dstptr[(j + ij) * ld_dst + i] = f8_mx_quantize<F8_T>(srcptr[(j + ij) * ld_src + i], scale, scale_dtype);
       }
     };
     for (; j < align_row_loop; j += blocksize) f8_blk_quant(blocksize);

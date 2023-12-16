@@ -270,13 +270,11 @@ class QuantizeSignIntRowBlock {
 
 class QuantizeF8RowBlock {
  public:
-  template <JBLAS_ISA ISA_T, JBLAS_DTYPE F8_T, JBLAS_DTYPE SCA_T>
+  template <JBLAS_ISA ISA_T, JBLAS_DTYPE F8_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                                   float* scales, int blocksize) {
-    if constexpr (SCA_T == JBLAS_DTYPE::F8_E8M0) {
-      return ref::quantize_f32_f8_rowblock_mxscale<F8_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
-    }
-    return JblasNotSupport;
+                                   float* scales, int blocksize, JBLAS_DTYPE scale_dtype) {
+    return ref::quantize_f32_f8_rowblock_mxscale<F8_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize,
+                                                       scale_dtype);
   }
 };
 
