@@ -52,7 +52,7 @@ class TestFinetuning(unittest.TestCase):
         with open(test_data_file, mode='w') as f:
             f.write(json_data)
 
-        if is_optimum_habana_available():
+        if is_optimum_habana_available() and self.device == "hpu":
             from optimum.habana import GaudiTrainingArguments, GaudiSeq2SeqTrainingArguments
             self.training_args = GaudiTrainingArguments(
                     output_dir='./tmp',
