@@ -87,7 +87,7 @@ class TestNeuralChatCommands(unittest.TestCase):
     def test_text_chat_executor_execute(self):
         # Test for TextVoiceChatExecutor class execute method
         # Create a mock argument list
-        argv = ['--query', 'Tell me about Intel Xeon processors.', '--model_name_or_path', 'facebook/opt-125m']
+        argv = ['--query', 'Tell me about Intel Xeon processors.', '--model_name_or_path', 'facebook/opt-125m', '--device', 'cpu']
         chat_executor = TextVoiceChatExecutor()
         # Mocking sys.argv to simulate command line arguments
         with patch('sys.argv', ['neuralchat.predict'] + argv):
