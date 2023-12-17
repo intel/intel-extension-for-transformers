@@ -146,8 +146,10 @@ function run_benchmark {
         model_name_or_path="Intel/neural-chat-7b-v3"
     elif [ "${topology}" = "phi_1b" ]; then
         model_name_or_path="susnato/phi-1_dev"
+	pip install transformers==4.36.1
     elif [ "${topology}" = "phi_1_5b" ]; then
         model_name_or_path="susnato/phi-1_5_dev"
+	pip install transformers==4.36.1
     fi
 
     if [[ ${int8} == "true" ]]; then

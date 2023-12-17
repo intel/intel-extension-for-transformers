@@ -193,12 +193,14 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
+	pip install transformers==4.36.1
     elif [ "${topology}" = "phi_1_5b" ]; then
         alpha=0.5
         model_name_or_path="susnato/phi-1_5_dev"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
+	pip install tranformers==4.36.1
     fi
 
     if [ ${script} = "run_generation.py" ];then

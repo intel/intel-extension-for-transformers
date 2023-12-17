@@ -137,7 +137,9 @@ tokenizer = AutoTokenizer.from_pretrained(
     args.model,
     truncation_side="left",
     padding_side="right",
+    trust_remote_code=args.trust_remote_code
 )
+
 config = AutoConfig.from_pretrained(
     args.model,
     torchscript=True
