@@ -25,7 +25,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 def main():
     # See all possible arguments in src/transformers/training_args.py

@@ -42,7 +42,7 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)

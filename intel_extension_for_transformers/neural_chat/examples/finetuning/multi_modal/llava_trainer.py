@@ -30,7 +30,7 @@ from transformers.trainer import (
     logger,
 )
 from typing import List, Optional
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero # pylint: disable=E0401

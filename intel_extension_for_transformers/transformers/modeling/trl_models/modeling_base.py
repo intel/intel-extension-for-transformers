@@ -32,7 +32,7 @@ from huggingface_hub.utils import (
 from safetensors.torch import load_file as safe_load_file
 from transformers import PreTrainedModel
 import importlib
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 
 def is_peft_available():

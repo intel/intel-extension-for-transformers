@@ -26,8 +26,8 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type, is_hpu_available
 from intel_extension_for_transformers.neural_chat.config_logging import configure_logging
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 logger = configure_logging()
 
 json_data = \

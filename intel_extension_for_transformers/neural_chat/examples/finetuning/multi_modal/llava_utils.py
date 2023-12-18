@@ -25,7 +25,7 @@ import json
 import os
 import copy
 import conversation_utils
-from intel_extension_for_transformers.neural_chat.utils.common import is_hpu_available
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 # Model Constants
 IGNORE_INDEX = -100
