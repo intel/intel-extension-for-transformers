@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
        - '.github/workflows/cpp-graph-test.yml'
-       - '.github/workflows/script/models/cpp_graph_inference.sh'
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
        - 'intel_extension_for_transformers/llm/library/jblas/**'
        - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
@@ -70,8 +69,18 @@ jobs:
 
       - name: BF16 Benchmark
         run: |
-          cd ${{ github.workspace }}/.github/workflows/script/models
-          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} ${{ env.INPUT_COMPILER_VERSION }}
+          WORKSPACE=${{ env.WORKING_DIR }} bash -eo pipefail ${{ env.GRAPH_DIR }}/scripts/ci/cpp_graph_inference.sh \
+            --cores_list="48," \
+            --input_list="32,1024" \
+            -- \
+            cpp-graph-test \
+            ${{ matrix.modelName }} \
+            ${{ env.GRAPH_DIR }} \
+            ${{ env.WORKING_DIR }} \
+            ${{ env.INPUT_COMPILER_VERSION }}
+        env:
+          WORKSPACE: ${{ env.WORKING_DIR }}
+          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
       
       - name: Rename summary
         run: |
