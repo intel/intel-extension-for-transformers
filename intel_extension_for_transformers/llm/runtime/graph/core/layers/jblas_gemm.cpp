@@ -84,19 +84,35 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-  utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
-  quanA.assign(WorkSpace);
-  WorkSpace += quanA.mSize;
-  auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
-  typename Launcher::Param args{gp, {A, K, &quanA, B->ShfIndice(), &reordA}, {B}, {C, N}};
-  if (B->ShfIndice()) {
-    reordA.assign(WorkSpace);
-    kernel.mProA.quantize({A, K, &quanA, B->ShfIndice(), &reordA}, M, K, th);
-    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = M - int(M / (1 + cb.PE));
+    utils::GemmProblem gp_P(1, offset, N, K, B->mBlockSize);
+    utils::GemmProblem gp_E(1, M - offset, N, K, B->mBlockSize);
+    auto quanA_P = kernel.mProA.createStorage(offset, K, B->mBlockSize, B->IsAsym());
+    auto quanA_E = kernel.mProA.createStorage(M - offset, K, B->mBlockSize, B->IsAsym());
+    quanA_P.assign(WorkSpace);
+    quanA_E.assign(WorkSpace + quanA_P.mSize);
+    assert(B->ShfIndice() == nullptr);
+    typename Launcher::Param args_P{gp_P, {A, lda, &quanA_P}, {B}, {C, N}};
+    typename Launcher::Param args_E{gp_E, {A + offset * lda, lda, &quanA_E}, {B}, {C + offset * N, N}};
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args_P, args_E, th);
   } else {
-    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
+    quanA.assign(WorkSpace);
+    WorkSpace += quanA.mSize;
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    typename Launcher::Param args{gp, {A, K, &quanA, B->ShfIndice(), &reordA}, {B}, {C, N}};
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
+      kernel.mProA.quantize({A, K, &quanA, B->ShfIndice(), &reordA}, M, K, th);
+      jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+    } else {
+      jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    }
   }
 }
 

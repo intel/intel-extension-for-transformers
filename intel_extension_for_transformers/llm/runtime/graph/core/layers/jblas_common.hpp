@@ -114,6 +114,7 @@ template <typename _T>
 struct ParamAdd {
   _T *C, *D;
   int ldc, ldd;
+  ParamAdd<_T> offset(int offset_) { return {C + offset_ * ldc, D + offset_ * ldd, ldc, ldd}; }
 };
 template <JBLAS_ISA ISA_T, typename _T>
 class Add {
@@ -144,6 +145,7 @@ template <typename _T>
 struct ParamMul {
   _T *C, *D;
   int ldc, ldd;
+  ParamMul<_T> offset(int offset_) { return {C + offset_ * ldc, D + offset_ * ldd, ldc, ldd}; }
 };
 template <JBLAS_ISA ISA_T, typename _T>
 class Mul {
@@ -170,6 +172,7 @@ template <typename _T>
 struct ParamAdd_Gelu {
   _T *C, *D;
   int ldc, ldd;
+  ParamAdd_Gelu<_T> offset(int offset_) { return {C + offset_ * ldc, D + offset_ * ldd, ldc, ldd}; }
 };
 template <JBLAS_ISA ISA_T, typename _T>
 class Add_Gelu {

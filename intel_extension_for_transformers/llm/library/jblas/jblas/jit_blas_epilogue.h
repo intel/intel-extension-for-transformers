@@ -28,6 +28,7 @@ struct ParamAccumulatorWriteBack {
   DT* C;
   int ldc;
   void* elt_const_v;
+  ParamAccumulatorWriteBack<DT> offset(int offset_) { return {C + offset_ * ldc, ldc, elt_const_v}; }
 };
 
 template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T>
@@ -88,6 +89,10 @@ struct ParamAlphaBetaProcess {
   DT *C, *D;
   int ldc, ldd;
   float alpha, beta;
+
+  ParamAlphaBetaProcess<DT> offset(int offset_) {
+    return {C + offset_ * ldc, ldc, D + offset_ * ldd, ldd, alpha, beta};
+  }
 };
 template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessFp32 {

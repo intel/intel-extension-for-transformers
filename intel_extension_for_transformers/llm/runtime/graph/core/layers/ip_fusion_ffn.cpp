@@ -73,6 +73,93 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
 }
 
 template <class Parallel_T, class Launch_T1, class Launch_T2>
+void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1_P,
+                      const typename Launch_T1::Param& args1_E, const typename Launch_T2::Param& args2_P,
+                      const typename Launch_T2::Param& args2_E, parallel::IThreading* th) {
+  device::CpuHybrid cb;
+  Parallel_T para1_P({th->num_threads() - cb.E_core_num, args1_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para2_P({th->num_threads() - cb.E_core_num, args2_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para1_E({cb.E_core_num, args1_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  Parallel_T para2_E({cb.E_core_num, args2_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  using AParall1 = typename Launch_T1::PrologueA::Parallel;
+  using AParall2 = typename Launch_T2::PrologueA::Parallel;
+  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - cb.E_core_num, args1_P.problem);
+  auto apara2_P = launcher2->mProA.createParallel(th->num_threads() - cb.E_core_num, args2_P.problem);
+  auto apara1_E = launcher1->mProA.createParallel(cb.E_core_num, args1_E.problem);
+  auto apara2_E = launcher2->mProA.createParallel(cb.E_core_num, args2_E.problem);
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para1_P.print();
+    para2_E.print();
+    para1_P.print();
+    para2_E.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    cb.core_bond(tidx);
+    if (tidx < cb.P_core_num) {
+      typename AParall1::ThreadProblem thdpA1{tidx};
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx};
+      para1_P.getIndex(thdp1);
+      if (thdp1.valid) launcher1->run(args1_P, thdp1);
+
+      th->sync();
+      typename AParall2::ThreadProblem thdpA2{tidx};
+      apara2_P.getIndex(thdpA2);
+      if (thdpA2.valid) launcher2->mProA.run(args2_P.paramA, thdpA2);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp2{tidx};
+      para2_P.getIndex(thdp2);
+      if (thdp2.valid) launcher2->run(args2_P, thdp2);
+    } else if (tidx < cb.P_core_num + cb.E_core_num) {
+      typename AParall1::ThreadProblem thdpA1{tidx - cb.P_core_num};
+      apara1_E.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx - cb.P_core_num};
+      para1_E.getIndex(thdp1);
+      if (thdp1.valid) launcher1->run(args1_E, thdp1);
+
+      th->sync();
+      typename AParall2::ThreadProblem thdpA2{tidx - cb.P_core_num};
+      apara2_E.getIndex(thdpA2);
+      if (thdpA2.valid) launcher2->mProA.run(args2_E.paramA, thdpA2);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp2{tidx - cb.P_core_num};
+      para2_E.getIndex(thdp2);
+      if (thdp2.valid) launcher2->run(args2_E, thdp2);
+    } else {
+      typename AParall1::ThreadProblem thdpA1{tidx - cb.E_core_num};
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx - cb.E_core_num};
+      para1_P.getIndex(thdp1);
+      if (thdp1.valid) launcher1->run(args1_P, thdp1);
+
+      th->sync();
+      typename AParall2::ThreadProblem thdpA2{tidx - cb.E_core_num};
+      apara2_P.getIndex(thdpA2);
+      if (thdpA2.valid) launcher2->mProA.run(args2_P.paramA, thdpA2);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp2{tidx - cb.E_core_num};
+      para2_P.getIndex(thdp2);
+      if (thdp2.valid) launcher2->run(args2_P, thdp2);
+    }
+  });
+}
+
+template <class Parallel_T, class Launch_T1, class Launch_T2>
 void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1,
                  const typename Launch_T2::Param& args2, parallel::IThreading* th) {
   device::CpuBase cb;
@@ -197,30 +284,57 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
       GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T, Epi_T2>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
-  utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
-  utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
   static Launcher_epi kernel_epi;
   static Launcher kernel;
   auto WS = reinterpret_cast<int8_t*>(workspace);
-  auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
-  quanA1.assign(WS);
-  WS += quanA1.mSize;
-  auto reordA1 = kernel_epi.mProA.createReorderStorage(seq, fin, w1ptr_->mBlockSize);
-  if (w1ptr_->ShfIndice()) {
-    reordA1.assign(WS);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = seq - int(seq / (1 + cb.PE));
+    utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp1_E(1, seq - offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_E(1, seq - offset, fout, fmid, w2ptr_->mBlockSize);
+    auto quanA1_P = kernel_epi.mProA.createStorage(offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_P.assign(WS);
+    auto quanA2_P = kernel.mProA.createStorage(offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_P.assign(WS);
+    auto quanA1_E = kernel_epi.mProA.createStorage(seq - offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_E.assign(WS + quanA1_P.mSize);
+    auto quanA2_E = kernel.mProA.createStorage(seq - offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_E.assign(WS + quanA2_P.mSize);
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    typename Launcher_epi::Param args1_P{gp1_P, {activation, fin, &quanA1_P}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2_P{gp2_P, {tmp, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
+    typename Launcher_epi::Param args1_E{
+        gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
+    typename Launcher::Param args2_E{
+        gp2_E, {tmp + offset * fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
+    GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1_P, args1_E, args2_P, args2_E, th);
+  } else {
+    utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
+    auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1.assign(WS);
+    WS += quanA1.mSize;
+    auto reordA1 = kernel_epi.mProA.createReorderStorage(seq, fin, w1ptr_->mBlockSize);
+    if (w1ptr_->ShfIndice()) {
+      reordA1.assign(WS);
+    }
+    WS = reinterpret_cast<int8_t*>(workspace);
+    auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2.assign(WS);
+    WS += quanA2.mSize;
+    auto reordA2 = kernel.mProA.createReorderStorage(seq, fmid, w2ptr_->mBlockSize);
+    if (w2ptr_->ShfIndice()) {
+      reordA2.assign(WS);
+    }
+    typename Launcher_epi::Param args1{
+        gp1, {activation, fin, &quanA1, w1ptr_->ShfIndice(), &reordA1}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2, w2ptr_->ShfIndice(), &reordA2}, {w2ptr_}, epi_prama2};
+    GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
   }
-  WS = reinterpret_cast<int8_t*>(workspace);
-  auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  quanA2.assign(WS);
-  WS += quanA2.mSize;
-  auto reordA2 = kernel_epi.mProA.createReorderStorage(seq, fin, w2ptr_->mBlockSize);
-  if (w2ptr_->ShfIndice()) {
-    reordA2.assign(WS);
-  }
-  typename Launcher_epi::Param args1{
-      gp1, {activation, fin, &quanA1, w1ptr_->ShfIndice(), &reordA1}, {w1ptr_}, epi_prama1};
-  typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2, w2ptr_->ShfIndice(), &reordA2}, {w2ptr_}, epi_prama2};
-  GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
 }
 
 bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
@@ -421,6 +535,103 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
 }
 
 template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
+void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1_P,
+                      const typename Launch_T1::Param& args1_E, const typename Launch_T2::Param& args2_P,
+                      const typename Launch_T2::Param& args2_E, const typename Launch_T3::Param& args3_P,
+                      const typename Launch_T3::Param& args3_E, parallel::IThreading* th) {
+  device::CpuHybrid cb;
+  Parallel_T para1_P({th->num_threads() - cb.E_core_num, args1_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para3_P({th->num_threads() - cb.E_core_num, args3_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para1_E({cb.E_core_num, args1_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  Parallel_T para3_E({cb.E_core_num, args3_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  using AParall1 = typename Launch_T1::PrologueA::Parallel;
+  using AParall3 = typename Launch_T3::PrologueA::Parallel;
+  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - cb.E_core_num, args1_P.problem);
+  auto apara3_P = launcher3->mProA.createParallel(th->num_threads() - cb.E_core_num, args3_P.problem);
+  auto apara1_E = launcher1->mProA.createParallel(cb.E_core_num, args1_E.problem);
+  auto apara3_E = launcher3->mProA.createParallel(cb.E_core_num, args3_E.problem);
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para1_P.print();
+    para3_E.print();
+    para1_P.print();
+    para3_E.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    cb.core_bond(tidx);
+    if (tidx < cb.P_core_num) {
+      typename AParall1::ThreadProblem thdpA1{tidx};
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx};
+      para1_P.getIndex(thdp1);
+      if (thdp1.valid) {
+        launcher1->run(args1_P, thdp1);
+        launcher2->run(args2_P, thdp1);
+      }
+
+      th->sync();
+      typename AParall3::ThreadProblem thdpA3{tidx};
+      apara3_P.getIndex(thdpA3);
+      if (thdpA3.valid) launcher3->mProA.run(args3_P.paramA, thdpA3);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp3{tidx};
+      para3_P.getIndex(thdp3);
+      if (thdp3.valid) launcher3->run(args3_P, thdp3);
+    } else if (tidx < cb.P_core_num + cb.E_core_num) {
+      typename AParall1::ThreadProblem thdpA1{tidx - cb.P_core_num};
+      apara1_E.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx - cb.P_core_num};
+      para1_E.getIndex(thdp1);
+      if (thdp1.valid) {
+        launcher1->run(args1_E, thdp1);
+        launcher2->run(args2_E, thdp1);
+      }
+
+      th->sync();
+      typename AParall3::ThreadProblem thdpA3{tidx - cb.P_core_num};
+      apara3_E.getIndex(thdpA3);
+      if (thdpA3.valid) launcher3->mProA.run(args3_E.paramA, thdpA3);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp3{tidx - cb.P_core_num};
+      para3_E.getIndex(thdp3);
+      if (thdp3.valid) launcher3->run(args3_E, thdp3);
+    } else {
+      typename AParall1::ThreadProblem thdpA1{tidx - cb.E_core_num};
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp1{tidx - cb.E_core_num};
+      para1_P.getIndex(thdp1);
+      if (thdp1.valid) {
+        launcher1->run(args1_P, thdp1);
+        launcher2->run(args2_P, thdp1);
+      }
+
+      th->sync();
+      typename AParall3::ThreadProblem thdpA3{tidx - cb.E_core_num};
+      apara3_P.getIndex(thdpA3);
+      if (thdpA3.valid) launcher3->mProA.run(args3_P.paramA, thdpA3);
+
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp3{tidx - cb.E_core_num};
+      para3_P.getIndex(thdp3);
+      if (thdp3.valid) launcher3->run(args3_P, thdp3);
+    }
+  });
+}
+
+template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
 void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* launcher3,
                  const typename Launch_T1::Param& args1, const typename Launch_T2::Param& args2,
                  const typename Launch_T3::Param& args3, parallel::IThreading* th) {
@@ -550,26 +761,59 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
-  utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
-  utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
-  utils::GemmProblem gp3(1, seq, fmid, fin, w3ptr_->mBlockSize);
   static Launcher_epi kernel_epi;
   static Launcher_mul kernel_mul;
   static Launcher kernel;
-  auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
   auto WS = reinterpret_cast<int8_t*>(workspace);
-  quanA1.assign(WS);
-
-  auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  WS = reinterpret_cast<int8_t*>(workspace);
-  quanA2.assign(WS);
-  assert(w1ptr_->ShfIndice() == nullptr);
-  assert(w2ptr_->ShfIndice() == nullptr);
-  assert(w3ptr_->ShfIndice() == nullptr);
-  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
-  typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, epi_prama2};
-  typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
-  GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = seq - int(seq / (1 + cb.PE));
+    utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp3_P(1, offset, fmid, fin, w3ptr_->mBlockSize);
+    utils::GemmProblem gp1_E(1, seq - offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_E(1, seq - offset, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp3_E(1, seq - offset, fmid, fin, w3ptr_->mBlockSize);
+    auto quanA1_P = kernel_epi.mProA.createStorage(offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_P.assign(WS);
+    auto quanA2_P = kernel.mProA.createStorage(offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_P.assign(WS);
+    auto quanA1_E = kernel_epi.mProA.createStorage(seq - offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_E.assign(WS + quanA1_P.mSize);
+    auto quanA2_E = kernel.mProA.createStorage(seq - offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_E.assign(WS + quanA2_P.mSize);
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    assert(w3ptr_->ShfIndice() == nullptr);
+    typename Launcher_epi::Param args1_P{gp1_P, {activation, fin, &quanA1_P}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2_P{gp2_P, {tmp, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
+    typename Launcher_epi::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
+    typename Launcher_epi::Param args1_E{
+        gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
+    typename Launcher::Param args2_E{
+        gp2_E, {tmp + offset * fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
+    typename Launcher_mul::Param args3_E{gp3_E,
+                                         {activation + offset * fin, fin, &quanA1_E},
+                                         {w3ptr_},
+                                         {tmp2 + fmid * offset, tmp1 + fmid * offset, fmid, fmid}};
+    GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1_P, args1_E, args2_P, args2_E, args3_P, args3_E, th);
+  } else {
+    utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp3(1, seq, fmid, fin, w3ptr_->mBlockSize);
+    auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1.assign(WS);
+    auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2.assign(WS);
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    assert(w3ptr_->ShfIndice() == nullptr);
+    typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, epi_prama2};
+    typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
+    GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
+  }
 }
 
 bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int seq, int fin, int fmid, int fout) {
