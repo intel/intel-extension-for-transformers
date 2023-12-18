@@ -183,8 +183,14 @@ class _BaseQBitsAutoModelClass:
                 )
                 return model
             else:
+                if quantization_config.compute_dtype == "fp32":
+                    torch_dtype=torch.float32
+                elif quantization_config.compute_dtype == "bf16":
+                    torch_dtype=torch.bfloat16
+                else:
+                    torch_dtype="auto"
                 model = cls.ORIG_MODEL.from_pretrained(
-                    pretrained_model_name_or_path, *model_args, **kwargs
+                    pretrained_model_name_or_path, torch_dtype=torch_dtype, *model_args, **kwargs
                 )
                 if (
                     not torch.cuda.is_available()
@@ -197,7 +203,6 @@ class _BaseQBitsAutoModelClass:
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
-
                 model = convert_to_quantized_model(model, quantization_config)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
