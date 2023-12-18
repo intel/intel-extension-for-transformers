@@ -72,22 +72,22 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>Intel Xeon Scalable Processors</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 		<tr>
 			<td>Intel Xeon CPU Max Series</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 		<tr>
 			<td>Intel Core Processors</td>
 			<td>-</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 	</tbody>
 </table>
