@@ -716,9 +716,23 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        pattern = re.compile(r'问：.*?\n答：', re.DOTALL)
+        matches = pattern.findall(prompt)
         if matches:
-            result = matches[-1]
+            result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
+    elif re.search("neuralchat", model_name, re.IGNORECASE):
+        matches = re.findall(r'### User:.*?### Assistant:', prompt, re.DOTALL)
+        if matches:
+            result = '''
+### System:
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, \
+but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry,\
+short stories, and make jokes.</s>
+''' + matches[-1]
+
     return result
 
 output_token_len = 0
@@ -795,14 +809,24 @@ def predict_stream(**params):
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower()) else 1024
 
-    streamer = TextIteratorStreamer(
-        tokenizer, skip_prompt=True, skip_special_tokens=True
-    )
+    if is_llm_runtime_model(model):
+        if "chatglm" in model_name.lower():
+            prompt = tokenizer.build_prompt(prompt)
+            input_tokens = tokenizer([prompt], return_tensors="pt").input_ids
+            input_token_len = input_tokens.shape[-1]
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+        else:
+            input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+    else:
+        input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+        streamer = TextIteratorStreamer(
+            tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
     if num_beams == 0:
         num_beams = 1
         do_sample = True
 
-    input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
         get_stop_token_ids(model, tokenizer),
@@ -847,25 +871,25 @@ def predict_stream(**params):
                             )
 
                     else:
-                        with context:
-                            global output_token_len
-                            if is_llm_runtime_model(model):  # optimized model gerenate
-                                output_token=model.generate(
-                                    input_tokens['input_ids'],
-                                    streamer=streamer,
-                                    temperature=temperature,
-                                    top_p=top_p,
-                                    top_k=top_k,
-                                    repetition_penalty=repetition_penalty,
-                                    max_new_tokens=max_new_tokens,
-                                    ctx_size=max_new_tokens,
-                                    ignore_prompt=True,
-                                    interactive=True,
-                                    do_sample=do_sample,
-                                    num_beams=num_beams,
-                                    seed=1
-                                )
-                            else:
+                        global output_token_len
+                        if is_llm_runtime_model(model):  # optimized model gerenate
+                            output_token=model.generate(
+                                input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
+                                streamer=streamer,
+                                temperature=temperature,
+                                top_p=top_p,
+                                top_k=top_k,
+                                repetition_penalty=repetition_penalty,
+                                max_new_tokens=max_new_tokens,
+                                ctx_size=max_new_tokens,
+                                ignore_prompt=True,
+                                interactive=True,
+                                do_sample=do_sample,
+                                num_beams=num_beams,
+                                n_keep=2 if "chatglm" in model_name.lower() else 1
+                            )
+                        else:
+                            with context:
                                 output_token=model.generate(
                                     **input_tokens,
                                     **generate_kwargs,
@@ -952,11 +976,20 @@ def predict_stream(**params):
     first_token_latency = int(
         (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    msecond_per_token = (
-        duration  / (output_token_len - input_token_len)
-        if output_token_len != 1
-        else 0
-    )
+    if is_llm_runtime_model(model):
+        msecond_per_token = (
+            duration  / output_token_len
+            if output_token_len != 1
+            else
+            0
+        )
+    else:
+        msecond_per_token = (
+            duration  / (output_token_len - input_token_len)
+            if output_token_len != 1
+            else
+            0
+        )
     if return_stats:
         stats = {
             "input_token_len": str(input_token_len),
