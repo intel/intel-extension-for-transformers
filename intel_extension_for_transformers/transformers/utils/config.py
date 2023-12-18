@@ -36,7 +36,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         scale_dtype="fp32",
         mse_range=False,
         use_double_quant=False,
-        double_quant_dtype="int8",  # reserve for double quant
+        double_quant_scale_dtype="fp32",  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
@@ -55,7 +55,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.weight_dtype = weight_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
-        self.double_quant_dtype = double_quant_dtype
+        self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scale_dtype = scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
@@ -107,10 +107,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
-        if self.scale_dtype not in ["fp32", "fp8"]:
+        if self.scale_dtype not in ["fp32", "fp8_e8m0"]:
             raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8' "
-                f"and fp8 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'")
+                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
+                f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'")
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")
@@ -153,7 +153,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         runtime_supported_scheme = ["sym", "asym"]
 
         if self.compute_dtype is None:
-            self.compute_dtype = "int8"
+            self.compute_dtype = "fp32"
         else:
             if self.compute_dtype not in runtime_supported_compute_dtype:
                 raise ValueError("compute_dtype must be in {}.".format(
@@ -194,8 +194,9 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 print("WARNING: fp8 scale is only be supported in fp8 weight type. "\
                       "Fall back to fp32.")
                 self.scale_dtype = "fp32"
-            if self.weight_dtype[:3] == "fp8" and self.scale_dtype != "fp8":
-                print("WARNING: fp8 weight type only supports fp8 scale now.Fall back to fp8.")
+            if self.weight_dtype[:3] == "fp8" and self.scale_dtype not in ["fp8", "fp32"]:
+                print("WARNING: fp8 weight type only supports fp8 / fp32 scale now."\
+                      " Fall back to fp8.")
                 self.scale_dtype = "fp8"
 
     def quantization_method(self):

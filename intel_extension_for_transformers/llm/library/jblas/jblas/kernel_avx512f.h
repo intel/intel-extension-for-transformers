@@ -573,7 +573,7 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
       e_revert = _mm512_and_epi32(e_revert, e_revert_and_mask);
       e_revert = _mm512_srli_epi32(e_revert, mantissabit);
       e_revert = _mm512_sub_epi32(e_revert, e_revert_shift);
-      if constexpr (WITH_SCALE) {
+      if constexpr (WITH_SCALE && std::is_same_v<_S_T, utils::f8>) {
         auto scale = _mm512_cvtepi8_epi32(_mm_loadu_si128(reinterpret_cast<__m128i*>(sptr + j / _PACK_ROW)));
         if constexpr (_PACK_ROW == 2) scale = _mm512_permutexvar_epi32(packrow2_permute_idx, scale);
         e_revert = _mm512_add_epi32(e_revert, scale);
@@ -583,6 +583,11 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
       mantissa_revert = _mm512_and_epi32(mantissa_revert, mantissa_revert_and_mask);
       auto fp_v = _mm512_or_ps(_mm512_castsi512_ps(sign_revert), _mm512_castsi512_ps(e_revert));
       fp_v = _mm512_or_ps(fp_v, _mm512_castsi512_ps(mantissa_revert));
+      if constexpr (WITH_SCALE && std::is_same_v<_S_T, float>) {
+        auto scale = _mm512_loadu_ps(sptr + j / _PACK_ROW);
+        if constexpr (_PACK_ROW == 2) scale = _mm512_permutexvar_ps(packrow2_permute_idx, scale);
+        fp_v = _mm512_mul_ps(fp_v, scale);
+      }
       if constexpr (std::is_same_v<_DST_T, float>) {
         _mm512_mask_storeu_ps(dstptr + i * ld_dst + j, mask, fp_v);
       } else if constexpr (std::is_same_v<_DST_T, utils::bf16>) {

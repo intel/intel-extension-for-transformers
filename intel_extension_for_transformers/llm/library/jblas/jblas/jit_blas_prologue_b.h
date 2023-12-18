@@ -268,7 +268,7 @@ class WeightKBlockNInteger {
         auto siptr = stor->ShfIndice();
         for (size_t i = 0; i < stor->mK; i++) {
           if (groupindices[i] >= thdp.loc[1] && groupindices[i] < thdp.loc[1] + thdp.size[1]) {
-            siptr[i] = groupindices[i] * stor->mBlockSize + countptr[groupindices[i]];
+            siptr[groupindices[i] * stor->mBlockSize + countptr[groupindices[i]]] = i;
             countptr[groupindices[i]]++;
           }
         }
@@ -741,7 +741,7 @@ class WeightKBlockS8 {
     auto ssize = static_cast<size_t>(N) * nk_scale;
     auto Tscales = utils::amalloc<float>(ssize);
     auto Tzps = utils::amalloc<int8_t>(ptr->IsAsym() ? ssize : 0);
-    quantizeWeight(N, K, B, ldb, ptr->mBlockSize, tmpq, Tscales, Tzps, ptr->mDType, threading);
+    quantizeWeight(N, K, B, ldb, tmpq, Tscales, Tzps, ptr, threading);
     packQWeight(N, K, tmpq, N, Tscales, Tzps, stor, threading);
     utils::afree(tmpq);
     utils::afree(Tscales);
@@ -994,9 +994,10 @@ class WeightKBlockS8 {
     });
   }
 
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB, float* scales,
-                      int8_t* zero_points, JBLAS_DTYPE quant_dtype, parallel::IThreading* threading) {
-    int bsize = blocksize == -1 ? K : blocksize;
+  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int8_t* qB, float* scales,
+                      int8_t* zero_points, void* stor, parallel::IThreading* threading) {
+    auto ptr = reinterpret_cast<StorageWeight*>(stor);
+    int bsize = ptr->mBlockSize == -1 ? K : ptr->mBlockSize;
     parallel::Scheduler2D _para({threading->num_threads(), K, N, bsize, 16});
     threading->parallel_for([&](int tidx) {
       parallel::ThreadProblem2D thdp({tidx});
@@ -1004,8 +1005,7 @@ class WeightKBlockS8 {
       if (thdp.valid) {
         quantRowBlock(B + thdp.loc[0] * ldb + thdp.loc[1], qB + thdp.loc[0] * N + thdp.loc[1], thdp.size[0],
                       thdp.size[1], ldb, N, scales + thdp.loc[0] / bsize * N + thdp.loc[1],
-                      zero_points == nullptr ? zero_points : zero_points + thdp.loc[0] / bsize * N + thdp.loc[1], bsize,
-                      quant_dtype);
+                      zero_points == nullptr ? zero_points : zero_points + thdp.loc[0] / bsize * N + thdp.loc[1], ptr);
       }
     });
   }
@@ -1174,10 +1174,12 @@ class WeightKBlockS8 {
 
  protected:
   virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                             float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) {
+                             float* scales, int8_t* zero_points, void* stor) {
+    auto ptr = reinterpret_cast<StorageWeight*>(stor);
+    auto quant_dtype = ptr->mDType;
     if (quant_dtype == JBLAS_DTYPE::S8) {
-      kernel::wrapper::QuantizeSignIntRowBlock::forward<ISA_T, JBLAS_DTYPE::S8>(srcptr, dstptr, row, col, ld_src,
-                                                                                ld_dst, scales, zero_points, blocksize);
+      kernel::wrapper::QuantizeSignIntRowBlock::forward<ISA_T, JBLAS_DTYPE::S8>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, ptr->mBlockSize);
     } else {
       assert(0);
     }
@@ -1216,12 +1218,20 @@ class WeightKBlockF8 : public WeightKBlockS8<_GemmCore_T, ISA_T> {
     auto KPad = wptr->mKPad;
     auto bptr = wptr->template WPtr<utils::f8>() + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
     int constexpr ColSize = _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW;
-    assert(wptr->SDtype() == JBLAS_DTYPE::F8_E8M0);
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      auto sptr = wptr->template SPtr<utils::f8>() + n_offset + i;
-      kernel::wrapper::DecompressKBlockF8FP<_GemmCore_T::PACK_ROW>::template forward<ISA_T>(
-          bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW, ColSize, ColSize, ColSize, sptr,
-          k_offset / _GemmCore_T::PACK_ROW, wptr->mBlockSize / _GemmCore_T::PACK_ROW, NPad, wptr->mDType);
+      if (wptr->SDtype() == JBLAS_DTYPE::F8_E8M0) {
+        auto sptr = wptr->template SPtr<utils::f8>() + n_offset + i;
+        kernel::wrapper::DecompressKBlockF8FP<_GemmCore_T::PACK_ROW>::template forward<ISA_T>(
+            bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW, ColSize, ColSize, ColSize, sptr,
+            k_offset / _GemmCore_T::PACK_ROW, wptr->mBlockSize / _GemmCore_T::PACK_ROW, NPad, wptr->mDType);
+      } else if (wptr->SDtype() == JBLAS_DTYPE::F32) {
+        auto sptr = wptr->template SPtr<float>() + n_offset + i;
+        kernel::wrapper::DecompressKBlockF8FP<_GemmCore_T::PACK_ROW>::template forward<ISA_T>(
+            bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW, ColSize, ColSize, ColSize, sptr,
+            k_offset / _GemmCore_T::PACK_ROW, wptr->mBlockSize / _GemmCore_T::PACK_ROW, NPad, wptr->mDType);
+      } else {
+        assert(0);
+      }
     }
     *dststep = k_size;
     return JblasSuccess;
@@ -1246,13 +1256,15 @@ class WeightKBlockF8 : public WeightKBlockS8<_GemmCore_T, ISA_T> {
 
  protected:
   virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                             float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) {
+                             float* scales, int8_t* zero_points, void* stor) {
+    auto ptr = reinterpret_cast<StorageWeight*>(stor);
+    auto quant_dtype = ptr->mDType;
     if (quant_dtype == JBLAS_DTYPE::F8_E4M3)
-      kernel::wrapper::QuantizeF8RowBlock::forward<ISA_T, JBLAS_DTYPE::F8_E4M3, JBLAS_DTYPE::F8_E8M0>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+      kernel::wrapper::QuantizeF8RowBlock::forward<ISA_T, JBLAS_DTYPE::F8_E4M3>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, ptr->mBlockSize, ptr->SDtype());
     else if (quant_dtype == JBLAS_DTYPE::F8_E5M2)
-      kernel::wrapper::QuantizeF8RowBlock::forward<ISA_T, JBLAS_DTYPE::F8_E5M2, JBLAS_DTYPE::F8_E8M0>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+      kernel::wrapper::QuantizeF8RowBlock::forward<ISA_T, JBLAS_DTYPE::F8_E5M2>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, ptr->mBlockSize, ptr->SDtype());
     else
       assert(0);
   }
@@ -1447,13 +1459,15 @@ class WeightKBlockS4 : public WeightKBlockS8<_GemmCore_T, ISA_T> {
   }
 
   virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                             float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) {
+                             float* scales, int8_t* zero_points, void* stor) {
+    auto ptr = reinterpret_cast<StorageWeight*>(stor);
+    auto quant_dtype = ptr->mDType;
     if (quant_dtype == JBLAS_DTYPE::S4_FULLRANGE) {
       kernel::wrapper::QuantizeSignIntRowBlock::forward<ISA_T, JBLAS_DTYPE::S4_FULLRANGE>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, blocksize);
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, ptr->mBlockSize);
     } else if (quant_dtype == JBLAS_DTYPE::S4_CLIP) {
       kernel::wrapper::QuantizeSignIntRowBlock::forward<ISA_T, JBLAS_DTYPE::S4_CLIP>(
-          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, blocksize);
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, ptr->mBlockSize);
     }
   }
 
@@ -1587,16 +1601,18 @@ class WeightKBlockF4 : public WeightKBlockS4<_GemmCore_T, ISA_T> {
 
  protected:
   virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                             float* scales, int8_t* zero_points, int blocksize, JBLAS_DTYPE quant_dtype) override {
+                             float* scales, int8_t* zero_points, void* stor) override {
+    auto ptr = reinterpret_cast<StorageWeight*>(stor);
+    auto quant_dtype = ptr->mDType;
     if (quant_dtype == JBLAS_DTYPE::F4_BNB) {
       kernel::wrapper::QuantizeF4RowBlock::forward<ISA_T, JBLAS_DTYPE::F4_BNB>(srcptr, dstptr, row, col, ld_src, ld_dst,
-                                                                               scales, zero_points, blocksize);
+                                                                               scales, zero_points, ptr->mBlockSize);
     } else if (quant_dtype == JBLAS_DTYPE::F4_E2M1) {
-      kernel::wrapper::QuantizeF4RowBlock::forward<ISA_T, JBLAS_DTYPE::F4_E2M1>(srcptr, dstptr, row, col, ld_src,
-                                                                                ld_dst, scales, zero_points, blocksize);
+      kernel::wrapper::QuantizeF4RowBlock::forward<ISA_T, JBLAS_DTYPE::F4_E2M1>(
+          srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, ptr->mBlockSize);
     } else if (quant_dtype == JBLAS_DTYPE::F4_NF4) {
       kernel::wrapper::QuantizeF4RowBlock::forward<ISA_T, JBLAS_DTYPE::F4_NF4>(srcptr, dstptr, row, col, ld_src, ld_dst,
-                                                                               scales, zero_points, blocksize);
+                                                                               scales, zero_points, ptr->mBlockSize);
     }
   }
 

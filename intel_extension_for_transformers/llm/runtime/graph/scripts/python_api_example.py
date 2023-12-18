@@ -21,10 +21,14 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM, 
 model_name = "Intel/neural-chat-7b-v1-1"  # or local path to model
 # int4 weight_only quantization
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+# fp4 weight_only quantization
+# woq_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="fp4")
 # nf4 weight_only quantization
 # woq_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
 # fp8 weight_only quantization
 # woq_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="fp8")
+# for more data types combinations, please refer to
+# `Supported Matrix Multiplication Data Types Combinations` section in README
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
