@@ -77,7 +77,16 @@ struct model_load_tensor_shard {
   void calc_size() { size = model_calc_tensor_size(ne, type); }
 };
 
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN, TP_1D_ONLY_MASTER };
+enum model_split_type {
+  SPLIT_NONE,
+  SPLIT_BY_COLUMNS,
+  SPLIT_BY_ROWS,
+  TP_1D_ROW,
+  TP_1D_COLUMN,
+  TP_1D_ONLY_MASTER,
+  TP_1D_QKV_ROW,
+  TP_1D_QKV_COLUMN
+};
 
 struct model_load_tensor {
   std::vector<model_load_tensor_shard> shards;
@@ -139,11 +148,9 @@ struct model_load_tensor {
           name.find(".attn.v_proj.weight") != std::string::npos ||
           name.find(".mlp.fc_in.weight") != std::string::npos ||
           // for baichuan
-          name.find(".self_attn.W_pack.weight") != std::string::npos ||
           name.find(".mlp.gate_proj.weight") != std::string::npos ||
           name.find(".mlp.up_proj.weight") != std::string::npos ||
           // for chatglm2
-          name.find(".self_attention.query_key_value.weight") != std::string::npos ||
           name.find(".mlp.dense_h_to_4h.weight") != std::string::npos ||
           // for llama model
           name.find(".attention.wq.weight") != std::string::npos ||
@@ -153,6 +160,14 @@ struct model_load_tensor {
           name.find(".feed_forward.w3.weight") != std::string::npos) {
         split_type = TP_1D_ROW;
       }
+      if (name.find(".self_attn.W_pack.weight") != std::string::npos ||
+          // for chatglm2
+          name.find(".self_attention.query_key_value.weight") != std::string::npos) {
+        split_type = TP_1D_QKV_ROW;
+      }
+      if (name.find(".self_attention.query_key_value.bias") != std::string::npos) {
+        split_type = TP_1D_QKV_COLUMN;
+      }
       if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos ||
           name.find(".attn.out_proj.weight") != std::string::npos ||
           name.find(".self_attention.dense.weight") != std::string::npos ||
@@ -161,7 +176,6 @@ struct model_load_tensor {
           name.find(".mlp.down_proj.weight") != std::string::npos ||
           // for chatglm2
           name.find(".mlp.dense_4h_to_h.weight") != std::string::npos ||
-          name.find(".self_attention.query_key_value.bias") != std::string::npos ||
           // TODO check if this part should be column
           name.find(".attention.wo.weight") != std::string::npos ||
           name.find(".feed_forward.w2.weight") != std::string::npos) {
@@ -197,11 +211,13 @@ struct model_load_tensor {
         break;
 #ifdef NE_TP_MODEL
       case TP_1D_ROW:
+      case TP_1D_QKV_ROW:
         MODEL_ASSERT(first_shard.ne.size() > 1);
         MODEL_ASSERT(first_shard.ne[1] % world_size == 0);
         ne = {first_shard.ne[0], first_shard.ne[1] / world_size};
         break;
       case TP_1D_COLUMN:
+      case TP_1D_QKV_COLUMN:
         MODEL_ASSERT(first_shard.ne[0] % world_size == 0);
         if (first_shard.ne.size() == 1) {
           ne = {first_shard.ne[0] / world_size};
@@ -556,11 +572,17 @@ struct model_model_loader {
     }
     model_load_tensor& lt = tensors_map.tensors.at(it->second);
 #ifdef NE_TP_MODEL
-    if (lt.enable_tp && (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_COLUMN)) {
+    if (lt.enable_tp && (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_COLUMN ||
+                         lt.split_type == TP_1D_QKV_ROW || lt.split_type == TP_1D_QKV_COLUMN)) {
       // check the split dim
-      size_t split_dim_size =
-          lt.ne.size() == 1 ? lt.ne.at(0) : (lt.split_type == TP_1D_ROW ? lt.ne.at(1) : lt.ne.at(0));
-      size_t origin_dim_size = ne.size() == 1 ? ne.at(0) : (lt.split_type == TP_1D_ROW ? ne.at(1) : ne.at(0));
+      size_t split_dim_size, origin_dim_size;
+      if (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_QKV_ROW) {
+        split_dim_size = lt.ne.size() == 1 ? lt.ne.at(0) : lt.ne.at(1);
+        origin_dim_size = ne.size() == 1 ? ne.at(0) : ne.at(1);
+      } else {
+        split_dim_size = lt.ne.at(0);
+        origin_dim_size = ne.at(0);
+      }
       MODEL_ASSERT(split_dim_size == origin_dim_size / lt.world_size);
       return get_tensor_for(lt, backend);
     }
@@ -642,19 +664,30 @@ struct model_model_loader {
   }
 
   void jblas_split_weight(void** src, void** dst, size_t src_n, size_t src_k, size_t dst_n, size_t dst_k, size_t n_rank,
-                          size_t k_rank) {
+                          size_t k_rank, bool qkv_fusion = false) {
     auto src_fp32 = (float*)malloc(src_n * src_k * sizeof(float));
     if (src_fp32 == nullptr) {
       assert(0);
     }
     jblas_unpackweight_fp32(*src, src_n, src_k, src_fp32, src_n);
     // layout will be K * N in the buffer
-    auto dst_fp32 = src_fp32 + k_rank * dst_k * src_n + n_rank * dst_n;
-    jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, src_n, *src);
+    float* dst_fp32;
+    if (qkv_fusion) {
+      dst_fp32 = (float*)malloc(dst_n * dst_k * sizeof(float));
+      for (int i = 0; i < src_k; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          float* dst_off = dst_fp32 + dst_n * i + j * dst_n / 3;
+          float* src_off = src_fp32 + src_n * i + j * src_n / 3 + n_rank * dst_n / 3;
+          memcpy(dst_off, src_off, dst_n * sizeof(float) / 3);
+        }
+      }
+      jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, dst_n, *src);
+      free(dst_fp32);
+    } else {
+      dst_fp32 = src_fp32 + k_rank * dst_k * src_n + n_rank * dst_n;
+      jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, src_n, *src);
+    }
     free(src_fp32);
-    // auto dst_tmp = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(*dst);
-    // MODEL_ASSERT(dst_tmp != nullptr);
-    // return dst_tmp->mSize;
   }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
@@ -696,7 +729,7 @@ struct model_model_loader {
       MODEL_ASSERT(out_offset == lt.size);
     }
 #ifdef NE_TP_MODEL
-    else if (lt.split_type == TP_1D_ROW) {
+    else if (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_QKV_ROW) {
       model_load_tensor_shard& shard = lt.shards.at(0);
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
@@ -708,14 +741,22 @@ struct model_model_loader {
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
         jblas_split_weight(&src_data, &dst_data, lt.world_size * num_rows, lt.ne.at(0), num_rows, lt.ne.at(0), lt.rank,
-                           0);
+                           0, lt.split_type == TP_1D_QKV_ROW);
       } else {
         // only copy part of weight form the tmp_buf of origin file
         tmp_buf.resize(lt.size * lt.world_size);
         file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
-        memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+        if (lt.split_type == TP_1D_QKV_ROW) {
+          for (int j = 0; j < 3; ++j) {
+            auto dst_off = lt.data + j * lt.size / 3;
+            auto src_off = tmp_buf.addr + (lt.rank + j * lt.world_size) * lt.size / 3;
+            memcpy(dst_off, src_off, lt.size / 3);
+          }
+        } else {
+          memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+        }
       }
-    } else if (lt.split_type == TP_1D_COLUMN) {
+    } else if (lt.split_type == TP_1D_COLUMN || lt.split_type == TP_1D_QKV_COLUMN) {
       if (lt.size == 0) {
         return;
       }
@@ -729,6 +770,7 @@ struct model_model_loader {
         file.read_raw(tmp_buf.addr, shard.size);
         void* dst_data = (void*)lt.data;
         void* src_data = (void*)(tmp_buf.addr);
+        // TODO support QKV COLUMN in jblas
         jblas_split_weight(&src_data, &dst_data, num_rows, lt.world_size * lt.ne.at(0), num_rows, lt.ne.at(0), 0,
                            lt.rank);
       } else {
@@ -737,10 +779,21 @@ struct model_model_loader {
         size_t offset = 0;
         // different data type may have differnet per_row_size
         size_t per_row_size = lt.size / num_rows;
-        for (size_t i = 0; i < num_rows; ++i) {
-          memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
-                 per_row_size);
-          offset += per_row_size;
+        if (lt.split_type == TP_1D_QKV_COLUMN) {
+          for (size_t i = 0; i < num_rows; ++i) {
+            for (int j = 0; j < 3; ++j) {
+              auto dst_off = lt.data + i * per_row_size + j * per_row_size / 3;
+              auto src_off = tmp_buf.addr + (lt.rank / 3 + j * lt.world_size / 3 + i * lt.world_size) * per_row_size;
+              memcpy(dst_off, src_off, per_row_size / 3);
+            }
+            offset += per_row_size;
+          }
+        } else {
+          for (size_t i = 0; i < num_rows; ++i) {
+            memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
+                   per_row_size);
+            offset += per_row_size;
+          }
         }
         MODEL_ASSERT(offset == lt.size);
       }

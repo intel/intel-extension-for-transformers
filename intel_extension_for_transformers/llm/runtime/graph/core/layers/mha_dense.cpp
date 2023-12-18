@@ -1386,8 +1386,19 @@ class MHAStableInterface {
     const auto group_heads = p.head_num / p.heads_kv;
     const auto sl_diff = p.sl_kv - p.sl_q;
 
+    // TP will need the real rank oder of k
+    int32_t k_offset = 0;
+    int32_t log_head_num = p.head_num;
+#ifdef NE_TP_MODEL
+    parallel_context* p_ctx = init_parallel_context();
+    int32_t world_size = get_tp_size(p_ctx);
+    int32_t rank = get_tp_rank(p_ctx);
+    if (world_size > 1) k_offset += rank * p.head_num;
+    log_head_num *= world_size;
+#endif
+
     // alibi slope
-    const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(p.head_num)));
+    const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(log_head_num)));
     const float m0 = powf(2.0f, -(8.f) / n_heads_log2_floor);
     const float m1 = powf(2.0f, -(8.f / 2.0f) / n_heads_log2_floor);
 
@@ -1422,9 +1433,10 @@ class MHAStableInterface {
           const int ihkv = ihn / group_heads;
           const int m_size = std::min(M_TILE, p.sl_q - i_m);
 
-          const auto alibi_ihn_m = !is_alibi                    ? 0.f
-                                   : (ihn < n_heads_log2_floor) ? powf(m0, ihn + 1)
-                                                                : powf(m1, 2 * (ihn - n_heads_log2_floor) + 1);
+          const auto alibi_ihn_m = !is_alibi ? 0.f
+                                   : (ihn + k_offset < n_heads_log2_floor)
+                                       ? powf(m0, ihn + k_offset + 1)
+                                       : powf(m1, 2 * (ihn + k_offset - n_heads_log2_floor) + 1);
 
           float s_max[M_TILE]{};  // maximum for each row of the S matrix
           std::fill_n(s_max, M_TILE, -INFINITY);
@@ -1751,7 +1763,17 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   const auto ROWPACK = p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 4
                        : p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 2
                                                                         : 0;
-  const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(p.head_num)));
+  // TP will need the real rank oder of k
+  int32_t k_offset = 0;
+  int32_t log_head_num = p.head_num;
+#ifdef NE_TP_MODEL
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  int32_t rank = get_tp_rank(p_ctx);
+  if (world_size > 1) k_offset += rank * p.head_num;
+  log_head_num = p.head_num * world_size;
+#endif
+  const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(log_head_num)));
   const float m0 = powf(2.0f, -(8.f) / n_heads_log2_floor);
   const float m1 = powf(2.0f, -(8.f / 2.0f) / n_heads_log2_floor);
 
@@ -1770,9 +1792,10 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
         const auto unmasked = is_causal ? sl_diff + i + 1 : p.sl_kv;
         const auto curr_row = std::unique_ptr<float[]>(new float[unmasked]);
 
-        const auto alibi_ihn_m = !is_alibi                    ? 0.f
-                                 : (ihn < n_heads_log2_floor) ? powf(m0, ihn + 1)
-                                                              : powf(m1, 2 * (ihn - n_heads_log2_floor) + 1);
+        const auto alibi_ihn_m = !is_alibi ? 0.f
+                                 : (ihn + k_offset < n_heads_log2_floor)
+                                     ? powf(m0, ihn + k_offset + 1)
+                                     : powf(m1, 2 * (ihn + k_offset - n_heads_log2_floor) + 1);
 
         // Q x K
         float row_max = -INFINITY;

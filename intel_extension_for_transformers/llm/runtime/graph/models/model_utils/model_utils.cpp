@@ -60,21 +60,20 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
                           const ne_type wtype, const int n_ctx, const int batch_size, const int beam_size,
                           const bool shift_roped_k, model_struct* model) {
   const auto n_layer = hparams.n_layer;
-  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
+  auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
   const auto head_size = hparams.n_embd / hparams.n_head;
+#ifdef NE_TP_MODEL
+  // when use TP, cached kv will also have smaller size
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  heads_kv /= world_size;
+#endif
   int32_t k_size, v_size;
   get_batch_kv_elements_from_gpt_params(heads_kv, head_size, n_ctx, wtype, &k_size, &v_size);
 
   int64_t layer_ne_k = batch_size * beam_size * k_size;
   int64_t layer_ne_v = batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
-#ifdef NE_TP_MODEL
-  // when use TP, cached kv will also have smaller size
-  parallel_context* p_ctx = init_parallel_context();
-  int32_t world_size = get_tp_size(p_ctx);
-  layer_ne_k /= world_size;
-  layer_ne_v /= world_size;
-#endif
 
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
   cache.seq_cells.resize(batch_size * beam_size);
@@ -2087,8 +2086,14 @@ static void jblas_model_kv_cache_seq_cpy(struct model_context* ctx, const model_
                                          const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
   const auto& kv_self = ctx->model.kv_self;
   const auto& hparams = ctx->model.hparams;
-  const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
+  int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
   const int head_size = hparams.n_embd / hparams.n_head;
+#ifdef NE_TP_MODEL
+  // when use TP, cached kv will also have smaller size
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  heads_kv /= world_size;
+#endif
   const int n_ctx = ctx->n_ctx;
   const auto kv_n_ctx_block = ctx->kv_n_ctx_block;
   NE_ASSERT(("Invalid end position!", n_ctx >= p1));
