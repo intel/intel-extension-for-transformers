@@ -22,6 +22,7 @@ from collections import OrderedDict
 from intel_extension_for_transformers.transformers import OptimizedModel
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from transformers import T5Config, MT5Config
+from typing import Union, Optional
 
 from .optimized_sentence_transformers import OptimzedTransformer
 
@@ -34,21 +35,6 @@ class OptimizedInstructorTransformer(InstructorEmbedding.INSTRUCTOR_Transformer)
     def __init__(self, *args, **kwargs):
         """Initialize the OptimizedInstructorTransformer."""
         super().__init__(*args, **kwargs)
-
-    @staticmethod
-    def load(input_path: str):
-        #Old classes used other config names than 'sentence_bert_config.json'
-        for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json', 
-                            'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
-                            'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
-                            'sentence_xlnet_config.json']:
-            sbert_config_path = os.path.join(input_path, config_name)
-            if os.path.exists(sbert_config_path):
-                break
-
-        with open(sbert_config_path) as fIn:
-            config = json.load(fIn)
-        return OptimizedInstructorTransformer(model_name_or_path=input_path, **config)
     
     def _load_model(self, model_name_or_path, config, cache_dir, **model_args):
         """Loads the transformer model"""
@@ -67,25 +53,45 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
         """Initialize the OptimizedInstructor."""
         super().__init__(*args, **kwargs)
 
-    def _load_auto_model(self, model_name_or_path): # pragma: no cover
+    def _load_auto_model(self, 
+                         model_name_or_path, 
+                         token: Optional[Union[bool, str]], 
+                         cache_folder: Optional[str]): # pragma: no cover
         """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
-        transformer_model = OptimzedTransformer(model_name_or_path)
-        pooling_model = sentence_transformers.models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
+        transformer_model = OptimzedTransformer(
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+        pooling_model = sentence_transformers.models.Pooling(
+            transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
     
-    def _load_sbert_model(self, model_path):
+    def _load_sbert_model(self, 
+                          model_name_or_path: str, 
+                          token: Optional[Union[bool, str]], 
+                          cache_folder: Optional[str]):
         """Loads a full sentence-transformers model."""
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
-        config_sentence_transformers_json_path = os.path.join(model_path, 'config_sentence_transformers.json')
-        if os.path.exists(config_sentence_transformers_json_path):
+        config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'config_sentence_transformers.json', token=token, cache_folder=cache_folder)
+        if config_sentence_transformers_json_path is not None:
             with open(config_sentence_transformers_json_path) as fIn:
                 self._model_config = json.load(fIn)
 
+            if '__version__' in self._model_config and \
+                'sentence_transformers' in self._model_config['__version__'] and \
+                    self._model_config['__version__']['sentence_transformers'] > sentence_transformers.__version__:
+                logger.warning("You try to use a model that was created with version {}, "\
+                               "however, your version is {}. This might cause unexpected "\
+                               "behavior or errors. In that case, try to update to the "\
+                               "latest version.\n\n\n".format(
+                                    self._model_config['__version__']['sentence_transformers'],
+                                    sentence_transformers.__version__))
+
         # Check if a readme exists
-        model_card_path = os.path.join(model_path, 'README.md')
-        if os.path.exists(model_card_path):
+        model_card_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'README.md', token=token, cache_folder=cache_folder)
+        if model_card_path is not None:
             try:
                 with open(model_card_path, encoding='utf8') as fIn:
                     self._model_card_text = fIn.read()
@@ -93,7 +99,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 pass
 
         # Load the modules of sentence transformer
-        modules_json_path = os.path.join(model_path, 'modules.json')
+        modules_json_path = sentence_transformers.util.load_file_path(
+            model_name_or_path, 'modules.json', token=token, cache_folder=cache_folder)
         with open(modules_json_path) as fIn:
             modules_config = json.load(fIn)
 
@@ -101,12 +108,32 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
         for module_config in modules_config:
             if module_config['idx']==0:
                 logger.info('load Optimized InstructorTransformer')
-                module_class = OptimizedInstructorTransformer
+                kwargs = {}
+                for config_name in ['sentence_bert_config.json', 'sentence_roberta_config.json', 
+                                    'sentence_distilbert_config.json', 'sentence_camembert_config.json', 
+                                    'sentence_albert_config.json', 'sentence_xlm-roberta_config.json', 
+                                    'sentence_xlnet_config.json']:
+                    config_path = sentence_transformers.util.load_file_path(
+                        model_name_or_path, config_name, token=token, cache_folder=cache_folder)
+                    if config_path is not None:
+                        with open(config_path) as fIn:
+                            kwargs = json.load(fIn)
+                        break
+                if "model_args" in kwargs:
+                    kwargs["model_args"]["token"] = token
+                else:
+                    kwargs["model_args"] = {"token": token}
+                module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
+                module_path = sentence_transformers.util.load_dir_path(
+                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module = module_class.load(module_path)
             else:
                 module_class = InstructorEmbedding.import_from_string(module_config['type'])
-            module = module_class.load(os.path.join(model_path, module_config['path']))
+                module_path = sentence_transformers.util.load_dir_path(
+                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module = module_class.load(module_path)
             modules[module_config['name']] = module
-
+        
         return modules

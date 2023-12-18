@@ -27,11 +27,11 @@ def prod(iterable):
 
 class MatMulKBit(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, A, B, out=None, bias=None, compute_dtype=None, weight_dtype=None):
+    def forward(ctx, A, B, out=None, bias=None, compute_dtype=None, weight_dtype=None, scale_dtype=None):
         # # 1. Dequantize
         # B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
-        # torch.ops.weight_only_jblasop.qbits_dequantize(
-        #     B, B_dequant, True, compute_dtype, weight_dtype)
+        # torch.ops.jblasop.woq_dequantize(
+        #     B, B_dequant, True, compute_dtype, weight_dtype, scale_dtype)
         # B_dequant = B_dequant.to(dtype=A.dtype)
 
         # default of pytorch behavior if inputs are empty
@@ -49,13 +49,13 @@ class MatMulKBit(torch.autograd.Function):
 
         # 2. Matmul
         # output = torch.nn.functional.linear(A, B_dequant, bias)
-        torch.ops.weight_only_jblasop.qbits_linear(
-            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype
+        torch.ops.jblasop.woq_linear(
+            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype, scale_dtype
         )
         output = out
 
         # 3. Save state
-        ctx.compute_dtype, ctx.weight_dtype = compute_dtype, weight_dtype
+        ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype = compute_dtype, weight_dtype, scale_dtype
         ctx.dtype_A, ctx.dtype_B, ctx.dtype_bias = A.dtype, B.dtype, None if bias is None else bias.dtype
         # B_dequant.dtype
 
@@ -72,13 +72,13 @@ class MatMulKBit(torch.autograd.Function):
             bias_grad = None if ctx.bias is None else torch.zeros_like(ctx.bias)
             return torch.zeros_like(ctx.A), torch.zeros_like(ctx.B), None, bias_grad, None
 
-        req_gradA, _, _, req_gradBias, _, _ = ctx.needs_input_grad
+        req_gradA, _, _, req_gradBias, _, _, _ = ctx.needs_input_grad
         A, B = ctx.tensors
         grad_A, grad_B, grad_bias = None, None, None
 
         B_dequant = torch.zeros(grad_output.shape[-1], A.shape[-1], dtype=torch.float)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
-            B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype)
+        torch.ops.jblasop.woq_dequantize(
+            B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype)
         B = B_dequant
 
         if req_gradBias:
@@ -89,13 +89,22 @@ class MatMulKBit(torch.autograd.Function):
         #if req_gradB: grad_B = torch.matmul(grad_output.t(), A)
         if req_gradA: grad_A = torch.matmul(grad_output, B.to(grad_output.dtype))
 
-        return grad_A, grad_B, None, grad_bias, None, None
+        return grad_A, grad_B, None, grad_bias, None, None, None
 
-def matmul_kbit(A: Tensor, B: Tensor, bias, out, compute_dtype, weight_dtype, do_dequant=False):
+
+def matmul_kbit(A: Tensor,
+                B: Tensor,
+                bias,
+                out,
+                compute_dtype,
+                weight_dtype,
+                scale_dtype,
+                do_dequant=False):
     if do_dequant:
-        return MatMulKBit.apply(A, B, out, bias, compute_dtype, weight_dtype)
+        return MatMulKBit.apply(A, B, out, bias, compute_dtype, weight_dtype,
+                                scale_dtype)
     else:
-        torch.ops.weight_only_jblasop.qbits_linear(
-            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype
-        )
+        torch.ops.jblasop.woq_linear(A, B.data, bias, out, out.shape[-1], bias
+                                     is not None, compute_dtype, weight_dtype,
+                                     scale_dtype)
         return out

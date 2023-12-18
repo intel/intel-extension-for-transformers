@@ -81,7 +81,7 @@ def build_chatbot(config: PipelineConfig=None):
     elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path.lower():
+    elif "qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
     elif "mistral" in config.model_name_or_path.lower():
@@ -124,7 +124,7 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
                     plugins[plugin_name]['class'] = NamedEntityRecognition
-                elif plugin_name == "face_animation": # pragma: no cover
+                elif plugin_name == "face_animation":
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
                 elif plugin_name == "image2image": # pragma: no cover
@@ -167,6 +167,7 @@ def build_chatbot(config: PipelineConfig=None):
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except ValueError as e:
         if "load_model: unsupported device" in str(e):
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
@@ -180,8 +181,10 @@ def build_chatbot(config: PipelineConfig=None):
             set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except Exception as e:
         set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     return adapter
 
 def finetune_model(config: BaseFinetuningConfig):

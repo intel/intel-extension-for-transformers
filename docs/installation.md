@@ -50,10 +50,12 @@ pip install -v .
 
 ## System Requirements
 ### Validated Hardware Environment
-Intel® Extension for Transformers supports systems based on [Intel 64 architecture or compatible processors](https://en.wikipedia.org/wiki/X86-64) that are specifically optimized for the following CPUs:
+Intel® Extension for Transformers supports the following HWs:
 
-* Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)
-* Future Intel Xeon Scalable processor (code name Sapphire Rapids)
+* Intel Xeon Scalable processor (Sapphire Rapids, Icelake, ...etc)
+* Intel Gaudi2
+* Intel Core Processors
+* Intel Xeon CPU Max Series
 
 ### Validated Software Environment
 

@@ -23,7 +23,7 @@ from intel_extension_for_transformers.transformers import OptimizedModel
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 import transformers
 from transformers import T5Config, MT5Config
-from typing import List, Optional
+from typing import Union, Optional
 
 sentence_transformers = LazyImport("sentence_transformers")
 
@@ -53,12 +53,12 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
         """Initialize the OptimizedSentenceTransformer."""
         super().__init__(*args, **kwargs)
 
-    def _load_auto_model(self, model_name_or_path):
+    def _load_auto_model(self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
         """
         Creates a simple Transformer + Mean Pooling model and returns the modules
         """
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
-        transformer_model = OptimzedTransformer(model_name_or_path)
+        transformer_model = OptimzedTransformer(model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
         pooling_model = sentence_transformers.models.Pooling(transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]

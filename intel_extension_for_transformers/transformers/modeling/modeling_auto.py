@@ -120,8 +120,9 @@ class _BaseQBitsAutoModelClass:
             if load_in_4bit:
                 if quantization_config is None:
                     if use_llm_runtime:
+                        # use wnf4_sfp32_cfp32_g32_sym by default
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype="int8", weight_dtype="int4"
+                            compute_dtype="fp32", weight_dtype="nf4"
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
@@ -227,8 +228,12 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if 'falcon' in model_type and transformers.__version__ > "4.33":
-                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(model.eval())
+            if "falcon" in model_type and transformers.__version__ > "4.33":
+                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
+                    model.eval()
+                )
+                quantization_config.ipex_opt_llm = False
+            if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
             # ipex.optimize_transformers
@@ -434,9 +439,7 @@ class _BaseQBitsAutoModelClass:
                             example_inputs["position_ids"] = (
                                 inputs["position_ids"][:, -1:] + 1
                             )
-                            example_inputs["input_ids"] = inputs["input_ids"][
-                                :, -1:
-                            ]
+                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
                         else:
                             example_inputs = inputs
                     else:
