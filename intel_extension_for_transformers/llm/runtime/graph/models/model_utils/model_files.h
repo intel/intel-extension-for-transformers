@@ -457,7 +457,10 @@ struct model_file_loader {
       throw std::runtime_error(format("%s: tensor '%s' not found in the file", __func__, name));
     }
 
-    return gguf_get_data_offset(ctx_gguf) + gguf_get_tensor_offset(ctx_gguf, idx);
+    size_t data_offset = gguf_get_data_offset(ctx_gguf);
+    size_t tensor_offset = gguf_get_tensor_offset(ctx_gguf, idx);
+    std::cout << " data_offset = " << data_offset << " tensor_offset = " << tensor_offset;
+    return data_offset + tensor_offset;
   }
 
   void gguf_set_val_u8(struct gguf_context* ctx, const char* key, uint8_t val) {
@@ -599,11 +602,12 @@ struct model_file_loader {
 
     size_t offset = 0;
     char magic[4];
+    
     gguf_fread_el(file_gguf, &magic, sizeof(magic), &offset);
     std::cout << "magic = " << magic << "  offset = " << offset << std::endl;
 
     struct gguf_context* ctx = reinterpret_cast<struct gguf_context*>(GGML_ALIGNED_MALLOC(sizeof(struct gguf_context)));
-
+    ctx->offset = 0;
     // read the header
     strncpy(ctx->header.magic, magic, 4);
 
@@ -806,6 +810,9 @@ struct model_file_loader {
 
       // 这段代码有点问题，因为data读取load不在这里
       // file.seek(offs, SEEK_SET);
+
+      // TODO: 
+      // shard.file_off = offs;
       shard.file_off = offs;
 
       // 目前就是这个offs，算的有点问题。
@@ -900,10 +907,35 @@ struct model_file_loader {
       std::cout << "loading the bin file with GGUF format." << std::endl;
       fseek(file.fp, 0, SEEK_SET);
     } else {
+      fseek(file.fp, 0, SEEK_SET);
       uint32_t ne_magic = file.read_u32();
       if (ne_magic == MODEL_FILE_MAGIC_NE) {
         file_version = MODEL_FILE_VERSION_NE;
         std::cout << "loading the bin file with NE format.";
+      }
+
+      uint32_t version = file.read_u32();
+
+      switch (ne_magic) {
+        case MODEL_FILE_MAGIC_GGMF:
+          switch (version) {
+            case 1:
+              file_version = MODEL_FILE_VERSION_GGMF_V1;
+              return;
+          }
+          break;
+        case MODEL_FILE_MAGIC_GGJT:
+          switch (version) {
+            case 1:
+              file_version = MODEL_FILE_VERSION_GGJT_V1;
+              return;
+            case 2:
+              file_version = MODEL_FILE_VERSION_GGJT_V2;
+              return;
+            case 3:
+              file_version = MODEL_FILE_VERSION_GGJT_V3;
+              return;
+          }
       }
 
       throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", ne_magic, file_version);
@@ -1113,52 +1145,52 @@ struct model_file_loader {
   }
 
   void read_hparams() {
-    // hparams.n_vocab = file.read_u32();
-    // hparams.n_embd = file.read_u32();
-    // hparams.n_mult = file.read_u32();
-    // hparams.n_head = file.read_u32();
-    // hparams.n_head_kv = file.read_u32();
-    // hparams.n_layer = file.read_u32();
-    // hparams.n_rot = file.read_u32();
-    // hparams.ftype = (enum ne_ftype)file.read_u32();
-    // hparams.max_seq_len = file.read_u32();
-    // file.read_raw(&hparams.alibi_bias_max, sizeof(float));
-    // file.read_raw(&hparams.clip_qkv, sizeof(float));
-    // hparams.par_res = file.read_u32();
+    hparams.n_vocab = file.read_u32();
+    hparams.n_embd = file.read_u32();
+    hparams.n_mult = file.read_u32();
+    hparams.n_head = file.read_u32();
+    hparams.n_head_kv = file.read_u32();
+    hparams.n_layer = file.read_u32();
+    hparams.n_rot = file.read_u32();
+    hparams.ftype = (enum ne_ftype)file.read_u32();
+    hparams.max_seq_len = file.read_u32();
+    file.read_raw(&hparams.alibi_bias_max, sizeof(float));
+    file.read_raw(&hparams.clip_qkv, sizeof(float));
+    hparams.par_res = file.read_u32();
 
-    // hparams.word_embed_proj_dim = file.read_u32();
-    // hparams.do_layer_norm_before = bool(file.read_u32());
+    hparams.word_embed_proj_dim = file.read_u32();
+    hparams.do_layer_norm_before = bool(file.read_u32());
 
-    // // For ChatGLM-2
-    // hparams.multi_query_group_num = file.read_u32();
-    // hparams.ffn_hidden_size = file.read_u32();
+    // For ChatGLM-2
+    hparams.multi_query_group_num = file.read_u32();
+    hparams.ffn_hidden_size = file.read_u32();
 
-    // // For ChatGLM-2
-    // hparams.inner_hidden_size = file.read_u32();
+    // For ChatGLM-2
+    hparams.inner_hidden_size = file.read_u32();
   }
 
   void read_vocab() {
-    // file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
-    // file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
-    // file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
-    // file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
 
-    // vocab.id_to_token.resize(hparams.n_vocab);
-    // for (uint32_t i = 0; i < hparams.n_vocab; i++) {
-    //   uint32_t len = file.read_u32();
-    //   std::string word = file.read_string(len);
+    vocab.id_to_token.resize(hparams.n_vocab);
+    for (uint32_t i = 0; i < hparams.n_vocab; i++) {
+      uint32_t len = file.read_u32();
+      std::string word = file.read_string(len);
 
-    //   float score = 0.0f;
-    //   if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
-    //     file.read_raw(&score, sizeof(score));
-    //   }
+      float score = 0.0f;
+      if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
+        file.read_raw(&score, sizeof(score));
+      }
 
-    //   vocab.token_to_id[word] = i;
+      vocab.token_to_id[word] = i;
 
-    //   auto& tok_score = vocab.id_to_token[i];
-    //   tok_score.tok = std::move(word);
-    //   tok_score.score = score;
-    // }
+      auto& tok_score = vocab.id_to_token[i];
+      tok_score.tok = std::move(word);
+      tok_score.score = score;
+    }
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
@@ -1494,9 +1526,8 @@ struct model_model_loader {
       lt.data = (uint8_t*)mapping->addr + lt.shards.at(0).file_off;
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
+      // file.seek(lt.shards.at(0).file_off, SEEK_SET);
       file.seek(lt.shards.at(0).file_off + 1490912, SEEK_SET);
-      // size就是tensor的长度
-      // file_off， 看一下值。
       std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off + 1490912
                 << " lt.size =  " << lt.size << std::endl;
       file.read_raw(lt.data, lt.size);
