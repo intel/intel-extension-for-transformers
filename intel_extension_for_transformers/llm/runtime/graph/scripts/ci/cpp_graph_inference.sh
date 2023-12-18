@@ -157,7 +157,7 @@ function main() {
                         $infer_cmd --seed 1234 -t $cores_per_instance -b 2047 -c ${ctx} -n ${output} -m ${model}-${precision}.bin -p "$prompt" 2>&1 | tee ${WORKING_DIR}/${logs_file} || true &
                     minitor
 
-                    python ${WORKING_DIR}/.github/workflows/script/models/calculate_percentage.py ${WORKING_DIR}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
+                    python ${WORKING_DIR}/.github/workflows/script/models/calculate_percentiles.py ${WORKING_DIR}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
                 done
             done
         done
@@ -235,7 +235,7 @@ function minitor() {
     echo "======  Monitor Start ======="
     while true; do
         if [ $(ps -ef | grep "$infer_cmd" | wc -l) -lt 2 ]; then
-            #python calculate_percertiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
+            #python calculate_percentiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
             sleep 3
 
             break
@@ -244,6 +244,6 @@ function minitor() {
     done
 }
 function get_data() {
-    python calculate_percertiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
+    python calculate_percentiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
 }
 main $@ 2>&1 | tee ${WORKING_DIR}/launch.log
