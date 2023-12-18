@@ -15,7 +15,7 @@
 #include "models/model_utils/pool.h"
 
 // fcfs_pool
-const bool fcfs_pool::add(const sequence& seq) {
+const bool fcfs_pool::add(sequence* seq) {
   context.push(seq);
   return true;
 }
@@ -25,13 +25,13 @@ const bool fcfs_pool::pop(sequence* seq) {
     fprintf(stderr, "%s: pool is empty.\n", __func__);
     return false;
   }
-  *seq = std::move(context.front());
+  seq = context.front();
   context.pop();
   return true;
 }
 
 void fcfs_pool::clear() {
-  std::queue<sequence> empty_q;
+  std::queue<sequence*> empty_q;
   context.swap(empty_q);
 }
 
@@ -65,7 +65,7 @@ serve_pool::~serve_pool() {
   }
 }
 
-const bool serve_pool::add(const sequence& seq) {
+const bool serve_pool::add(sequence* seq) {
   std::lock_guard<std::mutex> lock(mtx);
   return internel_pool->add(seq);
 }

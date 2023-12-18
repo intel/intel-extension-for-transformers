@@ -42,13 +42,13 @@ struct sequence {
   int request_idx = -1;  // -1 means unknown
   int64_t receive_time;
   int64_t end_time;
-  model_token* prompt_ids = NULL;
+  std::vector<model_token> prompt_ids;
   std::vector<model_token> generated_ids;
   uint32_t n_prompt_tokens;
   uint32_t n_past;
   uint32_t n_total;
   uint32_t n_tokens;
-  generation_config* gen_conf = NULL;
+  generation_config gen_conf;
   seq_status status = seq_status::UNKNOWN;
 };
 
@@ -57,7 +57,7 @@ class pool {
  public:
   explicit pool(const pool_property& property) : property(property) {}
   virtual ~pool() {}
-  virtual const bool add(const sequence& seq) = 0;
+  virtual const bool add(sequence* seq) = 0;
   virtual const bool pop(sequence* seq) = 0;
   virtual void clear() = 0;
   virtual const bool empty() = 0;
@@ -71,14 +71,14 @@ class fcfs_pool : public pool {
  public:
   explicit fcfs_pool(const pool_property& property) : pool(property) {}
   ~fcfs_pool() {}
-  const bool add(const sequence& seq) override;
+  const bool add(sequence* seq) override;
   const bool pop(sequence* seq) override;
   void clear() override;
   const bool empty() override;
   const int size() override;
 
  protected:
-  std::queue<sequence> context;
+  std::queue<sequence*> context;
 };
 
 class serve_pool {
@@ -86,7 +86,7 @@ class serve_pool {
   explicit serve_pool(const pool_property& property);
   serve_pool(const serve_policy& policy, const pool_property& property);
   ~serve_pool();
-  const bool add(const sequence& seq);
+  const bool add(sequence* seq);
   const bool pop(sequence* seq);
   void clear();
   const bool empty();
