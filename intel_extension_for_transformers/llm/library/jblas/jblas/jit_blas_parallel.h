@@ -736,13 +736,13 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
       }
     } else if (tidx < cb.P_core_num + cb.E_core_num) {
       // run on E-core
-      typename AParall::ThreadProblem thdpA{tidx};
+      typename AParall::ThreadProblem thdpA{tidx - cb.P_core_num};
       apara_E.getIndex(thdpA);
       if (thdpA.valid) {
         launcher.mProA.run(args_E.paramA, thdpA);
       }
       th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx};
+      typename Parallel_T::ThreadProblem thdp{tidx - cb.P_core_num};
       para_E.getIndex(thdp);
       if (thdp.valid) {
         launcher.run(args_E, thdp);

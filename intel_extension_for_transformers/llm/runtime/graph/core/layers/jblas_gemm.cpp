@@ -74,12 +74,27 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
   using Launcher = tLauncher_Int8_F32F32<GemmCore_T, Wei_T>;
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-  utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
-  quanA.assign(WorkSpace);
-  typename Launcher::Param args{gp, {A, K, &quanA}, {B}, {C, N}};
-  jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = M - int(M / (1 + cb.PE));
+    utils::GemmProblem gp_P(1, offset, N, K, B->mBlockSize);
+    utils::GemmProblem gp_E(1, M - offset, N, K, B->mBlockSize);
+    auto quanA_P = kernel.mProA.createStorage(offset, K, B->mBlockSize, B->IsAsym());
+    auto quanA_E = kernel.mProA.createStorage(M - offset, K, B->mBlockSize, B->IsAsym());
+    quanA_P.assign(WorkSpace);
+    quanA_E.assign(WorkSpace + quanA_P.mSize);
+    typename Launcher::Param args_P{gp_P, {A, lda, &quanA_P}, {B}, {C, N}};
+    typename Launcher::Param args_E{gp_E, {A + offset * lda, lda, &quanA_E}, {B}, {C + offset * N, N}};
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args_P, args_E, th);
+  } else {
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
+    quanA.assign(WorkSpace);
+    typename Launcher::Param args{gp, {A, K, &quanA}, {B}, {C, N}};
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  }
 }
 
 bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const size_t BatchN,

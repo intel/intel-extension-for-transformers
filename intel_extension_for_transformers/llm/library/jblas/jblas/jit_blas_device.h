@@ -287,7 +287,7 @@ class CpuDevice {
       uint32_t tmp[4];
       _cpu.getCpuid(7, tmp);
       if (tmp[3] & (1U << 15)) mHybrid = true;
-      printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
+      // printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
     }
     if (mHybrid) {
       int total_cores = numcores * _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::SmtLevel);
@@ -492,15 +492,7 @@ class CpuHybrid {
 
   void core_bond(int tidx) {
     int core = cores_order[tidx];
-#ifdef _WIN32
-    SetThreadAffinityMask(GetCurrentThread(), 1 << core);
-#else
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(core, &cpuset);
-    int s = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-    if (s != 0) printf("ERROR\n");
-#endif
+    CpuDevice::core_bond(core);
   }
 
   uint32_t mL2Cache_P, mL1Cache_P, mL2Cache_E, mL1Cache_E;

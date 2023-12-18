@@ -69,6 +69,67 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args, 
   });
 }
 
+template <class Parallel_T, class Launch_T>
+void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P,
+                      const typename Launch_T::Param* args_E, parallel::IThreading* th) {
+  device::CpuHybrid cb;
+  Parallel_T para_P({th->num_threads() - cb.E_core_num, args_P[0].problem, cb.mL2Cache_P, cb.mL1Cache_P});
+  Parallel_T para_E({cb.E_core_num, args_E[0].problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  using AParall = typename Launch_T::PrologueA::Parallel;
+  auto apara_P = launcher->mProA.createParallel(th->num_threads() - cb.E_core_num, args_P[0].problem);
+  auto apara_E = launcher->mProA.createParallel(cb.E_core_num, args_E[0].problem);
+  static bool flag = false;
+  if (flag) {
+    printf("%s\n", __FUNCTION__);
+    para_P.print();
+    para_E.print();
+    flag = false;
+  }
+  th->parallel_for([&](int tidx) {
+    cb.core_bond(tidx);
+    if (tidx < cb.P_core_num) {
+      // run on P-core
+      typename AParall::ThreadProblem thdpA{tidx};
+      apara_P.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher->mProA.run(args_P[0].paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx};
+      para_P.getIndex(thdp);
+      if (thdp.valid) {
+        for (size_t i = 0; i < 3; i++) launcher->run(args_P[i], thdp);
+      }
+    } else if (tidx < cb.P_core_num + cb.E_core_num) {
+      // run on E-core
+      typename AParall::ThreadProblem thdpA{tidx - cb.P_core_num};
+      apara_E.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher->mProA.run(args_E[0].paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx - cb.P_core_num};
+      para_E.getIndex(thdp);
+      if (thdp.valid) {
+        for (size_t i = 0; i < 3; i++) launcher->run(args_E[i], thdp);
+      }
+    } else {
+      // run on SMT
+      typename AParall::ThreadProblem thdpA{tidx - cb.E_core_num};
+      apara_P.getIndex(thdpA);
+      if (thdpA.valid) {
+        launcher->mProA.run(args_P[0].paramA, thdpA);
+      }
+      th->sync();
+      typename Parallel_T::ThreadProblem thdp{tidx - cb.E_core_num};
+      para_P.getIndex(thdp);
+      if (thdp.valid) {
+        for (size_t i = 0; i < 3; i++) launcher->run(args_P[i], thdp);
+      }
+    }
+  });
+}
+
 template <class GemmCore_T, template <class, JBLAS_ISA> class Wei_T>
 void JblasGemmCompF32(const int M, const int N, const int K, const float* A, const int lda,
                       jblas::storage::gemm::IWeightBase* _BQ, jblas::storage::gemm::IWeightBase* _BK,
@@ -130,13 +191,32 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
   auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
-  quanA.assign(WorkSpace);
-  utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
-  typename Launcher::Param args[3]{{gp, {A, K, &quanA}, {BQ}, {C, N}},
-                                   {gp, {A, K, &quanA}, {BK}, {C + M * ldc, N}},
-                                   {gp, {A, K, &quanA}, {BV}, {C + M * ldc * 2, N}}};
-  GemmRunWithA_QKV<Parallel>(&kernel, args, th);
+  GetCPUDevice();
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = M - int(M / (1 + cb.PE));
+    utils::GemmProblem gp_P(1, offset, N, K, BQ->mBlockSize);
+    utils::GemmProblem gp_E(1, M - offset, N, K, BQ->mBlockSize);
+    auto quanA_P = kernel.mProA.createStorage(offset, K, BQ->mBlockSize, BQ->IsAsym());
+    auto quanA_E = kernel.mProA.createStorage(M - offset, K, BQ->mBlockSize, BQ->IsAsym());
+    quanA_P.assign(WorkSpace);
+    quanA_E.assign(WorkSpace + quanA_P.mSize);
+    typename Launcher::Param args_P[3]{{gp_P, {A, K, &quanA_P}, {BQ}, {C, N}},
+                                       {gp_P, {A, K, &quanA_P}, {BK}, {C + M * ldc, N}},
+                                       {gp_P, {A, K, &quanA_P}, {BV}, {C + M * ldc * 2, N}}};
+    typename Launcher::Param args_E[3]{{gp_E, {A + offset * K, K, &quanA_E}, {BQ}, {C + offset * N, N}},
+                                       {gp_E, {A + offset * K, K, &quanA_E}, {BK}, {C + offset * N + M * ldc, N}},
+                                       {gp_E, {A + offset * K, K, &quanA_E}, {BV}, {C + offset * N + M * ldc * 2, N}}};
+    GemmRunWithA_QKV<Parallel>(&kernel, args_P, args_E, th);
+  } else {
+    auto quanA = kernel.mProA.createStorage(M, K, BQ->mBlockSize, BQ->IsAsym());
+    quanA.assign(WorkSpace);
+    utils::GemmProblem gp(1, M, N, K, BQ->mBlockSize);  // If mixed blocksize, change it to three instances.
+    typename Launcher::Param args[3]{{gp, {A, K, &quanA}, {BQ}, {C, N}},
+                                     {gp, {A, K, &quanA}, {BK}, {C + M * ldc, N}},
+                                     {gp, {A, K, &quanA}, {BV}, {C + M * ldc * 2, N}}};
+    GemmRunWithA_QKV<Parallel>(&kernel, args, th);
+  }
 }
 }  // namespace ip_qkv
 
