@@ -7,3 +7,4 @@ pydub
 python-multipart
 speechbrain
 librosa
+zhconv

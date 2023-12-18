@@ -77,7 +77,8 @@ enum model_archs {
   MODEL_BLOOM,
   MODEL_BAICHUAN,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM
+  MODEL_CHATGLM,
+  MODEL_QWEN
 };
 
 static const size_t MB = 1024 * 1024;
@@ -124,6 +125,8 @@ struct model_hparams {
   int32_t par_res = 1;                // for neox 1 = true, 0 = false
   uint32_t word_embed_proj_dim = 0;   // for opt
   bool do_layer_norm_before = false;  // for opt
+  float rms_norm_eps = 1e-6f;         // rms norm epsilon
+  float freq_base = 10000.0f;
 
   // ChatGLM-2
   int32_t multi_query_group_num = 0;
@@ -151,9 +154,23 @@ struct model_layer {
   struct ne_tensor* v_cache;
 };
 
+typedef int32_t model_pos;
+typedef int32_t model_seq_id;
+
+struct kv_token_cell {
+  model_pos pos = -1;   // token idx (for rope)
+  model_pos delta = 0;  // token shift delta (pos += delta)
+};
+
+struct kv_seq_cell {
+  std::vector<kv_token_cell> token_cells;
+  model_seq_id seq_id = -1;
+  bool empty = true;
+};
+
 struct model_kv_cache {
-  struct ne_tensor* k;
-  struct ne_tensor* v;
+  struct ne_tensor* k = NULL;
+  struct ne_tensor* v = NULL;
   struct ne_tensor* cossin = NULL;  // cached cos/sin value for shifting RoPE
 
   struct ne_context* ctx = NULL;
@@ -161,6 +178,9 @@ struct model_kv_cache {
   model_ctx_buffer buf;
 
   int n;  // number of tokens currently in the cache
+
+  bool has_shift = false;  // ring-buffer (for too long text generation like streaming-llm)
+  std::vector<kv_seq_cell> seq_cells;
 
   ~model_kv_cache() {
     if (ctx) {
@@ -258,6 +278,13 @@ struct model_context {
 
   model_struct model;
   model_vocab vocab;
+  // maximum num of bearable requests in current env
+  int max_request_bs = 32;  // TODO
+  // num of current execution prompts
+  int request_running_bs = 1;
+  // length of current execution tokens list
+  // first token (prefill) generation is equal to `request_running_bs`
+  // next tokens (decoding) generation may be larger than `request_running_bs`(for example, beam search)
   int batch_size = 1;
   bool beam_search = false;
   bool shift_roped_k = false;     // whether to store non-RoPEd K cache
@@ -274,7 +301,7 @@ struct model_context {
   std::vector<float> logits;
   bool logits_all = false;
 
-  // input embedding (1-dimensional array: [n_embd])
+  // input embedding (1-dimensional array: [n_embd * batch_size])
   std::vector<float> embedding;
 
   // memory buffers used to evaluate the model
@@ -341,6 +368,30 @@ typedef struct model_token_data_array {
 
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
+struct model_input {
+  // embd or next token
+  const model_token* tokens = nullptr;
+  // tokens length
+  uint32_t n_tokens = 0;
+  // prompt length
+  uint32_t n_prompt_tokens = 0;
+  // kv cache n_past
+  uint32_t n_past = 0;
+  // text tokens length (prompt + all next tokens)
+  // the number of tokens evaluated so far (including evicted tokens if there is any)
+  uint32_t n_total = 0;
+  // request id
+  int request_idx = -1;
+  // beam id in beam search
+  int beam_idx = 0;
+  // padding related, attention mask
+  // (0: left, 1: right)
+  // only support padding left in decoder only model
+  int padding_side = 0;
+  // padding length
+  uint32_t n_padding = 0;
+};
+
 struct model_context_params {
   model_archs arch;  // arch of models (GPT-J, LLAMA)
   int n_ctx;         // text context
@@ -399,7 +450,8 @@ class model_name_to_arch {
       {"mpt", MODEL_MPT},         {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
       {"dolly", MODEL_GPTNEOX},   {"polyglot", MODEL_GPTNEOX},  {"starcoder", MODEL_STARCODER},
       {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},       {"chatglm2", MODEL_CHATGLM2},
-      {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}, {"mistral", MODEL_LLAMA}};
+      {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}, {"mistral", MODEL_LLAMA},
+      {"qwen", MODEL_QWEN}};
 };
 
 #ifdef __cplusplus

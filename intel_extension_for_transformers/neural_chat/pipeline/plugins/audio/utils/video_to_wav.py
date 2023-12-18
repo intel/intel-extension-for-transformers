@@ -21,11 +21,18 @@ import subprocess
 import shlex
 
 from pydub import AudioSegment
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
+
 
 def convert_video_to_wav(path, output_sample_rate, is_mono=True):
     path, basename = os.path.split(path)
     path_list = [basename]
-    print(path)
+    logging.info(path)
 
     output_dir = os.path.join(path, "../raw")
     if not os.path.exists(output_dir):
@@ -35,10 +42,10 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         if os.path.isdir(os.path.join(path, filename)):
             continue
         filename_suffix = os.path.splitext(filename)[1]
-        print(filename)
+        logging.info(filename)
         input_file_path = os.path.join(path, filename)
         output_file_path = os.path.join(output_dir, os.path.splitext(filename)[0] + ".wav")
-        if filename_suffix == '.flv':
+        if filename_suffix == '.flv': # pragma: no cover
             sound = AudioSegment.from_flv(input_file_path)
             sound = sound.set_frame_rate(output_sample_rate)
             if is_mono:
@@ -49,19 +56,19 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
             if is_mono:
                 cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(
                     input_file_path, output_sample_rate, output_file_path).split()
-            else:
+            else: # pragma: no cover
                 cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(
                     input_file_path, output_sample_rate, output_file_path).split()
             try:
                 subprocess.run(cmd, check=True)
-            except subprocess.CalledProcessError as e:
-                print("Error while executing command:", e)
-        else:
-            print("file ", filename, " format not supported!")
+            except subprocess.CalledProcessError as e: # pragma: no cover
+                logging.error("Error while executing command: %s", e)
+        else: # pragma: no cover
+            logging.info("file %s format not supported!", filename)
             continue
         
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
     parser.add_argument("--is_mono", type=str, default='True')
@@ -70,7 +77,7 @@ if __name__ == '__main__':
     output_sample_rate = shlex.quote(args.sr)
     is_exist = os.path.exists(shlex.quote(args.path))
     if not is_exist:
-        print("path not existed!")
+        logging.info("path not existed!")
     else:
         path = shlex.quote(args.path)
         is_mono = shlex.quote(args.is_mono)

@@ -41,20 +41,25 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
 
-static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                        const int n_past, const int n_total, const int n_threads) {
+static bool chatglm_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
+                                        const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
-  const int N = n_tokens;
+  // static batching for now
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
+  const int batch_size = lctx.batch_size;
+  MODEL_ASSERT(batch_size == n_input);
 
   const auto& kv_self = model.kv_self;
 
@@ -64,11 +69,13 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_layer = hparams.n_layer;
   const int n_ctx = lctx.n_ctx;
   const int n_keep = lctx.n_keep;
+  const bool shift_roped_k = lctx.shift_roped_k;
+  const bool is_ring_full = shift_roped_k && n_total > n_past;
+  const int n_cached = shift_roped_k ? std::min(n_total + N, n_ctx) : (n_past + N);  // #tokens cached after kv-append
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
-  const int n_rot = n_embd / n_head / 2;
   const int head_size = n_embd / n_head;
-  const int rope_dim = head_size / 2;
+  const int n_rot = head_size / 2;
   const int mqa_scale = n_head / hparams.multi_query_group_num;
   const int num_kv_heads = hparams.multi_query_group_num;
 
@@ -101,7 +108,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         /* .heads_kv = */ num_kv_heads,
         /* .head_size = */ head_size,
         /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inference
-        /* .sl_kv = */ n_past + N,
+        /* .sl_kv = */ n_cached,
     };
 
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
@@ -116,7 +123,9 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
+  }
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   NE_ASSERT(N == inpL->ne[1]);
@@ -126,7 +135,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     lctx.use_buf(ctx0, 0);
 
     // self-attention
-    cur = ne_rms_norm(ctx0, inpL);
+    cur = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
     cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
     {
       // compute QKV
@@ -137,13 +146,14 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
           ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                      0);  // [N, heads, head_size]
       ne_set_name(query_layer, "query_layer");
-      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
+      query_layer = ne_rope_inplace(ctx0, query_layer, std::max(n_cached - N, n_past), n_rot, 0, 0, hparams.freq_base);
 
       struct ne_tensor* key_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
                      hidden_size * ne_element_size(cur));  // [N, kv_heads, head_size]
       ne_set_name(key_layer, "key_layer");
-      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
+      key_layer = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
+          ctx0, key_layer, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0, hparams.freq_base);
 
       struct ne_tensor* value_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
@@ -175,24 +185,34 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         }
 
         // concat key & value with past kv
-        key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + N, num_kv_heads,
+        key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_cached, num_kv_heads,
                                model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
                                0);  // [kv_heads, klen, head_size]
-        value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_past + N, head_size, num_kv_heads,
+        value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_cached, head_size, num_kv_heads,
                                  model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
                                  0);  // [kv_heads, head_size, klen]
+
+        if (is_ring_full) {
+          key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);  // perm for rope
+          struct ne_tensor* cossin_cache = nullptr;
+          // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N
+          // in a single eval execution
+          if (N == 1) cossin_cache = kv_self.cossin;
+          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
+          key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);  // perm back
+        }
 
         // attention
         struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [kv_heads, mqa_scale * N, klen]
         ne_set_name(attn_scores, "attn_scores");
         attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, attn_scale));
 
-        if (n_past == 0) {
+        if (N > 1 || !shift_roped_k) {
           // build attention mask for context input
-          attn_scores = ne_reshape_3d(ctx0, attn_scores, n_past + N, N,
+          attn_scores = ne_reshape_3d(ctx0, attn_scores, n_cached, N,
                                       num_attention_heads);  // [heads, N, klen]
           attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
-          attn_scores = ne_reshape_3d(ctx0, attn_scores, n_past + N, mqa_scale * N,
+          attn_scores = ne_reshape_3d(ctx0, attn_scores, n_cached, mqa_scale * N,
                                       num_kv_heads);  // [kv_heads, mqa_scale * N, klen]
         }
 
@@ -204,7 +224,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         cur = ne_cont(ctx0, ne_permute(ctx0, cur, 0, 2, 1, 3));  // [N, heads, head_size]
         cur = ne_reshape_2d(ctx0, cur, hidden_size, N);          // [N, hidden]
       } else {                                                   // Using MHA (GQA/MQA) managed kv-cache
-        const auto seq_kv = n_past + N;
         const auto k_size = kv_cache_info.k_bytes;
         const auto v_size = kv_cache_info.v_bytes;
 
@@ -214,30 +233,37 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
                                           head_size, n_ctx, num_kv_heads,  // ne
                                           0, 0,                            // nb (jblas managed)
                                           0);                              // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, key_layer, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, key_layer, n_past, is_ring_full));
           const auto v_cache = ne_view_3d(ctx0, model.layers[il].v_cache,  // tensor
                                           head_size, n_ctx, num_kv_heads,  // ne
                                           0, 0,                            // nb (jblas managed)
                                           0);                              // offset
-          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, value_layer, n_past));
+          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, value_layer, n_past, is_ring_full));
         }
 
-        query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);                            // [heads, N, head_size]
-        key_layer =                                                                         //
-            ne_view_3d(ctx0, model.layers[il].k_cache,                                      // tensor
-                       head_size, seq_kv, num_kv_heads,                                     // ne
-                       kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,          // nb (jblas managed)
-                       0);                                                                  // offset
-        *reinterpret_cast<ATTN_FWD_LAYOUT*>(&key_layer->nb[0]) = kv_cache_info.k_layout;    // us nb0 for layout
-        value_layer =                                                                       //
+        query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);                          // [heads, N, head_size]
+        key_layer =                                                                       //
+            ne_view_3d(ctx0, model.layers[il].k_cache,                                    // tensor
+                       head_size, n_cached, num_kv_heads,                                 // ne
+                       kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,        // nb (jblas managed)
+                       0);                                                                // offset
+        *reinterpret_cast<ATTN_FWD_LAYOUT*>(&key_layer->nb[0]) = kv_cache_info.k_layout;  // us nb0 for layout
+        if (is_ring_full) {
+          struct ne_tensor* cossin_cache = nullptr;
+          // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N
+          // in a single eval execution
+          if (N == 1) cossin_cache = kv_self.cossin;
+          key_layer = ne_rope_shift_inplace(ctx0, key_layer, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base);
+        }
+        value_layer =
             ne_view_3d(ctx0, model.layers[il].v_cache,                                      // tensor
-                       seq_kv, head_size, num_kv_heads,                                     // ne
+                       n_cached, head_size, num_kv_heads,                                   // ne
                        kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num,   // nb (jblas managed)
                        0);                                                                  // offset
         *reinterpret_cast<ATTN_FWD_LAYOUT*>(&value_layer->nb[0]) = kv_cache_info.v_layout;  // us nb0 for layout
 
         ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
-        if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+        if (n_total == 0 || !shift_roped_k) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, query_layer, key_layer, value_layer, attn_scale, attn_flags);
         cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
       }
@@ -249,7 +275,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     struct ne_tensor* hidden_states = ne_add(ctx0, inpL, cur);
 
     // mlp.forward
-    struct ne_tensor* mlp_output = ne_rms_norm(ctx0, hidden_states);
+    struct ne_tensor* mlp_output = ne_rms_norm(ctx0, hidden_states, hparams.rms_norm_eps);
     ne_set_name(mlp_output, "mlp_output");
     // mlp_output = ne_mul(ctx0, mlp_output, model.layers[il].norm[1]);
     mlp_output = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], mlp_output), mlp_output);
@@ -272,7 +298,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
     ne_set_name(inpL, "inpL");
     // inpL = ne_mul(ctx0, inpL, model.others[1]);
     inpL = ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL);
@@ -296,7 +322,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 #endif
 
   // update kv token count
-  lctx.model.kv_self.n = n_past + N;
+  lctx.model.kv_self.n = n_cached;
 
   // extract logits
   {
@@ -304,11 +330,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab);
     }
   }
 
@@ -317,7 +343,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -340,15 +367,14 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!chatglm_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!chatglm_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

@@ -37,18 +37,23 @@
 // evaluate the transformer
 //
 //   - lctx:      model context
-//   - tokens:    new batch of tokens to process
-//   - n_past:    the offset to which the kv is cached to
-//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
+//   - inputs:    model_input array
+//   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
 #define OPT_POS_EMBD_OFFS 2
 
-static bool opt_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                    const int n_past, const int n_total, const int n_threads) {
+static bool opt_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
+                                    const int n_threads) {
   const int64_t t_start_us = ne_time_us();
+  model_context& lctx = *ctx;
 
-  const int N = n_tokens;
+  // static batching for now
+  const int N = inputs->n_tokens;
+  const int n_past = inputs->n_past;
+  const int n_total = inputs->n_total;
+  const int batch_size = lctx.batch_size;
+  MODEL_ASSERT(batch_size == n_input);
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -84,7 +89,9 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, (inputs + i)->tokens, N * ne_element_size(embd));
+  }
 
   /* class OPTLearnedPositionalEmbedding(nn.Embedding)
         attention_mask = attention_mask.long()
@@ -99,7 +106,7 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
   */
   struct ne_tensor* position = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   for (int i = 0; i < N; ++i) {
-    ((int32_t*)position->data)[i] = n_past + i + OPT_POS_EMBD_OFFS;
+    (reinterpret_cast<int32_t*>(position->data))[i] = n_past + i + OPT_POS_EMBD_OFFS;
   }
 
   // wte + wpe
@@ -194,7 +201,8 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
       // [n_past + N, N, n_head]
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled =
+          ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(static_cast<float>((n_embd) / n_head))));
 
       // KQ_masked = mask_past(KQ_scaled)
       // [n_past + N, N, n_head]
@@ -330,11 +338,12 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -343,7 +352,8 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -366,15 +376,14 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-               int n_threads) {
-  if (!opt_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
+int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
+  if (!opt_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

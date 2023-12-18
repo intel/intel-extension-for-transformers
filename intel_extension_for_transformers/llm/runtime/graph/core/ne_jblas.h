@@ -22,6 +22,8 @@ void jblas_timer(bool _init);
 
 int jblas_set_threads(int _nth);
 
+void* jblas_get_thread_handle();
+
 void jblas_init();
 
 unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr);
@@ -58,6 +60,9 @@ void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, vo
                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
                                               bool boardcast_bias, void* workspace);
 
+void jblas_unpackweight_fp32(void* wptr, int n, int k, float* fp32data, int ld);
+// packweight to dstptr, copy weight attributes from srcptr
+void jblas_packweight_copyattr(const float* f32ptr, void* dstpr, int n, int k, int ld, void* srcptr);
 #ifdef __cplusplus
 }
 #endif

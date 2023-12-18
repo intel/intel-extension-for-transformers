@@ -22,13 +22,16 @@ from transformers import AutoTokenizer
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+
+def is_win():
+    return sys.platform.startswith('win')
+
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="Model name: String", required=True)
     parser.add_argument("-m", "--model", type=Path, help="Path to the executed model: String", required=True)
-    parser.add_argument(
-        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
-    )
+    parser.add_argument("--build_dir", type=Path, help="Path to the build file: String", default=build_path)
     parser.add_argument(
         "-p",
         "--prompt",
@@ -67,7 +70,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "-c",
         "--ctx_size",
         type=int,
-        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
+        help=
+        "Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
@@ -95,6 +99,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default=0,
     )
     parser.add_argument(
+        "--shift-roped-k",
+        action="store_true",
+        help="Use ring-buffer and thus do not re-computing after reaching ctx_size (default: False)",
+    )
+    parser.add_argument(
         "--memory-f32",
         action="store_true",
         help="Use fp32 for the data type of kv memory",
@@ -114,23 +123,28 @@ def main(args_in: Optional[List[str]] = None) -> None:
     args = parser.parse_args(args_in)
     print(args)
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(args.build_dir, "./bin/run_{}".format(model_name))
+    if is_win():
+        path = Path(args.build_dir, "./Bin/Release/run_{}.exe".format(model_name))
+    else:
+        path = Path(args.build_dir, "./bin/run_{}".format(model_name))
     if not path.exists():
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
     cmd = [path]
-    cmd.extend(["--model",          args.model])
-    cmd.extend(["--prompt",         args.prompt])
-    cmd.extend(["--n-predict",      str(args.n_predict)])
-    cmd.extend(["--threads",        str(args.threads)])
-    cmd.extend(["--batch-size-truncate",     str(args.batch_size_truncate)])
-    cmd.extend(["--ctx-size",       str(args.ctx_size)])
-    cmd.extend(["--seed",           str(args.seed)])
+    cmd.extend(["--model", args.model])
+    cmd.extend(["--prompt", args.prompt])
+    cmd.extend(["--n-predict", str(args.n_predict)])
+    cmd.extend(["--threads", str(args.threads)])
+    cmd.extend(["--batch-size-truncate", str(args.batch_size_truncate)])
+    cmd.extend(["--ctx-size", str(args.ctx_size)])
+    cmd.extend(["--seed", str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
-    cmd.extend(["--keep",           str(args.keep)])
+    cmd.extend(["--keep", str(args.keep)])
+    if args.shift_roped_k:
+        cmd.extend(["--shift-roped-k"])
     if args.color:
-        cmd.append(" --color")
+        cmd.append("--color")
     if args.memory_f32:
         cmd.extend(["--memory-f32"])
     if args.memory_f16:
@@ -138,15 +152,15 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.memory_auto:
         cmd.extend(["--memory-auto"])
 
-
     if (args.model_name == "chatglm"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         token_ids_list = tokenizer.encode(args.prompt)
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
-    elif (args.model_name == "baichuan"):
+    elif (args.model_name == "baichuan" or args.model_name == "qwen"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
+
         def truncate(ids, max_length):
             """Truncates a list of integers to a given length.
 

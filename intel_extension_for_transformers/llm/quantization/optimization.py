@@ -25,7 +25,11 @@ class Optimization:
         self.optimization_config = optimization_config
 
     def optimize(self, model, use_llm_runtime=False):
-        optimized_model = model
+        if isinstance(model, str):
+            model_name = model
+        else:
+            model_name = model.config._name_or_path
+            optimized_model = model
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
             WeightOnlyQuantConfig,
@@ -35,39 +39,34 @@ class Optimization:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         config = self.optimization_config
-        if re.search("flan-t5", model.config._name_or_path, re.IGNORECASE):
+        if re.search("flan-t5", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM
             optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
-                    model.config._name_or_path,
+                    model_name,
                     quantization_config=config,
                     use_llm_runtime=use_llm_runtime,
                     trust_remote_code=True)
         elif (
-            re.search("gpt", model.config._name_or_path, re.IGNORECASE)
-            or re.search("mpt", model.config._name_or_path, re.IGNORECASE)
-            or re.search("bloom", model.config._name_or_path, re.IGNORECASE)
-            or re.search("llama", model.config._name_or_path, re.IGNORECASE)
-            or re.search("opt", model.config._name_or_path, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model.config._name_or_path, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model.config._name_or_path, re.IGNORECASE)
+            re.search("gpt", model_name, re.IGNORECASE)
+            or re.search("mpt", model_name, re.IGNORECASE)
+            or re.search("bloom", model_name, re.IGNORECASE)
+            or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("opt", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(
-                model.config._name_or_path,
+                model_name,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
                 trust_remote_code=True)
-        elif re.search("starcoder", model.config._name_or_path, re.IGNORECASE):
-            from intel_extension_for_transformers.transformers import GPTBigCodeForCausalLM
-            optimized_model = GPTBigCodeForCausalLM.from_pretrained(
-                model.config._name_or_path,
-                quantization_config=config,
-                use_llm_runtime=use_llm_runtime,
-                trust_remote_code=True)
-        elif re.search("chatglm", model.config._name_or_path, re.IGNORECASE):
+        elif re.search("chatglm", model_name, re.IGNORECASE):
             from intel_extension_for_transformers.transformers import AutoModel
             optimized_model = AutoModel.from_pretrained(
-                model.config._name_or_path,
+                model_name,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
                 trust_remote_code=True)

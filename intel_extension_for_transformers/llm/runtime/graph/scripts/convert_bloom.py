@@ -22,9 +22,10 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -37,16 +38,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -62,25 +64,28 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
 
     tokenizer = AutoTokenizer.from_pretrained(dir_model)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     hparams = config.to_dict()
     print("Loading model: ", dir_model)
-    model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
-                    if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(dir_model,
+                                                 config=config,
+                                                 torch_dtype=torch.float16 if ftype == 1 else torch.float32,
+                                                 low_cpu_mem_usage=True,
+                                                 trust_remote_code=True)
     print("Model loaded: ", dir_model)
 
     fout = open(fname_out, "wb")
-    fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
+    fout.write(struct.pack("i", 0x67676d6c))  # magic: ggml in hex
 
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 1))
     fout.write(struct.pack("i", hparams["n_head"]))
-    fout.write(struct.pack("i", hparams.get("n_head_kv", 0))) # multi-query attention
+    fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
     fout.write(struct.pack("i", hparams["n_layer"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
@@ -94,7 +99,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
+
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
@@ -102,7 +109,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
 
     for i in range(hparams["vocab_size"]):
         text = tokenizer.decode([i]).encode('utf-8')
@@ -115,7 +122,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
         if "query_key_value" in src:
             q, k, v = list_vars[src].reshape(config.n_head, 3, -1).unbind(1)
             list_vars[src] = torch.cat([q, k, v], dim=0).reshape_as(list_vars[src])
-
 
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
@@ -144,6 +150,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print("Done. Output file: " + fname_out)
     print("")
+
 
 if __name__ == '__main__':
     main()

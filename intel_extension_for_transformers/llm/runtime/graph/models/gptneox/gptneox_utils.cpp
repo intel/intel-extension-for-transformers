@@ -39,8 +39,19 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void GPTNEOX::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
+                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                         void* progress_callback_user_data) {
+  std::unique_ptr<GPTNEOX> ms(new GPTNEOX());
+  ms->init(fname.c_str(), ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  ms->load(ctx, progress_callback, progress_callback_user_data);
+  model_context& lctx = *ctx;
+  lctx.support_jblas_kv = true;
+}
+
+void GPTNEOX::init(const char* path_model, model_context* ctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
                    bool vocab_only_) {
+  model_context& lctx = *ctx;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -68,9 +79,10 @@ void GPTNEOX::init(const char* path_model, model_context& lctx, int n_gpu_layer_
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void GPTNEOX::load(model_context* ctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+  model_context& lctx = *ctx;
   auto& model = lctx.model;
-  auto& ctx = model.ctx;
+  auto& ne_ctx = model.ctx;
 
   size_t ctx_size;
   size_t mmapped_size;
@@ -95,7 +107,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
     throw format("ne_init() failed");
   }
 
-  ml->ne_ctx = ctx;
+  ml->ne_ctx = ne_ctx;
 
   model.others[0] = ml->get_tensor("gpt_neox.embed_in.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   model.others[1] = ml->get_tensor("gpt_neox.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
@@ -106,7 +118,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
   model.layers.resize(n_layer);
   size_t vram_total = 0;
   for (uint32_t i = 0; i < n_layer; ++i) {
-    const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
+    const ne_backend backend = static_cast<int>(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
     std::string layers_i = "gpt_neox.layers." + std::to_string(i);
 
@@ -162,8 +174,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
 
 class gptneox_quant_layer : public quant_layer_base {
  public:
-  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
-                                                 ne_type type) override {
+  quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne, ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
     if (layername == "gpt_neox.embed_in.weight") {
       // special layer process, can be loaded by config file
@@ -178,118 +189,3 @@ class gptneox_quant_layer : public quant_layer_base {
   }
 };
 REGISTER_QUANT_LAYER_CLASS(gptneox);
-
-class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder {
- public:
-  explicit gptneox_beam_search_kv_cache_reorder(model_context* lctx) : beam_search_kv_cache_reorder(lctx) {}
-  ~gptneox_beam_search_kv_cache_reorder() {}
-
-  virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
-                      const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
-                      const std::vector<beam>& next_beams = {}) override {
-    // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-    NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
-    // first step
-    if (n_past == n_prompt_tokens) {
-      // cpy batch 1 to all batches
-#pragma omp parallel for collapse(3)
-      for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-        for (int j = 1; j < kv_n_ctx_block; ++j) {
-          // [head_dim, N, n_head]
-          for (int nh = 0; nh < n_head; ++nh) {
-            memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                        j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
-                       ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx,
-                   static_cast<char*>(ctx->model.kv_self.k->data) +
-                       i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                       ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx,
-                   ne_element_size(ctx->model.kv_self.k) * head_dim * n_prompt_tokens);
-          }
-        }
-      }
-#pragma omp parallel for collapse(3)
-      for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-        for (int j = 1; j < kv_n_ctx_block; ++j) {
-          // [N, head_dim, n_head] or [N, n_embd]
-          for (int k = 0; k < n_embd; ++k) {
-            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
-                        n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                   static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                   ne_element_size(ctx->model.kv_self.v) * n_prompt_tokens);
-          }
-        }
-      }
-    } else if (n_past > n_prompt_tokens) {
-      // next setp
-      for (auto t : kv_reorder_indices) {
-        int cur_id = std::get<0>(t);
-        int cpy_id = std::get<1>(t);
-        if (cur_id != cpy_id) {
-          uint32_t len = next_beams[cur_id].token_ids.size() - 1;
-          // last token in beam is for next step inference
-          MODEL_ASSERT(len == n_past - n_prompt_tokens);
-          size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * head_dim;
-          size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
-          if (len + n_prompt_tokens > n_ctx) {
-            // all token hidden states cache should be updated
-            input_token_offset_k = 0;
-            input_token_offset_v = 0;
-            len = n_ctx;
-          }
-#pragma omp parallel for collapse(2)
-          for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-            // [head_dim, N, n_head]
-            for (int nh = 0; nh < n_head; ++nh) {
-              memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                         (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                          cur_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
-                         ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx + input_token_offset_k,
-                     static_cast<char*>(ctx->model.kv_self.k->data) +
-                         i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                         cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
-                         ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx + input_token_offset_k,
-                     ne_element_size(ctx->model.kv_self.k) * head_dim * len);
-            }
-          }
-#pragma omp parallel for collapse(2)
-          for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-            // [N, head_dim, n_head] or [N, n_embd]
-            for (int k = 0; k < n_embd; ++k) {
-              memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                         (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                          cur_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                          n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                     static_cast<char*>(ctx->model.kv_self.v->data) +
-                         (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                          cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                          n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                     ne_element_size(ctx->model.kv_self.v) * len);
-            }
-          }
-        }
-      }
-    } else {
-      return;
-    }
-  }
-};
-
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
-                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
-                         void* progress_callback_user_data) {
-  std::unique_ptr<GPTNEOX> ms(new GPTNEOX());
-  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
-  ms->load(lctx, progress_callback, progress_callback_user_data);
-  lctx.support_jblas_kv = true;
-  if (lctx.beam_search) {
-    lctx.bs_kv_reorder = std::make_shared<gptneox_beam_search_kv_cache_reorder>(&lctx);
-#ifdef NE_BEAM_SEARCH_VERBOSE_ON
-    printf("get GPTNEOX beam search kv cache update function. \n");
-#endif
-  }
-}

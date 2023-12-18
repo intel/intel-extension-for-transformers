@@ -1,0 +1,94 @@
+name: LLM Runtime Unit Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - intel_extension_for_transformers/llm/runtime/graph/**
+      - .github/workflows/unit-test-llmruntime.yml
+      - .github/workflows/script/unitTest/**
+      - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
+      - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "devel"
+  CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME: "modelTest"
+
+jobs:
+  unit-test:
+    runs-on: [self-hosted, linux, X64, llmruntime-node]
+    steps:
+      - name: Load environment variables
+        run: cat ~/actions-runner2/.env >> $GITHUB_ENV
+      
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          fetch-tags: true
+
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile --build-arg http_proxy="${{ env.HTTP_PROXY }}" --build-arg https_proxy="${{ env.HTTPS_PROXY }}" -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+            docker stop ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+            docker rm -vf ${{ env.CONTAINER_NAME }}-${{ runner.name }} || true
+          fi
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} -v /dev/shm:/dev/shm \
+          -e http_proxy="${{ env.HTTP_PROXY }}" \
+          -e https_proxy="${{ env.HTTPS_PROXY }}" \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          -v /tf_dataset2:/tf_dataset2 \
+          -v ~/.cache/oneAPI:/cache \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+
+      - name: Binary build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && bash install_binary.sh"
+
+      - name: Run UT
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && bash run_unit_test_llmruntime.sh"
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: LLM Runtime Unit Test
+          path: ${{ github.workspace }}/log_dir/unit_test*.*

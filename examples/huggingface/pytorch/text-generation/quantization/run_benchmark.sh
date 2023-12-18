@@ -85,6 +85,10 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+	model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "opt_1.3b" ]; then
         model_name_or_path="facebook/opt-1.3b"
     elif [ "${topology}" = "opt_2.7b" ]; then
@@ -98,16 +102,54 @@ function run_benchmark {
     elif [ "${topology}" = "bloomz-3b" ]; then
         model_name_or_path="bigscience/bloomz-3b"
     elif [ "${topology}" = "llama_7b" ]; then
-        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+        model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
     elif [ "${topology}" = "llama_13b" ]; then
-        model_name_or_path="decapoda-research/llama-13b-hf"
+        model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"
+    elif [ "${topology}" = "chatglm3_6b" ]; then
+        model_name_or_path="THUDM/chatglm3-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm2_6b" ]; then
+        model_name_or_path="THUDM/chatglm2-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "chatglm_6b" ]; then
+        model_name_or_path="THUDM/chatglm-6b"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "falcon_7b" ]; then
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan_7b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan-7B"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan_13b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan-13B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --revision 14d5b0e204542744900f6fb52422c6d633bdcb00"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_7b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_13b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "qwen_7b" ]; then
+        model_name_or_path="Qwen/Qwen-7B"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "mistral_7b" ]; then
+        model_name_or_path="Intel/neural-chat-7b-v3"
+    elif [ "${topology}" = "phi_1b" ]; then
+        model_name_or_path="susnato/phi-1_dev"
+    elif [ "${topology}" = "phi_1_5b" ]; then
+        model_name_or_path="susnato/phi-1_5_dev"
     fi
 
-    
     if [[ ${int8} == "true" ]]; then
         if [ "${topology}" = "gpt_j_woq_rtn" ]; then
             extra_cmd=$extra_cmd" --woq"

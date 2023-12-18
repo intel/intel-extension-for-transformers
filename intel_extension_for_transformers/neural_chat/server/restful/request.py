@@ -39,7 +39,7 @@ class RetrievalRequest(RequestBaseModel):
 
 
 class FinetuneRequest(RequestBaseModel):
-    model_name_or_path: str = "meta-llama/Llama-2-7b-chat-hf"
+    model_name_or_path: str = "Intel/neural-chat-7b-v3-1"
     train_file: str = None
     dataset_name: str = None
     output_dir: str = './tmp'
@@ -51,6 +51,7 @@ class FinetuneRequest(RequestBaseModel):
 
 class AskDocRequest(RequestBaseModel):
     query: str
+    translated: str
     domain: str
     blob: Optional[str]
     filename: Optional[str]
@@ -59,6 +60,7 @@ class AskDocRequest(RequestBaseModel):
     params: Optional[dict] = None
     debug: Optional[bool] = False
     stream: bool = True
+    max_new_tokens: int = 256
 
 
 class FeedbackRequest(RequestBaseModel):

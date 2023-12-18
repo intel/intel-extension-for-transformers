@@ -22,11 +22,11 @@ sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 For other operating systems such as CentOS, you will need to make slight adjustments.
 
-# English Automatic Speech Recognition (ASR)
+# Multilingual Automatic Speech Recognition (ASR)
 
 ## Dependencies Installation
 
-To use the English ASR module, you need to install the necessary dependencies. You can do this by running the following command:
+To use the ASR module, you need to install the necessary dependencies. You can do this by running the following command:
 
 ```bash
 pip install transformers datasets pydub
@@ -34,37 +34,18 @@ pip install transformers datasets pydub
 
 ## Usage
 
-The AudioSpeechRecognition class provides functionality for converting English audio to text. Here's how to use it:
+The AudioSpeechRecognition class provides functionality for converting English/Multiligual audio to text. Here's how to use it:
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
-asr = AudioSpeechRecognition()
+# pass the parameter language="auto" to let the asr model automatically detect language
+# otherwise, you can pass an arbitrary language to the model (e.g. en/zh/de/fr)
+asr = AudioSpeechRecognition("openai/whisper-small", language="auto", device=self.device)
 audio_path = "~/audio.wav"  # Replace with the path to your English audio file (supports MP3 and WAV)
 result = asr.audio2text(audio_path)
 print("ASR Result:", result)
 ```
 
-# Chinese Automatic Speech Recognition (ASR)
-
-## Dependencies Installation
-
-To use the Chinese ASR module, you need to install the necessary dependencies. You can do this by running the following command:
-
-```bash
-pip install paddlespeech paddlepaddle
-```
-
-## Usage
-
-The ChineseAudioSpeechRecognition class provides functionality for converting Chinese audio to text. Here's how to use it:
-
-```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import ChineseAudioSpeechRecognition
-asr = ChineseAudioSpeechRecognition()
-audio_path = "~/audio.wav"  # Replace with the path to your audio file
-result = asr.audio2text(audio_path)
-print("ASR Result:", result)
-```
 
 # English Text-to-Speech (TTS)
 

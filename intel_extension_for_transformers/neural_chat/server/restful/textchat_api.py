@@ -24,7 +24,8 @@ from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
-import json
+import json, types
+from ...plugins import plugins, is_plugin_enabled
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
@@ -57,8 +58,12 @@ class TextChatAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -66,6 +71,8 @@ class TextChatAPIRouter(APIRouter):
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
 
+    def is_generator(self, obj):
+        return isinstance(obj, types.GeneratorType)
 
     def handle_completion_request(self, request: ChatCompletionRequest):
         return self.handle_chat_completion_request(request)
@@ -82,16 +89,38 @@ class TextChatAPIRouter(APIRouter):
                 if attr == "stream":
                     continue
                 setattr(config, attr, value)
+            if chatbot.device == "hpu":
+                config.device = "hpu"
+                config.use_hpu_graphs = True
+                config.task = "chat"
+            buffered_texts = ""
             if request.stream:
                 generator, link = chatbot.predict_stream(query=request.prompt, config=config)
+                if not self.is_generator(generator):
+                    generator = (generator,)
                 def stream_generator():
+                    nonlocal buffered_texts
                     for output in generator:
-                        ret = {
-                            "text": output,
-                            "error_code": 0,
-                        }
-                        yield json.dumps(ret).encode() + b"\0"
+                        if isinstance(output, str):
+                            chunks = output.split()
+                            for chunk in chunks:
+                                ret = {
+                                    "text": chunk,
+                                    "error_code": 0,
+                                }
+                                buffered_texts += chunk + ' '
+                                yield json.dumps(ret).encode() + b"\0"
+                        else:
+                            ret = {
+                                "text": output,
+                                "error_code": 0,
+                            }
+                            buffered_texts += output + ' '
+                            yield json.dumps(ret).encode() + b"\0"
                     yield f"data: [DONE]\n\n"
+                    if is_plugin_enabled("cache") and \
+                       not plugins["cache"]["instance"].pre_llm_inference_actions(request.prompt):
+                        plugins["cache"]["instance"].post_llm_inference_actions(request.prompt, buffered_texts)
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             else:
                 response = chatbot.predict(query=request.prompt, config=config)

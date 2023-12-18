@@ -129,11 +129,26 @@ typedef struct jblas_fusion_attn_fp32_update_kv_args_t {
   char* cache;
   int batch_size, heads_kv, head_size, seq_off, seq_size, seq_max;
   int step_bs, step_head_num, step_seq, step_head_size;
+  bool no_zeroing;  // set to true to prevent zeroing unaligned seq
 } jblas_fusion_attn_fp32_update_kv_args_t;
 // update k-cache and output the memory layout of it
 void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_args_t* params);
 // update v-cache and output the memory layout of it
 void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_args_t* params);
+// shift-RoPE k-cache with pre-computed cos/sin values
+void jblas_reordered_attn_fp32_shift_rope_k(char* cache, const ne_fp16_t* cossin, int batch_size, int heads_kv,
+                                            int head_size, int seq_max, int seq_keep);
+
+typedef struct jblas_fusion_attn_fp32_batch_cpy_kv_args_t {
+  char* src;
+  char* dst;
+  int heads_kv, head_size, seq_off, seq_size, seq_max;
+  bool no_zeroing;  // set to true to prevent zeroing unaligned seq
+} jblas_fusion_attn_fp32_batch_cpy_kv_args_t;
+// copy k-cache across batch from seq_off to (seq_off + seq_size)
+void jblas_fusion_attn_fp32_batch_cpy_k(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params);
+// copy v-cache across batch from seq_off to (seq_off + seq_size)
+void jblas_fusion_attn_fp32_batch_cpy_v(const jblas_fusion_attn_fp32_batch_cpy_kv_args_t* params);
 
 typedef struct jblas_reordered_attn_fp32_fp32_fwd_args_t {
   float* Q;

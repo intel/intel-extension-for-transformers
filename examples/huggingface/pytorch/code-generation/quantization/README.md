@@ -1,10 +1,10 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for Starcoder models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
+We provide the inference benchmarking script `run_generation.py` for Starcoder and CodeLlama models, [bigcode/starcoder](https://huggingface.co/bigcode/starcoder), [bigcode/starcoderbase](https://huggingface.co/bigcode/starcoderbase), [codellama/CodeLlama-7b-hf](https://huggingface.co/codellama/CodeLlama-7b-hf) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
 
 
 # Prerequisite​
-## 1. Create Environment​
-Recommend python 3.7 or higher version is recommended. The dependent packages are listed in requirements, please install them as follows,
+## 1. Environment​
+Recommend python version is 3.10 due to [code evaluation library](https://github.com/bigcode-project/bigcode-evaluation-harness) limitation. The dependent packages are listed in requirements, please install them as follows,
 
 ```shell
 git clone https://github.com/intel/intel-extension-for-transformers.git
@@ -12,83 +12,139 @@ cd intel-extension-for-transformers
 pip install -r requirements.txt
 python setup.py install
 ```
-
 Required libraries.
 ```shell
 pip install -r requirements.txt
 ```
 
-We use the gpt_bigcode definition script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
-```diff
-# Line 227 in modeling_gpt_bigcode.py on transformers 4.28.1
--      query, key_value = self.c_attn(hidden_states).split((self.embed_dim, 2 * self.kv_dim), dim=2)
-+      query, key, value = self.c_attn(hidden_states).split((self.embed_dim, self.kv_dim, self.kv_dim), dim=2)
-
-# Line 239 in modeling_gpt_bigcode.py on transformers 4.28.1
-+      key_value = torch.cat((key, value), dim=-1)
-
-
-# Line 642 in modeling_gpt_bigcode.py on transformers 4.28.1
--      presents = [] if use_cache else None
-+      presents = () if use_cache else None
-
-# Line 682 in modeling_gpt_bigcode.py on transformers 4.28.1
--      presents.append(outputs[1])
-+      presents += (outputs[1],)
-
-```
-
-
 # Run
+We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, the followings are command to show how to use it.
+>**Note**: 
+> Model type "llama" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3.
 
-## 1. Quantization
-``` bash
-python run_generation.py \
-    --model bigcode/starcoder \
-    --output_dir "./saved_results" \
-    --quantize \
-    --sq \
-    --alpha 0.7  \
-    --ipex \
-    --calib_iters 500 \
-    --calib_batch_size 1 \
-    --dataset "mbpp" \
-    --calib_split "test"
-```
-
-## 2. Performance
-
+## 1. Performance
 ```bash
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
-# --int8 is used for int8 model
+# fp32
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoder \
-    --output_dir "./saved_results" \
-    --int8 \
-    --ipex \
     --benchmark \
     --batch_size 1
-```
-
-## 3. Accuracy
-```bash
-# --int8 is used for int8 model
+# mixedprecision
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --mixed_precision \
+    --benchmark \
+    --batch_size 1
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 python run_generation.py \
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
-    --int8 \    
-    --ipex \
-    --batch_size 20 \
+    --sq \
+    --alpha 0.7  \
+    --calib_iters 500 \
+    --dataset "mbpp"
+    --int8 \
+    --benchmark \
+    --batch_size 1
+# weightonlyquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --woq \
+    --benchmark \
+    --batch_size 1
+# load_in_4bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_4bit True \
+    --benchmark \
+    --batch_size 1
+# load_in_8bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_8bit True \
+    --benchmark \
+    --batch_size 1
+```
+## 2. Accuracy
+
+```bash
+# fp32
+python run_generation.py \
+    --model bigcode/starcoder \
     --accuracy \
+    --batch_size 20 \
     --n_samples 20 \
     --allow_code_execution \
     --temperature 0.2 \
-    --do_sample
+    --do_sample \
+    --tasks "humaneval" \
+# mixedprecision
+python run_generation.py \
+    --model bigcode/starcoder \
+    --mixed_precision \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+python run_generation.py \
+    --model bigcode/starcoder \
+    --sq \
+    --alpha 1.0 \
+    --int8 \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# weightonlyquant
+python run_generation.py \
+    --model bigcode/starcoder \
+    --woq \
+    --woq_weight_dtype "nf4" \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# load_in_4bit
+python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_4bit True \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# load_in_8bit
+python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_8bit True \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
 ```
+
 >Note:
 please follow the [guide](https://huggingface.co/docs/accelerate/usage_guides/ipex) to set up the configuration if `accelerate launch` is used.
 
@@ -119,7 +175,6 @@ python3 run_generation.py \
     --calib_iters 500 \
     --calib_batch_size 1 \
     --dataset "mbpp" \
-    --calib_split "test" \ 
     --output_dir "$(CURDIR)/saved_results" \
     --int8 \
     --accuracy \
@@ -142,5 +197,3 @@ docker run -v $(CURDIR):$(CURDIR) \
     --do_sample --temperature 0.2 --limit 2
 
 ```
-
-

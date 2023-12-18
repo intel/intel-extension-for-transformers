@@ -17,7 +17,12 @@
 
 from num2words import num2words
 import re
-
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 class EnglishNormalizer:
     def __init__(self):
         self.correct_dict = {
@@ -36,7 +41,7 @@ class EnglishNormalizer:
             "M": "em",
             "N": "en",
             "O": "o",
-            "P": "pee",
+            "P": "pea",
             "Q": "cue",
             "R": "ar",
             "S": "ess",
@@ -46,24 +51,30 @@ class EnglishNormalizer:
             "W": "doubleliu",
             "X": "ex",
             "Y": "wy",
-            "Z": "zed"
+            "Z": "zed",
+            ".": "point",
         }
         
     def correct_abbreviation(self, text):
         # TODO mixed abbreviation or proper noun like i7, ffmpeg, BTW should be supported
 
         # words = text.split()    # CVPR-15 will be upper but 1 and 5 will be splitted to two numbers
-        words = re.split(' |-|_', text)
+        words = re.split(' |_|/', text)
         results = []
         for idx, word in enumerate(words):
-            if word.isupper(): # W3C is also upper
-                for c in word:
-                    if c in self.correct_dict:
-                        results.append(self.correct_dict[c])
-                    else:
-                        results.append(c)
+            if word.startswith("-"):    # bypass negative number
+                parts = [word]
             else:
-                results.append(word)
+                parts = word.split('-')
+            for w in parts:
+                if w.isupper(): # W3C is also upper
+                    for c in w:
+                        if c in self.correct_dict:
+                            results.append(self.correct_dict[c])
+                        else:
+                            results.append(c)
+                else:
+                    results.append(w)
         return " ".join(results)
 
     def correct_number(self, text):
@@ -88,7 +99,7 @@ class EnglishNormalizer:
                     else:
                         word = num2words(word)
                 except Exception as e:
-                    print(f"num2words fail with word: {word} and exception: {e}")
+                    logging.info("num2words fail with word: %s and exception: %s", word, e)
             else:
                 try:
                     val = int(word)

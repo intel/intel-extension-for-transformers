@@ -7,7 +7,8 @@ on:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
-       - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
+       - 'intel_extension_for_transformers/llm/library/jblas/**'
+       - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
   workflow_dispatch:
     inputs:
       compiler_version:
@@ -19,7 +20,7 @@ on:
         description: 'models (in json)'
         required: false
         type: string
-        default: '["llama-7b-hf", "gptj-6b"]'
+        default: '["llama-2-7b-chat", "gptj-6b"]'
       runner:
         description: 'runner'
         required: false
@@ -43,7 +44,7 @@ jobs:
     runs-on: ${{inputs.runner || 'spr'}}
     strategy:
       matrix:
-        modelName: ${{fromJson(inputs.models || '["llama-7b-hf", "gptj-6b"]')}}
+        modelName: ${{fromJson(inputs.models || '["llama-2-7b-chat", "gptj-6b"]')}}
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3

@@ -18,7 +18,12 @@ import subprocess
 import os
 import argparse
 import shlex
-
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 def get_length(filename):
     result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                              "format=duration", "-of",
@@ -40,7 +45,7 @@ def cut_video(args, outdir):
         t_second = int(get_length(os.path.join(path, file_name))) % 60
         t_hour = min // 60
         t_min = min % 60
-        print("total:", t_hour, t_min, t_second)
+        logging.info("total: %s hours, %s minutes, %s seconds", t_hour, t_min, t_second)
 
         start_hour = 0
         start_min = 0
@@ -51,7 +56,7 @@ def cut_video(args, outdir):
         mark = 0
         
         for i in range(0, min + 1, delta_X):
-            print("i:", i)
+            logging.info("i: %s", i)
             if min >= delta_X:
                 end_min = start_min + delta_X
                 end_sec = start_sec
@@ -65,28 +70,16 @@ def cut_video(args, outdir):
                     end_hour = t_hour
                 if end_min > t_min and end_hour >= t_hour:
                     end_min = t_min
-                if end_sec > t_second and end_min >= t_min and end_hour >= t_hour:
+
+                if i == t_min:
                     end_sec = t_second  
 
-                start_hour = str(start_hour)
-                start_min = str(start_min)
-                start_sec = str(start_sec)
-                end_hour = str(end_hour)
-                end_min = str(end_min)
-                end_sec = str(end_sec)
-                # crop video
-                if len(str(start_hour)) == 1:
-                    start_hour = '0'+str(start_hour)
-                if len(str(start_min)) == 1:
-                    start_min = '0'+str(start_min)
-                if len(str(start_sec)) == 1:
-                    start_sec = '0'+str(start_sec)
-                if len(str(end_hour)) == 1:
-                    end_hour = '0'+str(end_hour)
-                if len(str(end_min)) == 1:
-                    end_min = '0'+str(end_min)
-                if len(str(end_sec)) == 1:
-                    end_sec = '0'+str(end_sec)
+                start_hour = '0' + str(start_hour) if len(str(start_hour)) == 1 else str(start_hour)
+                start_min = '0' + str(start_min) if len(str(start_min)) == 1 else str(start_min)
+                start_sec = '0' + str(start_sec) if len(str(start_sec)) == 1 else str(start_sec)
+                end_hour = '0' + str(end_hour) if len(str(end_hour)) == 1 else str(end_hour)
+                end_min = '0' + str(end_min) if len(str(end_min)) == 1 else str(end_min)
+                end_sec = '0' + str(end_sec) if len(str(end_sec)) == 1 else str(end_sec)
 
                 name, _ = os.path.splitext(file_name)
                 name = str(name) + "_" + str(mark)
@@ -94,12 +87,12 @@ def cut_video(args, outdir):
                 command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(
                     os.path.join(path,file_name), start_hour, start_min, start_sec, end_hour,
                     end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav').split()
-                print(start_hour, start_min, start_sec)
-                print(end_hour, end_min, end_sec)
+                logging.info("%s hours, %s minutes, %s seconds", start_hour, start_min, start_sec)
+                logging.info("%s hours, %s minutes, %s seconds", end_hour, end_min, end_sec)
                 try:
                     subprocess.run(command, check=True)
                 except subprocess.CalledProcessError as e:
-                    print("Error while executing command:", e)
+                    logging.error("Error while executing command: %s", e)
                 start_hour = int(end_hour)
                 start_min = int(end_min)
                 start_sec = int(end_sec)

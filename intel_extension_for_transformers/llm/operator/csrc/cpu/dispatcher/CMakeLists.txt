@@ -14,7 +14,7 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(jblas_dispatcher LANGUAGES C CXX)
 if(NOT WIN32)
-set(CMAKE_CXX_FLAGS "-Wno-narrowing -fconcepts")
+set(CMAKE_CXX_FLAGS "-fconcepts")
 endif()
 file(GLOB SOURCES 
     ${PROJECT_SOURCE_DIR}/src/*.cpp

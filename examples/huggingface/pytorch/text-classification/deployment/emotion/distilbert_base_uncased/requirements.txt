@@ -1,5 +1,5 @@
 neural-compressor
-transformers
+transformers==4.34.1
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
@@ -7,4 +7,5 @@ protobuf
 torch==2.1.0
 onnx>=1.12
 onnxruntime==1.13.1
+optimum
 

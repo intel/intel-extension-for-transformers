@@ -61,6 +61,6 @@ RUN conda init bash && \
     source ~/.bashrc
 
 SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-demo"]
-RUN pip install langchain chromadb PyPDF2 farm-haystack python-docx pandas InstructorEmbedding
+RUN pip install langchain chromadb PyPDF2 python-docx pandas InstructorEmbedding
 
 WORKDIR /itrex/workflows/chatbot/inference/document_indexing/

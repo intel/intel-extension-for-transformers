@@ -14,37 +14,35 @@
 #pragma once
 #include <ATen/core/TensorBody.h>
 #include <torch/torch.h>
-#include "jblas/jit_blas_weight_compression.h"
+#include "jblas/jit_blas_storage.h"
+#include "../include/dispatcher_utils.hpp"
 #include <string.h>
 #include <assert.h>
 #include <iostream>
+namespace woq {
 
-enum QBITS_TASK {
-  QBITS_QUANTIZE,
-  QBITS_DEQUANTIZE,
-  QBITS_LINEAR,
+enum WOQ_TASK {
+  WOQ_QUANTIZE,
+  WOQ_DEQUANTIZE,
+  WOQ_LINEAR,
 };
 
-enum QBITS_DT {
-  QBITS_FP32,
-  QBITS_BF16,
-  QBITS_FP16,
+struct woq_config_param {
+  std::string compute_type;           // determin gemm core template
+  std::string weight_type;            // determin compress-weight template
+  std::string scale_type;             // determin scale param
+  dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
+  dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
 };
 
-struct qbits_config_param {
-  std::string compute_type;  // determin gemm core template
-  std::string weight_type;   // determin compress-weight template
-  QBITS_DT src_dt;           // determin activation related template
-  QBITS_DT dst_dt;           // determin write_back template
-};
-
-struct qbits_runtime_ctx {
+struct woq_runtime_ctx {
   torch::Tensor *activation, *weight, *bias, *output;
   bool transpose;
-  int64_t blocksize, m, n, k, lda, ldo;
+  int blocksize, m, n, k, lda, ldo;
   float alpha, beta;
-  jblas::prologue::weight_comp::gemm_kblcok::WeightBase* deseries_wei;
+  jblas::storage::gemm::IWeightBase* deseries_wei;
 };
 
-void task_dispatcher(qbits_config_param* p, qbits_runtime_ctx* ctx, QBITS_TASK task);
-void set_jblas_workspace(torch::Tensor* workspace);
+void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
+void set_woq_workspace(torch::Tensor* workspace);
+}  // namespace woq

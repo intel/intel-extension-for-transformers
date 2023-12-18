@@ -1,4 +1,4 @@
-:hammer: Thanks to all the contributors including
+:hammer: Thanks to the new contributors including
 <table>
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td> 
@@ -71,7 +71,53 @@
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/46982523"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/NeoZhangJianyu">Neo Zhang Jianyu</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/63159924"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/akarX23">akarX23</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/112881240"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/aahouzi">Anas Ahouzi</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/5948851"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/dc3671">Dino Chen</a></td>
   </tr>
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/120911455"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/dalvishruti14">dalvishruti14</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/64208057"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/Ayaan49">Ayaan B. Bordoloi</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/114826902"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/sonijogesh">Jogesh Soni</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/117426013"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/RS-labhub">Rohan Sharma</a></td>
+  </tr>
+
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/85491057"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/SandeshPyakurel">SandeshPyakurel</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/82999440"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/Sandesh-Pyakurel">Sandesh Pyakurel</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/97780892"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/sudhanshu-77">Sudhanshu Tripathi</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/69961360"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/bearn01d">Benedikt Imbusch</a></td>
+  </tr>
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/31226269"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/LucasHBG">Lucas Guimarães</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/14088817"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/arthw">Neo Zhang</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/65897012"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/mzyczyns">Mikołaj Życzyński</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/32893314"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/danielkorat">Daniel Korat</a></td>
+  </tr>
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/17159645"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/Liangliang-Ma">Liangliang-Ma</a></td>
+  </tr>
+
 
 </table>
 

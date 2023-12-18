@@ -1,0 +1,10 @@
+datasets
+torch
+transformers==4.34.1
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops
+fire

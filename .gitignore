@@ -1,10 +1,18 @@
 tests/*.pt
+/intel_extension_for_transformers/llm/runtime/graph/*
+!/intel_extension_for_transformers/llm/runtime/graph/*.*
+!/intel_extension_for_transformers/llm/runtime/graph/*/
+### ignore binary files in llm-runtime ###
+
 *.pyc
 .vscode
 .idea
 /venv/
 */__pycache__
 *.snapshot
+*.exe
+*.dll
+*.pyd
 *.so
 *.so.*
 *.pb
@@ -12,6 +20,7 @@ tests/*.pt
 *.log
 *.swp
 *.onnx
+*.bin
 tags
 build/
 _build
@@ -21,7 +30,6 @@ dist/
 # build / dist files
 /intel_extension_for_transformers/intel_extension_for_transformers[.-]*/
 /intel_extension_for_transformers/neural_engine_*
-/intel_extension_for_transformers/*.dll
 /intel_extension_for_transformers/_version.py
 /intel_extension_for_transformers[.-]*
 /neural_engine_py*
@@ -33,6 +41,8 @@ CMakeUserPresets.json
 
 /intel_extension_for_transformers/llm/runtime/.vs
 /intel_extension_for_transformers/llm/runtime/out
+/intel_extension_for_transformers/llm/runtime/graph/out
+/intel_extension_for_transformers/llm/runtime/graph/runtime_outs
 /examples/**/*.npy
 /examples/**/*.bin
 /examples/**/*.yaml

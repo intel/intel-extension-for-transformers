@@ -16,11 +16,18 @@
 # limitations under the License.
 
 import os
+from typing import List
 from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
@@ -30,25 +37,41 @@ class Agent_QA():
                  response_template = "Please reformat your query to regenerate the answer.",
                  asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",):
         self.model = None
+        self.top_k = top_k
+        self.index_name = index_name
+        self.embedding_model = embedding_model
+        self.max_length = max_length
+        self.search_type = search_type
+        self.search_kwargs = search_kwargs
         self.tokenizer = None
         self.retrieval_type = retrieval_type
+        self.document_store = document_store
+        self.process = process
         self.retriever = None
         self.append_path = append_path
         self.intent_detector = IntentDetector()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.response_template = response_template
         self.search_type = search_type
-        
-        if os.path.exists(input_path):
+        self.input_path = None
+
+        if isinstance(input_path, str):
+            if os.path.exists(input_path):
+                self.input_path = input_path
+            elif os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                                + '/assets/docs/'):
+                self.input_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                                + '/assets/docs/'
+            elif os.path.exists(os.path.join(asset_path, 'docs/')):
+                self.input_path = os.path.join(asset_path, 'docs/')
+            logging.info("The given file path is unavailable, please check and try again!")
+        elif isinstance(input_path, List):
             self.input_path = input_path
-        elif os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                            + '/assets/docs/'):
-            self.input_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
-                            + '/assets/docs/'
-        elif os.path.exists(os.path.join(asset_path, 'docs/')):
-            self.input_path = os.path.join(asset_path, 'docs/')
         else:
             print("The given file path is unavailable, please check and try again!")
+
+        assert self.input_path != None, "Should gave an input path!"
+        
         if append:
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
                                                persist_dir=persist_dir, process=process,
@@ -56,7 +79,7 @@ class Agent_QA():
                                                index_name = index_name)
             self.db = self.doc_parser.KB_construct(self.input_path)
         else:
-            print("Make sure the current persist path is new!")
+            logging.info("Make sure the current persist path is new!")
             if os.path.exists(persist_dir):
                 if bool(os.listdir(persist_dir)):
                     self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
@@ -84,25 +107,42 @@ class Agent_QA():
                                    search_type=search_type, search_kwargs=search_kwargs)
 
 
-    def append_localdb(self, 
-                       append_path, 
-                       top_k=1, 
-                       search_type="similarity_score_threshold", 
-                       search_kwargs={"score_threshold": 0.9, "k": 1}):
-        self.db = self.doc_parser.KB_append(append_path)
-        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
-                           search_type=search_type, search_kwargs=search_kwargs)
+    # reload db from a specific path
+    def reload_localdb(self, local_persist_dir):
+        assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
+            "Please check the local knowledge base was built!"
+        self.db = self.doc_parser.reload(local_persist_dir)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
+                                   search_type=self.search_type, search_kwargs=self.search_kwargs)
+    
+    # create a new knowledge base
+    def create(self, input_path, persist_dir):
+        self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=self.document_store,
+            persist_dir=persist_dir, process=self.process,
+            embedding_model=self.embedding_model, max_length=self.max_length,
+            index_name=self.index_name)
+        self.db = self.doc_parser.KB_construct(input_path)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, 
+                                   top_k=self.top_k, search_type=self.search_type, search_kwargs=self.search_kwargs)
+
+
+    def append_localdb(self, append_path, persist_path):
+        self.db = self.doc_parser.KB_append(append_path, persist_path)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=self.top_k,
+                           search_type=self.search_type, search_kwargs=self.search_kwargs)
 
 
     def pre_llm_inference_actions(self, model_name, query):
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
-        docs = []
-        if 'qa' not in intent.lower():
-            print("Chat with AI Agent.")
+        context = ''
+        if self.retriever and self.search_type == "similarity_score_threshold":
+            context, links = self.retriever.get_context(query)
+        if 'qa' not in intent.lower() and context == '':
+            logging.info("Chat with AI Agent.")
             prompt = generate_prompt(query)
         else:
-            print("Chat with QA agent.")
+            logging.info("Chat with QA agent.")
             if self.retriever:
                 context, links = self.retriever.get_context(query)
                 if len(context) == 0:

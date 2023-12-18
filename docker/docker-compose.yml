@@ -10,18 +10,21 @@ services:
         IMAGE_TAG: 22.04
         PYTHON: python3.10
       context: ../
-      dockerfile: ./docker/Dockerfile_code_gen
+      dockerfile: ./docker/Dockerfile
       target: devel
-    command: python tests/test_config.py
+    command: python tests/CI/test_config.py
     environment:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
       no_proxy: ${no_proxy}
     image: intel/ai-tools:itrex-devel-latest
-    privileged: true
+    pull_policy: always
   prod:
     extends:
       service: devel
     build:
       target: prod
     image: intel/ai-tools:itrex-prod-latest
+    volumes:
+      - $PWD/..:/app
+    working_dir: /app

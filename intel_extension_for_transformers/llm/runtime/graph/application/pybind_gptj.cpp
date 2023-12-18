@@ -35,12 +35,22 @@ static model_context** g_ctx;
 
 bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval, size_t n_past, size_t n_threads) {
   const int n_ctx = model_n_ctx(ctx);
-  if ((int)n_eval > n_ctx - 4) {
-    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, (int)n_eval, n_ctx - 4);
+  if (static_cast<int>(n_eval) > n_ctx - 4) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, static_cast<int>(n_eval),
+            n_ctx - 4);
     return 1;
   }
 
-  if (model_eval(ctx, tokens, n_eval, n_past, n_past, n_threads)) {
+  std::vector<model_input> inputs = {model_input{
+      /*.tokens              =*/tokens,
+      /*.n_tokens           =*/static_cast<uint32_t>(n_eval),
+      /*.n_prompt_tokens    =*/0,
+      /*.n_past             =*/static_cast<uint32_t>(n_past),
+      /*.n_total            =*/static_cast<uint32_t>(n_past),
+      /*.request_idx        =*/0,
+      /*.beam_idx           =*/0,
+  }};
+  if (model_eval(ctx, inputs.data(), inputs.size(), n_threads)) {
     fprintf(stderr, "%s : failed to eval\n", __func__);
     return 1;
   }
@@ -69,7 +79,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.batch_size = batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
-  params.memory_type = KV_MEM_TYPE_F16;  // TODO MEMORY_AUTO for MHA
+  if (batch_size > 1) params.memory_type = KV_MEM_TYPE_F16;  // TODO(Yi): NO MHA IN MULTI-BATCH
   // params.use_mmap = false;
   // params.use_mlock= true;
   model_init_backend();
@@ -83,22 +93,31 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   ctx->generation_conf.min_new_tokens = min_new_tokens;
   ctx->generation_conf.length_penalty = length_penalty;
   ctx->generation_conf.do_early_stopping = do_early_stopping;
-  return (void*)ctx;
+  return reinterpret_cast<void*>(ctx);
 }
 
 int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_predict, int top_k, float top_p,
                        float temp, int n_batch, int n_threads) {
-  model_context* lctx = (model_context*)ctx;
+  model_context* lctx = reinterpret_cast<model_context*>(ctx);
   int n_past = 0;
 
   auto hparams = lctx->model.hparams;
 
-  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)ind_size);
+  n_predict = std::min(n_predict, static_cast<int>(lctx->n_ctx) - static_cast<int>(ind_size));
   std::vector<model_token> res;
   bool do_beam_search = lctx->beam_search;
 
   if (do_beam_search) {
-    res = beam_search(lctx, n_predict, embd_inp_ptr, ind_size, n_threads);
+    std::vector<model_input> inputs = {model_input{
+        /*.tokens             =*/embd_inp_ptr,
+        /*.n_tokens           =*/static_cast<uint32_t>(ind_size),
+        /*.n_prompt_tokens    =*/0,
+        /*.n_past             =*/0,
+        /*.n_total            =*/0,
+        /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
+    }};
+    res = beam_search(lctx, n_predict, inputs, n_threads)[0];
   } else {
     std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
     std::vector<model_token> embd;
@@ -146,18 +165,29 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
 }
 
 char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, float top_p, float temp, int n_batch) {
-  model_context* lctx = (model_context*)ctx;
+  model_context* lctx = reinterpret_cast<model_context*>(ctx);
   int n_past = 0;
 
   auto hparams = lctx->model.hparams;
   std::vector<model_token> embd_inp = ::model_tokenize(lctx, std::string(prom), false);
-  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)embd_inp.size());
+  n_predict = std::min(n_predict, static_cast<int>(lctx->n_ctx) - static_cast<int>(embd_inp.size()));
   std::string res;
   std::vector<model_token> embd;
 
   bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
-    embd = beam_search(lctx, n_predict, embd_inp.data(), embd_inp.size(), N_threads);
+    std::vector<model_input> inputs = {model_input{
+        /*.tokens             =*/embd_inp.data(),
+        /*.n_tokens           =*/static_cast<uint32_t>(embd_inp.size()),
+        /*.n_prompt_tokens    =*/0,
+        /*.n_past             =*/0,
+        /*.n_total            =*/0,
+        /*.request_idx        =*/0,
+        /*.beam_idx           =*/0,
+        /*.padding_side       =*/0,
+        /*n_padding           =*/0,
+    }};
+    embd = beam_search(lctx, n_predict, inputs, N_threads)[0];
     for (auto id : embd_inp) {
       res += model_token_to_str(lctx, id);
     }
@@ -212,7 +242,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
 }
 
 void exit_gptj(void* ctx) {
-  model_context* lctx = (model_context*)ctx;
+  model_context* lctx = reinterpret_cast<model_context*>(ctx);
   model_free(lctx);
 }
 }

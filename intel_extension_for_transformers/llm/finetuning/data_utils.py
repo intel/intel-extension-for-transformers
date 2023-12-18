@@ -19,6 +19,7 @@ import copy
 import datasets
 import re
 from itertools import chain
+from intel_extension_for_transformers.neural_chat.prompts.prompt import PromptTemplate
 
 IGNORE_INDEX = -100
 
@@ -47,21 +48,101 @@ def truncate_sequences(sequences, max_length):
     return sequences
 
 class CompletionDataPreprocess:
-    prompt_template = ALPACA_PROMPT_DICT
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name.lower()
+        if "alpaca" in self.dataset_name:
+            self.prompt_template = [
+                PromptTemplate("alpaca_without_input"),
+                PromptTemplate("alpaca_with_input")
+            ]
+            self.key_role_map = [
+                [('instruction', 0), ('output', 1)],
+                [('instruction', 0), ('input', 1), ('output', 2)]
+            ]
+        elif "stack-exchange-instruction" in self.dataset_name:
+            self.prompt_template = PromptTemplate("question_answer")
+            self.key_role_map = [('question', 0), ('response', 1)]
+        else:
+            raise NotImplementedError(
+                f"Unsupported dataset {dataset_name}, "
+                "only supports stack-exchange-instruction and Alpaca liked dataset now."
+            )
+
 
     def create_data(self, examples):
         prompts = {}
         prompts["source"] = []
         prompts["target"] = []
         for example in examples:
-            prompt_template = (
-                self.prompt_template["prompt_with_input"]
-                if example.get("input") is not None and example.get("input") != ""
-                else self.prompt_template["prompt_without_input"]
-            )
-            source = prompt_template.format_map(example)
+            prompt_template = self.prompt_template
+            key_role_map = self.key_role_map
+            if "alpaca" in self.dataset_name:
+                if "input" in example and example["input"]:
+                    prompt_template = self.prompt_template[1]
+                    key_role_map = self.key_role_map[1]
+                else:
+                    prompt_template = self.prompt_template[0]
+                    key_role_map = self.key_role_map[0]
+
+            for idx, (key, role) in enumerate(key_role_map):
+                message = example[key]
+                if idx == len(key_role_map)-1:
+                    message = ""
+                prompt_template.append_message(prompt_template.roles[role], message)
+            source = prompt_template.get_prompt()
             prompts["source"].append(source)
-            prompts["target"].append(example["output"])
+            prompts["target"].append(example[key_role_map[-1][0]])
+            prompt_template.clear_messages()
+        return prompts
+
+    @staticmethod
+    def tokenize_func(tokenizer, data_args, finetune_args):
+        def tokenize(prompt, add_eos_token=True):
+            results = tokenizer(
+                    prompt,
+                    truncation=True,
+                    max_length=data_args.max_seq_length,
+                    padding=False,
+                    return_tensors=None,)
+            for i in range(len(results["input_ids"])):
+                if (results["input_ids"][i][-1] != tokenizer.eos_token_id \
+                        and len(results["input_ids"][i]) < data_args.max_seq_length \
+                        and add_eos_token \
+                        ):
+                    results["input_ids"][i].append(tokenizer.eos_token_id)
+                    results["attention_mask"][i].append(1)
+            results["labels"] = copy.deepcopy(results["input_ids"])
+            results["input_id_len"] = [len(result) for result in results["input_ids"]]
+            return results
+
+        def preprocess_function(examples):
+            st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
+            examples_tokenized = tokenize(st)
+            input_ids = examples_tokenized["input_ids"]
+            labels = examples_tokenized["labels"]
+            if not finetune_args.train_on_inputs:
+                sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
+                for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
+                    label[:source_len] = [IGNORE_INDEX] * source_len
+            return dict(
+                    input_ids=input_ids,
+                    labels=labels,
+                    attention_mask=examples_tokenized["attention_mask"],
+                    )
+
+        return preprocess_function
+
+class IntelDpoDataPreprocess:
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name.lower()
+
+    def create_data(self, examples):
+        prompts = {}
+        prompts["source"] = []
+        prompts["target"] = []
+        for example in examples:
+            prompts["source"].append(example["system"] + example["question"])
+            prompts["target"].append(example["chosen"])
         return prompts
 
     @staticmethod
@@ -201,6 +282,45 @@ class ChatDataPreprocess:
 
         return preprocess_function
 
+class SlimOrcaDataPreprocess(ChatDataPreprocess):
+    def __init__(self, eos_token):
+        self.system = "### System:\n"
+        self.default_system = "You are a helpful, respectful and honest assistant."
+        self.user = "### User:\n"
+        self.assistant = "### Assistant:\n"
+        self.end = eos_token
+
+    def create_data(self, examples):
+        prompts = {}
+        prompts["prompt_sources"] = []
+        prompts["prompt_targets"] = []
+
+        for conv in examples:
+            conv = conv["conversations"]
+
+            # system
+            if conv[0]["from"] != "system":
+                prompt = self.system + self.default_system + self.end + '\n'
+                start = 0
+            elif conv[0]["from"] == "system" and conv[0]["value"] == "":
+                prompt = self.system + self.default_system + self.end + '\n'
+                start = 1
+            else:
+                prompt = self.system + conv[0]["value"] + self.end + '\n'
+                start = 1
+
+            for j in range(start, len(conv) - 1, 2):
+                
+                u = conv[j]["value"]
+                ass = conv[j+1]["value"]
+                prompt = prompt + self.user + u + self.end + '\n' + self.assistant
+                response = ass + self.end
+                prompts["prompt_sources"].append(prompt)
+                prompts["prompt_targets"].append(response)
+
+                prompt += response + '\n'
+
+        return prompts
 
 class SummarizationDataPreprocess:
     prompt_template = "\nSummarize the highlights of this article.\n"
@@ -280,7 +400,24 @@ class SummarizationDataPreprocess:
 
 def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
-    if finetune_args.task == "chat":
+    if data_args.dataset_name == "Intel/orca_dpo_pairs":
+        preprocess = IntelDpoDataPreprocess(
+            data_args.dataset_name if data_args.dataset_name else data_args.train_file
+        )
+        for key in raw_datasets:
+            prompts = preprocess.create_data(raw_datasets[key])
+            columns_to_be_removed = list(raw_datasets[key].features.keys())
+            raw_datasets[key] = raw_datasets[key].add_column(
+                    "prompt_sources", prompts["source"]
+                    )
+            raw_datasets[key] = raw_datasets[key].add_column(
+                    "prompt_targets", prompts["target"]
+                    )
+            raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
+
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+    elif finetune_args.task == "chat":
         preprocess = ChatDataPreprocess(tokenizer.eos_token)
         new_datasets = datasets.DatasetDict()
         for key in raw_datasets:
@@ -300,13 +437,27 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
         return new_datasets, preprocess_fn
 
+    elif finetune_args.task == "SlimOrca":
+        preprocess = SlimOrcaDataPreprocess(tokenizer.eos_token)
+        new_datasets = datasets.DatasetDict()
+        for key in raw_datasets:
+            prompts = preprocess.create_data(raw_datasets[key])
+
+            new_datasets[key] = datasets.Dataset.from_dict(prompts)
+
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+        return new_datasets, preprocess_fn
+
     elif finetune_args.task == "summarization":
         preprocess = SummarizationDataPreprocess()
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
     elif finetune_args.task == "completion" or finetune_args.task == "code-generation":
         # default use alpaca template
-        preprocess = CompletionDataPreprocess()
+        preprocess = CompletionDataPreprocess(
+            data_args.dataset_name if data_args.dataset_name else data_args.train_file
+        )
         for key in raw_datasets:
             prompts = preprocess.create_data(raw_datasets[key])
             columns_to_be_removed = list(raw_datasets[key].features.keys())
@@ -324,3 +475,4 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         raise NotImplementedError(f'finetune task data preprocessing is not support currently.')
 
     return raw_datasets, preprocess_fn
+

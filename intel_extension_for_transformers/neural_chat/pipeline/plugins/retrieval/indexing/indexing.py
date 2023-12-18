@@ -16,15 +16,22 @@
 # limitations under the License.
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
-import os
-from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
+
+import os, re
+from typing import List
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings, \
-    HuggingFaceBgeEmbeddings, GooglePalmEmbeddings
-from haystack.schema import Document as SDocument
+from langchain.embeddings import GooglePalmEmbeddings
+from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
+    HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
-
+from .html_parser import load_html_data
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
@@ -37,9 +44,10 @@ class DocumentIndexing:
         self.document_store = document_store
         self.process = process
         self.persist_dir = persist_dir
+        self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
-        
+
         try:
             if "instruct" in embedding_model:
                 self.embeddings = HuggingFaceInstructEmbeddings(model_name=embedding_model)
@@ -56,9 +64,8 @@ class DocumentIndexing:
                     encode_kwargs={"normalize_embeddings": True},
                 )
         except Exception as e:
-            print("Please selet a proper embedding model")
-            
-        
+            logging.info("Please selet a proper embedding model")
+           
         
     def parse_document(self, input):
         """
@@ -71,11 +78,35 @@ class DocumentIndexing:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
                 chuck = [[content.strip(),input]]
-        elif input.endswith("jsonl") or input.endswith("xlsx"):
+        
+        elif input.endswith("jsonl") or input.endswith("xlsx") or input.endswith("csv"):
             chuck = laod_structured_data(input, self.process, self.max_length)
+        elif re.match(r'^https?:/{2}\w.+$', input):
+            chuck = load_html_data(input)
         else:
-            print("This file is ignored. Will support this file format soon.")
+            logging.info("This file is ignored. Will support this file format soon.")
         return chuck
+
+
+    def parse_html(self, input):
+        """
+        Parse the uploaded file.
+        """
+        chucks = []
+        for link in input:
+            if re.match(r'^https?:/{2}\w.+$', link):
+                content = load_html_data(link)
+                if content == None:
+                    continue
+                if self.process:
+                    chuck = get_chuck_data(content, self.max_length, link)
+                else:
+                    chuck = [[content.strip(), link]]
+                chucks += chuck
+            else:
+                logging.info("The given link/str %s cannot be parsed.", link)
+
+        return chucks
 
 
     def batch_parse_document(self, input):
@@ -93,132 +124,98 @@ class DocumentIndexing:
                     else:
                         chuck = [[content.strip(),input]]
                     paragraphs += chuck
-                elif filename.endswith("jsonl") or filename.endswith("xlsx"):
+                elif filename.endswith("jsonl") or filename.endswith("xlsx") or filename.endswith("csv"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
                     paragraphs += chuck
                 else:
-                    print("This file {} is ignored. Will support this file format soon.".format(filename))
+                    logging.info("This file %s is ignored. Will support this file format soon.", filename)
         return paragraphs
     
     def load(self, input):
         if self.retrieval_type=="dense":
-            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
+            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
-            if self.document_store == "inmemory":
-                vectordb = self.KB_construct(input)
-            else:
-                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                      port=9200, search_fields=["content", "title"])
+            vectordb=None
+            logging.info("Will be removed in another PR")
+        return vectordb
+
+    def reload(self, local_path):
+        if self.retrieval_type == "dense":
+            vectordb = Chroma(persist_directory=local_path, embedding_function=self.embeddings)
+        else:
+            vectordb=None
+            logging.info("Will be removed in another PR")
         return vectordb
             
     def KB_construct(self, input):
         """
         Construct the local knowledge base based on the uploaded file/files.
         """
-        if self.retrieval_type == "dense":
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
-                    
-                documents = []
-                for data, meta in data_collection:
-                    if len(data) < 5:
-                        continue
-                    metadata = {"source": meta}
-                    new_doc = Document(page_content=data, metadata=metadata)
-                    documents.append(new_doc)
-                assert documents!= [], "The given file/files cannot be loaded." 
-                vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
-                                                 persist_directory=self.persist_dir)
-                vectordb.persist()
-                print("The local knowledge base has been successfully built!")
-                return vectordb
+        if isinstance(input, str):
+            if os.path.isfile(input):
+                data_collection = self.parse_document(input)
+            elif os.path.isdir(input):
+                data_collection = self.batch_parse_document(input)
             else:
-                print("There might be some errors, please wait and try again!")
+                logging.info("Please check your upload file and try again!")
+        elif isinstance(input, List):
+            try:
+                data_collection = self.parse_html(input)
+            except:
+                logging.info("The given link/str is unavailable. Please try another one!")
         else:
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
-                if self.document_store == "inmemory":
-                    document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
-                elif self.document_store == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                                port=9200, search_fields=["content", "title"])
+            logging.error("The input path is invalid!")
 
-                documents = []
-                for data, meta in data_collection:
-                    metadata = {"source": meta}
-                    if len(data) < 5:
-                        continue
-                    new_doc = SDocument(content=data, meta=metadata)
-                    documents.append(new_doc)
-                assert documents != [], "The given file/files cannot be loaded."
-                document_store.write_documents(documents)
-                print("The local knowledge base has been successfully built!")
-                return document_store
-            else:
-                print("There might be some errors, please wait and try again!")
-
-
-    def KB_append(self, input):  ### inmemory documentstore please use KB construct
         if self.retrieval_type == "dense":
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
+            documents = []
+            for data, meta in data_collection:
+                if len(data) < 5:
+                    continue
+                metadata = {"source": meta}
+                new_doc = Document(page_content=data, metadata=metadata)
+                documents.append(new_doc)
+            assert documents!= [], "The given file/files cannot be loaded."
+            vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
+                                             persist_directory=self.persist_dir)
+            vectordb.persist()
+            logging.info("The local knowledge base has been successfully built!")
+            return vectordb
+        elif self.retrieval_type == "sparse":
+            logging.info("Will be removed in another PR")
 
-                documents = []
-                for data, meta in data_collection:
-                    if len(data) < 5:
-                        continue
-                    metadata = {"source": meta}
-                    new_doc = Document(page_content=data, metadata=metadata)
-                    documents.append(new_doc)
-                assert documents != [], "The given file/files cannot be loaded."
-                embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
-                vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
-                                                 persist_directory=self.persist_dir)
-                vectordb.persist()
-                print("The local knowledge base has been successfully built!")
-                return Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+
+    def KB_append(self, input, persist_path=None):  ### inmemory documentstore please use KB construct
+        if isinstance(input, str):
+            if os.path.isfile(input):
+                data_collection = self.parse_document(input)
+            elif os.path.isdir(input):
+                data_collection = self.batch_parse_document(input)
             else:
-                print("There might be some errors, please wait and try again!")
+                logging.info("Please check your upload file and try again!")
+        elif isinstance(input, List):
+            try:
+                data_collection = self.parse_html(input)
+            except:
+                logging.info("The given link/str is unavailable. Please try another one!")
         else:
-            if os.path.exists(input):
-                if os.path.isfile(input):
-                    data_collection = self.parse_document(input)
-                elif os.path.isdir(input):
-                    data_collection = self.batch_parse_document(input)
-                else:
-                    print("Please check your upload file and try again!")
+            logging.error("The input format is invalid!")
 
-                if self.document_store == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                                port=9200, search_fields=["content", "title"])
-                    documents = []
-                    for data, meta in data_collection:
-                        metadata = {"source": meta}
-                        if len(data) < 5:
-                            continue
-                        new_doc = SDocument(content=data, meta=metadata)
-                        documents.append(new_doc)
-                    assert documents != [], "The given file/files cannot be loaded."
-                    document_store.write_documents(documents)
-                    print("The local knowledge base has been successfully built!")
-                    return ElasticsearchDocumentStore(host="localhost", index=self.index_name,
-                                                              port=9200, search_fields=["content", "title"])
-                else:
-                    print("Unsupported document store type, please change to Elasticsearch!")
-            else:
-                print("There might be some errors, please wait and try again!")
+        if self.retrieval_type == "dense":
+            documents = []
+            for data, meta in data_collection:
+                if len(data) < 5:
+                    continue
+                metadata = {"source": meta}
+                new_doc = Document(page_content=data, metadata=metadata)
+                documents.append(new_doc)
+            assert documents != [], "The given file/files cannot be loaded."
+            if persist_path is None:
+                persist_path = self.persist_dir
+            vectordb = Chroma.from_documents(documents=documents, embedding=self.embeddings,
+                                             persist_directory=persist_path)
+            vectordb.persist()
+            logging.info("The local knowledge base has been successfully built!")
+            return Chroma(persist_directory=self.persist_dir, embedding_function=self.embeddings)
+        elif self.retrieval_type == "sparse":
+            logging.error("Will be removed in another PR.")

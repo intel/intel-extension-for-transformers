@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import sys
 import struct
 import json
@@ -22,9 +21,10 @@ import re
 import os
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -37,21 +37,23 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"),
-              ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
-    parser.add_argument("--outtype", choices=["f32", "f16"], default="fp32",
+    parser.add_argument("--outtype",
+                        choices=["f32", "f16"],
+                        default="fp32",
                         help="output format (default: based on input)")
     parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
     parser.add_argument("model", type=Path, help="directory containing model file")
@@ -88,7 +90,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print("Saving ne model to: ", fname_out)
     fout = open(fname_out, "wb")
 
-    fout.write(struct.pack("i", 0x67676d6c)) # magic: ne in hex
+    fout.write(struct.pack("i", 0x67676d6c))  # magic: ne in hex
     vocab_size = hparams["vocab_size"]
     fout.write(struct.pack("i", vocab_size))
     fout.write(struct.pack("i", hparams["n_embd"]))
@@ -108,14 +110,16 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
+
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
     fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
 
     counter = 0
     # sort by value
@@ -190,7 +194,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         ftype = 0
         if use_f16:
             if (name == "model/wte" or name == "model/lm_head" or name[-2:] == "/g"
-                or name[-2:] == "/w") and n_dims == 2:
+                    or name[-2:] == "/w") and n_dims == 2:
                 print("  Converting to float16...")
                 data = data.astype(np.float16)
                 ftype = 1
@@ -207,8 +211,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
             head_dim = embed_dim // hparams["n_head"]
 
             # ((n_heads + 2) * head_dim, hidden_dim) -> (3 * n_heads * head_dim, hidden_dim)
-            q, k ,v = np.split(data, (hparams["n_head"] * head_dim,
-                                    (hparams["n_head"] + 1) * head_dim), axis=0)
+            q, k, v = np.split(data, (hparams["n_head"] * head_dim, (hparams["n_head"] + 1) * head_dim), axis=0)
             # duplicate k, v along the first axis (head_dim, hidden_dim) ->
             #                                     (n_heads * head_dim, hidden_dim)
             if len(k.shape) == 2:
@@ -235,6 +238,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print("Done. Output file: " + fname_out)
     print("")
+
 
 if __name__ == "__main__":
     main()

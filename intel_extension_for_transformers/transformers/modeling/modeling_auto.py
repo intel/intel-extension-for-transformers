@@ -33,8 +33,9 @@
 
 import json
 import os
-import transformers
+import re
 import torch
+import transformers
 
 from ..utils import (
     BitsAndBytesConfig,
@@ -50,6 +51,9 @@ from ..utils.utility import (
     QUANT_CONFIG,
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
+    generate_dummy_past_key_values_for_opt_llm,
+    MODEL_TYPES_REQUIRING_POSITION_IDS,
+    IPEX_OPT_LLM_SUPPORTED,
 )
 from ...llm.quantization.utils import replace_linear
 from ...utils.utils import get_gpu_family, supported_gpus
@@ -157,7 +161,23 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if kwargs.get("use_embedding_runtime", False):
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
+                Graph,
+            )
+            from intel_extension_for_transformers.llm.runtime.deprecated.compile import (
+                compile,
+                autocast,
+            )
+
+            cast_type = kwargs.get("cast_type", "native")
+            with autocast(cast_type):
+                model = compile(pretrained_model_name_or_path)
+
+            return model
+
         import intel_extension_for_transformers.transformers.modeling.modeling_map
+
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
@@ -206,9 +226,15 @@ class _BaseQBitsAutoModelClass:
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="nf4"
-                    )
+                    if use_llm_runtime:
+                        # use wnf4_sfp32_cfp32_g32_sym by default
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="fp32", weight_dtype="nf4"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="nf4"
+                        )
                 else:
                     assert (quantization_config.weight_dtype in int4_type_list()), \
                         "Quantization_config.weight_dtype should be one of {}.".format(int4_type_list())
@@ -219,37 +245,33 @@ class _BaseQBitsAutoModelClass:
 
             elif load_in_8bit:
                 if quantization_config is None:
-                    quantization_config = WeightOnlyQuantConfig(
-                        compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="int8"
-                    )
+                    if use_llm_runtime:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype="int8", weight_dtype="int8"
+                        )
+                    else:
+                        quantization_config = WeightOnlyQuantConfig(
+                            compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="int8"
+                        )
                 else:
-                    assert (quantization_config.weight_dtype == "int8"), \
-                        "Quantization_config.weight_dtype should be 'int8' ."
-
-                    assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
-                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(
-                            quantization_config.compute_dtype, torch_dtype)
-
+                    assert (
+                        quantization_config.weight_dtype == "int8"
+                        and quantization_config.compute_dtype == torch_dtype
+                    ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
         if isinstance(quantization_config, MixedPrecisionConfig):
-            kwargs["torch_dtype"] = torch.bfloat16
+            if (
+                quantization_config.dtype == "float16"
+                or quantization_config.dtype == "fp16"
+            ):
+                kwargs["torch_dtype"] = torch.float16
+            else:
+                kwargs["torch_dtype"] = torch.bfloat16
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
             logger.info("Mixed Precision done.")
-        kwargs["low_cpu_mem_usage"] = True
-        kwargs["device_map"] = "cpu"
-        try:
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path, *model_args, **kwargs
-            )
-            model.config.update({"low_cpu_mem_usage": True})
-        except NotImplementedError:
-            logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
-                        "will fall to traditional load method with higher memory consumption.")
-            kwargs["low_cpu_mem_usage"] = False
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path, *model_args, **kwargs
-            )
-            model.config.update({"low_cpu_mem_usage": False})
-        model.eval()
-        model.config.update({"device": "cpu"})
+
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
@@ -266,10 +288,29 @@ class _BaseQBitsAutoModelClass:
                     scale_dtype=quantization_config.scale_dtype,
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
+                    use_quant=quantization_config.use_quant,
+                    use_gptq=quantization_config.use_gptq,
                 )
                 model.quantization_config = quantization_config
                 return model
             else:
+                kwargs["low_cpu_mem_usage"] = True
+                kwargs["device_map"] = "cpu"
+                try:
+                    model = cls.ORIG_MODEL.from_pretrained(
+                        pretrained_model_name_or_path, *model_args, **kwargs
+                    )
+                    model.config.update({"low_cpu_mem_usage": True})
+                except NotImplementedError:
+                    logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
+                                "will fall to traditional load method with higher memory consumption.")
+                    kwargs["low_cpu_mem_usage"] = False
+                    model = cls.ORIG_MODEL.from_pretrained(
+                        pretrained_model_name_or_path, *model_args, **kwargs
+                    )
+                    model.config.update({"low_cpu_mem_usage": False})
+                model.eval()
+                model.config.update({"device": "cpu"})
                 is_max = False
                 if use_xpu:
                     import intel_extension_for_pytorch
@@ -289,6 +330,13 @@ class _BaseQBitsAutoModelClass:
                     )
                 else:
                     from ...llm.quantization.utils import convert_to_quantized_model
+                if (
+                    not torch.cuda.is_available()
+                    or device_map == "cpu"
+                    or device_map == torch.device("cpu")
+                ) and model.config.model_type == "chatglm":
+                    model = model.float()
+                model.eval()
                 quantization_config.post_init()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
             # add quantization_config and save_low_bit to pretrained model dynamically
@@ -298,15 +346,76 @@ class _BaseQBitsAutoModelClass:
             model.save_low_bit = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
-            logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
             except ImportError:
                 logger.warning(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
-            assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            assert (
+                ipex.__version__ >= "2.1.0+cpu"
+            ), "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float,
+                torchscript=True,
+                use_cache=True,
+                *model_args,
+                **kwargs,
+            )
+
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+            model.eval()
+            model_type = model.config.model_type.replace("_", "-")
+            if "falcon" in model_type and transformers.__version__ > "4.33":
+                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
+                    model.eval()
+                )
+                quantization_config.ipex_opt_llm = False
+            if "llama" in model_type and transformers.__version__ >= "4.36.0":
+                quantization_config.ipex_opt_llm = False
+            logger.info("Applying SmoothQuant.")
+            # ipex.optimize_transformers
+            if quantization_config.ipex_opt_llm is None:
+                if model_type in IPEX_OPT_LLM_SUPPORTED:
+                    quantization_config.ipex_opt_llm = True
+                    logger.info(
+                        "quantization_config.ipex_opt_llm set to True and ipex.optimize_transformers is used."
+                    )
+                    logger.warning("The suggested transformers version is 4.31.0.")
+                else:
+                    quantization_config.ipex_opt_llm = False
+            if quantization_config.ipex_opt_llm:
+                qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+                model = ipex.optimize_transformers(
+                    model.eval(),
+                    quantization_config=qconfig,
+                    dtype=torch.float32,
+                    inplace=True,
+                    deployment_mode=False,
+                )
+                model.eval()
+
+            # past_key_values
+            num_beams = quantization_config.num_beams
+            if quantization_config.ipex_opt_llm:
+                past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                    config=model.config, input_bs=1, num_beams=num_beams
+                )
+            else:
+                past_key_values = generate_dummy_past_key_values(
+                    config=model.config, input_bs=1
+                )
+
+            # calibration function
             calib_func = quantization_config.calib_func
+            tokenizer = quantization_config.tokenizer
             if calib_func is None:
                 if quantization_config.tokenizer is None:
                     logger.error(
@@ -316,20 +425,27 @@ class _BaseQBitsAutoModelClass:
                         + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
                     )
                     exit(0)
+
                 from datasets import load_dataset
 
                 calib_dataset = quantization_config.calib_dataset
+                calib_len = quantization_config.calib_len
                 calib_iters = quantization_config.calib_iters
-                calib_dataset = load_dataset(calib_dataset, split="train")
+                calib_dataset = load_dataset(
+                    calib_dataset,
+                    split="test"
+                    if calib_dataset in ["mbpp", "openai_humaneval"]
+                    else "train",
+                )
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
                     if "prompt" in examples:
-                        example = quantization_config.tokenizer(examples["prompt"])
+                        example = tokenizer(examples["prompt"])
                     elif "text" in examples:
-                        example = quantization_config.tokenizer(examples["text"])
+                        example = tokenizer(examples["text"])
                     elif "code" in examples:
-                        example = quantization_config.tokenizer(examples["code"])
+                        example = tokenizer(examples["code"])
                     else:
                         logger.error(
                             "Please check dataset prompt identifier,"
@@ -338,76 +454,177 @@ class _BaseQBitsAutoModelClass:
                         exit(0)
                     return example
 
-                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
-                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
-
                 def collate_batch(batch):
+                    position_ids_padded = []
                     input_ids_padded = []
+                    last_ind = []
+                    attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
                         input_ids = (
-                            input_ids[:512] if len(input_ids) > 512 else input_ids
+                            input_ids[:calib_len]
+                            if len(input_ids) > calib_len
+                            else input_ids
                         )
+                        last_ind.append(input_ids.shape[0] - 1)
+                        attention_mask = torch.ones(len(input_ids))
+                        position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
-                    return torch.vstack(input_ids_padded)
-
-                calib_dataloader = torch.utils.data.DataLoader(
-                    tokenized_dataset,
-                    batch_size=1,
-                    shuffle=False,
-                    collate_fn=collate_batch,
-                )
-
-            def default_calib_func(model):
-                """
-                This is the default calibration function, the dataset is NeelNanda/pile-10k,
-                the default calib_iters is 100.
-                """
-
-                for i, (input_ids) in enumerate(calib_dataloader):
-                    input_bs, input_len = input_ids.shape
-                    past_key_values = generate_dummy_past_key_values(input_bs, model)
-                    attention_mask = torch.ones(input_bs, input_len + 1)
-                    attention_mask[:, 0] = 0
-                    if i >= calib_iters:
-                        break
-                    model(
-                        input_ids=input_ids,
-                        past_key_values=past_key_values,
-                        attention_mask=attention_mask,
+                        attention_mask_padded.append(attention_mask)
+                        position_ids_padded.append(position_ids)
+                    return (
+                        {
+                            "input_ids": torch.vstack(input_ids_padded),
+                            "attention_mask": torch.vstack(attention_mask_padded),
+                            "position_ids": torch.vstack(position_ids_padded),
+                            "past_key_values": past_key_values,
+                        },
+                        torch.tensor(last_ind),
                     )
 
-            recipes = {
-                "smooth_quant": True,
-                "smooth_quant_args": {"alpha": quantization_config.alpha},
-            }
-            example_inputs = get_example_inputs_for_trace(model)
+                def collate_batch_for_chatglm(batch):
+                    last_ind = []
+                    for text in batch:
+                        input_ids = torch.vstack([text["input_ids"]])
+                        if re.search(
+                            "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
+                        ):
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                            eos = torch.tensor([130001, 130004]).repeat(1, 1)
+                            input_ids = torch.cat((input_ids, eos), 1)
+                        else:
+                            input_ids = (
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
+                                else input_ids
+                            )
+                        prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        last_ind.append(input_ids.shape[1] - 1)
+                    return (
+                        {
+                            "input_ids": input_ids,
+                            "position_ids": prepared_inputs["position_ids"],
+                            "past_key_values": past_key_values,
+                        },
+                        torch.tensor(last_ind),
+                    )
+
+                tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+                tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+                if model_type == "chatglm":
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch_for_chatglm,
+                    )
+                else:
+                    calib_dataloader = DataLoader(
+                        tokenized_dataset,
+                        batch_size=1,
+                        shuffle=False,
+                        collate_fn=collate_batch,
+                    )
+
+                def calib_func(model):
+                    with torch.no_grad():
+                        for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                            if i >= calib_iters:
+                                break
+                            if model_type == "chatglm":
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    position_ids=inputs["position_ids"],
+                                )
+                            elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    position_ids=inputs["position_ids"],
+                                    attention_mask=inputs["attention_mask"],
+                                )
+                            else:
+                                model(
+                                    input_ids=inputs["input_ids"],
+                                    past_key_values=inputs["past_key_values"],
+                                    attention_mask=inputs["attention_mask"],
+                                )
+
+                logger.info(
+                    "The default calibration funcation is used, "
+                    + "the calibration dataset is NeelNanda/pile-10k, "
+                    + "batchsize is 1 and calibration iteration is 100."
+                )
+                calib_func = calib_func
+
+            # example_inputs
+            example_inputs = quantization_config.example_inputs
+            if example_inputs is None:
+                for i, (inputs, last_ind) in enumerate(calib_dataloader):
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        if model_type == "chatglm":
+                            example_inputs = {
+                                "input_ids": inputs["input_ids"],
+                                "position_ids": inputs["position_ids"],
+                                "past_key_values": inputs["past_key_values"],
+                            }
+                        elif model_type == "falcon":
+                            input_bs, input_len = inputs["input_ids"].shape
+                            outputs = model(inputs["input_ids"])
+                            example_inputs["past_key_values"] = outputs[1]
+                            example_inputs["attention_mask"] = torch.ones(
+                                input_bs, input_len
+                            )
+                            example_inputs["position_ids"] = (
+                                inputs["position_ids"][:, -1:] + 1
+                            )
+                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
+                        else:
+                            example_inputs = inputs
+                    else:
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
+                    break
+
+            # call inc sq
             from neural_compressor import PostTrainingQuantConfig, quantization
 
             conf = PostTrainingQuantConfig(
-                backend="ipex",
+                backend=quantization_config.backend,  # default is ipex
                 excluded_precisions=quantization_config.excluded_precisions,
                 op_type_dict=quantization_config.op_type_dict,
                 op_name_dict=quantization_config.op_name_dict,
-                recipes=recipes,
+                recipes=quantization_config.recipes,
                 example_inputs=example_inputs,
             )
-            if calib_func is None:
-                logger.info(
-                    "The default calibration funcation is used, "
-                    + "the calibration dataset is NeelNanda/pile-10k,"
-                    + "batchsize is 1 and calibration iteration is 100."
-                )
-                calib_func = default_calib_func
-            else:
-                calib_func = calib_func
-            model.config.torchscript = True
             model = quantization.fit(
-                                    model,
-                                    conf,
-                                    calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
-                                    )
+                model,
+                conf,
+                calib_func=calib_func,
+                calib_dataloader=calib_dataloader
+                if quantization_config.recipes["smooth_quant_args"]["alpha"] == "auto" else None,
+            )
+            logger.info("SmoothQuant done.")
+        else:
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            if (
+                not torch.cuda.is_available()
+                or device_map == "cpu"
+                or device_map == torch.device("cpu")
+            ) and model.config.model_type == "chatglm":
+                model = model.float()
+
+            model.eval()
             logger.info("SmoothQuant done.")
         model = model.to(device_map)
         return model
@@ -701,6 +918,3 @@ class AutoModel(_BaseQBitsAutoModelClass):
 
 class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
-
-class GPTBigCodeForCausalLM(_BaseQBitsAutoModelClass):
-    ORIG_MODEL = transformers.GPTBigCodeForCausalLM

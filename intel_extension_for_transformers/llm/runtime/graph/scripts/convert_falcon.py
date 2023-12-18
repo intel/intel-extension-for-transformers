@@ -22,9 +22,10 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -37,16 +38,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -62,19 +64,22 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
-    
+
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
-    with open(os.path.join(dir_model,"config.json"), "r", encoding="utf-8") as f:
+    with open(os.path.join(dir_model, "config.json"), "r", encoding="utf-8") as f:
         hparams = json.load(f)
     if hparams["architectures"][0] != "FalconForCausalLM":
         print("Model architecture not supported: " + hparams["architectures"][0])
         sys.exit(1)
     print("Loading model: ", dir_model)
-    model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
-                    if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(dir_model,
+                                                 config=config,
+                                                 torch_dtype=torch.float16 if ftype == 1 else torch.float32,
+                                                 low_cpu_mem_usage=True,
+                                                 trust_remote_code=True)
     print("Model loaded: ", dir_model)
 
     n_head_kv = hparams.get("num_kv_heads", 1)
@@ -82,7 +87,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     head_dim = hparams["hidden_size"] // n_head
 
     fout = open(fname_out, "wb")
-    fout.write(struct.pack("i", 0x67676d6c)) # magic: falcon in hex
+    fout.write(struct.pack("i", 0x67676d6c))  # magic: falcon in hex
 
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
@@ -102,6 +107,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
     
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
@@ -110,7 +117,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
 
     for i in range(hparams["vocab_size"]):
         text = bytearray([byte_decoder[c] for c in reverse_vocab[i]])
@@ -129,14 +136,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
         # in contiguous fashion.
 
         if "query_key_value" in src and n_head_kv != 1:
-            qkv = list_vars[src].view(
-                n_head_kv, n_head // n_head_kv + 2, head_dim, head_dim * n_head)
+            qkv = list_vars[src].view(n_head_kv, n_head // n_head_kv + 2, head_dim, head_dim * n_head)
 
-            q = qkv[:, :-2 ].reshape(n_head * head_dim, head_dim * n_head)
+            q = qkv[:, :-2].reshape(n_head * head_dim, head_dim * n_head)
             k = qkv[:, [-2]].reshape(n_head_kv * head_dim, head_dim * n_head)
             v = qkv[:, [-1]].reshape(n_head_kv * head_dim, head_dim * n_head)
 
-            list_vars[src] = torch.cat((q,k,v)).reshape_as(list_vars[src])
+            list_vars[src] = torch.cat((q, k, v)).reshape_as(list_vars[src])
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 
@@ -164,6 +170,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print("Done. Output file: " + fname_out)
     print("")
+
 
 if __name__ == '__main__':
     main()

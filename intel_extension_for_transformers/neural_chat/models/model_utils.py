@@ -19,12 +19,22 @@ import json
 from pathlib import Path
 import copy, time
 from datetime import datetime
+import sys
 import torch
+import transformers
+import warnings
 from queue import Queue
 import re, os
 from threading import Thread
 import contextlib
 from huggingface_hub import snapshot_download
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO,
+    stream=sys.stdout
+)
 from typing import List
 from transformers import (
     GenerationConfig,
@@ -36,6 +46,7 @@ from transformers import (
     TextIteratorStreamer,
     StoppingCriteriaList,
     StoppingCriteria,
+    LlamaForCausalLM
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -44,6 +55,8 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
+
+import shutil
 
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
@@ -79,7 +92,7 @@ def get_repo_root(model_name_or_path, local_rank=-1, token=None):
         # Checks if online or not
         if is_offline_mode():
             if local_rank == 0:
-                print("Offline mode: forcing local_files_only=True")
+                logging.info("Offline mode: forcing local_files_only=True")
 
         # Only download PyTorch weights by default
         allow_patterns = ["*.bin"]
@@ -204,7 +217,7 @@ def max_input_len(input_text_length):
     elif input_text_length <= 2048:
         return 2048
     else:
-        print("Max support length is 4096")
+        logging.info("Max support length is 4096")
         return 4096
 
 
@@ -227,14 +240,22 @@ def import_deepspeed():
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
-    print("DeepSpeed is enabled.")
+    logging.info("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta, token=None):
+def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graphs, is_meta, token=None):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
 
     world_size, rank, local_rank = initialize_distributed_hpu()
+    merged_model_dir = None
+    if peft_path and is_meta:
+        merged_model_dir = "/tmp/text_generation_merged_peft_model"
+        if local_rank == 0:
+            if Path(merged_model_dir).is_dir():
+                shutil.rmtree(merged_model_dir)
+            peft_model(model_name_or_path, peft_path, torch.bfloat16, token).save_pretrained(merged_model_dir)
+        torch.distributed.barrier()
 
     model = model.eval()
     ds_inference_kwargs = {"dtype": torch.bfloat16}
@@ -243,7 +264,8 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta,
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token)
+        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
+                               checkpoints_json, token)
 
     torch.distributed.barrier()
 
@@ -253,6 +275,50 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta,
     ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
+
+
+def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
+    import importlib.util
+
+    if importlib.util.find_spec("peft") is None:
+        raise ImportError("The `peft` package is not installed, please run: `pip install peft`.")
+    from peft import AutoPeftModelForCausalLM
+    from peft.config import PeftConfigMixin
+
+    base_model_name = PeftConfigMixin.from_pretrained(
+        peft_model,
+        use_auth_token=hf_access_token,
+    ).base_model_name_or_path
+
+    base_model_is_local = Path(base_model_name).is_dir()
+    if not base_model_is_local:
+        # Check if the base model path to a remote repository on the HF Hub exists
+        from huggingface_hub import list_repo_files
+
+        try:
+            list_repo_files(base_model_name)
+            base_model_is_remote = True
+        except Exception:
+            base_model_is_remote = False
+
+    if base_model_is_local or base_model_is_remote:
+        model = AutoPeftModelForCausalLM.from_pretrained(peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                         use_auth_token=hf_access_token)
+    else:
+        # Since the base model doesn't exist locally nor remotely, use `args.model_name_or_path` as the base model
+        print(
+            f"The base model `{base_model_name}` of the LoRA configuration associated"
+            f" to `{peft_model}` does not exist locally or remotely. Using "
+            f"`--model_name_or_path {model_name}` as a fall back for the base model."
+        )
+        from peft import PeftModel
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                                     use_auth_token=hf_access_token)
+        model = PeftModel.from_pretrained(model, peft_model, torch_dtype=model_dtype, low_cpu_mem_usage=True,
+                                          use_auth_token=hf_access_token)
+
+    return model.merge_and_unload()
 
 def load_model(
     model_name,
@@ -266,7 +332,8 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
-    use_llm_runtime=False
+    use_llm_runtime=False,
+    assistant_model=None
 ):
     """
     Load the model and initialize the tokenizer.
@@ -275,12 +342,13 @@ def load_model(
         model_name (str): The name of the model.
         device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
+        assistant_model (str, optional): The assistant model name. Defaults to None.
 
     Returns:
         None
 
     Raises:
-        ValueError: If the model is not supported, ValueError is raised.
+        ValueError
     """
     print("Loading model {}".format(model_name))
     if device == "hpu":
@@ -305,7 +373,7 @@ def load_model(
         if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
             bitsandbytes_quant_config = optimization_config
         else:
-            print(
+            logging.warning(
                 "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
                 + " library is available, ignoring bitsandbytes config now."
             )
@@ -317,78 +385,160 @@ def load_model(
     elif dtype == "float32":
         torch_dtype = torch.float32
     else:
-        print(f"Unsupported dtype {dtype}, using float32 now.")
+        logging.warning(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name,
-        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
-        use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-            re.search("chatglm", model_name, re.IGNORECASE)) else False,
-    )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
+
+    # load assistant model
+    if assistant_model:
+        print("Loading assistant model...")
+        if 'llama' in assistant_model.lower():
+            assistant_model_class = LlamaForCausalLM
+        else:
+            assistant_model_class = AutoModelForCausalLM
+        print(f"Loading assistant model via {assistant_model_class}")
+        assis_model = assistant_model_class.from_pretrained(
+            assistant_model, 
+            low_cpu_mem_usage=True, 
+            torch_dtype=torch_dtype)
+        assis_model = assis_model.eval().to(device)
+        assis_model = assis_model.to(memory_format=torch.channels_last)
+        MODELS[model_name]["assistant_model"] = assis_model
+    else:
+        MODELS[model_name]["assistant_model"] = None
+
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+            use_auth_token=hf_access_token,
+            trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                re.search("chatglm", model_name, re.IGNORECASE)) else False,
+        )
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: tokenizer is not found")
+        else:
+            raise
+
+    try:
+        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+    except ValueError as e:
+        if "Unrecognized model in" in str(e):
+            raise ValueError("load_model: model config is not found")
+        else:
+            raise
+
     load_to_meta = model_on_meta(config)
-    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
-        load_to_meta = False
-    if device == "hpu" and use_deepspeed and load_to_meta:
-        with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
-            model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModel.from_pretrained(
-                model_name,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                use_auth_token=hf_access_token,
-                trust_remote_code=True)
-    elif (
-        re.search("gpt", model_name, re.IGNORECASE)
-        or re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("bloom", model_name, re.IGNORECASE)
-        or re.search("llama", model_name, re.IGNORECASE)
-        or re.search("opt", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-        or re.search("qwen", model_name, re.IGNORECASE)
-        or re.search("starcoder", model_name, re.IGNORECASE)
-    ) and not ipex_int8:
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                use_auth_token=hf_access_token,
-                torch_dtype=torch_dtype,
-                low_cpu_mem_usage=True,
-                quantization_config=bitsandbytes_quant_config,
-            )
-    elif (
-            (re.search("starcoder", model_name, re.IGNORECASE)
-            ) and ipex_int8
-        ):
+
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
+        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        model = optimize_model(model_name, optimization_config, use_llm_runtime)
+        if not model.config.is_encoder_decoder:
+            tokenizer.padding_side = "left"
+        if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        logging.info("Optimized Model loaded.")
+        return
+
+    try:
+        if device == "hpu" and use_deepspeed and load_to_meta:
+            with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
+                model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
+        elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
             with smart_context_manager(use_deepspeed=use_deepspeed):
-                import intel_extension_for_pytorch
+                model = AutoModelForSeq2SeqLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    quantization_config=bitsandbytes_quant_config,
+                )
+        elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModel.from_pretrained(
+                    model_name,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    use_auth_token=hf_access_token,
+                    trust_remote_code=True)
+        elif ((
+            re.search("gpt", model_name, re.IGNORECASE)
+            or re.search("mpt", model_name, re.IGNORECASE)
+            or re.search("bloom", model_name, re.IGNORECASE)
+            or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("qwen", model_name, re.IGNORECASE)
+            or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("codellama", model_name, re.IGNORECASE)
+            or re.search("mistral", model_name, re.IGNORECASE)
+        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    use_auth_token=hf_access_token,
+                    torch_dtype=torch_dtype,
+                    low_cpu_mem_usage=True,
+                    quantization_config=bitsandbytes_quant_config,
+                    trust_remote_code=True if re.search("qwen", model_name, re.IGNORECASE) else False
+                )
+        elif (
+                (re.search("starcoder", model_name, re.IGNORECASE)
+                or re.search("codellama", model_name, re.IGNORECASE)
+                ) and ipex_int8
+            ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
                 from optimum.intel.generation.modeling import TSModelForCausalLM
                 model = TSModelForCausalLM.from_pretrained(
                         model_name,
                         file_name="best_model.pt",
-                 )
-    else:
-        raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
-        )
+                    )
+        elif(
+                (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("opt", model_name, re.IGNORECASE)
+                or re.search("gpt_neox", model_name, re.IGNORECASE)
+                or re.search("gptj", model_name, re.IGNORECASE)
+                or re.search("falcon", model_name, re.IGNORECASE)
+                ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                try:
+                    import intel_extension_for_pytorch as ipex
+                except ImportError:
+                    warnings.warn(
+                        "Please install Intel Extension for PyTorch to accelerate the model inference."
+                    )
+                assert ipex.__version__ >= "2.1.0+cpu", "Please use Intel Extension for PyTorch >=2.1.0+cpu."
+                if re.search("falcon", model_name, re.IGNORECASE):
+                    assert transformers.__version__ <= "4.33.3", "Please pip install transformers==4.33.3"
+                from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+                model = TSModelCausalLMForITREX.from_pretrained(
+                    model_name,
+                    file_name="best_model.pt"
+                )
+        else:
+            raise ValueError(f"unsupported model name or path {model_name}, \
+            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+    except EnvironmentError as e:
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError("load_model: model name or path is not found")
+        else:
+            raise
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -422,17 +572,8 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if isinstance(optimization_config, WeightOnlyQuantConfig):
-        from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config, use_llm_runtime)
-
-        MODELS[model_name]["model"] = model
-        MODELS[model_name]["tokenizer"] = tokenizer
-        print("Optimized Model loaded.")
-        return
-
     if device == "hpu":
-        if peft_path:
+        if peft_path and not (use_deepspeed and load_to_meta):
             from peft import PeftModel
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16)
@@ -448,6 +589,7 @@ def load_model(
             model = init_deepspeed_inference(
                 model=model,
                 model_name_or_path=model_name,
+                peft_path=peft_path,
                 use_hpu_graphs=use_hpu_graphs,
                 is_meta=load_to_meta,
                 token=hf_access_token,
@@ -488,7 +630,7 @@ def load_model(
                 model = model.eval().to(device)
         else:
             raise ValueError(
-                f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
+                f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
             )
 
     if not model.config.is_encoder_decoder:
@@ -542,7 +684,8 @@ def tokenization(prompt, tokenizer, device):
         input_token_len = input_tokens.input_ids.shape[-1]
     return input_tokens, input_token_len
 
-def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
+def get_generate_kwargs(
+        max_new_tokens, input_token_len, stop_token_id, assistant_model=None):
     generate_kwargs = {
         "stopping_criteria": StoppingCriteriaList(
             [
@@ -554,6 +697,9 @@ def get_generate_kwargs(max_new_tokens, input_token_len, stop_token_id):
             ]
         )
     }
+    if assistant_model:
+        generate_kwargs["assistant_model"] = assistant_model
+        generate_kwargs["use_cache"] = True
     return generate_kwargs
 
 def is_llm_runtime_model(model):
@@ -563,6 +709,17 @@ def is_llm_runtime_model(model):
     else:
         return False
 
+def remove_prompt_history(model_name, prompt):
+    result = prompt
+    if re.search("llama", model_name, re.IGNORECASE):
+        matches = re.findall(r'\[INST\](.*?)\[/INST\]', prompt)
+        if matches:
+            result = "[INST]" + matches[-1] + "[/INST]"
+    elif re.search("chatglm", model_name, re.IGNORECASE):
+        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        if matches:
+            result = matches[-1]
+    return result
 
 output_token_len = 0
 def predict_stream(**params):
@@ -587,7 +744,7 @@ def predict_stream(**params):
         `num_beams` (int): Controls the number of beams used in beam search.
                            Higher values increase the diversity but also the computation time.
         `model_name` (string): Specifies the name of the pre-trained model to use for text generation.
-                               If not provided, the default model is "mosaicml/mpt-7b-chat".
+                               If not provided, the default model is "Intel/neural-chat-7b-v3-1".
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
@@ -613,7 +770,7 @@ def predict_stream(**params):
     do_sample = params["do_sample"] if "do_sample" in params else True
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
-        params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
+        params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
     num_return_sequences = (
         params["num_return_sequences"] if "num_return_sequences" in params else 1
@@ -627,9 +784,16 @@ def predict_stream(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model = MODELS[model_name]["assistant_model"]
     errors_queue = Queue()
     if hasattr(model, 'device') and model.device.type != device:
         device = model.device.type
+
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -640,7 +804,9 @@ def predict_stream(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer),
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:
@@ -692,6 +858,9 @@ def predict_stream(**params):
                                     top_k=top_k,
                                     repetition_penalty=repetition_penalty,
                                     max_new_tokens=max_new_tokens,
+                                    ctx_size=max_new_tokens,
+                                    ignore_prompt=True,
+                                    interactive=True,
                                     do_sample=do_sample,
                                     num_beams=num_beams,
                                     seed=1
@@ -704,7 +873,8 @@ def predict_stream(**params):
                                     generation_config=generation_config,
                                     return_dict_in_generate=True,
                                 )
-                    output_token_len=output_token.sequences[0].shape[-1]
+                    output_token_len= len(output_token[0]) if is_llm_runtime_model(model) else \
+                                      output_token.sequences[0].shape[-1]
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
@@ -755,7 +925,7 @@ def predict_stream(**params):
         generation_thread.start()
     else:
         raise ValueError(
-            f"Unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
+            f"unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
         )
     output_word_len = 0
 
@@ -861,8 +1031,15 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:
         device = model.device.type
+
+    if is_llm_runtime_model(model):
+        prompt = remove_prompt_history(model_name, prompt)
+        max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
+                                            "codellama" in model_name.lower() or \
+                                            "starcoder" in model_name.lower()) else 1024
 
     if num_beams == 0:
         num_beams = 1
@@ -870,7 +1047,9 @@ def predict(**params):
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
-        max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
+        max_new_tokens, input_token_len, 
+        get_stop_token_ids(model, tokenizer), 
+        assistant_model=assistant_model
     )
 
     if device in ["cpu", "cuda", "xpu"]:
@@ -914,6 +1093,9 @@ def predict(**params):
                             top_k=top_k,
                             repetition_penalty=repetition_penalty,
                             max_new_tokens=max_new_tokens,
+                            ctx_size=max_new_tokens,
+                            ignore_prompt=True,
+                            interactive=True,
                             do_sample=do_sample,
                             num_beams=num_beams,
                             seed=1
@@ -963,4 +1145,12 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "### Assistant" in output:
+        return output.split("### Assistant:")[1].strip()
+    if "\nassistant\n" in output:
+        return output.split("\nassistant\n")[1].strip()
+    if "[/INST]" in output:
+        return output.split("[/INST]")[1].strip()
+    if "答：" in output:
+        return output.split("答：")[1].strip()
     return output

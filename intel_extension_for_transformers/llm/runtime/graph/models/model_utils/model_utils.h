@@ -50,7 +50,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data);
 
@@ -119,12 +119,12 @@ MODEL_API bool model_save_session_file(struct model_context* ctx, const char* pa
                                        size_t n_token_total);
 
 // Run the model inference to obtain the logits and probabilities for the next
+// model_input has some necessary members for inference (more details please see model_types.h):
 // token. tokens + n_tokens is the provided batch of new tokens to process
 // n_past is the offset to which the kv is cached to
 // n_total is the number of tokens evaluated in previous eval calls
 // Returns 0 on success
-MODEL_API int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
-                         int n_threads);
+MODEL_API int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads);
 
 // Convert the provided text into tokens.
 // The tokens pointer must be large enough to hold the resulting tokens.
@@ -259,30 +259,63 @@ MODEL_API const char* model_print_system_info(void);
 }
 #endif
 
+/* kv cache utils */
+// kv cache both stores permuted tensor
+// k shape is [head_dim, N, n_head]
+// v shape is [N, head_dim, n_head] or [N, n_embd]
+/* kv cache utils */
+
+// copy consecutive tokens from one seq to another
+MODEL_API void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                      const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
+
+// concat several seqs into a continuous batch from kv cache
+MODEL_API ne_tensor* model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
+                                               struct ne_context* nectx, const int64_t& ne0, const int64_t& ne1,
+                                               const int64_t& ne2, const int64_t& ne3,
+                                               const std::vector<int>& block_ids, const int& layer_idx,
+                                               const bool& concat_k = true);
+
 /*  beam search utils  */
 #define NEG_INF -std::numeric_limits<float>::max()
 
 typedef struct beam_next_token {
-  model_token id;  // token id
-  float score;     // score of the token
-  int beam_idx;    // token in which beam (-1 means unknown)
+  model_token id = -1;  // token id
+  float score = 0.0f;   // score of the token
+  int beam_idx = -1;    // token in which beam (-1 means unknown)
 } beam_next_token;
 
 struct beam {
   const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
   // Cumulative beam score (log-softmax here)
-  float score;
-  // record inference batch indice
-  int infer_bs_id;
+  float score = 0.0f;
+  // record related indices
+  // 0 - request_bs-1
+  int request_idx = -1;
+  // 0 - num_beams-1
+  int beam_idx = -1;
+  // if stop generation (append new token_id)
+  bool done = false;
+
   // end-of-text
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
+
   void print() const {
-    printf("length: %d, score: %12.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
+    printf("length: %ld, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
+           score, eos(), request_idx, beam_idx, done);
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
     printf("\n");
+  }
+
+  void clear() {
+    token_ids.clear();
+    score = 0.0f;
+    request_idx = -1;
+    beam_idx = -1;
+    done = false;
   }
 };
 
@@ -345,6 +378,8 @@ struct beam_hypotheses {
     auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
     return *std::max_element(beams.begin(), beams.end(), by_score);
   }
+
+  void clear() { beams.clear(); }
 };
 
 struct logits_info;
@@ -354,8 +389,8 @@ class logits_processor {
   explicit logits_processor(model_context* lctx) : ctx(lctx), min_new_tokens(lctx->generation_conf.min_new_tokens) {}
   ~logits_processor() {}
 
-  void process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
-  void min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
+  void process(const std::vector<uint32_t>& cur_lens, const model_vocab::id& eos_token_id);
+  void min_new_tokens_logits_process(const std::vector<uint32_t>& cur_lens, const model_vocab::id& eos_token_id);
 
  private:
   model_context* ctx = nullptr;
@@ -370,66 +405,83 @@ class logits_processor {
 class beam_search_kv_cache_reorder {
  public:
   explicit beam_search_kv_cache_reorder(model_context* lctx)
-      : ctx(lctx),
-        n_ctx(lctx->n_ctx),
-        n_embd(lctx->model.hparams.n_embd),
-        head_dim(lctx->model.hparams.n_embd / lctx->model.hparams.n_head),
-        n_head(lctx->model.hparams.n_head),
-        kv_n_ctx_block(lctx->kv_n_ctx_block) {}
-  ~beam_search_kv_cache_reorder() {}
+      : ctx(lctx), n_ctx(lctx->n_ctx), kv_n_ctx_block(lctx->kv_n_ctx_block) {}
+  virtual ~beam_search_kv_cache_reorder() {}
 
-  virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+  virtual void update(const std::vector<uint32_t>& n_past, const std::vector<uint32_t>& n_prompt_tokens,
+                      const std::vector<int> request_running_indices,
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
  protected:
   model_context* ctx = nullptr;
   const uint32_t n_ctx;
-  const uint32_t n_embd;
-  // const uint32_t n_head_kv;
-  const uint32_t head_dim;
-  const uint32_t n_head;
   const uint32_t kv_n_ctx_block;
 };
 
 class beam_search_flow {
  public:
-  explicit beam_search_flow(model_context* lctx) : ctx(lctx), beam_size(lctx->beam_size), lp(logits_processor(lctx)) {
-    cur_beams.reserve(beam_size);
-    next_beams.reserve(beam_size);
-    cur_beams.push_back({ctx, {}, 0.0f});
+  explicit beam_search_flow(model_context* lctx, const int batch_size = 1)
+      : ctx(lctx), beam_size(lctx->beam_size), request_bs(batch_size), lp(logits_processor(lctx)) {
+    cur_beams.resize(batch_size * beam_size);
+    next_beams.resize(batch_size * beam_size);
+    for (int i = 0; i < batch_size; ++i) {
+      beam_hypos.push_back(std::move(beam_hypotheses(lctx)));
+    }
+    response.resize(batch_size);
+    requests_done.assign(batch_size, false);
+    request_running_indices.reserve(batch_size);
+    next_done_request_ids.reserve(batch_size);
+    n_tokens.reserve(batch_size);
+    n_past.reserve(batch_size);
+    n_prompt_tokens.reserve(batch_size);
+    n_total.reserve(batch_size);
+    padding_side.reserve(batch_size);
+    n_padding.reserve(batch_size);
   }
   ~beam_search_flow() {}
 
   // public interface
-  std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
+  // static batching (padding inputs or batch = 1)
+  const std::vector<std::vector<model_token>>& loop(const std::vector<model_input>& inputs, const int& n_threads);
+  // continuous batching (scheduling from the outside)
+  void step(model_token* dst);  // TODO one step
 
  private:
-  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
-                                                      const std::vector<float>& beams_score,
+  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const std::vector<float>& beams_score,
                                                       const std::vector<int>& num_beams,
                                                       const std::vector<int> beam_indices, const int& sample_scale = 2,
                                                       const int& dim = -1);
   void fill_next_beams_by_top_scores();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
-  const beam& finalize();
+  void update_status();
+  const beam& finalize(const int& request_idx);
 
   model_context* ctx = nullptr;
   const int beam_size;
+  const int request_bs;  // could be the max bs in continuous batching mechanism
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
   std::vector<beam_hypotheses> beam_hypos;
   std::vector<bool> requests_done;
-  uint32_t n_past = 0;
-  uint32_t n_total = 0;
-  uint32_t n_prompt_tokens = 0;
+  std::vector<int> request_running_indices;
+  std::vector<int> next_done_request_ids;
+  std::vector<uint32_t> n_tokens;
+  std::vector<uint32_t> n_past;
+  std::vector<uint32_t> n_prompt_tokens;
+  std::vector<uint32_t> n_total;
+  std::vector<int> padding_side;
+  std::vector<uint32_t> n_padding;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
+  std::vector<std::vector<model_token>> response;
 };
 
-MODEL_API std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                                               const int& n_tokens, const int& n_threads);
+// static batching generation
+MODEL_API std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,
+                                                            const std::vector<model_input>& inputs,
+                                                            const int& n_threads);
 
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL

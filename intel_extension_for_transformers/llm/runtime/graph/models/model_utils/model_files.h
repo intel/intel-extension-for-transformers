@@ -29,6 +29,7 @@
 #define NE_MEM_ALIGN 16
 #endif
 
+#include "core/layers/jblas_common.hpp"
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
@@ -76,7 +77,7 @@ struct model_load_tensor_shard {
   void calc_size() { size = model_calc_tensor_size(ne, type); }
 };
 
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN };
+enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN, TP_1D_ONLY_MASTER };
 
 struct model_load_tensor {
   std::vector<model_load_tensor_shard> shards;
@@ -152,6 +153,9 @@ struct model_load_tensor {
           name.find(".feed_forward.w2.weight") != std::string::npos) {
         split_type = TP_1D_COLUMN;
       }
+      if (name.find(".mlp.fc_out.bias") != std::string::npos) {
+        split_type = TP_1D_ONLY_MASTER;
+      }
     }
 #endif
   }
@@ -190,6 +194,9 @@ struct model_load_tensor {
         } else {
           ne = {first_shard.ne[0] / world_size, first_shard.ne[1]};
         }
+        break;
+      case TP_1D_ONLY_MASTER:
+        ne = first_shard.ne;
         break;
 #endif
     }
@@ -274,6 +281,9 @@ struct model_file_loader {
 
     // For ChatGLM-2
     hparams.inner_hidden_size = file.read_u32();
+
+    file.read_raw(&hparams.rms_norm_eps, sizeof(float));
+    file.read_raw(&hparams.freq_base, sizeof(float));
   }
 
   void read_vocab() {
@@ -390,6 +400,9 @@ struct model_file_saver {
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
+
+    file.write_raw(&hparams.rms_norm_eps, sizeof(float));
+    file.write_raw(&hparams.freq_base, sizeof(float));
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -614,6 +627,18 @@ struct model_model_loader {
     }
   }
 
+  void jblas_split_weight(void** src, void** dst, size_t src_n, size_t src_k, size_t dst_n, size_t dst_k, size_t n_rank,
+                          size_t k_rank) {
+    auto src_fp32 = (float*)malloc(src_n * src_k * sizeof(float));
+    if (src_fp32 == nullptr) {
+      assert(0);
+    }
+    jblas_unpackweight_fp32(*src, src_n, src_k, src_fp32, src_n);
+    // layout will be K * N in the buffer
+    auto dst_fp32 = src_fp32 + k_rank * dst_k * src_n + n_rank * dst_n;
+    jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, src_n, *src);
+    free(src_fp32);
+  }
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
       MODEL_ASSERT(lt.shards.size() == 1);
@@ -659,10 +684,20 @@ struct model_model_loader {
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
-      tmp_buf.resize(lt.size * lt.world_size);
-      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
-      // only copy part of weight form the tmp_buf of origin file
-      memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+      size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
+      if (lt.type == NE_TYPE_JBLAS) {
+        tmp_buf.resize(shard.size);
+        file.read_raw(tmp_buf.addr, shard.size);
+        void* dst_data = (void*)lt.data;
+        void* src_data = (void*)(tmp_buf.addr);
+        jblas_split_weight(&src_data, &dst_data, lt.world_size * num_rows, lt.ne.at(0), num_rows, lt.ne.at(0), lt.rank,
+                           0);
+      } else {
+        // only copy part of weight form the tmp_buf of origin file
+        tmp_buf.resize(lt.size * lt.world_size);
+        file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
+        memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+      }
     } else if (lt.split_type == TP_1D_COLUMN) {
       if (lt.size == 0) {
         return;
@@ -671,18 +706,36 @@ struct model_model_loader {
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
       file.seek(shard.file_off, SEEK_SET);
-      tmp_buf.resize(lt.size * lt.world_size);
-      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
-      size_t offset = 0;
       size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
-      // different data type may have differnet per_row_size
-      size_t per_row_size = lt.size / num_rows;
-      for (size_t i = 0; i < num_rows; ++i) {
-        memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
-               per_row_size);
-        offset += per_row_size;
+      if (lt.type == NE_TYPE_JBLAS) {
+        tmp_buf.resize(shard.size);
+        file.read_raw(tmp_buf.addr, shard.size);
+        void* dst_data = (void*)lt.data;
+        void* src_data = (void*)(tmp_buf.addr);
+        jblas_split_weight(&src_data, &dst_data, num_rows, lt.world_size * lt.ne.at(0), num_rows, lt.ne.at(0), 0,
+                           lt.rank);
+      } else {
+        tmp_buf.resize(lt.size * lt.world_size);
+        file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
+        size_t offset = 0;
+        // different data type may have differnet per_row_size
+        size_t per_row_size = lt.size / num_rows;
+        for (size_t i = 0; i < num_rows; ++i) {
+          memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
+                 per_row_size);
+          offset += per_row_size;
+        }
+        MODEL_ASSERT(offset == lt.size);
       }
-      MODEL_ASSERT(offset == lt.size);
+    } else if (lt.split_type == TP_1D_ONLY_MASTER) {
+      // only master node load the tensor, other node set to zero
+      model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
+      file.seek(lt.shards.at(0).file_off, SEEK_SET);
+      if (lt.rank == 0) {
+        file.read_raw(lt.data, lt.size);
+      } else {
+        memset(lt.data, 0, lt.size);
+      }
     }
 #endif
     if (0) {
