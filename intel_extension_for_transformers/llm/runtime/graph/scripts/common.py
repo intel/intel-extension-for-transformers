@@ -59,7 +59,6 @@ def quantize_q4_1(tensor: torch.Tensor) -> torch.CharTensor:
     # compress two int4 weights into an int8
     tensor = tensor[:, :16] | (tensor[:, 16:] << 4)
     # add scale & min into each block
-    import pdb; pdb.set_trace()
     tensor = torch.cat((scale.half().view(torch.int8), min_vals.half().view(torch.int8), tensor), dim=-1)
     return tensor
 
