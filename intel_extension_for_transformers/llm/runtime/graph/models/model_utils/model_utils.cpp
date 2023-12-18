@@ -986,8 +986,6 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-
-
 int model_apply_lora_from_file_internal(struct model_context* ctx, const char* path_lora, const char* path_base_model,
                                         int n_threads) {
   fprintf(stderr, "%s: applying lora adapter from '%s' - please wait ...\n", __func__, path_lora);

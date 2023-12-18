@@ -42,8 +42,7 @@
 #define WHISPER_MAX_DECODERS 16
 
 #define WHISPER_USE_SCRATCH
-#define WHISPER_MAX_SCRATCH_BUFFERS 64
-
+#define WHISPER_MAX_SCRATCH_BUFFERS 16
 
 // avoid dup code
 int64_t model_time_us_whisper() { return ne_time_us(); }
@@ -1505,6 +1504,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
 
       ne_build_forward_expand(&gf, cur);
       ne_graph_compute(ctx0, &gf);
+      ne_graph_profiling(&gf);
 
       // ggml_graph_print(&gf);
     }
@@ -1527,7 +1527,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
   // pre-compute cross-attention memory
   {
     struct ne_cgraph gf = {};
-      gf.n_threads = n_threads;
+    gf.n_threads = n_threads;
 
     // hack to disconnect the encoded features from the previous graph
     cur->op = NE_OP_NONE;
@@ -1564,6 +1564,7 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
     }
 
     ne_graph_compute(ctx0, &gf);
+    ne_graph_profiling(&gf);
     // ggml_graph_print(&gf);
   }
 
@@ -1630,7 +1631,7 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
   struct ne_context* ctx0 = ne_init(params);
 
   struct ne_cgraph gf = {};
-      gf.n_threads = n_threads;
+  gf.n_threads = n_threads;
 
   struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   memcpy(embd->data, tokens, N * ne_element_size(embd));
@@ -1912,6 +1913,7 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
   {
     ne_build_forward_expand(&gf, logits);
     ne_graph_compute(ctx0, &gf);
+    ne_graph_profiling(&gf);
   }
 
   // extract logits for all N tokens
@@ -3492,11 +3494,11 @@ int whisper_full_with_state(struct whisper_context* ctx, struct whisper_state* s
 
     if (decoder.kv_self.ctx == nullptr) {
       // decoder.kv_self = state->decoders[0].kv_self;
-decoder.kv_self.k = state->decoders[0].kv_self.k;
-decoder.kv_self.v = state->decoders[0].kv_self.v;
-decoder.kv_self.ctx = state->decoders[0].kv_self.ctx;
-decoder.kv_self.n = state->decoders[0].kv_self.n;
-  decoder.kv_self.buf.resize(state->decoders[0].kv_self.buf.size);
+      decoder.kv_self.k = state->decoders[0].kv_self.k;
+      decoder.kv_self.v = state->decoders[0].kv_self.v;
+      decoder.kv_self.ctx = state->decoders[0].kv_self.ctx;
+      decoder.kv_self.n = state->decoders[0].kv_self.n;
+      decoder.kv_self.buf.resize(state->decoders[0].kv_self.buf.size);
 
       if (!kv_cache_reinit(&decoder.kv_self)) {
         fprintf(stderr, "%s: kv_cache_reinit() failed for self-attention, decoder %d\n", __func__, j);

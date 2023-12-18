@@ -127,4 +127,4 @@ compile_run(run_mistral   main_run.cpp   main_pybind.cpp mistral   llama)
 compile_run(run_qwen      main_run.cpp   main_pybind.cpp qwen      qwen)
 
 # # speech recognition
-compile_run(run_whisper   audio_run.cpp ""              whisper   whisper)
+compile_run(run_whisper   audio_run.cpp  whisper_pybind.cpp whisper   whisper)

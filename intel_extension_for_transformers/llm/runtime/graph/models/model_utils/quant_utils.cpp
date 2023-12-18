@@ -47,7 +47,7 @@
 #include "core/layers/jblas_gemm.h"
 #include "jblas/jit_blas_parallel.h"
 // #include "jblas/jblas/jit_blas_weight_compression.h"
-//#include "models/model_utils/model_config.h"
+// #include "models/model_utils/model_config.h"
 
 #include "models/model_utils/model_files.h"
 #include "models/whisper/whisper.h"
@@ -250,7 +250,7 @@ static void model_quantize_internal(const quant_params& params, std::shared_ptr<
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
 }
 
-size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, int nthread, int n, int k){
+size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, int nthread, int n, int k) {
   // using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
   // using namespace ne_jblas;
   // auto cd = jblas::utils::parallel::CpuDevice::getInstance();
@@ -269,184 +269,180 @@ size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, 
   //     }
   // return packedw.mSize;
   return 0;
-
-
 }
-bool model_quantize_special(
-        std::ifstream & finp,
-        std::ofstream & fout,
-        const ne_ftype ftype,
-        const std::vector<std::string> & to_quant,
-        const std::vector<std::string> & to_skip) {
+bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
+                            const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip) {
+  ne_type qtype = NE_TYPE_F32;
 
-    ne_type qtype = NE_TYPE_F32;
+  switch (ftype) {
+    case NE_FTYPE_MOSTLY_Q4_0:
+      qtype = NE_TYPE_Q4_0;
+      break;
+    case NE_FTYPE_MOSTLY_Q_JBLAS:
+      qtype = NE_TYPE_JBLAS;
+      break;
+    case NE_FTYPE_MOSTLY_F16: {
+      fprintf(stderr, "%s: invalid model type %d\n", __func__, ftype);
+      return false;
+    }
+  };
+  if (!ne_is_quantized(qtype)) {
+    fprintf(stderr, "%s: invalid quantization type %d (%s)\n", __func__, qtype, ne_type_name(qtype));
+    return false;
+  }
 
-    switch (ftype) {
-        case NE_FTYPE_MOSTLY_Q4_0: qtype = NE_TYPE_Q4_0; break;
-        case NE_FTYPE_MOSTLY_Q_JBLAS: qtype = NE_TYPE_JBLAS; break;
-        case NE_FTYPE_MOSTLY_F16:
-                {
-                    fprintf(stderr, "%s: invalid model type %d\n", __func__, ftype);
-                    return false;
-                }
-    };
-    if (!ne_is_quantized(qtype)) {
-        fprintf(stderr, "%s: invalid quantization type %d (%s)\n", __func__, qtype, ne_type_name(qtype));
+  size_t total_size_org = 0;
+  size_t total_size_new = 0;
+
+  std::vector<float> work;
+
+  std::vector<uint8_t> data_u8;
+  std::vector<ne_fp16_t> data_f16;
+  std::vector<float> data_f32;
+
+  std::vector<int64_t> hist_all(1 << 4, 0);
+
+  while (true) {
+    int32_t n_dims;
+    int32_t length;
+    int32_t ttype;
+
+    finp.read(reinterpret_cast<char*>(&n_dims), sizeof(n_dims));
+    finp.read(reinterpret_cast<char*>(&length), sizeof(length));
+    finp.read(reinterpret_cast<char*>(&ttype), sizeof(ttype));
+
+    if (finp.eof()) {
+      break;
+    }
+
+    int32_t nelements = 1;
+    int32_t ne[4] = {1, 1, 1, 1};
+    for (int i = 0; i < n_dims; ++i) {
+      finp.read(reinterpret_cast<char*>(&ne[i]), sizeof(ne[i]));
+      nelements *= ne[i];
+    }
+
+    std::string name(length, 0);
+    finp.read(&name[0], length);
+
+    printf("%64s - [%5d, %5d, %5d], type = %6s ", name.data(), ne[0], ne[1], ne[2], ne_type_name((ne_type)ttype));
+
+    bool quantize = false;
+
+    // check if we should quantize this tensor
+    for (const auto& s : to_quant) {
+      if (std::regex_match(name, std::regex(s))) {
+        quantize = true;
+        break;
+      }
+    }
+
+    // check if we should skip this tensor
+    for (const auto& s : to_skip) {
+      if (std::regex_match(name, std::regex(s))) {
+        quantize = false;
+        break;
+      }
+    }
+
+    // quantize only 2D tensors
+    quantize &= (n_dims == 2);
+
+    if (quantize) {
+      if (ttype != NE_TYPE_F32 && ttype != NE_TYPE_F16) {
+        fprintf(stderr, "%s: unsupported ttype %d (%s) for integer quantization\n", __func__, ttype,
+                ne_type_name((ne_type)ttype));
         return false;
+      }
+
+      if (ttype == NE_TYPE_F16) {
+        data_f16.resize(nelements);
+        finp.read(reinterpret_cast<char*>(data_f16.data()), nelements * sizeof(ne_fp16_t));
+        data_f32.resize(nelements);
+        for (int i = 0; i < nelements; ++i) {
+          data_f32[i] = ne_fp16_to_fp32(data_f16[i]);
+        }
+      } else {
+        data_f32.resize(nelements);
+        finp.read(reinterpret_cast<char*>(data_f32.data()), nelements * sizeof(float));
+      }
+
+      ttype = qtype;
+    } else {
+      const int bpe = (ttype == 0) ? sizeof(float) : sizeof(uint16_t);
+
+      data_u8.resize(nelements * bpe);
+      finp.read(reinterpret_cast<char*>(data_u8.data()), nelements * bpe);
     }
 
-    size_t total_size_org = 0;
-    size_t total_size_new = 0;
+    fout.write(reinterpret_cast<char*>(&n_dims), sizeof(n_dims));
+    fout.write(reinterpret_cast<char*>(&length), sizeof(length));
+    fout.write(reinterpret_cast<char*>(&ttype), sizeof(ttype));
+    for (int i = 0; i < n_dims; ++i) {
+      fout.write(reinterpret_cast<char*>(&ne[i]), sizeof(ne[i]));
+    }
+    fout.write(&name[0], length);
 
-    std::vector<float> work;
+    if (quantize) {
+      work.resize(nelements);  // for quantization
 
-    std::vector<uint8_t>     data_u8;
-    std::vector<ne_fp16_t>   data_f16;
-    std::vector<float>       data_f32;
+      size_t cur_size = 0;
+      std::vector<int64_t> hist_cur(1 << 4, 0);
 
-    std::vector<int64_t> hist_all(1 << 4, 0);
-
-    while (true) {
-        int32_t n_dims;
-        int32_t length;
-        int32_t ttype;
-
-        finp.read(reinterpret_cast<char *>(&n_dims), sizeof(n_dims));
-        finp.read(reinterpret_cast<char *>(&length), sizeof(length));
-        finp.read(reinterpret_cast<char *>(&ttype),  sizeof(ttype));
-
-        if (finp.eof()) {
-            break;
+      switch ((ne_type)ttype) {
+        case NE_TYPE_Q4_0: {
+          cur_size = ne_quantize_chunk((ne_type)ttype, data_f32.data(), work.data(), 0, nelements, hist_cur.data());
+        } break;
+        case NE_TYPE_JBLAS: {
+          cur_size = jblas_special_quantize(data_f32.data(), work.data(), 32, 1, ne[0], ne[1]);
+          printf("JBLAS");
+        } break;
+        case NE_TYPE_F32: {
+          fprintf(stderr, "%s: unsupported quantization type %d (%s)\n", __func__, ttype, ne_type_name((ne_type)ttype));
+          return false;
         }
+      }
 
-        int32_t nelements = 1;
-        int32_t ne[4] = { 1, 1, 1, 1 };
-        for (int i = 0; i < n_dims; ++i) {
-            finp.read (reinterpret_cast<char *>(&ne[i]), sizeof(ne[i]));
-            nelements *= ne[i];
-        }
+      fout.write(reinterpret_cast<char*>(work.data()), cur_size);
+      total_size_new += cur_size;
 
-        std::string name(length, 0);
-        finp.read (&name[0], length);
+      printf("size = %8.2f MB -> %8.2f MB | hist: ", nelements * sizeof(float) / 1024.0 / 1024.0,
+             cur_size / 1024.0 / 1024.0);
+      for (int i = 0; i < (int)hist_cur.size(); ++i) {
+        hist_all[i] += hist_cur[i];
+      }
 
-        printf("%64s - [%5d, %5d, %5d], type = %6s ", name.data(), ne[0], ne[1], ne[2], ne_type_name((ne_type) ttype));
-
-        bool quantize = false;
-
-        // check if we should quantize this tensor
-        for (const auto & s : to_quant) {
-            if (std::regex_match(name, std::regex(s))) {
-                quantize = true;
-                break;
-            }
-        }
-
-        // check if we should skip this tensor
-        for (const auto & s : to_skip) {
-            if (std::regex_match(name, std::regex(s))) {
-                quantize = false;
-                break;
-            }
-        }
-
-        // quantize only 2D tensors
-        quantize &= (n_dims == 2);
-
-        if (quantize) {
-            if (ttype != NE_TYPE_F32 && ttype != NE_TYPE_F16) {
-                fprintf(stderr, "%s: unsupported ttype %d (%s) for integer quantization\n", __func__, ttype, ne_type_name((ne_type) ttype));
-                return false;
-            }
-
-            if (ttype == NE_TYPE_F16) {
-                data_f16.resize(nelements);
-                finp.read(reinterpret_cast<char *>(data_f16.data()), nelements * sizeof(ne_fp16_t));
-                data_f32.resize(nelements);
-                for (int i = 0; i < nelements; ++i) {
-                    data_f32[i] = ne_fp16_to_fp32(data_f16[i]);
-                }
-            } else {
-                data_f32.resize(nelements);
-                finp.read(reinterpret_cast<char *>(data_f32.data()), nelements * sizeof(float));
-            }
-
-            ttype = qtype;
-        } else {
-            const int bpe = (ttype == 0) ? sizeof(float) : sizeof(uint16_t);
-
-            data_u8.resize(nelements*bpe);
-            finp.read(reinterpret_cast<char *>(data_u8.data()), nelements * bpe);
-        }
-
-        fout.write(reinterpret_cast<char *>(&n_dims), sizeof(n_dims));
-        fout.write(reinterpret_cast<char *>(&length), sizeof(length));
-        fout.write(reinterpret_cast<char *>(&ttype),  sizeof(ttype));
-        for (int i = 0; i < n_dims; ++i) {
-            fout.write(reinterpret_cast<char *>(&ne[i]), sizeof(ne[i]));
-        }
-        fout.write(&name[0], length);
-
-        if (quantize) {
-            work.resize(nelements); // for quantization
-
-            size_t cur_size = 0;
-            std::vector<int64_t> hist_cur(1 << 4, 0);
-
-            switch ((ne_type) ttype) {
-                case NE_TYPE_Q4_0:
-                    {
-                        cur_size = ne_quantize_chunk((ne_type) ttype, data_f32.data(), work.data(), 0, nelements, hist_cur.data());
-                    } break;
-                case NE_TYPE_JBLAS:
-                    {
-                        cur_size = jblas_special_quantize(data_f32.data(), work.data(), 32, 1, ne[0], ne[1]);
-                        printf("JBLAS");
-                    } break;
-                case NE_TYPE_F32:
-                    {
-                        fprintf(stderr, "%s: unsupported quantization type %d (%s)\n", __func__, ttype, ne_type_name((ne_type) ttype));
-                        return false;
-                    }
-            }
-
-            fout.write(reinterpret_cast<char *>(work.data()), cur_size);
-            total_size_new += cur_size;
-
-            printf("size = %8.2f MB -> %8.2f MB | hist: ", nelements * sizeof(float)/1024.0/1024.0, cur_size/1024.0/1024.0);
-            for (int i = 0; i < (int) hist_cur.size(); ++i) {
-                hist_all[i] += hist_cur[i];
-            }
-
-            for (int i = 0; i < (int) hist_cur.size(); ++i) {
-                printf("%5.3f ", hist_cur[i] / (float)nelements);
-            }
-            printf("\n");
-        } else {
-            printf("size = %8.3f MB\n", data_u8.size()/1024.0/1024.0);
-            fout.write(reinterpret_cast<char *>(data_u8.data()), data_u8.size());
-            total_size_new += data_u8.size();
-        }
-
-        total_size_org += nelements * sizeof(float);
+      for (int i = 0; i < (int)hist_cur.size(); ++i) {
+        printf("%5.3f ", hist_cur[i] / (float)nelements);
+      }
+      printf("\n");
+    } else {
+      printf("size = %8.3f MB\n", data_u8.size() / 1024.0 / 1024.0);
+      fout.write(reinterpret_cast<char*>(data_u8.data()), data_u8.size());
+      total_size_new += data_u8.size();
     }
 
-    printf("%s: model size  = %8.2f MB\n", __func__, total_size_org/1024.0/1024.0);
-    printf("%s: quant size  = %8.2f MB | ftype = %d (%s)\n", __func__, total_size_new/1024.0/1024.0, ftype, ne_type_name(qtype));
+    total_size_org += nelements * sizeof(float);
+  }
 
-    {
-        int64_t sum_all = 0;
-        for (int i = 0; i < (int) hist_all.size(); ++i) {
-            sum_all += hist_all[i];
-        }
+  printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
+  printf("%s: quant size  = %8.2f MB | ftype = %d (%s)\n", __func__, total_size_new / 1024.0 / 1024.0, ftype,
+         ne_type_name(qtype));
 
-        printf("%s: hist: ", __func__);
-        for (int i = 0; i < (int) hist_all.size(); ++i) {
-            printf("%5.3f ", hist_all[i] / (float)sum_all);
-        }
-        printf("\n");
+  {
+    int64_t sum_all = 0;
+    for (int i = 0; i < (int)hist_all.size(); ++i) {
+      sum_all += hist_all[i];
     }
 
-    return true;
+    printf("%s: hist: ", __func__);
+    for (int i = 0; i < (int)hist_all.size(); ++i) {
+      printf("%5.3f ", hist_all[i] / (float)sum_all);
+    }
+    printf("\n");
+  }
+
+  return true;
 }
 int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   try {
@@ -457,5 +453,3 @@ int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base>
     return 1;
   }
 }
-
-

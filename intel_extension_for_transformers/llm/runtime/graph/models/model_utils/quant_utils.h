@@ -14,7 +14,6 @@
 #ifndef QUANT_UTILS_H
 #define QUANT_UTILS_H
 
-
 #include "application/common.h"
 #include "models/model_utils/quant_config.h"
 
@@ -44,12 +43,8 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-
 QUANT_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
-QUANT_API bool model_quantize_special(
-        std::ifstream & finp,
-        std::ofstream & fout,
-        const ne_ftype ftype,
-        const std::vector<std::string> & to_quant,
-        const std::vector<std::string> & to_skip);
+QUANT_API bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
+                                      const std::vector<std::string>& to_quant,
+                                      const std::vector<std::string>& to_skip);
 #endif  // MODEL_H
