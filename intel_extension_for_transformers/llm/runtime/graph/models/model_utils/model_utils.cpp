@@ -879,15 +879,10 @@ size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* s
   if (params.bits == quant_bits::q8) {
     quant_type = JBLAS_DTYPE::S8;
   }
-  if (params.bits == quant_bits::fp4) {
-    quant_type = JBLAS_DTYPE::F4_E2M1;
-  }
-  if (params.bits == quant_bits::nf4) {
-    quant_type = JBLAS_DTYPE::F4_NF4;
-  }
   auto dtype_type = static_cast<JBLAS_DTYPE>(
       jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
   if (dtype_type == JBLAS_DTYPE::TypeFloat) {
+    printf("Not support float dtype in qpack\n");
     if (params.alg == quant_alg::asym) {
       printf("Invalid alg for float quant types, will be igonred\n");
     }

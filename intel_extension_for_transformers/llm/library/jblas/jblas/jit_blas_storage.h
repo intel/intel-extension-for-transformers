@@ -926,6 +926,9 @@ class StorageWeightKBlockNFloat : public StorageWeightKBlockNInteger {
 class PackedWeightParser {
  public:
   static gemm::IWeightBase* deserialBuffer(void* serialized_buf) {
+    if (serialized_buf == nullptr) {
+      return nullptr;
+    }
     auto rptr = reinterpret_cast<int8_t*>(serialized_buf);
     rptr += IWeightBase::offset();
     int mProID = utils::deserialize<int>(rptr);
