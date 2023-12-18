@@ -346,7 +346,8 @@ class CpuDevice {
         L1Cache = L1[P_core[0]];
         E_L1Cache = L1[E_core[0]];
         L2Cache = L2[P_core[0]];
-        E_L2Cache = L2[E_core[0]];
+        E_L2Cache = L2[E_core[0]] / 4;
+        numcores = P_core.size() + E_core.size();
       }
       delete[] core_type;
       delete[] core_id;

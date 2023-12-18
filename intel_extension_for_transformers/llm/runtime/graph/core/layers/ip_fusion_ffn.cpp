@@ -767,40 +767,40 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher kernel;
   auto WS = reinterpret_cast<int8_t*>(workspace);
   GetCPUDevice();
-  // if (_cd->isHybrid()) {
-  //   device::CpuHybrid cb;
-  //   int offset = seq - int(seq / (1 + cb.PE));
-  //   utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
-  //   utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
-  //   utils::GemmProblem gp3_P(1, offset, fmid, fin, w3ptr_->mBlockSize);
-  //   utils::GemmProblem gp1_E(1, seq - offset, fmid, fin, w1ptr_->mBlockSize);
-  //   utils::GemmProblem gp2_E(1, seq - offset, fout, fmid, w2ptr_->mBlockSize);
-  //   utils::GemmProblem gp3_E(1, seq - offset, fmid, fin, w3ptr_->mBlockSize);
-  //   auto quanA1_P = kernel_epi.mProA.createStorage(offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
-  //   quanA1_P.assign(WS);
-  //   auto quanA2_P = kernel.mProA.createStorage(offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  //   quanA2_P.assign(WS);
-  //   auto quanA1_E = kernel_epi.mProA.createStorage(seq - offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
-  //   quanA1_E.assign(WS + quanA1_P.mSize);
-  //   auto quanA2_E = kernel.mProA.createStorage(seq - offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  //   quanA2_E.assign(WS + quanA2_P.mSize);
-  //   assert(w1ptr_->ShfIndice() == nullptr);
-  //   assert(w2ptr_->ShfIndice() == nullptr);
-  //   assert(w3ptr_->ShfIndice() == nullptr);
-  //   typename Launcher_epi::Param args1_P{gp1_P, {activation, fin, &quanA1_P}, {w1ptr_}, epi_prama1};
-  //   typename Launcher::Param args2_P{gp2_P, {tmp, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
-  //   typename Launcher_epi::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
-  //   typename Launcher_epi::Param args1_E{
-  //       gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
-  //   typename Launcher::Param args2_E{
-  //       gp2_E, {tmp + offset * fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
-  //   typename Launcher_mul::Param args3_E{gp3_E,
-  //                                        {activation + offset * fin, fin, &quanA1_E},
-  //                                        {w3ptr_},
-  //                                        {tmp2 + fmid * offset, tmp1 + fmid * offset, fmid, fmid}};
-  //   GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1_P, args1_E, args2_P, args2_E, args3_P, args3_E, th);
-  // } else
-  {
+  if (_cd->isHybrid()) {
+    device::CpuHybrid cb;
+    int offset = seq - int(seq / (1 + cb.PE));
+    utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp3_P(1, offset, fmid, fin, w3ptr_->mBlockSize);
+    utils::GemmProblem gp1_E(1, seq - offset, fmid, fin, w1ptr_->mBlockSize);
+    utils::GemmProblem gp2_E(1, seq - offset, fout, fmid, w2ptr_->mBlockSize);
+    utils::GemmProblem gp3_E(1, seq - offset, fmid, fin, w3ptr_->mBlockSize);
+    auto quanA1_P = kernel_epi.mProA.createStorage(offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_P.assign(WS);
+    auto quanA2_P = kernel.mProA.createStorage(offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_P.assign(WS);
+    auto quanA1_E = kernel_epi.mProA.createStorage(seq - offset, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
+    quanA1_E.assign(WS + quanA1_P.mSize);
+    auto quanA2_E = kernel.mProA.createStorage(seq - offset, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
+    quanA2_E.assign(WS + quanA2_P.mSize);
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    assert(w3ptr_->ShfIndice() == nullptr);
+    typename Launcher_epi::Param args1_P{gp1_P, {activation, fin, &quanA1_P}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2_P{gp2_P, {tmp2, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
+    typename Launcher_epi::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
+    typename Launcher_epi::Param args1_E{
+        gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
+    typename Launcher::Param args2_E{
+        gp2_E, {tmp2 + offset * fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
+    typename Launcher_mul::Param args3_E{gp3_E,
+                                         {activation + offset * fin, fin, &quanA1_E},
+                                         {w3ptr_},
+                                         {tmp2 + fmid * offset, tmp1 + fmid * offset, fmid, fmid}};
+    GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1_P, args1_E, args3_P, args3_E, args2_P, args2_E,
+                               th);
+  } else {
     utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp3(1, seq, fmid, fin, w3ptr_->mBlockSize);
