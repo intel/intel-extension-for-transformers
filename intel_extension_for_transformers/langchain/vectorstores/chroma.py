@@ -28,8 +28,8 @@ class Chroma(Chroma_origin):
     @classmethod
     def from_documents(
         cls: Type[Chroma],
-        sign: Optional[str] = None,
         documents: List[Document],
+        sign: str = None,
         embedding: Optional[Embeddings] = None,
         ids: Optional[List[str]] = None,
         collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
