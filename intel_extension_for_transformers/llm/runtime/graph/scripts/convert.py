@@ -19,10 +19,10 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
+model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder", "whisper": "whisper"}
 
 
-def convert_model(model, outfile, outtype):
+def convert_model(model, outfile, whisper_repo_path, outtype):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
@@ -33,6 +33,8 @@ def convert_model(model, outfile, outtype):
         path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
     cmd = []
     cmd.extend(["python", path])
+    if model_type == "whisper":
+        cmd.extend(["--whisper_repo_path", whisper_repo_path])
     cmd.extend(["--outfile", outfile])
     cmd.extend(["--outtype", outtype])
     cmd.extend([model])
@@ -50,6 +52,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="f32",
     )
     parser.add_argument("--outfile", type=Path, required=True, help="path to write to")
+    parser.add_argument("--whisper_repo_path", type=Path, required=Optional, help="path to write to")
     parser.add_argument("model", type=Path, help="directory containing model file or model id")
     args = parser.parse_args(args_in)
 
@@ -58,7 +61,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    convert_model(dir_model, args.outfile, args.outtype)
+    convert_model(dir_model, args.outfile, args.whisper_repo_path, args.outtype)
 
 
 if __name__ == "__main__":
