@@ -5,6 +5,7 @@ protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
+peft==0.6.2
 transformers >= 4.35.0
 neural-compressor
 intel_extension_for_pytorch

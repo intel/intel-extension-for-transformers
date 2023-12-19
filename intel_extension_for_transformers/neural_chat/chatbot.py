@@ -16,13 +16,16 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-import os
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
+from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
+from .utils.error_utils import set_latest_error
+import psutil
+import torch
 from .config_logging import configure_logging
 logger = configure_logging()
 
@@ -41,13 +44,29 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    # Check for out of storage
+    available_storage = psutil.disk_usage('/').free
+    available_storage_gb = available_storage / (1024 ** 3)
+    if available_storage_gb < STORAGE_THRESHOLD_GB:
+        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        return
+
     global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
-        valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
-        raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
+
+    if config.device == "cuda":
+        if not torch.cuda.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
+    elif config.device == "xpu":
+        if not torch.xpu.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -62,7 +81,7 @@ def build_chatbot(config: PipelineConfig=None):
     elif "chatglm" in config.model_name_or_path.lower():
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
-    elif "Qwen" in config.model_name_or_path.lower():
+    elif "qwen" in config.model_name_or_path.lower():
         from .models.qwen_model import QwenModel
         adapter = QwenModel()
     elif "mistral" in config.model_name_or_path.lower():
@@ -76,8 +95,8 @@ def build_chatbot(config: PipelineConfig=None):
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
-        raise ValueError("NeuralChat Error: Unsupported model name or path, \
-           only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+        set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+        return
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -105,16 +124,17 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
                     plugins[plugin_name]['class'] = NamedEntityRecognition
-                elif plugin_name == "face_animation": # pragma: no cover
+                elif plugin_name == "face_animation":
                     from .pipeline.plugins.video.face_animation.sadtalker import SadTalker
                     plugins[plugin_name]['class'] = SadTalker
                 elif plugin_name == "image2image": # pragma: no cover
                     from .pipeline.plugins.image2image.image2image import Image2Image
                     plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
-                    raise ValueError("NeuralChat Error: Unsupported plugin")
-                logger.info("create %s plugin instance...", plugin_name)
-                logger.info("plugin parameters: %s", plugin_value['args'])
+                    set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    return
+                print(f"create {plugin_name} plugin instance...")
+                print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
@@ -136,8 +156,35 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
 
-    adapter.load_model(parameters)
-
+    try:
+        adapter.load_model(parameters)
+    except RuntimeError as e:
+        if "out of memory" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+        elif "devices are busy or unavailable" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+        elif "tensor does not have a device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except ValueError as e:
+        if "load_model: unsupported device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        elif "load_model: unsupported model" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+        elif "load_model: tokenizer is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
+        elif "load_model: model name or path is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
+        elif "load_model: model config is not found" in str(e):
+            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
+    except Exception as e:
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     return adapter
 
 def finetune_model(config: BaseFinetuningConfig):
@@ -150,7 +197,29 @@ def finetune_model(config: BaseFinetuningConfig):
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
-    finetuning.finetune()
+    try:
+        finetuning.finetune()
+    except FileNotFoundError as e:
+        if "Couldn't find a dataset script" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
+    except ValueError as e:
+        if "--do_eval requires a validation dataset" in str(e):
+            set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
+        elif "--do_train requires a train dataset" in str(e):
+            set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
+    except Exception as e:
+        if config.finetune_args.peft == "lora":
+            set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "llama_adapter":
+            set_latest_error(ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "ptun":
+            set_latest_error(ErrorCodes.ERROR_PTUN_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "prefix":
+            set_latest_error(ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
+        elif config.finetune_args.peft == "prompt":
+            set_latest_error(ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
 
 def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
@@ -161,5 +230,18 @@ def optimize_model(model, config, use_llm_runtime=False):
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model, use_llm_runtime)
+    try:
+        model = optimization.optimize(model, use_llm_runtime)
+    except Exception as e:
+        from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig
+        )
+        if type(config) == MixedPrecisionConfig:
+            set_latest_error(ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
+        elif type(config) == WeightOnlyQuantConfig:
+            set_latest_error(ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
+        elif type(config) == BitsAndBytesConfig:
+            set_latest_error(ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)
     return model
