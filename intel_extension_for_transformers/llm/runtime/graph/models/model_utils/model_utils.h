@@ -80,7 +80,6 @@ MODEL_API void model_free(struct model_context* ctx);
 // param - from args
 // quant_layer - depends on each model's config
 
-
 size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
                    const quant_params_internal params, int nthread, int n, int k, int* g_idx);
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,

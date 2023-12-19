@@ -55,12 +55,6 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-quant_params_internal quant_params_to_internal(const quant_params& params) {
-  return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
-                               parse_scale_dtype(params.scale_dtype),
-                               parse_compute_type(params.compute_dtype, params.use_ggml)};
-}
-
 // default hparams (Whisper tiny)
 struct whisper_hparams {
   int32_t n_vocab = 51864;
@@ -222,7 +216,56 @@ bool whisper_model_quantize(const std::string& fname_inp, const std::string& fna
 
   return true;
 }
+//
+// quantization
+//
+quant_params_internal quant_params_to_internal(const quant_params& params) {
+  return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
+                               parse_scale_dtype(params.scale_dtype),
+                               parse_compute_type(params.compute_dtype, params.use_ggml)};
+}
 
+size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                   const quant_params_internal params, int nthread, int n, int k, int* g_idx) {
+  auto ctype = quant2ne_comp_type(params.compute_dtype);
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
+  jblas::parallel::OMPThreading threading(nthread);
+  JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
+  if (params.bits == quant_bits::q8) {
+    quant_type = JBLAS_DTYPE::S8;
+  }
+  auto dtype_type = static_cast<JBLAS_DTYPE>(
+      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+  if (dtype_type == JBLAS_DTYPE::TypeFloat) {
+    printf("Not support float dtype in qpack\n");
+    if (params.alg == quant_alg::asym) {
+      printf("Invalid alg for float quant types, will be igonred\n");
+    }
+    if (params.compute_dtype == quant_comp::int8) {
+      printf("Compute Int8 is not supported by float quant types, will be igonred\n");
+    }
+  }
+  JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
+  if (params.scale_dtype == quant_sdtype::fp32) {
+    scale_type = JBLAS_DTYPE::F32;
+  }
+  if (params.scale_dtype == quant_sdtype::fp16) {
+    printf("Current not support float16 scale, reset to bf16\n");
+  }
+  auto gsize = params.group_size == -1 ? k : params.group_size;
+  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype, g_idx);
+  if (size) {
+    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type,
+                        params.alg == quant_alg::asym, ctype, g_idx, &threading)) {
+      printf("Failed to quant this weight\n");
+      return 0;
+    }
+    return size;
+  }
+  return 0;
+}
+
+// dstptr: default maximum workspace = float array size
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
                       size_t k) {
   auto ctype = quant2ne_comp_type(params.compute_dtype);
@@ -232,14 +275,17 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.bits == quant_bits::q8) {
     quant_type = JBLAS_DTYPE::S8;
   }
-  if (params.bits == quant_bits::fp4) {
+  if (params.bits == quant_bits::fp4_e2m1) {
     quant_type = JBLAS_DTYPE::F4_E2M1;
   }
   if (params.bits == quant_bits::nf4) {
     quant_type = JBLAS_DTYPE::F4_NF4;
   }
-  if (params.bits == quant_bits::fp8) {
+  if (params.bits == quant_bits::fp8_e4m3) {
     quant_type = JBLAS_DTYPE::F8_E4M3;
+  }
+  if (params.bits == quant_bits::fp8_e5m2) {
+    quant_type = JBLAS_DTYPE::F8_E5M2;
   }
   auto dtype_type = static_cast<JBLAS_DTYPE>(
       jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
@@ -258,9 +304,9 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.scale_dtype == quant_sdtype::fp16) {
     printf("Current not support float16 scale, reset to bf16\n");
   }
-  if (quant_type == JBLAS_DTYPE::F8_E4M3) {
-    if (params.scale_dtype != quant_sdtype::fp8) {
-      printf("Warning: fp8 weight only supports fp8 scale now\n");
+  if (quant_type == JBLAS_DTYPE::F8_E4M3 || quant_type == JBLAS_DTYPE::F8_E5M2) {
+    if (params.scale_dtype != quant_sdtype::fp8 && params.scale_dtype != quant_sdtype::fp32) {
+      printf("Warning: fp8 weight only supports fp8 / fp32 scale now! Fall back to fp8.\n");
     }
     scale_type = JBLAS_DTYPE::F8_E8M0;
   }
@@ -432,6 +478,7 @@ size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, 
   // return packedw.mSize;
   return 0;
 }
+
 bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
                             const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip) {
   ne_type qtype = NE_TYPE_F32;
