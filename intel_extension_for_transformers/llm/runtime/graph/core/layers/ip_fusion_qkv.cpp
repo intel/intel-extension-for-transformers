@@ -86,46 +86,27 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    cb.core_bond(tidx);
-    if (tidx < cb.P_core_num) {
-      // run on P-core
-      typename AParall::ThreadProblem thdpA{tidx};
-      apara_P.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher->mProA.run(args_P[0].paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx};
-      para_P.getIndex(thdp);
-      if (thdp.valid) {
-        for (size_t i = 0; i < 3; i++) launcher->run(args_P[i], thdp);
-      }
-    } else if (tidx < cb.P_core_num + cb.E_core_num) {
-      // run on E-core
-      typename AParall::ThreadProblem thdpA{tidx - cb.P_core_num};
+    GetCPU();
+    int core_idx = _cb->getCoreidx(tidx);
+    typename AParall::ThreadProblem thdpA{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       apara_E.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher->mProA.run(args_E[0].paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx - cb.P_core_num};
-      para_E.getIndex(thdp);
-      if (thdp.valid) {
-        for (size_t i = 0; i < 3; i++) launcher->run(args_E[i], thdp);
-      }
+      if (thdpA.valid) launcher->mProA.run(args_E[0].paramA, thdpA);
     } else {
-      // run on SMT
-      typename AParall::ThreadProblem thdpA{tidx - cb.E_core_num};
       apara_P.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher->mProA.run(args_P[0].paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx - cb.E_core_num};
+      if (thdpA.valid) launcher->mProA.run(args_P[0].paramA, thdpA);
+    }
+    th->sync();
+
+    typename Parallel_T::ThreadProblem thdp{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+      para_E.getIndex(thdp);
+      if (thdp.valid)
+        for (size_t i = 0; i < 3; i++) launcher->run(args_E[i], thdp);
+    } else {
       para_P.getIndex(thdp);
-      if (thdp.valid) {
+      if (thdp.valid)
         for (size_t i = 0; i < 3; i++) launcher->run(args_P[i], thdp);
-      }
     }
   });
 }
@@ -202,8 +183,8 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto BK = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BK);
   auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
   static Launcher kernel;
-  GetCPUDevice();
-  if (_cd->isHybrid()) {
+  GetCPU();
+  if (_cb->mHybrid) {
     device::CpuHybrid cb;
     int offset = M - int(M / (1 + cb.PE));
     utils::GemmProblem gp_P(1, offset, N, K, BQ->mBlockSize);

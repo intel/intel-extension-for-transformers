@@ -97,62 +97,40 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    cb.core_bond(tidx);
-    if (tidx < cb.P_core_num) {
-      typename AParall1::ThreadProblem thdpA1{tidx};
-      apara1_P.getIndex(thdpA1);
-      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx};
-      para1_P.getIndex(thdp1);
-      if (thdp1.valid) launcher1->run(args1_P, thdp1);
-
-      th->sync();
-      typename AParall2::ThreadProblem thdpA2{tidx};
-      apara2_P.getIndex(thdpA2);
-      if (thdpA2.valid) launcher2->mProA.run(args2_P.paramA, thdpA2);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp2{tidx};
-      para2_P.getIndex(thdp2);
-      if (thdp2.valid) launcher2->run(args2_P, thdp2);
-    } else if (tidx < cb.P_core_num + cb.E_core_num) {
-      typename AParall1::ThreadProblem thdpA1{tidx - cb.P_core_num};
+    GetCPU();
+    int core_idx = _cb->getCoreidx(tidx);
+    typename AParall1::ThreadProblem thdpA1{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx - cb.P_core_num};
+    } else {
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+    }
+    th->sync();
+    typename Parallel_T::ThreadProblem thdp1{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) launcher1->run(args1_E, thdp1);
-
-      th->sync();
-      typename AParall2::ThreadProblem thdpA2{tidx - cb.P_core_num};
+    } else {
+      para1_P.getIndex(thdp1);
+      if (thdp1.valid) launcher1->run(args1_P, thdp1);
+    }
+    th->sync();
+    typename AParall2::ThreadProblem thdpA2{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       apara2_E.getIndex(thdpA2);
       if (thdpA2.valid) launcher2->mProA.run(args2_E.paramA, thdpA2);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp2{tidx - cb.P_core_num};
+    } else {
+      apara2_P.getIndex(thdpA2);
+      if (thdpA2.valid) launcher2->mProA.run(args2_P.paramA, thdpA2);
+    }
+    th->sync();
+    typename Parallel_T::ThreadProblem thdp2{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       para2_E.getIndex(thdp2);
       if (thdp2.valid) launcher2->run(args2_E, thdp2);
     } else {
-      typename AParall1::ThreadProblem thdpA1{tidx - cb.E_core_num};
-      apara1_P.getIndex(thdpA1);
-      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx - cb.E_core_num};
-      para1_P.getIndex(thdp1);
-      if (thdp1.valid) launcher1->run(args1_P, thdp1);
-
-      th->sync();
-      typename AParall2::ThreadProblem thdpA2{tidx - cb.E_core_num};
-      apara2_P.getIndex(thdpA2);
-      if (thdpA2.valid) launcher2->mProA.run(args2_P.paramA, thdpA2);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp2{tidx - cb.E_core_num};
       para2_P.getIndex(thdp2);
       if (thdp2.valid) launcher2->run(args2_P, thdp2);
     }
@@ -287,8 +265,8 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher_epi kernel_epi;
   static Launcher kernel;
   auto WS = reinterpret_cast<int8_t*>(workspace);
-  GetCPUDevice();
-  if (_cd->isHybrid()) {
+  GetCPU();
+  if (_cb->mHybrid) {
     device::CpuHybrid cb;
     int offset = seq - int(seq / (1 + cb.PE));
     utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
@@ -561,71 +539,49 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    cb.core_bond(tidx);
-    if (tidx < cb.P_core_num) {
-      typename AParall1::ThreadProblem thdpA1{tidx};
-      apara1_P.getIndex(thdpA1);
-      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx};
-      para1_P.getIndex(thdp1);
-      if (thdp1.valid) {
-        launcher1->run(args1_P, thdp1);
-        launcher2->run(args2_P, thdp1);
-      }
-
-      th->sync();
-      typename AParall3::ThreadProblem thdpA3{tidx};
-      apara3_P.getIndex(thdpA3);
-      if (thdpA3.valid) launcher3->mProA.run(args3_P.paramA, thdpA3);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp3{tidx};
-      para3_P.getIndex(thdp3);
-      if (thdp3.valid) launcher3->run(args3_P, thdp3);
-    } else if (tidx < cb.P_core_num + cb.E_core_num) {
-      typename AParall1::ThreadProblem thdpA1{tidx - cb.P_core_num};
+    GetCPU();
+    int core_idx = _cb->getCoreidx(tidx);
+    typename AParall1::ThreadProblem thdpA1{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
+    } else {
+      apara1_P.getIndex(thdpA1);
+      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
+    }
+    th->sync();
 
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx - cb.P_core_num};
+    typename Parallel_T::ThreadProblem thdp1{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) {
         launcher1->run(args1_E, thdp1);
         launcher2->run(args2_E, thdp1);
       }
-
-      th->sync();
-      typename AParall3::ThreadProblem thdpA3{tidx - cb.P_core_num};
-      apara3_E.getIndex(thdpA3);
-      if (thdpA3.valid) launcher3->mProA.run(args3_E.paramA, thdpA3);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp3{tidx - cb.P_core_num};
-      para3_E.getIndex(thdp3);
-      if (thdp3.valid) launcher3->run(args3_E, thdp3);
     } else {
-      typename AParall1::ThreadProblem thdpA1{tidx - cb.E_core_num};
-      apara1_P.getIndex(thdpA1);
-      if (thdpA1.valid) launcher1->mProA.run(args1_P.paramA, thdpA1);
-
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp1{tidx - cb.E_core_num};
       para1_P.getIndex(thdp1);
       if (thdp1.valid) {
         launcher1->run(args1_P, thdp1);
         launcher2->run(args2_P, thdp1);
       }
+    }
+    th->sync();
 
-      th->sync();
-      typename AParall3::ThreadProblem thdpA3{tidx - cb.E_core_num};
+    typename AParall3::ThreadProblem thdpA3{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+      apara3_E.getIndex(thdpA3);
+      if (thdpA3.valid) launcher3->mProA.run(args3_E.paramA, thdpA3);
+    } else {
       apara3_P.getIndex(thdpA3);
       if (thdpA3.valid) launcher3->mProA.run(args3_P.paramA, thdpA3);
+    }
+    th->sync();
 
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp3{tidx - cb.E_core_num};
+    typename Parallel_T::ThreadProblem thdp3{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+      para3_E.getIndex(thdp3);
+      if (thdp3.valid) launcher3->run(args3_E, thdp3);
+    } else {
       para3_P.getIndex(thdp3);
       if (thdp3.valid) launcher3->run(args3_P, thdp3);
     }
@@ -766,10 +722,12 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher_mul kernel_mul;
   static Launcher kernel;
   auto WS = reinterpret_cast<int8_t*>(workspace);
-  GetCPUDevice();
-  if (_cd->isHybrid()) {
+  GetCPU();
+  if (_cb->mHybrid) {
     device::CpuHybrid cb;
     int offset = seq - int(seq / (1 + cb.PE));
+    // utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
+    // cb.getP_problem(gp1);
     utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp3_P(1, offset, fmid, fin, w3ptr_->mBlockSize);

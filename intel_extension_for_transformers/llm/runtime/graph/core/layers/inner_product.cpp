@@ -98,8 +98,8 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
 
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   static Launcher kernel;
-  GetCPUDevice();
-  if (_cd->isHybrid()) {
+  GetCPU();
+  if (_cb->mHybrid) {
     device::CpuHybrid cb;
     int offset = M - int(M / (1 + cb.PE));
     utils::GemmProblem gp_P(1, offset, N, K, B->mBlockSize);

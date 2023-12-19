@@ -471,6 +471,19 @@ class SchedulerKBlock : public Scheduler2D {
   int mSizePadded[3] = {0, 0, 0};
   int mBlock[3] = {0, 0, 0};
 };
+// class Scheduler2D_New {};
+
+// class SchedulerKBlockS_New {
+//   SchedulerKBlockS(const Config& config) {
+//     if (hybrid) {
+//       SchedulerKBlockS - p.update(config);
+//       SchedulerKBlockS - e.update();
+//     } else
+//       elseSchedulerKBlockS - p.update(config);
+//   }
+//   void update(const Config& config) void getindex(const Config& config) SchedulerKBlockS - P;
+//   SchedulerKBlockS - E;
+// }
 
 template <class _GemmCore_T>
 class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
@@ -584,8 +597,8 @@ using thread_func = std::function<void(int tid)>;
 class IThreading {
  public:
   explicit IThreading(int nthreads) : mThreadNum(nthreads) {
-    GetCPUDevice();
-    _cd->setThreads(nthreads);
+    GetCPU();
+    _cb->setThreads(nthreads);
   }
   virtual void parallel_for(const thread_func& func) const = 0;
   virtual inline void sync() const = 0;
@@ -607,8 +620,8 @@ class OMPThreading : public IThreading {
     }
   }
   virtual void set_threads(int nthreads) override {
-    GetCPUDevice();
-    _cd->setThreads(nthreads);
+    GetCPU();
+    nthreads = _cb->setThreads(nthreads);
     mThreadNum = nthreads;
     omp_set_num_threads(nthreads);
   }
@@ -638,9 +651,8 @@ class StdThreading : public IThreading {
   }
 
   void set_threads(int nthreads) override {
-    GetCPUDevice();
-    _cd->setThreads(nthreads);
-    mThreadNum = nthreads;
+    GetCPU();
+    mThreadNum = _cb->setThreads(nthreads);
   }
 
   inline void sync() const override { assert(0); }
@@ -720,46 +732,24 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    cb.core_bond(tidx);
-    if (tidx < cb.P_core_num) {
-      // run on P-core
-      typename AParall::ThreadProblem thdpA{tidx};
-      apara_P.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher.mProA.run(args_P.paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx};
-      para_P.getIndex(thdp);
-      if (thdp.valid) {
-        launcher.run(args_P, thdp);
-      }
-    } else if (tidx < cb.P_core_num + cb.E_core_num) {
-      // run on E-core
-      typename AParall::ThreadProblem thdpA{tidx - cb.P_core_num};
+    GetCPU();
+    int core_idx = _cb->getCoreidx(tidx);
+    typename AParall::ThreadProblem thdpA{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
       apara_E.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher.mProA.run(args_E.paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx - cb.P_core_num};
-      para_E.getIndex(thdp);
-      if (thdp.valid) {
-        launcher.run(args_E, thdp);
-      }
+      if (thdpA.valid) launcher.mProA.run(args_E.paramA, thdpA);
     } else {
-      // run on SMT
-      typename AParall::ThreadProblem thdpA{tidx - cb.E_core_num};
       apara_P.getIndex(thdpA);
-      if (thdpA.valid) {
-        launcher.mProA.run(args_P.paramA, thdpA);
-      }
-      th->sync();
-      typename Parallel_T::ThreadProblem thdp{tidx - cb.E_core_num};
+      if (thdpA.valid) launcher.mProA.run(args_P.paramA, thdpA);
+    }
+    th->sync();
+    typename Parallel_T::ThreadProblem thdp{core_idx};
+    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+      para_E.getIndex(thdp);
+      if (thdp.valid) launcher.run(args_E, thdp);
+    } else {
       para_P.getIndex(thdp);
-      if (thdp.valid) {
-        launcher.run(args_P, thdp);
-      }
+      if (thdp.valid) launcher.run(args_P, thdp);
     }
   });
 }
