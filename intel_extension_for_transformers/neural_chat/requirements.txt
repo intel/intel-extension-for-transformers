@@ -70,3 +70,4 @@ zhconv
 urllib3
 langid
 diffusers
+transformers_stream_generator
