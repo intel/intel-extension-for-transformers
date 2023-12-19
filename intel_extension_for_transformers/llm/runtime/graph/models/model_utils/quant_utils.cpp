@@ -32,12 +32,12 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <mutex>
+#include <mutex> //NOLINT
 #include <numeric>
 #include <queue>
 #include <random>
 #include <sstream>
-#include <thread>
+#include <thread> //NOLINT
 #include <unordered_map>
 
 #include "application/common.h"
@@ -98,30 +98,30 @@ bool whisper_model_quantize(const std::string& fname_inp, const std::string& fna
   // verify magic
   {
     uint32_t magic;
-    finp.read((char*)&magic, sizeof(magic));
+    finp.read(reinterpret_cast<char*>(&magic), sizeof(magic));
     if (magic != NE_FILE_MAGIC) {
       fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n", __func__, fname_inp.c_str());
       return false;
     }
 
-    fout.write((char*)&magic, sizeof(magic));
+    fout.write(reinterpret_cast<char*>(&magic), sizeof(magic));
   }
 
   whisper_hparams hparams;
 
   // load hparams
   {
-    finp.read((char*)&hparams.n_vocab, sizeof(hparams.n_vocab));
-    finp.read((char*)&hparams.n_audio_ctx, sizeof(hparams.n_audio_ctx));
-    finp.read((char*)&hparams.n_audio_state, sizeof(hparams.n_audio_state));
-    finp.read((char*)&hparams.n_audio_head, sizeof(hparams.n_audio_head));
-    finp.read((char*)&hparams.n_audio_layer, sizeof(hparams.n_audio_layer));
-    finp.read((char*)&hparams.n_text_ctx, sizeof(hparams.n_text_ctx));
-    finp.read((char*)&hparams.n_text_state, sizeof(hparams.n_text_state));
-    finp.read((char*)&hparams.n_text_head, sizeof(hparams.n_text_head));
-    finp.read((char*)&hparams.n_text_layer, sizeof(hparams.n_text_layer));
-    finp.read((char*)&hparams.n_mels, sizeof(hparams.n_mels));
-    finp.read((char*)&hparams.ftype, sizeof(hparams.ftype));
+    finp.read(reinterpret_cast<char*>(&hparams.n_vocab), sizeof(hparams.n_vocab));
+    finp.read(reinterpret_cast<char*>(&hparams.n_audio_ctx), sizeof(hparams.n_audio_ctx));
+    finp.read(reinterpret_cast<char*>(&hparams.n_audio_state), sizeof(hparams.n_audio_state));
+    finp.read(reinterpret_cast<char*>(&hparams.n_audio_head), sizeof(hparams.n_audio_head));
+    finp.read(reinterpret_cast<char*>(&hparams.n_audio_layer), sizeof(hparams.n_audio_layer));
+    finp.read(reinterpret_cast<char*>(&hparams.n_text_ctx), sizeof(hparams.n_text_ctx));
+    finp.read(reinterpret_cast<char*>(&hparams.n_text_state), sizeof(hparams.n_text_state));
+    finp.read(reinterpret_cast<char*>(&hparams.n_text_head), sizeof(hparams.n_text_head));
+    finp.read(reinterpret_cast<char*>(&hparams.n_text_layer), sizeof(hparams.n_text_layer));
+    finp.read(reinterpret_cast<char*>(&hparams.n_mels), sizeof(hparams.n_mels));
+    finp.read(reinterpret_cast<char*>(&hparams.ftype), sizeof(hparams.ftype));
 
     const int32_t qntvr_src = hparams.ftype / NE_QNT_VERSION_FACTOR;
     const int32_t ftype_dst = NE_QNT_VERSION * NE_QNT_VERSION_FACTOR + ftype;
@@ -158,21 +158,21 @@ bool whisper_model_quantize(const std::string& fname_inp, const std::string& fna
   {
     whisper_filters filters;
 
-    finp.read((char*)&filters.n_mel, sizeof(filters.n_mel));
-    fout.write((char*)&filters.n_mel, sizeof(filters.n_mel));
-    finp.read((char*)&filters.n_fft, sizeof(filters.n_fft));
-    fout.write((char*)&filters.n_fft, sizeof(filters.n_fft));
+    finp.read(reinterpret_cast<char*>(&filters.n_mel), sizeof(filters.n_mel));
+    fout.write(reinterpret_cast<char*>(&filters.n_mel), sizeof(filters.n_mel));
+    finp.read(reinterpret_cast<char*>(&filters.n_fft), sizeof(filters.n_fft));
+    fout.write(reinterpret_cast<char*>(&filters.n_fft), sizeof(filters.n_fft));
 
     filters.data.resize(filters.n_mel * filters.n_fft);
-    finp.read((char*)filters.data.data(), filters.data.size() * sizeof(float));
-    fout.write((char*)filters.data.data(), filters.data.size() * sizeof(float));
+    finp.read(reinterpret_cast<char*>(filters.data.data()), filters.data.size() * sizeof(float));
+    fout.write(reinterpret_cast<char*>(filters.data.data()), filters.data.size() * sizeof(float));
   }
 
   // load vocab
   {
     int32_t n_vocab = 0;
-    finp.read((char*)&n_vocab, sizeof(n_vocab));
-    fout.write((char*)&n_vocab, sizeof(n_vocab));
+    finp.read(reinterpret_cast<char*>(&n_vocab), sizeof(n_vocab));
+    fout.write(reinterpret_cast<char*>(&n_vocab), sizeof(n_vocab));
 
     // if (n_vocab != hparams.n_vocab) {
     //     fprintf(stderr, "%s: invalid model file '%s' (bad vocab size %d != %d)\n",
@@ -184,13 +184,13 @@ bool whisper_model_quantize(const std::string& fname_inp, const std::string& fna
 
     for (int i = 0; i < n_vocab; i++) {
       uint32_t len;
-      finp.read((char*)&len, sizeof(len));
-      fout.write((char*)&len, sizeof(len));
+      finp.read(reinterpret_cast<char*>(&len), sizeof(len));
+      fout.write(reinterpret_cast<char*>(&len), sizeof(len));
 
       word[len] = '\0';
 
-      finp.read((char*)word, len);
-      fout.write((char*)word, len);
+      finp.read(reinterpret_cast<char*>(word), len);
+      fout.write(reinterpret_cast<char*>(word), len);
 
       vocab.token_to_id[word] = i;
       vocab.id_to_token[i] = word;
@@ -199,7 +199,7 @@ bool whisper_model_quantize(const std::string& fname_inp, const std::string& fna
 
   // regexes of tensor names to not be quantized
   const std::vector<std::string> to_skip = {
-      //"encoder.*",
+      // "encoder.*",
       "encoder.conv1.bias",
       "encoder.conv2.bias",
       "encoder.positional_embedding",
@@ -494,7 +494,7 @@ bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_f
       fprintf(stderr, "%s: invalid model type %d\n", __func__, ftype);
       return false;
     }
-  };
+  }
   if (!ne_is_quantized(qtype)) {
     fprintf(stderr, "%s: invalid quantization type %d (%s)\n", __func__, qtype, ne_type_name(qtype));
     return false;
@@ -617,11 +617,11 @@ bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_f
 
       printf("size = %8.2f MB -> %8.2f MB | hist: ", nelements * sizeof(float) / 1024.0 / 1024.0,
              cur_size / 1024.0 / 1024.0);
-      for (int i = 0; i < (int)hist_cur.size(); ++i) {
+      for (int i = 0; i < static_cast<int>(hist_cur.size()); ++i) {
         hist_all[i] += hist_cur[i];
       }
 
-      for (int i = 0; i < (int)hist_cur.size(); ++i) {
+      for (int i = 0; i < static_cast<int>(hist_cur.size()); ++i) {
         printf("%5.3f ", hist_cur[i] / (float)nelements);
       }
       printf("\n");
@@ -640,12 +640,12 @@ bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_f
 
   {
     int64_t sum_all = 0;
-    for (int i = 0; i < (int)hist_all.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(hist_all.size()); ++i) {
       sum_all += hist_all[i];
     }
 
     printf("%s: hist: ", __func__);
-    for (int i = 0; i < (int)hist_all.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(hist_all.size()); ++i) {
       printf("%5.3f ", hist_all[i] / (float)sum_all);
     }
     printf("\n");
