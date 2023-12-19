@@ -69,6 +69,11 @@ class Model {
   whisper_params params;
 };
 
+const std::vector<std::string> k_colors = {
+    "\033[38;5;196m", "\033[38;5;202m", "\033[38;5;208m", "\033[38;5;214m", "\033[38;5;220m",
+    "\033[38;5;226m", "\033[38;5;190m", "\033[38;5;154m", "\033[38;5;118m", "\033[38;5;82m",
+};
+
 void Model::init_model(const std::string& model_path) {
   params.model = model_path;
   ctx = whisper_init_from_file(params.model.c_str());
@@ -160,6 +165,112 @@ bool Model::read_wav(const std::string& fname, std::vector<float>* pcmf32, std::
   }
 
   return true;
+}
+
+std::string estimate_diarization_speaker(std::vector<std::vector<float>> pcmf32s, int64_t t0, int64_t t1,
+                                         bool id_only = false) {
+  std::string speaker = "";
+  const int64_t n_samples = pcmf32s[0].size();
+
+  const int64_t is0 = timestamp_to_sample(t0, n_samples);
+  const int64_t is1 = timestamp_to_sample(t1, n_samples);
+
+  double energy0 = 0.0f;
+  double energy1 = 0.0f;
+
+  for (int64_t j = is0; j < is1; j++) {
+    energy0 += fabs(pcmf32s[0][j]);
+    energy1 += fabs(pcmf32s[1][j]);
+  }
+
+  if (energy0 > 1.1 * energy1) {
+    speaker = "0";
+  } else if (energy1 > 1.1 * energy0) {
+    speaker = "1";
+  } else {
+    speaker = "?";
+  }
+
+  // printf("is0 = %lld, is1 = %lld, energy0 = %f, energy1 = %f, speaker = %s\n", is0, is1, energy0, energy1,
+  // speaker.c_str());
+
+  if (!id_only) {
+    speaker.insert(0, "(speaker ");
+    speaker.append(")");
+  }
+
+  return speaker;
+}
+
+  void whisper_print_segment_callback(struct whisper_context* ctx, struct whisper_state* /*state*/, int n_new,
+                                    void* user_data) {
+  const auto& params = *(reinterpret_cast<whisper_print_user_data*>(user_data))->params;
+  const auto& pcmf32s = *(reinterpret_cast<whisper_print_user_data*>(user_data))->pcmf32s;
+
+  const int n_segments = whisper_full_n_segments(ctx);
+
+  std::string speaker = "";
+
+  int64_t t0 = 0;
+  int64_t t1 = 0;
+
+  // print the last n_new segments
+  const int s0 = n_segments - n_new;
+
+  if (s0 == 0) {
+    printf("\n");
+  }
+
+  for (int i = s0; i < n_segments; i++) {
+    if (!params.no_timestamps || params.diarize) {
+      t0 = whisper_full_get_segment_t0(ctx, i);
+      t1 = whisper_full_get_segment_t1(ctx, i);
+    }
+
+    if (!params.no_timestamps) {
+      printf("[%s --> %s]  ", to_timestamp(t0).c_str(), to_timestamp(t1).c_str());
+    }
+
+    if (params.diarize && pcmf32s.size() == 2) {
+      speaker = estimate_diarization_speaker(pcmf32s, t0, t1);
+    }
+
+    if (params.print_colors) {
+      for (int j = 0; j < whisper_full_n_tokens(ctx, i); ++j) {
+        if (params.print_special == false) {
+          const whisper_token id = whisper_full_get_token_id(ctx, i, j);
+          if (id >= whisper_token_eot(ctx)) {
+            continue;
+          }
+        }
+
+        const char* text = whisper_full_get_token_text(ctx, i, j);
+        const float p = whisper_full_get_token_p(ctx, i, j);
+
+        const int col = std::max(0, std::min(static_cast<int>(k_colors.size()) - 1,
+                                             static_cast<int>(std::pow(p, 3) * static_cast<float>(k_colors.size()))));
+
+        printf("%s%s%s%s", speaker.c_str(), k_colors[col].c_str(), text, "\033[0m");
+      }
+    } else {
+      const char* text = whisper_full_get_segment_text(ctx, i);
+
+      printf("%s%s", speaker.c_str(), text);
+    }
+
+    if (params.tinydiarize) {
+      if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
+        printf("%s", params.tdrz_speaker_turn.c_str());
+      }
+    }
+
+    // with timestamps or speakers: each segment on new line
+    if (!params.no_timestamps || params.diarize) {
+      printf("\n");
+    }
+
+    fflush(stdout);
+  }
 }
 void Model::inference(const std::string& fname_inp) {
   params.fname_inp.emplace_back(fname_inp);
@@ -261,10 +372,10 @@ void Model::inference(const std::string& fname_inp) {
       whisper_print_user_data user_data = {&params, &pcmf32s};
 
       // this callback is called on each new segment
-      // if (!wparams.print_realtime) {
-      //   wparams.new_segment_callback = whisper_print_segment_callback;
-      //   wparams.new_segment_callback_user_data = &user_data;
-      // }
+      if (!wparams.print_realtime) {
+        wparams.new_segment_callback = whisper_print_segment_callback;
+        wparams.new_segment_callback_user_data = &user_data;
+      }
 
       // example for abort mechanism
       // in this example, we do not abort the processing, but we could if the flag is set to true
