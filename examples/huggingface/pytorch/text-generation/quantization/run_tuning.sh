@@ -159,7 +159,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-        extra_cmd=$extra_cmd" --revision 14d5b0e204542744900f6fb52422c6d633bdcb00"
+        extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan2_7b" ]; then
         alpha=0.85

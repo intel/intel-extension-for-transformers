@@ -196,7 +196,8 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
-    "falcon"
+    "falcon",
+    "qwen"
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
