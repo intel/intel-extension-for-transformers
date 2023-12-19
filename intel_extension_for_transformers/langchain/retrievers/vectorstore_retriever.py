@@ -1,0 +1,46 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""The wrapper for Retriever based on langchain"""
+from langchain_core.vectorstores import VectorStoreRetriever as VectorRetriever
+
+class VectorStoreRetriever(VectorRetriever):
+    """Retrieve the vector document stores using dense retrieval."""
+    
+    vectorstore: VectorStore
+    """VectorStore to use for retrieval."""
+    search_type: str = "similarity"
+    """Type of search to perform. Defaults to "similarity"."""
+    search_kwargs: dict = Field(default_factory=dict)
+    """Keyword arguments to pass to the search function."""
+    allowed_search_types: ClassVar[Collection[str]] = (
+        "similarity",
+        "similarity_score_threshold",
+        "mmr",
+    )
+
+    def __init__(self, document_store=None, **kwargs):
+        super().__init__(**kwargs)
+    
+    def get_context(self, query):
+        context = ''
+        links = []
+        retrieved_documents = self.get_relevant_documents(query)
+        for doc in retrieved_documents:
+            context = context + doc.page_content + " "
+            links.append(doc.metadata['source'])
+        return context.strip(), links
