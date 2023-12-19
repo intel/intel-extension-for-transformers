@@ -15,4 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .retriever_base import Retriever
+from .retriever_adapter import RetrieverAdapter
