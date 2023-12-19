@@ -19,6 +19,15 @@
 from langchain.retrievers import MultiVectorRetriever
 from langchain_core.vectorstores import VectorStore
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun
+from enum import Enum
+
+class SearchType(str, Enum):
+    """Enumerator of the types of search to perform."""
+
+    similarity = "similarity"
+    """Similarity search."""
+    mmr = "mmr"
+    """Maximal Marginal Relevance reranking of similarity search."""
 
 
 class ChildParentRetriever(MultiVectorRetriever):

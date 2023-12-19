@@ -18,20 +18,9 @@
 """The wrapper for Retriever based on langchain"""
 from langchain_core.vectorstores import VectorStoreRetriever as VectorRetriever
 
+
 class VectorStoreRetriever(VectorRetriever):
     """Retrieve the vector document stores using dense retrieval."""
-    
-    vectorstore: VectorStore
-    """VectorStore to use for retrieval."""
-    search_type: str = "similarity"
-    """Type of search to perform. Defaults to "similarity"."""
-    search_kwargs: dict = Field(default_factory=dict)
-    """Keyword arguments to pass to the search function."""
-    allowed_search_types: ClassVar[Collection[str]] = (
-        "similarity",
-        "similarity_score_threshold",
-        "mmr",
-    )
 
     def __init__(self, document_store=None, **kwargs):
         super().__init__(**kwargs)

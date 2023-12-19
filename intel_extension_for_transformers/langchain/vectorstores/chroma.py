@@ -16,7 +16,27 @@
 # limitations under the License.
 
 """The wrapper for Chroma retriever based on langchain"""
+from __future__ import annotations
+import base64
+import logging
+import uuid
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
+import numpy as np
+from langchain_core.documents import Document
 from langchain.vectorstores.chroma import Chroma as Chroma_origin
+from langchain_core.embeddings import Embeddings
+from langchain_core.utils import xor_args
+from langchain_core.vectorstores import VectorStore
 _DEFAULT_PERSIST_DIR = './output'
 _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
 

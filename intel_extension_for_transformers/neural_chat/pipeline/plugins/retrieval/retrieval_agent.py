@@ -147,7 +147,7 @@ class Agent_QA():
             "Please check the local knowledge base was built!"
         knowledge_base = self.database.reload(persist_directory=local_persist_dir, **kwargs)
         if self.retrieval_type == 'default':
-            self.retriever = RetrieverAdaptar(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
+            self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs)
         elif self.retrieval_type == "child_parent":
             child_persist_dir = local_persist_dir + "_child"
@@ -186,7 +186,7 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, \
                                               document_store=knowledge_base, **kwargs).retriever
         elif self.retrieval_type == "child_parent":
-            knowledge_base = self.database.from_documents(documents=langchain_documents, sign = 'child', \
+            child_knowledge_base = self.database.from_documents(documents=langchain_documents, sign = 'child', \
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
