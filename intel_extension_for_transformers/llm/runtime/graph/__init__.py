@@ -64,6 +64,8 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.qwen_cpp as cpp_model
         elif model_type == "mistral":
             import intel_extension_for_transformers.llm.runtime.graph.mistral_cpp as cpp_model
+        elif model_type == "whisper":
+            import intel_extension_for_transformers.llm.runtime.graph.whisper_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_type))
         self.module = cpp_model
@@ -76,6 +78,28 @@ class Model:
         return model_type
 
     def init(self, model_name, use_quant=True, use_gptq=False, **quant_kwargs):
+        if model_name == "whisper":
+            output_path = "runtime_outs"
+            os.makedirs(output_path, exist_ok=True)
+            fp32_bin = "{}/ne_{}_f32.bin".format(output_path, self.model_type)
+            quant_desc = quant_kwargs['weight_dtype']
+            if quant_kwargs['use_ggml']:
+                quant_desc += "_ggml"
+            quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, self.model_type, quant_desc)
+            if not use_quant:
+                self.bin_file = fp32_bin
+            else:
+                self.bin_file = quant_bin
+            if not os.path.exists(fp32_bin):
+                convert_model(model_name, fp32_bin, "f32")
+                assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
+            if not use_quant:
+                print("FP32 model will be used.")
+                return
+            self.module.Model.quant_model(model_path=fp32_bin, out_path=quant_bin, **quant_kwargs)
+            assert os.path.exists(quant_bin), "Fail to quantize model"
+            return
+
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.model_type = Model.get_model_type(self.config)
@@ -142,6 +166,10 @@ class Model:
         self.model.init_model(model_path, **generate_kwargs)
 
     def quant_model(self, model_type, model_path, out_path, **quant_kwargs):
+        self.__import_package(model_type)
+        self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
+
+    def inference(self, model_type, model_path, out_path, **quant_kwargs):
         self.__import_package(model_type)
         self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
