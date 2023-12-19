@@ -78,7 +78,7 @@ def read_md(md_path):
     return text
 
 
-def load_json(input, process, max_length, min_length):
+def load_json(input, process, max_length):
     """Load and process json file."""
     data = []
     with open(input, 'r') as file:
@@ -88,20 +88,17 @@ def load_json(input, process, max_length, min_length):
 
     new_sens = []
     new_collect = []
+    paragraphs = []
     for sub in data:
-        sub['content'].replace('#', " ")
-        sub['content'] = re.sub(r'\s+', ' ', sub['content'])
+        sub['doc'].replace('#', " ")
         if not process:
-            if len(sub['content']) < min_length:
-                continue
-            new_doc = [sub['content'], sub['link']]
+            sub['doc'] = re.sub(r'\s+', ' ', sub['doc'])
+            new_doc = [sub['doc'], sub['doc_id']]
             new_collect.append(new_doc)
         else:
             for sub in data:
-                sub['content'].replace('#', " ")
-                if len(sub['content'])<min_length:
-                    continue
-                split_sen = re.split(r'[.?!]', sub['content'])
+                sub['doc'].replace('#', " ")
+                split_sen = re.split(r'[.?!]', sub['doc'])
                 for num in range(len(split_sen)):
                     split_sen[num] = re.sub(r'\s+', ' ', split_sen[num])
                     if num +1 < len(split_sen):
@@ -114,7 +111,7 @@ def load_json(input, process, max_length, min_length):
 
             paragraphs = list(set(new_sens))
             for paragraph in paragraphs:
-                new_doc = [paragraph, sub['link']]
+                new_doc = [paragraph, sub['doc_id']]
                 new_collect.append(new_doc)
     return new_collect
 
@@ -122,45 +119,10 @@ def load_json(input, process, max_length, min_length):
 def load_xlsx(input):
     """Load and process xlsx file."""
     df = pd.read_excel(input)
-    header = df.columns.tolist()
-    all_data = []
-    if 'Questions' in header and 'Answers' in header:
-        for index, row in df.iterrows():
-            sub = "User Query: " + row['Questions'] + "Answer: " + row["Answers"]
-            sub=sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
-            new_doc = [sub, input]
-            all_data.append(new_doc)
-    elif 'question' in header and 'answer' in header and 'link' in header:
-        for index, row in df.iterrows():
-            sub = "Question: " + row['question'] + " Answer: " + row["answer"]
-            sub = sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
-            all_data.append([sub, row['link']])
-    elif 'context' in header and 'link' in header:
-        for index, row in df.iterrows():
-            sub = row['context']
-            sub = sub.replace('#', " ")
-            sub = sub.replace(r'\t', " ")
-            sub = sub.replace('\n', ' ')
-            sub = sub.replace('\n\n', ' ')
-            sub = re.sub(r'\s+', ' ', sub)
-            all_data.append([sub, row['link']])
-    return all_data
-
-def load_csv(input):
-    """ Load the csv file."""
-    df = pd.read_csv(input)
     all_data = []
     documents = []
     for index, row in df.iterrows():
-        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
+        sub = "User Query: " + row['Questions'] + "Answer: " + row["Answers"]
         all_data.append(sub)
 
     for data in all_data:
@@ -170,15 +132,38 @@ def load_csv(input):
         documents.append(new_doc)
     return documents
 
-def load_structured_data(input, process, max_length, min_length):
-    """Load structured context."""
-    if input.endswith("jsonl") or input.endswith("json"):
-        content = load_json(input, process, max_length, min_length)
-    elif input.endswith("xlsx"):
-        content = load_xlsx(input)
-    elif input.endswith("csv"):
-        content = load_csv(input)
-    return content
+
+def load_faq_xlsx(input):
+    """Load and process faq xlsx file."""
+    df = pd.read_excel(input)
+    all_data = []
+
+    for index, row in df.iterrows():
+        sub = "Question: " + row['question'] + " Answer: " + row["answer"]
+        sub = sub.replace('#', " ")
+        sub = sub.replace(r'\t', " ")
+        sub = sub.replace('\n', ' ')
+        sub = sub.replace('\n\n', ' ')
+        sub = re.sub(r'\s+', ' ', sub)
+        all_data.append([sub, row['link']])
+    return all_data
+
+
+def load_general_xlsx(input):
+    """Load and process doc xlsx file."""
+    df = pd.read_excel(input)
+    all_data = []
+
+    for index, row in df.iterrows():
+        sub = row['context']
+        sub = sub.replace('#', " ")
+        sub = sub.replace(r'\t', " ")
+        sub = sub.replace('\n', ' ')
+        sub = sub.replace('\n\n', ' ')
+        sub = re.sub(r'\s+', ' ', sub)
+        all_data.append([sub, row['link']])
+    return all_data
+
 
 def load_unstructured_data(input):
     """Load unstructured context."""
@@ -199,7 +184,40 @@ def load_unstructured_data(input):
     text = re.sub(r'\s+', ' ', text)
     return text
 
-def get_chuck_data(content, max_length, min_length, input):
+
+def laod_structured_data(input, process, max_length):
+    """Load structured context."""
+    if input.endswith("jsonl"):
+        content = load_json(input, process, max_length)
+    elif "faq" in input and input.endswith("xlsx"):
+        content = load_faq_xlsx(input)
+    elif "enterprise_docs" in input and input.endswith("xlsx"):
+        content = load_general_xlsx(input)
+    elif input.endswith("csv"):
+        content = load_csv(input)
+    else:
+        content = load_xlsx(input)
+    return content
+
+
+def load_csv(input):
+    """ Load the csv file."""
+    df = pd.read_csv(input)
+    all_data = []
+    documents = []
+    for index, row in df.iterrows():
+        sub = "User Query: " + row['question'] + "Answer: " + row["correct_answer"]
+        all_data.append(sub)
+
+    for data in all_data:
+        data.replace('#', " ")
+        data = re.sub(r'\s+', ' ', data)
+        new_doc = [data, input]
+        documents.append(new_doc)
+    return documents
+
+
+def get_chuck_data(content, max_length, input):
     """Process the context to make it maintain a suitable length for the generation."""
     sentences = re.split('(?<=[!.?])', content)
 
@@ -213,7 +231,7 @@ def get_chuck_data(content, max_length, min_length, input):
         if current_length + sentence_length <= max_length:
             current_paragraph += sub_sen
             current_length += sentence_length
-            if count == len(sentences) and len(current_paragraph.strip())>min_length:
+            if count == len(sentences) and len(current_paragraph.strip())>5:
                 paragraphs.append([current_paragraph.strip() ,input])
         else:
             paragraphs.append([current_paragraph.strip() ,input])
