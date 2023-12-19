@@ -52,7 +52,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="f32",
     )
     parser.add_argument("--outfile", type=Path, required=True, help="path to write to")
-    parser.add_argument("--whisper_repo_path", type=Path, required=Optional, help="path to write to")
+    parser.add_argument("--whisper_repo_path", type=Path, required=False, help="path to whisper repo")
     parser.add_argument("model", type=Path, help="directory containing model file or model id")
     args = parser.parse_args(args_in)
 
