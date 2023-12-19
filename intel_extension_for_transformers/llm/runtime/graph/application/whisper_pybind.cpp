@@ -92,11 +92,6 @@ void Model::quant_model(const std::string& model_path, const std::string& out_pa
   quant_params q_params;
   q_params.model_file = model_path;
   q_params.out_file = out_path;
-  q_params.weight_dtype = weight_dtype;
-  q_params.alg = alg;
-  q_params.group_size = group_size;
-  q_params.scale_dtype = scale_dtype;
-  q_params.compute_dtype = compute_dtype;
   q_params.use_ggml = use_ggml;
   q_params.nthread = threads;
   // needed to initialize f16 tables
