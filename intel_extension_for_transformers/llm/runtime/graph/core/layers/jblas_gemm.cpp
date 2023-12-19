@@ -39,16 +39,21 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
     using Launcher = tLauncher_Fp_F32F32<GemmCore_T, Wei_T>;
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-    auto reduceA = kernel.mProA.createStorage(M, K, B->mBlockSize);
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto reduceA = kernel.mProA.createReduceStorage(M, K, B->mBlockSize);
     if (B->IsAsym()) {
       reduceA.assign(WorkSpace);
+      WorkSpace += reduceA.mSize;
+    }
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
     }
     typename Launcher::BEpiParam blkargs{
         B->template SPtr<int8_t>(),     B->SDtype(), B->CStep(), B->template ZPtr<int8_t>(),
         reduceA.template RPtr<float>(), reduceA.lda};
-    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
-    typename Launcher::Param args{gp, {A, K, &reduceA}, {B}, blkargs, {C, N}};
-    if (B->IsAsym()) {
+    typename Launcher::Param args{gp, {A, K, &reduceA, B->ShfIndice(), &reordA}, {B}, blkargs, {C, N}};
+    if (B->IsAsym() || B->ShfIndice()) {
       jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
     } else {
       jblas::parallel::GemmRun<Parallel>(kernel, args, th);
@@ -56,14 +61,19 @@ void JblasGemmCompF32(const int M, const int N, const int K, const float* A, con
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerBase<GemmCore_T>;
     using Launcher = jblas::wrapper::gemm::LauncherBase<GemmCore_T::ISA, GemmCore_T,
-                                                        jblas::prologue_a::gemm::ActivationKBlockBaseF32, Wei_T,
+                                                        jblas::prologue_a::gemm::ShuffleActivationKBlockBaseF32, Wei_T,
                                                         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
     static Launcher kernel;
     auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
-    utils::GemmProblem gp(1, M, N, K);
-
-    typename Launcher::Param args{gp, {A, K}, {B}, {C, N}};
-    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+    utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
+    auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+    typename Launcher::Param args{gp, {A, K, nullptr, B->ShfIndice(), &reordA}, {B}, {C, N}};
+    if (B->ShfIndice()) {
+      reordA.assign(WorkSpace);
+      jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+    } else {
+      jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+    }
   }
 }
 
@@ -76,10 +86,18 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto B = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_B);
   utils::GemmProblem gp(1, M, N, K, B->mBlockSize);
   static Launcher kernel;
-  auto quanA = kernel.mProA.createStorage(M, K, B->mBlockSize, B->IsAsym());
+  auto quanA = kernel.mProA.createQuantStorage(M, K, B->mBlockSize, B->IsAsym());
   quanA.assign(WorkSpace);
-  typename Launcher::Param args{gp, {A, K, &quanA}, {B}, {C, N}};
-  jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  WorkSpace += quanA.mSize;
+  auto reordA = kernel.mProA.createReorderStorage(M, K, B->mBlockSize);
+  typename Launcher::Param args{gp, {A, K, &quanA, B->ShfIndice(), &reordA}, {B}, {C, N}};
+  if (B->ShfIndice()) {
+    reordA.assign(WorkSpace);
+    kernel.mProA.quantize({A, K, &quanA, B->ShfIndice(), &reordA}, M, K, th);
+    jblas::parallel::GemmRun<Parallel>(kernel, args, th);
+  } else {
+    jblas::parallel::GemmRunWithA<Parallel>(kernel, args, th);
+  }
 }
 
 bool JblasGemmBatchDriver(const size_t M, const size_t N, const size_t K, const size_t BatchN,
@@ -407,6 +425,8 @@ void JblaGemmPackBImpl(void* PackedBuf, int BlkSize, const int8_t* QData, const 
       launcher.mProB.enableShuffle(&stor);
       stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
       launcher.mProB.setShuffleIndices(shuffle_indice, &stor, pth);
+    } else {
+      stor.assign(reinterpret_cast<int8_t*>(PackedBuf));
     }
   } else {
     (void)(shuffle_indice);
