@@ -855,7 +855,7 @@ def lazy_load_torch_file(outer_fp: IO[bytes], path: Path) -> ModelPlus:
     return ModelPlus(model=as_dict, paths=[path], format='torch', vocab=None)
 
 
-SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {'F16': DT_F16, 'F32': DT_F32, 'I32': DT_I32, 'BOOL': DT_BOOL}
+SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {'F16': DT_F16, 'F32': DT_F32, 'I32': DT_I32, 'BOOL': DT_BOOL, 'BF16': DT_BF16}
 
 
 def lazy_load_safetensors_file(fp: IO[bytes], path: Path) -> ModelPlus:
