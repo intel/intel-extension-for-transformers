@@ -32,12 +32,12 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <mutex> //NOLINT
+#include <mutex>  //NOLINT
 #include <numeric>
 #include <queue>
 #include <random>
 #include <sstream>
-#include <thread> //NOLINT
+#include <thread>  //NOLINT
 #include <unordered_map>
 
 #include "application/common.h"
@@ -622,7 +622,7 @@ bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_f
       }
 
       for (int i = 0; i < static_cast<int>(hist_cur.size()); ++i) {
-        printf("%5.3f ", hist_cur[i] / (float)nelements);
+        printf("%5.3f ", hist_cur[i] / static_cast<float>(nelements));
       }
       printf("\n");
     } else {
@@ -646,7 +646,7 @@ bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_f
 
     printf("%s: hist: ", __func__);
     for (int i = 0; i < static_cast<int>(hist_all.size()); ++i) {
-      printf("%5.3f ", hist_all[i] / (float)sum_all);
+      printf("%5.3f ", hist_all[i] / static_cast<float>(sum_all));
     }
     printf("\n");
   }

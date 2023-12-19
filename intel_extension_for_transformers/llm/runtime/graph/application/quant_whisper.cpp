@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <regex> //NOLINT
+#include <regex>  //NOLINT
 #include "models/model_utils/quant_utils.h"
 #include "common.h"
 
