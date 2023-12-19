@@ -47,4 +47,5 @@ QUANT_API int model_quantize(const quant_params& param, std::shared_ptr<quant_la
 QUANT_API bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
                                       const std::vector<std::string>& to_quant,
                                       const std::vector<std::string>& to_skip);
+QUANT_API bool whisper_model_quantize(const std::string& fname_inp, const std::string& fname_out, ne_ftype ftype);
 #endif  // MODEL_H

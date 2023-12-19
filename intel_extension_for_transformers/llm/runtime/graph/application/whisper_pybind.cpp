@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "models/whisper/whisper.h"
+#include "models/model_utils/quant_utils.h"
 #include "application/common.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -60,9 +61,10 @@ class Model {
     if (ctx) delete (ctx);
   }
   void init_model(const std::string& model_path);
+  void quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                        const std::string& alg, int group_size, const std::string& scale_dtype,
+                        const std::string& compute_dtype, bool use_ggml, int threads);
   void inference(const std::string& fname_inp);
-  bool read_wav(const std::string& fname, std::vector<float>* pcmf32, std::vector<std::vector<float>>* pcmf32s,
-                bool stereo);
 
  private:
   whisper_context* ctx = nullptr;
@@ -84,7 +86,65 @@ void Model::init_model(const std::string& model_path) {
   }
 }
 
-bool Model::read_wav(const std::string& fname, std::vector<float>* pcmf32, std::vector<std::vector<float>>* pcmf32s,
+void Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                        const std::string& alg, int group_size, const std::string& scale_dtype,
+                        const std::string& compute_dtype, bool use_ggml, int threads) {
+  quant_params q_params;
+  q_params.model_file = model_path;
+  q_params.out_file = out_path;
+  q_params.weight_dtype = weight_dtype;
+  q_params.alg = alg;
+  q_params.group_size = group_size;
+  q_params.scale_dtype = scale_dtype;
+  q_params.compute_dtype = compute_dtype;
+  q_params.use_ggml = use_ggml;
+  q_params.nthread = threads;
+  // needed to initialize f16 tables
+  {
+    struct ne_init_params params = {0, NULL, false};
+    struct ne_context* ctx = ne_init(params);
+    ne_free(ctx);
+  }
+  const std::string fname_inp = q_params.model_file;
+  const std::string fname_out = q_params.out_file;
+  // printf("input_model_file:%s \n",fname_inp.c_str());
+
+  const ne_ftype ftype = quant_params_to_ftype(q_params);
+  if (ftype != NE_FTYPE_MOSTLY_Q4_0) {
+    fprintf(stderr, "%s: ITREX now only support quantize model to q4_0 \n", __func__);
+    return ;
+  }
+
+  const int64_t t_main_start_us = common_time_us();
+
+  int64_t t_quantize_us = 0;
+
+  // load the model
+  {
+    const int64_t t_start_us = common_time_us();
+
+    if (!whisper_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
+      fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
+      return ;
+    }
+
+    t_quantize_us = common_time_us() - t_start_us;
+  }
+
+  // report timing
+  {
+    const int64_t t_main_end_us = common_time_us();
+
+    printf("\n");
+    printf("%s: quantize time = %8.2f ms\n", __func__, t_quantize_us / 1000.0f);
+    printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
+  }
+
+  return ;
+}
+
+
+bool read_wav(const std::string& fname, std::vector<float>* pcmf32, std::vector<std::vector<float>>* pcmf32s,
                      bool stereo) {
   drwav wav;
   std::vector<uint8_t> wav_data;  // used for pipe input from stdin
@@ -410,6 +470,9 @@ PYBIND11_MODULE(whisper_cpp, m)
   py::class_<Model>(m, "Model", py::module_local())
       .def(py::init())
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"))
-      // .dif("read_wav", &Model::read_wav, "Read audio", py::arg("fname"), py::arg())
+      .def("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
+                  py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("use_ggml") = false,
+                  py::arg("threads") = 8)
       .def("inference", &Model::inference, "Translate audio to text");
 }

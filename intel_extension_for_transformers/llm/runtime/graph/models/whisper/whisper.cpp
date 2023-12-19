@@ -1504,7 +1504,6 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
 
       ne_build_forward_expand(&gf, cur);
       ne_graph_compute(ctx0, &gf);
-      ne_graph_profiling(&gf);
 
       // ggml_graph_print(&gf);
     }
@@ -1564,7 +1563,6 @@ static bool whisper_encode_internal(whisper_context* wctx, whisper_state* wstate
     }
 
     ne_graph_compute(ctx0, &gf);
-    ne_graph_profiling(&gf);
     // ggml_graph_print(&gf);
   }
 
@@ -1913,7 +1911,6 @@ static bool whisper_decode_internal(whisper_context* wctx, whisper_state* wstate
   {
     ne_build_forward_expand(&gf, logits);
     ne_graph_compute(ctx0, &gf);
-    ne_graph_profiling(&gf);
   }
 
   // extract logits for all N tokens
