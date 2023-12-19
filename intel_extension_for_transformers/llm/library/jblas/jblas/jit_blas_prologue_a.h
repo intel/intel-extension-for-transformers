@@ -293,50 +293,85 @@ using ActivationKBlockBaseF32 = ActivationKBlockBase<_GemmCore_T, ISA_T, float>;
 template <typename AType>
 struct ParamShuffleActivationKBlockBase : ParamActivationKBlockBase<AType> {
   int* indices = nullptr;
+  storage::gemm::StorageReorderActivation* reordered = nullptr;
 };
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ShuffleActivationKBlockBase : public ActivationKBlockBase<_GemmCore_T, ISA_T, SRC_T> {
  public:
   using AType = typename _GemmCore_T::AType;
-  using SType = storage::gemm::StorageReduce;
+  using RedType = storage::gemm::StorageReduce;
+  using RAType = storage::gemm::StorageReorderActivation;
   using SRCType = SRC_T;
   using Param = ParamShuffleActivationKBlockBase<SRC_T>;
+  using Parallel = jblas::parallel::Scheduler2D;
+  using ThreadProblem = jblas::parallel::ThreadProblem2D;
+  inline RAType createReorderStorage(int m, int k, int kblock) {
+    RAType tmp(_GemmCore_T::ID);
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    int mpad = utils::padto(m, _GemmCore_T::MTILE);
+    tmp.resize(mpad, kpad, m, k, kblock == -1 ? kpad : kblock, utils::jblas_dtype<SRC_T>);
+    return tmp;
+  }
+
+  inline RedType createReduceStorage(int m, int k, int kblock) {
+    RedType tmp;
+    tmp.resize(m, k, kblock == -1 ? k : kblock, JBLAS_DTYPE::F32);
+    return tmp;
+  }
+
+  void run(const Param& _param, ThreadProblem& thdp) {
+    auto stor = _param.reduce;
+    auto reordered = _param.reordered;
+    if (thdp.valid) {
+      auto srcptr = const_cast<SRC_T*>(_param.A) + thdp.loc[0] * _param.lda + thdp.loc[1];
+      if (reordered && _param.indices) {
+        auto rptr = reordered->template APtr<SRC_T>() + thdp.loc[0] * reordered->mKPad + thdp.loc[1];
+        auto ret =
+            kernel::ref::shuffle_activation(const_cast<SRC_T*>(_param.A), rptr, thdp.size[0], thdp.size[1], thdp.loc[0],
+                                            thdp.loc[1], _param.indices, _param.lda, reordered->mKPad);
+        srcptr = rptr;
+      }
+      if (stor) {
+        // min max
+        auto blk_offset = thdp.loc[0] * stor->lda + thdp.loc[1] / stor->kblock;
+        auto thdrptr = stor->template RPtr<float>() + blk_offset;
+        auto ret = kernel::wrapper::ColBlockReduceSum::template forward<ISA_T, SRC_T>(
+            srcptr, _param.lda, thdp.size[0], thdp.size[1], stor->kblock, thdrptr, stor->lda);
+        assert(ret == JblasSuccess);
+      }
+    }
+  }
+
+  JBLAS_CODE preprocess(const Param& _param, int m, int k, int kblock, jblas::parallel::IThreading* threading) {
+    auto paral = Parallel({threading->num_threads(), m, k, 1, kblock});
+    threading->parallel_for([&](int tidx) {
+      parallel::ThreadProblem2D thdp{tidx};
+      paral.getIndex(thdp);
+      run(_param, thdp);
+    });
+    return JblasSuccess;
+  }
+
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset, void* tmpcache, size_t cachesize) {
     if (_param.indices == nullptr) {
       return ActivationConverter<_GemmCore_T, ISA_T, SRC_T>::getActivation(
           dstptr, dststep, {_param.A, _param.lda}, m_size, k_size, m_offset, k_offset, tmpcache, cachesize);
     } else {
-      SRC_T* shuffle_ptr;
-      bool malloc_shuffle = false;
-      if (cachesize >= m_size * k_size) {
-        shuffle_ptr = reinterpret_cast<SRC_T*>(tmpcache);
-      } else {
-        shuffle_ptr = utils::amalloc<SRC_T>(m_size * k_size);
-        malloc_shuffle = true;
-      }
-
-      auto ret = kernel::ref::shuffle_activation(const_cast<SRC_T*>(_param.A), shuffle_ptr, m_size, k_size, m_offset,
-                                                 k_offset, _param.indices, _param.lda, k_size);
-      if (ret != JblasSuccess) return ret;
-      if constexpr (std::is_same_v<SRC_T, AType>) {
-        auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
-        *dststep = k_pad;
-        ret = kernel::wrapper::Memcpy2D::forward<JblasNoSIMD, AType, AType>(shuffle_ptr, *dstptr, m_size, k_size,
-                                                                            k_size, k_pad);
-      } else {
-        ret = ActivationConverter<_GemmCore_T, ISA_T, SRC_T>::getActivation(dstptr, dststep, {shuffle_ptr, k_size},
-                                                                            m_size, k_size, 0, 0, tmpcache, cachesize);
-      }
-      if (malloc_shuffle) utils::afree(shuffle_ptr);
-      return ret;
+      return ActivationConverter<_GemmCore_T, ISA_T, SRC_T>::getActivation(
+          dstptr, dststep, {_param.reordered->template APtr<SRC_T>(), _param.reordered->mKPad}, m_size, k_size,
+          m_offset, k_offset, tmpcache, cachesize);
     }
   }
 };
 
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ShuffleActivationKBlockBaseF32 = ShuffleActivationKBlockBase<_GemmCore_T, ISA_T, float>;
+
 template <typename AType>
 struct ParamShuffleActivationKBlockQuantize : ParamActivationKBlockQuantize<AType> {
   int* indices = nullptr;
+  storage::gemm::StorageReorderActivation* reordered = nullptr;
 };
 template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
 class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCore_T, ISA_T, SRC_T> {
@@ -344,26 +379,49 @@ class ShuffleActivationKBlockQuantize : public ActivationKBlockQuantize<_GemmCor
   using AType = typename _GemmCore_T::AType;
   using SType = float;
   using QParam = storage::gemm::StorageQuantActivation;
+  using RAType = storage::gemm::StorageReorderActivation;
   using SRCType = SRC_T;
-  using Param  = ParamShuffleActivationKBlockQuantize<SRC_T>;
+  using Param = ParamShuffleActivationKBlockQuantize<SRC_T>;
   using Parallel = jblas::parallel::Scheduler2D;
   using ThreadProblem = jblas::parallel::ThreadProblem2D;
 
+  inline QParam createQuantStorage(int m, int k, int kblock, bool hasreduce) {
+    QParam tmp;
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    int mpad = utils::padto(m, _GemmCore_T::MTILE);
+    tmp.resize(mpad, kpad, m, k, kblock == -1 ? kpad : kblock, JBLAS_DTYPE::U8, JBLAS_DTYPE::F32, JBLAS_DTYPE::U8,
+               JBLAS_DTYPE::F32, std::is_same_v<AType, uint8_t>, hasreduce);
+    return tmp;
+  }
+
+  inline RAType createReorderStorage(int m, int k, int kblock) {
+    RAType tmp(_GemmCore_T::ID);
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    int mpad = utils::padto(m, _GemmCore_T::MTILE);
+    tmp.resize(mpad, kpad, m, k, kblock == -1 ? kpad : kblock, utils::jblas_dtype<SRC_T>);
+    return tmp;
+  }
+
   JBLAS_CODE quantize(const Param& _param, int m, int k, jblas::parallel::IThreading* threading) {
-    auto shuffle_src = utils::amalloc<SRC_T>(m * k);
-    threading->parallel_for([&](int tidx) {
-      auto enable_thr = threading->num_threads();
-      auto align_m = m / enable_thr;
-      auto process_m = (tidx + 1) == enable_thr ? (m - tidx * align_m) : align_m;
-      kernel::ref::shuffle_activation(const_cast<SRC_T*>(_param.A), shuffle_src + tidx * align_m * k, process_m, k,
-                                      tidx * align_m, 0, _param.indices, k, k);
-    });
-    ActivationKBlockQuantize<_GemmCore_T, ISA_T, SRC_T>::quantize({shuffle_src, k, _param.quan}, m, k, threading);
-    utils::afree(shuffle_src);
+    auto srcptr = const_cast<SRC_T*>(_param.A);
+    if (_param.reordered) {
+      auto shuffle_src = _param.reordered->template APtr<SRC_T>();
+      threading->parallel_for([&](int tidx) {
+        auto enable_thr = threading->num_threads();
+        auto align_m = m / enable_thr;
+        auto process_m = (tidx + 1) == enable_thr ? (m - tidx * align_m) : align_m;
+        kernel::ref::shuffle_activation(const_cast<SRC_T*>(_param.A), shuffle_src + tidx * align_m * k, process_m, k,
+                                        tidx * align_m, 0, _param.indices, k, k);
+      });
+      srcptr = shuffle_src;
+    }
+    ActivationKBlockQuantize<_GemmCore_T, ISA_T, SRC_T>::quantize({srcptr, k, _param.quan}, m, k, threading);
     return JblasSuccess;
   }
 };
 
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ShuffleActivationKBlockQuantizeF32 = ShuffleActivationKBlockQuantize<_GemmCore_T, ISA_T, float>;
 }  // namespace gemm
 }  // namespace prologue_a
 }  // namespace jblas

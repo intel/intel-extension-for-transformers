@@ -860,6 +860,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
   ctx->n_sample++;
   return result;
 }
+
 //
 // interface implementation
 //

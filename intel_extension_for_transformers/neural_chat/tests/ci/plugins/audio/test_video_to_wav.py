@@ -21,6 +21,7 @@ import argparse
 import shlex
 import shutil
 import unittest
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestVideo2Wav(unittest.TestCase):
     def setUp(self):
@@ -41,6 +42,7 @@ class TestVideo2Wav(unittest.TestCase):
         else:
             shutil.rmtree("../assets/raw", ignore_errors=True)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
         video_path = \

@@ -50,10 +50,7 @@ tts:
 ner:
     enable: true
     args:
-        device: "cpu"
-        model_path: "Intel/neural-chat-7b-v3-1"
         spacy_model: "en_core_web_lg"
-        bf16: true
 
 retrieval:
     enable: true

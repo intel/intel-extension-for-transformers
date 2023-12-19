@@ -4,6 +4,21 @@
 	const classes = overrideClasses ? overrideClasses : `w-5 h-5 text-gray-400`;
 </script>
 
+<!-- <svg
+	class={classes}
+	width="10"
+	height="10"
+	fill="none"
+	viewBox="0 0 18 18"
+	style="min-width: 18px; min-height: 18px;"
+	><g
+		><path
+			fill="#3369FF"
+			d="M15.71 8.019 3.835 1.368a1.125 1.125 0 0 0-1.61 1.36l2.04 5.71h5.298a.562.562 0 1 1 0 1.125H4.264l-2.04 5.71a1.128 1.128 0 0 0 1.058 1.506c.194 0 .384-.05.552-.146l11.877-6.65a1.125 1.125 0 0 0 0-1.964Z"
+		/></g
+	></svg
+> -->
+
 <svg
   class={classes}
   xmlns="http://www.w3.org/2000/svg"

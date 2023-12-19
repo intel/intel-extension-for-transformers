@@ -70,7 +70,8 @@ class ParamsQBits(torch.nn.Parameter):
             quant_state=None,
             blocksize=32,
             compress_statistics=True,
-            quant_dtype='int8'
+            quant_dtype=None,
+            scale_dtype="fp32",
     ):
         if data is None:
             data = torch.empty(0)
@@ -79,6 +80,7 @@ class ParamsQBits(torch.nn.Parameter):
         self.blocksize = blocksize
         self.compress_statistics = compress_statistics
         self.quant_dtype = quant_dtype
+        self.scale_dtype = scale_dtype
         self.quant_state = quant_state
         self.data = data
         return self
@@ -92,7 +94,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=True,
         compute_dtype="fp32",
         compress_statistics=True,
-        weight_dtype='s4fullrange_scalef32',
+        weight_dtype="int4_fullrange",
+        scale_dtype="fp32",
         blocksize=32,
         scheme="sym",
         device=None,
@@ -103,6 +106,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
+        self.scale_dtype = scale_dtype
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -118,7 +122,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias = None if self.bias is None else self.bias.data
         out = matmul_kbit(
             x.view(m, shape[-1]), self.weight, bias, out,
-            self.compute_dtype, self.weight_dtype, do_dequant=self.training
+            self.compute_dtype, self.weight_dtype, self.scale_dtype, do_dequant=self.training
         )
         shape[-1] = self.out_features
         out = out.view(shape)
@@ -127,11 +131,14 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
     def set_weights_bias(self, weight_data, bias=None):
         weight = torch.ops.jblasop.woq_quantize(
-            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
-        self.weight = ParamsQBits(
-            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
-        )
+            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        self.weight = ParamsQBits(data=weight,
+                                  requires_grad=False,
+                                  quant_state={"scheme": self.scheme},
+                                  blocksize=self.blocksize,
+                                  compress_statistics=self.compress_statistics,
+                                  quant_dtype=self.weight_dtype,
+                                  scale_dtype=self.scale_dtype)
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
@@ -154,7 +161,8 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             bias=kwargs.get("bias", True),
             compute_dtype=kwargs.get("compute_dtype", "fp32"),
             compress_statistics=kwargs.get("compress_statistics", True),
-            weight_dtype=kwargs.get("weight_dtype", "s4fullrange_scalef32"),
+            weight_dtype=kwargs.get("weight_dtype", "int4_fullrange"),
+            scale_dtype=kwargs.get("scale_dtype", "fp32"),
             blocksize=kwargs.get("blocksize", 32),
             scheme=kwargs.get("scheme", "sym"),
             device=kwargs.get("device",None)
@@ -191,7 +199,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             )
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
         torch.ops.jblasop.woq_dequantize(
-            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         w_data = w_dequant
         for active_adapter in self.active_adapters:
             if active_adapter in self.lora_A.keys():
@@ -210,10 +218,10 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 else:
                     w_data += self.get_delta_weight(active_adapter)
         weight = torch.ops.jblasop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype
         )
 
     def unmerge(self) -> None:
@@ -222,17 +230,17 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             return
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
         torch.ops.jblasop.woq_dequantize(
-            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         w_data = w_dequant
         while len(self.merged_adapters) > 0:
             active_adapter = self.merged_adapters.pop()
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
         weight = torch.ops.jblasop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype
         )
 
     def get_delta_weight(self, adapter) -> torch.Tensor:
@@ -305,6 +313,7 @@ class QBitsLoraModel(LoraModel):
             kwargs["compute_dtype"] = target.compute_dtype
             kwargs["compress_statistics"] = target.compress_statistics
             kwargs["weight_dtype"] = target.weight_dtype
+            kwargs["scale_dtype"] = target.scale_dtype
             kwargs["blocksize"] = target.blocksize
             kwargs["scheme"] = target.scheme
             new_module = QuantizedLoraLinearQBits(adapter_name, in_features, out_features, bias=bias, **kwargs)

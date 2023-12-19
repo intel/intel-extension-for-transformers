@@ -174,6 +174,8 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
         self.parser.add_argument(
             '--output_audio_path', type=str, default=None, help='Audio output path if the prompt is audio file.')
+        self.parser.add_argument(
+            '--device', type=str, default=None, help='Specify chat on which device.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -184,6 +186,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
         prompt = parser_args.query
         model_name = parser_args.model_name_or_path
         output_audio_path = parser_args.output_audio_path
+        device = parser_args.device
         if os.path.exists(prompt):
             if is_audio_file(prompt):
                 plugins.asr.enable = True
@@ -192,7 +195,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
                     plugins.tts.args["output_audio_path"]=output_audio_path
 
         if model_name:
-            self.config = PipelineConfig(model_name_or_path=model_name, plugins=plugins)
+            self.config = PipelineConfig(model_name_or_path=model_name, plugins=plugins, device=device)
         else:
             self.config = PipelineConfig(plugins=plugins)
         self.chatbot = build_chatbot(self.config)
