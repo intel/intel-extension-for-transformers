@@ -360,13 +360,17 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     shape = int_weight.shape
     write_header(fout, shape[::-1], dst_name, GGML_QJBLAS_TYPE)
 
-    dst = np.zeros((int_weight.shape[0], int_weight.shape[1]*4), dtype=np.int8)
-    int_weight = np.ascontiguousarray(((int_weight - 8) * 16).numpy())
-    gptq_scales = np.ascontiguousarray((gptq_scales.float() / 16).numpy())
+    if q_config['bits'] == 4:
+        int_weight = (int_weight - 8) * 16
+        gptq_scales = gptq_scales / 16
+        gptq_zeros = (gptq_zeros - 8) * 16
+    dst = np.zeros((int_weight.shape[0], int_weight.shape[1] * 4), dtype=np.int8)
+    int_weight = np.ascontiguousarray(int_weight.numpy())
+    gptq_scales = np.ascontiguousarray((gptq_scales.float()).numpy())
     if q_config['sym']:
         gptq_zeros = np.empty(0, dtype=np.int8)
     else:
-        gptq_zeros = np.ascontiguousarray(((gptq_zeros - 8) * 16).numpy())
+        gptq_zeros = np.ascontiguousarray(gptq_zeros.numpy())
     if q_config['desc_act']:
         g_idx = np.ascontiguousarray(g_idx.numpy())
     else:
