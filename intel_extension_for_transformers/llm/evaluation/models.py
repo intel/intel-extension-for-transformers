@@ -166,9 +166,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
             if model_type in IPEX_OPT_LLM_SUPPORTED:
-                if (model_type == "falcon" and transformers.__version__ > "4.33") or (
-                    model_type == "llama" and transformers.__version__ >= "4.36"
-                ):
+                if model_type == "llama" and transformers.__version__ >= "4.36":
                     past_key_values = generate_dummy_past_key_values(
                         config=self.config, input_bs=input_bs
                     )
@@ -195,7 +193,6 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                 inputs["position_ids"] = position_ids
             else:
                 inputs["position_ids"] = torch.arange(input_len).repeat(input_bs, 1)
-
         outputs = self.model(**inputs)
 
         if isinstance(outputs, (list, tuple)):

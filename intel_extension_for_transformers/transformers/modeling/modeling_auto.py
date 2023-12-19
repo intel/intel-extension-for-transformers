@@ -228,11 +228,10 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type and transformers.__version__ > "4.33":
-                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
-                    model.eval()
+            if "falcon" in model_type:
+                logger.warning(
+                    "Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon."
                 )
-                quantization_config.ipex_opt_llm = False
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -429,7 +428,7 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        elif model_type == "falcon" or model_type=="qwen":
+                        elif model_type == "falcon" or model_type == "qwen":
                             example_inputs = inputs
                             input_bs, input_len = inputs["input_ids"].shape
                             outputs = model(inputs["input_ids"])

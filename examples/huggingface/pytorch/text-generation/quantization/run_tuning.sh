@@ -145,7 +145,7 @@ function run_tuning {
         model_name_or_path="tiiuae/falcon-7b-instruct"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
-	pip install transformers==4.33
+	pip install transformers==4.33.3
     elif [ "${topology}" = "baichuan_7b" ]; then
         alpha=0.85
         model_name_or_path="baichuan-inc/Baichuan-7B"
