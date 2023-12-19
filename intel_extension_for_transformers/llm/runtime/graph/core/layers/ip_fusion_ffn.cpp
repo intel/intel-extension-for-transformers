@@ -31,9 +31,9 @@ namespace ffn_2w {
 template <class Parallel_T, class Launch_T1, class Launch_T2>
 void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1,
                       const typename Launch_T2::Param& args2, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
-  Parallel_T para2({th->num_threads(), args2.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para1({th->num_threads(), args1.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para2({th->num_threads(), args2.problem, _cb->mL2Cache, _cb->mL1Cache});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall2 = typename Launch_T2::PrologueA::Parallel;
   auto apara1 = launcher1->mProA.createParallel(th->num_threads(), args1.problem);
@@ -76,17 +76,17 @@ template <class Parallel_T, class Launch_T1, class Launch_T2>
 void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1_P,
                       const typename Launch_T1::Param& args1_E, const typename Launch_T2::Param& args2_P,
                       const typename Launch_T2::Param& args2_E, parallel::IThreading* th) {
-  device::CpuHybrid cb;
-  Parallel_T para1_P({th->num_threads() - cb.E_core_num, args1_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
-  Parallel_T para2_P({th->num_threads() - cb.E_core_num, args2_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
-  Parallel_T para1_E({cb.E_core_num, args1_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
-  Parallel_T para2_E({cb.E_core_num, args2_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  GetCPU();
+  Parallel_T para1_P({th->num_threads() - _cb->E_core_num, args1_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
+  Parallel_T para2_P({th->num_threads() - _cb->E_core_num, args2_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
+  Parallel_T para1_E({_cb->E_core_num, args1_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
+  Parallel_T para2_E({_cb->E_core_num, args2_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall2 = typename Launch_T2::PrologueA::Parallel;
-  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - cb.E_core_num, args1_P.problem);
-  auto apara2_P = launcher2->mProA.createParallel(th->num_threads() - cb.E_core_num, args2_P.problem);
-  auto apara1_E = launcher1->mProA.createParallel(cb.E_core_num, args1_E.problem);
-  auto apara2_E = launcher2->mProA.createParallel(cb.E_core_num, args2_E.problem);
+  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - _cb->E_core_num, args1_P.problem);
+  auto apara2_P = launcher2->mProA.createParallel(th->num_threads() - _cb->E_core_num, args2_P.problem);
+  auto apara1_E = launcher1->mProA.createParallel(_cb->E_core_num, args1_E.problem);
+  auto apara2_E = launcher2->mProA.createParallel(_cb->E_core_num, args2_E.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -97,10 +97,10 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    GetCPU();
+    _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall1::ThreadProblem thdpA1{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
     } else {
@@ -109,7 +109,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp1{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) launcher1->run(args1_E, thdp1);
     } else {
@@ -118,7 +118,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename AParall2::ThreadProblem thdpA2{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       apara2_E.getIndex(thdpA2);
       if (thdpA2.valid) launcher2->mProA.run(args2_E.paramA, thdpA2);
     } else {
@@ -127,7 +127,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp2{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       para2_E.getIndex(thdp2);
       if (thdp2.valid) launcher2->run(args2_E, thdp2);
     } else {
@@ -140,9 +140,9 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
 template <class Parallel_T, class Launch_T1, class Launch_T2>
 void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename Launch_T1::Param& args1,
                  const typename Launch_T2::Param& args2, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
-  Parallel_T para2({th->num_threads(), args2.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para1({th->num_threads(), args1.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para2({th->num_threads(), args2.problem, _cb->mL2Cache, _cb->mL1Cache});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -244,8 +244,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher kernel;
   GetCPU();
   if (_cb->mHybrid) {
-    device::CpuHybrid cb;
-    int offset = seq - int(seq / (1 + cb.PE));
+    int offset = seq - int(seq / (1 + _cb->PE));
     utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp1_E(1, seq - offset, fmid, fin, w1ptr_->mBlockSize);
@@ -432,9 +431,9 @@ template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
 void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* launcher3,
                       const typename Launch_T1::Param& args1, const typename Launch_T2::Param& args2,
                       const typename Launch_T3::Param& args3, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
-  Parallel_T para3({th->num_threads(), args3.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para1({th->num_threads(), args1.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para3({th->num_threads(), args3.problem, _cb->mL2Cache, _cb->mL1Cache});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall3 = typename Launch_T3::PrologueA::Parallel;
   auto apara1 = launcher1->mProA.createParallel(th->num_threads(), args1.problem);
@@ -480,17 +479,17 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
                       const typename Launch_T2::Param& args2_P, const typename Launch_T2::Param& args2_E,
                       const typename Launch_T3::Param& args3_P, const typename Launch_T3::Param& args3_E,
                       parallel::IThreading* th) {
-  device::CpuHybrid cb;
-  Parallel_T para1_P({th->num_threads() - cb.E_core_num, args1_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
-  Parallel_T para3_P({th->num_threads() - cb.E_core_num, args3_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
-  Parallel_T para1_E({cb.E_core_num, args1_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
-  Parallel_T para3_E({cb.E_core_num, args3_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  GetCPU();
+  Parallel_T para1_P({th->num_threads() - _cb->E_core_num, args1_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
+  Parallel_T para3_P({th->num_threads() - _cb->E_core_num, args3_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
+  Parallel_T para1_E({_cb->E_core_num, args1_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
+  Parallel_T para3_E({_cb->E_core_num, args3_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
   using AParall1 = typename Launch_T1::PrologueA::Parallel;
   using AParall3 = typename Launch_T3::PrologueA::Parallel;
-  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - cb.E_core_num, args1_P.problem);
-  auto apara3_P = launcher3->mProA.createParallel(th->num_threads() - cb.E_core_num, args3_P.problem);
-  auto apara1_E = launcher1->mProA.createParallel(cb.E_core_num, args1_E.problem);
-  auto apara3_E = launcher3->mProA.createParallel(cb.E_core_num, args3_E.problem);
+  auto apara1_P = launcher1->mProA.createParallel(th->num_threads() - _cb->E_core_num, args1_P.problem);
+  auto apara3_P = launcher3->mProA.createParallel(th->num_threads() - _cb->E_core_num, args3_P.problem);
+  auto apara1_E = launcher1->mProA.createParallel(_cb->E_core_num, args1_E.problem);
+  auto apara3_E = launcher3->mProA.createParallel(_cb->E_core_num, args3_E.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -501,10 +500,10 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    GetCPU();
+    _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall1::ThreadProblem thdpA1{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
     } else {
@@ -514,7 +513,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp1{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) {
         launcher1->run(args1_E, thdp1);
@@ -530,7 +529,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename AParall3::ThreadProblem thdpA3{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       apara3_E.getIndex(thdpA3);
       if (thdpA3.valid) launcher3->mProA.run(args3_E.paramA, thdpA3);
     } else {
@@ -540,7 +539,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp3{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       para3_E.getIndex(thdp3);
       if (thdp3.valid) launcher3->run(args3_E, thdp3);
     } else {
@@ -554,9 +553,9 @@ template <class Parallel_T, class Launch_T1, class Launch_T2, class Launch_T3>
 void GemmRun_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* launcher3,
                  const typename Launch_T1::Param& args1, const typename Launch_T2::Param& args2,
                  const typename Launch_T3::Param& args3, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para1({th->num_threads(), args1.problem, cb.mL2Cache, cb.mL1Cache});
-  Parallel_T para3({th->num_threads(), args3.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para1({th->num_threads(), args1.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para3({th->num_threads(), args3.problem, _cb->mL2Cache, _cb->mL1Cache});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -681,10 +680,9 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher kernel;
   GetCPU();
   if (_cb->mHybrid) {
-    device::CpuHybrid cb;
-    int offset = seq - int(seq / (1 + cb.PE));
+    int offset = seq - int(seq / (1 + _cb->PE));
     // utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
-    // cb.getP_problem(gp1);
+    // _cb->getP_problem(gp1);
     utils::GemmProblem gp1_P(1, offset, fmid, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp2_P(1, offset, fout, fmid, w2ptr_->mBlockSize);
     utils::GemmProblem gp3_P(1, offset, fmid, fin, w3ptr_->mBlockSize);

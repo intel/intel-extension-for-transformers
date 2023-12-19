@@ -204,7 +204,7 @@ class SchedulerBase : public Scheduler2D {
     mL2Use += static_cast<size_t>(mBlock[1]) * mBlock[2] * mEleSize[1];
     mL2Use += static_cast<size_t>(mStep[0]) * mBlock[2] * mEleSize[0];
   }
-  const float DensityThres = 32;
+  const float DensityThres = 16;
   static size_t constexpr ReservedSize = 32ULL * 1024ULL;
 
   virtual float calculate_score() {
@@ -364,7 +364,7 @@ class SchedulerKBlock : public Scheduler2D {
     mL2Use += static_cast<size_t>(mBlock[1]) * mBlock[2] * mEleSize[1];
     mL2Use += static_cast<size_t>(mStep[0]) * mBlock[2] * mEleSize[0];
   }
-  const float DensityThres = 32;
+  const float DensityThres = 16;
 
   float calculate_score() {
     int tmpnstep = mThdSize[1] < _GemmCore_T::PREFERRED_N ? mThdSize[1] : _GemmCore_T::PREFERRED_N;
@@ -671,8 +671,8 @@ class SingleThread : public StdThreading {
 
 template <class Parallel_T, class Launch_T>
 void GemmRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para({th->num_threads(), args.problem, _cb->mL2Cache, _cb->mL1Cache});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -690,8 +690,8 @@ void GemmRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel:
 
 template <class Parallel_T, class Launch_T>
 void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
-  device::CpuBase cb;
-  Parallel_T para({th->num_threads(), args.problem, cb.mL2Cache, cb.mL1Cache});
+  GetCPU();
+  Parallel_T para({th->num_threads(), args.problem, _cb->mL2Cache, _cb->mL1Cache});
   using AParall = typename Launch_T::PrologueA::Parallel;
   auto apara = launcher.mProA.createParallel(th->num_threads(), args.problem);
   static bool flag = false;
@@ -718,12 +718,12 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, para
 template <class Parallel_T, class Launch_T>
 void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, const typename Launch_T::Param& args_E,
                   parallel::IThreading* th) {
-  device::CpuHybrid cb;
-  Parallel_T para_P({th->num_threads() - cb.E_core_num, args_P.problem, cb.mL2Cache_P, cb.mL1Cache_P});
-  Parallel_T para_E({cb.E_core_num, args_E.problem, cb.mL2Cache_E, cb.mL1Cache_E});
+  GetCPU();
+  Parallel_T para_P({th->num_threads() - _cb->E_core_num, args_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
+  Parallel_T para_E({_cb->E_core_num, args_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  auto apara_P = launcher.mProA.createParallel(th->num_threads() - cb.E_core_num, args_P.problem);
-  auto apara_E = launcher.mProA.createParallel(cb.E_core_num, args_E.problem);
+  auto apara_P = launcher.mProA.createParallel(th->num_threads() - _cb->E_core_num, args_P.problem);
+  auto apara_E = launcher.mProA.createParallel(_cb->E_core_num, args_E.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -732,10 +732,10 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     flag = false;
   }
   th->parallel_for([&](int tidx) {
-    GetCPU();
+    _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall::ThreadProblem thdpA{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       apara_E.getIndex(thdpA);
       if (thdpA.valid) launcher.mProA.run(args_E.paramA, thdpA);
     } else {
@@ -744,7 +744,7 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp{core_idx};
-    if (cb.P_core_num < tidx && tidx < cb.P_core_num + cb.E_core_num) {
+    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
       para_E.getIndex(thdp);
       if (thdp.valid) launcher.run(args_E, thdp);
     } else {
