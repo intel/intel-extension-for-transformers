@@ -44,6 +44,10 @@
 #define MODEL_SESSION_VERSION 1
 
 QUANT_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
+size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                   const quant_params_internal params, int nthread, int n, int k, int* g_idx);
+size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
+                      size_t k);
 QUANT_API bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
                                       const std::vector<std::string>& to_quant,
                                       const std::vector<std::string>& to_skip);
