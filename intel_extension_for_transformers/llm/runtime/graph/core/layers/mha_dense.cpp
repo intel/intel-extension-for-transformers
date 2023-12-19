@@ -654,7 +654,7 @@ class MHAInterface {
     assert(p.step_v_head_size == 1);
     assert(p.step_k_head_size == 1 || p.step_k_sl == 1);
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
-    jblas::device::CpuBase cb;                         // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
+    GetCPU();                                          // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
 
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
     const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
@@ -758,8 +758,8 @@ class MHAInterface {
           typename jblas::parallel::gemm::ThreadProblemBase tpQK{
               /* ThreadProblem2D */ {tid, {}, {i_m, 0}, {m_size, unmasked_size_pad_qk}, true},
               /* .block = */ {M_TILE, GemmQK::NTILE, p.head_size},
-              /* .stacksize = */ cb.mL2Cache,
-              /* .tmpcachesize = */ cb.mL2Cache,
+              /* .stacksize = */ _cb->getL2Cache(),
+              /* .tmpcachesize = */ _cb->getL2Cache(),
           };
           const auto bf16_tmp = reinterpret_cast<bf16*>(tmp);
           l_expsum.run(  // QxK => S ==exp==> P
@@ -789,8 +789,8 @@ class MHAInterface {
           typename jblas::parallel::gemm::ThreadProblemBase tpPV{
               /* ThreadProblem2D */ {tid, {}, {0, 0}, {m_size, p.head_size}, true},
               /* .block = */ {M_TILE, GemmPV::NTILE, unmasked_size_pad_qk},
-              /* .stacksize = */ cb.mL2Cache,
-              /* .tmpcachesize = */ cb.mL2Cache,
+              /* .stacksize = */ _cb->getL2Cache(),
+              /* .tmpcachesize = */ _cb->getL2Cache(),
           };
           l_scale.run(  // PxV => O
               PVArgs{
@@ -1335,7 +1335,7 @@ class MHAStableInterface {
     assert((p.K_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_v_head_size == 1));
     assert((p.V_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_k_sl == 1));
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
-    jblas::device::CpuBase cb;                         // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
+    GetCPU();                                          // Note: DO NOT use cb.mNumThreads; use th.num_threads() instead
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
     const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
     assert(!is_causal || p.sl_q <= p.sl_kv);
@@ -1407,8 +1407,8 @@ class MHAStableInterface {
           typename jblas::parallel::gemm::ThreadProblemBase tpQK{
               /* ThreadProblem2D */ {tid, {}, {i_m, 0}, {m_size, unmasked_size_pad_qk}, true},
               /* .block = */ {M_TILE, GemmQK::NTILE, p.head_size},
-              /* .stacksize = */ cb.mL2Cache,
-              /* .tmpcachesize = */ cb.mL2Cache,
+              /* .stacksize = */ _cb->getL2Cache(),
+              /* .tmpcachesize = */ _cb->getL2Cache(),
           };
           l_qk.run(  // QxK => S ==exp==> P
               QKArgs{
@@ -1461,8 +1461,8 @@ class MHAStableInterface {
           typename jblas::parallel::gemm::ThreadProblemBase tpPV{
               /* ThreadProblem2D */ {tid, {}, {0, 0}, {m_size, p.head_size}, true},
               /* .block = */ {M_TILE, GemmPV::NTILE, unmasked_size_pad_pv},
-              /* .stacksize = */ cb.mL2Cache,
-              /* .tmpcachesize = */ cb.mL2Cache,
+              /* .stacksize = */ _cb->getL2Cache(),
+              /* .tmpcachesize = */ _cb->getL2Cache(),
           };
           l_pv.run(  // PxV => O
               PVArgs{

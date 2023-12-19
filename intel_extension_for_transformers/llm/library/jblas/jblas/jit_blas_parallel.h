@@ -672,7 +672,7 @@ class SingleThread : public StdThreading {
 template <class Parallel_T, class Launch_T>
 void GemmRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para({th->num_threads(), args.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para({th->num_threads(), args.problem, _cb->getL2Cache(), _cb->getL1Cache()});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -691,7 +691,7 @@ void GemmRun(Launch_T& launcher, const typename Launch_T::Param& args, parallel:
 template <class Parallel_T, class Launch_T>
 void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args, parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para({th->num_threads(), args.problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para({th->num_threads(), args.problem, _cb->getL2Cache(), _cb->getL1Cache()});
   using AParall = typename Launch_T::PrologueA::Parallel;
   auto apara = launcher.mProA.createParallel(th->num_threads(), args.problem);
   static bool flag = false;
@@ -719,11 +719,11 @@ template <class Parallel_T, class Launch_T>
 void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, const typename Launch_T::Param& args_E,
                   parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para_P({th->num_threads() - _cb->E_core_num, args_P.problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
-  Parallel_T para_E({_cb->E_core_num, args_E.problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
+  Parallel_T para_P({th->num_threads() - _cb->getECoreNum(), args_P.problem, _cb->getL2Cache_P(), _cb->getL1Cache_P()});
+  Parallel_T para_E({_cb->getECoreNum(), args_E.problem, _cb->getL2Cache_E(), _cb->getL1Cache_E()});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  auto apara_P = launcher.mProA.createParallel(th->num_threads() - _cb->E_core_num, args_P.problem);
-  auto apara_E = launcher.mProA.createParallel(_cb->E_core_num, args_E.problem);
+  auto apara_P = launcher.mProA.createParallel(th->num_threads() - _cb->getECoreNum(), args_P.problem);
+  auto apara_E = launcher.mProA.createParallel(_cb->getECoreNum(), args_E.problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -735,7 +735,7 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall::ThreadProblem thdpA{core_idx};
-    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
+    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
       apara_E.getIndex(thdpA);
       if (thdpA.valid) launcher.mProA.run(args_E.paramA, thdpA);
     } else {
@@ -744,7 +744,7 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp{core_idx};
-    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
+    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
       para_E.getIndex(thdp);
       if (thdp.valid) launcher.run(args_E, thdp);
     } else {

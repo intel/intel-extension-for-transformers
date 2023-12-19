@@ -22,7 +22,7 @@ namespace ip_qkv {
 template <class Parallel_T, class Launch_T>
 void GemmRun_QKV(Launch_T* launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para({th->num_threads(), args[0].problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para({th->num_threads(), args[0].problem, _cb->getL2Cache(), _cb->getL1Cache()});
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -43,7 +43,7 @@ void GemmRun_QKV(Launch_T* launcher, const typename Launch_T::Param* args, paral
 template <class Parallel_T, class Launch_T>
 void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args, parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para({th->num_threads(), args[0].problem, _cb->mL2Cache, _cb->mL1Cache});
+  Parallel_T para({th->num_threads(), args[0].problem, _cb->getL2Cache(), _cb->getL1Cache()});
   using AParall = typename Launch_T::PrologueA::Parallel;
   auto apara = launcher->mProA.createParallel(th->num_threads(), args[0].problem);
   static bool flag = false;
@@ -73,11 +73,12 @@ template <class Parallel_T, class Launch_T>
 void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P,
                       const typename Launch_T::Param* args_E, parallel::IThreading* th) {
   GetCPU();
-  Parallel_T para_P({th->num_threads() - _cb->E_core_num, args_P[0].problem, _cb->mL2Cache_P, _cb->mL1Cache_P});
-  Parallel_T para_E({_cb->E_core_num, args_E[0].problem, _cb->mL2Cache_E, _cb->mL1Cache_E});
+  Parallel_T para_P(
+      {th->num_threads() - _cb->getECoreNum(), args_P[0].problem, _cb->getL2Cache_P(), _cb->getL1Cache_P()});
+  Parallel_T para_E({_cb->getECoreNum(), args_E[0].problem, _cb->getL2Cache_E(), _cb->getL1Cache_E()});
   using AParall = typename Launch_T::PrologueA::Parallel;
-  auto apara_P = launcher->mProA.createParallel(th->num_threads() - _cb->E_core_num, args_P[0].problem);
-  auto apara_E = launcher->mProA.createParallel(_cb->E_core_num, args_E[0].problem);
+  auto apara_P = launcher->mProA.createParallel(th->num_threads() - _cb->getECoreNum(), args_P[0].problem);
+  auto apara_E = launcher->mProA.createParallel(_cb->getECoreNum(), args_E[0].problem);
   static bool flag = false;
   if (flag) {
     printf("%s\n", __FUNCTION__);
@@ -89,7 +90,7 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall::ThreadProblem thdpA{core_idx};
-    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
+    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
       apara_E.getIndex(thdpA);
       if (thdpA.valid) launcher->mProA.run(args_E[0].paramA, thdpA);
     } else {
@@ -99,7 +100,7 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp{core_idx};
-    if (_cb->P_core_num < tidx && tidx < _cb->P_core_num + _cb->E_core_num) {
+    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
       para_E.getIndex(thdp);
       if (thdp.valid)
         for (size_t i = 0; i < 3; i++) launcher->run(args_E[i], thdp);
@@ -184,8 +185,8 @@ void JblasGemmCompInt8(const int M, const int N, const int K, const float* A, co
   auto BV = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(_BV);
   static Launcher kernel;
   GetCPU();
-  if (_cb->mHybrid) {
-    int offset = M - int(M / (1 + _cb->PE));
+  if (_cb->isHybrid()) {
+    int offset = M - int(M / (1 + _cb->getPE()));
     utils::GemmProblem gp_P(1, offset, N, K, BQ->mBlockSize);
     utils::GemmProblem gp_E(1, M - offset, N, K, BQ->mBlockSize);
     auto quanA_P = kernel.mProA.createStorage(offset, K, BQ->mBlockSize, BQ->IsAsym());
