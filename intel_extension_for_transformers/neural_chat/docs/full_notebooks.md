@@ -33,6 +33,8 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 4.3     | Fine-tuning on Habana Gaudi1/Gaudi2 (Single Card) | Learn how to fine-tune on Habana Gaudi1/Gaudi2 with single card | [Notebook](./notebooks/single_card_finetuning_on_habana_gaudi.ipynb) |
 | 4.4     | Fine-tuning on Habana Gaudi1/Gaudi2 (Multiple Cards) | Learn how to fine-tune on  Habana Gaudi1/Gaudi2 with multiple cards | [Notebook](./notebooks/multi_card_finetuning_on_habana_gaudi.ipynb) |
 | 4.5     | Fine-tuning on Nvidia A100 (Single Card)       | Learn how to fine-tune chatbot on Nvidia A100 | [Notebook](./notebooks/finetuning_on_nv_a100.ipynb) |
+| 4.6     | Finetune Neuralchat on NVIDIA GPU       | Learn how to fine-tune Neuralchat on Nvidia GPU | [Notebook](./notebooks/finetune_neuralchat_v2_on_Nvidia_GPU.ipynb) |
+| 4.7     | Finetuning or RAG for external knowledge       | Learn how to fine-tune or RAG for external knowledge | [Notebook](./notebooks/Finetuning_or_RAG_for_external_knowledge.ipynb) |
 | 5       | Customizing Chatbots                          |                                                          |                                                         |
 | 5.1     | Enabling Plugins to Customize Chatbot         | Learn how to customize chatbot using plugins             | [Notebook](./notebooks/customize_chatbot_with_plugins.ipynb) |
 | 5.2     | Enabling Fine-tuned Models in Chatbot         | Learn how to customize chatbot using fine-tuned models   | [Notebook](./notebooks/customize_chatbot_with_finetuned_models.ipynb) |
