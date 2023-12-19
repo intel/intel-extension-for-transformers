@@ -208,42 +208,6 @@ class isa_base {
 
 class CpuDevice {
  public:
-  inline void setThreads(int _nth) {
-    if (!mHybrid) {
-      if (_nth <= 0)
-        numthreads = numcores;
-      else
-        numthreads = std::min(numcores, _nth);
-    } else {
-      numthreads = _nth;
-      if (_nth <= numcores) {
-        if (_nth > P_core.size()) {
-          E_core.erase(E_core.begin() + _nth - P_core.size(), E_core.end());
-        } else if (_nth <= 0) {
-          numthreads = E_core.size() + P_core.size() + smt_core.size();
-        } else {
-          E_core.clear();
-          P_core.erase(P_core.begin() + _nth, P_core.end());
-          mHybrid = false;
-        }
-        smt_core.clear();
-      } else {  // use SMT
-        L1Cache = L1Cache / 2;
-        L2Cache = L2Cache / 2;
-        smt_core.erase(smt_core.begin() + _nth - numcores, smt_core.end());
-      }
-      static bool p = true;
-      if (p) {
-        printf("Pcore:");
-        for (auto& i : P_core) printf("%d,", i);
-        printf("\nEcore:");
-        for (auto& i : E_core) printf("%d,", i);
-        printf("\nsmt:");
-        for (auto& i : smt_core) printf("%d,", i);
-        printf("\n");
-      }
-    }
-  }
   inline int getThreads() { return numthreads; }
   inline int getCores() { return numcores; }
   inline uint32_t getL2CacheSize() { return L2Cache; }
@@ -265,7 +229,7 @@ class CpuDevice {
   inline std::vector<int> getCoreOrder() {
     std::vector<int> core_order = P_core;
     core_order.insert(core_order.end(), E_core.begin(), E_core.end());
-    core_order.insert(core_order.end(), smt_core.begin(), smt_core.end());
+    core_order.insert(core_order.end(), SMT_core.begin(), SMT_core.end());
     return core_order;
   }
 #define ADD_FLAG(isa) mHas##isa = _cpu.has(_cpu.t##isa)
@@ -328,7 +292,7 @@ class CpuDevice {
               P_core.push_back(i);
               core_id_count[core_id[i]] = 0;
             } else {
-              smt_core.push_back(i);
+              SMT_core.push_back(i);
             }
           } else {
             if (core_id_count[core_id[i]] == 4) E_core.push_back(i);
@@ -340,21 +304,23 @@ class CpuDevice {
           printf("\nEcore:");
           for (auto& i : E_core) printf("%d,", i);
           printf("\nsmt:");
-          for (auto& i : smt_core) printf("%d,", i);
+          for (auto& i : SMT_core) printf("%d,", i);
           printf("\n");
         }
         L1Cache = L1[P_core[0]];
         E_L1Cache = L1[E_core[0]];
         L2Cache = L2[P_core[0]];
         E_L2Cache = L2[E_core[0]] / 4;
-        numcores = P_core.size() + E_core.size();
       }
+      numcores = P_core.size() + E_core.size();
+      numthreads = P_core.size() * 2 + E_core.size();
       delete[] core_type;
       delete[] core_id;
       delete[] L1;
       delete[] L2;
+    } else {
+      numthreads = numcores;
     }
-    numthreads = numcores;
   }
 
   static CpuDevice* getInstance() {
@@ -457,7 +423,7 @@ class CpuDevice {
       mHasAVX512_FP16;
   int numcores;
   int numthreads;
-  std::vector<int> P_core, E_core, smt_core;
+  std::vector<int> P_core, E_core, SMT_core;
   uint32_t E_L2Cache, E_L1Cache;
   float P_power = 3.8, E_power = 2.7;
 };
@@ -474,33 +440,97 @@ class CpuBase {
   }
   size_t mL2Cache, mL1Cache;
   int mNumThreads;
+  bool mHybrid = false;
+  inline virtual int setThreads(int _nth) {
+    if (_nth > 0) mNumThreads = mNumThreads < _nth ? mNumThreads : _nth;
+    return mNumThreads;
+  }
+  inline virtual int getCoreidx(int tidx) { return tidx; }
 };
 
-class CpuHybrid {
+class CpuHybrid : public CpuBase {
  public:
+  enum core_type { P_core, E_core, SMT_core };
   CpuHybrid() {
     GetCPUDevice();
-    mL2Cache_P = _cd->getL2CacheSize();
-    mL1Cache_P = _cd->getL1CacheSize();
+    mL2Cache_P = _cd->getL2CacheSize() / 2;
+    mL1Cache_P = _cd->getL1CacheSize() / 2;
     mL2Cache_E = _cd->getL2CacheSize_E();
     mL1Cache_E = _cd->getL1CacheSize_E();
     P_core_num = _cd->getPcoreNum();
     E_core_num = _cd->getEcoreNum();
     mNumThreads = _cd->getThreads();
     PE = _cd->getPE();
-    cores_order = _cd->getCoreOrder();
   }
 
-  void core_bond(int tidx) {
-    int core = cores_order[tidx];
-    CpuDevice::core_bond(core);
+  // void core_bond(int tidx) {
+  //   int core = cores_order[tidx];
+  //   CpuDevice::core_bond(core);
+  // }
+
+  int getCoreType(int tidx) {
+    if (tidx < P_core_num)
+      return P_core;
+    else if (tidx < P_core_num + E_core_num)
+      return E_core;
+    else
+      return SMT_core;
+  }
+
+  inline int getCoreidx(int tidx) override {
+    switch (getCoreType(tidx)) {
+      case E_core:
+        return tidx - P_core_num;
+      case SMT_core:
+        return tidx - E_core_num;
+      default:
+        return tidx;
+    }
+  }
+
+  inline int setThreads(int _nth) override {
+    if (_nth > 0) mNumThreads = mNumThreads < _nth ? mNumThreads : _nth;
+    GetCPUDevice();
+    if (mNumThreads <= P_core_num) {
+      mL2Cache_P = _cd->getL2CacheSize();
+      mL1Cache_P = _cd->getL1CacheSize();
+      P_core_num = mNumThreads;
+      E_core_num = 0;
+      mHybrid = false;
+    } else if (mNumThreads <= P_core_num + E_core_num) {
+      mL2Cache_P = _cd->getL2CacheSize();
+      mL1Cache_P = _cd->getL1CacheSize();
+      P_core_num = _cd->getPcoreNum();
+      E_core_num = mNumThreads - P_core_num;
+      mHybrid = true;
+    } else {
+      mL2Cache_P = _cd->getL2CacheSize() / 2;
+      mL1Cache_P = _cd->getL1CacheSize() / 2;
+      P_core_num = _cd->getPcoreNum();
+      E_core_num = _cd->getEcoreNum();
+      mHybrid = true;
+    }
+    return mNumThreads;
+  }
+
+  static CpuBase* getInstance() {
+    GetCPUDevice();
+    if (_cd->isHybrid()) {
+      static CpuBase cb;
+      return &cb;
+    } else {
+      static CpuHybrid ch;
+      return &ch;
+    }
   }
 
   uint32_t mL2Cache_P, mL1Cache_P, mL2Cache_E, mL1Cache_E;
   int P_core_num, E_core_num;
-  std::vector<int> cores_order;
   float PE;
   int mNumThreads;
+  bool mHybrid = true;
 };
+#define GetCPU() jblas::device::CpuBase* _cb = jblas::device::CpuHybrid::getInstance();
+
 }  // namespace device
 }  // namespace jblas
