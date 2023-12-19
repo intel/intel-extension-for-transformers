@@ -29,15 +29,15 @@ class TestNeuralChatModel(unittest.TestCase):
 
     def test_match(self):
         result = NeuralChatModel().match(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1-1')
+            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1')
         self.assertTrue(result)
 
     def test_get_default_conv_template_v1(self):
         result = NeuralChatModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1-1')
+            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1')
         self.assertIn("<|im_start|>system", str(result))
         config = PipelineConfig(
-            model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1-1")
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)
@@ -58,7 +58,7 @@ class TestNeuralChatModel(unittest.TestCase):
             model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3')
         self.assertIn("### System:", str(result))
         config = PipelineConfig(
-            model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v2")
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         self.assertIn('The Intel Xeon Scalable Processors', str(result))
