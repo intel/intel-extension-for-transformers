@@ -226,12 +226,9 @@ class CpuDevice {
   inline float getPE() { return (P_core.size() * P_power) / (E_core.size() * E_power); }
   inline size_t getPcoreNum() { return P_core.size(); }
   inline size_t getEcoreNum() { return E_core.size(); }
-  inline std::vector<int> getCoreOrder() {
-    std::vector<int> core_order = P_core;
-    core_order.insert(core_order.end(), E_core.begin(), E_core.end());
-    core_order.insert(core_order.end(), SMT_core.begin(), SMT_core.end());
-    return core_order;
-  }
+  inline std::vector<int> getPCores() { return P_core; }
+  inline std::vector<int> getECores() { return E_core; }
+  inline std::vector<int> getSMTCores() { return SMT_core; }
 #define ADD_FLAG(isa) mHas##isa = _cpu.has(_cpu.t##isa)
   CpuDevice() {
     static Xbyak::util::Cpu _cpu;
@@ -247,11 +244,12 @@ class CpuDevice {
     ADD_FLAG(AVX512_BF16);
     ADD_FLAG(AVX512_FP16);
     numcores = _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
+    static bool p = false;
     {
       uint32_t tmp[4];
       _cpu.getCpuid(7, tmp);
       if (tmp[3] & (1U << 15)) mHybrid = true;
-      // printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
+      if(p) printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
     }
     if (mHybrid) {
       int total_cores = numcores * _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::SmtLevel);
@@ -281,7 +279,6 @@ class CpuDevice {
           thdset[i].join();
           core_id_count[core_id[i]] = core_id_count[core_id[i]] + 1;
         }
-        static bool p = false;
         if (p) {
           for (int i = 0; i < total_cores; i++) printf("%d %d\n", core_type[i], core_id[i]);
           for (auto& kv : core_id_count) printf("%d,%d\n", kv.first, kv.second);
@@ -425,7 +422,7 @@ class CpuDevice {
   int numthreads;
   std::vector<int> P_core, E_core, SMT_core;
   uint32_t E_L2Cache, E_L1Cache;
-  float P_power = 3.8, E_power = 2.7;
+  float P_power = 4.2, E_power = 2.8;
 };
 
 #define GetCPUDevice() auto _cd = jblas::device::CpuDevice::getInstance();
@@ -438,14 +435,25 @@ class CpuBase {
     mL1Cache = _cd->getL1CacheSize();
     mNumThreads = _cd->getThreads();
   }
+
   size_t mL2Cache, mL1Cache;
   int mNumThreads;
   bool mHybrid = false;
   inline virtual int setThreads(int _nth) {
-    if (_nth > 0) mNumThreads = mNumThreads < _nth ? mNumThreads : _nth;
+    GetCPUDevice();
+    if (_nth > 0) mNumThreads = _cd->getThreads() < _nth ? _cd->getThreads() : _nth;
     return mNumThreads;
   }
   inline virtual int getCoreidx(int tidx) { return tidx; }
+
+  inline virtual void core_bond(int tidx) { }
+  uint32_t mL2Cache_P = 0, mL1Cache_P = 0, mL2Cache_E = 0, mL1Cache_E = 0;
+  int P_core_num = 0, E_core_num = 0;
+  float PE = 1;
+
+  inline virtual void print() { 
+      printf("CPUBase:%d %d %d\n", mNumThreads, (int)mL1Cache, (int)mL2Cache);
+  }
 };
 
 class CpuHybrid : public CpuBase {
@@ -463,10 +471,10 @@ class CpuHybrid : public CpuBase {
     PE = _cd->getPE();
   }
 
-  // void core_bond(int tidx) {
-  //   int core = cores_order[tidx];
-  //   CpuDevice::core_bond(core);
-  // }
+   inline void core_bond(int tidx) override {
+       int core = core_order[tidx];
+       CpuDevice::core_bond(core);
+   }
 
   int getCoreType(int tidx) {
     if (tidx < P_core_num)
@@ -489,46 +497,58 @@ class CpuHybrid : public CpuBase {
   }
 
   inline int setThreads(int _nth) override {
-    if (_nth > 0) mNumThreads = mNumThreads < _nth ? mNumThreads : _nth;
     GetCPUDevice();
+    if (_nth > 0) mNumThreads = _cd->getThreads() < _nth ? _cd->getThreads() : _nth;
+    core_order.clear();
+    auto Pcores = _cd->getPCores();
+    auto Ecores = _cd->getECores();
+    auto SMTcores = _cd->getSMTCores();
     if (mNumThreads <= P_core_num) {
       mL2Cache_P = _cd->getL2CacheSize();
       mL1Cache_P = _cd->getL1CacheSize();
       P_core_num = mNumThreads;
       E_core_num = 0;
+      core_order.insert(core_order.end(), Pcores.begin(), Pcores.begin() + P_core_num);
       mHybrid = false;
     } else if (mNumThreads <= P_core_num + E_core_num) {
       mL2Cache_P = _cd->getL2CacheSize();
       mL1Cache_P = _cd->getL1CacheSize();
       P_core_num = _cd->getPcoreNum();
       E_core_num = mNumThreads - P_core_num;
+      core_order.insert(core_order.end(), Pcores.begin(), Pcores.end());
+      core_order.insert(core_order.end(), Ecores.begin(), Ecores.begin() + P_core_num);
       mHybrid = true;
     } else {
       mL2Cache_P = _cd->getL2CacheSize() / 2;
       mL1Cache_P = _cd->getL1CacheSize() / 2;
       P_core_num = _cd->getPcoreNum();
       E_core_num = _cd->getEcoreNum();
+      core_order.insert(core_order.end(), Pcores.begin(), Pcores.end());
+      core_order.insert(core_order.end(), Ecores.begin(), Ecores.end());
+      core_order.insert(core_order.end(), SMTcores.begin(), SMTcores.begin() + mNumThreads-P_core_num-E_core_num);
       mHybrid = true;
     }
     return mNumThreads;
   }
 
+  inline void print() override { 
+    printf("CPUHyprid:%d %d %d %d\n", mNumThreads, P_core_num, E_core_num, mHybrid);
+    printf("%d %d %d %d\n", (int)mL1Cache_P , (int)mL2Cache_P , (int)mL1Cache_E , (int)mL2Cache);
+  }
+
   static CpuBase* getInstance() {
     GetCPUDevice();
     if (_cd->isHybrid()) {
-      static CpuBase cb;
-      return &cb;
-    } else {
       static CpuHybrid ch;
       return &ch;
+    } else {
+      static CpuBase cb;
+      return &cb;
     }
   }
 
-  uint32_t mL2Cache_P, mL1Cache_P, mL2Cache_E, mL1Cache_E;
-  int P_core_num, E_core_num;
-  float PE;
-  int mNumThreads;
   bool mHybrid = true;
+  std::vector<int> core_order;
 };
 #define GetCPU() jblas::device::CpuBase* _cb = jblas::device::CpuHybrid::getInstance();
 
