@@ -69,7 +69,7 @@ def build_chatbot(config: PipelineConfig=None):
             return
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower() or "magicoder" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
