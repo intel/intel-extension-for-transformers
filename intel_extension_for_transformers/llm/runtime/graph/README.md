@@ -124,9 +124,9 @@ LLM Runtime supports the following models:
     <td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-1</a>,
     <a href="https://huggingface.co/Intel/neural-chat-7b-v3-2" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-2</a></td>
     <td>✅</td>
-    <td> </td>
     <td>✅</td>
-    <td> </td>
+    <td>✅</td>
+    <td>✅</td>
     <td>Latest</td>
   </tr>
   <tr>
@@ -260,7 +260,7 @@ To enable [StreamingLLM for infinite inference](./docs/infinite_inference.md), h
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-2"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
