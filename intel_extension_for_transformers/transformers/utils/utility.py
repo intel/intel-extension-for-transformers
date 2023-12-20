@@ -105,6 +105,76 @@ def generate_dummy_past_key_values(config, input_bs):
         num_key_value_heads = normalized_config.multi_query_group_num
 
     if config.model_type == "bloom":
+        shape_key = (input_bs * num_attention_heads, d_k, 1)
+        shape_value = (input_bs * num_attention_heads, 1, d_k)
+        key = torch.ones(size=shape_key)
+        value = torch.ones(size=shape_value)
+        past_key_values = tuple(
+            tuple(key if idx % 2 == 0 else value for idx in range(nb_pkv))
+            for _ in range(num_layers)
+        )
+        return past_key_values
+    elif config.model_type == "gpt_bigcode":
+        new_shape = [input_bs, 0, d_k * 2]
+        dummy_tensor = torch.zeros(size=new_shape)
+        past_key_values = tuple([dummy_tensor] * num_layers)
+        return past_key_values
+    elif config.model_type == "qwen":
+        new_shape = [input_bs, 1, num_key_value_heads, d_k]
+        past_key_values = [
+            (
+                torch.ones(size=new_shape).contiguous(),
+                torch.ones(size=new_shape).contiguous(),
+            )
+            for _ in range(num_layers)
+        ]
+        return tuple(past_key_values)
+    elif config.model_type == "baichuan":
+        new_shape = [input_bs, num_key_value_heads, 1, d_k]
+        past_key_values = [
+            (
+                torch.ones(size=new_shape).contiguous(),
+                torch.ones(size=new_shape).contiguous(),
+            )
+            for _ in range(num_layers)
+        ]
+        return tuple(past_key_values)
+    elif config.model_type == "chatglm":
+        new_shape = [0, input_bs, num_key_value_heads, d_k]
+    elif config.model_type == "falcon":
+        new_shape = [input_bs, 1, 0, d_k]
+    else:
+        new_shape = [input_bs, num_key_value_heads, 0, d_k]
+    past_key_values = [
+        (
+            torch.zeros(size=new_shape).contiguous(),
+            torch.zeros(size=new_shape).contiguous(),
+        )
+        for _ in range(num_layers)
+    ]
+    return tuple(past_key_values)
+
+def generate_dummy_past_key_values_for_inference(config, input_bs):
+    """
+    Generate the dummy past_key_values.
+    """
+    from optimum.utils import NormalizedConfigManager
+
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(
+        config.model_type
+    )(config)
+    nb_pkv = 2
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    num_key_value_heads = num_attention_heads
+    if hasattr(normalized_config, "num_key_value_heads"):
+        num_key_value_heads = normalized_config.num_key_value_heads
+    if hasattr(normalized_config, "multi_query_group_num"):
+        num_key_value_heads = normalized_config.multi_query_group_num
+
+    if config.model_type == "bloom":
         shape_key = (input_bs * num_attention_heads, d_k, 0)
         shape_value = (input_bs * num_attention_heads, 0, d_k)
         key = torch.empty(size=shape_key)
@@ -135,7 +205,6 @@ def generate_dummy_past_key_values(config, input_bs):
         for _ in range(num_layers)
     ]
     return tuple(past_key_values)
-
 
 def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
     """
@@ -195,8 +264,7 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "imagegpt",
     "llama",
     "mistral",
-    "chatglm",
-    "qwen"
+    "chatglm"
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):

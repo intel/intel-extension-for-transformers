@@ -333,7 +333,10 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        attention_mask = torch.ones(len(input_ids))
+                        if model_type in ["bloom", "qwen", "baichuan"]:
+                            attention_mask = torch.ones(len(input_ids) +1)
+                        else:
+                            attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
@@ -449,18 +452,6 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        elif model_type == "falcon" or model_type == "qwen":
-                            example_inputs = inputs
-                            input_bs, input_len = inputs["input_ids"].shape
-                            outputs = model(inputs["input_ids"])
-                            example_inputs["past_key_values"] = outputs[1]
-                            example_inputs["attention_mask"] = torch.ones(
-                                input_bs, input_len + 1
-                            )
-                            example_inputs["position_ids"] = (
-                                inputs["position_ids"][:, -1:] + 1
-                            )
-                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
                         else:
                             example_inputs = inputs
                     else:

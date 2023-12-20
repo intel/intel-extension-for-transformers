@@ -142,7 +142,7 @@ function run_benchmark {
     elif [ "${topology}" = "qwen_7b" ]; then
         model_name_or_path="Qwen/Qwen-7B"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-	pip install transformers==4.33.3
+	pip install transformers==4.35.2
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3"
     elif [ "${topology}" = "phi_1b" ]; then

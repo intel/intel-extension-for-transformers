@@ -266,7 +266,6 @@ elif args.load_in_4bit or args.load_in_8bit:
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         _commit_hash=args._commit_hash,
-        use_llm_runtime=False,
         use_llm_runtime=args.use_llm_runtime,
     )
 elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
