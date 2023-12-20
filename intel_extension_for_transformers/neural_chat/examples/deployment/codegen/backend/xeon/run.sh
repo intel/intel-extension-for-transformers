@@ -15,17 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the parameter configuration file for NeuralChat Serving.
+# Kill the exist and re-run
+ps -ef |grep 'run_code_gen' |awk '{print $2}' |xargs kill -9
 
-#################################################################################
-#                             SERVER SETTING                                    #
-#################################################################################
-host: 0.0.0.0
-port: 8000
+# KMP
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
 
-model_name_or_path: "/mnt/localdisk/models/codegen25-7b-mono"
-device: "cpu"
+# OMP
+export OMP_NUM_THREADS=48
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
+# tc malloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
-tasks_list: ['codegen']
+numactl -l -C 0-47 python -m run_code_gen 2>&1 | tee run.log
