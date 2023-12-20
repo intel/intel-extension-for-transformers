@@ -3020,8 +3020,9 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_load(ctx);
 
-  ne_set_op_params(result, &freq_base, sizeof(freq_base));
-  ne_set_op_params(result, &freq_scale, sizeof(freq_scale));
+  float params[] = {freq_base, freq_scale};
+  ne_set_op_params(result, &params, sizeof(params));
+
   result->op = NE_OP_ROPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
