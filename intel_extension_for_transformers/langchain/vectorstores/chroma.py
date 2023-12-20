@@ -18,7 +18,7 @@
 """The wrapper for Chroma retriever based on langchain"""
 from __future__ import annotations
 import base64
-import logging
+import logging, os
 import uuid
 from typing import (
     TYPE_CHECKING,
@@ -42,8 +42,16 @@ _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
 
 
 class Chroma(Chroma_origin):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        try:
+            import chromadb
+            import chromadb.config
+        except ImportError:
+            raise ImportError(
+                "Could not import chromadb python package. "
+                "Please install it with `pip install chromadb`."
+            )
 
     @classmethod
     def from_documents(
