@@ -261,22 +261,28 @@ class SentencePieceVocab:
 
     def sentencepiece_tokens(self) -> Iterable[Tuple[bytes, float]]:
         tokenizer = self.sentencepiece_tokenizer
-        for i in range(tokenizer.vocab_size()):
-            text: bytes
-            if tokenizer.is_unknown(i):
+        for i in range(32256):
+            text: bytes           
+            if i < tokenizer.vocab_size():
+                if tokenizer.is_unknown(i):
+                    text = " \u2047 ".encode("utf-8")
+                elif tokenizer.is_control(i):
+                    text = b""
+                elif tokenizer.is_byte(i):
+                    piece = tokenizer.id_to_piece(i)
+                    if len(piece) != 6:
+                        raise Exception(f"Invalid token: {piece}")
+                    byte_value = int(piece[3:-1], 16)
+                    text = struct.pack("B", byte_value)
+                else:
+                    text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
+                score: float = tokenizer.get_score(i)
+                yield text, score
+            else :
                 text = " \u2047 ".encode("utf-8")
-            elif tokenizer.is_control(i):
-                text = b""
-            elif tokenizer.is_byte(i):
-                piece = tokenizer.id_to_piece(i)
-                if len(piece) != 6:
-                    raise Exception(f"Invalid token: {piece}")
-                byte_value = int(piece[3:-1], 16)
-                text = struct.pack("B", byte_value)
-            else:
-                text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
-            score: float = tokenizer.get_score(i)
-            yield text, score
+                print(text)
+                score: float = i
+                yield text, score
 
     def added_tokens(self) -> Iterable[Tuple[bytes, float]]:
         for text in self.added_tokens_list:
@@ -1066,8 +1072,8 @@ class OutputFile:
 
         # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
         # but bos_token_id = 1 in llama.cpp
-        self.fout.write(struct.pack("i", 1))
-        self.fout.write(struct.pack("i", 2))
+        self.fout.write(struct.pack("i", params.bos_token_id))
+        self.fout.write(struct.pack("i", params.eos_token_id))
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
 
@@ -1095,7 +1101,7 @@ class OutputFile:
 
     @staticmethod
     def write_all(fname_out: Path, params: Params, model: LazyModel, vocab: Vocab, file_type: NEFileType) -> None:
-        check_vocab_size(params, vocab)
+        #check_vocab_size(params, vocab)
         of = OutputFile(fname_out)
         of.write_file_header(params, file_type)
         print("Writing vocab...")
