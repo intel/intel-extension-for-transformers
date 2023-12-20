@@ -1,4 +1,4 @@
-transformers==4.30.0
+transformers==4.36.0
 datasets==2.11.0
 neural-compressor==2.1
 --extra-index-url https://download.pytorch.org/whl/cpu
