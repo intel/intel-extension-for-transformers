@@ -480,6 +480,7 @@ def load_model(
             or re.search("starcoder", model_name, re.IGNORECASE)
             or re.search("codellama", model_name, re.IGNORECASE)
             or re.search("mistral", model_name, re.IGNORECASE)
+            or re.search("mixtral", model_name, re.IGNORECASE)
         ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -533,7 +534,7 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/MIXSTRAL/CODELLAMA/STARCODER now.")
     except EnvironmentError as e:
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")

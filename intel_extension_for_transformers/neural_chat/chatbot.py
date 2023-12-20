@@ -91,7 +91,8 @@ def build_chatbot(config: PipelineConfig=None):
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
          "bloom" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path.lower():
+         "starcoder" in config.model_name_or_path.lower() or \
+         "mixtral" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
