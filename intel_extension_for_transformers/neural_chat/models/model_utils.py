@@ -45,8 +45,7 @@ from transformers import (
     AutoConfig,
     TextIteratorStreamer,
     StoppingCriteriaList,
-    StoppingCriteria,
-    LlamaForCausalLM
+    StoppingCriteria
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -405,14 +404,11 @@ def load_model(
     # load assistant model
     if assistant_model:
         print("Loading assistant model...")
-        if 'llama' in assistant_model.lower():
-            assistant_model_class = LlamaForCausalLM
-        else:
-            assistant_model_class = AutoModelForCausalLM
+        assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
         assis_model = assistant_model_class.from_pretrained(
-            assistant_model, 
-            low_cpu_mem_usage=True, 
+            assistant_model,
+            low_cpu_mem_usage=True,
             torch_dtype=torch_dtype)
         assis_model = assis_model.eval().to(device)
         assis_model = assis_model.to(memory_format=torch.channels_last)
