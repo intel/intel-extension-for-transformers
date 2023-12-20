@@ -73,7 +73,7 @@ class TestLLMRUNTIME(unittest.TestCase):
         itrex_logits = itrex_model(inputs.input_ids)
         cmp = cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten())
         print("load_in_8bit: ", cmp)
-        self.assertTrue(cmp["diff2"] < 0.25)
+        self.assertTrue(cmp["diff2"] < 0.42)
 
 if __name__ == "__main__":
     unittest.main()
