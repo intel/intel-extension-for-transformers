@@ -15,13 +15,15 @@
 ### Python API
 
 ```python
+import torch
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 model = AutoModelForCausalLM.from_pretrained(
     'decapoda-research/llama-7b-hf',
     torch_dtype=torch.bfloat16,
     load_in_4bit=True,
+    use_llm_runtime=False
 )
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
 model = prepare_model_for_kbit_training(
     model, use_gradient_checkpointing=True
 )

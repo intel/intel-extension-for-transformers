@@ -53,9 +53,9 @@ class TestSadTalker(unittest.TestCase):
     @classmethod
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def tearDownClass(self):
-        os.remove(self.output_video_path)
-        os.remove(self.source_image)
-        os.remove(self.driven_audio)
+        os.remove(self.output_video_path) if os.path.exists(self.output_video_path) else None
+        os.remove(self.source_image) if os.path.exists(self.source_image) else None
+        os.remove(self.driven_audio) if os.path.exists(self.driven_audio) else None
         shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
         shutil.rmtree(self.enhancer_dir, ignore_errors=True)
 
