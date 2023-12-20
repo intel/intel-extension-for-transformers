@@ -30,7 +30,7 @@ from transformers.integrations.deepspeed import is_deepspeed_available
 from intel_extension_for_transformers.transformers.modeling.llava_models import LlavaMistralForCausalLM
 from llava_utils import *
 
-if is_optimum_habana_available():
+if is_hpu_available:
     from optimum.habana import GaudiTrainingArguments as TrainingArguments
 else:
     from transformers import TrainingArguments
@@ -244,7 +244,7 @@ def train():
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
 
-    if is_optimum_habana_available():
+    if is_hpu_available:
         from optimum.habana import GaudiConfig
         gaudi_config = GaudiConfig()
         gaudi_config.use_fused_adam = True
