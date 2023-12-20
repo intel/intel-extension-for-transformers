@@ -23,7 +23,7 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "/mnt/localdisk/models/codegen25-7b-mono"
+model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
 device: "cpu"
 
 
