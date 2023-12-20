@@ -26,6 +26,7 @@ from intel_extension_for_transformers.neural_chat.utils.common import get_device
 
 class TestSadTalker(unittest.TestCase):
     @classmethod
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def setUpClass(self):
         self.cur_directory = os.path.dirname(os.path.abspath(__file__))
         p = subprocess.Popen(["bash",
@@ -50,6 +51,7 @@ class TestSadTalker(unittest.TestCase):
         self.sadtalker = SadTalker(device=self.device, checkpoint_dir=self.checkpoint_dir, bf16=True, p_num=4, enhancer=None, output_video_path=self.output_video_path)
 
     @classmethod
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def tearDownClass(self):
         os.remove(self.output_video_path)
         os.remove(self.source_image)

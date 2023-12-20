@@ -59,6 +59,7 @@ class TestChatbotBuilder(unittest.TestCase):
             print(response)
             self.assertIsNotNone(response)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
         plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"

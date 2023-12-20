@@ -25,6 +25,7 @@ from intel_extension_for_transformers.neural_chat.config import (
 from intel_extension_for_transformers.neural_chat import plugins
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class UnitTest(unittest.TestCase):
     def setUp(self):
@@ -78,6 +79,7 @@ class UnitTest(unittest.TestCase):
         plugins.retrieval.args["persist_dir"] = "./output"
         plugins.retrieval.enable = False
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_voice_chat(self):
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"] = "./response.wav"
@@ -110,4 +112,15 @@ class UnitTest(unittest.TestCase):
         self.assertIsNotNone(stream_text)
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestSuite()
+
+    suite.addTest(UnitTest('test_text_chat'))
+    suite.addTest(UnitTest('test_retrieval'))
+    suite.addTest(UnitTest('test_retrieval_append'))
+    suite.addTest(UnitTest('test_voice_chat'))
+    suite.addTest(UnitTest('test_quantization'))
+    suite.addTest(UnitTest('test_text_chat_stream'))
+
+    runner = unittest.TextTestRunner()
+
+    runner.run(suite)
