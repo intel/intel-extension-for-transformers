@@ -232,8 +232,6 @@ class CpuDevice {
 #define ADD_FLAG(isa) mHas##isa = _cpu.has(_cpu.t##isa)
   CpuDevice() {
     static Xbyak::util::Cpu _cpu;
-    L1Cache = _cpu.getDataCacheSize(0);
-    L2Cache = _cpu.getDataCacheSize(1);
     ADD_FLAG(AVX);
     ADD_FLAG(AVX2);
     ADD_FLAG(AVX512F);
@@ -316,6 +314,8 @@ class CpuDevice {
       delete[] L1;
       delete[] L2;
     } else {
+      L1Cache = _cpu.getDataCacheSize(0);
+      L2Cache = _cpu.getDataCacheSize(1);
       numthreads = numcores;
     }
   }
@@ -470,13 +470,17 @@ class CpuHybrid : public CpuBase {
   enum core_type { P_core, E_core, SMT_core };
   CpuHybrid() {
     GetCPUDevice();
-    mL2Cache_P = _cd->getL2CacheSize() / 2;
-    mL1Cache_P = _cd->getL1CacheSize() / 2;
+    mL2Cache = _cd->getL2CacheSize();
+    mL1Cache = _cd->getL1CacheSize();
+    mNumThreads = _cd->getThreads();
+
+    //set P/E core use all threads by default
+    mL2Cache_P = mL2Cache / 2;
+    mL1Cache_P = mL1Cache / 2;
     mL2Cache_E = _cd->getL2CacheSize_E();
     mL1Cache_E = _cd->getL1CacheSize_E();
     P_core_num = _cd->getPcoreNum();
     E_core_num = _cd->getEcoreNum();
-    mNumThreads = _cd->getThreads();
     PE = _cd->getPE();
   }
   inline int setThreads(int _nth) override {
@@ -486,14 +490,14 @@ class CpuHybrid : public CpuBase {
     auto Pcores = _cd->getPCores();
     auto Ecores = _cd->getECores();
     auto SMTcores = _cd->getSMTCores();
-    if (mNumThreads <= P_core_num) {
+    if (mNumThreads <= _cd->getPcoreNum()) {
       mL2Cache_P = _cd->getL2CacheSize();
       mL1Cache_P = _cd->getL1CacheSize();
       P_core_num = mNumThreads;
       E_core_num = 0;
       core_order.insert(core_order.end(), Pcores.begin(), Pcores.begin() + P_core_num);
       mHybrid = false;
-    } else if (mNumThreads <= P_core_num + E_core_num) {
+    } else if (mNumThreads <= _cd->getPcoreNum() + _cd->getEcoreNum()) {
       mL2Cache_P = _cd->getL2CacheSize();
       mL1Cache_P = _cd->getL1CacheSize();
       P_core_num = _cd->getPcoreNum();
@@ -519,8 +523,6 @@ class CpuHybrid : public CpuBase {
   }
   inline bool isHybrid() override { return mHybrid; }
   inline int getThreads() override { return mNumThreads; }
-  inline size_t getL2Cache() override { return wrongCPU(); }
-  inline size_t getL1Cache() override { return wrongCPU(); }
   inline size_t getL2Cache_P() override { return mL2Cache_P; }
   inline size_t getL2Cache_E() override { return mL2Cache_E; }
   inline size_t getL1Cache_P() override { return mL1Cache_P; }
@@ -539,8 +541,8 @@ class CpuHybrid : public CpuBase {
     }
   }
   inline void core_bond(int tidx) override {
-    int core = core_order[tidx];
-    CpuDevice::core_bond(core);
+    //int core = core_order[tidx];
+    //CpuDevice::core_bond(core);
   }
 
   int getCoreType(int tidx) {
