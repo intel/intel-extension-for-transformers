@@ -7,7 +7,7 @@ on:
        - '.github/workflows/cpp-graph-test.yml'
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
        - 'intel_extension_for_transformers/llm/library/jblas/**'
-       - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
+       - '!**/*.md'
   workflow_dispatch:
     inputs:
       compiler_version:
@@ -147,7 +147,7 @@ jobs:
           /usr/bin/bash generate_report.sh --workflow=deploy
           sed -n '/<body>/,/<\/body>/p' generated/report.html | sed -r '/^$/d' | sed -r 's/^ +//g' >> $GITHUB_STEP_SUMMARY
         env:
-          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          RUN_DISPLAY_URL: https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
           MR_source_branch: ${{ github.head_ref }}
