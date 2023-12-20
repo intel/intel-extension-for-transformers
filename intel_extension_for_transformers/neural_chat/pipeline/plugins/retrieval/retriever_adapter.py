@@ -16,9 +16,7 @@
 # limitations under the License.
 
 """The wrapper for Retriever based on langchain"""
-from .vectorstore_retriever import VectorStoreRetriever
-from .child_parent_retriever import ChildParentRetriever
-
+from intel_extension_for_transformers.langchain.retrievers import VectorStoreRetriever, ChildParentRetriever
 
 class RetrieverAdapter():
     """Retrieve the document database with Chroma database using dense retrieval."""

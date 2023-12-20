@@ -19,7 +19,7 @@ import os
 from typing import Dict, List, Any
 from .detector.intent_detection import IntentDetector
 from .parser.parser import DocumentParser
-from .retrieval_adapter import RetrieverAdapter
+from .retriever_adapter import RetrieverAdapter
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
