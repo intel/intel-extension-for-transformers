@@ -70,6 +70,7 @@ jobs:
       - name: BF16 Benchmark
         run: |
           WORKSPACE=${{ env.WORKING_DIR }} bash -eo pipefail ${{ env.GRAPH_DIR }}/scripts/ci/cpp_graph_inference.sh \
+            --local_models="${{ github.workspace }}/.github/workflows/script/models/local_models.json" \
             --cores_list="48," \
             --input_list="32,1024" \
             -- \

@@ -35,10 +35,15 @@ ppl_nctx_list=() # no ppl test by defalut
 drop_caches=false
 ppl_fp32_test=false
 ppl_mf16_test=false
+local_models=""
 
 # parse named arguments
 while [ $# -gt 0 ]; do
     case "$1" in
+    --local_models=*)
+        # A json file which map HF model name to local path
+        local_models="${1#*=}"
+        ;;
     --cores_list=*)
         IFS=', ' read -r -a cores_list <<<"${1#*=}"
         ;;
@@ -103,7 +108,7 @@ declare -p ppl_mf16_test
 function ppl_eval() {
     local task_name="$1"
     local n_cores="$2"
-    local input_model="$3"
+    local model_path="$3"
     local quantized_weight_path="$4"
     local memory_dtype_list=('auto')
     if [[ "$ppl_mf16_test" = true ]]; then
@@ -117,7 +122,7 @@ function ppl_eval() {
                 local ppl_task_name="$task_name-ppl-$(basename -- "$ppl_dataset")-nctx$ppl_nctx-M$memory_dtype"
                 echo "***** PPL: $ppl_task_name *****"
                 OMP_NUM_THREADS=$(($n_cores * 1)) numactl -m 0 -C 0-$(($n_cores * 1 - 1)) \
-                    python scripts/perplexity.py --model_name "$input_model" --dataset_name "$ppl_dataset" --quantized_weight_path "$quantized_weight_path" --ctx_size $ppl_nctx --n_threads $n_cores --memory_dtype $memory_dtype 2>&1 |
+                    python scripts/perplexity.py --model_name "$model_path" --dataset_name "$ppl_dataset" --quantized_weight_path "$quantized_weight_path" --ctx_size $ppl_nctx --n_threads $n_cores --memory_dtype $memory_dtype 2>&1 |
                     tee "$WORKSPACE/$ppl_task_name.log"
                 mv out/ppl.png "$WORKSPACE/$ppl_task_name.png"
                 mv out/ppl_data.json "$WORKSPACE/$ppl_task_name.json"
@@ -126,6 +131,23 @@ function ppl_eval() {
     done
     echo "=======  PPL Evaluation End  ======="
 }
+
+declare -A model_name_map
+model_name_map["llama-2-7b-chat"]="meta-llama/Llama-2-7b-chat-hf"
+model_name_map["gptj-6b"]="EleutherAI/gpt-j-6b"
+model_name_map["gpt-neox-20b"]="EleutherAI/gpt-neox-20b"
+model_name_map["mpt-7b"]="mosaicml/mpt-7b"
+model_name_map["falcon-7b"]="tiiuae/falcon-7b"
+model_name_map["starcoder-3b"]="bigcode/starcoder"
+model_name_map["bloom-7b"]="bigscience/bloom-7b1"
+model_name_map["opt-1.3b"]="facebook/opt-1.3b"
+model_name_map["dolly-v2-3b"]="databricks/dolly-v2-3b"
+model_name_map["chatglm2"]="THUDM/chatglm2-6b"
+model_name_map["chatglm-6b"]="THUDM/chatglm-6b"
+model_name_map["baichuan2-13b"]="baichuan-inc/Baichuan2-13B-Chat"
+model_name_map["baichuan-13b"]="baichuan-inc/Baichuan-13B-Chat"
+model_name_map["mistral-7b"]="mistralai/Mistral-7B-v0.1"
+model_name_map["qwen-7b"]="Qwen/Qwen-7B-Chat"
 
 function main() {
     conda_env="$1"
@@ -137,11 +159,19 @@ function main() {
 
     # init params
     precision_list=()
-    requirements_file="requirements.txt"  # some models need extra constraints
+    requirements_file="requirements.txt" # some models need extra constraints
+
+    model_name="${model_name_map["$model"]}"
+
+    if [[ -n "$local_models" ]]; then
+        model_path=$(python -c "import sys, json; print(json.load(sys.stdin).get('$model_name', '$model_name'))" <"$local_models")
+    else
+        model_path=$model_name
+    fi
+
     if [[ "${model}" == "llama-2-7b-chat" ]]; then
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
-        input_model="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf"
         precision_list+=( # Our "main model"
             "q4_j1_i8_g128" "q4_j_f32_g128" "q4_1" "q8_0"
             "q8e4m3_j_f32_g128" "q8e4m3_j_f32_g128_fp8" "q8e5m2_j_f32_g128" "q8e5m2_j_f32_g128_fp8"
@@ -150,79 +180,51 @@ function main() {
     elif [[ "${model}" == "gptj-6b" ]]; then
         quant_script="./build/bin/quant_gptj"
         infer_cmd="./build/bin/run_gptj"
-        model_name="EleutherAI/gpt-j-6b"
-        input_model="/tf_dataset2/models/pytorch/gpt-j-6B" # model focused on mlperf
         precision_list+=("q4_j1_i8_g128" "q4_j1_bf16_pc")
     elif [[ "${model}" == "gpt-neox-20b" ]]; then
         quant_script="./build/bin/quant_gptneox"
         infer_cmd="./build/bin/run_gptneox"
-        model_name="EleutherAI/gpt-neox-20b"
-        input_model="/tf_dataset2/models/nlp_toolkit/gpt-neox-20b"
     elif [[ "${model}" == "mpt-7b" ]]; then
         quant_script="./build/bin/quant_mpt"
         infer_cmd="./build/bin/run_mpt"
-        model_name="mosaicml/mpt-7b"
-        input_model="/tf_dataset2/models/nlp_toolkit/mpt-7b"
     elif [[ "${model}" == "falcon-7b" ]]; then
         quant_script="./build/bin/quant_falcon"
         infer_cmd="./build/bin/run_falcon"
-        model_name="tiiuae/falcon-7b"
-        input_model="/tf_dataset2/models/nlp_toolkit/falcon-7b"
     elif [[ "${model}" == "starcoder-3b" ]]; then
         quant_script="./build/bin/quant_starcoder"
         infer_cmd="./build/bin/run_starcoder"
-        model_name="bigcode/starcoder"
-        input_model="/tf_dataset2/models/pytorch/starcode_3b"
     elif [[ "${model}" == "bloom-7b" ]]; then
         quant_script="./build/bin/quant_bloom"
         infer_cmd="./build/bin/run_bloom"
-        model_name="bigscience/bloom-7b1"
-        input_model="/tf_dataset2/models/pytorch/bloom-7b1"
     elif [[ "${model}" == "opt-1.3b" ]]; then
         quant_script="./build/bin/quant_opt"
         infer_cmd="./build/bin/run_opt"
-        model_name="facebook/opt-1.3b"
-        input_model="/tf_dataset2/models/pytorch/opt-1.3b"
     elif [[ "${model}" == "dolly-v2-3b" ]]; then
         quant_script="./build/bin/quant_dolly"
         infer_cmd="./build/bin/run_dolly"
-        model_name="databricks/dolly-v2-3b"
-        input_model="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [[ "${model}" == "chatglm2" ]]; then
         quant_script="./build/bin/quant_chatglm2"
         infer_cmd="./build/bin/run_chatglm2"
-        model_name="THUDM/chatglm2-6b"
-        input_model="/tf_dataset2/models/pytorch/chatglm2-6b"
     elif [[ "${model}" == "chatglm-6b" ]]; then
         quant_script="./build/bin/quant_chatglm"
         infer_cmd="python ./scripts/inference.py"
-        model_name="THUDM/chatglm-6b"
-        input_model="/tf_dataset2/models/pytorch/chatglm-6b"
-        extension=" --model_name chatglm --tokenizer $input_model"
+        extension=" --model_name chatglm --tokenizer $model_path"
         requirements_file="scripts/requirements/chatglm-6b.txt"
     elif [[ "${model}" == "baichuan2-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
-        model_name="baichuan-inc/Baichuan2-13B-Chat"
-        input_model="/tf_dataset2/models/pytorch/Baichuan2-13B-Chat"
-        extension=" --model_name baichuan --tokenizer $input_model"
+        extension=" --model_name baichuan --tokenizer $model_path"
     elif [[ "${model}" == "baichuan-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
-        model_name="baichuan-inc/Baichuan-13B-Chat"
-        input_model="/tf_dataset2/models/pytorch/Baichuan-13B-Chat"
-        extension=" --model_name baichuan --tokenizer $input_model"
+        extension=" --model_name baichuan --tokenizer $model_path"
     elif [[ "${model}" == "mistral-7b" ]]; then
         quant_script="./build/bin/quant_mistral"
         infer_cmd="./build/bin/run_mistral"
-        model_name="mistralai/Mistral-7B-v0.1"
-        input_model="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
         requirements_file="scripts/requirements/mistral.txt"
     elif [[ "${model}" == "qwen-7b" ]]; then
         quant_script="./build/bin/quant_qwen"
         infer_cmd="./build/bin/run_qwen"
-        model_name="Qwen/Qwen-7B-Chat"
-        input_model="/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat"
     else
         echo "Error: Unexpedted model: $model" 1>&2
         exit 1
@@ -275,7 +277,7 @@ function main() {
     fi
     echo "=======  Convert Start  ======="
     ## prepare fp32 bin
-    python "$working_dir/scripts/convert.py" --outtype f32 --outfile ${working_dir}/${model}-fp32.bin ${input_model}
+    python "$working_dir/scripts/convert.py" --outtype f32 --outfile ${working_dir}/${model}-fp32.bin ${model_path}
     echo "=======  Convert End  ======="
 
     # launch benchmark
@@ -360,7 +362,7 @@ function main() {
                         [[ "$batch_size_idx" == "0" ]] &&
                         [[ "$input_idx" == "0" ]] &&
                         [[ "${#ppl_nctx_list[@]}" != "0" ]]; then
-                        ppl_eval "$task_name" "$cores_per_instance" "$input_model" "$model-$precision.bin"
+                        ppl_eval "$task_name" "$cores_per_instance" "$model_path" "$model-$precision.bin"
                     fi
                 done
             done
@@ -369,7 +371,7 @@ function main() {
     if [[ "${#ppl_nctx_list[@]}" != "0" ]] && [[ "$ppl_fp32_test" = true ]]; then
         cores_per_instance="${cores_list[@]: -1:1}"
         task_name="${model}-fp32-${cores_per_instance}-${batch_size_list[@]:0:1}-${input_list[@]:0:1}-${output}"
-        ppl_eval "$task_name" "$cores_per_instance" "$input_model" "$model-fp32.bin"
+        ppl_eval "$task_name" "$cores_per_instance" "$model_path" "$model-fp32.bin"
     fi
     conda deactivate >/dev/null 2>&1
 }

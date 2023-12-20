@@ -1,0 +1,17 @@
+{
+    "meta-llama/Llama-2-7b-chat-hf": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf",
+    "EleutherAI/gpt-j-6b": "/tf_dataset2/models/pytorch/gpt-j-6B",
+    "EleutherAI/gpt-neox-20b": "/tf_dataset2/models/nlp_toolkit/gpt-neox-20b",
+    "mosaicml/mpt-7b": "/tf_dataset2/models/nlp_toolkit/mpt-7b",
+    "tiiuae/falcon-7b": "/tf_dataset2/models/nlp_toolkit/falcon-7b",
+    "bigcode/starcoder": "/tf_dataset2/models/pytorch/starcode_3b",
+    "bigscience/bloom-7b1": "/tf_dataset2/models/pytorch/bloom-7b1",
+    "facebook/opt-1.3b": "/tf_dataset2/models/pytorch/opt-1.3b",
+    "databricks/dolly-v2-3b": "/tf_dataset2/models/pytorch/dolly_v2_3b",
+    "THUDM/chatglm2-6b": "/tf_dataset2/models/pytorch/chatglm2-6b",
+    "THUDM/chatglm-6b": "/tf_dataset2/models/pytorch/chatglm-6b",
+    "baichuan-inc/Baichuan2-13B-Chat": "/tf_dataset2/models/pytorch/Baichuan2-13B-Chat",
+    "baichuan-inc/Baichuan-13B-Chat": "/tf_dataset2/models/pytorch/Baichuan-13B-Chat",
+    "mistralai/Mistral-7B-v0.1": "/tf_dataset2/models/pytorch/Mistral-7B-v0.1",
+    "Qwen/Qwen-7B-Chat": "/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat"
+}
