@@ -18,6 +18,7 @@
 import os
 import torch
 import unittest
+import shutil
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig,
@@ -32,6 +33,13 @@ class UnitTest(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("output"):
+            shutil.rmtree("output")
+        if os.path.exists("check_append"):
+            shutil.rmtree("check_append")
+        for filename in os.listdir("."):
+            if filename.endswith(".wav"):
+                os.remove(filename)
         return super().tearDown()
 
     def test_text_chat(self):

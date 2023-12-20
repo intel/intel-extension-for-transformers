@@ -17,6 +17,7 @@
 
 import unittest
 import os
+import shutil
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
@@ -30,6 +31,11 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("output"):
+            shutil.rmtree("output")
+        for filename in os.listdir("."):
+            if filename.endswith(".wav"):
+                os.remove(filename)
         return super().tearDown()
 
     def test_build_chatbot_with_default_config(self):
