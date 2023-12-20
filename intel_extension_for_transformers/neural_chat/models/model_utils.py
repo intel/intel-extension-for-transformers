@@ -45,8 +45,7 @@ from transformers import (
     AutoConfig,
     TextIteratorStreamer,
     StoppingCriteriaList,
-    StoppingCriteria,
-    LlamaForCausalLM
+    StoppingCriteria
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -140,10 +139,11 @@ def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, tok
     Dumps metadata into a JSON file for DeepSpeed-inference.
     """
     checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
-    if local_rank == 0:
+    if local_rank == 0 and len(checkpoint_files) != 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
         with open(checkpoints_json, "w") as fp:
             json.dump(data, fp)
+    return len(checkpoint_files) != 0
 
 
 def model_on_meta(config):
@@ -264,8 +264,19 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
-                               checkpoints_json, token)
+        ret = write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                local_rank, checkpoints_json, token)
+        if ret == False:
+            is_meta = False
+            generation_config = model.generation_config
+            model = AutoModelForCausalLM.from_pretrained(
+                merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                use_auth_token=token,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True
+            )
+            model.generation_config = generation_config
+
 
     torch.distributed.barrier()
 
@@ -393,14 +404,11 @@ def load_model(
     # load assistant model
     if assistant_model:
         print("Loading assistant model...")
-        if 'llama' in assistant_model.lower():
-            assistant_model_class = LlamaForCausalLM
-        else:
-            assistant_model_class = AutoModelForCausalLM
+        assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
         assis_model = assistant_model_class.from_pretrained(
-            assistant_model, 
-            low_cpu_mem_usage=True, 
+            assistant_model,
+            low_cpu_mem_usage=True,
             torch_dtype=torch_dtype)
         assis_model = assis_model.eval().to(device)
         assis_model = assis_model.to(memory_format=torch.channels_last)
@@ -473,6 +481,7 @@ def load_model(
             or re.search("mpt", model_name, re.IGNORECASE)
             or re.search("bloom", model_name, re.IGNORECASE)
             or re.search("llama", model_name, re.IGNORECASE)
+            or re.search("magicoder", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
