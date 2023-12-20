@@ -221,12 +221,13 @@ struct model_file_loader {
   model_hparams hparams;
   model_vocab vocab;
 
+  size_t gguf_data_offset = 0;  // offset of the GGUF tensor data from the beginning of the file.
+  size_t model_magic = -1;
+
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     // read_gguf();
     read_magic(tensors_map);
-    read_hparams();
-    read_vocab();
     read_tensor_metadata(file_idx, tensors_map);
   }
 
@@ -846,6 +847,7 @@ struct model_file_loader {
     }
 
     ctx->offset = offset;
+    gguf_data_offset = offset;
 
     return ctx;
   }
@@ -899,6 +901,41 @@ struct model_file_loader {
   //       return tensor->ne[0]*tensor->ne[1]*tensor->ne[2]*tensor->ne[3];
   //   }
 
+  void read_ne_magic() {
+    uint32_t magic = file.read_u32();
+
+    if (magic == MODEL_FILE_MAGIC_NE) {
+      file_version = MODEL_FILE_VERSION_NE;
+      return;
+    }
+
+    uint32_t version = file.read_u32();
+
+    switch (magic) {
+      case MODEL_FILE_MAGIC_GGMF:
+        switch (version) {
+          case 1:
+            file_version = MODEL_FILE_VERSION_GGMF_V1;
+            return;
+        }
+        break;
+      case MODEL_FILE_MAGIC_GGJT:
+        switch (version) {
+          case 1:
+            file_version = MODEL_FILE_VERSION_GGJT_V1;
+            return;
+          case 2:
+            file_version = MODEL_FILE_VERSION_GGJT_V2;
+            return;
+          case 3:
+            file_version = MODEL_FILE_VERSION_GGJT_V3;
+            return;
+        }
+    }
+
+    throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
+  }
+
   void read_magic(model_load_tensors_map& tensors_map) {
     std::string gguf = "GGUF";
     char gguf_magic[4];
@@ -906,40 +943,15 @@ struct model_file_loader {
     if (strcmp(gguf.c_str(), gguf_magic) == 0) {
       std::cout << "loading the bin file with GGUF format." << std::endl;
       fseek(file.fp, 0, SEEK_SET);
+      model_magic = 0;
     } else {
+      std::cout << "loading the bin file with NE format." << std::endl;
       fseek(file.fp, 0, SEEK_SET);
-      uint32_t ne_magic = file.read_u32();
-      if (ne_magic == MODEL_FILE_MAGIC_NE) {
-        file_version = MODEL_FILE_VERSION_NE;
-        std::cout << "loading the bin file with NE format.";
-      }
-
-      uint32_t version = file.read_u32();
-
-      switch (ne_magic) {
-        case MODEL_FILE_MAGIC_GGMF:
-          switch (version) {
-            case 1:
-              file_version = MODEL_FILE_VERSION_GGMF_V1;
-              return;
-          }
-          break;
-        case MODEL_FILE_MAGIC_GGJT:
-          switch (version) {
-            case 1:
-              file_version = MODEL_FILE_VERSION_GGJT_V1;
-              return;
-            case 2:
-              file_version = MODEL_FILE_VERSION_GGJT_V2;
-              return;
-            case 3:
-              file_version = MODEL_FILE_VERSION_GGJT_V3;
-              return;
-          }
-      }
-
-      throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", ne_magic,
-                   file_version);
+      read_ne_magic();
+      read_hparams();
+      read_vocab();
+      model_magic = 1;
+      return;
     }
 
     int n_kv = 0;
@@ -1196,6 +1208,10 @@ struct model_file_loader {
     }
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
+    if (model_magic != 1) {
+      return;
+    }
+
     while (file.tell() < file.size) {
       model_load_tensor_shard shard;
       uint32_t n_dims = file.read_u32();
@@ -1534,9 +1550,9 @@ struct model_model_loader {
       lt.data = (uint8_t*)mapping->addr + lt.shards.at(0).file_off;
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
-      file.seek(lt.shards.at(0).file_off, SEEK_SET);
+      file.seek(lt.shards.at(0).file_off + file_loaders.at(0)->gguf_data_offset, SEEK_SET);
       std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off << " lt.size =  " << lt.size
-                << std::endl;
+                << " file_loaders.at(0)->gguf_data_offset " << file_loaders.at(0)->gguf_data_offset << std::endl;
       // file.seek(lt.shards.at(0).file_off + 1490912, SEEK_SET);
       // std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off + 1490912
       //           << " lt.size =  " << lt.size << std::endl;
