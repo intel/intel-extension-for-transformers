@@ -213,11 +213,13 @@ function main() {
     elif [[ "${model}" == "baichuan2-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
+        requirements_file="scripts/requirements/baichuan.txt"
         extension=" --model_name baichuan --tokenizer $model_path"
     elif [[ "${model}" == "baichuan-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
         extension=" --model_name baichuan --tokenizer $model_path"
+        requirements_file="scripts/requirements/baichuan.txt"
     elif [[ "${model}" == "mistral-7b" ]]; then
         quant_script="./build/bin/quant_mistral"
         infer_cmd="./build/bin/run_mistral"
@@ -272,9 +274,7 @@ function main() {
 
     ## prepare example requiement
     pip install -r "$requirements_file"
-    if [[ "${model}" == "baichuan"* ]] || [[ "${model}" == "mistral-7b" ]]; then
-        pip install --force-reinstall transformers==4.33.1
-    fi
+
     echo "=======  Convert Start  ======="
     ## prepare fp32 bin
     python "$working_dir/scripts/convert.py" --outtype f32 --outfile ${working_dir}/${model}-fp32.bin ${model_path}
