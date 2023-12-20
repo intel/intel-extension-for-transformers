@@ -129,7 +129,6 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
                 module = sentence_transformers.models.Transformer(
                     model_name_or_path, cache_dir=cache_folder, **kwargs)
             else:
-                import pdb;pdb.set_trace()
                 module_path = get_module_path(
                     model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
                 module = module_class.load(module_path)
