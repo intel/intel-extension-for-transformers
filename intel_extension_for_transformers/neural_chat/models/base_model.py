@@ -389,7 +389,7 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_after_gen=True)
         else:
             clear_after_gen = True
             if task == "completion":
