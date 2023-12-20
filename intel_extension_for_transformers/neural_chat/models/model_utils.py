@@ -489,6 +489,7 @@ def load_model(
             or re.search("starcoder", model_name, re.IGNORECASE)
             or re.search("codellama", model_name, re.IGNORECASE)
             or re.search("mistral", model_name, re.IGNORECASE)
+            or re.search("codegen", model_name, re.IGNORECASE)
         ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -497,11 +498,13 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
-                    trust_remote_code=True if re.search("qwen", model_name, re.IGNORECASE) else False
+                    trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                        re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (
                 (re.search("starcoder", model_name, re.IGNORECASE)
                 or re.search("codellama", model_name, re.IGNORECASE)
+                or re.search("codegen", model_name, re.IGNORECASE)
                 ) and ipex_int8
             ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -542,7 +545,7 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER/CODEGEN now.")
     except EnvironmentError as e:
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")
@@ -816,7 +819,8 @@ def predict_stream(**params):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
-                                            "starcoder" in model_name.lower()) else 1024
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
 
     if is_llm_runtime_model(model):
         if "chatglm" in model_name.lower():
@@ -1081,7 +1085,8 @@ def predict(**params):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
-                                            "starcoder" in model_name.lower()) else 1024
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
 
     if num_beams == 0:
         num_beams = 1
