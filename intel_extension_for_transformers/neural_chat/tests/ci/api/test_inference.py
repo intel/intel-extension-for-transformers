@@ -125,9 +125,9 @@ if __name__ == '__main__':
     suite.addTest(UnitTest('test_text_chat'))
     suite.addTest(UnitTest('test_retrieval'))
     suite.addTest(UnitTest('test_retrieval_append'))
-    suite.addTest(UnitTest('test_voice_chat'))
     suite.addTest(UnitTest('test_quantization'))
     suite.addTest(UnitTest('test_text_chat_stream'))
+    suite.addTest(UnitTest('test_voice_chat'))
 
     runner = unittest.TextTestRunner()
 
