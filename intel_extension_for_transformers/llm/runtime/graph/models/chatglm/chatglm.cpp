@@ -137,14 +137,14 @@ static bool chatglm_model_eval_internal(model_context* ctx, const model_input* i
 
       ne_set_name(query_layer, "query_layer");
       query_layer = ne_rope_with_padding_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size,
-                                                 n_padding.data(), hparams.freq_base);
+                                                 n_padding.data(), hparams.freq_base, hparams.freq_scale);
       query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [bs, heads, qlen, head_size]
 
       ne_tensor* key_layer =
           ne_view_4d(ctx0, cur, head_size, num_attention_heads, qlen, batch_size, 3 * head_size * ne_element_size(cur),
                      cur->nb[1], cur->nb[1] * qlen, head_size * ne_element_size(cur));  // [bs, qlen, heads, head_size]
       key_layer = ne_rope_with_padding_inplace(ctx0, key_layer, n_past, rope_dim, 4, first_tokens_size,
-                                               n_padding.data(), hparams.freq_base);
+                                               n_padding.data(), hparams.freq_base, hparams.freq_scale);
 
       ne_tensor* value_layer = ne_view_4d(ctx0, cur, head_size, num_attention_heads, qlen, batch_size,
                                           3 * head_size * ne_element_size(cur), cur->nb[1], cur->nb[1] * qlen,

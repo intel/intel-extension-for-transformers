@@ -127,7 +127,7 @@ struct model_hparams {
   bool do_layer_norm_before = false;  // for opt
   float rms_norm_eps = 1e-6f;         // rms norm epsilon
   float freq_base = 10000.0f;         // rope theta
-  float freq_scale = 1.0f;        // rope scale factor
+  float freq_scale = 1.0f;            // rope scale factor
 
   // ChatGLM-2
   int32_t multi_query_group_num = 0;

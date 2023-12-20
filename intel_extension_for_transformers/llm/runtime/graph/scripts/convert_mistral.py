@@ -151,6 +151,7 @@ class Params:
     ffn_hidden_size: int
     rms_norm_eps: float
     rope_theta: float
+    rope_scale: float
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -179,6 +180,7 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
+        rope_scale = config["factor"] if "rope_scaling" in config else 1
 
         return Params(
             n_vocab=n_vocab,
@@ -1058,6 +1060,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("f", params.rms_norm_eps))
         self.fout.write(struct.pack("f", params.rope_theta))
+        self.fout.write(struct.pack("f", params.rope_scale))
 
         self.fout.write(
             struct.pack("i", 1)
