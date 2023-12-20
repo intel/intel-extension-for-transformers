@@ -263,7 +263,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
     typename Launcher::Param args2_P{gp2_P, {tmp, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
     typename Launcher_epi::Param args1_E{
         gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
-    typename Launcher::Param args2_E{gp2_E, {tmp, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
+    typename Launcher::Param args2_E{gp2_E, {tmp+offset*fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
     GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1_P, args1_E, args2_P, args2_E, th);
   } else {
     utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
@@ -706,7 +706,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
     typename Launcher_mul::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
     typename Launcher_epi::Param args1_E{
         gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
-    typename Launcher::Param args2_E{gp2_E, {tmp2, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
+    typename Launcher::Param args2_E{gp2_E, {tmp2+offset*fmid, fmid, &quanA2_E}, {w2ptr_}, epi_prama2.offset(offset)};
     typename Launcher_mul::Param args3_E{gp3_E,
                                          {activation + offset * fin, fin, &quanA1_E},
                                          {w3ptr_},
