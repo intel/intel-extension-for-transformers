@@ -287,7 +287,7 @@ class _BaseQBitsAutoModelClass:
                 calib_dataset = quantization_config.calib_dataset
                 calib_iters = quantization_config.calib_iters
                 calib_padding = quantization_config.calib_padding
-                calib_pad_max = quantization_config.calib_pad_max
+                calib_len = quantization_config.calib_len
                 calib_pad_val = quantization_config.calib_pad_val
                 from torch.nn.functional import pad
 
@@ -323,12 +323,12 @@ class _BaseQBitsAutoModelClass:
                         input_ids = text["input_ids"]
                         if not calib_padding:
                             input_ids = (
-                                input_ids[: int(calib_pad_max)]
-                                if len(input_ids) > int(calib_pad_max)
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
                                 else input_ids
                             )  # no_padding
                         else:
-                            pad_len = calib_pad_max - input_ids.shape[0]
+                            pad_len = calib_len - input_ids.shape[0]
                             input_ids = pad(
                                 input_ids, (0, pad_len), value=calib_pad_val
                             )
@@ -367,16 +367,16 @@ class _BaseQBitsAutoModelClass:
                             "THUDM/chatglm-6b", model.config.auto_map["AutoConfig"]
                         ):
                             input_ids = (
-                                input_ids[:, :calib_pad_max]
-                                if input_ids.shape[1] > calib_pad_max
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
                                 else input_ids
                             )
                             eos = torch.tensor([130001, 130004]).repeat(1, 1)
                             input_ids = torch.cat((input_ids, eos), 1)
                         else:
                             input_ids = (
-                                input_ids[:, :calib_pad_max]
-                                if input_ids.shape[1] > calib_pad_max
+                                input_ids[:, :calib_len]
+                                if input_ids.shape[1] > calib_len
                                 else input_ids
                             )
                         prepared_inputs = model.prepare_inputs_for_generation(input_ids)

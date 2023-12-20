@@ -71,7 +71,7 @@ parser.add_argument(
     "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
 )
 parser.add_argument(
-    "--calib_pad_max",
+    "--calib_len",
     default=512,
     type=int,
     help="Calibration dataset max or padding max length.",
@@ -221,7 +221,7 @@ elif args.sq:
         num_beams=generate_kwargs["num_beams"],
         calib_iters=args.calib_iters,
         calib_padding=args.calib_padding,
-        calib_pad_max=args.calib_pad_max,
+        calib_len=args.calib_len,
         calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
