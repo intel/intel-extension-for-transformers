@@ -150,6 +150,8 @@ class Params:
     ffn_hidden_size: int
     rms_norm_eps: float
     rope_theta: float
+    bos_token_id: int
+    eos_token_id: int
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -178,6 +180,8 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
+        bos_token_id = config["bos_token_id"]
+        eos_token_id = config["eos_token_id"]
 
         return Params(
             n_vocab=n_vocab,
@@ -189,6 +193,8 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            bos_token_id = bos_token_id,
+            eos_token_id = eos_token_id,
         )
 
     # LLaMA v2 70B params.json
@@ -204,6 +210,8 @@ class Params:
         n_head = config["n_heads"]
         n_head_kv = config["n_kv_heads"] if "n_kv_heads" in config else n_head
         ffn_hidden_size = config["intermediate_size"]
+        bos_token_id = config["bos_token_id"]
+        eos_token_id = config["eos_token_id"]
         # hack to determine LLaMA v1 vs v2 vs CodeLlama
 
         if n_vocab == -1:
@@ -217,6 +225,8 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
+            bos_token_id = bos_token_id,
+            eos_token_id = eos_token_id,
         )
 
     @staticmethod
@@ -280,7 +290,6 @@ class SentencePieceVocab:
                 yield text, score
             else :
                 text = " \u2047 ".encode("utf-8")
-                print(text)
                 score: float = i
                 yield text, score
 
