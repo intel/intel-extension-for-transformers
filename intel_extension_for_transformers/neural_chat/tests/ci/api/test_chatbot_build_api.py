@@ -135,6 +135,34 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+    
+    def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
+
+        def _run_retrieval(local_dir):
+            plugins.retrieval.enable = True
+            plugins.retrieval.args["input_path"] = "../../../README.md"
+            plugins.retrieval.args["embedding_model"] = local_dir
+            pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                             plugins=plugins)
+            chatbot = build_chatbot(pipeline_config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="What is Intel extension for transformers?")
+            self.assertIsNotNone(response)
+
+        # test local file
+        local_dir = "./local_model_dir"
+        from huggingface_hub import snapshot_download
+        snapshot_download("thenlper/gte-base", local_dir = local_dir)
+        _run_retrieval(local_dir)
+        
+        snapshot_download("hkunlp/instructor-large", local_dir = local_dir)
+        _run_retrieval(local_dir)
+
+        snapshot_download("BAAI/bge-small-en-v1.5", local_dir = local_dir)
+        _run_retrieval(local_dir)
+
+        import shutil
+        shutil.rmtree(local_dir, ignore_errors=True)
 
 if __name__ == '__main__':
     unittest.main()

@@ -126,14 +126,25 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
-                module_path = sentence_transformers.util.load_dir_path(
-                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = get_module_path(
+                    model_name_or_path, module_config['path'], token, cache_folder)
                 module = module_class.load(module_path)
             else:
                 module_class = InstructorEmbedding.import_from_string(module_config['type'])
-                module_path = sentence_transformers.util.load_dir_path(
-                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = get_module_path(
+                    model_name_or_path, module_config['path'], token, cache_folder)
                 module = module_class.load(module_path)
             modules[module_config['name']] = module
         
         return modules
+
+def get_module_path(model_name_or_path: str, 
+                    path: str,
+                    token: Optional[Union[bool, str]], 
+                    cache_folder: Optional[str]):
+    is_local = os.path.isdir(model_name_or_path)
+    if is_local:
+        return os.path.join(model_name_or_path, path)
+    else:
+        return sentence_transformers.util.load_dir_path(
+            model_name_or_path, path, token=token, cache_folder=cache_folder)
