@@ -19,13 +19,13 @@ import os
 from typing import Dict, List, Any
 from .detector.intent_detection import IntentDetector
 from .parser.parser import DocumentParser
+from .retrieval_adapter import RetrieverAdapter
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmbeddings, \
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
 from langchain.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.retrievers import RetrieverAdapter
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
 import uuid
 from langchain_core.documents import Document
