@@ -1,4 +1,20 @@
 #!/bin/bash
+#===============================================================================
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#===============================================================================
+
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 set -x
 quant_nthr=48
@@ -121,6 +137,7 @@ function main() {
 
     # init params
     precision_list=()
+    requirements_file="requirements.txt"  # some models need extra constraints
     if [[ "${model}" == "llama-2-7b-chat" ]]; then
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
@@ -182,6 +199,7 @@ function main() {
         model_name="THUDM/chatglm-6b"
         input_model="/tf_dataset2/models/pytorch/chatglm-6b"
         extension=" --model_name chatglm --tokenizer $input_model"
+        requirements_file="scripts/requirements/chatglm-6b.txt"
     elif [[ "${model}" == "baichuan2-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
@@ -199,6 +217,7 @@ function main() {
         infer_cmd="./build/bin/run_mistral"
         model_name="mistralai/Mistral-7B-v0.1"
         input_model="/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+        requirements_file="scripts/requirements/mistral.txt"
     elif [[ "${model}" == "qwen-7b" ]]; then
         quant_script="./build/bin/quant_qwen"
         infer_cmd="./build/bin/run_qwen"
@@ -250,7 +269,7 @@ function main() {
     cd ..
 
     ## prepare example requiement
-    pip install -r requirements.txt
+    pip install -r "$requirements_file"
     if [[ "${model}" == "baichuan"* ]] || [[ "${model}" == "mistral-7b" ]]; then
         pip install --force-reinstall transformers==4.33.1
     fi
