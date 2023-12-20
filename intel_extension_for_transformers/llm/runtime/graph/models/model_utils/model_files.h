@@ -225,9 +225,9 @@ struct model_file_loader {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     // read_gguf();
     read_magic(tensors_map);
-    // read_hparams();
-    // read_vocab();
-    // read_tensor_metadata(file_idx, tensors_map);
+    read_hparams();
+    read_vocab();
+    read_tensor_metadata(file_idx, tensors_map);
   }
 
   const char* gguf_type_name(enum gguf_type type) { return GGUF_TYPE_NAME[type]; }
@@ -602,7 +602,7 @@ struct model_file_loader {
 
     size_t offset = 0;
     char magic[4];
-    
+
     gguf_fread_el(file_gguf, &magic, sizeof(magic), &offset);
     std::cout << "magic = " << magic << "  offset = " << offset << std::endl;
 
@@ -811,7 +811,7 @@ struct model_file_loader {
       // 这段代码有点问题，因为data读取load不在这里
       // file.seek(offs, SEEK_SET);
 
-      // TODO: 
+      // TODO:
       // shard.file_off = offs;
       shard.file_off = offs;
 
@@ -902,7 +902,7 @@ struct model_file_loader {
   void read_magic(model_load_tensors_map& tensors_map) {
     std::string gguf = "GGUF";
     char gguf_magic[4];
-    const size_t n = fread(&gguf_magic, 1, sizeof(gguf_magic), file.fp);   
+    const size_t n = fread(&gguf_magic, 1, sizeof(gguf_magic), file.fp);
     if (strcmp(gguf.c_str(), gguf_magic) == 0) {
       std::cout << "loading the bin file with GGUF format." << std::endl;
       fseek(file.fp, 0, SEEK_SET);
@@ -938,7 +938,8 @@ struct model_file_loader {
           }
       }
 
-      throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", ne_magic, file_version);
+      throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", ne_magic,
+                   file_version);
     }
 
     int n_kv = 0;
@@ -1051,7 +1052,9 @@ struct model_file_loader {
     vocab.bos_token_id = ctx_gguf->kv[20].value.uint32;
     vocab.eos_token_id = ctx_gguf->kv[21].value.uint32;
     vocab.pad_token_id = ctx_gguf->kv[22].value.uint32;
-    vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
+    // vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
+    // 和original对齐试试
+    vocab.sep_token_id = -1;
 
     // load vocab
     std::string tokens = "tokenizer.ggml.tokens";
@@ -1283,6 +1286,9 @@ struct model_file_saver {
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
+
+    // file.write_raw(&hparams.rms_norm_eps, sizeof(float));
+    // file.write_raw(&hparams.freq_base, sizeof(float));
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -1319,6 +1325,8 @@ struct model_file_saver {
     file.write_u32(new_type);
     file.write_raw(tensor.ne.data(), sizeof(tensor.ne[0]) * tensor.ne.size());
     file.write_raw(tensor.name.data(), tensor.name.size());
+    std::cout << "  tensor.name = " << tensor.name << " tensor.ne.size() = " << tensor.ne.size()
+              << "  tensor.name.size()  = " << tensor.name.size() << "  new_type  = " << new_type << std::endl;
     file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
     if (new_type != NE_TYPE_JBLAS) MODEL_ASSERT(new_size == model_calc_tensor_size(tensor.ne, new_type));
     file.write_raw(new_data, new_size);
@@ -1526,10 +1534,12 @@ struct model_model_loader {
       lt.data = (uint8_t*)mapping->addr + lt.shards.at(0).file_off;
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
-      // file.seek(lt.shards.at(0).file_off, SEEK_SET);
-      file.seek(lt.shards.at(0).file_off + 1490912, SEEK_SET);
-      std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off + 1490912
-                << " lt.size =  " << lt.size << std::endl;
+      file.seek(lt.shards.at(0).file_off, SEEK_SET);
+      std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off << " lt.size =  " << lt.size
+                << std::endl;
+      // file.seek(lt.shards.at(0).file_off + 1490912, SEEK_SET);
+      // std::cout << "lt.data =  " << lt.data << " file_off " << lt.shards.at(0).file_off + 1490912
+      //           << " lt.size =  " << lt.size << std::endl;
       file.read_raw(lt.data, lt.size);
     } else if (lt.split_type == SPLIT_BY_ROWS) {
       size_t offset = 0;
