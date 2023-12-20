@@ -7,5 +7,7 @@ onnx
 rouge-score
 nltk
 neural-compressor
+optimum
 optimum-intel
-git+https://github.com/intel/intel-extension-for-pytorch.git
+onnxruntime
+intel-extension-for-pytorch
