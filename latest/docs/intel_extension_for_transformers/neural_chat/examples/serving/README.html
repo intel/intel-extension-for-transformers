@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Serving NeuralChat Text Generation with Triton Inference Server &mdash; Intel® Extension for Transformers 0.1.dev1+g7f699f8 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Serving NeuralChat Text Generation with Triton Inference Server</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/serving/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="serving-neuralchat-text-generation-with-triton-inference-server">
+<h1>Serving NeuralChat Text Generation with Triton Inference Server<a class="headerlink" href="#serving-neuralchat-text-generation-with-triton-inference-server" title="Link to this heading"></a></h1>
+<p>Nvidia Triton Inference Server is a widely adopted inference serving software. We also support serving and deploying NeuralChat models with Triton Inference Server.</p>
+<section id="prepare-serving-scripts">
+<h2>Prepare serving scripts<a class="headerlink" href="#prepare-serving-scripts" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span><span class="w"> </span><span class="o">&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="o">&gt;/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">serving</span>
+<span class="n">mkdir</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="n">models</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="mi">1</span><span class="o">/</span>
+<span class="n">cp</span><span class="w"> </span><span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="n">serving</span><span class="o">/</span><span class="n">triton</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">model</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">models</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="mi">1</span><span class="o">/</span><span class="n">model</span><span class="p">.</span><span class="n">py</span>
+<span class="n">cp</span><span class="w"> </span><span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="n">serving</span><span class="o">/</span><span class="n">triton</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">config</span><span class="p">.</span><span class="n">pbtxt</span><span class="w"> </span><span class="n">models</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">config</span><span class="p">.</span><span class="n">pbtxt</span>
+</pre></div>
+</div>
+<p>Then your folder structure under the current <code class="docutils literal notranslate"><span class="pre">serving</span></code> folder shoud be like:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">serving</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">models</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">text_generation</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="mi">1</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="n">py</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="n">pbtxt</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">README</span><span class="p">.</span><span class="n">html</span>
+</pre></div>
+</div>
+</section>
+<section id="start-triton-inference-server">
+<h2>Start Triton Inference Server<a class="headerlink" href="#start-triton-inference-server" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span><span class="w"> </span><span class="o">&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="o">&gt;/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">serving</span>
+<span class="n">docker</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="n">d</span><span class="w"> </span><span class="o">-</span><span class="n">e</span><span class="w"> </span><span class="n">PYTHONPATH</span><span class="o">=/</span><span class="n">opt</span><span class="o">/</span><span class="n">tritonserver</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">transformers</span><span class="w"> </span><span class="o">--</span><span class="n">net</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="n">$</span><span class="p">{</span><span class="n">PWD</span><span class="p">}</span><span class="o">/</span><span class="n">models</span><span class="o">:/</span><span class="n">models</span><span class="w"> </span><span class="n">spycsh</span><span class="o">/</span><span class="n">triton_neuralchat</span><span class="o">:</span><span class="n">v1</span><span class="w"> </span><span class="n">tritonserver</span><span class="w"> </span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">repository</span><span class="o">=/</span><span class="n">models</span><span class="w"> </span><span class="o">--</span><span class="n">http</span><span class="o">-</span><span class="n">port</span><span class="w"> </span><span class="mi">8021</span>
+</pre></div>
+</div>
+<p>NeuralChat by default uses <code class="docutils literal notranslate"><span class="pre">Intel/neural-chat-7b-v3-1</span></code> as the LLM, so if you already have this Huggingface model in cache, you can add a <code class="docutils literal notranslate"><span class="pre">-v</span></code> flag to the above command to avoid downloading the model every time you start the server, like follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="n">d</span><span class="w"> </span><span class="o">-</span><span class="n">e</span><span class="w"> </span><span class="n">PYTHONPATH</span><span class="o">=/</span><span class="n">opt</span><span class="o">/</span><span class="n">tritonserver</span><span class="o">/</span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">transformers</span><span class="w"> </span><span class="o">--</span><span class="n">net</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="n">$</span><span class="p">{</span><span class="n">PWD</span><span class="p">}</span><span class="o">/</span><span class="n">models</span><span class="o">:/</span><span class="n">models</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="p">.</span><span class="n">cache</span><span class="o">/</span><span class="n">huggingface</span><span class="o">/</span><span class="n">hub</span><span class="o">/</span><span class="n">models</span><span class="o">--</span><span class="n">Intel</span><span class="o">--</span><span class="n">neural</span><span class="o">-</span><span class="n">chat</span><span class="mi">-7</span><span class="n">b</span><span class="o">-</span><span class="n">v3</span><span class="mi">-1</span><span class="o">:/</span><span class="n">root</span><span class="o">/</span><span class="p">.</span><span class="n">cache</span><span class="o">/</span><span class="n">huggingface</span><span class="o">/</span><span class="n">hub</span><span class="o">/</span><span class="n">models</span><span class="o">--</span><span class="n">Intel</span><span class="o">--</span><span class="n">neural</span><span class="o">-</span><span class="n">chat</span><span class="mi">-7</span><span class="n">b</span><span class="o">-</span><span class="n">v3</span><span class="mi">-1</span><span class="w">  </span><span class="n">spycsh</span><span class="o">/</span><span class="n">triton_neuralchat</span><span class="o">:</span><span class="n">v1</span><span class="w">  </span><span class="n">tritonserver</span><span class="w"> </span><span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">repository</span><span class="o">=/</span><span class="n">models</span><span class="w"> </span><span class="o">--</span><span class="n">http</span><span class="o">-</span><span class="n">port</span><span class="o">=</span><span class="mi">8021</span>
+</pre></div>
+</div>
+<p>To check whether the server is up:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="n">localhost</span><span class="o">:</span><span class="mi">8021</span><span class="o">/</span><span class="n">v2</span><span class="o">/</span><span class="n">health</span><span class="o">/</span><span class="n">ready</span>
+</pre></div>
+</div>
+<p>You will find a <code class="docutils literal notranslate"><span class="pre">HTTP/1.1</span> <span class="pre">200</span> <span class="pre">OK</span></code> if your server is up and ready for receiving requests.</p>
+</section>
+<section id="use-triton-client-to-send-inference-request">
+<h2>Use Triton client to send inference request<a class="headerlink" href="#use-triton-client-to-send-inference-request" title="Link to this heading"></a></h2>
+<p>Start the Triton client and enter into the container</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span><span class="w"> </span><span class="o">&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="o">&gt;/</span><span class="n">neural_chat</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">serving</span>
+<span class="n">docker</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">--</span><span class="n">net</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">-</span><span class="n">it</span><span class="w"> </span><span class="o">--</span><span class="n">rm</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="n">$</span><span class="p">{</span><span class="n">PWD</span><span class="p">}</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="n">serving</span><span class="o">/</span><span class="n">triton</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">client</span><span class="p">.</span><span class="n">py</span><span class="o">:/</span><span class="n">workspace</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">client</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">nvcr</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">nvidia</span><span class="o">/</span><span class="n">tritonserver</span><span class="o">:</span><span class="mf">23.11</span><span class="o">-</span><span class="n">py3</span><span class="o">-</span><span class="n">sdk</span>
+</pre></div>
+</div>
+<p>Send a request</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="o">/</span><span class="n">workspace</span><span class="o">/</span><span class="n">text_generation</span><span class="o">/</span><span class="n">client</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="o">--</span><span class="n">prompt</span><span class="o">=</span><span class="s">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">url</span><span class="o">=</span><span class="n">localhost</span><span class="o">:</span><span class="mi">8021</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fbdd8c84760> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
