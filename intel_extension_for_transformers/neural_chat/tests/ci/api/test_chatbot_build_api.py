@@ -150,15 +150,15 @@ class TestChatbotBuilder(unittest.TestCase):
             self.assertIsNotNone(response)
 
         # test local file
-        local_dir = "./local_model_dir"
+        local_dir = "local_model_dir"
         from huggingface_hub import snapshot_download
-        snapshot_download("thenlper/gte-base", local_dir = local_dir)
+        snapshot_download("thenlper/gte-base", local_dir=local_dir)
         _run_retrieval(local_dir)
         
-        snapshot_download("hkunlp/instructor-large", local_dir = local_dir)
+        snapshot_download("hkunlp/instructor-large", local_dir=local_dir)
         _run_retrieval(local_dir)
-
-        snapshot_download("BAAI/bge-small-en-v1.5", local_dir = local_dir)
+        
+        snapshot_download("BAAI/bge-base-en-v1.5", local_dir=local_dir)
         _run_retrieval(local_dir)
 
         import shutil
