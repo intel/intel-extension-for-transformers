@@ -25,7 +25,7 @@ class RetrieverAdapter():
         self.retrieval_type = retrieval_type
         
         if self.retrieval_type == "default":
-            self.retriever = VectorStoreRetriever(document_store = document_store, **kwargs)
+            self.retriever = VectorStoreRetriever(vectorstore = document_store, **kwargs)
         elif self.retrieval_type == "child_parent":
             self.retriever = ChildParentRetriever(vectorstore=child_document_store, parentstore=document_store, \
                                                   **kwargs)
