@@ -247,7 +247,7 @@ class CpuDevice {
       uint32_t tmp[4];
       _cpu.getCpuid(7, tmp);
       if (tmp[3] & (1U << 15)) mHybrid = true;
-      if(p) printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
+      if (p) printf("!!!Hybrid:%d\t%x\t%x\t%x\t%x!!!\n", mHybrid, tmp[0], tmp[1], tmp[2], tmp[3]);
     }
     if (mHybrid) {
       int total_cores = numcores * _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::SmtLevel);
@@ -429,6 +429,7 @@ class CpuDevice {
 
 class CpuBase {
  public:
+  enum core_type { P_CORE, E_CORE, SMT_CORE };
   CpuBase() {
     GetCPUDevice();
     mL2Cache = _cd->getL2CacheSize();
@@ -452,6 +453,7 @@ class CpuBase {
   virtual inline int getPCoreNum() { return wrongCPU(); }
   virtual inline int getECoreNum() { return wrongCPU(); }
   virtual inline float getPE() { return wrongCPU(); }
+  virtual inline core_type getCoreType(int tidx) { return P_CORE; }
   virtual inline int getCoreidx(int tidx) { return wrongCPU(); }
   virtual inline void core_bond(int tidx) { wrongCPU(); }
 
@@ -467,14 +469,13 @@ class CpuBase {
 
 class CpuHybrid : public CpuBase {
  public:
-  enum core_type { P_core, E_core, SMT_core };
   CpuHybrid() {
     GetCPUDevice();
     mL2Cache = _cd->getL2CacheSize();
     mL1Cache = _cd->getL1CacheSize();
     mNumThreads = _cd->getThreads();
 
-    //set P/E core use all threads by default
+    // set P/E core use all threads by default
     mL2Cache_P = mL2Cache / 2;
     mL1Cache_P = mL1Cache / 2;
     mL2Cache_E = _cd->getL2CacheSize_E();
@@ -503,7 +504,7 @@ class CpuHybrid : public CpuBase {
       P_core_num = _cd->getPcoreNum();
       E_core_num = mNumThreads - P_core_num;
       core_order.insert(core_order.end(), Pcores.begin(), Pcores.end());
-      core_order.insert(core_order.end(), Ecores.begin(), Ecores.begin() + P_core_num);
+      core_order.insert(core_order.end(), Ecores.begin(), Ecores.begin() + E_core_num);
       mHybrid = true;
     } else {
       mL2Cache_P = _cd->getL2CacheSize() / 2;
@@ -512,7 +513,7 @@ class CpuHybrid : public CpuBase {
       E_core_num = _cd->getEcoreNum();
       core_order.insert(core_order.end(), Pcores.begin(), Pcores.end());
       core_order.insert(core_order.end(), Ecores.begin(), Ecores.end());
-      core_order.insert(core_order.end(), SMTcores.begin(), SMTcores.begin() + mNumThreads-P_core_num-E_core_num);
+      core_order.insert(core_order.end(), SMTcores.begin(), SMTcores.begin() + mNumThreads - P_core_num - E_core_num);
       mHybrid = true;
     }
     return mNumThreads;
@@ -530,28 +531,27 @@ class CpuHybrid : public CpuBase {
   inline int getPCoreNum() override { return P_core_num; }
   inline int getECoreNum() override { return E_core_num; }
   inline float getPE() override { return PE; }
+  inline core_type getCoreType(int tidx) override {
+    if (tidx < P_core_num)
+      return P_CORE;
+    else if (tidx < P_core_num + E_core_num)
+      return E_CORE;
+    else
+      return SMT_CORE;
+  }
   inline int getCoreidx(int tidx) override {
     switch (getCoreType(tidx)) {
-      case E_core:
+      case E_CORE:
         return tidx - P_core_num;
-      case SMT_core:
+      case SMT_CORE:
         return tidx - E_core_num;
       default:
         return tidx;
     }
   }
   inline void core_bond(int tidx) override {
-    //int core = core_order[tidx];
-    //CpuDevice::core_bond(core);
-  }
-
-  int getCoreType(int tidx) {
-    if (tidx < P_core_num)
-      return P_core;
-    else if (tidx < P_core_num + E_core_num)
-      return E_core;
-    else
-      return SMT_core;
+    // int core = core_order[tidx];
+    // CpuDevice::core_bond(core);
   }
 
   static CpuBase* getInstance() {

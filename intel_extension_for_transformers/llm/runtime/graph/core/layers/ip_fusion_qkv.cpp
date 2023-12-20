@@ -90,7 +90,7 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall::ThreadProblem thdpA{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara_E.getIndex(thdpA);
       if (thdpA.valid) launcher->mProA.run(args_E[0].paramA, thdpA);
     } else {
@@ -100,7 +100,7 @@ void GemmRunWithA_QKV(Launch_T* launcher, const typename Launch_T::Param* args_P
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para_E.getIndex(thdp);
       if (thdp.valid)
         for (size_t i = 0; i < 3; i++) launcher->run(args_E[i], thdp);

@@ -102,7 +102,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall1::ThreadProblem thdpA1{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
     } else {
@@ -111,7 +111,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp1{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) launcher1->run(args1_E, thdp1);
     } else {
@@ -120,7 +120,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename AParall2::ThreadProblem thdpA2{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara2_E.getIndex(thdpA2);
       if (thdpA2.valid) launcher2->mProA.run(args2_E.paramA, thdpA2);
     } else {
@@ -129,7 +129,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, const typename
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp2{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para2_E.getIndex(thdp2);
       if (thdp2.valid) launcher2->run(args2_E, thdp2);
     } else {
@@ -545,7 +545,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall1::ThreadProblem thdpA1{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara1_E.getIndex(thdpA1);
       if (thdpA1.valid) launcher1->mProA.run(args1_E.paramA, thdpA1);
     } else {
@@ -555,7 +555,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp1{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para1_E.getIndex(thdp1);
       if (thdp1.valid) {
         launcher1->run(args1_E, thdp1);
@@ -571,7 +571,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename AParall3::ThreadProblem thdpA3{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara3_E.getIndex(thdpA3);
       if (thdpA3.valid) launcher3->mProA.run(args3_E.paramA, thdpA3);
     } else {
@@ -581,7 +581,7 @@ void GemmRunWithA_ffn(Launch_T1* launcher1, Launch_T2* launcher2, Launch_T3* lau
     th->sync();
 
     typename Parallel_T::ThreadProblem thdp3{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para3_E.getIndex(thdp3);
       if (thdp3.valid) launcher3->run(args3_E, thdp3);
     } else {
