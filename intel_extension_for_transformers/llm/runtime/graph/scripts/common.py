@@ -228,8 +228,15 @@ def load_gptq_model(model_path):
         quantize_config = json.load(f)
     return model, config, quantize_config
 
+def load_hf_model(model_path):
+    from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True)
+    config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+    return model, config, None
 
-def convert_fp32_tensor(src_name, dst_name, model, fout):
+def convert_fp32_tensor(src_name, dst_name, model, fout, n_head=0, n_head2=0, permute_func=None):
+    if ".weight" not in src_name:
+        src_name = src_name + ".weight"
     v = model[src_name]
     shape = v.shape
     # print("Processing non-Q4 variable: " + src_name +
@@ -240,7 +247,8 @@ def convert_fp32_tensor(src_name, dst_name, model, fout):
 
     # header
     write_header(fout, shape, dst_name, ftype_cur)
-
+    if permute_func:
+        v = permute_func(v, n_head, n_head2).contiguous()
     # data
     v.numpy().tofile(fout)
     print(f"converting {dst_name} float tensor")
