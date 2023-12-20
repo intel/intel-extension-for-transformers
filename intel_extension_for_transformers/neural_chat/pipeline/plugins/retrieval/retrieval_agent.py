@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, ClassVar, Collection
 from .detector.intent_detection import IntentDetector
 from .parser.parser import DocumentParser
 from .retriever_adapter import RetrieverAdapter
@@ -29,8 +29,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from intel_extension_for_transformers.langchain.vectorstores import Chroma
 import uuid
 from langchain_core.documents import Document
+import logging
 
-
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 def document_transfer(data_collection):
     "Transfer the raw document into langchain supported format."
@@ -39,7 +44,6 @@ def document_transfer(data_collection):
         doc_id = str(uuid.uuid4())
         metadata = {"source": meta, "doc_id":doc_id}
         doc = Document(page_content=data, metadata=metadata)
-        
         documents.append(doc)
     return documents
 
@@ -73,7 +77,13 @@ class Agent_QA():
         self.retriever = None
         self.splitter = RecursiveCharacterTextSplitter(chunk_size= kwargs['child_size'] \
                     if 'child_size' in kwargs else 512)
+        allowed_retrieval_type: ClassVar[Collection[str]] = (
+            "default",
+            "child_parent",
+        )
 
+        assert self.retrieval_type in allowed_retrieval_type, "search_type of {} not allowed.".format(   \
+            self.retrieval_type)
         if isinstance(input_path, str):
             if os.path.exists(input_path):
                 self.input_path = input_path
@@ -86,7 +96,7 @@ class Agent_QA():
         elif isinstance(input_path, List):
             self.input_path = input_path
         else:
-            print("The given file path is unavailable, please check and try again!")
+            logging.error("The given file path is unavailable, please check and try again!")
         assert self.input_path != None, "Should gave an input path!"
 
         try:
@@ -105,12 +115,15 @@ class Agent_QA():
                     encode_kwargs={"normalize_embeddings": True},
                 )
         except Exception as e:
-            print("Please selet a proper embedding model")
+            logging.error("Please selet a proper embedding model.")
         
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
         data_collection = self.document_parser.load(input=self.input_path, **kwargs)
+        logging.info("The parsing for the uploaded files is finished.")
+        
         langchain_documents = document_transfer(data_collection)
+        logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
             self.database = Chroma()
@@ -138,6 +151,7 @@ class Agent_QA():
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs).retriever
+        logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):
         """
@@ -154,6 +168,7 @@ class Agent_QA():
             child_knowledge_base = self.database.reload(persist_directory=child_persist_dir, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
+        logging.info("The retriever is successfully built.")
 
 
     def create(self, input_path, **kwargs):
@@ -173,6 +188,7 @@ class Agent_QA():
                                                                 embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
+        logging.info("The retriever is successfully built.")
             
 
     def append_localdb(self, append_path, **kwargs):
@@ -190,6 +206,7 @@ class Agent_QA():
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
+        logging.info("The retriever is successfully built.")
         
 
 
@@ -197,23 +214,23 @@ class Agent_QA():
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
         context = ''
-        assert self.retriever is not None, print("Please check the status of retriever")
+        assert self.retriever is not None, logging.info("Please check the status of retriever")
         if self.mode == 1:   ## "retrieval with threshold" will only return the document that bigger than the threshold.
             context, links = self.retriever.get_context(query)
             if 'qa' not in intent.lower() and context == '':
-                print("Chat with AI Agent.")
+                logging.info("Chat with AI Agent.")
                 prompt = generate_prompt(query)
             else:
-                print("Chat with QA Agent.")
+                logging.info("Chat with QA Agent.")
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_enterprise(query, context)
         elif self.mode == 2: ## For general setting, will return top-k documents.
             if 'qa' not in intent.lower() and context == '':
-                print("Chat with AI Agent.")
+                logging.info("Chat with AI Agent.")
                 prompt = generate_prompt(query)
             else:
-                print("Chat with QA Agent.")
+                logging.info("Chat with QA Agent.")
                 context, links = self.retriever.get_context(query)
                 if len(context) == 0:
                     return "Response with template.", links

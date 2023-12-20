@@ -17,6 +17,12 @@
 
 """The wrapper for Retriever based on langchain"""
 from intel_extension_for_transformers.langchain.retrievers import VectorStoreRetriever, ChildParentRetriever
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class RetrieverAdapter():
     """Retrieve the document database with Chroma database using dense retrieval."""
@@ -30,4 +36,4 @@ class RetrieverAdapter():
             self.retriever = ChildParentRetriever(vectorstore=child_document_store, parentstore=document_store, \
                                                   **kwargs)
         else:
-            print("Other types of retriever will coming soon.")
+            logging.error('The chosen retrieval type remains outside the supported scope.')

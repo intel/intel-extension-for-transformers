@@ -41,6 +41,11 @@ import chromadb
 import chromadb.config
 _DEFAULT_PERSIST_DIR = './output'
 _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
 class Chroma(Chroma_origin):
@@ -181,7 +186,7 @@ class Chroma(Chroma_origin):
             persist_directory = _DEFAULT_PERSIST_DIR
         if os.path.exists(persist_directory):
             if bool(os.listdir(persist_directory)):
-                print("Load the existing database!")
+                logging.info("Load the existing database!")
                 chroma_collection = cls(
                     collection_name=collection_name,
                     embedding_function=embedding,
@@ -194,7 +199,7 @@ class Chroma(Chroma_origin):
                 )
                 return chroma_collection
         else:
-            print("Create a new kb...")
+            logging.info("Create a new knowledge base...")
             chroma_collection = cls.from_documents(
                 documents=documents,
                 embedding=embedding,
