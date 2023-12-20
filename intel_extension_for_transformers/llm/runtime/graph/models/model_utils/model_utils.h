@@ -451,6 +451,7 @@ class beam_search_flow {
   const bool step_prefill(const model_input& input);
   const bool step_decoding();
   const std::vector<int> request_done_ids();
+  const std::vector<std::vector<model_token>> request_done_reponse();
 
  private:
   std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const std::vector<float>& beams_score,

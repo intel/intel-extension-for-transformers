@@ -29,7 +29,6 @@ enum class seq_status : int {
 
 enum class pool_property : int {
   WAITING = 0,
-  HOLDING,
   RUNNING,
   FINISHED,
 };
