@@ -68,4 +68,5 @@ urllib3
 langid
 optimum-intel==1.11.0
 zhconv
-diffusers==0.12.1
+diffusers
+transformers_stream_generator
