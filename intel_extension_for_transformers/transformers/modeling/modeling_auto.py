@@ -138,7 +138,7 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype="int8", weight_dtype="int8"
+                            compute_dtype="bf16", weight_dtype="int8"
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
