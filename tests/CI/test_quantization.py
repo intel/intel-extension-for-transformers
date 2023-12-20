@@ -325,7 +325,7 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                    calib_iters=5,
+                                    calib_iters=2,
                                     ipex_opt_llm=False
                                     )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -333,7 +333,23 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
-
+        # SQ auto
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
+                "alpha_min":0.5, "alpha_step":0.1, "shared_criterion": "mean", "do_blockwise": False}},
+            }
+        sq_config = SmoothQuantConfig(
+                            tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                            calib_iters=2,
+                            recipes=recipes,
+                            ipex_opt_llm=False
+                            )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_llm_runtime=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         # weight-only
         #RTN
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")

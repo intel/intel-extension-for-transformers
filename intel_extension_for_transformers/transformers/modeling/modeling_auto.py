@@ -328,15 +328,25 @@ class _BaseQBitsAutoModelClass:
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
                         position_ids_padded.append(position_ids)
-                    return (
-                        {
-                            "input_ids": torch.vstack(input_ids_padded),
-                            "attention_mask": torch.vstack(attention_mask_padded),
-                            "position_ids": torch.vstack(position_ids_padded),
-                            "past_key_values": past_key_values,
-                        },
-                        torch.tensor(last_ind),
-                    )
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "position_ids": torch.vstack(position_ids_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
+                    else:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
 
                 def collate_batch_for_chatglm(batch):
                     last_ind = []
