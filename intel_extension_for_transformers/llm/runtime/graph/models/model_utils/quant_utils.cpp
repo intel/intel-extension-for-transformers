@@ -458,26 +458,7 @@ static void model_quantize_internal(const quant_params& params, std::shared_ptr<
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
 }
 
-size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, int nthread, int n, int k) {
-  // using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  // using namespace ne_jblas;
-  // auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  // auto dstbptr = (int8_t*)dstpr;
-  // cd->setThreads(nthread);
-  // using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
-  // using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
-  // static Kernel kernel;
-  // static KernelRef kernelref;
-  // auto packedw = kernel.createStorage(n, k, group_size);
-  // packedw.assign(dstbptr);
-  // if (cd->AVX512F()) {
-  //     kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-  //     } else {
-  //       kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-  //     }
-  // return packedw.mSize;
-  return 0;
-}
+size_t jblas_special_quantize(const float* f32ptr, void* dstpr, int group_size, int nthread, int n, int k) { return 0; }
 
 bool model_quantize_special(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
                             const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip) {

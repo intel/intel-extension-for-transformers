@@ -22,7 +22,7 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder", "whisper": "whisper"}
 
 
-def convert_model(model, outfile, whisper_repo_path, outtype):
+def convert_model(model, outfile, outtype, whisper_repo_path=None):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
@@ -61,7 +61,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    convert_model(dir_model, args.outfile, args.whisper_repo_path, args.outtype)
+    convert_model(dir_model, args.outfile, args.outtype, args.whisper_repo_path)
 
 
 if __name__ == "__main__":
