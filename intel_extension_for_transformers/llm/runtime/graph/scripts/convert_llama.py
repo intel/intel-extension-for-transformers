@@ -195,6 +195,7 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale,
             bos_token_id = bos_token_id,
             eos_token_id = eos_token_id,
         )
