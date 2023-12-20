@@ -321,14 +321,17 @@ class _BaseQBitsAutoModelClass:
                     attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
-                    if not calib_padding:
-                        input_ids = (
+                        if not calib_padding:
+                            input_ids = (
                                 input_ids[: int(calib_pad_max)]
-                                if len(input_ids) > int(calib_pad_max) else input_ids
-                                    ) #no_padding
-                    else:
-                        pad_len = calib_pad_max - input_ids.shape[0] 
-                        input_ids = pad(input_ids, (0, pad_len), value=calib_pad_val)
+                                if len(input_ids) > int(calib_pad_max)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_pad_max - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
 
                         last_ind.append(input_ids.shape[0] - 1)
                         attention_mask = torch.ones(len(input_ids))
