@@ -749,7 +749,7 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
     assert(w3ptr_->ShfIndice() == nullptr);
     typename Launcher_epi::Param args1_P{gp1_P, {activation, fin, &quanA1_P}, {w1ptr_}, epi_prama1};
     typename Launcher::Param args2_P{gp2_P, {tmp2, fmid, &quanA2_P}, {w2ptr_}, epi_prama2};
-    typename Launcher_epi::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
+    typename Launcher_mul::Param args3_P{gp3_P, {activation, fin, &quanA1_P}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
     typename Launcher_epi::Param args1_E{
         gp1_E, {activation + offset * fin, fin, &quanA1_E}, {w1ptr_}, epi_prama1.offset(offset)};
     typename Launcher::Param args2_E{
