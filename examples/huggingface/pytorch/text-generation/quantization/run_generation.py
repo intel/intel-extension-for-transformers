@@ -63,6 +63,20 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_pad_max",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
+parser.add_argument("--recipes", default=None, help="Recipes for smoothquant.")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 parser.add_argument(
     "--fallback_add", action="store_true", help="Whether to fallback add ops to FP32"
@@ -190,18 +204,25 @@ elif args.sq:
             "activation": {"dtype": ["fp32"]},
         }
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    recipes = {
-        "smooth_quant": True,
-        "smooth_quant_args": {
-            "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-        },
-    }
+    if args.recipes is None:
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": {
+                "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
+            },
+        }
+    else:
+        recipes = args.recipes
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
         recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        calib_iters=args.calib_iters,
+        calib_padding=args.calib_padding,
+        calib_pad_max=args.calib_pad_max,
+        calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
