@@ -502,9 +502,9 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     this->mL2Use += static_cast<size_t>(blks) * (this->mBlock[1] + this->mStep[0]) *
                     (sizeof(float) + sizeof(int8_t) + sizeof(float));  // scale+zp+reduce
     assert(this->mL2Use <= this->mL2Size - ReservedSize);
-    assert(this->mBlock[0]>0);
-    assert(this->mBlock[1]>0);
-    assert(this->mBlock[2]>0);
+    assert(this->mBlock[0] > 0);
+    assert(this->mBlock[1] > 0);
+    assert(this->mBlock[2] > 0);
   }
 
  protected:
@@ -735,7 +735,7 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     _cb->core_bond(tidx);
     int core_idx = _cb->getCoreidx(tidx);
     typename AParall::ThreadProblem thdpA{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       apara_E.getIndex(thdpA);
       if (thdpA.valid) launcher.mProA.run(args_E.paramA, thdpA);
     } else {
@@ -744,7 +744,7 @@ void GemmRunWithA(Launch_T& launcher, const typename Launch_T::Param& args_P, co
     }
     th->sync();
     typename Parallel_T::ThreadProblem thdp{core_idx};
-    if (_cb->getPCoreNum() < tidx && tidx < _cb->getPCoreNum() + _cb->getECoreNum()) {
+    if (_cb->getCoreType(tidx) == _cb->E_CORE) {
       para_E.getIndex(thdp);
       if (thdp.valid) launcher.run(args_E, thdp);
     } else {
