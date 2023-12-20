@@ -172,7 +172,7 @@ Below is the sample code to enable weight-only INT4/INT8 inference. See more [ex
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -187,7 +187,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
