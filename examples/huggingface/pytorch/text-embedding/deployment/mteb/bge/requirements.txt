@@ -8,5 +8,5 @@ onnx==1.13.1
 onnxruntime==1.13.1
 mteb==1.1.1
 beir
-transformers==4.34.1
+transformers==4.36.0
 optimum
