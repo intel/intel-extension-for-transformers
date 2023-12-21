@@ -389,19 +389,19 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_after_gen=True)
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_history=True)
         else:
-            clear_after_gen = True
+            clear_history = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
                 name = "neural-chat-7b-v2"
-                clear_after_gen = False
+                clear_history = False
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
+            self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
     def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
         self.get_conv_template(model_path, task)
