@@ -166,13 +166,14 @@ class Agent_QA():
         """
         assert os.path.exists(local_persist_dir) and bool(os.listdir(local_persist_dir)), \
             "Please check the local knowledge base was built!"
-        knowledge_base = self.database.reload(persist_directory=local_persist_dir, **kwargs)
+        knowledge_base = self.database.reload(persist_directory=local_persist_dir, embedding=self.embeddings, **kwargs)
         if self.retrieval_type == 'default':
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
         elif self.retrieval_type == "child_parent":
             child_persist_dir = local_persist_dir + "_child"
-            child_knowledge_base = self.database.reload(persist_directory=child_persist_dir, **kwargs)
+            child_knowledge_base = self.database.reload(persist_directory=child_persist_dir, \
+                                                        embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
         logging.info("The retriever is successfully built.")

@@ -218,7 +218,7 @@ class Chroma(Chroma_origin):
     def reload(
             cls: Type[Chroma],
             collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
-            embedding_function: Optional[Embeddings] = None,
+            embedding: Optional[Embeddings] = None,
             persist_directory: Optional[str] = None,
             client_settings: Optional[chromadb.config.Settings] = None,
             collection_metadata: Optional[Dict] = None,
@@ -230,7 +230,7 @@ class Chroma(Chroma_origin):
             persist_directory = _DEFAULT_PERSIST_DIR
         chroma_collection = cls(
             collection_name=collection_name,
-            embedding_function=embedding_function,
+            embedding_function=embedding,
             persist_directory=persist_directory,
             client_settings=client_settings,
             client=client,
