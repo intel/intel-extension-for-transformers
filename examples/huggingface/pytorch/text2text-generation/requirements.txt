@@ -2,7 +2,7 @@ accelerate
 sentencepiece != 0.1.92
 protobuf
 datasets
-transformers==4.34.1
+transformers
 onnx
 rouge-score
 nltk
