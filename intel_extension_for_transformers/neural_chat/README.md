@@ -149,6 +149,7 @@ The table below displays the validated model list in NeuralChat for both inferen
 |Qwen series| ✅| ✅|✅| ✅    |
 |StarCoder series|   |   |   | ✅ |
 |CodeLLaMA series|   |   |   | ✅ |
+|CodeGen series|   |   |   | ✅ |
 
 
 ## Restful API

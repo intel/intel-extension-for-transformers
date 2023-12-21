@@ -382,7 +382,9 @@ class SmoothQuantConfig:
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
     calib_iters: int = 100
+    calib_padding: bool = False
     calib_len: int = 512
+    calib_pad_val: int = 1
     alpha: float = 0.5
     op_type_dict: dict = None
     op_name_dict: dict = None
