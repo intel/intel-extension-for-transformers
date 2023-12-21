@@ -32,9 +32,9 @@ class TestChatbotBuilder(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if os.path.exists("./ci/api/output"):
-            shutil.rmtree("./ci/api/output")
-        for filename in os.listdir("./ci/api/"):
+        if os.path.exists("./output"):
+            shutil.rmtree("./output")
+        for filename in os.listdir("./"):
             if filename.endswith(".wav"):
                 os.remove(filename)
 
