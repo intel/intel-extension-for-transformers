@@ -12,10 +12,12 @@ Quantized Length Adaptive Transformer is based on [Length Adaptive Transformer](
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
 ```
-  >*Note: Suggest use PyTorch 1.12.0 and Intel Extension for PyTorch 1.12.0
+>**Note**: Suggest use PyTorch 1.12.0 and Intel Extension for PyTorch 1.12.0
+
+>**Note**: Suggest use transformers no higher than 4.34.1
+
 
 # Run
-
 
 ## Step 1: Finetune
 In this step, `output/finetuning` is a fine-tuned minilm for squad, which uploaded to [sguskin/minilmv2-L6-H384-squad1.1](https://huggingface.co/sguskin/minilmv2-L6-H384-squad1.1)
