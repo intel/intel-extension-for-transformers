@@ -104,8 +104,8 @@ def _replace_linear(
                     in_features = module.in_features
                     out_features = module.out_features
                     if device == "cpu" or device == torch.device("cpu"):
-                        from .nn.modules import QuantizedLinearCPU  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
-                        model._modules[name] = QuantizedLinearCPU(
+                        from .nn.modules import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
+                        model._modules[name] = QuantizedLinearQBits(
                             in_features,
                             out_features,
                             module.bias is not None,
@@ -145,9 +145,11 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                model._modules[name].set_weights_bias(
-                    module.weight.data, None if module.bias is None else module.bias.data
-                )
+                if not empty_weights:
+                    model._modules[name].set_weights_bias(
+                        module.weight.data, None if module.bias is None else module.bias.data
+                    )
+
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,

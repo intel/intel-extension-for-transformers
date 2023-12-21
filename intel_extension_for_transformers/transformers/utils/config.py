@@ -372,7 +372,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
     def get_config_dict(
         cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=QUANT_CONFIG, **kwargs)
+        cf = kwargs.pop("_configuration_file", QUANT_CONFIG)
+        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=cf, **kwargs)
 
 
 @dataclass

@@ -86,7 +86,7 @@ class ParamsQBits(torch.nn.Parameter):
         return self
 
 
-class QuantizedLinearCPU(torch.nn.Linear):
+class QuantizedLinearQBits(torch.nn.Linear):
     def __init__(
         self,
         input_features,
@@ -144,7 +144,7 @@ class QuantizedLinearCPU(torch.nn.Linear):
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
-class QuantizedLoraLinearQBits(QuantizedLinearCPU, LoraLayer):
+class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
@@ -156,7 +156,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearCPU, LoraLayer):
         lora_dropout: float = 0.0,
         **kwargs,
     ) -> None:
-        QuantizedLinearCPU.__init__(
+        QuantizedLinearQBits.__init__(
             self,
             in_features,
             out_features,
@@ -303,7 +303,7 @@ class QBitsLoraModel(LoraModel):
     _create_new_module_ = LoraModel._create_new_module
 
     def _create_new_module(self, lora_config, adapter_name, target, **kwargs):
-        if isinstance(target, QuantizedLinearCPU):
+        if isinstance(target, QuantizedLinearQBits):
             bias = kwargs.pop("bias", False)
             in_features, out_features = target.in_features, target.out_features
             if kwargs["fan_in_fan_out"]:

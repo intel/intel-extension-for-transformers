@@ -63,12 +63,13 @@ torch = LazyImport("torch")
 
 def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
     assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
+    device_map = self.device_map
+
     if os.path.isfile(save_directory):
         logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
         return
 
     os.makedirs(save_directory, exist_ok=True)
-    self.to('cpu')
     self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -625,16 +626,17 @@ class _BaseQBitsAutoModelClass:
             **kwargs,
         )
         assert quantization_config is not None, "Detect this model is not a low-bit model."
+        kwargs["trust_remote_code"] = trust_remote_code
         config, kwargs = AutoConfig.from_pretrained(
             pretrained_model_name_or_path,
             return_unused_kwargs=True,
-            trust_remote_code=trust_remote_code,
             **kwargs,
         )
 
         if commit_hash is None:
             if not isinstance(config, PretrainedConfig):
-                # We make a call to the config file first (which may be absent) to get the commit hash as soon as possible
+                # We make a call to the config file first (which may be absent)
+                # to get the commit hash as soon as possible.
                 resolved_config_file = cached_file(
                     pretrained_model_name_or_path,
                     "config.json",
