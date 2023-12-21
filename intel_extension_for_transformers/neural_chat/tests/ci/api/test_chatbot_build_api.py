@@ -144,6 +144,26 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
+    
+    def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
+
+        def _run_retrieval(local_dir):
+            plugins.retrieval.enable = True
+            plugins.retrieval.args["input_path"] = "../../../README.md"
+            plugins.retrieval.args["embedding_model"] = local_dir
+            pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                             plugins=plugins)
+            chatbot = build_chatbot(pipeline_config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="What is Intel extension for transformers?")
+            self.assertIsNotNone(response)
+
+        # test local file
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
+
+        
 
 if __name__ == '__main__':
     unittest.main()
