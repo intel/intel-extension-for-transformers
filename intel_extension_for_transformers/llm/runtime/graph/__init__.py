@@ -127,7 +127,8 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-    def __init_from_bin(self, model_type, model_path, **generate_kwargs):
+    def init_from_bin(self, model_type, model_path, **generate_kwargs):
+        """initialize cpp model from bin file"""
         self.__import_package(model_type)
         self.model = self.module.Model()
         if "threads" not in generate_kwargs:
@@ -149,7 +150,7 @@ class Model:
         max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
         self.batch_size = input_ids.shape[0]
         if self.model is None:
-            self.__init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
+            self.init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
                                **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
@@ -222,7 +223,7 @@ class Model:
     def __call__(self, input_ids, reinit=False, **kwargs):
         """forward function"""
         if self.model is None:
-            self.__init_from_bin(self.model_type, self.bin_file, **kwargs)
+            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
         elif reinit:
             self.model.reinit()

@@ -281,6 +281,7 @@ Methods description of model:
 | Method         | Description                                                                                |
 | -------------- | -----------------------------------------------------------------------                    |
 | `init`         | initialize cpp model using model name                                                      |
+| `init_from_bin` | initialize cpp model from bin file                                                      |
 | `generate`     | transformer-like generate function, arguments please refer to `argument description of generate function`|
 | `__call__`     | forward function                                                                           |
 | `quant_model`  | quantize model from fp32 bin, arguments please refer to following `WeightOnlyQuantConfig`  | 
