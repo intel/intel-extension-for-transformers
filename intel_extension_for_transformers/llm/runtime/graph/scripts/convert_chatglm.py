@@ -167,7 +167,7 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
     fout = open(fname_out, "wb")
 
     gguf_file = fname_out + '.gguf'
-    gguf_writer = gguf.GGUFWriter(gguf_file, "chatglm2-test.ggml")
+    gguf_writer = gguf.GGUFWriter(gguf_file, "chatglm2")
     # gguf_writer.add_name('chatglm2-6b')
 
     gguf_writer.add_uint32('magic', 0x67676d66)
@@ -198,16 +198,6 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
     gguf_writer.add_uint32('eos_token_id', 2)
     gguf_writer.add_uint32('pad_token_id', 0)
     gguf_writer.add_uint32('sep_token_id', 0)
-
-    # TODO:
-    #gguf_writer.add_context_length(ctx_length)
-    #gguf_writer.add_embedding_length(hparams["hidden_size"])
-    #gguf_writer.add_block_count(block_count)
-    #gguf_writer.add_feed_forward_length(hparams["intermediate_size"])
-    # gguf_writer.add_rope_dimension_count(hparams["hidden_size"] // hparams["num_attention_heads"])
-    # gguf_writer.add_head_count(hparams["num_attention_heads"])
-    # gguf_writer.add_head_count_kv(hparams["num_attention_heads"])
-    #gguf_writer.add_layer_norm_rms_eps(hparams["rms_norm_eps"])
 
     def write_vocab_gguf(dir_model):
         print("gguf: get tokenizer metadata")
