@@ -169,7 +169,7 @@ class Agent_QA():
         knowledge_base = self.database.reload(persist_directory=local_persist_dir, **kwargs)
         if self.retrieval_type == 'default':
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
-                                              **kwargs)
+                                              **kwargs).retriever
         elif self.retrieval_type == "child_parent":
             child_persist_dir = local_persist_dir + "_child"
             child_knowledge_base = self.database.reload(persist_directory=child_persist_dir, **kwargs)
@@ -222,7 +222,8 @@ class Agent_QA():
         links = []
         context = ''
         assert self.retriever is not None, logging.info("Please check the status of retriever")
-        if self.mode == "accuracy":   ## "retrieval with threshold" will only return the document that bigger than the threshold.
+        if self.mode == "accuracy":
+        # "retrieval with threshold" will only return the document that bigger than the threshold.
             context, links = self.retriever.get_context(query)
             if 'qa' not in intent.lower() and context == '':
                 logging.info("Chat with AI Agent.")
@@ -232,7 +233,8 @@ class Agent_QA():
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_enterprise(query, context)
-        elif self.mode == "general": ## For general setting, will return top-k documents.
+        elif self.mode == "general":
+        # For general setting, will return top-k documents.
             if 'qa' not in intent.lower() and context == '':
                 logging.info("Chat with AI Agent.")
                 prompt = generate_prompt(query)
