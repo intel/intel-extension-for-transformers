@@ -76,6 +76,8 @@ function pytest() {
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "/intel-extension-for-transformers/tests"
     echo "test on ${test_name}"
+    ## install transformers==4.34.1, to work with SharedDPO API
+    pip install transformers==4.34.1
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
     elif [[ $test_name == "baseline" ]]; then
