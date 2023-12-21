@@ -91,9 +91,7 @@ class Model {
     generate_count = 0;
   }
 
-  void print_time() {
-    model_print_timings(ctx);
-  }
+  void print_time() { model_print_timings(ctx); }
 
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros,
                                py::array_t<int32_t> g_idx, py::array_t<int8_t> dst, const std::string& weight_dtype,
