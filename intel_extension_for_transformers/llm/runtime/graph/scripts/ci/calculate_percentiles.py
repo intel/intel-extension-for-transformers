@@ -66,6 +66,7 @@ if __name__ == "__main__":
     model_output = sys.argv[7]
     memory_file = os.environ.get("WORKSPACE") + "/memory.txt"
     predictions = parse_output_file(output_file)
+    assert len(predictions) > 1, "Model has less than 2 ouput tokens!"
     first_token_latency = predictions[0]
     p90 = calculate_percentile(predictions, 90)
     p99 = calculate_percentile(predictions, 99)
