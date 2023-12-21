@@ -12,6 +12,7 @@ Before running the scripts, make sure to install the library's training dependen
 pip install transformers~=4.21.0
 pip install -r requirements.txt
 ```
+>>**Note**: Please use transformers no higher than 4.21.0
 
 ## Get a FP32 Textual Inversion model
 

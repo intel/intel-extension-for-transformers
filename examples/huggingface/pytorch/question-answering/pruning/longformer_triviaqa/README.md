@@ -8,10 +8,13 @@ This document is used to list steps of reproducing PyTorch longformer-base-4096 
 
 ## 1. Environment
 
-
 ```shell
+pip install intel-extension-for-transformers
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>>**Note**: Please use transformers no higher than 4.34.1
+
 
 ## 2. Prepare Dataset
 
