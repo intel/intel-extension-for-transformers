@@ -22,7 +22,7 @@ from typing import Optional, Tuple
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers.utils.utility import (
-    generate_dummy_past_key_values,
+    generate_dummy_past_key_values_for_inference,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
@@ -175,7 +175,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
                         config=self.config, input_bs=input_bs, num_beams=1
                     )
             else:
-                past_key_values = generate_dummy_past_key_values(
+                past_key_values = generate_dummy_past_key_values_for_inference(
                     config=self.config, input_bs=input_bs
                 )
         inputs["past_key_values"] = past_key_values

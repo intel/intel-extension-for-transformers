@@ -129,16 +129,6 @@ def generate_dummy_past_key_values(config, input_bs):
             for _ in range(num_layers)
         ]
         return tuple(past_key_values)
-    elif config.model_type == "baichuan":
-        new_shape = [input_bs, num_key_value_heads, 1, d_k]
-        past_key_values = [
-            (
-                torch.ones(size=new_shape).contiguous(),
-                torch.ones(size=new_shape).contiguous(),
-            )
-            for _ in range(num_layers)
-        ]
-        return tuple(past_key_values)
     elif config.model_type == "chatglm":
         new_shape = [0, input_bs, num_key_value_heads, d_k]
     elif config.model_type == "falcon":
