@@ -28,7 +28,7 @@ parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
 parser.add_argument("--trust_remote_code", default=False)
-parser.add_argument("--revision", default="main", type=str)
+parser.add_argument("--_commit_hash", default="main", type=str)
 parser.add_argument("--dataset", nargs="?", default="mbpp", const="mbpp")
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
@@ -137,7 +137,9 @@ tokenizer = AutoTokenizer.from_pretrained(
     args.model,
     truncation_side="left",
     padding_side="right",
+    trust_remote_code=args.trust_remote_code
 )
+
 config = AutoConfig.from_pretrained(
     args.model,
     torchscript=True
@@ -149,7 +151,7 @@ config = AutoConfig.from_pretrained(
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
-    revision=args.revision,
+    _commit_hash=args._commit_hash,
 )
 if not tokenizer.eos_token:
     if tokenizer.bos_token:
@@ -206,7 +208,7 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
         use_llm_runtime=False,
     )
 elif args.load_in_4bit or args.load_in_8bit:
@@ -215,7 +217,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         args.model,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
         use_llm_runtime=False,
     )
 elif not args.int8 and not args.int8_bf16_mixed:
@@ -223,7 +225,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
         args.model,
         config=config,
         trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
         use_llm_runtime=False,
     )
 
@@ -248,7 +250,7 @@ if args.int8 or args.int8_bf16_mixed:
         args.output_dir,
         file_name="best_model.pt",
         trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
     )
 
 if args.benchmark:
