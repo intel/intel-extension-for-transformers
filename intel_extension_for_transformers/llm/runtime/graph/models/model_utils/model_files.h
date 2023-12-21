@@ -226,7 +226,6 @@ struct model_file_loader {
 
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
-    // read_gguf();
     read_magic(tensors_map);
     read_tensor_metadata(file_idx, tensors_map);
   }
@@ -541,28 +540,6 @@ struct model_file_loader {
     ctx->kv[idx].value.bool_ = val;
   }
 
-  // struct ne_tensor * ne_get_tensor(struct ne_context * ctx, const char * name) {
-  //     struct ne_object * obj = ctx->objects_begin;
-
-  //     char * const mem_buffer = reinterpret_cast<char*>(ctx->mem_buffer);
-
-  //     while (obj != NULL) {
-  //         // if (obj->type == GGML_OBJECT_TENSOR) {
-  //         //     struct ggml_tensor * cur = (struct ggml_tensor *)(mem_buffer + obj->offs);
-  //         //     if (strcmp(cur->name, name) == 0) {
-  //         //         return cur;
-  //         //     }
-  //         // }
-  //         struct ne_tensor * cur = (struct ne_tensor *)(mem_buffer + obj->offs);
-  //         if (strcmp(cur->name, name) == 0) {
-  //             return cur;
-  //         }
-  //         obj = obj->next;
-  //     }
-
-  //     return NULL;
-  // }
-
   void gguf_set_val_str(struct gguf_context* ctx, const char* key, const char* val) {
     const int idx = gguf_get_or_add_key(ctx, key);
 
@@ -775,7 +752,6 @@ struct model_file_loader {
       uint32_t name_len = name.length();
       shard.type = (enum ne_type)0;
 
-      // 不是都等于2的，兄弟呀。
       std::cout << "                     ";
       uint32_t n_dims = info->n_dims;
       shard.ne.resize(n_dims);
@@ -852,25 +828,6 @@ struct model_file_loader {
     return ctx;
   }
 
-  // struct ggml_tensor * ggml_get_tensor(struct ggml_context * ctx, const char * name) {
-  //     struct ggml_object * obj = ctx->objects_begin;
-
-  //     char * const mem_buffer = ctx->mem_buffer;
-
-  //     while (obj != NULL) {
-  //         if (obj->type == GGML_OBJECT_TENSOR) {
-  //             struct ggml_tensor * cur = (struct ggml_tensor *)(mem_buffer + obj->offs);
-  //             if (strcmp(cur->name, name) == 0) {
-  //                 return cur;
-  //             }
-  //         }
-
-  //         obj = obj->next;
-  //     }
-
-  //     return NULL;
-  // }
-
   size_t ggml_nbytes(const struct ne_tensor* tensor) {
     size_t nbytes;
 
@@ -893,13 +850,6 @@ struct model_file_loader {
 
     return nbytes;
   }
-
-  //   int64_t ggml_nelements(const struct ggml_tensor * tensor) {
-
-  //       static_assert(GGML_MAX_DIMS == 4, "GGML_MAX_DIMS is not 4 - update this function");
-
-  //       return tensor->ne[0]*tensor->ne[1]*tensor->ne[2]*tensor->ne[3];
-  //   }
 
   void read_ne_magic() {
     uint32_t magic = file.read_u32();
@@ -959,7 +909,6 @@ struct model_file_loader {
     llama_fver fver;
 
     struct gguf_context* ctx_gguf = NULL;
-    // struct ggml_context * ctx_meta = NULL;
     struct ne_context* ctx_meta = NULL;
 
     ctx_gguf = read_gguf(tensors_map);
@@ -971,11 +920,10 @@ struct model_file_loader {
     n_tensors = gguf_get_n_tensors(ctx_gguf);
 
     fver = (enum llama_fver)gguf_get_version(ctx_gguf);
-
     printf("%s: loaded meta data with %d key-value pairs and %d tensors (version %s)\n", __func__, n_kv, n_tensors,
            llama_file_version_name(fver));
 
-    // 统计tensor占用空间的
+    // calcaute the tensor data size
     // int64_t n_elements = 0;
     // size_t  n_bytes    = 0;
     // for (int i = 0; i < n_tensors; i++) {
@@ -1003,17 +951,19 @@ struct model_file_loader {
       printf("%s: - kv %3d: %42s %-16s = %s\n", __func__, i, name, type_name.c_str(), value.c_str());
     }
 
-    uint32_t magic = ctx_gguf->kv[1].value.uint32;
-    // uint32_t magic = file.read_u32();
+    std::string arch = "unknown";
+    GGUF_GET_KEY(ctx_gguf, arch, gguf_get_val_str, GGUF_TYPE_STRING, false, "general.architecuture");
+
+    uint32_t magic = -1;
+    GGUF_GET_KEY(ctx_gguf, magic, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "magic");
 
     if (magic == MODEL_FILE_MAGIC_NE) {
-      std::cout << "?????????????????????" << std::endl;
       file_version = MODEL_FILE_VERSION_NE;
       return;
     }
 
-    uint32_t version = ctx_gguf->kv[2].value.uint32;
-    // uint32_t version = file.read_u32();
+    uint32_t version = -1;
+    GGUF_GET_KEY(ctx_gguf, version, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "version");
 
     switch (magic) {
       case MODEL_FILE_MAGIC_GGMF:
@@ -1039,34 +989,66 @@ struct model_file_loader {
     std::cout << "magic = " << magic << " version = " << version << std::endl;
     // throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
 
-    hparams.n_vocab = ctx_gguf->kv[3].value.uint32;
-    hparams.n_embd = ctx_gguf->kv[4].value.uint32;
-    hparams.n_mult = ctx_gguf->kv[5].value.uint32;
-    hparams.n_head = ctx_gguf->kv[6].value.uint32;
-    hparams.n_head_kv = ctx_gguf->kv[7].value.uint32;
-    hparams.n_layer = ctx_gguf->kv[8].value.uint32;
-    hparams.n_rot = ctx_gguf->kv[9].value.uint32;
-    hparams.ftype = (enum ne_ftype)ctx_gguf->kv[10].value.uint32;
-    hparams.max_seq_len = ctx_gguf->kv[11].value.uint32;
-    hparams.alibi_bias_max = ctx_gguf->kv[12].value.uint32;
-    hparams.clip_qkv = ctx_gguf->kv[13].value.uint32;
-    hparams.par_res = ctx_gguf->kv[14].value.uint32;
+    // get hparams kv
+    GGUF_GET_KEY(ctx_gguf, hparams.n_vocab, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_vocab");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_embd");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_mult");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_head");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_head_kv");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_layer");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_rot");
 
-    hparams.word_embed_proj_dim = ctx_gguf->kv[15].value.uint32;
-    hparams.do_layer_norm_before = bool(ctx_gguf->kv[16].value.uint32);
+    uint32_t ftype = 1;
+    GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "ftype");
+    hparams.ftype = (enum ne_ftype)ftype;
 
-    // For ChatGLM-2
-    hparams.multi_query_group_num = ctx_gguf->kv[17].value.uint32;
-    hparams.ffn_hidden_size = ctx_gguf->kv[18].value.uint32;
+    GGUF_GET_KEY(ctx_gguf, hparams.max_seq_len, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "max_seq_len");
+    GGUF_GET_KEY(ctx_gguf, hparams.alibi_bias_max, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "alibi_bias_max");
+    GGUF_GET_KEY(ctx_gguf, hparams.clip_qkv, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "clip_qkv");
+    GGUF_GET_KEY(ctx_gguf, hparams.par_res, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "par_res");
 
-    // For ChatGLM-2
-    hparams.inner_hidden_size = ctx_gguf->kv[19].value.uint32;
-    vocab.bos_token_id = ctx_gguf->kv[20].value.uint32;
-    vocab.eos_token_id = ctx_gguf->kv[21].value.uint32;
-    vocab.pad_token_id = ctx_gguf->kv[22].value.uint32;
-    // vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
-    // 和original对齐试试
-    vocab.sep_token_id = -1;
+    GGUF_GET_KEY(ctx_gguf, hparams.word_embed_proj_dim, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+                 "word_embed_proj_dim");
+    GGUF_GET_KEY(ctx_gguf, hparams.do_layer_norm_before, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+                 "do_layer_norm_before");
+
+    GGUF_GET_KEY(ctx_gguf, hparams.multi_query_group_num, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+                 "multi_query_group_num");
+    GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "ffn_hidden_size");
+    GGUF_GET_KEY(ctx_gguf, hparams.inner_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "inner_hidden_size");
+
+    GGUF_GET_KEY(ctx_gguf, vocab.bos_token_id, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "bos_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.eos_token_id, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "eos_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.pad_token_id, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "pad_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.sep_token_id, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "sep_token_id");
+
+    // hparams.n_vocab = ctx_gguf->kv[3].value.uint32;
+    // hparams.n_embd = ctx_gguf->kv[4].value.uint32;
+    // hparams.n_mult = ctx_gguf->kv[5].value.uint32;
+    // hparams.n_head = ctx_gguf->kv[6].value.uint32;
+    // hparams.n_head_kv = ctx_gguf->kv[7].value.uint32;
+    // hparams.n_layer = ctx_gguf->kv[8].value.uint32;
+    // hparams.n_rot = ctx_gguf->kv[9].value.uint32;
+    // hparams.ftype = (enum ne_ftype)ctx_gguf->kv[10].value.uint32;
+    // hparams.max_seq_len = ctx_gguf->kv[11].value.uint32;
+    // hparams.alibi_bias_max = ctx_gguf->kv[12].value.uint32;
+    // hparams.clip_qkv = ctx_gguf->kv[13].value.uint32;
+    // hparams.par_res = ctx_gguf->kv[14].value.uint32;
+
+    // hparams.word_embed_proj_dim = ctx_gguf->kv[15].value.uint32;
+    // hparams.do_layer_norm_before = bool(ctx_gguf->kv[16].value.uint32);
+
+    // // For ChatGLM-2
+    // hparams.multi_query_group_num = ctx_gguf->kv[17].value.uint32;
+    // hparams.ffn_hidden_size = ctx_gguf->kv[18].value.uint32;
+    // hparams.inner_hidden_size = ctx_gguf->kv[19].value.uint32;
+
+    // vocab.bos_token_id = ctx_gguf->kv[20].value.uint32;
+    // vocab.eos_token_id = ctx_gguf->kv[21].value.uint32;
+    // vocab.pad_token_id = ctx_gguf->kv[22].value.uint32;
+    // // vocab.sep_token_id = ctx_gguf->kv[23].value.uint32;
+    // // 和original对齐试试
+    // vocab.sep_token_id = -1;
 
     // load vocab
     std::string tokens = "tokenizer.ggml.tokens";
@@ -1155,8 +1137,6 @@ struct model_file_loader {
     //     }
     //     tensors_map.tensors.at(idx).shards.push_back(shard);
     // }
-
-    std::cout << "HAPPYEND" << std::endl;
   }
 
   void read_hparams() {

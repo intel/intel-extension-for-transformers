@@ -30,6 +30,56 @@
 #define GGML_MAX_DIMS 4
 #define GGUF_MAGIC "GGUF"
 
+enum ggml_log_level { GGML_LOG_LEVEL_ERROR = 2, GGML_LOG_LEVEL_WARN = 3, GGML_LOG_LEVEL_INFO = 4 };
+
+typedef void (*ggml_log_callback)(enum ggml_log_level level, const char* text, void* user_data);
+static void llama_log_callback_default(ggml_log_level level, const char* text, void* user_data) {
+  (void)level;
+  (void)user_data;
+  fputs(text, stderr);
+  fflush(stderr);
+}
+
+struct llama_state {
+  llama_state() {}
+
+  // We save the log callback globally
+  ggml_log_callback log_callback = llama_log_callback_default;
+  void* log_callback_user_data = nullptr;
+};
+
+static llama_state g_state;
+
+static void llama_log_internal(ggml_log_level level, const char* format, ...);
+
+#define LLAMA_LOG_INFO(...) llama_log_internal(GGML_LOG_LEVEL_INFO, __VA_ARGS__)
+#define LLAMA_LOG_WARN(...) llama_log_internal(GGML_LOG_LEVEL_WARN, __VA_ARGS__)
+#define LLAMA_LOG_ERROR(...) llama_log_internal(GGML_LOG_LEVEL_ERROR, __VA_ARGS__)
+
+static void llama_log_internal_v(ggml_log_level level, const char* format, va_list args) {
+  va_list args_copy;
+  va_copy(args_copy, args);
+  char buffer[128];
+  int len = vsnprintf(buffer, 128, format, args);
+  if (len < 128) {
+    g_state.log_callback(level, buffer, g_state.log_callback_user_data);
+  } else {
+    char* buffer2 = new char[len + 1];
+    vsnprintf(buffer2, len + 1, format, args_copy);
+    buffer2[len] = 0;
+    g_state.log_callback(level, buffer2, g_state.log_callback_user_data);
+    delete[] buffer2;
+  }
+  va_end(args_copy);
+}
+
+static void llama_log_internal(ggml_log_level level, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  llama_log_internal_v(level, format, args);
+  va_end(args);
+}
+
 struct gguf_str {
   uint64_t n;  // GGUFv2
   char* data;
@@ -164,6 +214,32 @@ static const size_t GGUF_TYPE_SIZE[GGUF_TYPE_COUNT] = {
     [GGUF_TYPE_FLOAT64] = sizeof(double),
 };
 static_assert(GGUF_TYPE_COUNT == 13, "GGUF_TYPE_COUNT != 13");
+
+enum llm_arch {
+  LLM_ARCH_LLAMA,
+  LLM_ARCH_FALCON,
+  LLM_ARCH_BAICHUAN,
+  LLM_ARCH_GPT2,
+  LLM_ARCH_GPTJ,
+  LLM_ARCH_GPTNEOX,
+  LLM_ARCH_MPT,
+  LLM_ARCH_STARCODER,
+  LLM_ARCH_PERSIMMON,
+  LLM_ARCH_REFACT,
+  LLM_ARCH_BLOOM,
+  LLM_ARCH_STABLELM,
+  LLM_ARCH_QWEN,
+  LLM_ARCH_CHATGLM2,
+  LLM_ARCH_UNKNOWN,
+};
+
+static std::map<llm_arch, std::string> LLM_ARCH_NAMES = {
+    {LLM_ARCH_LLAMA, "llama"},       {LLM_ARCH_FALCON, "falcon"},       {LLM_ARCH_GPT2, "gpt2"},
+    {LLM_ARCH_GPTJ, "gptj"},         {LLM_ARCH_GPTNEOX, "gptneox"},     {LLM_ARCH_MPT, "mpt"},
+    {LLM_ARCH_BAICHUAN, "baichuan"}, {LLM_ARCH_STARCODER, "starcoder"}, {LLM_ARCH_PERSIMMON, "persimmon"},
+    {LLM_ARCH_REFACT, "refact"},     {LLM_ARCH_BLOOM, "bloom"},         {LLM_ARCH_STABLELM, "stablelm"},
+    {LLM_ARCH_QWEN, "qwen"},         {LLM_ARCH_CHATGLM2, "chatglm2"},
+};
 
 struct gguf_tensor_info {
   struct gguf_str name;
@@ -370,6 +446,14 @@ static std::map<llm_kv, std::string> LLM_KV_NAMES = {
     {LLM_KV_TOKENIZER_ADD_EOS, "tokenizer.ggml.add_eos_token"},
     {LLM_KV_TOKENIZER_HF_JSON, "tokenizer.huggingface.json"},
     {LLM_KV_TOKENIZER_RWKV, "tokenizer.rwkv.world"},
+};
+
+struct LLM_KV {
+  LLM_KV(llm_arch arch) : arch(arch) {}
+
+  llm_arch arch;
+
+  std::string operator()(llm_kv kv) const { return ::format(LLM_KV_NAMES[kv].c_str(), LLM_ARCH_NAMES[arch].c_str()); }
 };
 
 static std::string gguf_data_to_str(enum gguf_type type, const void* data, int i) {
