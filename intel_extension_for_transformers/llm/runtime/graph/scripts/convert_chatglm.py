@@ -219,32 +219,12 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
                 "gguf: get sentencepiece tokenizer vocab, scores and token types"
             )
 
-            tokenizer = SentencePieceProcessor(dir_model + "/tokenizer.model")
+            vocab = load_vocab_for_glm2(Path(dir_model))
 
-            for i in range(tokenizer.vocab_size()):
-                text: bytes
-                score: float
-
-                piece = tokenizer.id_to_piece(i)
-                text = piece.encode("utf-8")
-                score = tokenizer.get_score(i)
-
-                toktype = 1  # defualt to normal token type
-                if tokenizer.is_unknown(i):
-                    toktype = 2
-                if tokenizer.is_control(i):
-                    toktype = 3
-
-                # toktype = 4 is user-defined = tokens from added_tokens.json
-
-                if tokenizer.is_unused(i):
-                    toktype = 5
-                if tokenizer.is_byte(i):
-                    toktype = 6
-
+            # NOTE: `all_tokens` returns the base vocabulary and added tokens
+            for text, score in vocab.all_tokens():
                 tokens.append(text)
                 scores.append(score)
-                toktypes.append(toktype)
 
             if Path(dir_model + "/added_tokens.json").is_file():
                 with open(dir_model + "/added_tokens.json",
@@ -262,7 +242,6 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
             gguf_writer.add_tokenizer_model("chatglm2")
             gguf_writer.add_token_list(tokens)
             gguf_writer.add_token_scores(scores)
-            gguf_writer.add_token_types(toktypes)
 
         print("gguf: get special token ids")
 
@@ -333,9 +312,10 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
             if "pad_token_id" in hparams and hparams["pad_token_id"] != None:
                 gguf_writer.add_pad_token_id(hparams["pad_token_id"])
 
+    write_vocab_gguf(dir_model)
+
     # tensor info
     print("gguf: get tensor metadata")
-
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
 
@@ -365,8 +345,6 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
         #print(f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} | type {lazy_tensor.data_type.name:4}")
 
         gguf_writer.add_tensor(name, data)
-
-    write_vocab_gguf(dir_model)
 
     print("gguf: write header")
     gguf_writer.write_header_to_file()
@@ -413,7 +391,8 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", hparams["multi_query_group_num"]))
     fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("f", hparams.get("layernorm_epsilon", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", hparams.get("layernorm_epsilon",
+                                            1e-6)))  # rms norm eps
     fout.write(struct.pack("f", 10000.0))  # freq_base
 
     fout.write(
@@ -520,7 +499,8 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["inner_hidden_size"]))
-    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps",
+                                            1e-6)))  # rms norm eps
     fout.write(struct.pack("f", 10000.0))  # freq_base
 
     fout.write(
@@ -607,10 +587,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument("model",
                         type=Path,
                         help="directory containing model file")
-    parser.add_argument("--gguf",
-                        type=bool,
-                        default=False,
-                        help="convert to the GGUF format")
+    parser.add_argument("--format",
+                        type=str,
+                        default="NE",
+                        choices=["NE", "GGUF"],
+                        help="convert to the GGUF or NE format")
     args = parser.parse_args(args_in)
 
     dir_model = args.model.as_posix()
@@ -633,7 +614,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
                                       trust_remote_code=True)
 
     if hasattr(model.config, "multi_query_attention"):
-        if args.gguf == True:
+        if args.format == "GGUF":
             chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out,
                                   ftype, hparams)
         else:

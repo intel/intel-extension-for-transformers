@@ -977,11 +977,8 @@ struct model_file_loader {
       tok_score.score = scores ? scores[i] : 0.0f;
     }
 
-    // hparams.n_vocab and n_vocab may be different
-    // (gdb) p n_vocab
-    // $1 = 64789
-    // (gdb) p hparams.n_vocab
-    // $2 = 65024
+    // std::cout << " vocab.id_to_token.size() = " << vocab.id_to_token.size() << std::endl;
+    // std::cout << " vocab.token_to_id.size() = " << vocab.token_to_id.size() << std::endl;
     // NE_ASSERT(vocab.id_to_token.size() == vocab.token_to_id.size());
   }
 
