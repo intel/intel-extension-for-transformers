@@ -278,12 +278,12 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 Methods description of model:
-| Method         | Description                                                                             |
-| -------------- | -----------------------------------------------------------------------                 |
-| `init`         | initialize cpp model using model name |       
-| `generate`     | transformer-like generate function, arguments please refer to Argument description of generate function|
-| `__call__`     | forward function                                                             |
-| `quant_model`  | quantize model from fp32 bin, arguments please refer to following WeightOnlyQuantConfig| 
+| Method         | Description                                                                                |
+| -------------- | -----------------------------------------------------------------------                    |
+| `init`         | initialize cpp model using model name                                                      |
+| `generate`     | transformer-like generate function, arguments please refer to `argument description of generate function`|
+| `__call__`     | forward function                                                                           |
+| `quant_model`  | quantize model from fp32 bin, arguments please refer to following `WeightOnlyQuantConfig`  | 
 | `print_time`   | print time of each evaluation                                                              |
 
 Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
