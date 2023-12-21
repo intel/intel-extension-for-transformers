@@ -138,7 +138,7 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype="int8", weight_dtype="int8"
+                            compute_dtype="bf16", weight_dtype="int8"
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
@@ -284,8 +284,12 @@ class _BaseQBitsAutoModelClass:
                 from torch.utils.data import DataLoader
 
                 calib_dataset = quantization_config.calib_dataset
-                calib_len = quantization_config.calib_len
                 calib_iters = quantization_config.calib_iters
+                calib_padding = quantization_config.calib_padding
+                calib_len = quantization_config.calib_len
+                calib_pad_val = quantization_config.calib_pad_val
+                from torch.nn.functional import pad
+
                 calib_dataset = load_dataset(
                     calib_dataset,
                     split="test"
@@ -316,26 +320,43 @@ class _BaseQBitsAutoModelClass:
                     attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
-                        input_ids = (
-                            input_ids[:calib_len]
-                            if len(input_ids) > calib_len
-                            else input_ids
-                        )
+                        if not calib_padding:
+                            input_ids = (
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
+
                         last_ind.append(input_ids.shape[0] - 1)
                         attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
                         position_ids_padded.append(position_ids)
-                    return (
-                        {
-                            "input_ids": torch.vstack(input_ids_padded),
-                            "attention_mask": torch.vstack(attention_mask_padded),
-                            "position_ids": torch.vstack(position_ids_padded),
-                            "past_key_values": past_key_values,
-                        },
-                        torch.tensor(last_ind),
-                    )
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "position_ids": torch.vstack(position_ids_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
+                    else:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
 
                 def collate_batch_for_chatglm(batch):
                     last_ind = []

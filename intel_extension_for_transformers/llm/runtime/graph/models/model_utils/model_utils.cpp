@@ -870,6 +870,46 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
                                parse_compute_type(params.compute_dtype, params.use_ggml)};
 }
 
+size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
+                   const quant_params_internal params, int nthread, int n, int k, int* g_idx) {
+  auto ctype = quant2ne_comp_type(params.compute_dtype);
+  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
+  jblas::parallel::OMPThreading threading(nthread);
+  JBLAS_DTYPE quant_type = JBLAS_DTYPE::S4_CLIP;
+  if (params.bits == quant_bits::q8) {
+    quant_type = JBLAS_DTYPE::S8;
+  }
+  auto dtype_type = static_cast<JBLAS_DTYPE>(
+      jblas::utils::jblas_dtype_get_mask_val(quant_type, JBLAS_DTYPE::TypeMask, JBLAS_DTYPE::TypeShift));
+  if (dtype_type == JBLAS_DTYPE::TypeFloat) {
+    printf("Not support float dtype in qpack\n");
+    if (params.alg == quant_alg::asym) {
+      printf("Invalid alg for float quant types, will be igonred\n");
+    }
+    if (params.compute_dtype == quant_comp::int8) {
+      printf("Compute Int8 is not supported by float quant types, will be igonred\n");
+    }
+  }
+  JBLAS_DTYPE scale_type = JBLAS_DTYPE::BF16;
+  if (params.scale_dtype == quant_sdtype::fp32) {
+    scale_type = JBLAS_DTYPE::F32;
+  }
+  if (params.scale_dtype == quant_sdtype::fp16) {
+    printf("Current not support float16 scale, reset to bf16\n");
+  }
+  auto gsize = params.group_size == -1 ? k : params.group_size;
+  auto size = JblasGemmPackBSize(n, k, gsize, quant_type, scale_type, params.alg == quant_alg::asym, ctype, g_idx);
+  if (size) {
+    if (!JblasGemmPackB(dstpr, src_w, src_scales, src_zps, n, k, n, gsize, quant_type, scale_type,
+                        params.alg == quant_alg::asym, ctype, g_idx, &threading)) {
+      printf("Failed to quant this weight\n");
+      return 0;
+    }
+    return size;
+  }
+  return 0;
+}
+
 // dstptr: default maximum workspace = float array size
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
                       size_t k) {

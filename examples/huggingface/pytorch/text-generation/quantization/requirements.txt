@@ -4,7 +4,7 @@ peft
 protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
+torch==2.1.1+cpu
 transformers==4.35.2
 intel_extension_for_pytorch
 bitsandbytes  #baichuan

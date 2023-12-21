@@ -69,7 +69,7 @@ def build_chatbot(config: PipelineConfig=None):
             return
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower() or "magicoder" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
@@ -91,7 +91,8 @@ def build_chatbot(config: PipelineConfig=None):
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
          "bloom" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path.lower():
+         "starcoder" in config.model_name_or_path.lower() or \
+         "codegen" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:

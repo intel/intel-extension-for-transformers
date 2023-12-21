@@ -119,26 +119,40 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
 
     auto reduceA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize);
+    auto reordA1 = kernel_epi.mProA.createReorderStorage(seq, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
+    auto WS = reinterpret_cast<int8_t*>(workspace);
     if (w1ptr_->IsAsym()) {
-      reduceA1.assign(reinterpret_cast<int8_t*>(workspace));
+      reduceA1.assign(WS);
+      WS += reduceA1.mSize;
+    }
+    if (w1ptr_->ShfIndice()) {
+      reordA1.assign(WS);
     }
     typename Launcher_epi::BEpiParam blkargs1{
         w1ptr_->template SPtr<int8_t>(), w1ptr_->SDtype(), w1ptr_->CStep(), w1ptr_->template ZPtr<int8_t>(),
         reduceA1.template RPtr<float>(), reduceA1.lda};
-    typename Launcher_epi::Param args1{gp1, {activation, fin, &reduceA1}, {w1ptr_}, blkargs1, {epi_prama1}};
+    typename Launcher_epi::Param args1{
+        gp1, {activation, fin, &reduceA1, w1ptr_->ShfIndice(), &reordA1}, {w1ptr_}, blkargs1, {epi_prama1}};
 
     auto reduceA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize);
+    auto reordA2 = kernel_epi.mProA.createReorderStorage(seq, fin, w2ptr_->mBlockSize);
     utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
+    WS = reinterpret_cast<int8_t*>(workspace);
     if (w2ptr_->IsAsym()) {
-      reduceA2.assign(reinterpret_cast<int8_t*>(workspace));
+      reduceA2.assign(reinterpret_cast<int8_t*>(WS));
+      WS += reduceA1.mSize;
+    }
+    if (w2ptr_->ShfIndice()) {
+      reordA2.assign(WS);
     }
     typename Launcher::BEpiParam blkargs2{
         w2ptr_->template SPtr<int8_t>(), w2ptr_->SDtype(), w2ptr_->CStep(), w2ptr_->template ZPtr<int8_t>(),
         reduceA2.template RPtr<float>(), reduceA2.lda};
-    typename Launcher::Param args2{gp2, {tmp, fmid, &reduceA2}, {w2ptr_}, blkargs2, epi_prama2};
+    typename Launcher::Param args2{
+        gp2, {tmp, fmid, &reduceA2, w2ptr_->ShfIndice(), &reordA2}, {w2ptr_}, blkargs2, epi_prama2};
 
-    if (w1ptr_->IsAsym()) {
+    if (w1ptr_->IsAsym() || w1ptr_->ShfIndice()) {
       GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
     } else {
       GemmRun_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
@@ -153,9 +167,19 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     utils::GemmProblem gp2(1, seq, fout, fmid);
     static Launcher_epi kernel_epi;
     static Launcher kernel;
-    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
-    typename Launcher::Param args2{gp2, {tmp, fmid}, {w2ptr_}, epi_prama2};
-    GemmRun_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
+    auto reordA1 = kernel_epi.mProA.createReorderStorage(seq, fin, w1ptr_->mBlockSize);
+    auto reordA2 = kernel_epi.mProA.createReorderStorage(seq, fin, w2ptr_->mBlockSize);
+    typename Launcher_epi::Param args1{
+        gp1, {activation, fin, nullptr, w1ptr_->ShfIndice(), &reordA1}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp, fmid, nullptr, w2ptr_->ShfIndice(), &reordA2}, {w2ptr_}, epi_prama2};
+    auto WS = reinterpret_cast<int8_t*>(workspace);
+    if (w1ptr_->ShfIndice()) {
+      reordA1.assign(WS);
+      reordA2.assign(WS);
+      GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
+    } else {
+      GemmRun_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
+    }
   }
 }
 
@@ -167,24 +191,35 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
                        typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
                        typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
-  using Launcher_epi =
-      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T1>;
-  using Launcher =
-      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T2>;
+  using Launcher_epi = jblas::wrapper::gemm::LauncherIntKBlock<
+      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T, Epi_T1>;
+  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<
+      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T, Epi_T2>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
   utils::GemmProblem gp2(1, seq, fout, fmid, w2ptr_->mBlockSize);
   static Launcher_epi kernel_epi;
   static Launcher kernel;
+  auto WS = reinterpret_cast<int8_t*>(workspace);
   auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
-  quanA1.assign(reinterpret_cast<int8_t*>(workspace));
+  quanA1.assign(WS);
+  WS += quanA1.mSize;
+  auto reordA1 = kernel_epi.mProA.createReorderStorage(seq, fin, w1ptr_->mBlockSize);
+  if (w1ptr_->ShfIndice()) {
+    reordA1.assign(WS);
+  }
+  WS = reinterpret_cast<int8_t*>(workspace);
   auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  quanA2.assign(reinterpret_cast<int8_t*>(workspace));
-  typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
-  typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2}, {w2ptr_}, epi_prama2};
+  quanA2.assign(WS);
+  WS += quanA2.mSize;
+  auto reordA2 = kernel_epi.mProA.createReorderStorage(seq, fin, w2ptr_->mBlockSize);
+  if (w2ptr_->ShfIndice()) {
+    reordA2.assign(WS);
+  }
+  typename Launcher_epi::Param args1{
+      gp1, {activation, fin, &quanA1, w1ptr_->ShfIndice(), &reordA1}, {w1ptr_}, epi_prama1};
+  typename Launcher::Param args2{gp2, {tmp, fmid, &quanA2, w2ptr_->ShfIndice(), &reordA2}, {w2ptr_}, epi_prama2};
   GemmRunWithA_ffn<Parallel>(&kernel_epi, &kernel, args1, args2, th);
 }
 
@@ -195,7 +230,7 @@ bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin,
   bool support = false;
   if (w1tmp != nullptr && w2tmp != nullptr) {
     auto sameKernel = samePackedWeight(w1tmp, w2tmp);
-    if (w1tmp) {
+    if (sameKernel) {
       if (w1tmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
         constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
         support = contains(w1tmp->mCoreId, AllKBlockCores, EleNum);
@@ -437,7 +472,9 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
-
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    assert(w3ptr_->ShfIndice() == nullptr);
     auto reduceA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize);
     utils::GemmProblem gp1(1, seq, fmid, fin, w1ptr_->mBlockSize);
     if (w1ptr_->IsAsym()) {
@@ -478,15 +515,18 @@ void JblasGemmCompF32(float* activation, jblas::storage::gemm::IWeightBase* w1pt
     auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
     auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
     auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
+    assert(w1ptr_->ShfIndice() == nullptr);
+    assert(w2ptr_->ShfIndice() == nullptr);
+    assert(w3ptr_->ShfIndice() == nullptr);
     utils::GemmProblem gp1(1, seq, fmid, fin);
     utils::GemmProblem gp2(1, seq, fout, fmid);
     utils::GemmProblem gp3(1, seq, fmid, fin);
     static Launcher_epi kernel_epi;
     static Launcher_mul kernel_mul;
     static Launcher kernel;
-    typename Launcher_epi::Param args1{gp1, {activation, fin}, {w1ptr_}, epi_prama1};
-    typename Launcher::Param args2{gp2, {tmp2, fmid}, {w2ptr_}, epi_prama2};
-    typename Launcher_mul::Param args3{gp3, {activation, fin}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
+    typename Launcher_epi::Param args1{gp1, {activation, fin, nullptr}, {w1ptr_}, epi_prama1};
+    typename Launcher::Param args2{gp2, {tmp2, fmid, nullptr}, {w2ptr_}, epi_prama2};
+    typename Launcher_mul::Param args3{gp3, {activation, fin, nullptr}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
     GemmRun_ffn<Parallel>(&kernel_epi, &kernel_mul, &kernel, args1, args3, args2, th);
   }
 }
@@ -499,15 +539,14 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
                        jblas::parallel::IThreading* th, typename Epi_T1<GemmCore_T::ISA>::Param epi_prama1,
                        typename Epi_T2<GemmCore_T::ISA>::Param epi_prama2) {
   using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore_T>;
-  using Launcher_epi =
+  using Launcher_epi = jblas::wrapper::gemm::LauncherIntKBlock<
+      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T, Epi_T1>;
+  using Launcher_mul =
       jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T1>;
-  using Launcher_mul = jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                                               jblas::prologue_a::gemm::ActivationF32KBlockQuantize,
-                                                               Wei_T, custom::epilogue::MulFp32>;
-  using Launcher =
-      jblas::wrapper::gemm::LauncherIntKBlock<GemmCore_T::ISA, GemmCore_T,
-                                              jblas::prologue_a::gemm::ActivationF32KBlockQuantize, Wei_T, Epi_T2>;
+                                              jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T,
+                                              custom::epilogue::MulFp32>;
+  using Launcher = jblas::wrapper::gemm::LauncherIntKBlock<
+      GemmCore_T::ISA, GemmCore_T, jblas::prologue_a::gemm::ShuffleActivationKBlockQuantizeF32, Wei_T, Epi_T2>;
   auto w1ptr_ = reinterpret_cast<typename Launcher_epi::PrologueB::StorageWeight*>(w1ptr);
   auto w2ptr_ = reinterpret_cast<typename Launcher::PrologueB::StorageWeight*>(w2ptr);
   auto w3ptr_ = reinterpret_cast<typename Launcher_mul::PrologueB::StorageWeight*>(w3ptr);
@@ -518,9 +557,15 @@ void JblasGemmCompInt8(float* activation, jblas::storage::gemm::IWeightBase* w1p
   static Launcher_mul kernel_mul;
   static Launcher kernel;
   auto quanA1 = kernel_epi.mProA.createStorage(seq, fin, w1ptr_->mBlockSize, w1ptr_->IsAsym());
-  quanA1.assign(reinterpret_cast<int8_t*>(workspace));
+  auto WS = reinterpret_cast<int8_t*>(workspace);
+  quanA1.assign(WS);
+
   auto quanA2 = kernel.mProA.createStorage(seq, fmid, w2ptr_->mBlockSize, w2ptr_->IsAsym());
-  quanA2.assign(reinterpret_cast<int8_t*>(workspace));
+  WS = reinterpret_cast<int8_t*>(workspace);
+  quanA2.assign(WS);
+  assert(w1ptr_->ShfIndice() == nullptr);
+  assert(w2ptr_->ShfIndice() == nullptr);
+  assert(w3ptr_->ShfIndice() == nullptr);
   typename Launcher_epi::Param args1{gp1, {activation, fin, &quanA1}, {w1ptr_}, epi_prama1};
   typename Launcher::Param args2{gp2, {tmp2, fmid, &quanA2}, {w2ptr_}, epi_prama2};
   typename Launcher_mul::Param args3{gp3, {activation, fin, &quanA1}, {w3ptr_}, {tmp2, tmp1, fmid, fmid}};
@@ -536,8 +581,12 @@ bool jblas_fusion_ffn_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int 
   if (w1tmp != nullptr && w2tmp != nullptr && w3tmp != nullptr) {
     jblas::storage::gemm::IWeightBase* tmps[3] = {w1tmp, w2tmp, w3tmp};
     auto sameKernel = samePackedWeight(tmps, 3);
-    if (w1tmp) {
+    if (sameKernel) {
       if (w1tmp->mPrologueID == JBLAS_PROLOGUEB_IDS::WeightKBlockNInteger) {
+        auto w1ptr = reinterpret_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(w1tmp);
+        if (w1ptr->ShfIndice()) {
+          return false;  // Do not support 3w ffn fusion for activation shuffle
+        }
         constexpr size_t EleNum = sizeof(AllKBlockCores) / sizeof(AllKBlockCores[0]);
         support = contains(w1tmp->mCoreId, AllKBlockCores, EleNum);
         support &= hasISA(AllKBlockCores, EleNum);
