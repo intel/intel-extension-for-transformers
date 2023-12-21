@@ -23,7 +23,7 @@ from intel_extension_for_transformers.transformers import OptimizedModel
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from transformers import T5Config, MT5Config
 from typing import Union, Optional
-
+from .utils import get_module_path
 from .optimized_sentence_transformers import OptimzedTransformer
 
 sentence_transformers = LazyImport("sentence_transformers")
@@ -126,13 +126,13 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
-                module_path = sentence_transformers.util.load_dir_path(
-                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = get_module_path(
+                    model_name_or_path, module_config['path'], token, cache_folder)
                 module = module_class.load(module_path)
             else:
                 module_class = InstructorEmbedding.import_from_string(module_config['type'])
-                module_path = sentence_transformers.util.load_dir_path(
-                    model_name_or_path, module_config['path'], token=token, cache_folder=cache_folder)
+                module_path = get_module_path(
+                    model_name_or_path, module_config['path'], token, cache_folder)
                 module = module_class.load(module_path)
             modules[module_config['name']] = module
         
