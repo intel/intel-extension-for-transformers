@@ -60,10 +60,8 @@ option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"            
 option(NE_FMA                    "neural_engine: enable FMA"                                     ON)
 option(NE_AMX                    "neural_engine: enable AMX"                                     OFF)
 
-# in MSVC F16C is implied with AVX2/AVX512
-if (NOT MSVC)
-    option(NE_F16C               "neural_engine: enable F16C"                                    ON)
-endif()
+
+option(NE_F16C                   "neural_engine: enable F16C"                                    ON)
 
 # 3rd party libs
 option(NE_ONEDNN                 "neural_engine: use oneDNN"                                     ON)
@@ -103,7 +101,6 @@ endif()
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX)
-
     if (BUILD_SHARED_LIBS)
         set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
