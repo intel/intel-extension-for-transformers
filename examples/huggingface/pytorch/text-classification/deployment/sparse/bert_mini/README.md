@@ -34,8 +34,9 @@ cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-c
 pip install -r requirements.txt
 pip install transformers==4.34.1
 ```
->》**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
->>**Note**: Please use transformers no higher than 4.34.1
+>**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 ## Environment Variables (Optional)

@@ -9,7 +9,7 @@ Recommend python 3.9 or higher version.
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
 ```
->>**Note**: Suggest use transformers no higher than 4.34.1
+>**Note**: Suggest use transformers no higher than 4.34.1
 
 
 # Run

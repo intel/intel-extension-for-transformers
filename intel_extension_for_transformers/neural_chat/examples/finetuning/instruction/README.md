@@ -22,7 +22,7 @@ pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
 python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
->>**Note**: Suggest using transformers no higher than 4.34.1
+>**Note**: Suggest using transformers no higher than 4.34.1
 
 ### Docker 
 Pick either one of below options to setup docker environment.

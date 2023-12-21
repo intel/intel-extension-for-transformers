@@ -11,7 +11,7 @@ pip install intel-extension-for-transformers
 pip install -r requirements.txt
 pip install transformers==4.34.1
 ```
->>**Note**: Please use transformers no higher than 4.34.1
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 # Distillation

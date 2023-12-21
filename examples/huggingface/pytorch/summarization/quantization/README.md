@@ -13,7 +13,7 @@ pip install transformers==4.34.1
 # if run pegasus-samsum, need to downgrade the protobuf package to 3.20.x or lower.
 pip install protobuf==3.20
 ```
->>**Note**: Please use transformers no higher than 4.34.1
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 ## Run

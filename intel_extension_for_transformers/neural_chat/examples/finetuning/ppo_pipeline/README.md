@@ -13,7 +13,7 @@ Models such as ChatGPT, GPT-4, and Claude are powerful language models that have
 pip install -r requirements.txt
 pip install transformers==4.34.1
 ```
->>**Note**: Suggest using transformers no higher than 4.34.1
+>**Note**: Suggest using transformers no higher than 4.34.1
 
 
 ## 2. Prepare reference dataset
