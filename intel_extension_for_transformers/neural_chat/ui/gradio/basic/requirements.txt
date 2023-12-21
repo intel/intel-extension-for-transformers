@@ -6,5 +6,5 @@ requests
 huggingface_hub
 markdown2
 nh3
-gradio==3.36.0
+gradio==4.11.0
 fschat
