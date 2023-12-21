@@ -91,6 +91,10 @@ class Model {
     generate_count = 0;
   }
 
+  void print_time() {
+    model_print_timings(ctx);
+  }
+
   static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros,
                                py::array_t<int32_t> g_idx, py::array_t<int8_t> dst, const std::string& weight_dtype,
                                const std::string& alg, int group_size, const std::string& scale_dtype,
@@ -688,5 +692,6 @@ PYBIND11_MODULE(qwen_cpp, m)
       .def_static("np_jblas_quantize", &Model::np_jblas_quantize, "Quantize tensor to jblas format", py::arg("src_w"),
                   py::arg("dst"), py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
                   py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("threads") = 8)
+      .def("print_time", &Model::print_time)
       .def("reinit", &Model::reinit);
 }

@@ -76,6 +76,7 @@ class Model:
         return model_type
 
     def init(self, model_name, use_quant=True, use_gptq=False, **quant_kwargs):
+        """initialize cpp model using model name"""
         self.config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.model_type = Model.get_model_type(self.config)
@@ -126,7 +127,7 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-    def init_from_bin(self, model_type, model_path, **generate_kwargs):
+    def __init_from_bin(self, model_type, model_path, **generate_kwargs):
         self.__import_package(model_type)
         self.model = self.module.Model()
         if "threads" not in generate_kwargs:
@@ -138,15 +139,17 @@ class Model:
         self.model.init_model(model_path, **generate_kwargs)
 
     def quant_model(self, model_type, model_path, out_path, **quant_kwargs):
+        """quantize model from fp32 bin"""
         self.__import_package(model_type)
         self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,
                  **generate_kwargs):
+        """transformer-like generate"""
         max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
         self.batch_size = input_ids.shape[0]
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
+            self.__init_from_bin(self.model_type, self.bin_file, batch_size=self.batch_size,
                                **generate_kwargs)
             self.generate_round = 0
         elif not interactive:
@@ -190,7 +193,7 @@ class Model:
             elif (max_new_tokens != -1 and out_count >= max_new_tokens):
                 break
             else:
-                all_done = [(r[-1] in [self.eos_token_id(), self.pad_token_id()]) for r in ret]
+                all_done = [(r[-1] in [self.__eos_token_id(), self.__pad_token_id()]) for r in ret]
                 if False not in all_done:
                     break
         if streamer:
@@ -199,15 +202,15 @@ class Model:
         self.generate_round += 1
         return ret
 
-    def is_token_end(self):
+    def __is_token_end(self):
         return self.model.is_token_end()
 
-    def eos_token_id(self):
+    def __eos_token_id(self):
         if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
     
-    def pad_token_id(self):
+    def __pad_token_id(self):
         if self.tokenizer.pad_token_id == None:
             if self.batch_size == 1:
                 return None
@@ -217,10 +220,15 @@ class Model:
         return self.tokenizer.pad_token_id
 
     def __call__(self, input_ids, reinit=False, **kwargs):
+        """forward function"""
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
+            self.__init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
         elif reinit:
             self.model.reinit()
             self.generate_round = 0
         return self.model.evaluate(input_ids.tolist())
+
+    def print_time(self):
+        """print time of each evaluation"""
+        self.model.print_time()
