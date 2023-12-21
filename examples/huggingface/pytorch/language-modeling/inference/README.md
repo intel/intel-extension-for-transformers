@@ -19,6 +19,8 @@ pip install -v .
 cd examples/huggingface/pytorch/language-modeling/inference
 pip install -r requirements.txt
 
+>>**Note**: Please use transformers no higher than 4.34.1
+
 # Setup Environment Variables
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1

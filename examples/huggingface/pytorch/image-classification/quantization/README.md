@@ -2,6 +2,8 @@
 The script `run_image_classification.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 Here is how to run the script:
+>>**Note**: Please use transformers no higher than 4.34.1
+
 1. quantization with PostTrainingStatic
 
 ```

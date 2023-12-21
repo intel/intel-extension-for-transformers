@@ -4,11 +4,13 @@ The script `run_qa.py` provides three quantization approaches (PostTrainingStati
 
 # Prerequisite​
 ## 1. Create Environment​
-Recommended python 3.7 or higher version.
+Recommended python 3.9 or higher version.
 ```shell
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>>**Note**: Please use transformers no higher than 4.34.1
 
 # Run
 ## 1. Quantization
