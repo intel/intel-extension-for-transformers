@@ -3,4 +3,4 @@ sentencepiece != 0.1.92
 seqeval
 protobuf
 intel-tensorflow
-transformers==4.34.1
+transformers==4.36.0
