@@ -17,6 +17,7 @@
 
 import unittest
 import os
+import shutil
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
@@ -27,8 +28,10 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("output"):
+            shutil.rmtree("output")
         return super().tearDown()
-    
+
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"

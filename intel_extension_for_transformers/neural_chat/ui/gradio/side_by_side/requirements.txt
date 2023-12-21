@@ -1,7 +1,7 @@
 pip
 torch
 diffusers==0.8.1
-transformers==4.36.0
+transformers
 requests
 huggingface_hub
 markdown2
