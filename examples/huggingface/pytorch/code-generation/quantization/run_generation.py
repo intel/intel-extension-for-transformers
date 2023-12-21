@@ -252,105 +252,147 @@ if args.int8 or args.int8_bf16_mixed:
     )
 
 if args.benchmark:
-    normalized_config = NormalizedConfigManager.get_normalized_config_class(
-        user_model.config.model_type
-    )(user_model.config)
-    num_layers = normalized_config.num_layers
-    num_attention_heads = normalized_config.num_attention_heads
-    hidden_size = normalized_config.hidden_size
-    d_k = hidden_size // num_attention_heads
-    num_beams = 1
-    if hasattr(normalized_config, "num_key_value_heads"):
-        num_key_value_heads = normalized_config.num_key_value_heads
-    if hasattr(normalized_config, "multi_query_group_num"):
-        num_key_value_heads = normalized_config.multi_query_group_num
-
-    num_iter = args.iters
-    num_warmup = args.num_warmup
-
-    total_latency = 0
-    for j in range(args.max_new_tokens):
-        total_time = 0.0
-        with torch.inference_mode(), torch.no_grad():
-            for i in range(num_iter):
-                tic = time.time()
-                if j == 0:
-                    input_ids = torch.randint(
-                        1,
-                        tokenizer.vocab_size,
-                        size=(args.batch_size, args.prompt_size),
-                    )
-                    input_bs, input_len = input_ids.shape
-                    attention_mask = torch.ones(input_bs, input_len)
-                    position_ids = (
-                        torch.arange(input_len).unsqueeze(0).expand(input_bs, -1)
-                    )
-                    if user_model.config.model_type == "gpt_bigcode":
-                        new_shape = [input_bs, 0, d_k * 2]
-                        dummy_tensor = torch.zeros(size=new_shape)
-                        past_key_values = tuple([dummy_tensor] * num_layers)
-                    else:
-                        if not (args.int8 or args.int8_bf16_mixed):
-                            new_shape = [input_bs, num_key_value_heads, 0, d_k]
-                            past_key_values = [
-                                (
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
-
+    if args.woq:   
+        num_iter = args.iters
+        num_warmup = args.num_warmup
+        total_latency = 0
+        for j in range(args.max_new_tokens):
+            total_time = 0.0
+            with torch.inference_mode(), torch.no_grad():
+                for i in range(num_iter):
+                    tic = time.time()
+                    if j==0:
+                        #input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+                        input_ids = torch.randint(1, tokenizer.vocab_size, size = (args.batch_size , args.prompt_size))
+                        attention_mask = torch.ones(input_ids.shape)
+                        past_key_values = None
+                    inp = {"input_ids": input_ids,
+                            "past_key_values": past_key_values,
+                            "attention_mask": attention_mask}
+                    out = user_model(**inp)
+                    gen_id = torch.argmax(out[0][:, -1:, :], axis = -1)
+                    gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
+                    toc = time.time()
+                    #print(gen_text, flush=True)
+                    if i >= num_warmup:
+                        total_time += toc - tic
+    
+            print("\n", "-" * 10, "Summary:", "-" * 10)
+            print("Generated token index:", j+1)
+            latency = total_time / (num_iter - num_warmup)
+            print("Inference latency: %.5f sec." % latency)
+            throughput = (num_iter - num_warmup) / total_time
+            print("Throughput: {} samples/sec".format(throughput))
+    
+            input_ids = gen_id
+            past_key_values = out[1]
+            attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1))
+            total_latency += latency
+    
+        average_latency = total_latency / args.max_new_tokens
+        print("Average inference latency: %.5f sec." % latency)
+        average_throughput = args.max_new_tokens / total_latency
+        print("Average throughput: {} samples/sec".format(throughput))
+    else:
+        normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            user_model.config.model_type
+        )(user_model.config)
+        num_layers = normalized_config.num_layers
+        num_attention_heads = normalized_config.num_attention_heads
+        hidden_size = normalized_config.hidden_size
+        d_k = hidden_size // num_attention_heads
+        num_beams = 1
+        if hasattr(normalized_config, "num_key_value_heads"):
+            num_key_value_heads = normalized_config.num_key_value_heads
+        if hasattr(normalized_config, "multi_query_group_num"):
+            num_key_value_heads = normalized_config.multi_query_group_num
+    
+        num_iter = args.iters
+        num_warmup = args.num_warmup
+    
+        total_latency = 0
+        for j in range(args.max_new_tokens):
+            total_time = 0.0
+            with torch.inference_mode(), torch.no_grad():
+                for i in range(num_iter):
+                    tic = time.time()
+                    if j == 0:
+                        input_ids = torch.randint(
+                            1,
+                            tokenizer.vocab_size,
+                            size=(args.batch_size, args.prompt_size),
+                        )
+                        input_bs, input_len = input_ids.shape
+                        attention_mask = torch.ones(input_bs, input_len)
+                        position_ids = (
+                            torch.arange(input_len).unsqueeze(0).expand(input_bs, -1)
+                        )
+                        if user_model.config.model_type == "gpt_bigcode":
+                            new_shape = [input_bs, 0, d_k * 2]
+                            dummy_tensor = torch.zeros(size=new_shape)
+                            past_key_values = tuple([dummy_tensor] * num_layers)
                         else:
-                            new_shape = [input_bs, num_key_value_heads, 1, d_k]
-                            beam_idx_tmp = torch.zeros(
-                                (2048, int(input_bs * num_beams)), dtype=torch.long
-                            ).contiguous()
-                            past_key_values = [
-                                (
-                                    torch.zeros(
-                                        1, 0, 0, 1, dtype=torch.long
-                                    ).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    torch.zeros(size=new_shape).contiguous(),
-                                    beam_idx_tmp,
-                                )
-                                for _ in range(num_layers)
-                            ]
-                            past_key_values = tuple(past_key_values)
-
-                inp = {
-                    "input_ids": input_ids,
-                    "past_key_values": past_key_values,
-                    "attention_mask": attention_mask,
-                    "position_ids": position_ids,
-                }
-                out = user_model(**inp)
-                gen_id = torch.argmax(out[0][:, -1:, :], axis=-1)
-                gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
-                toc = time.time()
-                if i >= num_warmup:
-                    total_time += toc - tic
-
-        print("\n", "-" * 10, "Summary:", "-" * 10)
-        print("Generated token index:", j + 1)
-        latency = total_time / (num_iter - num_warmup)
-        print("Inference latency: %.5f sec." % latency)
-        throughput = (num_iter - num_warmup) / total_time
-        print("Throughput: {} samples/sec".format(throughput))
-
-        input_ids = gen_id
-        past_key_values = out[1]
-        attention_mask = torch.ones(
-            (attention_mask.shape[0], attention_mask.shape[1] + 1)
-        )
-        position_ids = torch.tensor([[len(inp["position_ids"])]])
-        total_latency += latency
-
-    average_latency = total_latency / args.max_new_tokens
-    print("Average inference latency: %.5f sec." % latency)
-    average_throughput = args.max_new_tokens / total_latency
-    print("Average throughput: {} samples/sec".format(throughput))
+                            if not (args.int8 or args.int8_bf16_mixed):
+                                new_shape = [input_bs, num_key_value_heads, 0, d_k]
+                                past_key_values = [
+                                    (
+                                        torch.zeros(size=new_shape).contiguous(),
+                                        torch.zeros(size=new_shape).contiguous(),
+                                    )
+                                    for _ in range(num_layers)
+                                ]
+                                past_key_values = tuple(past_key_values)
+    
+                            else:
+                                new_shape = [input_bs, num_key_value_heads, 1, d_k]
+                                beam_idx_tmp = torch.zeros(
+                                    (2048, int(input_bs * num_beams)), dtype=torch.long
+                                ).contiguous()
+                                past_key_values = [
+                                    (
+                                        torch.zeros(
+                                            1, 0, 0, 1, dtype=torch.long
+                                        ).contiguous(),
+                                        torch.zeros(size=new_shape).contiguous(),
+                                        torch.zeros(size=new_shape).contiguous(),
+                                        beam_idx_tmp,
+                                    )
+                                    for _ in range(num_layers)
+                                ]
+                                past_key_values = tuple(past_key_values)
+    
+                    inp = {
+                        "input_ids": input_ids,
+                        "past_key_values": past_key_values,
+                        "attention_mask": attention_mask,
+                        "position_ids": position_ids,
+                    }
+                    out = user_model(**inp)
+                    gen_id = torch.argmax(out[0][:, -1:, :], axis=-1)
+                    gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
+                    toc = time.time()
+                    if i >= num_warmup:
+                        total_time += toc - tic
+    
+            print("\n", "-" * 10, "Summary:", "-" * 10)
+            print("Generated token index:", j + 1)
+            latency = total_time / (num_iter - num_warmup)
+            print("Inference latency: %.5f sec." % latency)
+            throughput = (num_iter - num_warmup) / total_time
+            print("Throughput: {} samples/sec".format(throughput))
+    
+            input_ids = gen_id
+            past_key_values = out[1]
+            attention_mask = torch.ones(
+                (attention_mask.shape[0], attention_mask.shape[1] + 1)
+            )
+            position_ids = torch.tensor([[len(inp["position_ids"])]])
+            total_latency += latency
+    
+        average_latency = total_latency / args.max_new_tokens
+        print("Average inference latency: %.5f sec." % latency)
+        average_throughput = args.max_new_tokens / total_latency
+        print("Average throughput: {} samples/sec".format(throughput))
 
 
 if args.accuracy:
