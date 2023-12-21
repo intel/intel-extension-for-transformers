@@ -63,14 +63,17 @@ torch = LazyImport("torch")
 
 def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
     assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
-    device_map = self.device_map
 
     if os.path.isfile(save_directory):
         logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
         return
 
     os.makedirs(save_directory, exist_ok=True)
+    # use transformers original `save_pretrained` function
+    del self.save_pretrained
     self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
+    import types
+    self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
     # it's not necessary to load the entire model to extract its keys
@@ -113,6 +116,14 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if kwargs.get("is_quantized", False):
+            logger.info("Trying to load quantized model...")
+            try:
+                model = cls.load_low_bit(pretrained_model_name_or_path)
+            except:
+                logger.error("Loading failed, please check your model.")
+                exit(0)
+            return model
         if kwargs.get("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
                 Graph,
@@ -269,7 +280,7 @@ class _BaseQBitsAutoModelClass:
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.quantization_config = quantization_config
             import types
-            model.save_low_bit = types.MethodType(save_low_bit, model)
+            model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
