@@ -61,7 +61,7 @@ pip install -r ../../../../requirements.txt
 pip install transformers==4.28.1
 pip install diffusers==0.12.1
 ```
-
+>**Note**: Please use transformers no higher than 4.28.1
 
 # Prepare Stable Diffusion Models
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gc83d4c8 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+gab408d7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -109,10 +109,14 @@
 <h3>Bare Metal<a class="headerlink" href="#bare-metal" title="Link to this heading"></a></h3>
 <p>Recommend python 3.9 or higher version.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+pip<span class="w"> </span>install<span class="w"> </span><span class="nv">transformers</span><span class="o">==</span><span class="m">4</span>.34.1
 <span class="c1"># To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.</span>
 python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">oneccl_bind_pt</span><span class="o">==</span><span class="m">2</span>.1.0<span class="w"> </span>-f<span class="w"> </span>https://developer.intel.com/ipex-whl-stable-cpu
 </pre></div>
 </div>
+<blockquote>
+<div><p><strong>Note</strong>: Suggest using transformers no higher than 4.34.1</p>
+</div></blockquote>
 </section>
 <section id="docker">
 <h3>Docker<a class="headerlink" href="#docker" title="Link to this heading"></a></h3>
@@ -714,7 +718,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fef151336d0> 
+   <jinja2.runtime.BlockReference object at 0x7f61cc54a290> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
