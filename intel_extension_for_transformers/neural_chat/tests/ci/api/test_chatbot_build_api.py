@@ -17,6 +17,7 @@
 
 import unittest
 import os
+import shutil
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
@@ -29,8 +30,13 @@ class TestChatbotBuilder(unittest.TestCase):
         self.device = get_device_type()
         return super().setUp()
 
-    def tearDown(self) -> None:
-        return super().tearDown()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if os.path.exists("./output"):
+            shutil.rmtree("./output")
+        for filename in os.listdir("./"):
+            if filename.endswith(".wav"):
+                os.remove(filename)
 
     def test_build_chatbot_with_default_config(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -59,6 +65,7 @@ class TestChatbotBuilder(unittest.TestCase):
             print(response)
             self.assertIsNotNone(response)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
         plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"
@@ -120,6 +127,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
@@ -135,6 +143,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
 if __name__ == '__main__':
     unittest.main()
