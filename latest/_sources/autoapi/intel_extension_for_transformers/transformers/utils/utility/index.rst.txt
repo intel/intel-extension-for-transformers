@@ -20,6 +20,7 @@ Functions
 
    intel_extension_for_transformers.transformers.utils.utility.distributed_init
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values
+   intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_inference
    intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values_for_opt_llm
    intel_extension_for_transformers.transformers.utils.utility.get_example_inputs
    intel_extension_for_transformers.transformers.utils.utility.recover_model_from_json
@@ -32,6 +33,11 @@ Functions
 
 
 .. py:function:: generate_dummy_past_key_values(config, input_bs)
+
+   Generate the dummy past_key_values.
+
+
+.. py:function:: generate_dummy_past_key_values_for_inference(config, input_bs)
 
    Generate the dummy past_key_values.
 
