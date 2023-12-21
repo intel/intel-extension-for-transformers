@@ -1,6 +1,8 @@
 # Step-by-Step
 We provide the inference benchmarking script `run_generation.py` for large language models, The following are the models we validated, more models are working in progress.
->**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
+>**Note**: 
+> 1.  default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
+> 2. Model type "gptj", "opt", "llama" and "falcon" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3 with use_llm_runtime=False.
 
 
 # Prerequisite​
@@ -62,6 +64,14 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model EleutherAI/gpt-j-6b \
     --load_in_8bit True \
     --benchmark
+# restore the model optimized with smoothquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --int8 \
+    --restore \
+    --benchmark \
+    --tasks "lambada_openai"
 
 ```
 
@@ -105,6 +115,14 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --load_in_8bit True \
+    --accuracy \
+    --tasks "lambada_openai"
+# restore the model optimized with smoothquant
+python run_generation.py \
+    --model EleutherAI/gpt-j-6b \
+    --output_dir saved_results \
+    --int8 \
+    --restore \
     --accuracy \
     --tasks "lambada_openai"
 

@@ -30,6 +30,8 @@ ENCODER_NAME = "encoder_model.bin"
 DECODER_NAME = "decoder_model.bin"
 DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
 WEIGHTS_NAME = "pytorch_model.bin"
+QUANT_CONFIG = "quantization_config.json"
+SPARSITY_CONFIG = "sparsity_config.json"
 
 torch = LazyImport("torch")
 
@@ -121,6 +123,8 @@ def generate_dummy_past_key_values(config, input_bs):
         new_shape = [input_bs, 0, num_key_value_heads, d_k]
     elif config.model_type == "chatglm":
         new_shape = [0, input_bs, num_key_value_heads, d_k]
+    elif config.model_type == "falcon":
+        new_shape = [input_bs, 1, 0, d_k]
     else:
         new_shape = [input_bs, num_key_value_heads, 0, d_k]
     past_key_values = [
@@ -192,4 +196,79 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "llama",
     "mistral",
     "chatglm",
+    "falcon"
 }
+
+def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):
+    """Generate the dummy example inputs.
+    """
+    prompt = "Welcome to use Intel Extension for Transformers."
+    prompt = [prompt] * batch_size
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+    if model_config.model_type in IPEX_OPT_LLM_SUPPORTED:
+        past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                                                                    config=model_config,
+                                                                    input_bs=batch_size,
+                                                                    num_beams=num_beams
+                                                                    )
+    else:
+        past_key_values = generate_dummy_past_key_values(config=model_config, input_bs=batch_size)
+
+    input_ids = input_ids[:, :512]
+    attention_mask = torch.ones(input_ids.shape)
+    position_ids = torch.arange(input_ids.shape[1]).repeat(batch_size, 1)
+
+    if model_config.model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+        example_inputs = {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "position_ids": position_ids,
+                    "past_key_values": past_key_values
+                }
+    else:
+        example_inputs = {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "past_key_values": past_key_values
+                }
+    return example_inputs
+
+def recover_model_from_json(user_model, json_file_path, trust_remote_code=False):
+    """Recover ipex model from JSON file.
+
+    Args:
+        model (object): fp32 model need to do quantization.
+        json_file_path (json): configuration JSON file for ipex.
+        trust_remote_code (bool): trust remote code.
+
+    Returns:
+        (object): quantized model
+    """
+    if user_model.config.model_type in IPEX_OPT_LLM_SUPPORTED:
+        import intel_extension_for_pytorch as ipex
+        qconfig = ipex.quantization.default_static_qconfig_mapping
+        user_model = ipex.optimize_transformers(
+            user_model.eval(),
+            dtype=torch.float,
+            inplace=True,
+            quantization_config=qconfig,
+            deployment_mode=False,
+        )
+
+    # tokenizer
+    if user_model.config.model_type == "llama":
+        from transformers import LlamaTokenizer
+        tokenizer = LlamaTokenizer.from_pretrained(user_model.config.name_or_path)
+    else:
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(
+            user_model.config.name_or_path, trust_remote_code=trust_remote_code
+        )
+
+    # example_inputs
+    example_inputs = get_example_inputs(user_model.config, tokenizer=tokenizer)
+
+    # pylint: disable=E0611
+    from neural_compressor.utils.pytorch import recover_model_from_json as inc_recover_model_from_json
+    user_model = inc_recover_model_from_json(user_model, json_file_path, example_inputs)
+    return user_model

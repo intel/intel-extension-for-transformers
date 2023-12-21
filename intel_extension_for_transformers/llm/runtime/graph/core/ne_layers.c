@@ -130,7 +130,7 @@ static_assert(sizeof(block_q8_1) == 2 * sizeof(float) + QK8_1, "wrong q8_1 block
 #if UINTPTR_MAX == 0xFFFFFFFF
 #define NE_MEM_ALIGN 4
 #else
-#define NE_MEM_ALIGN 16
+#define NE_MEM_ALIGN 64
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -863,6 +863,12 @@ void ne_scratch_save(struct ne_context* ctx) {
 void ne_scratch_load(struct ne_context* ctx) { ctx->scratch = ctx->scratch_save; }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+static void ne_set_op_params(struct ne_tensor* tensor, const void* params, size_t params_size) {
+  NE_ASSERT(tensor != NULL);  // silence -Warray-bounds warnings
+  // assert(params_size <= NE_MAX_OP_PARAMS);
+  memcpy(tensor->op_params, params, params_size);
+}
 
 struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne,
                                      void* data, size_t size) {
@@ -2065,7 +2071,7 @@ struct ne_tensor* ne_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
   return ne_norm_impl(ctx, a, true);
 }
 
-struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
+struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace, float eps) {
   bool is_node = false;
 
   if (!inplace && (a->grad)) {
@@ -2074,20 +2080,21 @@ struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, 
 
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
+  ne_set_op_params(result, &eps, sizeof(eps));
+
   result->op = NE_OP_RMS_NORM;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
-  result->src1 = NULL;  // TODO: maybe store epsilon here?
 
   return result;
 }
 
-struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a) {
-  return ne_rms_norm_impl(ctx, a, false);
+struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a, float eps) {
+  return ne_rms_norm_impl(ctx, a, false, eps);
 }
 
-struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
-  return ne_rms_norm_impl(ctx, a, true);
+struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a, float eps) {
+  return ne_rms_norm_impl(ctx, a, true, eps);
 }
 
 struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b) {
@@ -2973,7 +2980,7 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
                                int prompt_size, bool inplace, int n_keep, struct ne_tensor* cossin, int* n_padding,
-                               bool padding_left) {
+                               bool padding_left, float freq_base) {
   NE_ASSERT(n_past >= 0 || n_keep >= 0);
   NE_ASSERT(padding_left);
   bool is_node = false;
@@ -3013,6 +3020,7 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_load(ctx);
 
+  ne_set_op_params(result, &freq_base, sizeof(freq_base));
   result->op = NE_OP_ROPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
@@ -3023,18 +3031,18 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 }
 
 struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                          int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, NULL, true);
+                          int prompt_size, float freq_base) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, NULL, true, freq_base);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                  int prompt_size) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, NULL, true);
+                                  int prompt_size, float freq_base) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, NULL, true, freq_base);
 }
 
 struct ne_tensor* ne_rope_shift_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_shift, int n_dims, int mode,
-                                        int prompt_size, int n_keep, struct ne_tensor* cossin) {
-  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin, NULL, true);
+                                        int prompt_size, int n_keep, struct ne_tensor* cossin, float freq_base) {
+  return ne_rope_impl(ctx, a, n_shift, n_dims, mode, prompt_size, true, n_keep, cossin, NULL, true, freq_base);
 }
 
 // ne_rope_back
@@ -3070,13 +3078,13 @@ struct ne_tensor* ne_rope_back(struct ne_context* ctx, struct ne_tensor* a, int 
 }
 
 struct ne_tensor* ne_rope_with_padding(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                       int prompt_size, int* n_padding) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, n_padding, true);
+                                       int prompt_size, int* n_padding, float freq_base) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false, -1, NULL, n_padding, true, freq_base);
 }
 
 struct ne_tensor* ne_rope_with_padding_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims,
-                                               int mode, int prompt_size, int* n_padding) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, n_padding, true);
+                                               int mode, int prompt_size, int* n_padding, float freq_base) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true, -1, NULL, n_padding, true, freq_base);
 }
 
 // ne_alibi
@@ -3199,12 +3207,6 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
   result->src1 = b;
 
   return result;
-}
-
-static void ne_set_op_params(struct ne_tensor* tensor, const void* params, size_t params_size) {
-  NE_ASSERT(tensor != NULL);  // silence -Warray-bounds warnings
-  // assert(params_size <= NE_MAX_OP_PARAMS);
-  memcpy(tensor->op_params, params, params_size);
 }
 
 // for ne_conv_1d
@@ -6096,7 +6098,8 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
 
-  const float eps = 1e-6f;  // TODO: make this a parameter
+  float eps;
+  memcpy(&eps, dst->op_params, sizeof(float));
 
   // TODO: optimize
   for (int64_t i03 = 0; i03 < ne03; i03++) {
@@ -7864,7 +7867,8 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   NE_ASSERT(src1->type == NE_TYPE_I32);
   NE_ASSERT(ne_nelements(src1) == 5 + bs);  // 5 + bs params
 
-  static const float freq_base = 10000.0f;
+  float freq_base = 10000.0f;
+  memcpy(&freq_base, dst->op_params, sizeof(float));
   static const float freq_scale = 1.0f;
 
   const int64_t n_past = ((int32_t*)src1->data)[ROPE_NPAST_IDX];
@@ -10011,7 +10015,8 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
         const int n_past = ((int32_t*)src1->data)[0];
         const int n_dims = ((int32_t*)src1->data)[1];
         const int mode = ((int32_t*)src1->data)[2];
-        src0->grad = ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode, 0), inplace);
+        src0->grad =
+            ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode, 0, 10000.0), inplace);
       }
       if (src1->grad) {
         // noop

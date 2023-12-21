@@ -29,6 +29,8 @@ from .finetune_api import router as finetune_router
 from .faceanimation_api import router as faceanimation_router
 from .photoai_api import router as photoai_router
 from .plugin_audio_api import router as plugin_audio_router
+from .plugin_image2image_api import router as plugin_image2image_router
+from .codegen_api import router as codegen_router
 
 _router = APIRouter()
 
@@ -41,7 +43,9 @@ api_router_mapping = {
     'finetune': finetune_router,
     'faceanimation': faceanimation_router,
     'photoai': photoai_router,
-    'plugin_audio': plugin_audio_router
+    'plugin_audio': plugin_audio_router,
+    "plugin_image2image": plugin_image2image_router,
+    'codegen': codegen_router,
 }
 
 def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):
@@ -60,6 +64,9 @@ def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, w
             api_router = api_router_mapping[lower_api_name]
             if enable_llm:
                 api_router.set_chatbot(chatbot, use_deepspeed, world_size, host, port)
+            if lower_api_name == "plugin_image2image":
+                api_router.worker.start()
+                logger.info("create main worker done...")
             _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")

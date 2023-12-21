@@ -17,12 +17,10 @@
 
 from fastapi.routing import APIRouter
 from fastapi.responses import StreamingResponse
-from concurrent import futures
 # pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter
-import requests
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 from ...config import GenerationConfig
@@ -60,7 +58,7 @@ class TextChatAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
 
-    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
         self.chatbot = chatbot
         self.use_deepspeed = use_deepspeed
         self.world_size = world_size
@@ -156,28 +154,3 @@ async def show_available_models():
     models = []
     models.append(router.get_chatbot().model_name)
     return {"models": models}
-
-@router.post("/v1/code_generation")
-async def code_generation_endpoint(chat_request: ChatCompletionRequest):
-    if router.use_deepspeed:
-        responses = []
-
-        def send_request(port):
-            try:
-                url = f'http://{router.host}:{port}/v1/code_generation'
-                response = requests.post(url, json=chat_request.dict())
-                response.raise_for_status()
-                responses.append(response.content)
-            except requests.exceptions.RequestException as e:
-                print(f"Error sending/receiving on port {port}: {e}")
-
-        with futures.ThreadPoolExecutor(max_workers=router.world_size) as executor:
-            worker_ports = [router.port + i + 1 for i in range(router.world_size)]
-            executor.map(send_request, worker_ports)
-        if responses:
-            return responses[0]
-    else:
-        ret = check_completion_request(chat_request)
-        if ret is not None:
-            raise RuntimeError("Invalid parameter.")
-        return router.handle_chat_completion_request(chat_request)

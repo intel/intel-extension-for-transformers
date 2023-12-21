@@ -33,7 +33,9 @@ from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
-IMAGE_ROOT_PATH = os.getenv("IMAGE_ROOT_PATH")
+def get_image_root_path():
+    IMAGE_ROOT_PATH = os.getenv("IMAGE_ROOT_PATH")
+    return IMAGE_ROOT_PATH
 
 
 def check_user_ip(user_ip: str) -> bool:
@@ -280,6 +282,7 @@ def process_single_image(img_id, img_path, user_id):
         logger.info(f'[background - single] Can not generate caption for image.')
 
     # process faces for image
+    IMAGE_ROOT_PATH = get_image_root_path()
     db_path = IMAGE_ROOT_PATH+"/user"+user_id
     try:
         process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
@@ -749,6 +752,7 @@ def delete_user_infos(user_id: str):
     # delete local images
     try:
         logger.info(f'[delete user] delete local images of user {user_id}.')
+        IMAGE_ROOT_PATH = get_image_root_path()
         folder_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
         if not os.path.exists(folder_path):
             logger.info(f'[delete user] no image folder for user {user_id}')

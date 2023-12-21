@@ -23,19 +23,19 @@
 host: 0.0.0.0
 port: 8000
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
+model_name_or_path: "Intel/neural-chat-7b-v3-1"
 device: "cpu"
 
 # users can choose one of the ipex int8, itrex int4, mix precision and
 # bitsandbytes to run the optimized model for inference speedup
 
 # itrex int4 llm runtime optimization
-optimization:
-    use_llm_runtime: true
-    optimization_type: "weight_only"
-    compute_dtype: "int8"
-    weight_dtype: "int4"
-    use_cached_bin: true
+# optimization:
+#     use_llm_runtime: true
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4"
+#     use_cached_bin: true
 
 # ipex int8 optimization
 # optimization:

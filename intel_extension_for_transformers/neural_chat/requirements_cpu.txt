@@ -1,5 +1,5 @@
-transformers >= 4.34.1
-peft
+transformers>=4.35.2
+peft==0.6.2
 fschat==0.2.32
 intel_extension_for_pytorch==2.1.0
 num2words
@@ -40,7 +40,7 @@ transformers_stream_generator==0.0.4
 torch==2.1.0
 torchaudio==2.1.0
 spacy
-neural-compressor==2.3.1
+neural-compressor
 pymysql
 deepface
 exifread

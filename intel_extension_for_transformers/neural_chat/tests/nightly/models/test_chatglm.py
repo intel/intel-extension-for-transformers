@@ -29,15 +29,15 @@ class TestChatGlmModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = ChatGlmModel().match(model_path='THUDM/chatglm2-6b')
+        result = ChatGlmModel().match(model_path='/tf_dataset2/models/pytorch/chatglm2-6b')
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
         if self.device == "hpu":
             self.skipTest("ChatGLM is not supported on HPU.")
-        result = ChatGlmModel().get_default_conv_template(model_path='THUDM/chatglm2-6b')
+        result = ChatGlmModel().get_default_conv_template(model_path='/tf_dataset2/models/pytorch/chatglm2-6b')
         self.assertIn('问', str(result))
-        config = PipelineConfig(model_name_or_path="THUDM/chatglm2-6b")
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/pytorch/chatglm2-6b")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("中国最大的城市是哪个？")
         print(result)

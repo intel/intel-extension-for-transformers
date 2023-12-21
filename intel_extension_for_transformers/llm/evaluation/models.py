@@ -17,6 +17,7 @@
 
 import re
 import torch
+import transformers
 from typing import Optional, Tuple
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from optimum.intel.generation.modeling import TSModelForCausalLM
@@ -24,7 +25,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     generate_dummy_past_key_values,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
-    IPEX_OPT_LLM_SUPPORTED
+    IPEX_OPT_LLM_SUPPORTED,
 )
 
 
@@ -43,6 +44,18 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             return tuple(
                 tuple(
                     past_state.index_select(1, beam_idx.to(past_state.device))
+                    for past_state in layer_past
+                )
+                for layer_past in past_key_values
+            )
+        if len(past_key_values[0]) == 4:  # discrete kv_cache
+            for layer_past in past_key_values:
+                layer_past[3][layer_past[0].size(-2) - 1] = beam_idx
+            return past_key_values
+        else:
+            return tuple(
+                tuple(
+                    past_state.index_select(0, beam_idx.to(past_state.device))
                     for past_state in layer_past
                 )
                 for layer_past in past_key_values
@@ -67,7 +80,6 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         position_ids = kwargs.get("position_ids", None)
 
         attention_mask = kwargs.get("attention_mask", None)
-
         if attention_mask is not None and position_ids is None:
             # create position_ids on the fly for batch generation
             position_ids = attention_mask.long().cumsum(-1) - 1
@@ -154,9 +166,16 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         input_bs, input_len = input_ids.shape
         if self.use_cache and past_key_values is None:
             if model_type in IPEX_OPT_LLM_SUPPORTED:
-                past_key_values = generate_dummy_past_key_values_for_opt_llm(
-                    config=self.config, input_bs=input_bs, num_beams=1
-                )
+                if (model_type == "falcon" and transformers.__version__ > "4.33") or (
+                    model_type == "llama" and transformers.__version__ >= "4.36"
+                ):
+                    past_key_values = generate_dummy_past_key_values(
+                        config=self.config, input_bs=input_bs
+                    )
+                else:
+                    past_key_values = generate_dummy_past_key_values_for_opt_llm(
+                        config=self.config, input_bs=input_bs, num_beams=1
+                    )
             else:
                 past_key_values = generate_dummy_past_key_values(
                     config=self.config, input_bs=input_bs

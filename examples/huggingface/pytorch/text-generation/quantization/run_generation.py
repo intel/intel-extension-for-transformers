@@ -35,6 +35,11 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument(
+    "--restore",
+    action="store_true",
+    help="restore ipex quantized model from output_dir/best_configure.json",
+)
+parser.add_argument(
     "--peft_model_id", type=str, default=None, help="model_name_or_path of peft model"
 )
 # ============Benchmark configs==============
@@ -58,8 +63,26 @@ parser.add_argument(
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
 parser.add_argument("--sq", action="store_true")
+parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_len",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
+parser.add_argument(
+    "--recipes", type=str, help="A dictionary as a string, recipes for smoothquant."
+)
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
-parser.add_argument("--fallback_add", action="store_true", help="Whether to fallback add ops to FP32")
+parser.add_argument(
+    "--fallback_add", action="store_true", help="Whether to fallback add ops to FP32"
+)
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
@@ -72,7 +95,22 @@ parser.add_argument(
     "--woq_weight_dtype",
     type=str,
     default="int8",
-    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
+    choices=[
+        "int8",
+        "int4_clip",
+        "int4_fullrange",
+        "fp4_e2m1_bnb",
+        "fp4_e2m1",
+        "nf4",
+        "fp8_e5m2",
+        "fp8_e4m3",
+    ],
+)
+parser.add_argument(
+    "--woq_scale_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "fp8"],
 )
 parser.add_argument(
     "--woq_compute_dtype",
@@ -89,6 +127,7 @@ parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 parser.add_argument("--revision", default="main", type=str)
 parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
 args = parser.parse_args()
 
@@ -163,24 +202,41 @@ elif args.sq:
     else:
         op_type_dict = {}
     if args.fallback_add:
-        op_type_dict["add"] = {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}}
+        op_type_dict["add"] = {
+            "weight": {"dtype": ["fp32"]},
+            "activation": {"dtype": ["fp32"]},
+        }
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    recipes = {
-        "smooth_quant": True,
-        "smooth_quant_args": {
-            "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
-        },
-    }
+    if args.recipes:
+        try:
+            import ast
+
+            recipes = ast.literal_eval(args.recipes)
+            print("Parsed recipes dictionary:", recipes)
+        except ValueError as e:
+            print("Error parsing recipes dictionary:", e)
+    else:
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": {
+                "alpha": args.alpha if args.alpha == "auto" else float(args.alpha)
+            },
+        }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
         recipes=recipes,
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        calib_iters=args.calib_iters,
+        calib_padding=args.calib_padding,
+        calib_len=args.calib_len,
+        calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
         compute_dtype=args.woq_compute_dtype,
+        scale_dtype=args.woq_scale_dtype,
         weight_dtype=args.woq_weight_dtype,
         scheme=args.woq_scheme,
         group_size=args.woq_group_size,
@@ -200,7 +256,7 @@ if quantization_config is not None:
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
         revision=args.revision,
-        use_llm_runtime=False,
+        use_llm_runtime=args.use_llm_runtime,
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -209,15 +265,15 @@ elif args.load_in_4bit or args.load_in_8bit:
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         revision=args.revision,
-        use_llm_runtime=False,
+        use_llm_runtime=args.use_llm_runtime,
     )
-elif not args.int8 and not args.int8_bf16_mixed:
+elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     if args.peft_model_id is not None:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
-            use_llm_runtime=False,
+            use_llm_runtime=args.use_llm_runtime,
         )
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
@@ -225,7 +281,7 @@ elif not args.int8 and not args.int8_bf16_mixed:
             config=config,
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
-            use_llm_runtime=False,
+            use_llm_runtime=args.use_llm_runtime,
         )
 
 # save model
@@ -247,11 +303,23 @@ if args.int8 or args.int8_bf16_mixed:
         TSModelCausalLMForITREX,
     )
 
-    user_model = TSModelCausalLMForITREX.from_pretrained(
-        args.output_dir,
-        file_name="best_model.pt",
-        trust_remote_code=args.trust_remote_code,
-    )
+    if args.restore:
+        from intel_extension_for_transformers.transformers.utils.utility import (
+            recover_model_from_json,
+        )
+
+        user_model = recover_model_from_json(
+            user_model,
+            os.path.join(args.output_dir, "best_configure.json"),
+            args.trust_remote_code,
+        )
+        user_model = TSModelCausalLMForITREX(user_model, config=config)
+    else:
+        user_model = TSModelCausalLMForITREX.from_pretrained(
+            args.output_dir,
+            file_name="best_model.pt",
+            trust_remote_code=args.trust_remote_code,
+        )
 
 if args.benchmark:
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."

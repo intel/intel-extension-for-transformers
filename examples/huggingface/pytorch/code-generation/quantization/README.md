@@ -1,5 +1,5 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for Starcoder and CodeLlama models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase), [codellama/CodeLlama-7b-hf](https://huggingface.co/codellama/CodeLlama-7b-hf) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
+We provide the inference benchmarking script `run_generation.py` for Starcoder and CodeLlama models, [bigcode/starcoder](https://huggingface.co/bigcode/starcoder), [bigcode/starcoderbase](https://huggingface.co/bigcode/starcoderbase), [codellama/CodeLlama-7b-hf](https://huggingface.co/codellama/CodeLlama-7b-hf) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
 
 
 # Prerequisite​
@@ -18,59 +18,133 @@ pip install -r requirements.txt
 ```
 
 # Run
+We provide compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device, the followings are command to show how to use it.
+>**Note**: 
+> Model type "llama" will default use [ipex.optimize_transformers](https://github.com/intel/intel-extension-for-pytorch/blob/339bd251841e153ad9c34e1033ab8b2d936a1781/docs/tutorials/llm/llm_optimize_transformers.md) to accelerate the inference, but "llama" requests transformers version lower than 4.36.0, "falcon" requests transformers version lower than 4.33.3.
 
-## 1. Quantization
-``` bash
-python run_generation.py \
-    --model bigcode/starcoder \
-    --output_dir "./saved_results" \
-    --sq \
-    --alpha 0.7  \
-    --calib_iters 500 \
-    --calib_batch_size 1 \
-    --dataset "mbpp"
-```
-``` bash
-python run_generation.py \
-    --model codellama/CodeLlama-7b-hf \
-    --output_dir "./saved_results" \
-    --woq \
-    --calib_iters 500 \
-    --calib_batch_size 1 \
-    --dataset "mbpp"
-```
-
-## 2. Performance
-
+## 1. Performance
 ```bash
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
-# --int8 is used for int8 model
+# fp32
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoder \
-    --output_dir "./saved_results" \
-    --int8 \
     --benchmark \
     --batch_size 1
-```
-
-## 3. Accuracy
-```bash
-# --int8 is used for int8 model
+# mixedprecision
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --mixed_precision \
+    --benchmark \
+    --batch_size 1
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 python run_generation.py \
     --model bigcode/starcoder \
     --output_dir "./saved_results" \
+    --sq \
+    --alpha 0.7  \
+    --calib_iters 500 \
+    --dataset "mbpp"
     --int8 \
-    --batch_size 20 \
+    --benchmark \
+    --batch_size 1
+# weightonlyquant
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --woq \
+    --benchmark \
+    --batch_size 1
+# load_in_4bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_4bit True \
+    --benchmark \
+    --batch_size 1
+# load_in_8bit
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_8bit True \
+    --benchmark \
+    --batch_size 1
+```
+## 2. Accuracy
+
+```bash
+# fp32
+python run_generation.py \
+    --model bigcode/starcoder \
     --accuracy \
+    --batch_size 20 \
     --n_samples 20 \
     --allow_code_execution \
     --temperature 0.2 \
-    --do_sample
+    --do_sample \
+    --tasks "humaneval" \
+# mixedprecision
+python run_generation.py \
+    --model bigcode/starcoder \
+    --mixed_precision \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# smoothquant
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+python run_generation.py \
+    --model bigcode/starcoder \
+    --sq \
+    --alpha 1.0 \
+    --int8 \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# weightonlyquant
+python run_generation.py \
+    --model bigcode/starcoder \
+    --woq \
+    --woq_weight_dtype "nf4" \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# load_in_4bit
+python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_4bit True \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
+# load_in_8bit
+python run_generation.py \
+    --model bigcode/starcoder \
+    --load_in_8bit True \
+    --accuracy \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --temperature 0.2 \
+    --do_sample \
+    --tasks "humaneval" \
 ```
+
 >Note:
 please follow the [guide](https://huggingface.co/docs/accelerate/usage_guides/ipex) to set up the configuration if `accelerate launch` is used.
 

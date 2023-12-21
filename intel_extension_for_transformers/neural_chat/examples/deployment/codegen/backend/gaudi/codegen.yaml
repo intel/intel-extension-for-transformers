@@ -27,6 +27,7 @@ model_name_or_path: "Phind/Phind-CodeLlama-34B-v2"
 device: "hpu"
 use_deepspeed: true
 world_size: 8
+master_port: 29500 # default value in deepspeed is 29500, users can change this value to avoid conflict
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat']
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune', 'codegen']
+tasks_list: ['codegen']

@@ -9,21 +9,16 @@ import types
 import numpy as np
 from itertools import chain
 from pathlib import Path
-from datasets import load_dataset
-from torch.nn.functional import pad
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, PretrainedConfig, AutoConfig
-import transformers
+from transformers import AutoTokenizer, AutoConfig
 from optimum.utils import NormalizedConfigManager
-from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
+    BitsAndBytesConfig,
 )
 from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM,
-    AutoModel,
 )
 
 parser = argparse.ArgumentParser()
@@ -41,9 +36,6 @@ parser.add_argument(
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
-parser.add_argument(
-    "--calib_batch_size", default=1, type=int, help="calibration batch size."
-)
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
@@ -69,6 +61,9 @@ parser.add_argument("--mixed_precision", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============WeightOnlyQuant configs============
+parser.add_argument("--bitsandbytes", action="store_true")
+parser.add_argument("--load_in_4bit", action="store_true")
+parser.add_argument("--load_in_8bit", action="store_true")
 parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
@@ -77,17 +72,30 @@ parser.add_argument(
     help="Weight-only parameter.",
 )
 parser.add_argument(
-    "--woq_dtype",
+    "--woq_weight_dtype",
     type=str,
     default="int4_fullrange",
-    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"],
+    choices=[
+        "int8",
+        "int4_clip",
+        "int4_fullrange",
+        "fp4_e2m1_bnb",
+        "fp4_e2m1",
+        "nf4",
+        "fp8_e5m2",
+        "fp8_e4m3",
+    ],
+)
+parser.add_argument(
+    "--woq_scale_dtype",
+    type=str,
+    default="fp32",
+    choices=["fp32", "fp8"],
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 # ============Harness configs============
-parser.add_argument(
-    "--tasks", default=None, help="Evaluation tasks", choices=["mbpp", "humaneval"]
-)
+parser.add_argument("--tasks", default=None, help="Evaluation tasks")
 parser.add_argument("--n_samples", default=200, type=int)
 parser.add_argument(
     "--limit", default=None, type=int, help="Limit number of samples to eval"
@@ -178,13 +186,21 @@ elif args.sq:
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
-        weight_dtype=args.woq_dtype,
+        weight_dtype=args.woq_weight_dtype,
+        scale_dtype=args.woq_scale_dtype,
         group_size=args.woq_group_size,
         scheme=args.woq_scheme,
         algorithm=args.woq_algo,
     )  # default is A32W4G32
+# bitsandbytes
+elif args.bitsandbytes:
+    # GPU device is need for `load_in_4bit` and `load_in_8bit`.
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+    )
 
-
+# get optimized model
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -193,15 +209,15 @@ if quantization_config is not None:
         revision=args.revision,
         use_llm_runtime=False,
     )
-    # save model
-    if args.sq:
-        config.save_pretrained(args.output_dir)
-        user_model.save(args.output_dir)
-    elif args.mixed_precision:
-        user_model.config.save_pretrained(args.output_dir)
-        torch.save(
-            user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
-        )
+elif args.load_in_4bit or args.load_in_8bit:
+    # CPU device usage is provided by intel-extension-for-transformers.
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        load_in_4bit=args.load_in_4bit,
+        load_in_8bit=args.load_in_8bit,
+        revision=args.revision,
+        use_llm_runtime=False,
+    )
 elif not args.int8 and not args.int8_bf16_mixed:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -211,6 +227,15 @@ elif not args.int8 and not args.int8_bf16_mixed:
         use_llm_runtime=False,
     )
 
+# save model
+if args.sq:
+    config.save_pretrained(args.output_dir)
+    user_model.save(args.output_dir)
+elif args.mixed_precision:
+    user_model.config.save_pretrained(args.output_dir)
+    torch.save(
+        user_model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin")
+    )
 
 if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.

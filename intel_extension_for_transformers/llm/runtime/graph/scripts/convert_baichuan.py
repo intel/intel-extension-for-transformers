@@ -125,7 +125,7 @@ def load_vocab_for_baichuan(path: Path) -> SentencePieceVocab:
 
 
 def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
-    print("ChatGLM-1 converting: ")
+    print("Baichuan-13B converting: ")
     list_vars = model.state_dict()
     for name in list_vars.keys():
         print(name, list_vars[name].shape, list_vars[name].dtype)
@@ -156,6 +156,8 @@ def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["intermediate_size"]))
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
 
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
