@@ -181,6 +181,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
 	pip install transformers==4.35.2
     elif [ "${topology}" = "mistral_7b" ]; then
         alpha=0.8
