@@ -30,13 +30,13 @@ class TestChatbotBuilder(unittest.TestCase):
         self.device = get_device_type()
         return super().setUp()
 
-    def tearDown(self) -> None:
-        if os.path.exists("output"):
-            shutil.rmtree("output")
-        for filename in os.listdir("."):
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if os.path.exists("./ci/api/output"):
+            shutil.rmtree("./ci/api/output")
+        for filename in os.listdir("./ci/api/"):
             if filename.endswith(".wav"):
                 os.remove(filename)
-        return super().tearDown()
 
     def test_build_chatbot_with_default_config(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -135,7 +135,7 @@ class TestChatbotBuilder(unittest.TestCase):
         plugins.retrieval.args["input_path"] = "../../../README.md"
         # Intel/bge-base-en-v1.5-sts-int8-static is private now, so we need to load it from local.
         plugins.retrieval.args["embedding_model"] = \
-            "/tf_dataset2/inc-ut/bge-base-en-v1.5-sts-int8-static"
+            "/mnt/localdisk/models/bge-base-en-v1.5-sts-int8-static/"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
