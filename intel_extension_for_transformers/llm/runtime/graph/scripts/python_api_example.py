@@ -18,7 +18,7 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "/mnt/disk1/data2/zhenweil/models/llama/Llama-2-7b-chat-hf"  # or local path to model
+model_name = "Intel/neural-chat-7b-v1-1"  # or local path to model
 # int4 weight_only quantization
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 # fp4 weight_only quantization
@@ -37,10 +37,9 @@ streamer = TextStreamer(tokenizer)
 
 # top_k_top_p sample or greedy_search
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=30)
-model.print_time()
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 # beam search
-# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-# outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
-# ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-# print(ans)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
+ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+print(ans)
