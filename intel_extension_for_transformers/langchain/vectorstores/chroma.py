@@ -184,13 +184,14 @@ class Chroma(Chroma_origin):
     ) -> Chroma:
         if not persist_directory:
             persist_directory = _DEFAULT_PERSIST_DIR
+        if sign == "child":
+            persist_directory = persist_directory + "_child"
         if os.path.exists(persist_directory):
             if bool(os.listdir(persist_directory)):
                 logging.info("Load the existing database!")
                 chroma_collection = cls(
                     collection_name=collection_name,
                     embedding_function=embedding,
-                    sign=sign,
                     persist_directory=persist_directory,
                     client_settings=client_settings,
                     client=client,
