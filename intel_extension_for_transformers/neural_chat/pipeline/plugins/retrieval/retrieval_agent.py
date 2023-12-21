@@ -243,5 +243,5 @@ class Agent_QA():
                     return "Response with template.", links
                 prompt = generate_qa_prompt(query, context)
         else:
-            
+            logging.error("The selcted generation mode is invalid!")
         return prompt, links
