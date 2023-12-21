@@ -127,6 +127,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
@@ -142,6 +143,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
 if __name__ == '__main__':
     unittest.main()
