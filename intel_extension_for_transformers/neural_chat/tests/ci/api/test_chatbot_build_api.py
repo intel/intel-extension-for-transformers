@@ -150,19 +150,10 @@ class TestChatbotBuilder(unittest.TestCase):
             self.assertIsNotNone(response)
 
         # test local file
-        local_dir = "local_model_dir"
-        from huggingface_hub import snapshot_download
-        snapshot_download("thenlper/gte-base", local_dir=local_dir)
-        _run_retrieval(local_dir)
-        
-        snapshot_download("hkunlp/instructor-large", local_dir=local_dir)
-        _run_retrieval(local_dir)
-        
-        snapshot_download("BAAI/bge-base-en-v1.5", local_dir=local_dir)
-        _run_retrieval(local_dir)
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
 
-        import shutil
-        shutil.rmtree(local_dir, ignore_errors=True)
 
 if __name__ == '__main__':
     unittest.main()
