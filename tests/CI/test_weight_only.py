@@ -15,7 +15,7 @@ from transformers import (
     Trainer
 )
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
+from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearCPU, QuantizedLoraLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
@@ -50,7 +50,7 @@ class TestWeightOnly(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        cls.workspace = "./woq_config_tmp"
+        cls.workspace = "./woq_tmp"
         # if workspace not exist, crate it
         if not os.path.exists(cls.workspace):
             os.mkdir(cls.workspace)
@@ -131,7 +131,7 @@ class TestWeightOnly(unittest.TestCase):
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
         module_list = []
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLinearQBits):
+            if isinstance(module, QuantizedLinearCPU):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 
@@ -142,7 +142,21 @@ class TestWeightOnly(unittest.TestCase):
         )
         module_list = []
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLinearQBits):
+            if isinstance(module, QuantizedLinearCPU):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+
+    def test_auto_model_saving_loading(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        module_list = []
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearCPU):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+        model.save_low_bit(self.workspace)
+        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace)
+        for name, module in loaded_model.named_modules():
+            if isinstance(module, QuantizedLinearCPU):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 

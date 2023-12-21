@@ -86,7 +86,7 @@ class ParamsQBits(torch.nn.Parameter):
         return self
 
 
-class QuantizedLinearQBits(torch.nn.Linear):
+class QuantizedLinearCPU(torch.nn.Linear):
     def __init__(
         self,
         input_features,
@@ -130,8 +130,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
+        shape = weight_data.shape
         weight = torch.ops.jblasop.woq_quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        weight.resize_(shape)
         self.weight = ParamsQBits(data=weight,
                                   requires_grad=False,
                                   quant_state={"scheme": self.scheme},
@@ -142,7 +144,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
-class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
+class QuantizedLoraLinearQBits(QuantizedLinearCPU, LoraLayer):
     # Lora implemented in a dense layer
     def __init__(
         self,
@@ -154,7 +156,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         lora_dropout: float = 0.0,
         **kwargs,
     ) -> None:
-        QuantizedLinearQBits.__init__(
+        QuantizedLinearCPU.__init__(
             self,
             in_features,
             out_features,
@@ -301,7 +303,7 @@ class QBitsLoraModel(LoraModel):
     _create_new_module_ = LoraModel._create_new_module
 
     def _create_new_module(self, lora_config, adapter_name, target, **kwargs):
-        if isinstance(target, QuantizedLinearQBits):
+        if isinstance(target, QuantizedLinearCPU):
             bias = kwargs.pop("bias", False)
             in_features, out_features = target.in_features, target.out_features
             if kwargs["fan_in_fan_out"]:

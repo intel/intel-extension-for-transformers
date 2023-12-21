@@ -43,6 +43,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_ggml=False,
         use_quant=True,
         use_gptq=False,
+        use_llm_runtime=True,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import (
@@ -68,6 +69,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_gptq = use_gptq
+        self.use_llm_runtime = use_llm_runtime
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -129,6 +131,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
+
+        self.use_llm_runtime = False
 
     def post_init_runtime(self):
         r"""
@@ -198,6 +202,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 print("WARNING: fp8 weight type only supports fp8 / fp32 scale now."\
                       " Fall back to fp8.")
                 self.scale_dtype = "fp8"
+
+        self.use_llm_runtime = True
 
     def quantization_method(self):
         r"""
