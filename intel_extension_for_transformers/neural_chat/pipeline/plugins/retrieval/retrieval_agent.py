@@ -61,7 +61,7 @@ class Agent_QA():
                  retrieval_type = 'default',
                  max_chuck_size=512,
                  min_chuck_size=5,
-                 mode = 1,
+                 mode = "accuracy",
                  process=True,
                  append=True,
                  **kwargs):
@@ -81,9 +81,16 @@ class Agent_QA():
             "default",
             "child_parent",
         )
-
+        allowed_generation_mode: ClassVar[Collection[str]] = (
+            "accuracy",
+            "general",
+        )
+        
         assert self.retrieval_type in allowed_retrieval_type, "search_type of {} not allowed.".format(   \
             self.retrieval_type)
+        assert self.mode in allowed_generation_mode, "generation mode of {} not allowed.".format( \
+            self.mode)
+        
         if isinstance(input_path, str):
             if os.path.exists(input_path):
                 self.input_path = input_path
@@ -215,7 +222,7 @@ class Agent_QA():
         links = []
         context = ''
         assert self.retriever is not None, logging.info("Please check the status of retriever")
-        if self.mode == 1:   ## "retrieval with threshold" will only return the document that bigger than the threshold.
+        if self.mode == "accuracy":   ## "retrieval with threshold" will only return the document that bigger than the threshold.
             context, links = self.retriever.get_context(query)
             if 'qa' not in intent.lower() and context == '':
                 logging.info("Chat with AI Agent.")
@@ -225,7 +232,7 @@ class Agent_QA():
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_enterprise(query, context)
-        elif self.mode == 2: ## For general setting, will return top-k documents.
+        elif self.mode == "general": ## For general setting, will return top-k documents.
             if 'qa' not in intent.lower() and context == '':
                 logging.info("Chat with AI Agent.")
                 prompt = generate_prompt(query)
@@ -235,4 +242,6 @@ class Agent_QA():
                 if len(context) == 0:
                     return "Response with template.", links
                 prompt = generate_qa_prompt(query, context)
+        else:
+            
         return prompt, links
