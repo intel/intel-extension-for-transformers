@@ -7,6 +7,7 @@ sentencepiece != 0.1.92
 torch==2.1.0+cpu
 peft==0.6.2
 transformers >= 4.35.0
+tiktoken #code_gen
 neural-compressor
 intel_extension_for_pytorch
 git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c

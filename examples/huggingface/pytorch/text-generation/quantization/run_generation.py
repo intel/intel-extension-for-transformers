@@ -125,7 +125,7 @@ parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
-parser.add_argument("--revision", default="main", type=str)
+parser.add_argument("--_commit_hash", default="main", type=str)
 parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
@@ -156,7 +156,7 @@ config = AutoConfig.from_pretrained(
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
     use_cache=True,  # to use kv cache.
     trust_remote_code=args.trust_remote_code,
-    revision=args.revision,
+    _commit_hash=args._commit_hash,
 )
 
 # chatglm
@@ -255,8 +255,9 @@ if quantization_config is not None:
         args.model,
         quantization_config=quantization_config,
         trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
         use_llm_runtime=args.use_llm_runtime,
+
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -264,7 +265,7 @@ elif args.load_in_4bit or args.load_in_8bit:
         args.model,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
-        revision=args.revision,
+        _commit_hash=args._commit_hash,
         use_llm_runtime=args.use_llm_runtime,
     )
 elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
@@ -272,7 +273,7 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.peft_model_id,
             trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
+            _commit_hash=args._commit_hash,
             use_llm_runtime=args.use_llm_runtime,
         )
     else:
@@ -280,7 +281,7 @@ elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
             args.model,
             config=config,
             trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
+            _commit_hash=args._commit_hash,
             use_llm_runtime=args.use_llm_runtime,
         )
 
@@ -389,8 +390,8 @@ if args.accuracy:
         + ",tokenizer="
         + args.model
         + ",dtype=float32"
-        + ",revision="
-        + args.revision
+        + ",_commit_hash="
+        + args._commit_hash
         + ",trust_remote_code="
         + str(args.trust_remote_code),
         user_model=user_model,

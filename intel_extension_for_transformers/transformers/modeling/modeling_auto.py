@@ -228,11 +228,10 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type and transformers.__version__ > "4.33":
-                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
-                    model.eval()
+            if "falcon" in model_type:
+                logger.warning(
+                    "Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon."
                 )
-                quantization_config.ipex_opt_llm = False
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -334,7 +333,11 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        attention_mask = torch.ones(len(input_ids))
+                        if model_type in ["bloom", "qwen"]:
+                            attention_mask = torch.ones(len(input_ids) +1)
+                            attention_mask[0] = 0
+                        else:
+                            attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
@@ -450,17 +453,6 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        elif model_type == "falcon":
-                            input_bs, input_len = inputs["input_ids"].shape
-                            outputs = model(inputs["input_ids"])
-                            example_inputs["past_key_values"] = outputs[1]
-                            example_inputs["attention_mask"] = torch.ones(
-                                input_bs, input_len
-                            )
-                            example_inputs["position_ids"] = (
-                                inputs["position_ids"][:, -1:] + 1
-                            )
-                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
                         else:
                             example_inputs = inputs
                     else:
