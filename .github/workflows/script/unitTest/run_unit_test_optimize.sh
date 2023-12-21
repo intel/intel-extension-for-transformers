@@ -22,6 +22,7 @@ function pytest() {
     pip install --no-cache-dir protobuf==3.20.0
     ## install transformers==4.34.1, to work with SharedDPO API
     pip install transformers==4.34.1
+    pip install huggingface_hub==0.17.3
     cd /intel-extension-for-transformers/tests/CI || exit 1
     JOB_NAME=unit_test
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
@@ -75,8 +76,6 @@ function pytest() {
 }
 
 function main() {
-    ## install transformers==4.34.1, to work with SharedDPO API
-    pip install transformers==4.34.1
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "/intel-extension-for-transformers/tests"
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
