@@ -7,7 +7,6 @@ onnx
 rouge-score
 nltk
 neural-compressor
-optimum
-optimum-intel
+optimum-intel > 1.12.0
 onnxruntime
 intel-extension-for-pytorch
