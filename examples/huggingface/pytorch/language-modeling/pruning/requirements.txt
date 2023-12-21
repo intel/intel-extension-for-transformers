@@ -3,7 +3,7 @@ datasets
 einops
 optimum
 sentencepiece != 0.1.92
-transformers==4.34.1
+transformers==4.36.0
 torch==2.0.1
 tqdm
 neural_compressor
