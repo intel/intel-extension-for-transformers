@@ -168,7 +168,6 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
 
     gguf_file = fname_out + '.gguf'
     gguf_writer = gguf.GGUFWriter(gguf_file, "chatglm2")
-    # gguf_writer.add_name('chatglm2-6b')
 
     gguf_writer.add_uint32('magic', 0x67676d66)
     gguf_writer.add_uint32('version', 1)
@@ -194,10 +193,18 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
     gguf_writer.add_uint32('ffn_hidden_size', hparams["ffn_hidden_size"])
     gguf_writer.add_uint32('inner_hidden_size', 0)
 
-    gguf_writer.add_uint32('bos_token_id', 1)
-    gguf_writer.add_uint32('eos_token_id', 2)
-    gguf_writer.add_uint32('pad_token_id', 0)
-    gguf_writer.add_uint32('sep_token_id', 0)
+    gguf_writer.add_int32(
+        'bos_token_id',
+        tokenizer.bos_token_id if tokenizer.bos_token_id is not None else -1)
+    gguf_writer.add_int32(
+        'eos_token_id',
+        tokenizer.eos_token_id if tokenizer.eos_token_id is not None else -1)
+    gguf_writer.add_int32(
+        'pad_token_id',
+        tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1)
+    gguf_writer.add_int32(
+        'sep_token_id',
+        tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1)
 
     def write_vocab_gguf(dir_model):
         print("gguf: get tokenizer metadata")
@@ -252,7 +259,7 @@ def chatglm2_convert_gguf(model, tokenizer, dir_model, fname_out, ftype,
                         scores.append(-1000.0)
                         toktypes.append(4)  # user-defined token type
 
-            gguf_writer.add_tokenizer_model("llama")
+            gguf_writer.add_tokenizer_model("chatglm2")
             gguf_writer.add_token_list(tokens)
             gguf_writer.add_token_scores(scores)
             gguf_writer.add_token_types(toktypes)
