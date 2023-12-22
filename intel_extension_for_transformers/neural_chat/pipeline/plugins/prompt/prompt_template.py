@@ -54,10 +54,10 @@ def generate_qa_enterprise(query, context=None, history=None):
 
 def generate_prompt(query, history=None):
     if history:
-        conv = PromptTemplate("rag_with_context_memory")
+        conv = PromptTemplate("rag_without_context_memory")
         conv.append_message(conv.roles[0], query)
-        conv.append_message(conv.roles[2], history)
-        conv.append_message(conv.roles[3], None)
+        conv.append_message(conv.roles[1], history)
+        conv.append_message(conv.roles[2], None)
     else:
         conv = PromptTemplate("rag_without_context")
         conv.append_message(conv.roles[0], query)
