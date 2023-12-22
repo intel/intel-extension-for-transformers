@@ -1,4 +1,5 @@
 accelerate
+evaluate
 sentencepiece != 0.1.92
 protobuf
 datasets
