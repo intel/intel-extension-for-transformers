@@ -124,7 +124,7 @@ class _BaseQBitsAutoModelClass:
                 _configuration_file=QUANT_CONFIG,
                 **kwargs,
             )
-            if quantization_config is None:
+            if quantization_config is None or quantization_config.low_bit_model != True:
                 logger.warning("Quantization_config loading failed. If you want to load saved " \
                                "low bit model, please check your quantization_config.json.")
             else:
