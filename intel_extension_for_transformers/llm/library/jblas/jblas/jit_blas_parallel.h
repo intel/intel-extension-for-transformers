@@ -204,7 +204,7 @@ class SchedulerBase : public Scheduler2D {
     mL2Use += static_cast<size_t>(mBlock[1]) * mBlock[2] * mEleSize[1];
     mL2Use += static_cast<size_t>(mStep[0]) * mBlock[2] * mEleSize[0];
   }
-  const float DensityThres = 32;
+  const float DensityThres = 16;
   static size_t constexpr ReservedSize = 32ULL * 1024ULL;
 
   virtual float calculate_score() {
@@ -364,7 +364,7 @@ class SchedulerKBlock : public Scheduler2D {
     mL2Use += static_cast<size_t>(mBlock[1]) * mBlock[2] * mEleSize[1];
     mL2Use += static_cast<size_t>(mStep[0]) * mBlock[2] * mEleSize[0];
   }
-  const float DensityThres = 32;
+  const float DensityThres = 16;
 
   float calculate_score() {
     int tmpnstep = mThdSize[1] < _GemmCore_T::PREFERRED_N ? mThdSize[1] : _GemmCore_T::PREFERRED_N;
@@ -492,10 +492,11 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
     assert(this->mBlock[0]>0);
     assert(this->mBlock[1]>0);
     assert(this->mBlock[2]>0);
+    assert(this->mBlock[2] % _GemmCore_T::KTILE == 0);
   }
 
  protected:
-  const float DensityThres = 32;
+  const float DensityThres = 16;
   static size_t constexpr ReservedSize = 32ULL * 1024ULL;
 
   void cache_blocking_compute() override {
@@ -529,6 +530,11 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
                                  (this->mStep[0] * this->mEleSize[0] +
                                   float(CorSize * (this->mStep[0] + this->mBlock[1])) / this->mKBlock +
                                   this->mBlock[1] * this->mEleSize[1]));
+    if (rawk < this->mKBlock) {
+      rawk = static_cast<int>((valid_total - this->mBlock[0] * this->mBlock[1] * this->mEleSize[2] -
+                               1 * CorSize * (this->mStep[0] + this->mBlock[1])) /
+                              (this->mStep[0] * this->mEleSize[0] + this->mBlock[1] * this->mEleSize[1]));
+    }
     rawk = std::min(rawk, this->mSizePadded[2]);
     this->mBlock[2] = utils::padto_le(rawk, this->mStep[2]);
     if (this->mBlock[2] > this->mKBlock) {
@@ -569,9 +575,6 @@ class SchedulerKBlockS : public SchedulerBase<_GemmCore_T> {
       this->mBlock[2] = static_cast<int>(getMaxK(this->mBlock[1]));
       this->mBlock[2] = utils::padto_le(this->mBlock[2], this->mStep[2]);
       this->mBlock[2] = std::min(mKBlock, this->mBlock[2]);
-      auto tmp = utils::updiv(mKBlock, this->mBlock[2]);
-      while (mKBlock % tmp != 0) tmp++;  // TODO(Yu) optimize
-      this->mBlock[2] = utils::downdiv(mKBlock, tmp);
     }
   }
 
