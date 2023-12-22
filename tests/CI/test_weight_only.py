@@ -154,7 +154,7 @@ class TestWeightOnly(unittest.TestCase):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
         model.save_pretrained(self.workspace)
-        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace, is_quantized=True)
+        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace)
         for name, module in loaded_model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
                 module_list.append(name)

@@ -109,6 +109,7 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
             token=kwargs.get("token"),
         )
 
+    self.quantization_config.low_bit_model = True
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
 class _BaseQBitsAutoModelClass:
@@ -116,14 +117,27 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        if kwargs.get("is_quantized", False):
-            logger.info("Trying to load quantized model...")
-            try:
-                model = cls.load_low_bit(pretrained_model_name_or_path)
-            except:
-                logger.error("Loading failed, please check your model.")
-                exit(0)
-            return model
+        if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
+            logger.info("Find quantization_config.json, trying to load quantized low bit model...")
+            quantization_config = WeightOnlyQuantConfig.from_pretrained(
+                pretrained_model_name_or_path,
+                _configuration_file=QUANT_CONFIG,
+                **kwargs,
+            )
+            if quantization_config is None:
+                logger.warning("Quantization_config loading failed. If you want to load saved " \
+                               "low bit model, please check your quantization_config.json.")
+            else:
+                logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
+                try:
+                    model = cls.load_low_bit(pretrained_model_name_or_path)
+                    logger.info("Saved low bit model loading successfully. Other input args " \
+                                "will be ignored.")
+                    return model
+                except:
+                    logger.error("Saved low bit model loading failed, please check your model.")
+                    exit(0)
+
         if kwargs.get("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
                 Graph,

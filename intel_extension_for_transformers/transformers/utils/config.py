@@ -44,6 +44,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_quant=True,
         use_gptq=False,
         use_llm_runtime=True,
+        low_bit_model=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import (
@@ -70,6 +71,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_quant = use_quant
         self.use_gptq = use_gptq
         self.use_llm_runtime = use_llm_runtime
+        self.low_bit_model = low_bit_model
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
