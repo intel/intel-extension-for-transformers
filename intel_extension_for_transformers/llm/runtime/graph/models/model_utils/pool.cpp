@@ -15,12 +15,12 @@
 #include "models/model_utils/pool.h"
 
 // fcfs_pool
-const bool fcfs_pool::add(sequence* seq) {
+bool fcfs_pool::add(sequence* seq) {
   context.push(seq);
   return true;
 }
 
-const bool fcfs_pool::pop(sequence* seq) {
+bool fcfs_pool::pop(sequence* seq) {
   if (empty()) {
     fprintf(stderr, "%s: pool is empty.\n", __func__);
     return false;
@@ -35,9 +35,9 @@ void fcfs_pool::clear() {
   context.swap(empty_q);
 }
 
-const bool fcfs_pool::empty() { return context.empty(); }
+bool fcfs_pool::empty() { return context.empty(); }
 
-const int fcfs_pool::size() { return context.size(); }
+int fcfs_pool::size() { return context.size(); }
 
 // serve_pool
 serve_pool::serve_pool(const pool_property& property) {
@@ -65,12 +65,12 @@ serve_pool::~serve_pool() {
   }
 }
 
-const bool serve_pool::add(sequence* seq) {
+bool serve_pool::add(sequence* seq) {
   std::lock_guard<std::mutex> lock(mtx);
   return internel_pool->add(seq);
 }
 
-const bool serve_pool::pop(sequence* seq) {
+bool serve_pool::pop(sequence* seq) {
   std::lock_guard<std::mutex> lock(mtx);
   return internel_pool->pop(seq);
 }
@@ -80,6 +80,6 @@ void serve_pool::clear() {
   internel_pool->clear();
 }
 
-const bool serve_pool::empty() { return internel_pool->empty(); }
+bool serve_pool::empty() { return internel_pool->empty(); }
 
-const int serve_pool::size() { return internel_pool->size(); }
+int serve_pool::size() { return internel_pool->size(); }

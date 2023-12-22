@@ -41,7 +41,7 @@ il_worker::~il_worker() {
 
 void il_worker::set_threads(const int& n_threads) { threads = n_threads; }
 
-const std::vector<int>& il_worker::get_request_done_ids() const { return request_done_ids; }
+std::vector<int> il_worker::get_request_done_ids() const { return request_done_ids; }
 
 void il_worker::empty_request_done_ids() { request_done_ids.clear(); }
 
@@ -50,7 +50,7 @@ spbg_worker::spbg_worker(const gpt_params& params) : il_worker(params) {}
 spbg_worker::spbg_worker(const gpt_params& params, const int& n_threads) : il_worker(params, n_threads) {}
 spbg_worker::~spbg_worker() {}
 
-const bool spbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) {
+bool spbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) {
   for (int ni = 0; ni < n_input; ++ni) {
     if ((seqs->at(ni))->status != seq_status::PREFILL || (seqs->at(ni))->status != seq_status::DECODING) {
       fprintf(stderr, "%s: error: request status is unright.\n", __func__);
@@ -79,7 +79,7 @@ const bool spbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& 
   return true;
 }
 
-const bool spbg_worker::beam_search_step(std::vector<sequence*>* seqs, const int& n_input) {
+bool spbg_worker::beam_search_step(std::vector<sequence*>* seqs, const int& n_input) {
   // add new request
   // step prefill
   if (n_input == 1) {
@@ -111,7 +111,7 @@ const bool spbg_worker::beam_search_step(std::vector<sequence*>* seqs, const int
   return true;
 }
 
-const bool spbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
+bool spbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
   reqidx_to_vecid.clear();
   for (int ni = 0; ni < n_input; ++ni) {
     reqidx_to_vecid.emplace(std::make_pair(seqs->at(ni)->request_idx, ni));
@@ -125,7 +125,7 @@ const bool spbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
   return update_seqs(seqs, n_input);
 }
 
-const bool spbg_worker::update_seqs(std::vector<sequence*>* seqs, const int& n_input) {
+bool spbg_worker::update_seqs(std::vector<sequence*>* seqs, const int& n_input) {
   empty_request_done_ids();
   if (n_input == 1 && seqs->front()->status == seq_status::PREFILL) {
     seqs->front()->status = seq_status::DECODING;
@@ -167,7 +167,7 @@ il_scheduler::il_scheduler(const gpt_params& params) : il_scheduler(params, serv
 
 il_scheduler::~il_scheduler() {}
 
-const bool il_scheduler::has_finished_seq() { return (finished_pool.size() > 0); }
+bool il_scheduler::has_finished_seq() { return (finished_pool.size() > 0); }
 
 std::vector<sequence*> il_scheduler::pop_completed_requests() {
   std::vector<sequence*> ret_seqs;
@@ -197,7 +197,7 @@ spbg_scheduler::spbg_scheduler(const gpt_params& params, const serve_policy& pol
 
 spbg_scheduler::~spbg_scheduler() {}
 
-const int spbg_scheduler::query_free_req_idx() {
+int spbg_scheduler::query_free_req_idx() {
   auto iter = std::find_if(free_req_idx.begin(), free_req_idx.end(), [](const bool flag) { return flag; });
   if (iter == free_req_idx.end()) {
     return -1;
@@ -206,7 +206,7 @@ const int spbg_scheduler::query_free_req_idx() {
   }
 }
 
-const bool spbg_scheduler::add_request(sequence* seq) {
+bool spbg_scheduler::add_request(sequence* seq) {
   if (seq->status != seq_status::UNKNOWN) {
     fprintf(stderr, "%s: error: seq status is not UNKNOWN, can not decide to add into which pool.\n", __func__);
     return false;
@@ -217,7 +217,7 @@ const bool spbg_scheduler::add_request(sequence* seq) {
   return waiting_pool.add(seq);
 }
 
-const bool spbg_scheduler::prepare_seqs() {
+bool spbg_scheduler::prepare_seqs() {
   executed_seqs.clear();
   cur_decoding_num = running_pool.size();
   if (cur_decoding_num > max_requests) {
@@ -259,7 +259,7 @@ const bool spbg_scheduler::prepare_seqs() {
   return true;
 }
 
-const bool spbg_scheduler::step() {
+bool spbg_scheduler::step() {
   if (done()) {
     fprintf(stderr,
             "%s: warning: scheduler has no more requests, please add extra requests or just stop "
@@ -289,7 +289,7 @@ const bool spbg_scheduler::step() {
   return update_pools();
 }
 
-const bool spbg_scheduler::update_pools() {
+bool spbg_scheduler::update_pools() {
   for (int ns = 0; ns < executed_seqs.size(); ++ns) {
     if (executed_seqs[ns]->status == seq_status::DECODING) {
       running_pool.add(executed_seqs[ns]);
@@ -304,7 +304,7 @@ const bool spbg_scheduler::update_pools() {
   return true;
 }
 
-const bool spbg_scheduler::done() {
+bool spbg_scheduler::done() {
   if (waiting_pool.empty() && running_pool.empty()) {
     return true;
   } else {

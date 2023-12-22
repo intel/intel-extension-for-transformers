@@ -2769,6 +2769,31 @@ const std::vector<std::vector<model_token>>& beam_search_flow::loop(const std::v
   return response;
 }
 
+bool beam_search_flow::step_prefill(const model_input& input) {
+
+}
+
+bool beam_search_flow::step_decoding() {
+
+}
+
+std::vector<int> beam_search_flow::request_done_ids() {
+  return next_done_request_ids;
+}
+
+std::vector<std::vector<model_token>> beam_search_flow::request_done_reponse() {
+  std::vector<std::vector<model_token>> done_res;
+  if (next_done_request_ids.empty()) {
+    return done_res;
+  }
+  done_res.resize((next_done_request_ids.size()));
+  for (int i = 0; i < next_done_request_ids.size(); ++i) {
+    done_res[i] = std::move(response[next_done_request_ids[i]]);
+    response[next_done_request_ids[i]].clear();
+  }
+  return done_res;
+}
+
 std::vector<std::vector<model_token>> beam_search(model_context* lctx, const int& n_predict,
                                                   const std::vector<model_input>& inputs, const int& n_threads) {
   lctx->generation_conf.max_new_tokens = n_predict;

@@ -56,11 +56,11 @@ class pool {
  public:
   explicit pool(const pool_property& property) : property(property) {}
   virtual ~pool() {}
-  virtual const bool add(sequence* seq) = 0;
-  virtual const bool pop(sequence* seq) = 0;
+  virtual bool add(sequence* seq) = 0;
+  virtual bool pop(sequence* seq) = 0;
   virtual void clear() = 0;
-  virtual const bool empty() = 0;
-  virtual const int size() = 0;
+  virtual bool empty() = 0;
+  virtual int size() = 0;
 
  protected:
   const pool_property property;
@@ -70,11 +70,11 @@ class fcfs_pool : public pool {
  public:
   explicit fcfs_pool(const pool_property& property) : pool(property) {}
   ~fcfs_pool() {}
-  const bool add(sequence* seq) override;
-  const bool pop(sequence* seq) override;
+  bool add(sequence* seq) override;
+  bool pop(sequence* seq) override;
   void clear() override;
-  const bool empty() override;
-  const int size() override;
+  bool empty() override;
+  int size() override;
 
  protected:
   std::queue<sequence*> context;
@@ -85,11 +85,11 @@ class serve_pool {
   explicit serve_pool(const pool_property& property);
   serve_pool(const serve_policy& policy, const pool_property& property);
   ~serve_pool();
-  const bool add(sequence* seq);
-  const bool pop(sequence* seq);
+  bool add(sequence* seq);
+  bool pop(sequence* seq);
   void clear();
-  const bool empty();
-  const int size();
+  bool empty();
+  int size();
 
  protected:
   pool* internel_pool = nullptr;

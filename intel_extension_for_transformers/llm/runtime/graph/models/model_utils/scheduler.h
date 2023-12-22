@@ -24,17 +24,17 @@ class il_worker {
   explicit il_worker(const gpt_params& params);
   il_worker(const gpt_params& params, const int& n_threads);  // TODO rm n_threads
   virtual ~il_worker();
-  virtual const bool step(std::vector<sequence*>* seqs, const int& n_input) = 0;
-  // virtual const int greedy_search_step(sequence* seqs, const int& n_input) = 0;
-  virtual const bool beam_search_step(std::vector<sequence*>* seqs, const int& n_input) = 0;
+  virtual bool step(std::vector<sequence*>* seqs, const int& n_input) = 0;
+  // virtual bool greedy_search_step(sequence* seqs, const int& n_input) = 0;
+  virtual bool beam_search_step(std::vector<sequence*>* seqs, const int& n_input) = 0;
 
   void set_threads(const int& n_threads);
-  const std::vector<int>& get_request_done_ids() const;
+  std::vector<int> get_request_done_ids() const;
   void empty_request_done_ids();
 
  protected:
-  virtual const bool prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) = 0;
-  virtual const bool update_seqs(std::vector<sequence*>* seqs, const int& n_input) = 0;
+  virtual bool prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) = 0;
+  virtual bool update_seqs(std::vector<sequence*>* seqs, const int& n_input) = 0;
 
   model_context* m_ctx = NULL;
   int threads;
@@ -50,13 +50,13 @@ class spbg_worker : public il_worker {
   spbg_worker(const gpt_params& params, const int& n_threads);
   ~spbg_worker();
 
-  const bool step(std::vector<sequence*>* seqs, const int& n_input) override;
-  // const int greedy_search_step(sequence* seqs, const int& n_input) override;
-  const bool beam_search_step(std::vector<sequence*>*, const int& n_input) override;
+  bool step(std::vector<sequence*>* seqs, const int& n_input) override;
+  // bool greedy_search_step(sequence* seqs, const int& n_input) override;
+  bool beam_search_step(std::vector<sequence*>*, const int& n_input) override;
 
  protected:
-  const bool prepare_inputs(std::vector<sequence*>*, const int& n_input, model_input* inputs) override;
-  const bool update_seqs(std::vector<sequence*>* seqs, const int& n_input) override;
+  bool prepare_inputs(std::vector<sequence*>*, const int& n_input, model_input* inputs) override;
+  bool update_seqs(std::vector<sequence*>* seqs, const int& n_input) override;
 };
 
 // iteration-level scheduler
@@ -66,16 +66,16 @@ class il_scheduler {
   il_scheduler(const gpt_params& params, const serve_policy& policy);
   virtual ~il_scheduler();
 
-  virtual const bool add_request(sequence* seq) = 0;
-  virtual const bool step() = 0;
-  virtual const bool done() = 0;
-  const bool has_finished_seq();
+  virtual bool add_request(sequence* seq) = 0;
+  virtual bool step() = 0;
+  virtual bool done() = 0;
+  bool has_finished_seq();
   std::vector<sequence*> pop_completed_requests();
   // void print_progress();
 
  protected:
-  virtual const bool prepare_seqs() = 0;
-  virtual const bool update_pools() = 0;
+  virtual bool prepare_seqs() = 0;
+  virtual bool update_pools() = 0;
 
   const serve_policy policy;
   const gpt_params params;
@@ -91,14 +91,14 @@ class spbg_scheduler : public il_scheduler {
   spbg_scheduler(const gpt_params& params, const serve_policy& policy);
   ~spbg_scheduler();
 
-  const bool add_request(sequence* seq) override;
-  const bool step() override;
-  const bool done() override;
+  bool add_request(sequence* seq) override;
+  bool step() override;
+  bool done() override;
 
  protected:
-  const bool prepare_seqs() override;
-  const bool update_pools() override;
-  const int query_free_req_idx();
+  bool prepare_seqs() override;
+  bool update_pools() override;
+  int query_free_req_idx();
 
   const int max_requests;
   spbg_worker wr;
