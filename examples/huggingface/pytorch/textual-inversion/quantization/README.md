@@ -11,8 +11,12 @@ Before running the scripts, make sure to install the library's training dependen
 
 ```bash
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
 >**Note**: intel_extension_for_pytorch (IPEX) version should match PyTorch version
+
+>**Note**: Please use transformers no higher than 4.34.1
+
 
 ### Nezha cartoon example
 

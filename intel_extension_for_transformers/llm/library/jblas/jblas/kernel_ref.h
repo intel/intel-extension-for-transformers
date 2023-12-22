@@ -230,25 +230,47 @@ inline void convert_s4_s8_8(int8_t* dstptr, int8_t* srcptr) {
   dstptr[7] = tmp;
 }
 
+inline void convert_s4_s8_8_lowbits(int8_t* dstptr, int8_t* srcptr) {
+  auto src32 = *reinterpret_cast<uint32_t*>(srcptr);
+  auto tmp = static_cast<int>(src32 & 0xf);
+  dstptr[0] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>(src32 & 0xf0) >> 4;
+  dstptr[1] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf00) >> 8);
+  dstptr[2] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf000) >> 12);
+  dstptr[3] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf0000) >> 16);
+  dstptr[4] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf00000) >> 20);
+  dstptr[5] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf000000) >> 24);
+  dstptr[6] = static_cast<int8_t>(tmp);
+  tmp = static_cast<int>((src32 & 0xf0000000) >> 28);
+  dstptr[7] = static_cast<int8_t>(tmp);
+}
+
 template <>
 inline void convert_s4_s8_8<JBLAS_DTYPE::S4_FULLRANGE>(int8_t* dstptr, int8_t* srcptr) {
-  auto src32 = *reinterpret_cast<uint32_t*>(srcptr);
-  auto tmp = static_cast<int8_t>(src32 & 0xf);
-  dstptr[0] = tmp - 8;
-  tmp = static_cast<int8_t>(src32 & 0xf0) >> 4;
-  dstptr[1] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf00) >> 8);
-  dstptr[2] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf000) >> 12);
-  dstptr[3] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf0000) >> 16);
-  dstptr[4] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf00000) >> 20);
-  dstptr[5] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf000000) >> 24);
-  dstptr[6] = tmp - 8;
-  tmp = static_cast<int8_t>((src32 & 0xf0000000) >> 28);
-  dstptr[7] = tmp - 8;
+  convert_s4_s8_8_lowbits(dstptr, srcptr);
+  for (size_t i = 0; i < 8; i++) {
+    dstptr[i] -= 8;
+  }
+}
+
+template <>
+inline void convert_s4_s8_8<JBLAS_DTYPE::F4_BNB>(int8_t* dstptr, int8_t* srcptr) {
+  convert_s4_s8_8_lowbits(dstptr, srcptr);
+}
+
+template <>
+inline void convert_s4_s8_8<JBLAS_DTYPE::F4_NF4>(int8_t* dstptr, int8_t* srcptr) {
+  convert_s4_s8_8_lowbits(dstptr, srcptr);
+}
+
+template <>
+inline void convert_s4_s8_8<JBLAS_DTYPE::F4_E2M1>(int8_t* dstptr, int8_t* srcptr) {
+  convert_s4_s8_8_lowbits(dstptr, srcptr);
 }
 
 template <JBLAS_DTYPE S4_T>

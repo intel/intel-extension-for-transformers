@@ -412,10 +412,14 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
     for (; j < align_col; j += 8) quant();
     for (; j < col; j++) {
       auto fp_v = ref::f8_to_fp32(srcptr[i * ld_src + j], src_f8_type);
-      if constexpr (std::is_same_v<_S_T, utils::f8>) {
-        dstptr[i * ld_dst + j] = fp_v * std::pow(2, sptr[j / _PACK_ROW].x);
-      } else if constexpr (std::is_same_v<_S_T, float>) {
-        dstptr[i * ld_dst + j] = fp_v * sptr[j / _PACK_ROW];
+      if constexpr (WITH_SCALE) {
+        if constexpr (std::is_same_v<_S_T, utils::f8>) {
+          dstptr[i * ld_dst + j] = fp_v * std::pow(2, sptr[j / _PACK_ROW].x);
+        } else if constexpr (std::is_same_v<_S_T, float>) {
+          dstptr[i * ld_dst + j] = fp_v * sptr[j / _PACK_ROW];
+        }
+      } else {
+        dstptr[i * ld_dst + j] = fp_v;
       }
     }
   }
@@ -635,6 +639,14 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(
             _mm_loadl_epi64(reinterpret_cast<__m128i*>(zero_points + (k_offset + irow) / kblock * NPad + iv * 8));
         vzps[iv] = _mm256_cvtepi8_epi32(tmp);
       }
+    }
+    auto rowre = row - irow;
+    int rowpad4 = utils::padto_le(rowre, UnrollRow) + irow;
+    for (; irow < rowpad4; irow += UnrollRow) {
+      for (int iter16 = 0; iter16 < Loop16; iter16++)
+        pad_bit4_16(tmpbuf + iter16 * 16, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 8 * iter16));
+      for (int iterr = 0; iterr < UnrollRow; iterr++)
+        dequantize(dstptr + (irow + iterr) * ld_dst, tmpbuf + iterr * _NCOL, vscales, vzps);
     }
     for (; irow < row; irow++) {
       if constexpr (_NCOL == 24) {

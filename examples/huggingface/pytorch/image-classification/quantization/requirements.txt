@@ -1,4 +1,4 @@
-transformers==4.36.0
+transformers
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
