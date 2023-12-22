@@ -72,22 +72,22 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>Intel Xeon Scalable Processors</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 		<tr>
 			<td>Intel Xeon CPU Max Series</td>
 			<td>✔</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 		<tr>
 			<td>Intel Core Processors</td>
 			<td>-</td>
 			<td>✔</td>
-			<td>✔ (INT8)</td>
-			<td>✔ (INT4)</td>
+			<td>✔ (INT8, FP8)</td>
+			<td>✔ (INT4, FP4, NF4)</td>
 		</tr>
 	</tbody>
 </table>
@@ -288,6 +288,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 https://github.com/intel/intel-extension-for-transformers/assets/88082706/9d9bdb7e-65db-47bb-bbed-d23b151e8b31
 
 ## 📃Selected Publications/Events
+* Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
 * Blog published on 360 EEA (A News Platform about AI and LLMs): [Intel neural-chat-7b-v3-1](https://360eea.com/intel-neural-chat-7b-v3-1/) (Dec 2023)
 * Apple Podcasts from Papers Read on AI: [Efficient LLM Inference on CPUs](https://podcasts.apple.com/us/podcast/efficient-llm-inference-on-cpus/id1577699357?i=1000637269932) (Dec 2023)
 * NeurIPS'2023 on Efficient Natural Language and Speech Processing: [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) (Nov 2023)

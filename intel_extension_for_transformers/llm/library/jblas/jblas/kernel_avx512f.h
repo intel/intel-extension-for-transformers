@@ -321,13 +321,28 @@ static inline JBLAS_CODE decompress_kblock_bit4_packrow1(utils::bit4x2* srcptr, 
           vzps[iv] = _mm512_cvtepi8_epi32(tmp);
         }
       }
-    }
-    for (; irow < row; irow++) {
-      pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2), zmm_mask, LoadMask48);
-      if constexpr (_IS_SYM) {
-        dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, nullptr);
-      } else {
-        dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
+      auto rowre = row - irow;
+      int rowpad4 = utils::padto_le(rowre, UnrollRow) + irow;
+      for (; irow < rowpad4; irow += UnrollRow) {
+        for (int iter64 = 0; iter64 < Loop64; iter64++) {
+          pad_bit4(tmpbuf + iter64 * 64, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2 + 32 * iter64), zmm_mask,
+                   LoadMask64);
+        }
+        for (int iterr = 0; iterr < UnrollRow; iterr++) {
+          if constexpr (_IS_SYM) {
+            dequantize(dstptr + (irow + iterr) * ld_dst, tmpbuf + iterr * ColTile, vscales, nullptr);
+          } else {
+            dequantize(dstptr + (irow + iterr) * ld_dst, tmpbuf + iterr * ColTile, vscales, vzps);
+          }
+        }
+      }
+      for (; irow < row; irow++) {
+        pad_bit4(tmpbuf, reinterpret_cast<int8_t*>(srcptr + irow * ld_src / 2), zmm_mask, LoadMask48);
+        if constexpr (_IS_SYM) {
+          dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, nullptr);
+        } else {
+          dequantize(dstptr + irow * ld_dst, tmpbuf, vscales, vzps);
+        }
       }
     }
     return JblasSuccess;
@@ -563,9 +578,8 @@ inline JBLAS_CODE decompress_kblock_f8_fp(utils::f8* srcptr, _DST_T* dstptr, int
     auto sptr = scales + kpos * NPad;
     int j = 0;
     auto quant = [&](__mmask16 mask) {
-      __m128i f8_src;
       auto sign_revert =
-          _mm512_cvtepi8_epi32(_mm_mask_loadu_epi8(f8_src, mask, reinterpret_cast<__m128i*>(srcptr + i * ld_src + j)));
+          _mm512_cvtepi8_epi32(_mm_maskz_loadu_epi8(mask, reinterpret_cast<__m128i*>(srcptr + i * ld_src + j)));
       auto e_revert = sign_revert;
       auto mantissa_revert = sign_revert;
       sign_revert = _mm512_slli_epi32(sign_revert, 24);
@@ -888,10 +902,10 @@ inline void f32_f4_quantize_4x16(const float* srcptr, int8_t* dstptr, int ld_src
     zmm2 = _mm512_add_ps(zmm2, zmm_zp);
     zmm3 = _mm512_add_ps(zmm3, zmm_zp);
   } else {
-    mask4 = _mm512_cmplt_ps_mask(zmm0, zmm_v0);
-    mask5 = _mm512_cmplt_ps_mask(zmm1, zmm_v0);
-    mask6 = _mm512_cmplt_ps_mask(zmm2, zmm_v0);
-    mask7 = _mm512_cmplt_ps_mask(zmm3, zmm_v0);
+    mask4 = _mm512_cmp_ps_mask(zmm0, zmm_v0, 1);
+    mask5 = _mm512_cmp_ps_mask(zmm1, zmm_v0, 1);
+    mask6 = _mm512_cmp_ps_mask(zmm2, zmm_v0, 1);
+    mask7 = _mm512_cmp_ps_mask(zmm3, zmm_v0, 1);
 
     zmm0 = _mm512_abs_ps(zmm0);
     zmm1 = _mm512_abs_ps(zmm1);
@@ -908,10 +922,10 @@ inline void f32_f4_quantize_4x16(const float* srcptr, int8_t* dstptr, int ld_src
     zmm5 = _mm512_sub_ps(zmm1, sub_v);
     zmm6 = _mm512_sub_ps(zmm2, sub_v);
     zmm7 = _mm512_sub_ps(zmm3, sub_v);
-    mask0 = _mm512_cmple_ps_mask(zmm4, zmm_v0);
-    mask1 = _mm512_cmple_ps_mask(zmm5, zmm_v0);
-    mask2 = _mm512_cmple_ps_mask(zmm6, zmm_v0);
-    mask3 = _mm512_cmple_ps_mask(zmm7, zmm_v0);
+    mask0 = _mm512_cmp_ps_mask(zmm4, zmm_v0, 2);
+    mask1 = _mm512_cmp_ps_mask(zmm5, zmm_v0, 2);
+    mask2 = _mm512_cmp_ps_mask(zmm6, zmm_v0, 2);
+    mask3 = _mm512_cmp_ps_mask(zmm7, zmm_v0, 2);
     xmm0 = _mm_mask_blend_epi8(mask0, xmm0, _mm_loadu_si128(reinterpret_cast<const __m128i*>(broadcast_f4_v + i * 16)));
     xmm1 = _mm_mask_blend_epi8(mask1, xmm1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(broadcast_f4_v + i * 16)));
     xmm2 = _mm_mask_blend_epi8(mask2, xmm2, _mm_loadu_si128(reinterpret_cast<const __m128i*>(broadcast_f4_v + i * 16)));
@@ -949,7 +963,7 @@ inline void f32_f4_quantize_1x16(const float* srcptr, int8_t* dstptr, int ld_src
     auto zp = _mm512_set1_ps(0.8480964004993439f);
     zmm0 = _mm512_add_ps(zmm0, zp);
   } else {
-    mask1 = _mm512_cmplt_ps_mask(zmm0, zmm_v0);
+    mask1 = _mm512_cmp_ps_mask(zmm0, zmm_v0, 1);
     zmm0 = _mm512_abs_ps(zmm0);
   }
   constexpr int loop_num = F4_T == JBLAS_DTYPE::F4_NF4 ? 16 : 8;
@@ -959,7 +973,7 @@ inline void f32_f4_quantize_1x16(const float* srcptr, int8_t* dstptr, int ld_src
     if constexpr (F4_T == JBLAS_DTYPE::F4_BNB) sub_v = _mm512_set1_ps(F4_BNB_quant_sub_helper[i]);
     if constexpr (F4_T == JBLAS_DTYPE::F4_E2M1) sub_v = _mm512_set1_ps(F4_E2M1_quant_sub_helper[i]);
     zmm1 = _mm512_sub_ps(zmm0, sub_v);
-    mask0 = _mm512_cmple_ps_mask(zmm1, zmm_v0);
+    mask0 = _mm512_cmp_ps_mask(zmm1, zmm_v0, 2);
     xmm0 = _mm_mask_blend_epi8(mask0, xmm0, _mm_loadu_si128(reinterpret_cast<const __m128i*>(broadcast_f4_v + i * 16)));
     zmm0 = _mm512_mask_add_ps(zmm0, mask0, zmm0, avoid_double_cmp);
   }

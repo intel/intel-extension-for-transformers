@@ -1,4 +1,4 @@
-transformers==4.36.0 
+transformers 
 accelerate
 sentencepiece != 0.1.92
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3

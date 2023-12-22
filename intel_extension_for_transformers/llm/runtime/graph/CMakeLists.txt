@@ -91,6 +91,9 @@ if (NE_GELU_VEC)
 endif()
 option(NE_PYTHON_API             "neural_engine: use python api"                                 OFF)
 option(NE_SIMD_VEC_DOT_F16       "neural_engine: enable vec_dot_fp16 SIMD optimization"          ON)
+
+option(BUILD_SHARED_LIBS        "If build as shared libs"                                        ON)
+
 if (NE_SIMD_VEC_DOT_F16)
     add_compile_definitions(NE_SIMD_VEC_DOT_F16)
 endif()

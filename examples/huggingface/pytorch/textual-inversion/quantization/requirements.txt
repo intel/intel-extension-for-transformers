@@ -2,7 +2,7 @@ diffusers==0.4.1
 accelerate
 torch==2.1.0
 torchvision
-transformers==4.36.0
+transformers
 ftfy
 tensorboard
 modelcards
