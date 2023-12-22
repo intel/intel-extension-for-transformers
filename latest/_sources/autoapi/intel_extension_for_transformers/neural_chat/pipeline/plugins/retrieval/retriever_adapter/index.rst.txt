@@ -1,0 +1,30 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retriever_adapter`
+===================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retriever_adapter
+
+.. autoapi-nested-parse::
+
+   The wrapper for Retriever based on langchain
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retriever_adapter.RetrieverAdapter
+
+
+
+
+.. py:class:: RetrieverAdapter(retrieval_type='default', document_store=None, child_document_store=None, **kwargs)
+
+
+   Retrieve the document database with Chroma database using dense retrieval.
+
+

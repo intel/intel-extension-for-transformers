@@ -1,0 +1,92 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils`
+======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.uni_pro
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.read_pdf
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.read_html
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.read_txt
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.read_docx
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.read_md
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.load_json
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.load_xlsx
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.load_csv
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.load_structured_data
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.load_unstructured_data
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.context_utils.get_chuck_data
+
+
+
+.. py:function:: uni_pro(text)
+
+   Check if the character is ASCII or falls in the category of non-spacing marks.
+
+
+.. py:function:: read_pdf(pdf_path)
+
+   Read the pdf file.
+
+
+.. py:function:: read_html(html_path)
+
+   Read the html file.
+
+
+.. py:function:: read_txt(txt_path)
+
+   Read txt file.
+
+
+.. py:function:: read_docx(doc_path)
+
+   Read docx file.
+
+
+.. py:function:: read_md(md_path)
+
+   Read docx file.
+
+
+.. py:function:: load_json(input, process, max_length, min_length)
+
+   Load and process json file.
+
+
+.. py:function:: load_xlsx(input)
+
+   Load and process xlsx file.
+
+
+.. py:function:: load_csv(input)
+
+   Load the csv file.
+
+
+.. py:function:: load_structured_data(input, process, max_length, min_length)
+
+   Load structured context.
+
+
+.. py:function:: load_unstructured_data(input)
+
+   Load unstructured context.
+
+
+.. py:function:: get_chuck_data(content, max_length, min_length, input)
+
+   Process the context to make it maintain a suitable length for the generation.
+
+

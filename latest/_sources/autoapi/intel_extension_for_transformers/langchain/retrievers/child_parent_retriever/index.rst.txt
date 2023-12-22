@@ -1,0 +1,66 @@
+:py:mod:`intel_extension_for_transformers.langchain.retrievers.child_parent_retriever`
+======================================================================================
+
+.. py:module:: intel_extension_for_transformers.langchain.retrievers.child_parent_retriever
+
+.. autoapi-nested-parse::
+
+   The wrapper for Child-Parent retriever based on langchain
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.langchain.retrievers.child_parent_retriever.SearchType
+   intel_extension_for_transformers.langchain.retrievers.child_parent_retriever.ChildParentRetriever
+
+
+
+
+.. py:class:: SearchType
+
+
+
+
+   Enumerator of the types of search to perform.
+
+   .. py:attribute:: similarity
+      :value: 'similarity'
+
+      Similarity search.
+
+   .. py:attribute:: mmr
+      :value: 'mmr'
+
+      Maximal Marginal Relevance reranking of similarity search.
+
+
+.. py:class:: ChildParentRetriever
+
+
+
+
+   Retrieve from a set of multiple embeddings for the same document.
+
+   .. py:attribute:: vectorstore
+      :type: langchain_core.vectorstores.VectorStore
+
+      The underlying vectorstore to use to store small chunks
+      and their embedding vectors
+
+   .. py:method:: get_context(query: str, *, run_manager: langchain.callbacks.manager.CallbackManagerForRetrieverRun)
+
+      Get documents relevant to a query.
+      :param query: String to find relevant documents for
+      :param run_manager: The callbacks handler to use
+
+      :returns: The concatation of the retrieved documents and the link
+
+
+

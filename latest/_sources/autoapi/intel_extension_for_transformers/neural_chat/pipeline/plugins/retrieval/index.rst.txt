@@ -12,7 +12,6 @@ Submodules
    :titlesonly:
    :maxdepth: 1
 
-   retrieval_base/index.rst
-   retrieval_chroma/index.rst
+   retriever_adapter/index.rst
 
 

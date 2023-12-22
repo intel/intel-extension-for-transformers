@@ -6,3 +6,50 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.document_transfer
+
+
+
+.. py:function:: document_transfer(data_collection)
+
+   Transfer the raw document into langchain supported format.
+
+
+.. py:class:: Agent_QA(vector_database='Chroma', embedding_model='BAAI/bge-base-en-v1.5', input_path=None, response_template='Please reformat your query to regenerate the answer.', asset_path='/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets', retrieval_type='default', max_chuck_size=512, min_chuck_size=5, mode='accuracy', process=True, append=True, **kwargs)
+
+
+   The agent for retrieval-based chatbot. Contains all parameters setting and file parsing.
+
+   .. py:method:: reload_localdb(local_persist_dir, **kwargs)
+
+      Reload the local existed knowledge base.
+
+
+   .. py:method:: create(input_path, **kwargs)
+
+      Create a new knowledge base based on the uploaded files.
+
+
+   .. py:method:: append_localdb(append_path, **kwargs)
+
+      Append the knowledge instances into a given knowledge base.
+
+
+

@@ -1,0 +1,32 @@
+:py:mod:`intel_extension_for_transformers.langchain.retrievers.vectorstore_retriever`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.langchain.retrievers.vectorstore_retriever
+
+.. autoapi-nested-parse::
+
+   The wrapper for Retriever based on langchain
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.langchain.retrievers.vectorstore_retriever.VectorStoreRetriever
+
+
+
+
+.. py:class:: VectorStoreRetriever(document_store=None, **kwargs)
+
+
+
+
+   Retrieve the vector document stores using dense retrieval.
+
+

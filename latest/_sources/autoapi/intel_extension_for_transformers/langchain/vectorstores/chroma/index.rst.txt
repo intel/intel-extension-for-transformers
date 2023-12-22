@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.langchain.vectorstores.chroma`
+========================================================================
+
+.. py:module:: intel_extension_for_transformers.langchain.vectorstores.chroma
+
+.. autoapi-nested-parse::
+
+   The wrapper for Chroma retriever based on langchain
+
+
+

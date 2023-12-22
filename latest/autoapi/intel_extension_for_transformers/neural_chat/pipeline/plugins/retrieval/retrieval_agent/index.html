@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent &mdash; Intel® Extension for Transformers 0.1.dev1+g6e3a514 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent &mdash; Intel® Extension for Transformers 0.1.dev1+g37d4007 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -90,6 +90,59 @@
              
   <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent">
 <span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-retrieval-retrieval-agent"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Agent_QA</span></code></a></p></td>
+<td><p>The agent for retrieval-based chatbot. Contains all parameters setting and file parsing.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.document_transfer" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.document_transfer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">document_transfer</span></code></a>(data_collection)</p></td>
+<td><p>Transfer the raw document into langchain supported format.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.document_transfer">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.</span></span><span class="sig-name descname"><span class="pre">document_transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_collection</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/retrieval_agent.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.document_transfer" title="Link to this definition"></a></dt>
+<dd><p>Transfer the raw document into langchain supported format.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.</span></span><span class="sig-name descname"><span class="pre">Agent_QA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vector_database</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Chroma'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BAAI/bge-base-en-v1.5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_template</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Please</span> <span class="pre">reformat</span> <span class="pre">your</span> <span class="pre">query</span> <span class="pre">to</span> <span class="pre">regenerate</span> <span class="pre">the</span> <span class="pre">answer.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrieval_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_chuck_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_chuck_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'accuracy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">append</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/retrieval_agent.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA" title="Link to this definition"></a></dt>
+<dd><p>The agent for retrieval-based chatbot. Contains all parameters setting and file parsing.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.reload_localdb">
+<span class="sig-name descname"><span class="pre">reload_localdb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_persist_dir</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/retrieval_agent.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.reload_localdb" title="Link to this definition"></a></dt>
+<dd><p>Reload the local existed knowledge base.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.create">
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/retrieval_agent.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.create" title="Link to this definition"></a></dt>
+<dd><p>Create a new knowledge base based on the uploaded files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.append_localdb">
+<span class="sig-name descname"><span class="pre">append_localdb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">append_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/retrieval_agent.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_agent.Agent_QA.append_localdb" title="Link to this definition"></a></dt>
+<dd><p>Append the knowledge instances into a given knowledge base.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
 </section>
 
 
@@ -106,7 +159,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ff615a44370> 
+   <jinja2.runtime.BlockReference object at 0x7fe301aa8d30> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
