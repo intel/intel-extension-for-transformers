@@ -181,7 +181,7 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
-        rope_scale = config["factor"] if "factor" in config else 1
+        rope_scale = config["rope_scaling"]["factor"] if "rope_scaling" in config and "factor" in config["rope_scaling"] else 1
         bos_token_id = config["bos_token_id"]
         eos_token_id = config["eos_token_id"]
 
