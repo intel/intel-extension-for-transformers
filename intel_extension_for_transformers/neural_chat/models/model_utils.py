@@ -546,7 +546,7 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/MIXSTRAL/CODELLAMA/STARCODER/CODEGEN now.")
+            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
     except EnvironmentError as e:
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")
