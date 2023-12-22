@@ -129,11 +129,14 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_context_memory",
-        system_message="Have a conversation with a human, answer the following questions as best you can." + \
-            " You can refer to the following document and context.\n",
-        roles=("### Question: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant developed by ITREX team \
+         to help the user with questions.
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""" ,
+        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
-        sep="\n",
+        sep="\n\n",
     )
 )
 
@@ -154,12 +157,14 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_threshold",
-        system_message="You are served as an AI agent to help the user complete a task." + \
-            " You are required to comprehend the usr query and then use the given context to" + \
-            " generate a suitable response.\n\n",
-        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant developed by ITREX team \
+         to help the user with questions.
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""",
+        roles=("### Question:", "### Search Results:", "### Chat History: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
-        sep="\n",
+        sep="\n\n",
     )
 )
 
