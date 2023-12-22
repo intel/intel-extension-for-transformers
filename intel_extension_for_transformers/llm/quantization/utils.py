@@ -280,7 +280,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      conf,
                                      calib_func=calib_func,
                                      calib_dataloader=calib_dataloader)
-        model = inc_model.export_compressed_model()
+        model = inc_model.export_compressed_model(compression_dtype=torch.int8, use_optimum_format=False)
         q_model = replace_linear(model,
                                  None,
                                  None,
