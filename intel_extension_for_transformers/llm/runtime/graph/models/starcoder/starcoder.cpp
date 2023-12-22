@@ -393,12 +393,9 @@ static bool starcoder_model_eval_internal(model_context* ctx, const model_input*
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 
-#ifdef NE_PERF
-  bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
-  if (engine_profiling_) {
+  if (ns_log_level() == 0 || ns_log_level() == 2) {
     ne_graph_profiling(&gf);
   }
-#endif
 
   // update kv token count
   lctx.model.kv_self.n = n_past + N;
