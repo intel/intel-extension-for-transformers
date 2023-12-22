@@ -47,7 +47,6 @@ from ..utils import (
 )
 from ..utils.utility import (
     generate_dummy_past_key_values,
-    get_example_inputs_for_trace,
     QUANT_CONFIG,
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
@@ -337,7 +336,10 @@ class _BaseQBitsAutoModelClass:
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
                 model.eval()
-                quantization_config.post_init()
+                if use_cpu:
+                    quantization_config.post_init()
+                elif use_xpu:
+                    quantization_config.post_init_xpu()
                 model = convert_to_quantized_model(model, quantization_config, device=device_map)
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.device_map = device_map

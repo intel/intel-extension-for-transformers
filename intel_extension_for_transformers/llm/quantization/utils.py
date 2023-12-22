@@ -22,6 +22,7 @@ from accelerate import init_empty_weights
 from datasets import load_dataset
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
+from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 from neural_compressor.config import PostTrainingQuantConfig
 from ...utils.utils import is_ipex_available
 
@@ -75,18 +76,6 @@ def replace_linear(
     return model
 
 
-def convert_dtype_2_str(dtype):
-    if dtype == torch.float32:
-        string = "fp32"
-    elif dtype == torch.bfloat16:
-        string = "bf16"
-    elif dtype == torch.int8:
-        string = "int8"
-    else:
-        string = "Unspport dtype"
-    return string
-
-
 def _replace_linear(
     model,
     modules_to_not_convert=None,
@@ -106,7 +95,7 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
 
-        if (isinstance(module, torch.nn.Linear)
+        if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
             or (is_ipex_available and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
            and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
@@ -129,8 +118,8 @@ def _replace_linear(
                             scheme=quantization_config.scheme
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        from .nn.gpu import QuantizedLinearGPU
-                        model._modules[name] = QuantizedLinearGPU(
+                        from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear as ipex_linear
+                        model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
                             module.bias is not None,
@@ -142,6 +131,14 @@ def _replace_linear(
                             scheme=quantization_config.scheme,
                             device=device
                         )
+                        if isinstance(module, WeightOnlyLinear):
+                            model._modules[name].compression_dtype = module.compression_dtype
+                            model._modules[name].compression_dim = module.compression_dim
+                            model._modules[name].g_idx = module.g_idx
+                            model._modules[name].use_optimum_format = module.use_optimum_format
+                            model._modules[name].scales = module.scales
+                            if hasattr(module, "qzeros"):
+                                model._modules[name].qzeros = module.qzeros
                     else:
                         raise Exception("{} device Unsupport weight only quantization!".format(device))
 
@@ -150,9 +147,10 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                model._modules[name].set_weights_bias(
-                    module.weight.data, None if module.bias is None else module.bias.data
-                )
+                if not empty_weights:
+                    model._modules[name].set_weights_bias(
+                        module.qweight.data, None if module.bias is None else module.bias.data
+                    )
 
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
@@ -172,7 +170,8 @@ def _replace_linear(
 def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
-        assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
+        assert hasattr(torch, "xpu") and torch.xpu.is_available(
+        ), "There is no xpu device in this system!"
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
@@ -185,9 +184,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.tokenizer is None:
             logger.error(
                 "Please provide the tokenizer or provide calib_func directly,"
-                + " the following is how to get tokenizer. \n"
-                + " from transformer import AutoTokenizer \n"
-                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                + " the following is how to get tokenizer. \n" +
+                " from transformer import AutoTokenizer \n" +
+                " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
             )
             exit(0)
 
@@ -200,9 +199,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 example = config.tokenizer(examples["code"])
             else:
                 logger.error(
-                    "Please check dataset prompt identifier,"
-                    + " NeelNanda/pile-10k is default used calibration dataset."
-                )
+                    "Please check dataset prompt identifier," +
+                    " NeelNanda/pile-10k is default used calibration dataset.")
                 exit(0)
             return example
 
@@ -213,11 +211,11 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                input_ids = (
-                    input_ids[:512] if len(input_ids) > 512 else input_ids
-                )
+                input_ids = (input_ids[:512]
+                             if len(input_ids) > 512 else input_ids)
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
+
         calib_dataloader = torch.utils.data.DataLoader(
             tokenized_dataset,
             batch_size=1,
@@ -225,6 +223,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             collate_fn=collate_batch,
         )
     if calib_func is None and config.algorithm in ['AWQ']:
+
         def default_calib_func(model):
             """
             This is the default calibration function, the dataset is NeelNanda/pile-10k,
@@ -233,15 +232,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
             for i, (input_ids) in enumerate(calib_dataloader):
                 if i >= calib_iters:
                     break
-                model(
-                    input_ids=input_ids,
-                )
+                model(input_ids=input_ids, )
+
         calib_func = default_calib_func
-        logger.info(
-            "The default calibration funcation is used, "
-            + "the calibration dataset is NeelNanda/pile-10k,"
-            + "batchsize is 1 and calibration iteration is 100."
-        )
+        logger.info("The default calibration funcation is used, " +
+                    "the calibration dataset is NeelNanda/pile-10k," +
+                    "batchsize is 1 and calibration iteration is 100.")
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
         return replace_linear(model, None, None, config)
     else:
@@ -255,31 +251,43 @@ def convert_to_quantized_model(model, config, device="cpu"):
         conf = PostTrainingQuantConfig(
             approach="weight_only",
             op_type_dict={
-                ".*":{
+                ".*": {
                     "weight": {
                         "bits": bits,
-                        "dtype":dtype,
+                        "dtype": dtype,
                         "group_size": config.group_size,  # -1 (per-channel)
                         "scheme": config.scheme,
-                        "algorithm": config.algorithm, 
+                        "algorithm": config.algorithm,
                     },
                 },
             },
             recipes={
-                "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
-                            "enable_mse_search": config.mse_range},
+                "rtn_args": {
+                    "enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                    "enable_mse_search": config.mse_range
+                },
+                "gptq_args":
+                config.algorithm_args if config.algorithm == "GPTQ" and config.algorithm_args is not None else {},
+                "awq_args": config.algorithm_args.update({"enable_mse_search": config.mse_range})
+                if config.algorithm == "AWQ" and config.algorithm_args is not None else {},
             },
         )
         # TEQ: set calib_func=None, use default training func as calib_func
         # RTN: doesn't need calib_func
-        if config.algorithm in ['TEQ','RTN']:
-            calib_func=None
+        if config.algorithm in ['TEQ', 'RTN']:
+            calib_func = None
         inc_model = quantization.fit(model,
-                                    conf,
-                                    calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader)
-        q_model = replace_linear(inc_model.model, None, None, config, device=device)
-        if device == "xpu" or (is_ipex_available and device == torch.device("xpu")):
+                                     conf,
+                                     calib_func=calib_func,
+                                     calib_dataloader=calib_dataloader)
+        model = inc_model.export_compressed_model()
+        q_model = replace_linear(model,
+                                 None,
+                                 None,
+                                 config,
+                                 device=device)
+        if device == "xpu" or (is_ipex_available
+                               and device == torch.device("xpu")):
             q_model = q_model.to("xpu")
         return q_model
 

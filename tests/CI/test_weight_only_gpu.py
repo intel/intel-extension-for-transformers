@@ -129,7 +129,7 @@ class TestWeightOnly(unittest.TestCase):
 
 
 @unittest.skipIf(not _ipex_available or gpu_name != "arc",
-    "There is no PVC(Max) GPU in this machine, skip this test!")
+    "There is no ARC GPU in this machine, skip this test!")
 class TestArcWeightOnly(unittest.TestCase):
 
     @classmethod
@@ -169,11 +169,12 @@ class TestArcWeightOnly(unittest.TestCase):
         qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                                       device_map=device_map, quantization_config=config,
                                                       trust_remote_code=True)
+        qmodel.save_low_bit(self.workspace)
+        # qmodel = ipex.optimize_transformers(qmodel, inplace=True)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
         quan_logits = output_quant['logits'].to('cpu')
         print("int4 logits {}".format(quan_logits.shape))
 
-        qmodel.save_low_bit(self.workspace)
         # move model to CPU
         qmodel.to("cpu")
         loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace, trust_remote_code=True)
@@ -201,6 +202,7 @@ class TestArcWeightOnly(unittest.TestCase):
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
             model = convert_to_quantized_model(model, config, device="xpu")
+            # model = ipex.optimize_transformers(model, inplace=True)
             output_quant = model(activation.to(torch.device("xpu")))
             print(output)
             print(output_quant)
