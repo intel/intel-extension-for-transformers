@@ -150,6 +150,7 @@ class Params:
     ffn_hidden_size: int
     rms_norm_eps: float
     rope_theta: float
+    rope_scale: float
     bos_token_id: int
     eos_token_id: int
 
@@ -180,6 +181,7 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
+        rope_scale = config["factor"] if "factor" in config else 1
         bos_token_id = config["bos_token_id"]
         eos_token_id = config["eos_token_id"]
 
@@ -193,6 +195,7 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale,
             bos_token_id = bos_token_id,
             eos_token_id = eos_token_id,
         )
@@ -1079,6 +1082,7 @@ class OutputFile:
 
         self.fout.write(struct.pack("f", params.rms_norm_eps))
         self.fout.write(struct.pack("f", params.rope_theta))
+        self.fout.write(struct.pack("f", params.rope_scale))
 
         # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
         # but bos_token_id = 1 in llama.cpp
