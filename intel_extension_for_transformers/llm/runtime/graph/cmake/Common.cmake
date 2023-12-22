@@ -53,11 +53,8 @@ endfunction()
 
 function(add_shareable_library_w_warning TARGET)
     if (BUILD_SHARED_LIBS)
-    add_library_w_warning_(${TARGET} SHARED ${ARGN})
+        add_library_w_warning_(${TARGET} SHARED ${ARGN})
     else()
-    add_library_w_warning_(${TARGET} STATIC ${ARGN})
+        add_library_w_warning_(${TARGET} STATIC ${ARGN})
     endif()
 endfunction()
-
-
-
