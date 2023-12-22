@@ -53,6 +53,13 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
+int64_t ns_log_level() {
+  const char* log_level = getenv("NEURAL_SPEED_VERBOSE");
+  if (log_level == nullptr)
+    return -1;
+  return std::stoi(log_level);
+}
+
 //
 // kv cache
 //

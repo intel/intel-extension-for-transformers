@@ -201,6 +201,8 @@ class Model:
             streamer.end()
 
         self.generate_round += 1
+        if os.getenv("NEURAL_SPEED_VERBOSE") and os.getenv("NEURAL_SPEED_VERBOSE") in ["1", "0"]:
+            self.model.print_time()
         return ret
 
     def __is_token_end(self):
@@ -229,7 +231,3 @@ class Model:
             self.model.reinit()
             self.generate_round = 0
         return self.model.evaluate(input_ids.tolist())
-
-    def print_time(self):
-        """print time of each evaluation"""
-        self.model.print_time()

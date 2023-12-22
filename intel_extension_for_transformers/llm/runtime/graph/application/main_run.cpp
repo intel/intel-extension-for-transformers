@@ -727,8 +727,10 @@ int main(int argc, char** argv) {  // NOLINT
     fprintf(stderr, "\n%s: saving final output to session file '%s'\n", __func__, path_session.c_str());
     model_save_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.size());
   }
-
-  model_print_timings(ctx);
+  if (ns_log_level() == 0 || ns_log_level() == 1) {
+    model_print_timings(ctx);
+  }
+  
   model_free(ctx);
 
   return 0;
