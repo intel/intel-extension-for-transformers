@@ -183,7 +183,7 @@ class Params:
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
         rope_scale = 1
         if config["rope_scaling"]:
-            rope_scale = config["rope_scaling"]["factor"] if "rope_scaling" in config and "factor" in config["rope_scaling"] else 1
+            rope_scale = config["rope_scaling"]["factor"] if "factor" in config["rope_scaling"] else 1
         bos_token_id = config["bos_token_id"]
         eos_token_id = config["eos_token_id"]
 
