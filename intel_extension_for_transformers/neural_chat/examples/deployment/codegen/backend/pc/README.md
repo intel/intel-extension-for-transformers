@@ -16,7 +16,6 @@ Install dependencies using pip
 
 ```bash
 pip install ../../../../../requirements_pc.txt
-# make sure you install the latest version of transformers
 pip install transformers==4.35.2
 ```
 

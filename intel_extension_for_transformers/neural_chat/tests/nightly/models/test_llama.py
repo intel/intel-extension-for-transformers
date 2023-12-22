@@ -28,11 +28,13 @@ class TestLlamaModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = LlamaModel().match(model_path='meta-llama/Llama-2-7b-chat-hf')
+        result = LlamaModel().match(
+            model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf')
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = LlamaModel().get_default_conv_template(model_path='meta-llama/Llama-2-7b-chat-hf')
+        result = LlamaModel().get_default_conv_template(
+            model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf')
         self.assertIn("[INST] <<SYS>>", str(result))
         chatbot = build_chatbot()
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")

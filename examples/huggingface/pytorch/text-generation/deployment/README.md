@@ -16,9 +16,10 @@ pip install -r requirements.txt
 # if you want to run gpt-j model, please install transformers==4.27.4
 pip install transformers==4.27.4
 
-# if you want to run llama model, please install transformers in following version:
-pip install git+https://github.com/huggingface/transformers.git@97a3d16a6941294d7d76d24f36f26617d224278e
+# for other models, please install transformers==4.34.1:
+pip install transformers==4.34.1
 ```
+>**Note**: Suggest use transformers no higher than 4.34.1
 
 ## Environment Variables
 ```bash

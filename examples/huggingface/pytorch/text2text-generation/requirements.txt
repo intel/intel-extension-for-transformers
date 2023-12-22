@@ -1,11 +1,14 @@
 accelerate
+evaluate
 sentencepiece != 0.1.92
 protobuf
 datasets
-transformers==4.34.1
+transformers
 onnx
 rouge-score
 nltk
 neural-compressor
-optimum-intel
-git+https://github.com/intel/intel-extension-for-pytorch.git
+optimum-intel > 1.12.0
+onnxruntime
+intel-extension-for-pytorch
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2

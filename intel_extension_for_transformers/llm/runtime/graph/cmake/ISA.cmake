@@ -13,6 +13,9 @@
 #  limitations under the License.
 
 if (MSVC)
+    if(NE_F16C)
+      add_compile_definitions(__F16C__)
+    endif()
     if (NE_AVX512)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:/arch:AVX512>)
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/arch:AVX512>)

@@ -4,9 +4,13 @@ peft
 protobuf
 sentencepiece != 0.1.92
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
-transformers==4.34.1
+torch==2.1.1+cpu
+transformers
 intel_extension_for_pytorch
+bitsandbytes  #baichuan
+transformers_stream_generator
+tiktoken  #qwen
+einops  #qwen
 git+https://github.com/intel/neural-compressor.git
 git+https://github.com/huggingface/optimum-intel.git@f95dea1ae8966dee4d75d622e7b2468c514ba02d
 git+https://github.com/huggingface/optimum.git@927e94739447b13f7eefe085c8d3662654b6a11c

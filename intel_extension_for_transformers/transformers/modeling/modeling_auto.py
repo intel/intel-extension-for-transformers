@@ -138,7 +138,7 @@ class _BaseQBitsAutoModelClass:
                 if quantization_config is None:
                     if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype="int8", weight_dtype="int8"
+                            compute_dtype="bf16", weight_dtype="int8"
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
@@ -228,11 +228,10 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type and transformers.__version__ > "4.33":
-                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
-                    model.eval()
+            if "falcon" in model_type:
+                logger.warning(
+                    "Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon."
                 )
-                quantization_config.ipex_opt_llm = False
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -285,8 +284,12 @@ class _BaseQBitsAutoModelClass:
                 from torch.utils.data import DataLoader
 
                 calib_dataset = quantization_config.calib_dataset
-                calib_len = quantization_config.calib_len
                 calib_iters = quantization_config.calib_iters
+                calib_padding = quantization_config.calib_padding
+                calib_len = quantization_config.calib_len
+                calib_pad_val = quantization_config.calib_pad_val
+                from torch.nn.functional import pad
+
                 calib_dataset = load_dataset(
                     calib_dataset,
                     split="test"
@@ -317,13 +320,24 @@ class _BaseQBitsAutoModelClass:
                     attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
-                        input_ids = (
-                            input_ids[:calib_len]
-                            if len(input_ids) > calib_len
-                            else input_ids
-                        )
+                        if not calib_padding:
+                            input_ids = (
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
+
                         last_ind.append(input_ids.shape[0] - 1)
-                        attention_mask = torch.ones(len(input_ids))
+                        if model_type in ["bloom", "qwen"]:
+                            attention_mask = torch.ones(len(input_ids) +1)
+                            attention_mask[0] = 0
+                        else:
+                            attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
@@ -439,17 +453,6 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        elif model_type == "falcon":
-                            input_bs, input_len = inputs["input_ids"].shape
-                            outputs = model(inputs["input_ids"])
-                            example_inputs["past_key_values"] = outputs[1]
-                            example_inputs["attention_mask"] = torch.ones(
-                                input_bs, input_len
-                            )
-                            example_inputs["position_ids"] = (
-                                inputs["position_ids"][:, -1:] + 1
-                            )
-                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
                         else:
                             example_inputs = inputs
                     else:
