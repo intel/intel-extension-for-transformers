@@ -249,7 +249,7 @@ class Params:
 
 
 class SentencePieceVocab:
-    def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
+    def __init__(self, fname_tokenizer: Path, params_vocab_size: int, fname_added_tokens: Optional[Path]) -> None:
         self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
         added_tokens: Dict[str, int]
         if fname_added_tokens is not None:
@@ -268,10 +268,11 @@ class SentencePieceVocab:
         self.vocab_size: int = self.vocab_size_base + len(self.added_tokens_list)
         self.fname_tokenizer = fname_tokenizer
         self.fname_added_tokens = fname_added_tokens
+        self.params_vocab_size = params_vocab_size
 
     def sentencepiece_tokens(self) -> Iterable[Tuple[bytes, float]]:
         tokenizer = self.sentencepiece_tokenizer
-        for i in range(32256):
+        for i in range(self.params_vocab_size):
             text: bytes           
             if i < tokenizer.vocab_size():
                 if tokenizer.is_unknown(i):
@@ -1083,8 +1084,8 @@ class OutputFile:
         # but bos_token_id = 1 in llama.cpp
         self.fout.write(struct.pack("i", params.bos_token_id))
         self.fout.write(struct.pack("i", params.eos_token_id))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", -1))
+        self.fout.write(struct.pack("i", -1))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')
@@ -1239,7 +1240,7 @@ def filter_and_sort_tensors(model: LazyModel) -> LazyModel:
     return {name: model[name] for name in TENSORS_LIST if name in model}
 
 
-def load_vocab(path: Path) -> SentencePieceVocab:
+def load_vocab(path: Path, params_vocab_size: int) -> SentencePieceVocab:
     # Be extra-friendly and accept either a file or a directory.  Also, if it's
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
@@ -1258,7 +1259,7 @@ def load_vocab(path: Path) -> SentencePieceVocab:
             )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
-    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+    return SentencePieceVocab(path, params_vocab_size, added_tokens_path if added_tokens_path.exists() else None)
 
 
 def default_outfile(model_paths: List[Path], params: Params) -> Path:
@@ -1321,13 +1322,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
         if args.dump:
             do_dump_model(model_plus)
             return
+        model = model_plus.model
+        params = Params.load(model_plus)
         if model_plus.vocab is not None and args.vocab_dir is None:
             vocab = model_plus.vocab
         else:
             vocab_dir = args.vocab_dir if args.vocab_dir else model_plus.paths[0].parent
-            vocab = load_vocab(vocab_dir)
-        model = model_plus.model
-        params = Params.load(model_plus)
+            vocab = load_vocab(vocab_dir, params.n_vocab)
         model = do_necessary_conversions(model, params)
         output_type = pick_output_type(model, args.outtype)
         model = convert_to_output_type(model, output_type)
