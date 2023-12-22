@@ -20,6 +20,13 @@ import os, re
 from typing import List
 from .context_utils import load_unstructured_data, load_structured_data, get_chuck_data
 from .html_parser import load_html_data
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 
 class DocumentParser:
@@ -54,9 +61,9 @@ class DocumentParser:
             try:
                 data_collection = self.parse_html(input)
             except:
-                print("The given link/str is unavailable. Please try another one!")
+                logging.error("The given link/str is unavailable. Please try another one!")
         else:
-            print("The input format is invalid!")
+            logging.error("The input format is invalid!")
             
         return data_collection
         
@@ -77,7 +84,7 @@ class DocumentParser:
             chuck = load_structured_data(input, self.process, \
                                          self.max_chuck_size, self.min_chuck_size)
         else:
-            print("This file {} is ignored. Will support this file format soon.".format(input))
+            logging.info("This file {} is ignored. Will support this file format soon.".format(input))
         return chuck
 
     def parse_html(self, input):
@@ -96,7 +103,7 @@ class DocumentParser:
                     chuck = [[content.strip(), link]]
                 chucks += chuck
             else:
-                print("The given link/str {} cannot be parsed.".format(link))
+                logging.error("The given link/str {} cannot be parsed.".format(link))
 
         return chucks
 
@@ -122,5 +129,5 @@ class DocumentParser:
                                                  self.process, self.max_chuck_size, self.min_chuck_size)
                     paragraphs += chuck
                 else:
-                    print("This file {} is ignored. Will support this file format soon.".format(filename))
+                    logging.info("This file {} is ignored. Will support this file format soon.".format(filename))
         return paragraphs
