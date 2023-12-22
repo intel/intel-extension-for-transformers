@@ -23,7 +23,8 @@ from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
-from ..prompts import PromptTemplate, MAGICODER_PROMPT
+from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
