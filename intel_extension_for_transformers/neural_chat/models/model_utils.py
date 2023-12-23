@@ -421,10 +421,20 @@ def load_model(
                                             if (re.search("chatglm", model_name, re.IGNORECASE) or \
                                                re.search("qwen", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
+        logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
-            raise ValueError("load_model: model config is not found")
+            raise ValueError(f"load_model: model config is not found, {e}")
         else:
-            raise
+            raise ValueError(f"load_model: unknown ValueError occurred, {e}")
+    except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError(f"load_model: model name or path is not found, {e}")
+        else:
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     MODELS[model_name]["model_type"] = config.model_type
 
@@ -437,10 +447,14 @@ def load_model(
                 re.search("chatglm", model_name, re.IGNORECASE)) else False,
         )
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: tokenizer is not found")
+            raise ValueError(f"load_model: tokenizer is not found, {e}")
         else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     load_to_meta = model_on_meta(config)
 
@@ -541,10 +555,14 @@ def load_model(
             raise ValueError(f"unsupported model name or path {model_name}, \
             only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER/CODEGEN now.")
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")
         else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
