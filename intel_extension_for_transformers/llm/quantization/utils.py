@@ -76,7 +76,7 @@ def _replace_linear(
     """
     Private method that wraps the recursion for module replacement.
 
-    Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
+    Returns the converted model and a boolean that indicates if the conversion has been successfully or not.
     """
     for name, module in model.named_children():
         if current_key_name is None:
