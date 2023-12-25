@@ -144,6 +144,7 @@ The table below displays the validated model list in NeuralChat for both inferen
 |LLaMA2 series| ✅| ✅|✅| ✅    |
 |MPT series| ✅| ✅|✅| ✅    |
 |Mistral| ✅| ✅|✅| ✅    |
+|Mixtral-8x7b-v0.1| ✅| ✅|✅| ✅    |
 |ChatGLM series| ✅| ✅|✅| ✅    |
 |Qwen series| ✅| ✅|✅| ✅    |
 |StarCoder series|   |   |   | ✅ |
