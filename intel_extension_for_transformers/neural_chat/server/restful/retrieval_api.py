@@ -101,7 +101,7 @@ async def retrieval_upload_link(request: Request):
         try:
             print("[askdoc - upload_link] starting to append local db...")
             instance = plugins['retrieval']["instance"]
-            instance.append_localdb(append_path=link_list, persist_path=persist_path)
+            instance.append_localdb(append_path=link_list, persist_directory=persist_path)
             print(f"[askdoc - upload_link] kb appended successfully")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
@@ -129,7 +129,7 @@ async def retrieval_upload_link(request: Request):
             # get retrieval instance and reload db with new knowledge base
             print("[askdoc - upload_link] starting to create local db...")
             instance = plugins['retrieval']["instance"]
-            instance.create(input_path=link_list, persist_dir=str(user_persist_dir))
+            instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
             print(f"[askdoc - upload_link] kb created successfully")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
@@ -174,7 +174,7 @@ async def retrieval_create(request: Request,
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - create] starting to create local db...")
         instance = plugins['retrieval']["instance"]
-        instance.create(input_path=str(user_upload_dir), persist_dir=str(user_persist_dir))
+        instance.create(input_path=str(user_upload_dir), persist_directory=str(user_persist_dir))
         print(f"[askdoc - create] kb created successfully")
     except Exception as e:  # pragma: no cover
         logger.info(f"[askdoc - create] create knowledge base failed! {e}")
@@ -214,7 +214,7 @@ async def retrieval_append(request: Request,
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - append] starting to append to local db...")
         instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=save_file_name, persist_path=persist_path)
+        instance.append_localdb(append_path=save_file_name, persist_directory=persist_path)
         print(f"[askdoc - append] new file successfully appended to kb")
     except Exception as e:  # pragma: no cover
         logger.info(f"[askdoc - append] create knowledge base failes! {e}")

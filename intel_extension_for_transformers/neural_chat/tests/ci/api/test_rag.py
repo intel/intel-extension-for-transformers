@@ -35,13 +35,13 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
-        plugins.retrieval.args["persist_dir"] = "./test_for_accuracy"
+        plugins.retrieval.args["persist_directory"] = "./test_for_accuracy"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
         print(response)
-        plugins.retrieval.args["persist_dir"] = "./output"
+        plugins.retrieval.args["persist_directory"] = "./output"
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
 

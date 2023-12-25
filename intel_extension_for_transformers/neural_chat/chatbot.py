@@ -69,7 +69,7 @@ def build_chatbot(config: PipelineConfig=None):
             return
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower() or "magicoder" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
@@ -87,13 +87,17 @@ def build_chatbot(config: PipelineConfig=None):
     elif "mistral" in config.model_name_or_path.lower():
         from .models.mistral_model import MistralModel
         adapter = MistralModel()
+    elif "solar" in config.model_name_or_path.lower():
+        from .models.solar_model import SolarModel
+        adapter = SolarModel()
     elif "opt" in config.model_name_or_path.lower() or \
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
          "bloom" in config.model_name_or_path.lower() or \
          "starcoder" in config.model_name_or_path.lower() or \
-         "mixtral" in config.model_name_or_path.lower() or \
-         "codegen" in config.model_name_or_path.lower():
+         "codegen" in config.model_name_or_path.lower() or \
+         "magicoder" in config.model_name_or_path.lower() or \
+         "mixtral" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
@@ -161,6 +165,7 @@ def build_chatbot(config: PipelineConfig=None):
     try:
         adapter.load_model(parameters)
     except RuntimeError as e:
+        logger.error(f"Exception: {e}")
         if "out of memory" in str(e):
             set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
         elif "devices are busy or unavailable" in str(e):
@@ -171,6 +176,7 @@ def build_chatbot(config: PipelineConfig=None):
             set_latest_error(ErrorCodes.ERROR_GENERIC)
         return
     except ValueError as e:
+        logger.error(f"Exception: {e}")
         if "load_model: unsupported device" in str(e):
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
         elif "load_model: unsupported model" in str(e):
@@ -185,6 +191,7 @@ def build_chatbot(config: PipelineConfig=None):
             set_latest_error(ErrorCodes.ERROR_GENERIC)
         return
     except Exception as e:
+        logger.error(f"Exception: {e}")
         set_latest_error(ErrorCodes.ERROR_GENERIC)
         return
     return adapter
@@ -202,14 +209,17 @@ def finetune_model(config: BaseFinetuningConfig):
     try:
         finetuning.finetune()
     except FileNotFoundError as e:
+        logger.error(f"Exception: {e}")
         if "Couldn't find a dataset script" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
     except ValueError as e:
+        logger.error(f"Exception: {e}")
         if "--do_eval requires a validation dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
         elif "--do_train requires a train dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
+        logger.error(f"Exception: {e}")
         if config.finetune_args.peft == "lora":
             set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
         elif config.finetune_args.peft == "llama_adapter":
@@ -235,6 +245,7 @@ def optimize_model(model, config, use_llm_runtime=False):
     try:
         model = optimization.optimize(model, use_llm_runtime)
     except Exception as e:
+        logger.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
             WeightOnlyQuantConfig,

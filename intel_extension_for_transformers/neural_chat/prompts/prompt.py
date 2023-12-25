@@ -221,3 +221,12 @@ class PromptTemplate:
 
     def clear_messages(self) -> str:
         self.conv.messages = []
+
+# pylint: disable=C0301
+MAGICODER_PROMPT = """You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.
+
+@@ Instruction
+{instruction}
+
+@@ Response
+"""
