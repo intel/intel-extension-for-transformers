@@ -448,8 +448,8 @@ class beam_search_flow {
   // static batching (padding inputs or batch = 1)
   const std::vector<std::vector<model_token>>& loop(const std::vector<model_input>& inputs, const int& n_threads);
   // continuous batching (scheduling from the outside)
-  bool step_prefill(const model_input& input);
-  bool step_decoding();
+  bool step(const std::vector<model_input>& inputs);
+  bool check_inputs(const std::vector<model_input>& inputs);
   std::vector<int> request_done_ids();
   std::vector<std::vector<model_token>> request_done_reponse();
 

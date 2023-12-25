@@ -27,8 +27,6 @@ il_worker::il_worker(const gpt_params& params) {
   threads = params.n_threads;
 }
 
-il_worker::il_worker(const gpt_params& params, const int& n_threads) : il_worker(params) { threads = n_threads; }
-
 il_worker::~il_worker() {
   // TODO (YZT) consider thread safe?
   if (m_ctx != NULL) {
@@ -45,12 +43,11 @@ std::vector<int> il_worker::get_request_done_ids() const { return request_done_i
 
 void il_worker::empty_request_done_ids() { request_done_ids.clear(); }
 
-// spbg_worker
-spbg_worker::spbg_worker(const gpt_params& params) : il_worker(params) {}
-spbg_worker::spbg_worker(const gpt_params& params, const int& n_threads) : il_worker(params, n_threads) {}
-spbg_worker::~spbg_worker() {}
+// cbg_worker
+cbg_worker::cbg_worker(const gpt_params& params) : il_worker(params) { m_ctx->cont_batching = true; }
+cbg_worker::~cbg_worker() {}
 
-bool spbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) {
+bool cbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_input, model_input* inputs) {
   for (int ni = 0; ni < n_input; ++ni) {
     if ((seqs->at(ni))->status != seq_status::PREFILL || (seqs->at(ni))->status != seq_status::DECODING) {
       fprintf(stderr, "%s: error: request status is unright.\n", __func__);
@@ -73,45 +70,24 @@ bool spbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_inpu
       (inputs + ni)->n_padding = 0;
     } else {
       continue;
-      ;
     }
   }
   return true;
 }
 
-bool spbg_worker::beam_search_step(std::vector<sequence*>* seqs, const int& n_input) {
-  // add new request
-  // step prefill
-  if (n_input == 1) {
-    if (seqs->front()->status != seq_status::PREFILL) {
-      fprintf(stderr, "%s: error: request status must be PERFILL when n_input = 1.\n", __func__);
-      return false;
-    }
-    model_input pr_input;
-    if (!prepare_inputs(seqs, n_input, &pr_input)) {
-      return false;
-    }
-    if (!bsf->step_prefill(pr_input)) {
-      return false;
-    }
-    return true;
+bool cbg_worker::beam_search_step(std::vector<sequence*>* seqs, const int& n_input) {
+  std::vector<model_input> step_inputs(n_input);
+  if (!prepare_inputs(seqs, n_input, step_inputs.data())) {
+    return false;
   }
-  // no new request
   // step beam search decoding
-  // TODO do we need to check if seqs == bfs inner requests vec?
-  for (int ni = 0; ni < n_input; ++ni) {
-    if ((seqs->at(ni))->status != seq_status::DECODING) {
-      fprintf(stderr, "%s: error: all requests status must be DECODING when n_input > 1.\n", __func__);
-      return false;
-    }
-  }
-  if (!bsf->step_decoding()) {
+  if (!bsf->step(step_inputs)) {
     return false;
   }
   return true;
 }
 
-bool spbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
+bool cbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
   reqidx_to_vecid.clear();
   for (int ni = 0; ni < n_input; ++ni) {
     reqidx_to_vecid.emplace(std::make_pair(seqs->at(ni)->request_idx, ni));
@@ -125,11 +101,13 @@ bool spbg_worker::step(std::vector<sequence*>* seqs, const int& n_input) {
   return update_seqs(seqs, n_input);
 }
 
-bool spbg_worker::update_seqs(std::vector<sequence*>* seqs, const int& n_input) {
+bool cbg_worker::update_seqs(std::vector<sequence*>* seqs, const int& n_input) {
   empty_request_done_ids();
-  if (n_input == 1 && seqs->front()->status == seq_status::PREFILL) {
-    seqs->front()->status = seq_status::DECODING;
-    seqs->front()->n_past = seqs->front()->n_prompt_tokens;
+  for (int ni = 0; ni < n_input; ++ni) {
+    if (seqs->at(ni)->status == seq_status::PREFILL) {
+      seqs->at(ni)->status = seq_status::DECODING;
+      seqs->at(ni)->n_past = seqs->at(ni)->n_prompt_tokens;
+    }
   }
   if (m_ctx->beam_search && bsf != nullptr) {
     request_done_ids = bsf->request_done_ids();
@@ -185,19 +163,24 @@ std::vector<sequence*> il_scheduler::pop_completed_requests() {
   return ret_seqs;
 }
 
-// spbg_scheduler
-spbg_scheduler::spbg_scheduler(const gpt_params& params)
-    : il_scheduler(params), max_requests(params.max_request_num), wr(params), free_req_idx(max_requests, true) {}
+// cbg_scheduler
+cbg_scheduler::cbg_scheduler(const gpt_params& params)
+    : il_scheduler(params),
+      max_requests(params.max_request_num),
+      wr(params),
+      free_req_idx(max_requests, true),
+      max_input_length(max_requests * params.n_ctx) {}
 
-spbg_scheduler::spbg_scheduler(const gpt_params& params, const serve_policy& policy)
+cbg_scheduler::cbg_scheduler(const gpt_params& params, const serve_policy& policy)
     : il_scheduler(params, policy),
       max_requests(params.max_request_num),
       wr(params),
-      free_req_idx(max_requests, true) {}
+      free_req_idx(max_requests, true),
+      max_input_length(max_requests * params.n_ctx) {}
 
-spbg_scheduler::~spbg_scheduler() {}
+cbg_scheduler::~cbg_scheduler() {}
 
-int spbg_scheduler::query_free_req_idx() {
+int cbg_scheduler::query_free_req_idx() {
   auto iter = std::find_if(free_req_idx.begin(), free_req_idx.end(), [](const bool flag) { return flag; });
   if (iter == free_req_idx.end()) {
     return -1;
@@ -206,7 +189,7 @@ int spbg_scheduler::query_free_req_idx() {
   }
 }
 
-bool spbg_scheduler::add_request(sequence* seq) {
+bool cbg_scheduler::add_request(sequence* seq) {
   if (seq->status != seq_status::UNKNOWN) {
     fprintf(stderr, "%s: error: seq status is not UNKNOWN, can not decide to add into which pool.\n", __func__);
     return false;
@@ -217,49 +200,51 @@ bool spbg_scheduler::add_request(sequence* seq) {
   return waiting_pool.add(seq);
 }
 
-bool spbg_scheduler::prepare_seqs() {
+bool cbg_scheduler::prepare_seqs() {
   executed_seqs.clear();
-  cur_decoding_num = running_pool.size();
-  if (cur_decoding_num > max_requests) {
-    fprintf(stderr, "%s: error: cur_decoding_num is larger than max_request_num.\n", __func__);
+  cur_running_num = running_pool.size();
+  if (cur_running_num > max_requests) {
+    fprintf(stderr, "%s: error: cur_running_num is larger than max_request_num.\n", __func__);
     return false;
   }
+  const int n_perfill_seqs = std::min(max_requests - cur_running_num, waiting_pool.size());
+  executed_seqs.resize(n_perfill_seqs + cur_running_num);
   if (waiting_pool.size() > 0) {
-    // o1.execute one prompt
-    if (cur_decoding_num < max_requests) {
-      executed_seqs.resize(pre_prefill_num);
-      if (waiting_pool.pop(executed_seqs.front())) {
-        executed_seqs.front()->status = seq_status::PREFILL;
-        if (executed_seqs.front()->request_idx == -1) {
-          const int fidx = query_free_req_idx();
-          if (fidx == -1) {
-            fprintf(stderr, "%s: error: no free position to put the request.\n", __func__);
-            return false;
+    // pop prompts
+    if (cur_running_num < max_requests) {
+      for (int np = 0; np < n_perfill_seqs; ++np) {
+        if (waiting_pool.pop(executed_seqs[cur_running_num + np])) {
+          executed_seqs[cur_running_num + np]->status == seq_status::PREFILL;
+          if (executed_seqs[cur_running_num + np]->request_idx == -1) {
+            const int fidx = query_free_req_idx();
+            if (fidx == -1) {
+              fprintf(stderr, "%s: error: no free position to put the request.\n", __func__);
+              return false;
+            }
+            executed_seqs[cur_running_num + np]->request_idx = fidx;
           }
-          executed_seqs.front()->request_idx = fidx;
+        } else {
+          fprintf(stderr, "%s: error: pop waiting seq failed.\n", __func__);
+          return false;
         }
-        return true;
-      } else {
-        fprintf(stderr, "%s: error: pop waiting seq failed.\n", __func__);
-        return false;
       }
     } else {
-      // o2.steps decoding
+      // steps generation
       steps_decoding_for_next_prefill = true;
     }
   }
-  // o3. step decoding
-  executed_seqs.resize(cur_decoding_num);
-  for (int dn = 0; dn < cur_decoding_num; ++dn) {
+  // step generation
+  for (int dn = 0; dn < cur_running_num; ++dn) {
     if (!running_pool.pop(executed_seqs[dn]) || executed_seqs[dn]->status != seq_status::DECODING) {
       fprintf(stderr, "%s: error: pop running_pool %dth seq failed.\n", __func__, dn);
       return false;
     }
   }
+  cur_running_num = executed_seqs.size();
   return true;
 }
 
-bool spbg_scheduler::step() {
+bool cbg_scheduler::step() {
   if (done()) {
     fprintf(stderr,
             "%s: warning: scheduler has no more requests, please add extra requests or just stop "
@@ -289,7 +274,7 @@ bool spbg_scheduler::step() {
   return update_pools();
 }
 
-bool spbg_scheduler::update_pools() {
+bool cbg_scheduler::update_pools() {
   for (int ns = 0; ns < executed_seqs.size(); ++ns) {
     if (executed_seqs[ns]->status == seq_status::DECODING) {
       running_pool.add(executed_seqs[ns]);
@@ -304,7 +289,7 @@ bool spbg_scheduler::update_pools() {
   return true;
 }
 
-bool spbg_scheduler::done() {
+bool cbg_scheduler::done() {
   if (waiting_pool.empty() && running_pool.empty()) {
     return true;
   } else {

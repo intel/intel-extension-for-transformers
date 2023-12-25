@@ -22,7 +22,6 @@
 class il_worker {
  public:
   explicit il_worker(const gpt_params& params);
-  il_worker(const gpt_params& params, const int& n_threads);  // TODO rm n_threads
   virtual ~il_worker();
   virtual bool step(std::vector<sequence*>* seqs, const int& n_input) = 0;
   // virtual bool greedy_search_step(sequence* seqs, const int& n_input) = 0;
@@ -43,12 +42,12 @@ class il_worker {
   std::unordered_map<int, int> reqidx_to_vecid;
 };
 
-// single-prompt-batched-generation worker
-class spbg_worker : public il_worker {
+// continuous batching generation worker
+class cbg_worker : public il_worker {
  public:
-  explicit spbg_worker(const gpt_params& params);
-  spbg_worker(const gpt_params& params, const int& n_threads);
-  ~spbg_worker();
+  explicit cbg_worker(const gpt_params& params);
+  cbg_worker(const gpt_params& params, const int& n_threads);
+  ~cbg_worker();
 
   bool step(std::vector<sequence*>* seqs, const int& n_input) override;
   // bool greedy_search_step(sequence* seqs, const int& n_input) override;
@@ -66,6 +65,7 @@ class il_scheduler {
   il_scheduler(const gpt_params& params, const serve_policy& policy);
   virtual ~il_scheduler();
 
+  // TODO (YZT) kv cache ptr as input params
   virtual bool add_request(sequence* seq) = 0;
   virtual bool step() = 0;
   virtual bool done() = 0;
@@ -84,12 +84,12 @@ class il_scheduler {
   serve_pool finished_pool;
 };
 
-// single-prompt-batched-generation scheduler
-class spbg_scheduler : public il_scheduler {
+// continuous batching generation scheduler
+class cbg_scheduler : public il_scheduler {
  public:
-  explicit spbg_scheduler(const gpt_params& params);
-  spbg_scheduler(const gpt_params& params, const serve_policy& policy);
-  ~spbg_scheduler();
+  explicit cbg_scheduler(const gpt_params& params);
+  cbg_scheduler(const gpt_params& params, const serve_policy& policy);
+  ~cbg_scheduler();
 
   bool add_request(sequence* seq) override;
   bool step() override;
@@ -101,12 +101,12 @@ class spbg_scheduler : public il_scheduler {
   int query_free_req_idx();
 
   const int max_requests;
-  spbg_worker wr;
+  cbg_worker wr;
   std::vector<sequence*> executed_seqs;
   std::vector<bool> free_req_idx;
-  // only execute one prompt in spbg_scheduler;
-  const int pre_prefill_num = 1;
-  int cur_decoding_num = -1;
+  // TODO (YZT) too long will hurt performance?
+  int64_t max_input_length;
+  int cur_running_num = -1;
   // reserve at least one position for next prompt hidden states prefilling
   // when running_pool is full (size == max_requests)
   bool steps_decoding_for_next_prefill = false;
