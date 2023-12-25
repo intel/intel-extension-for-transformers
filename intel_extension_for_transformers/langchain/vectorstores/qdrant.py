@@ -30,23 +30,59 @@ class Qdrant(Qdrant_origin):
         documents: List[Document],
         embedding: Embeddings,
         sign: Optional[str] = None,
-        persist_directory: Optional[str] = _DEFAULT_PERSIST_DIR,
+        location: Optional[str] = None,
+        url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        host: Optional[str]= None,
+        persist_directory: Optional[str] = None,
+        collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
+        force_recreate: Optional[bool] = False,
         **kwargs: Any,
     ):
         """Create a Qdrant vectorstore from a list of documents.
 
         Args:
             documents (List[Document]): List of documents to add to the vectorstore.
-            embedding (Embeddings): A subclass of `Embeddings`, responsible for text vectorization.
+            embedding (Optional[Embeddings]): A subclass of `Embeddings`, responsible for text vectorization.
             sign (Optional[str], optional): sign for retrieval_type of 'child_parent'. Defaults to None.
+            location (Optional[str], optional): 
+                If `:memory:` - use in-memory Qdrant instance.
+                If `str` - use it as a `url` parameter.
+                If `None` - fallback to relying on `host` and `port` parameters. 
+                Defaults to None.
+            url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
+                Optional[prefix]". Defaults to None.
+            api_key (Optional[str], optional): API key for authentication in Qdrant Cloud. Defaults to None.
+            host (Optional[str], optional): Host name of Qdrant service. If url and host are None, set to
+                'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
-                local mode. Defaults to _DEFAULT_PERSIST_DIR.
+                local mode. Defaults to None.
+            collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
+                Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
+            force_recreate (bool, optional): _description_. Defaults to False.
         """
-        if sign == 'child':
-            persist_directory = persist_directory + "_child"
+        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
+            # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
+            persist_directory = _DEFAULT_PERSIST_DIR
+            if sign == "child":
+                persist_directory = persist_directory + "_child"
+        assert not (sign == "child" and not persist_directory), \
+            "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
+        import pdb;pdb.set_trace()
         texts = [d.page_content for d in documents]
         metadatas = [d.metadata for d in documents]
-        return cls.from_texts(texts, embedding, metadatas=metadatas, path=persist_directory, **kwargs)
+        return cls.from_texts(
+            texts, 
+            embedding, 
+            metadatas=metadatas, 
+            location=location,
+            url=url,
+            api_key=api_key,
+            host=host,
+            path=persist_directory, 
+            collection_name=collection_name,
+            force_recreate=force_recreate,
+            **kwargs)
     
     @classmethod
     def build(
@@ -57,6 +93,7 @@ class Qdrant(Qdrant_origin):
         location: Optional[str] = None,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
+        host: Optional[str]= None,
         persist_directory: Optional[str] = None,
         collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
         force_recreate: Optional[bool] = False,
@@ -76,6 +113,8 @@ class Qdrant(Qdrant_origin):
             url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
                 Optional[prefix]". Defaults to None.
             api_key (Optional[str], optional): API key for authentication in Qdrant Cloud. Defaults to None.
+            host (Optional[str], optional): Host name of Qdrant service. If url and host are None, set to
+                'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
                 local mode. Defaults to None.
             collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
@@ -94,8 +133,7 @@ class Qdrant(Qdrant_origin):
                             http://localhost:6333/service/v1/{qdrant-endpoint} for REST API.
                     timeout (Optional[float], optional): 
                         Timeout for REST and gRPC API requests.
-                    host (Optional[str], optional): Host name of Qdrant service. If url and host are None, set to
-                        'localhost'.
+                    
                     distance_func (str, optional): Distance function. One of: "Cosine" / "Euclid" / "Dot".
                         Defaults to "Cosine".
                     content_payload_key (str, optional): A payload key used to store the content of the document. 
@@ -132,10 +170,13 @@ class Qdrant(Qdrant_origin):
                         Use data stored in another collection to initialize this collection.
                     on_disk (Optional[bool], optional): if True, vectors will be stored on disk. If None, default value will be used.
         """
-        if not persist_directory:
+        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
+            # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
-        if sign == "child":
-            persist_directory = persist_directory + "_child"
+            if sign == "child":
+                persist_directory = persist_directory + "_child"
+        assert sign == "child" and not persist_directory, \
+            "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
         if os.path.exists(persist_directory):
             if bool(os.listdir(persist_directory)):
                 logging.info("Load the existing database!")
@@ -146,6 +187,7 @@ class Qdrant(Qdrant_origin):
                     location=location,
                     url=url,
                     api_key=api_key,
+                    host=host,
                     path=persist_directory,
                     collection_name=collection_name,
                     force_recreate=force_recreate,
@@ -160,6 +202,7 @@ class Qdrant(Qdrant_origin):
                 location=location,
                 url=url,
                 api_key=api_key,
+                host=host,
                 persist_directory=persist_directory,
                 collection_name=collection_name,
                 force_recreate=force_recreate,
@@ -175,6 +218,7 @@ class Qdrant(Qdrant_origin):
         location: Optional[str] = None,
         url: Optional[str] = None,
         api_key: Optional[str] = None,
+        host: Optional[str]= None,
         persist_directory: Optional[str] = None,
         collection_name: Optional[str] = _LANGCHAIN_DEFAULT_COLLECTION_NAME,
         force_recreate: bool = False,
@@ -192,13 +236,16 @@ class Qdrant(Qdrant_origin):
             url (Optional[str], optional): either host or str of "Optional[scheme], host, Optional[port],
                 Optional[prefix]". Defaults to None.
             api_key (Optional[str], optional): API key for authentication in Qdrant Cloud. Defaults to None.
+            host (Optional[str], optional): Host name of Qdrant service. If url and host are None, set to
+                'localhost'. Defaults to None.
             persist_directory (Optional[str], optional): Path in which the vectors will be stored while using
                 local mode. Defaults to None.
             collection_name (Optional[str], optional): Name of the Qdrant collection to be used. 
                 Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
             force_recreate (bool, optional): _description_. Defaults to False.
         """
-        if not persist_directory:
+        if not all([location, url, host, persist_directory]):
+            # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
         tmp_texts = ["foo"]
         qdrant_collection = cls.construct_instance(
@@ -207,6 +254,7 @@ class Qdrant(Qdrant_origin):
             location=location,
             url=url,
             api_key=api_key,
+            host=host,
             path=persist_directory,
             collection_name=collection_name,
             force_recreate=force_recreate,
