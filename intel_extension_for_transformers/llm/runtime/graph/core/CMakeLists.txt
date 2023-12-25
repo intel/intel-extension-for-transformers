@@ -16,7 +16,7 @@ find_package(Threads REQUIRED)
 file(GLOB layers_srcs "layers/*.cpp")
 set(sources ne_layers.c ${layers_srcs})
 
-add_library_w_warning(ne_layers "${sources}")
+add_shareable_library_w_warning(ne_layers "${sources}")
 
 target_include_directories(ne_layers PUBLIC .)
 target_compile_features(ne_layers PUBLIC c_std_11) # don't bump

@@ -9,7 +9,10 @@ In this example we demonstrate how to apply quantization aware training as well 
 ```
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>**Note**: Please use transformers no higher than 4.34.1
+
 
 ## Prepare Dataset
 We use 20000 images from the [LAION-400M dataset](https://laion.ai/blog/laion-400-open-dataset/) to do quantization aware training with knowledge distillation for Stable Diffusion. Please follow the steps in [here](https://laion.ai/blog/laion-400-open-dataset/) to download the 20000 image and text pairs and put these files in a folder. Then we need to create metadata for this small dataset use the below command.

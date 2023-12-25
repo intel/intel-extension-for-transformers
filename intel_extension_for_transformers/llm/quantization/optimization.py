@@ -56,6 +56,7 @@ class Optimization:
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
             or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("solar", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(

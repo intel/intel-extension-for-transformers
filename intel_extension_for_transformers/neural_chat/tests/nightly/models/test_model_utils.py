@@ -27,6 +27,7 @@ from intel_extension_for_transformers.neural_chat.utils.common import get_device
 
 class TestModelUtils(unittest.TestCase):
     def setUp(self) -> None:
+        self.model_path = "/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1"
         return super().setUpClass()
 
     def tearDown(self) -> None:
@@ -38,15 +39,15 @@ class TestModelUtils(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'hpu', "Only run this test on HPU")
     def test_load_model_on_hpu(self):
-        load_model(model_name="Intel/neural-chat-7b-v3-1", tokenizer_name="Intel/neural-chat-7b-v3-1", device="hpu", use_hpu_graphs=True)
-        self.assertTrue("Intel/neural-chat-7b-v3-1" in MODELS)
-        self.assertTrue(MODELS["Intel/neural-chat-7b-v3-1"]["model"] is not None)
+        load_model(model_name=self.model_path, tokenizer_name=self.model_path, device="hpu", use_hpu_graphs=True)
+        self.assertTrue(self.model_path in MODELS)
+        self.assertTrue(MODELS[self.model_path]["model"] is not None)
 
     @unittest.skipIf(get_device_type() != 'hpu', "Only run this test on HPU")
     def test_load_model_on_hpu_with_deepspeed(self):
-        load_model(model_name="Intel/neural-chat-7b-v3-1", tokenizer_name="Intel/neural-chat-7b-v3-1", device="hpu", use_hpu_graphs=True, use_deepspeed=True)
-        self.assertTrue("Intel/neural-chat-7b-v3-1" in MODELS)
-        self.assertTrue(MODELS["Intel/neural-chat-7b-v3-1"]["model"] is not None)
+        load_model(model_name=self.model_path, tokenizer_name=self.model_path, device="hpu", use_hpu_graphs=True, use_deepspeed=True)
+        self.assertTrue(self.model_path in MODELS)
+        self.assertTrue(MODELS[self.model_path]["model"] is not None)
 
 if __name__ == '__main__':
     unittest.main()

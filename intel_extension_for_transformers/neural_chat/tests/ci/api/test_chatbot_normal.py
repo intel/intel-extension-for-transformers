@@ -22,6 +22,7 @@ import shutil
 import spacy
 from unittest.mock import MagicMock, patch
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 gaudi2_content = """
 Habana Gaudi2 and 4th Gen Intel Xeon Scalable processors deliver leading performance and optimal cost savings for AI training.
@@ -54,12 +55,14 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         if os.path.exists("./gptcache_data"):
             shutil.rmtree("./gptcache_data")
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_valid_model_name(self):
         # Test with valid model name
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_valid_cuda_device(self):
         # Test with valid CUDA configuration
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -69,6 +72,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         self.assertIsNone(result)
         torch.cuda.is_available = MagicMock(return_value=False)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_valid_xpu_device(self):
         # Test with valid XPU configuration
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -78,6 +82,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         self.assertIsNone(result)
         torch.xpu.is_available = MagicMock(return_value=False)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_valid_cpu_device(self):
         # Test with valid CPU configuration
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -85,6 +90,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_tts(self):
         # Test enabling Text-to-Speech plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -93,6 +99,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_tts_chinese(self):
         # Test enabling Chinese Text-to-Speech plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -100,6 +107,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_asr(self):
         # Test enabling Audio Speech Recognition plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -108,6 +116,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_retrieval(self):
         # Test enabling Retrieval plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -116,6 +125,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_cache(self):
         # Test enabling Cache plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -123,6 +133,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_safety_checker(self):
         # Test enabling Safety Checker plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -130,6 +141,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_ner(self):
         # Test enabling Named Entity Recognition plugin
         spacy.cli.download("en_core_web_lg")
@@ -138,6 +150,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_enable_plugin_face_animation(self):
         # Test enabling Face Animation plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
