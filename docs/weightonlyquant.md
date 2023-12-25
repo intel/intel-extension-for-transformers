@@ -115,3 +115,19 @@ gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
 print(gen_text)
 ```
+
+You can also save and load your quantized low bit model by the below code.
+> Note: Only supports CPU device for now.
+
+```python
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+saved_dir = "your_saved_model_dir"
+model_path = "your_pytorch_model_path_or_HF_model_name"
+# quant
+model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True, use_llm_runtime=False)
+# save quant model
+model.save_pretrained(saved_dir)
+# load quant model
+loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
+```
