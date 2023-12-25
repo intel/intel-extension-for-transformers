@@ -463,9 +463,9 @@ PYBIND11_MODULE(whisper_cpp, m)
   m.doc() = "cpp model python binding";
   py::class_<Model>(m, "Model", py::module_local())
       .def(py::init())
-      .def_static("init_model", &Model::init_model, "initial model with model path and parameters",
+      .def("init_model", &Model::init_model, "initial model with model path and parameters",
                   py::arg("model_path"))
-      .def("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
+      .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
            py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
            py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("use_ggml") = false,
            py::arg("threads") = 8)
