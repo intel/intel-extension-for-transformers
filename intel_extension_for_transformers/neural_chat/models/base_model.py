@@ -208,6 +208,16 @@ class BaseModel(ABC):
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
 
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
         try:
             response = predict_stream(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
@@ -300,7 +310,7 @@ class BaseModel(ABC):
             query = conv_template.get_prompt()
 
         if "magicoder" in self.model_name.lower():
-            query = MAGICODER_PROMPT.format(query)
+            query = MAGICODER_PROMPT.format(instruction=query)
 
         # LLM inference
         try:
