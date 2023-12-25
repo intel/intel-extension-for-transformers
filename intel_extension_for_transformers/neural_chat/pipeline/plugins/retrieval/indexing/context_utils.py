@@ -144,7 +144,7 @@ def load_xlsx(input):
 
     for data in all_data:
         data.replace('#', " ")
-        data = re.sub(r'\s+', ' ', data)
+        #data = re.sub(r'\s+', ' ', data)
         new_doc = [data, input]
         documents.append(new_doc)
     return documents
@@ -158,10 +158,10 @@ def load_faq_xlsx(input):
     for index, row in df.iterrows():
         sub = "Question: " + row['question'] + " Answer: " + row["answer"]
         sub = sub.replace('#', " ")
-        sub = sub.replace(r'\t', " ")
-        sub = sub.replace('\n', ' ')
-        sub = sub.replace('\n\n', ' ')
-        sub = re.sub(r'\s+', ' ', sub)
+        #sub = sub.replace(r'\t', " ")
+        #sub = sub.replace('\n', ' ')
+        #sub = sub.replace('\n\n', ' ')
+        #sub = re.sub(r'\s+', ' ', sub)
         all_data.append([sub, row['link']])
     return all_data
 
