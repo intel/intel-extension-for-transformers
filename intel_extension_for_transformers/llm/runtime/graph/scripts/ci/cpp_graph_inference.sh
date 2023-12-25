@@ -358,7 +358,7 @@ function main() {
 
                     OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
                         $infer_cmd --seed 1234 -t $cores_per_instance -b 2047 -c $real_ctx -n ${output} -m ${model}-${precision}.bin $extension -p "$prompt" 2>&1 | tee ${WORKSPACE}/${logs_file} || true &
-                    minitor
+                    monitor
 
                     echo "=======  Inference End  ======="
                     python $script_dir/calculate_percentiles.py ${WORKSPACE}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
@@ -381,7 +381,7 @@ function main() {
     conda deactivate >/dev/null 2>&1
 }
 
-function minitor() {
+function monitor() {
     sleep 1
     # try first time
     if [ $(ps -ef | grep "$infer_cmd" | wc -l) -lt 2 ]; then
@@ -400,7 +400,5 @@ function minitor() {
     done
     echo "======  Monitor End ======="
 }
-function get_data() {
-    python $script_dir/calculate_percentiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
-}
+
 main $@ 2>&1 | tee ${WORKSPACE}/launch.log
