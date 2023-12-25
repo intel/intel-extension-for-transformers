@@ -130,7 +130,7 @@ model.save_pretrained(saved_dir)
 # load quant model
 loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
-| Inference Framework |   load GPT-Q  |    load fp32 and quantized model    |
+| Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
 |:--------------:|:----------:|:----------:|
 |       llm_runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
 |       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
