@@ -595,4 +595,4 @@ Enable verbose mode and control tracing information using the `NEURAL_SPEED_VERB
 Available modes:
 - 0: Print all tracing information. Comprehensive output, including: evaluation time and operator profiling.
 - 1: Print evaluation time. Time taken for each evaluation.
-- 2: Profile individual operators. Identify performance bottlenecks within the model.
+- 2: Profile individual operator. Identify performance bottleneck within the model.
