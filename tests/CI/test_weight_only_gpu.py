@@ -160,7 +160,7 @@ class TestArcWeightOnly(unittest.TestCase):
         fp32_logits = output['logits']
         print("fp32 logits {}".format(fp32_logits.shape))
 
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=128, compute_dtype="fp16")
+        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=128, compute_dtype="fp16", scale_dtype="fp16")
         config.calib_dataloader = DataLoader(
             DummyDataset(model_name, model.seqlen),
             batch_size=1,
@@ -168,9 +168,9 @@ class TestArcWeightOnly(unittest.TestCase):
         )
         qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                                       device_map=device_map, quantization_config=config,
-                                                      trust_remote_code=True)
+                                                      trust_remote_code=True, torch_dtype=torch.float16)
         qmodel.save_low_bit(self.workspace)
-        # qmodel = ipex.optimize_transformers(qmodel, inplace=True)
+        qmodel = ipex.optimize_transformers(qmodel, inplace=True)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
         quan_logits = output_quant['logits'].to('cpu')
         print("int4 logits {}".format(quan_logits.shape))

@@ -158,7 +158,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 f"'int4_fullrange'."
             )
 
-        if self.scale_dtype not in ["fp32", "fp8_e8m0"]:
+        if self.scale_dtype not in ["fp16"]:
             raise ValueError(
                 f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
