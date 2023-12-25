@@ -441,8 +441,7 @@ def load_model(
     try:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_name,
-            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+            use_fast=False if config.model_type == "llama" else True,
             use_auth_token=hf_access_token,
             trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
                 re.search("chatglm", model_name, re.IGNORECASE)) else False,
