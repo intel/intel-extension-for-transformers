@@ -500,6 +500,7 @@ def load_model(
             or config.model_type == "mpt"
             or config.model_type == "llama"
             or config.model_type == "mistral"
+            or config.model_type == "mixtral"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -554,7 +555,7 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER/CODEGEN now.")
+            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
