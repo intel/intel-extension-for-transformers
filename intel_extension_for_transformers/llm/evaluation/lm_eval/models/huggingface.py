@@ -575,6 +575,13 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
+    
+    from transformers import AutoTokenizer, TextStreamer
+    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+    model_name = "/home/sdp/dongbo/polyglot-ko-5.8b-chat"     # Hugging Face model_id or local model
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    runtime_model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
+
     def __init__(self, *args, pretrained, model_format, **kwargs):
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
@@ -709,7 +716,19 @@ class AutoCausalLM(HuggingFaceAutoLM):
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
         if self.model_format != "onnx":
-            output = self.model(inputs)
+            # import pdb;pdb.set_trace()
+            # output1 = self.runtime_model.generate(inputs, max_new_tokens=32) # 255
+            
+            
+            # output1 = self.runtime_model(inputs, reinit=True)
+            # from transformers.modeling_outputs import CausalLMOutputWithPast
+            # output = CausalLMOutputWithPast()
+            # output.logits = output1
+            
+            
+            
+            
+            output = self.model(inputs)     # 233 *50400 
         else:
             inputs_names = [input.name for input in self.model.model.get_inputs()]
             if "position_ids" in inputs_names:
@@ -721,6 +740,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                 output = self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):
             return output[0]
+        # return torch.from_numpy(output1).expand(1, inputs.shape[-1], -1)
         return output["logits"]
 
     def _model_generate(
