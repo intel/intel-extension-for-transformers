@@ -132,7 +132,7 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
 | Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
 |:--------------:|:----------:|:----------:|
-|       llm_runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
+|       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
 |       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
 
 > Note: Only supports CPU device for now. For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
