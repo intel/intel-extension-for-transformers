@@ -277,16 +277,6 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
-Methods description of model:
-| Method         | Description                                                                                |
-| -------------- | -----------------------------------------------------------------------                    |
-| `init`         | initialize cpp model using model name                                                      |
-| `init_from_bin` | initialize cpp model from bin file                                                      |
-| `generate`     | transformer-like generate function, arguments please refer to `argument description of generate function`|
-| `__call__`     | forward function                                                                           |
-| `quant_model`  | quantize model from fp32 bin, arguments please refer to following `WeightOnlyQuantConfig`  | 
-| `print_time`   | print time of each evaluation                                                              |
-
 Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
@@ -596,3 +586,13 @@ outputs = model.generate(inputs, streamer=streamer, stopping_criteria=stopping_c
 
 ### 6. Perplexity (measuring model quality)
 You can use the [scripts/perplexity.py](./scripts/perplexity.py) script to over a given (subset of) dataset. Run `python scripts/perplexity.py --help` for detailed usage. For more infomation of the perplexity metric, see https://huggingface.co/docs/transformers/perplexity.
+
+
+### 7. Verbose Mode
+
+Enable verbose mode and control tracing information using the `NEURAL_SPEED_VERBOSE` environment variable.
+
+Available modes:
+- 0: Print all tracing information. Comprehensive output, including: evaluation time and operator profiling.
+- 1: Print evaluation time. Time taken for each evaluation.
+- 2: Profile individual operators. Identify performance bottlenecks within the model.
