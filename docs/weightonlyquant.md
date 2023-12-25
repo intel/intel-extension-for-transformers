@@ -117,7 +117,6 @@ print(gen_text)
 ```
 
 You can also save and load your quantized low bit model by the below code.
-> Note: Only supports CPU device for now.
 
 ```python
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -131,3 +130,9 @@ model.save_pretrained(saved_dir)
 # load quant model
 loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 ```
+| Inference Framework |   load GPT-Q  |    load fp32 and quantized model    |
+|:--------------:|:----------:|:----------:|
+|       llm_runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
+|       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
+
+> Note: Only supports CPU device for now. For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
