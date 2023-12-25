@@ -87,6 +87,9 @@ def build_chatbot(config: PipelineConfig=None):
     elif "mistral" in config.model_name_or_path.lower():
         from .models.mistral_model import MistralModel
         adapter = MistralModel()
+    elif "solar" in config.model_name_or_path.lower():
+        from .models.solar_model import SolarModel
+        adapter = SolarModel()
     elif "opt" in config.model_name_or_path.lower() or \
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
