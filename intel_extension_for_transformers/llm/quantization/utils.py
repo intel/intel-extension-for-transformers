@@ -129,13 +129,16 @@ def _replace_linear(
                             scale_dtype=quantization_config.scale_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme,
-                            device=device
+                            compression_dtype=module.compression_dtype
+                            if hasattr(module, "compression_dtype") else torch.int8,
+                            compression_dim=module.compression_dim if hasattr(module, "compression_dim") else 0,
+                            g_idx=(hasattr(module, "g_idx") and module.g_idx is not None),
+                            device=device,
+                            use_optimum_format=module.use_optimum_format
+                            if hasattr(module, "use_optimum_format") else False,
                         )
                         if isinstance(module, WeightOnlyLinear):
-                            model._modules[name].compression_dtype = module.compression_dtype
-                            model._modules[name].compression_dim = module.compression_dim
                             model._modules[name].g_idx = module.g_idx
-                            model._modules[name].use_optimum_format = module.use_optimum_format
                             model._modules[name].scales = module.scales
                             if hasattr(module, "qzeros"):
                                 model._modules[name].qzeros = module.qzeros
@@ -147,10 +150,9 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if not empty_weights:
-                    model._modules[name].set_weights_bias(
-                        module.qweight.data, None if module.bias is None else module.bias.data
-                    )
+                model._modules[name].set_weights_bias(
+                    module.qweight.data if hasattr(module, "qweight") else model._modules[name].qweight.data,
+                    None if module.bias is None else module.bias.data)
 
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
@@ -281,6 +283,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      calib_func=calib_func,
                                      calib_dataloader=calib_dataloader)
         model = inc_model.export_compressed_model(compression_dtype=torch.int8,
+                                                  compression_dim=0,
                                                   use_optimum_format=False,
                                                   scale_dtype=convert_dtype_str2torch(config.scale_dtype))
         q_model = replace_linear(model,
