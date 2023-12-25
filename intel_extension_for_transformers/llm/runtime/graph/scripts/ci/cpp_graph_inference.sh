@@ -385,18 +385,17 @@ function monitor() {
     sleep 1
     # try first time
     if [ $(ps -ef | grep "$infer_cmd" | wc -l) -lt 2 ]; then
-        #python $script_dir/calculate_percentiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
         sleep 1
     fi
     # keep monitoring
     echo "======  Monitor Start ======="
     while true; do
         if [ $(ps -ef | grep "$infer_cmd" | wc -l) -lt 2 ]; then
-            #python $script_dir/calculate_percentiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
             sleep 3
             break
         fi
-        echo "$(date +%s), $(numastat -p $(ps -ef | grep "$infer_cmd" | grep -v grep | awk '{printf("%s  ", $2)}'))" >>${WORKSPACE}/memory.txt 2>&1
+        echo "$(date +%s), $(numastat -p $(ps -ef | grep "$infer_cmd" | grep -v grep | awk '{printf("%s  ", $2)}'))" \
+            >>${WORKSPACE}/memory.txt 2>&1
     done
     echo "======  Monitor End ======="
 }
