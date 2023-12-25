@@ -442,7 +442,6 @@ other	民主
 other	zhemin
 other	li wenbin
 other	新语丝
-other	support
 other	getoffthefalun
 other	forced annihilation
 other	sixnever
