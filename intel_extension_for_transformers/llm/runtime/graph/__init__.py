@@ -80,6 +80,8 @@ class Model:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.model_type = Model.get_model_type(self.config)
         self.__import_package(self.model_type)
+        use_gptq = 'gptq' in model_name.lower()
+        use_awq = 'awq' in model_name.lower()
 
         # check cache and quantization
         output_path = "runtime_outs"
@@ -96,6 +98,8 @@ class Model:
                 quant_desc += "_g{}".format(quant_kwargs['group_size'])
         if use_gptq:
             quant_desc = "gptq"
+        if use_awq:
+            quant_desc = "awq"
         quant_bin = "{}/ne_{}_q_{}.bin".format(output_path, self.model_type, quant_desc)
 
         if not use_quant:
@@ -108,7 +112,7 @@ class Model:
                   format(self.bin_file))
             return
 
-        if use_gptq:
+        if use_gptq or use_awq:
             convert_model(model_name, quant_bin, "f32")
             return
 

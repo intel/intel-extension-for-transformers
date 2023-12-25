@@ -169,8 +169,18 @@ def qzeros_to_zeros(qzeros, bits=4):
         col += 1
     return zeros
 
-
 def unpack_weight(qweight, scales, qzeros, q_config):
+    if "quant_method" not in q_config:
+        raise ValueError(f"Unsupported q_config without quant_method: {q_config}")
+    quant_method = q_config["quant_method"]
+    if quant_method == "gptq":
+        return unpack_gptq_weight(qweight, scales, qzeros, q_config)
+    if quant_method == "awq":
+        return unpack_awq_weight(qweight, scales, qzeros, q_config)
+    raise ValueError(f"Unsupported quant_method: {quant_method}")
+
+# https://github.com/PanQiWei/AutoGPTQ/blob/d2662b18bb91e1864b29e4e05862712382b8a076/auto_gptq/nn_modules/qlinear/qlinear_cuda.py#L219
+def unpack_gptq_weight(qweight, scales, qzeros, q_config):
     group_size = q_config['group_size']
     bits = q_config['bits']
     wf = torch.tensor([[ 0,  4,  8, 12, 16, 20, 24, 28]], dtype=torch.int32)
@@ -179,16 +189,29 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
         
     zeros = zeros + 1
-    # zeros = zeros.reshape(-1, 1, zeros.shape[1] * zeros.shape[2])
     zeros = zeros.reshape(scales.shape)
-
-    # scales = scales
-    # scales = scales.reshape(-1, 1, scales.shape[-1])
         
     weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1),
                                        wf.unsqueeze(-1)).to(torch.int16 if bits == 8 else torch.int8)
     torch.bitwise_and(weight,(2 ** bits) - 1, out=weight)
-    # int_weight = weight.reshape(-1, group_size, weight.shape[2])
+
+    return weight, scales, zeros
+
+# https://github.com/casper-hansen/AutoAWQ/blob/5a673bf8435e019f50470b1b8878abf4ee63de57/awq/modules/linear.py#L24
+def unpack_awq_weight(qweight, scales, qzeros, q_config):
+    group_size = q_config['group_size']
+    bits = q_config['bits']
+    order_map = [0, 4, 1, 5, 2, 6, 3, 7]
+
+    pack_num = 8
+    weight = torch.zeros(qweight.shape[0], qweight.shape[1] * pack_num)
+    zeros = torch.zeros(qzeros.shape[0], qzeros.shape[1] * pack_num)
+    for col in range(qweight.shape[1]):
+        for i in range(pack_num):
+            w_col = torch.bitwise_right_shift(qweight[:, col], 4 * order_map[i])
+            weight[:, col * pack_num + i] = torch.bitwise_and(w_col, (2 ** bits) - 1)
+            z_col = torch.bitwise_right_shift(qzeros[:, col], 4 * order_map[i])
+            zeros[:, col * pack_num + i] = torch.bitwise_and(z_col, (2 ** bits) - 1)
 
     return weight, scales, zeros
 
@@ -210,7 +233,7 @@ def find_quantized_model_file(model_path):
             print(f"Detected model file {found[0]}")
             return str(found[0])
 
-def load_gptq_model(model_path):
+def load_quantized_model(model_path):
     input_path = find_quantized_model_file(model_path)
     model = None
     if input_path.endswith('pt'):
@@ -224,9 +247,10 @@ def load_gptq_model(model_path):
     with open(model_path + '/config.json', "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    with open(model_path + '/quantize_config.json', "r", encoding="utf-8") as f:
-        quantize_config = json.load(f)
-    return model, config, quantize_config
+    quantize_config = config["quantization_config"]
+    if "zero_point" in quantize_config:
+        quantize_config["sym"] = not quantize_config["zero_point"]
+    return model, config, config["quantization_config"]
 
 
 def convert_fp32_tensor(src_name, dst_name, model, fout):
@@ -304,15 +328,17 @@ def convert_q4_f32_tensor(src_name, dst_name, model, fout, q_config, n_head, n_h
     qweight = model[f"{src_name}.qweight"]
 
     weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
-    weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
+    # import pdb; pdb.set_trace()
+    # weight = weight.reshape(weight.shape[0], weight.shape[1] * weight.shape[2])
     # num_itr = g_idx.shape[0]//x.shape[-1]
-    if q_config['desc_act']:
+    if 'desc_act' in q_config and q_config['desc_act']:
         g_idx = model[f"{src_name}.g_idx"]
         weight = (gptq_scales[g_idx.long()] * (weight - gptq_zeros[g_idx.long()]))
     else:
         infeatures = weight.shape[0]
         g_idx = torch.tensor([i // q_config["group_size"] for i in range(infeatures)], dtype=torch.int32)
-        weight = (gptq_scales[g_idx.long()] * (weight - gptq_zeros[g_idx.long()]))
+        scale_zeros = gptq_zeros * gptq_scales
+        weight = (gptq_scales[g_idx.long()] * weight - scale_zeros[g_idx.long()])
     
     weight = weight.t()
     weight = weight.float()
@@ -327,6 +353,7 @@ def convert_q4_f32_tensor(src_name, dst_name, model, fout, q_config, n_head, n_h
 
 
 def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n_head_kv=0, permute_func=None):
+    # unpack weight and repack into jblas format
     import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
     qzeros = model[f"{src_name}.qzeros"]
     zeros = qzeros_to_zeros(qzeros)
@@ -336,12 +363,14 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
     int_weight, gptq_scales, gptq_zeros = unpack_weight(qweight, scales, qzeros, q_config)
     int_weight = int_weight.view(-1,int_weight.shape[-1])
 
+    # permute_func for llama-like model
     if permute_func:
         int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
         gptq_scales = permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
         gptq_zeros = permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
 
-    if q_config['desc_act']:
+    # shuffle weight in GPTQ when act order is on
+    if 'desc_act'in q_config and q_config['desc_act']:
         g_idx = model[f"{src_name}.g_idx"]
         int_weight2 = int_weight.clone()
         group_size=q_config['group_size']
@@ -371,15 +400,16 @@ def convert_q4_jblas_tensor(src_name, dst_name, model, fout, q_config, n_head, n
         gptq_zeros = np.empty(0, dtype=np.int8)
     else:
         gptq_zeros = np.ascontiguousarray(gptq_zeros.numpy())
-    if q_config['desc_act']:
+    if 'desc_act'in q_config and q_config['desc_act']:
         g_idx = np.ascontiguousarray(g_idx.numpy())
     else:
         g_idx = np.empty(0, dtype=np.int32)
 
+    # pack int weight in jblas format
     byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales, gptq_zeros, g_idx, dst,
                                                weight_dtype="int4" if q_config['bits'] == 4 else "int8",
                                                group_size=q_config['group_size'],
                                                alg="sym" if q_config['sym'] else "asym",
                                                compute_dtype="int8")
     dst.flatten()[:byte_size].tofile(fout)
-    print(f"converting {dst_name} qauntized tensor to jblas q4 block")
+    print(f"converting {dst_name} qauntized tensor to jblas block")

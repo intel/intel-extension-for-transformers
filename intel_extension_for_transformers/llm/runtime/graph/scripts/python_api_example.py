@@ -18,9 +18,9 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "Intel/neural-chat-7b-v1-1"  # or local path to model
+model_name = "/mnt/disk1/data2/zhenweil/models/awq/Llama-2-7B-Chat-AWQ"  # or local path to model
 # int4 weight_only quantization
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=True)
 # fp4 weight_only quantization
 # woq_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="fp4")
 # nf4 weight_only quantization
@@ -37,9 +37,17 @@ streamer = TextStreamer(tokenizer)
 
 # top_k_top_p sample or greedy_search
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+# outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 # beam search
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
-ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-print(ans)
+# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+# outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
+# ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+# print(ans)
+
+while True:
+    prompt = input("> ").strip()
+    if prompt == "quit":
+        break
+    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
+    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)

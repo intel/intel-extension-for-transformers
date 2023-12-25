@@ -16,16 +16,19 @@
 # limitations under the License.
 
 import os
+import json
+import sys
 import re
 import argparse
 from common import *
 
-
 def permute_func(weights, n_head: int, n_head_kv: int):
     if n_head_kv is not None and n_head != n_head_kv:
         n_head //= n_head_kv
-    return (weights.reshape(n_head, 2, weights.shape[0] // n_head // 2,
-                            *weights.shape[1:]).swapaxes(1, 2).reshape(weights.shape))
+    return (weights.reshape(n_head_kv, 2, weights.shape[0] // n_head_kv // 2, *weights.shape[1:])
+                .swapaxes(1, 2)
+                .reshape(weights.shape))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -37,9 +40,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     out_path = args.outfile.as_posix()
     model_path = args.model.as_posix()
 
-    model, config, quantize_config = load_gptq_model(model_path)
+    model, config, quantize_config = load_quantized_model(model_path)
     f = open(out_path, "wb")
-
+    
     # 1. write hparams
     n_vocab = config["vocab_size"]
     n_embd = config["hidden_size"]
@@ -49,23 +52,23 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     # hardcoded:
     n_mult = 256
-
     # 1. write head and params
     f.write(b"ggjt"[::-1])  # magic
 
     n_head = n_head
-    n_head_kv = n_head
+    n_head_kv = 8
     values = [
         1,  # file version
         n_vocab,
         n_embd,
-        256,  #hparams.n_mult,
+        256, #hparams.n_mult,
         n_head,
-        n_head_kv,  # n_head_kv (multi_query attention)
+        n_head_kv, # n_head_kv (multi_query attention)
         n_layer,
         n_embd // n_head,  # rot (obsolete)
-        0,  #file_type.value, # TODO
+        0, #file_type.value, # TODO
     ]
+    # import pdb; pdb.set_trace()
     f.write(struct.pack("i" * len(values), *values))
     f.write(struct.pack("i", 0))
     f.write(struct.pack("f", 0))
@@ -81,9 +84,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     f.write(struct.pack("f", config["rms_norm_eps"]))
     f.write(struct.pack("f", config["rope_theta"] if "rope_theta" in config else 10000))
 
-    # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
+    # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
     # but bos_token_id = 1 in llama.cpp
-    f.write(struct.pack("i", 1))  
+    f.write(struct.pack("i", 1))
     f.write(struct.pack("i", 2))
 
     f.write(struct.pack("i", 0))
@@ -129,7 +132,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     f.close()
     print(f"Success! saved as {out_path}")
-
 
 if __name__ == '__main__':
     main()
