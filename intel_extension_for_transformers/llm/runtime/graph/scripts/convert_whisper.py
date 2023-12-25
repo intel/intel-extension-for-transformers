@@ -98,11 +98,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
                         default="fp32",
                         help="output format (default: based on input)")
     parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
-    parser.add_argument("--whisper_repo_path", type=Path, help="path for whisper Repo")
     parser.add_argument("model", type=Path, help="directory containing model file")
     args = parser.parse_args(args_in)
     dir_model = args.model
-    dir_whisper = args.whisper_repo_path
     dir_out = args.outfile
     out_type = args.outtype
 
@@ -114,9 +112,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = WhisperForConditionalGeneration.from_pretrained(dir_model)
 
     #code.interact(local=locals())
-
+    path = os.getcwd()
+    path = path+'/whisper'
+    if os.path.exists(path)== False:
+        os.system('git clone https://github.com/openai/whisper.git')
     n_mels = hparams["num_mel_bins"]
-    with np.load(os.path.join(dir_whisper, "whisper/assets", "mel_filters.npz")) as f:
+    mel_path = path+'/whisper/assets/mel_filters.npz'
+    with np.load(mel_path) as f:
         filters = torch.from_numpy(f[f"mel_{n_mels}"])
 
     dir_tokenizer = dir_model
@@ -125,10 +127,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     tokens = json.load(open(dir_tokenizer / "vocab.json", "r", encoding="utf8"))
 
-    # use 16-bit or 32-bit floats
-    use_f16 = False
-    if out_type == "f16":
-        use_f16 = True
+    # Default use 16-bit
+    
+    use_f16 = True
 
     fout = open(fname_out, "wb")
 

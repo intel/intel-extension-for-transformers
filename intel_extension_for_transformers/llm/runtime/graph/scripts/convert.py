@@ -33,8 +33,6 @@ def convert_model(model, outfile, outtype, whisper_repo_path=None):
         path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
     cmd = []
     cmd.extend(["python", path])
-    if model_type == "whisper":
-        cmd.extend(["--whisper_repo_path", whisper_repo_path])
     cmd.extend(["--outfile", outfile])
     cmd.extend(["--outtype", outtype])
     cmd.extend([model])

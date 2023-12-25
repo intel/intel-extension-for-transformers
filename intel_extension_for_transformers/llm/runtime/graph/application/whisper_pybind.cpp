@@ -61,9 +61,9 @@ class Model {
     if (ctx) delete (ctx);
   }
   void init_model(const std::string& model_path);
-  void quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
-                   const std::string& alg, int group_size, const std::string& scale_dtype,
-                   const std::string& compute_dtype, bool use_ggml, int threads);
+  static void quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                          const std::string& alg, int group_size, const std::string& scale_dtype,
+                          const std::string& compute_dtype, bool use_ggml, int threads);
   void inference(const std::string& fname_inp);
 
  private:
@@ -463,7 +463,8 @@ PYBIND11_MODULE(whisper_cpp, m)
   m.doc() = "cpp model python binding";
   py::class_<Model>(m, "Model", py::module_local())
       .def(py::init())
-      .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"))
+      .def_static("init_model", &Model::init_model, "initial model with model path and parameters",
+                  py::arg("model_path"))
       .def("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
            py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
            py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("use_ggml") = false,
