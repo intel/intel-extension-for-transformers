@@ -122,8 +122,8 @@ You can also save and load your quantized low bit model by the below code.
 ```python
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
-saved_dir = "your_saved_model_dir"
-model_path = "your_pytorch_model_path_or_HF_model_name"
+model_path = "meta-llama/Llama-2-7b-chat-hf" # your_pytorch_model_path_or_HF_model_name
+saved_dir = "4_bit_llama2" # your_saved_model_dir
 # quant
 model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True, use_llm_runtime=False)
 # save quant model
