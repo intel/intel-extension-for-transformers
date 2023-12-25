@@ -148,7 +148,7 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
             if self.vector_database == "Qdrant" and knowledge_base.is_local():
-               # one storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+               # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
                knowledge_base.client.close()
         elif self.retrieval_type == "child_parent":    # Using child-parent store retriever
             child_documents = self.splitter.split_documents(langchain_documents)
