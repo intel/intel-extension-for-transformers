@@ -130,8 +130,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
+        shape = weight_data.shape
         weight = torch.ops.jblasop.woq_quantize(
             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        weight.resize_(shape)
         self.weight = ParamsQBits(data=weight,
                                   requires_grad=False,
                                   quant_state={"scheme": self.scheme},

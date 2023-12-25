@@ -115,7 +115,8 @@ class HuggingFaceAutoLM(BaseLM):
         bnb_4bit_compute_dtype: Optional[Union[str, torch.dtype]] = None,
         bnb_4bit_use_double_quant: Optional[bool] = False,
         init_empty_weights: Optional[bool] = False,
-        model_format: Optional[str] = "torch"
+        model_format: Optional[str] = "torch",
+        _commit_hash: Optional[str] = None
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
         Args:

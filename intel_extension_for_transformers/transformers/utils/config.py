@@ -43,6 +43,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_ggml=False,
         use_quant=True,
         use_gptq=False,
+        use_llm_runtime=True,
+        low_bit_model=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import (
@@ -68,6 +70,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_gptq = use_gptq
+        self.use_llm_runtime = use_llm_runtime
+        self.low_bit_model = low_bit_model
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -129,6 +133,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
 
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
+
+        self.use_llm_runtime = False
 
     def post_init_runtime(self):
         r"""
@@ -198,6 +204,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 print("WARNING: fp8 weight type only supports fp8 / fp32 scale now."\
                       " Fall back to fp8.")
                 self.scale_dtype = "fp8"
+
+        self.use_llm_runtime = True
 
     def quantization_method(self):
         r"""
@@ -366,7 +374,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
     def get_config_dict(
         cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=QUANT_CONFIG, **kwargs)
+        cf = kwargs.pop("_configuration_file", QUANT_CONFIG)
+        return super().get_config_dict(pretrained_model_name_or_path, _configuration_file=cf, **kwargs)
 
 
 @dataclass
@@ -382,7 +391,9 @@ class SmoothQuantConfig:
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
     calib_iters: int = 100
+    calib_padding: bool = False
     calib_len: int = 512
+    calib_pad_val: int = 1
     alpha: float = 0.5
     op_type_dict: dict = None
     op_name_dict: dict = None

@@ -69,7 +69,7 @@ def build_chatbot(config: PipelineConfig=None):
             return
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower() or "magicoder" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
@@ -87,11 +87,15 @@ def build_chatbot(config: PipelineConfig=None):
     elif "mistral" in config.model_name_or_path.lower():
         from .models.mistral_model import MistralModel
         adapter = MistralModel()
+    elif "solar" in config.model_name_or_path.lower():
+        from .models.solar_model import SolarModel
+        adapter = SolarModel()
     elif "opt" in config.model_name_or_path.lower() or \
          "gpt" in config.model_name_or_path.lower() or \
          "flan-t5" in config.model_name_or_path.lower() or \
          "bloom" in config.model_name_or_path.lower() or \
-         "starcoder" in config.model_name_or_path.lower():
+         "starcoder" in config.model_name_or_path.lower() or \
+         "codegen" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
