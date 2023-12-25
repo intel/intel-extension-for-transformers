@@ -147,8 +147,9 @@ class Agent_QA():
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
-            if self.vector_database == "Qdrant":
-                knowledge_base.client.close()
+            if self.vector_database == "Qdrant" and knowledge_base.is_local():
+               # one storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+               knowledge_base.client.close()
         elif self.retrieval_type == "child_parent":    # Using child-parent store retriever
             child_documents = self.splitter.split_documents(langchain_documents)
             if append:
@@ -162,8 +163,12 @@ class Agent_QA():
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs).retriever
-            if self.vector_database == "Qdrant":
-                knowledge_base.client.close()
+            if self.vector_database == "Qdrant" :
+                # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+                if knowledge_base.is_local():
+                    knowledge_base.client.close()
+                if child_knowledge_base.is_local():
+                    child_knowledge_base.client.close()
         logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):

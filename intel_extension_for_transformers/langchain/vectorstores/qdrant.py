@@ -68,7 +68,6 @@ class Qdrant(Qdrant_origin):
                 persist_directory = persist_directory + "_child"
         assert not (sign == "child" and not persist_directory), \
             "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
-        import pdb;pdb.set_trace()
         texts = [d.page_content for d in documents]
         metadatas = [d.metadata for d in documents]
         return cls.from_texts(
@@ -175,9 +174,9 @@ class Qdrant(Qdrant_origin):
             persist_directory = _DEFAULT_PERSIST_DIR
             if sign == "child":
                 persist_directory = persist_directory + "_child"
-        assert sign == "child" and not persist_directory, \
+        assert not (sign == "child" and not persist_directory), \
             "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
-        if os.path.exists(persist_directory):
+        if persist_directory and os.path.exists(persist_directory):
             if bool(os.listdir(persist_directory)):
                 logging.info("Load the existing database!")
                 texts = [d.page_content for d in documents]
@@ -244,10 +243,13 @@ class Qdrant(Qdrant_origin):
                 Defaults to _LANGCHAIN_DEFAULT_COLLECTION_NAME.
             force_recreate (bool, optional): _description_. Defaults to False.
         """
-        if not all([location, url, host, persist_directory]):
+        if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
             # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
             persist_directory = _DEFAULT_PERSIST_DIR
+
+        # for a single quick embedding to get vector size
         tmp_texts = ["foo"]
+        
         qdrant_collection = cls.construct_instance(
             texts=tmp_texts,
             embedding=embedding,
@@ -263,3 +265,12 @@ class Qdrant(Qdrant_origin):
         return qdrant_collection
     
     
+    def is_local(
+        self,
+    ):
+        """Determine whether a client is local."""
+        if hasattr(self.client, "_client") and \
+            isinstance(self.client._client, qdrant_client.local.qdrant_local.QdrantLocal):
+            return True
+        else:
+            return False
