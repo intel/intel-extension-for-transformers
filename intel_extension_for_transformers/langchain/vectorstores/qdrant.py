@@ -184,7 +184,8 @@ class Qdrant(Qdrant_origin):
                         Params for quantization, if None - quantization will be disable.
                     init_from (Optional[common_types.InitFrom], optional): 
                         Use data stored in another collection to initialize this collection.
-                    on_disk (Optional[bool], optional): if True, vectors will be stored on disk. If None, default value will be used.
+                    on_disk (Optional[bool], optional): if True, vectors will be stored on disk.
+                        If None, default value will be used.
         """
         if sum([param is not None for param in (location, url, host, persist_directory)]) == 0:
             # One of 'location', 'url', 'host' or 'persist_directory' should be specified.
