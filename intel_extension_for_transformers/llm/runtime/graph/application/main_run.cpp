@@ -730,7 +730,7 @@ int main(int argc, char** argv) {  // NOLINT
   if (ns_log_level() == 0 || ns_log_level() == 1) {
     model_print_timings(ctx);
   }
-  
+
   model_free(ctx);
 
   return 0;
