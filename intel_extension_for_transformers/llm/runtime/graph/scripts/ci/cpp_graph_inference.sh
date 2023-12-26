@@ -210,17 +210,17 @@ function main() {
         quant_script="./build/bin/quant_chatglm"
         infer_cmd="python ./scripts/inference.py"
         extension=" --model_name chatglm --tokenizer $model_path"
-        requirements_file="scripts/requirements/chatglm-6b.txt"
+        requirements_file="scripts/requirements/chatglm-6b.sh"
     elif [[ "${model}" == "baichuan2-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
-        requirements_file="scripts/requirements/baichuan.txt"
+        requirements_file="scripts/requirements/baichuan.sh"
         extension=" --model_name baichuan --tokenizer $model_path"
     elif [[ "${model}" == "baichuan-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
         extension=" --model_name baichuan --tokenizer $model_path"
-        requirements_file="scripts/requirements/baichuan.txt"
+        requirements_file="scripts/requirements/baichuan.sh"
     elif [[ "${model}" == "mistral-7b" ]]; then
         quant_script="./build/bin/quant_mistral"
         infer_cmd="./build/bin/run_mistral"
@@ -277,7 +277,14 @@ function main() {
     cd ..
 
     ## prepare example requiement
-    pip install -r "$requirements_file"
+    if [[ $requirements_file == *'.txt' ]]; then
+        pip install -r "$requirements_file"
+    elif [[ $requirements_file == *'.sh' ]]; then
+        source "$requirements_file"
+    else
+        echo "Error: Unexpedted requirements_file: $requirements_file" 1>&2
+        exit 1
+    fi
 
     echo "=======  Convert Start  ======="
     ## prepare fp32 bin
