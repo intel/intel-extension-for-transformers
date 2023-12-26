@@ -136,6 +136,10 @@ class Model:
             if threads is None:
                 if "windows" not in sys_platform:
                     generate_kwargs["threads"] = len(os.sched_getaffinity(0))
+                else:
+                    import os
+                    cpu_count = os.cpu_count()
+                    generate_kwargs["threads"] = int(cpu_count)
             else:
                 generate_kwargs["threads"] = int(threads)
         self.model.init_model(model_path, **generate_kwargs)
