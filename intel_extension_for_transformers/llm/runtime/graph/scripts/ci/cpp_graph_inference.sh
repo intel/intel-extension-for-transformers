@@ -148,6 +148,7 @@ model_name_map["baichuan2-13b"]="baichuan-inc/Baichuan2-13B-Chat"
 model_name_map["baichuan-13b"]="baichuan-inc/Baichuan-13B-Chat"
 model_name_map["mistral-7b"]="mistralai/Mistral-7B-v0.1"
 model_name_map["qwen-7b"]="Qwen/Qwen-7B-Chat"
+model_name_map["magicoder"]="ise-uiuc/Magicoder-S-DS-6.7B"
 
 function main() {
     conda_env="$1"
@@ -227,6 +228,9 @@ function main() {
     elif [[ "${model}" == "qwen-7b" ]]; then
         quant_script="./build/bin/quant_qwen"
         infer_cmd="./build/bin/run_qwen"
+    elif [[ "${model}" == "magicoder" ]]; then
+        quant_script="./build/bin/quant_llama"
+        infer_cmd="./build/bin/run_llama"
     else
         echo "Error: Unexpedted model: $model" 1>&2
         exit 1
