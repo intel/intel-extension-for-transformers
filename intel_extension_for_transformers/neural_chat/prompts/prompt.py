@@ -132,8 +132,7 @@ register_conv_template(
         system_message="""### You are a helpful, respectful and honest assistant developed by ITREX team \
          to help the user with questions.
          - Please refer to the search results obtained from the local knowledge base. But be careful to not \
-         incorporate the information that you think is not relevant to the question.
-         - If you don't know the answer to a question, please don't share false information.\n""" ,
+         incorporate the information that you think is not relevant to the question.\n""" ,
         roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
