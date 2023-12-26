@@ -35,6 +35,20 @@ struct woq_config_param {
   dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
 };
 
+struct woq_packq_param {
+  std::string compute_type;
+  std::string weight_type;
+  std::string scale_type;
+  std::string alg;  // sym/asym
+  int group_size;
+  bool enable_act_shuffle;
+};
+
+struct woq_packq_ctx {
+  torch::Tensor *qweight, *scale, *zp, *g_idx, *output;
+  int n, k;
+};
+
 struct woq_runtime_ctx {
   torch::Tensor *activation, *weight, *bias, *output;
   bool transpose;
@@ -44,5 +58,6 @@ struct woq_runtime_ctx {
 };
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
+void jblas_packq(woq_packq_param* p, woq_packq_ctx* ctx);
 void set_woq_workspace(torch::Tensor* workspace);
 }  // namespace woq

@@ -54,6 +54,23 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
   }
 }
 
+static torch::Tensor woq_packq(const torch::Tensor& qweight, const torch::Tensor& scale, const torch::Tensor& zp,
+                               const torch::Tensor& g_idx, const std::string& weight_type,
+                               const std::string& scale_type, std::string& compute_type, std::string& alg,
+                               int64_t group_size) {
+  torch::Tensor output;
+  woq::woq_packq_param p{compute_type, weight_type, scale_type, alg, static_cast<int>(group_size), g_idx.numel() == 0};
+  woq::woq_packq_ctx ctx{const_cast<torch::Tensor*>(&qweight),
+                         const_cast<torch::Tensor*>(&scale),
+                         const_cast<torch::Tensor*>(&zp),
+                         const_cast<torch::Tensor*>(&g_idx),
+                         &output,
+                         static_cast<int>(qweight.sizes()[1]),
+                         static_cast<int>(qweight.sizes()[0])};
+  woq::jblas_packq(&p, &ctx);
+  return output;
+}
+
 static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t block_size,
                                   const std::string& compute_type, const std::string& weight_type,
                                   const std::string& scale_type) {
