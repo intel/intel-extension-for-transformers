@@ -435,12 +435,24 @@ class beam_search_flow {
     requests_done.assign(batch_size, false);
     request_running_indices.reserve(batch_size);
     next_done_request_ids.reserve(batch_size);
-    n_tokens.reserve(batch_size);
-    n_past.reserve(batch_size);
-    n_prompt_tokens.reserve(batch_size);
-    n_total.reserve(batch_size);
-    padding_side.reserve(batch_size);
-    n_padding.reserve(batch_size);
+    n_tokens.resize(batch_size);
+    n_past.resize(batch_size);
+    n_prompt_tokens.resize(batch_size);
+    n_total.resize(batch_size);
+    padding_side.resize(batch_size);
+    n_padding.resize(batch_size);
+    gen_confs.resize(batch_size);
+    next_inputs.reserve(batch_size);
+    kv_reorder = ctx->bs_kv_reorder;
+    if (kv_reorder == nullptr) {
+      kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+      printf(
+          "WARNING: Using default kv cache update function. Ignore this warning if your K shape = [head_dim, N, "
+          "n_head], "
+          "V shape = [N, head_dim, n_head]\n");
+#endif
+    }
   }
   ~beam_search_flow() {}
 
@@ -449,7 +461,6 @@ class beam_search_flow {
   const std::vector<std::vector<model_token>>& loop(const std::vector<model_input>& inputs, const int& n_threads);
   // continuous batching (scheduling from the outside)
   bool step(const std::vector<model_input>& inputs);
-  bool check_inputs(const std::vector<model_input>& inputs);
   std::vector<int> request_done_ids();
   std::vector<std::vector<model_token>> request_done_reponse();
 
@@ -462,6 +473,10 @@ class beam_search_flow {
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
   void update_status();
   const beam& finalize(const int& request_idx);
+  // continuous batching (scheduling from the outside)
+  bool step_check_and_prepare_inputs(const std::vector<model_input>& inputs);
+  bool step_update_beams_and_kv_cache();
+  bool step_check_done_requests();
 
   model_context* ctx = nullptr;
   const int beam_size;
@@ -478,6 +493,8 @@ class beam_search_flow {
   std::vector<uint32_t> n_total;
   std::vector<int> padding_side;
   std::vector<uint32_t> n_padding;
+  std::vector<generation_config> gen_confs;
+  std::vector<model_input> next_inputs;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;

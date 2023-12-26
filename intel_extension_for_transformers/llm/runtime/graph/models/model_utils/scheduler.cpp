@@ -55,11 +55,13 @@ bool cbg_worker::prepare_inputs(std::vector<sequence*>* seqs, const int& n_input
     } else if ((seqs->at(ni))->status == seq_status::PREFILL) {
       (inputs + ni)->tokens = (seqs->at(ni))->prompt_ids.data();
       (inputs + ni)->n_tokens = (seqs->at(ni))->n_prompt_tokens;
+      (inputs + ni)->n_prompt_tokens = (seqs->at(ni))->n_prompt_tokens;
       (inputs + ni)->n_past = 0;
       (inputs + ni)->n_total = 0;
       (inputs + ni)->request_idx = (seqs->at(ni))->request_idx;
       // do not support padding for now
       (inputs + ni)->n_padding = 0;
+      (inputs + ni)->gen_conf = (seqs->at(ni))->gen_conf;
     } else if ((seqs->at(ni))->status == seq_status::DECODING) {
       (inputs + ni)->tokens = &(seqs->at(ni))->generated_ids.back();
       (inputs + ni)->n_tokens = 1;

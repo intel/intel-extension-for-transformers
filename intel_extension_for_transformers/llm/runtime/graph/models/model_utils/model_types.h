@@ -394,6 +394,7 @@ struct model_input {
   int padding_side = 0;
   // padding length
   uint32_t n_padding = 0;
+  generation_config gen_conf;
 };
 
 struct model_context_params {
