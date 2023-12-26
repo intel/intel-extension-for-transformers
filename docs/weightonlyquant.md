@@ -115,3 +115,24 @@ gen_ids = woq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
 print(gen_text)
 ```
+
+You can also save and load your quantized low bit model by the below code.
+
+```python
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+model_path = "meta-llama/Llama-2-7b-chat-hf" # your_pytorch_model_path_or_HF_model_name
+saved_dir = "4_bit_llama2" # your_saved_model_dir
+# quant
+model = AutoModelForCausalLM.from_pretrained(model_path, load_in_4bit=True, use_llm_runtime=False)
+# save quant model
+model.save_pretrained(saved_dir)
+# load quant model
+loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
+```
+| Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
+|:--------------:|:----------:|:----------:|
+|       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
+|       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
+
+> Note: Only supports CPU device for now. For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)

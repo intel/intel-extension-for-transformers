@@ -24,6 +24,7 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -163,7 +164,7 @@ class BaseModel(ABC):
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-              "codegen" in self.model_name.lower():
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -206,6 +207,16 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
 
         try:
             response = predict_stream(
@@ -256,7 +267,7 @@ class BaseModel(ABC):
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-               "codegen" in self.model_name.lower():
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -297,6 +308,9 @@ class BaseModel(ABC):
             conv_template.append_message(conv_template.roles[0], query)
             conv_template.append_message(conv_template.roles[1], None)
             query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
 
         # LLM inference
         try:

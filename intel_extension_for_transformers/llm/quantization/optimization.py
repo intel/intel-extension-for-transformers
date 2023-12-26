@@ -52,10 +52,11 @@ class Optimization:
             or re.search("bloom", model_name, re.IGNORECASE)
             or re.search("llama", model_name, re.IGNORECASE)
             or re.search("opt", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
+            or re.search("neural-chat", model_name, re.IGNORECASE)
             or re.search("starcoder", model_name, re.IGNORECASE)
+            or re.search("codegen", model_name, re.IGNORECASE)
+            or re.search("mistral", model_name, re.IGNORECASE)
+            or re.search("magicoder", model_name, re.IGNORECASE)
             or re.search("solar", model_name, re.IGNORECASE)
         ):
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
