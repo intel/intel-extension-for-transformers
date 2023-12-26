@@ -162,8 +162,8 @@ static bool falcon_model_eval_internal(model_context* ctx, const model_input* in
                                           fused_qkv_row_nb, (n_embd + n_head_kv * head_dim) * ne_element_size(cur));
 
       // using mode = 2 for neox mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2, 0, hparams.freq_base);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2, 0, hparams.freq_base);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2, 0, hparams.freq_base, hparams.freq_scale);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2, 0, hparams.freq_base, hparams.freq_scale);
 
       // self-attention
       const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
