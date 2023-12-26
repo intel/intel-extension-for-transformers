@@ -75,11 +75,6 @@ MODEL_API struct model_context* model_init_from_file(const char* path_model, str
 // Frees all allocated memory
 MODEL_API void model_free(struct model_context* ctx);
 
-// TODO: not great API - very likely to change
-// Returns 0 on success
-// param - from args
-// quant_layer - depends on each model's config
-
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for
 // the layers modified by the adapter. Can be NULL to use the current loaded
