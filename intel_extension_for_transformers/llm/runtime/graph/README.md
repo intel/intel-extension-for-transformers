@@ -293,7 +293,7 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM, 
 model_name = "Local path for whisper"     # please use local path
 woq_config = WeightOnlyQuantConfig(use_ggml=True) #Currently, only Q40 is supported
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
-model.inference('Local audio file') 
+model('Local audio file')
 ```
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
