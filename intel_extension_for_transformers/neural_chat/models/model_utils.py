@@ -417,6 +417,28 @@ def load_model(
         MODELS[model_name]["assistant_model"] = None
 
     try:
+        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+    except ValueError as e:
+        logging.error(f"Exception: {e}")
+        if "Unrecognized model in" in str(e):
+            raise ValueError(f"load_model: model config is not found, {e}")
+        else:
+            raise ValueError(f"load_model: unknown ValueError occurred, {e}")
+    except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError(f"load_model: model name or path is not found, {e}")
+        else:
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
+
+    MODELS[model_name]["model_type"] = config.model_type
+
+    try:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_name,
             use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
@@ -426,20 +448,14 @@ def load_model(
                 re.search("chatglm", model_name, re.IGNORECASE)) else False,
         )
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: tokenizer is not found")
+            raise ValueError(f"load_model: tokenizer is not found, {e}")
         else:
-            raise
-
-    try:
-        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
-    except ValueError as e:
-        if "Unrecognized model in" in str(e):
-            raise ValueError("load_model: model config is not found")
-        else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     load_to_meta = model_on_meta(config)
 
@@ -478,19 +494,14 @@ def load_model(
                     trust_remote_code=True)
         elif ((
             re.search("gpt", model_name, re.IGNORECASE)
-            or re.search("mpt", model_name, re.IGNORECASE)
-            or re.search("bloom", model_name, re.IGNORECASE)
-            or re.search("llama", model_name, re.IGNORECASE)
-            or re.search("magicoder", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-            or re.search("qwen", model_name, re.IGNORECASE)
-            or re.search("starcoder", model_name, re.IGNORECASE)
-            or re.search("codellama", model_name, re.IGNORECASE)
-            or re.search("mistral", model_name, re.IGNORECASE)
-            or re.search("codegen", model_name, re.IGNORECASE)
-        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            or config.model_type == "bloom"
+            or config.model_type == "qwen"
+            or config.model_type == "gpt_bigcode"
+            or config.model_type == "mpt"
+            or config.model_type == "llama"
+            or config.model_type == "mistral"
+            or config.model_type == "mixtral"
+        ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name,
@@ -498,13 +509,12 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
-                    trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+                    trust_remote_code=True if (config.model_type == "qwen" or \
                         re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (
-                (re.search("starcoder", model_name, re.IGNORECASE)
-                or re.search("codellama", model_name, re.IGNORECASE)
-                or re.search("codegen", model_name, re.IGNORECASE)
+                (config.model_type == "gpt_bigcode"
+                 or config.model_type == "llama"
                 ) and ipex_int8
             ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -520,9 +530,9 @@ def load_model(
                         model_name,
                         file_name="best_model.pt",
                     )
-        elif(
-                (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("opt", model_name, re.IGNORECASE)
+        elif (
+                (config.model_type == "llama"
+                or config.model_type == "opt"
                 or re.search("gpt_neox", model_name, re.IGNORECASE)
                 or re.search("gptj", model_name, re.IGNORECASE)
                 or re.search("falcon", model_name, re.IGNORECASE)
@@ -545,12 +555,16 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER/CODEGEN now.")
+            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")
         else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -1192,6 +1206,8 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "@@ Response" in output:
+        return output.split("@@ Response")[1].strip()
     if "### Assistant" in output:
         return output.split("### Assistant:")[1].strip()
     if "\nassistant\n" in output:
