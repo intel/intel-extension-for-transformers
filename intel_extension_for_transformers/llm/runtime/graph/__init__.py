@@ -143,10 +143,6 @@ class Model:
         self.__import_package(model_type)
         self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
-    def inference(self, audio_file):
-        self.model = self.module.Model()
-        self.model.init_model(self.bin_file)
-        self.model.inference(audio_file)
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,
                  **generate_kwargs):
@@ -223,11 +219,24 @@ class Model:
                                   " with padding!")
         return self.tokenizer.pad_token_id
 
-    def __call__(self, input_ids, reinit=False, **kwargs):
-        if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
-            self.generate_round = 0
-        elif reinit:
-            self.model.reinit()
-            self.generate_round = 0
-        return self.model.evaluate(input_ids.tolist())
+    def __call__(self, model_input, reinit=False, **kwargs):
+        if self.model_type == 'whisper':
+            if self.model is None:
+                self.model = self.module.Model()
+                self.model.init_model(self.bin_file)
+            if os.path.isfile(model_input):
+                self.model.inference(model_input)
+            else:
+                print("Please input an audio file")
+            return
+        if isinstance(model_input, torch.Tensor)
+            if self.model is None:
+                self.init_from_bin(self.model_type, self.bin_file, **kwargs)
+                self.generate_round = 0
+            elif reinit:
+                self.model.reinit()
+                self.generate_round = 0
+            return self.model.evaluate(model_input.tolist())
+        else:
+            print("Please input torch.Tensor")
+        return
