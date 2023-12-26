@@ -133,7 +133,7 @@ class Agent_QA():
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
-            self.database = Chroma()
+            self.database = Chroma
         elif self.vector_database == "Qdrant":
             self.database = Qdrant
         # elif self.vector_database == "PGVector":
