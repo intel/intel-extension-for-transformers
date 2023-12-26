@@ -29,7 +29,7 @@ enum llama_model {
 static const model_scratch llama_mem_req(int n_layers) {
   switch (n_layers) {
     case 32:
-      return {512ull * MB, 512ull * MB, 1026ull * MB};
+      return {1024ull * MB, 1024ull * MB, 1026ull * MB};
     case 40:
       return {512ull * MB, 512ull * MB, 1608ull * MB};
     case 60:
