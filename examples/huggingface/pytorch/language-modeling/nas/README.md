@@ -9,7 +9,8 @@ Neural architecture search (NAS) training script [`run_mlm.py`](./run_mlm.py) is
 Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
-pip install transformers==4.34.1
+pip install 
+pip install datasets==2.14.7
 ```
 >**Note**: Please use transformers no higher than 4.34.1
 
