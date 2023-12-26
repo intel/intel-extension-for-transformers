@@ -120,6 +120,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype)
         bias = None if self.bias is None else self.bias.data
+        if not x.is_contiguous():
+            x = x.contiguous()
         out = matmul_kbit(
             x.view(m, shape[-1]), self.weight, bias, out,
             self.compute_dtype, self.weight_dtype, self.scale_dtype, do_dequant=self.training
