@@ -180,9 +180,9 @@ static bool qwen_model_eval_internal(model_context* ctx, const model_input* inpu
                                                         fused_qkv_row_nb, 2 * sizeof(float) * n_embd));
 
       // using mode = 2 for GPT-NeoX mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0, hparams.freq_base);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0, hparams.freq_base, hparams.freq_scale);
       ne_set_name(Qcur, "Qcur");
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0, hparams.freq_base);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0, hparams.freq_base, hparams.freq_scale);
       ne_set_name(Kcur, "kcur");
       const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
       // store key and value to memory

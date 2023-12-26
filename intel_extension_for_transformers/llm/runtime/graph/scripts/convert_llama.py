@@ -150,6 +150,9 @@ class Params:
     ffn_hidden_size: int
     rms_norm_eps: float
     rope_theta: float
+    rope_scale: float
+    bos_token_id: int
+    eos_token_id: int
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -178,6 +181,11 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
+        rope_scale = 1
+        if config["rope_scaling"]:
+            rope_scale = config["rope_scaling"]["factor"] if "factor" in config["rope_scaling"] else 1
+        bos_token_id = config["bos_token_id"]
+        eos_token_id = config["eos_token_id"]
 
         return Params(
             n_vocab=n_vocab,
@@ -189,6 +197,9 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale,
+            bos_token_id = bos_token_id,
+            eos_token_id = eos_token_id,
         )
 
     # LLaMA v2 70B params.json
@@ -204,6 +215,8 @@ class Params:
         n_head = config["n_heads"]
         n_head_kv = config["n_kv_heads"] if "n_kv_heads" in config else n_head
         ffn_hidden_size = config["intermediate_size"]
+        bos_token_id = config["bos_token_id"]
+        eos_token_id = config["eos_token_id"]
         # hack to determine LLaMA v1 vs v2 vs CodeLlama
 
         if n_vocab == -1:
@@ -217,6 +230,8 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
+            bos_token_id = bos_token_id,
+            eos_token_id = eos_token_id,
         )
 
     @staticmethod
@@ -239,7 +254,7 @@ class Params:
 
 
 class SentencePieceVocab:
-    def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
+    def __init__(self, fname_tokenizer: Path, params_vocab_size: int, fname_added_tokens: Optional[Path]) -> None:
         self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
         added_tokens: Dict[str, int]
         if fname_added_tokens is not None:
@@ -258,25 +273,31 @@ class SentencePieceVocab:
         self.vocab_size: int = self.vocab_size_base + len(self.added_tokens_list)
         self.fname_tokenizer = fname_tokenizer
         self.fname_added_tokens = fname_added_tokens
+        self.params_vocab_size = params_vocab_size
 
     def sentencepiece_tokens(self) -> Iterable[Tuple[bytes, float]]:
         tokenizer = self.sentencepiece_tokenizer
-        for i in range(tokenizer.vocab_size()):
-            text: bytes
-            if tokenizer.is_unknown(i):
+        for i in range(self.params_vocab_size):
+            text: bytes           
+            if i < tokenizer.vocab_size():
+                if tokenizer.is_unknown(i):
+                    text = " \u2047 ".encode("utf-8")
+                elif tokenizer.is_control(i):
+                    text = b""
+                elif tokenizer.is_byte(i):
+                    piece = tokenizer.id_to_piece(i)
+                    if len(piece) != 6:
+                        raise Exception(f"Invalid token: {piece}")
+                    byte_value = int(piece[3:-1], 16)
+                    text = struct.pack("B", byte_value)
+                else:
+                    text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
+                score: float = tokenizer.get_score(i)
+                yield text, score
+            else :
                 text = " \u2047 ".encode("utf-8")
-            elif tokenizer.is_control(i):
-                text = b""
-            elif tokenizer.is_byte(i):
-                piece = tokenizer.id_to_piece(i)
-                if len(piece) != 6:
-                    raise Exception(f"Invalid token: {piece}")
-                byte_value = int(piece[3:-1], 16)
-                text = struct.pack("B", byte_value)
-            else:
-                text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
-            score: float = tokenizer.get_score(i)
-            yield text, score
+                score: float = i
+                yield text, score
 
     def added_tokens(self) -> Iterable[Tuple[bytes, float]]:
         for text in self.added_tokens_list:
@@ -1063,13 +1084,14 @@ class OutputFile:
 
         self.fout.write(struct.pack("f", params.rms_norm_eps))
         self.fout.write(struct.pack("f", params.rope_theta))
+        self.fout.write(struct.pack("f", params.rope_scale))
 
         # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
         # but bos_token_id = 1 in llama.cpp
-        self.fout.write(struct.pack("i", 1))
-        self.fout.write(struct.pack("i", 2))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", params.bos_token_id))
+        self.fout.write(struct.pack("i", params.eos_token_id))
+        self.fout.write(struct.pack("i", -1))
+        self.fout.write(struct.pack("i", -1))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')
@@ -1095,7 +1117,7 @@ class OutputFile:
 
     @staticmethod
     def write_all(fname_out: Path, params: Params, model: LazyModel, vocab: Vocab, file_type: NEFileType) -> None:
-        check_vocab_size(params, vocab)
+        #check_vocab_size(params, vocab)
         of = OutputFile(fname_out)
         of.write_file_header(params, file_type)
         print("Writing vocab...")
@@ -1224,7 +1246,7 @@ def filter_and_sort_tensors(model: LazyModel) -> LazyModel:
     return {name: model[name] for name in TENSORS_LIST if name in model}
 
 
-def load_vocab(path: Path) -> SentencePieceVocab:
+def load_vocab(path: Path, params_vocab_size: int) -> SentencePieceVocab:
     # Be extra-friendly and accept either a file or a directory.  Also, if it's
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
@@ -1243,7 +1265,7 @@ def load_vocab(path: Path) -> SentencePieceVocab:
             )
     added_tokens_path = path.parent / "added_tokens.json"
     print(f"Loading vocab file {path}")
-    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+    return SentencePieceVocab(path, params_vocab_size, added_tokens_path if added_tokens_path.exists() else None)
 
 
 def default_outfile(model_paths: List[Path], params: Params) -> Path:
@@ -1306,13 +1328,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
         if args.dump:
             do_dump_model(model_plus)
             return
+        model = model_plus.model
+        params = Params.load(model_plus)
         if model_plus.vocab is not None and args.vocab_dir is None:
             vocab = model_plus.vocab
         else:
             vocab_dir = args.vocab_dir if args.vocab_dir else model_plus.paths[0].parent
-            vocab = load_vocab(vocab_dir)
-        model = model_plus.model
-        params = Params.load(model_plus)
+            vocab = load_vocab(vocab_dir, params.n_vocab)
         model = do_necessary_conversions(model, params)
         output_type = pick_output_type(model, args.outtype)
         model = convert_to_output_type(model, output_type)
