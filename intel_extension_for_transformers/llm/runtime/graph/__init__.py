@@ -229,7 +229,7 @@ class Model:
             else:
                 print("Please input an audio file")
             return
-        if isinstance(model_input, torch.Tensor)
+        if isinstance(model_input, torch.Tensor):
             if self.model is None:
                 self.init_from_bin(self.model_type, self.bin_file, **kwargs)
                 self.generate_round = 0
