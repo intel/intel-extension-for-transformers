@@ -83,8 +83,6 @@ class Qdrant(Qdrant_origin):
             persist_directory = _DEFAULT_PERSIST_DIR
             if sign == "child":
                 persist_directory = persist_directory + "_child"
-        assert not (sign == "child" and not persist_directory), \
-            "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
         texts = [d.page_content for d in documents]
         metadatas = [d.metadata for d in documents]
         return cls.from_texts(
@@ -192,8 +190,6 @@ class Qdrant(Qdrant_origin):
             persist_directory = _DEFAULT_PERSIST_DIR
             if sign == "child":
                 persist_directory = persist_directory + "_child"
-        assert not (sign == "child" and not persist_directory), \
-            "retrieval_type of 'child_parent' is only available for on-disk storage by setting 'persist_directory'."
         if persist_directory and os.path.exists(persist_directory):
             if bool(os.listdir(persist_directory)):
                 logging.info("Load the existing database!")
