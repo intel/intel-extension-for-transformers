@@ -131,7 +131,9 @@ class Model:
         self.model = self.module.Model()
         if "threads" not in generate_kwargs:
             threads = os.getenv("OMP_NUM_THREADS")
-            if threads is None:
+            import platform
+            sys_platform = platform.platform().lower()
+            if threads is None and "windows" not in sys_platform:
                 generate_kwargs["threads"] = len(os.sched_getaffinity(0))
             else:
                 generate_kwargs["threads"] = int(threads)
