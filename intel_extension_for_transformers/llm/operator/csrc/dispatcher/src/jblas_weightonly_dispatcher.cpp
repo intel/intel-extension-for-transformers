@@ -274,6 +274,7 @@ void parse_gemm_core_online(woq_config_param* p, woq_runtime_ctx* ctx) {
   set_nk(ctx, ctx->weight);
   ctx->blocksize = ctx->blocksize == -1 ? ctx->k : ctx->blocksize;
   if (p->compute_type == "int8") {
+    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type dosen't support asym quantization currently.")
     if (dispatcher_utils::check_amx() && ctx->blocksize % jblas::gemm::ICoreRowNAmxint8KBlock<48, 16>::KTILE == 0) {
       return parse_weight<TASK, jblas::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
     }
@@ -315,11 +316,13 @@ void parse_gemm_core_offline(woq_config_param* p, woq_runtime_ctx* ctx) {
   auto CType = jblas::gemm::CoreAttr::get_mask_val(ctx->deseries_wei->mCoreId, jblas::gemm::CoreAttr::COMP_MASK,
                                                    jblas::gemm::CoreAttr::COMP_SHIFT);
   if (CType == uint32_t(jblas::gemm::CompType::COMP_INT8_US_INT32)) {
+    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type dosen't support asym quantization currently.")
     if (NTile == jblas::gemm::ICoreRowNAmxint8KBlock<48, 16>::NTILE && dispatcher_utils::check_amx()) {
       return parse_weight<TASK, jblas::gemm::ICoreRowNAmxint8KBlock<48, 16>>(p, ctx);
     }
   }
   if (CType == uint32_t(jblas::gemm::CompType::COMP_INT8_US_FP32)) {
+    TORCH_CHECK(p->asym == false, "Qbits: int8 compute_type dosen't support asym quantization currently.")
     if (NTile == jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>::NTILE && dispatcher_utils::check_avx512_vnni()) {
       return parse_weight<TASK, jblas::gemm::ICoreRowNAvx512vnniKBlock<48, 4>>(p, ctx);
     }

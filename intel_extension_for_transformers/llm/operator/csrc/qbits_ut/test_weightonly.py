@@ -32,8 +32,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 @pytest.mark.parametrize("n", [1024])
 @pytest.mark.parametrize("k", [512])
 @pytest.mark.parametrize("blocksize", [128, -1])
-# @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
-@pytest.mark.parametrize("compute_type", ["bf16", "fp32"])
+@pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
 @pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int4_fullrange", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
 @pytest.mark.parametrize("scale_type", ["fp32", "fp8_e8m0"])
 @pytest.mark.parametrize("asym", [True, False])
@@ -44,7 +43,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
-    if asym and weight_type not in asym_configs:
+    if (asym and weight_type not in asym_configs) or compute_type == "int8":
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
