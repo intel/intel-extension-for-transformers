@@ -289,7 +289,6 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
             def stream_generator():
                 for output in generator:
                     yield output + "\0"
-                yield f"data: [DONE]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
             response = chatbot.predict(query=request.prompt, config=gen_config)
