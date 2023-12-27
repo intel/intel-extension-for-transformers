@@ -25,16 +25,19 @@ from intel_extension_for_transformers.neural_chat import plugins
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
+        if os.path.exists("test_for_accuracy"):
+            shutil.rmtree("test_for_accuracy", ignore_errors=True)
         return super().setUp()
 
     def tearDown(self) -> None:
-        if os.path.exists("output"):
-            shutil.rmtree("output")
+        if os.path.exists("test_for_accuracy"):
+            shutil.rmtree("test_for_accuracy", ignore_errors=True)
         return super().tearDown()
 
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/"
+        plugins.retrieval.args["persist_directory"] = "./test_for_accuracy"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -44,6 +47,149 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
 
+class TestChatbotBuilder_txt(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_txt"):
+            shutil.rmtree("test_txt", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_txt"):
+            shutil.rmtree("test_txt", ignore_errors=True)
+        return super().tearDown()
+    
+    def test_retrieval_txt(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
+        plugins.retrieval.args["persist_directory"] = "./test_txt"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+class TestChatbotBuilder_docx(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_docx"):
+            shutil.rmtree("test_docx", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_docx"):
+            shutil.rmtree("test_docx", ignore_errors=True)
+        return super().tearDown()
+    
+    def test_retrieval_docx(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.docx"
+        plugins.retrieval.args["persist_directory"] = "./test_docx"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+class TestChatbotBuilder_xlsx(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_xlsx"):
+            shutil.rmtree("test_xlsx", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_xlsx"):
+            shutil.rmtree("test_xlsx", ignore_errors=True)
+        return super().tearDown()
+    
+    def test_retrieval_xlsx(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.xlsx"
+        plugins.retrieval.args["persist_directory"] = "./test_xlsx"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Who is the CEO of Intel?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+class TestChatbotBuilder_xlsx_1(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_xlsx_1"):
+            shutil.rmtree("test_xlsx_1", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_xlsx_1"):
+            shutil.rmtree("test_xlsx_1", ignore_errors=True)
+        return super().tearDown()
+    
+    def test_retrieval_xlsx_1(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.xlsx"
+        plugins.retrieval.args["persist_directory"] = "./test_xlsx_1"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Who is the CEO of Intel?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+class TestChatbotBuilder_xlsx_2(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_xlsx_2"):
+            shutil.rmtree("test_xlsx_2", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_xlsx_2"):
+            shutil.rmtree("test_xlsx_2", ignore_errors=True)
+        return super().tearDown()
+    
+    def test_retrieval_xlsx_2(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample_2.xlsx"
+        plugins.retrieval.args["persist_directory"] = "./test_xlsx_2"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Who is the CEO of Intel?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+class TestChatbotBuilder_jsonl(unittest.TestCase):
+    def setUp(self):
+        if os.path.exists("test_jsonl"):
+            shutil.rmtree("test_jsonl", ignore_errors=True)
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.exists("test_jsonl"):
+            shutil.rmtree("test_jsonl", ignore_errors=True)
+        return super().tearDown()
+
+    def test_retrieval_jsonl(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.jsonl"
+        plugins.retrieval.args["persist_directory"] = "./test_jsonl"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("What does this blog talk about?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
 if __name__ == '__main__':
     unittest.main()
