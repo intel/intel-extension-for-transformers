@@ -15,23 +15,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser 
 import unittest
+import os
+import shutil
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat import PipelineConfig
+from intel_extension_for_transformers.neural_chat import plugins
 
-
-class TestMemory(unittest.TestCase):
+# All UT cases use 'facebook/opt-125m' to reduce test time.
+class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("output"):
+            shutil.rmtree("output")
         return super().tearDown()
 
-    def test_html_loader(self):
-        url = ['https://www.ces.tech/']
-        doc_parser = DocumentParser(max_chuck_size=512, min_chuck_size = 10, process=True)
-        vectordb = None
-        vectordb = doc_parser.load(url)
-        self.assertIsNotNone(vectordb)
+    def test_retrieval_accuracy(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel Xeon Platinum 8480+ Processor have in total?")
+        print(response)
+        plugins.retrieval.args["persist_directory"] = "./output"
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     unittest.main()
