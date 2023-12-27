@@ -34,8 +34,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
-        plugins.retrieval.args["persist_directory"] = "./test_for_accuracy"
+        plugins.retrieval.args["input_path"] = "../assets/docs/"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
