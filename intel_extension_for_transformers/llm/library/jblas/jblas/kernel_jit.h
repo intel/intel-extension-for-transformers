@@ -1228,7 +1228,7 @@ class PaddingTransInterleaveCvt : protected xbyak::JitAvx512f {
     jmp(ptr[reg_tmp + reg_tmp2 * sizeof(void*)], T_NEAR);  // switch(rows-iterrow) ...
     align(sizeof(intptr_t));
     L(l_tail_tbl);
-    db(reinterpret_cast<uintptr_t>(nullptr), sizeof(intptr_t));  // case 0 should never occur
+    db(nullptr, sizeof(intptr_t));  // case 0 should never occur
     for (int i = 1; i < trans_cell; ++i) putL(l_tail_case[i]);
 
     for (int m_tail = 1; m_tail < trans_cell; ++m_tail) {  // case (m_tail):
