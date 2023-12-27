@@ -142,11 +142,13 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     const auto cossin_dtype = wtype == NE_TYPE_JBLAS ? NE_TYPE_F16 : wtype;
     cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
     ne_set_name(cache.cossin, "cossin(-1)");
-    float theta = -1;
+
+    float freq_base = hparams.freq_base;
+    float theta = -1 * hparams.freq_scale;
     float theta_scale = (model != nullptr && model->arch == MODEL_CHATGLM2)
-                            ? std::pow(10000.f, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
-                        : hparams.n_rot > 0 ? std::pow(10000.f, -2.0f / hparams.n_rot)
-                                            : std::pow(10000.f, -2.0f / head_size);
+                            ? std::pow(freq_base, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
+                        : hparams.n_rot > 0 ? std::pow(freq_base, -2.0f / hparams.n_rot)
+                                            : std::pow(freq_base, -2.0f / head_size);
     if (cossin_dtype == NE_TYPE_F16) {
       const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
       for (int i = 0; i < head_size; i += 2) {

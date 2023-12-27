@@ -148,6 +148,7 @@ model_name_map["baichuan2-13b"]="baichuan-inc/Baichuan2-13B-Chat"
 model_name_map["baichuan-13b"]="baichuan-inc/Baichuan-13B-Chat"
 model_name_map["mistral-7b"]="mistralai/Mistral-7B-v0.1"
 model_name_map["qwen-7b"]="Qwen/Qwen-7B-Chat"
+model_name_map["magicoder"]="ise-uiuc/Magicoder-S-DS-6.7B"
 
 function main() {
     conda_env="$1"
@@ -209,17 +210,17 @@ function main() {
         quant_script="./build/bin/quant_chatglm"
         infer_cmd="python ./scripts/inference.py"
         extension=" --model_name chatglm --tokenizer $model_path"
-        requirements_file="scripts/requirements/chatglm-6b.txt"
+        requirements_file="scripts/requirements/chatglm-6b.sh"
     elif [[ "${model}" == "baichuan2-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
-        requirements_file="scripts/requirements/baichuan.txt"
+        requirements_file="scripts/requirements/baichuan.sh"
         extension=" --model_name baichuan --tokenizer $model_path"
     elif [[ "${model}" == "baichuan-13b" ]]; then
         quant_script="./build/bin/quant_baichuan"
         infer_cmd="python ./scripts/inference.py"
         extension=" --model_name baichuan --tokenizer $model_path"
-        requirements_file="scripts/requirements/baichuan.txt"
+        requirements_file="scripts/requirements/baichuan.sh"
     elif [[ "${model}" == "mistral-7b" ]]; then
         quant_script="./build/bin/quant_mistral"
         infer_cmd="./build/bin/run_mistral"
@@ -227,6 +228,9 @@ function main() {
     elif [[ "${model}" == "qwen-7b" ]]; then
         quant_script="./build/bin/quant_qwen"
         infer_cmd="./build/bin/run_qwen"
+    elif [[ "${model}" == "magicoder" ]]; then
+        quant_script="./build/bin/quant_llama"
+        infer_cmd="./build/bin/run_llama"
     else
         echo "Error: Unexpedted model: $model" 1>&2
         exit 1
@@ -273,7 +277,14 @@ function main() {
     cd ..
 
     ## prepare example requiement
-    pip install -r "$requirements_file"
+    if [[ $requirements_file == *'.txt' ]]; then
+        pip install -r "$requirements_file"
+    elif [[ $requirements_file == *'.sh' ]]; then
+        source "$requirements_file"
+    else
+        echo "Error: Unexpedted requirements_file: $requirements_file" 1>&2
+        exit 1
+    fi
 
     echo "=======  Convert Start  ======="
     ## prepare fp32 bin
