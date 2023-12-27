@@ -124,18 +124,32 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   using EpiParam = typename Launcher::EpiParam;
   EpiParam param_epi = {ctx->output->data_ptr(), ctx->bias->data_ptr(), ctx->ldo, 0, ctx->alpha, ctx->beta};
   using GemmCore = typename Launcher::GemmCore;
+  using StorageWeight = typename Launcher::PrologueB::StorageWeight;
+  int asym_size = 0, shuf_size = 0;
+  int8_t* tmpbuf;
   if constexpr (GemmCore::ISA == JblasAMX_INT8 || GemmCore::ISA == JblasAVX512_VNNI || GemmCore::ISA == JblasAVX_VNNI) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore>;
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
+    StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
+    auto dyn_q_size = param_a.quan->mSize;
+    if (packedw->ShfIndice()) shuf_size = param_a.reordered->mSize;
+    tmpbuf = reinterpret_cast<int8_t*>(get_workspace(dyn_q_size + shuf_size));
+    param_a.quan->assign(tmpbuf);
+    if (packedw->ShfIndice()) {
+      param_a.reordered->assign(tmpbuf + dyn_q_size);
+      param_a.indices = packedw->ShfIndice();
+      launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
+    }
     typename Launcher::Param args{gp, param_a,
                                   dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei), param_epi};
-    jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    if (packedw->ShfIndice()) {
+      jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    } else {
+      jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    }
   } else {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore>;
-    using StorageWeight = typename Launcher::PrologueB::StorageWeight;
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
-    int asym_size = 0, shuf_size = 0;
-    int8_t* tmpbuf;
     if (p->asym || packedw->ShfIndice()) {
       if (p->asym) asym_size = param_a.reduce->mSize;
       if (packedw->ShfIndice()) shuf_size = param_a.reordered->mSize;
@@ -160,8 +174,8 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     } else {
       jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
     }
-    if (tmpbuf != woq_workspace) jblas::utils::afree(tmpbuf);
   }
+  if (tmpbuf != woq_workspace && tmpbuf != nullptr) jblas::utils::afree(tmpbuf);
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
     auto cost_time = dispatcher_utils::timer.get_elapsed_time();
@@ -181,11 +195,10 @@ void parse_paramA(woq_config_param* p, woq_runtime_ctx* ctx) {
   using SrcType = typename PrologueA::SRCType;
   static PrologueA kernel;
   if constexpr (quant_PrologueA<typename PrologueA::AType>) {
-    auto quantA = kernel.createStorage(ctx->m, ctx->deseries_wei->mK, ctx->blocksize, false);
-    quantA.assign(reinterpret_cast<int8_t*>(get_workspace(quantA.mSize)));
-    kernel.quantize({reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &quantA}, ctx->m,
-                    ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
+    auto quantA = kernel.createQuantStorage(ctx->m, ctx->deseries_wei->mK, ctx->blocksize, p->asym);
+    auto reordA = kernel.createReorderStorage(ctx->m, ctx->deseries_wei->mK, ctx->blocksize);
     ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &quantA};
+    param_a.reordered = &reordA;
     return do_compute<Launcher, ParamA>(p, ctx, param_a);
   } else {
     auto reduceA = kernel.createReduceStorage(ctx->m, ctx->k, ctx->blocksize);
