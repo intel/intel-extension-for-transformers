@@ -104,6 +104,19 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
               << " execute time:" << cost_time << "ms";
   }
 }
+
+void* get_workspace(int need_size) {
+  void* tmpbuf = NULL;
+  void* workspace = woq_workspace == nullptr ? NULL : woq_workspace;
+  if (workspace != NULL) {
+    TORCH_CHECK(workspace_size >= need_size, "Qbits: workspace size should large than ", need_size, " bytes");
+    return workspace;
+  } else {
+    tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
+    return tmpbuf;
+  }
+}
+
 template <class Launcher, class ParamA>
 void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
@@ -121,6 +134,19 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlock<GemmCore>;
     using StorageWeight = typename Launcher::PrologueB::StorageWeight;
     StorageWeight* packedw = dynamic_cast<StorageWeight*>(ctx->deseries_wei);
+    int asym_size = 0, shuf_size = 0;
+    int8_t* tmpbuf;
+    if (p->asym || packedw->ShfIndice()) {
+      if (p->asym) asym_size = param_a.reduce->mSize;
+      if (packedw->ShfIndice()) shuf_size = param_a.reordered->mSize;
+      tmpbuf = reinterpret_cast<int8_t*>(get_workspace(asym_size + shuf_size));
+    }
+    if (p->asym) param_a.reduce->assign(tmpbuf);
+    if (packedw->ShfIndice()) {
+      param_a.reordered->assign(tmpbuf + asym_size);
+      param_a.indices = packedw->ShfIndice();
+    }
+
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
     typename Launcher::Param args{gp,
                                   param_a,
@@ -129,11 +155,12 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
                                    p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
                                    param_a.reduce->template RPtr<float>(), param_a.reduce->lda},
                                   param_epi};
-    if (p->asym) {
+    if (p->asym || packedw->ShfIndice()) {
       jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
     } else {
       jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
     }
+    if (tmpbuf != woq_workspace) jblas::utils::afree(tmpbuf);
   }
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
@@ -153,17 +180,6 @@ void parse_paramA(woq_config_param* p, woq_runtime_ctx* ctx) {
   using ParamA = typename PrologueA::Param;
   using SrcType = typename PrologueA::SRCType;
   static PrologueA kernel;
-  void* workspace = woq_workspace == nullptr ? NULL : woq_workspace;
-  void* tmpbuf = NULL;
-  auto get_workspace = [&](int need_size) {
-    if (workspace != NULL) {
-      TORCH_CHECK(workspace_size >= need_size, "Qbits: workspace size should large than ", need_size, " bytes");
-      return workspace;
-    } else {
-      tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
-      return tmpbuf;
-    }
-  };
   if constexpr (quant_PrologueA<typename PrologueA::AType>) {
     auto quantA = kernel.createStorage(ctx->m, ctx->deseries_wei->mK, ctx->blocksize, false);
     quantA.assign(reinterpret_cast<int8_t*>(get_workspace(quantA.mSize)));
@@ -172,9 +188,10 @@ void parse_paramA(woq_config_param* p, woq_runtime_ctx* ctx) {
     ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &quantA};
     return do_compute<Launcher, ParamA>(p, ctx, param_a);
   } else {
-    auto rA = kernel.createStorage(ctx->m, ctx->k, ctx->blocksize);
-    if (p->asym) rA.assign(reinterpret_cast<int8_t*>(get_workspace(rA.mSize)));
-    ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &rA};
+    auto reduceA = kernel.createReduceStorage(ctx->m, ctx->k, ctx->blocksize);
+    auto reorderA = kernel.createReorderStorage(ctx->m, ctx->k, ctx->blocksize);
+    ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &reduceA};
+    param_a.reordered = &reorderA;
     return do_compute<Launcher, ParamA>(p, ctx, param_a);
   }
 }
