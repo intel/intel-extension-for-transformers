@@ -441,7 +441,8 @@ def load_model(
     try:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_name,
-            use_fast=False if config.model_type == "llama" else True,
+            use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
             use_auth_token=hf_access_token,
             trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
                 re.search("chatglm", model_name, re.IGNORECASE)) else False,
@@ -499,6 +500,7 @@ def load_model(
             or config.model_type == "mpt"
             or config.model_type == "llama"
             or config.model_type == "mistral"
+            or config.model_type == "mixtral"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -553,7 +555,7 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER/CODEGEN now.")
+            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
