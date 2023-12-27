@@ -74,10 +74,10 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   static Launcher launcher;
   if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockS8>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, jblas::utils::jblas_dtype<float>,
-                                           jblas::utils::jblas_dtype<float>, false);
+                                           jblas::utils::jblas_dtype<float>, p->asym);
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockS4>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
-                                           jblas::utils::jblas_dtype<float>, jblas::utils::jblas_dtype<float>, false);
+                                           jblas::utils::jblas_dtype<float>, jblas::utils::jblas_dtype<float>, p->asym);
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF4>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
                                            jblas::utils::jblas_dtype<float>);
@@ -125,9 +125,15 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     typename Launcher::Param args{gp,
                                   param_a,
                                   dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei),
-                                  {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep()},
+                                  {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
+                                   p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
+                                   param_a.reduce->template RPtr<float>(), param_a.reduce->lda},
                                   param_epi};
-    jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    if (p->asym) {
+      jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    } else {
+      jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    }
   }
   if (dispatcher_utils::initer.verbose) {
     dispatcher_utils::timer.stop();
@@ -146,29 +152,29 @@ void parse_paramA(woq_config_param* p, woq_runtime_ctx* ctx) {
   using PrologueA = typename Launcher::PrologueA;
   using ParamA = typename PrologueA::Param;
   using SrcType = typename PrologueA::SRCType;
+  static PrologueA kernel;
+  void* workspace = woq_workspace == nullptr ? NULL : woq_workspace;
+  void* tmpbuf = NULL;
+  auto get_workspace = [&](int need_size) {
+    if (workspace != NULL) {
+      TORCH_CHECK(workspace_size >= need_size, "Qbits: workspace size should large than ", need_size, " bytes");
+      return workspace;
+    } else {
+      tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
+      return tmpbuf;
+    }
+  };
   if constexpr (quant_PrologueA<typename PrologueA::AType>) {
-    static PrologueA kernel;
-    void* workspace = woq_workspace == nullptr ? NULL : woq_workspace;
-    size_t need_size;
-    void* tmpbuf = NULL;
-    auto get_workspace = [&] {
-      if (workspace != NULL) {
-        TORCH_CHECK(workspace_size >= need_size, "Qbits: workspace size should large than ", need_size, " bytes");
-        return workspace;
-      } else {
-        tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
-        return tmpbuf;
-      }
-    };
     auto quantA = kernel.createStorage(ctx->m, ctx->deseries_wei->mK, ctx->blocksize, false);
-    need_size = quantA.mSize;
-    quantA.assign(reinterpret_cast<int8_t*>(get_workspace()));
+    quantA.assign(reinterpret_cast<int8_t*>(get_workspace(quantA.mSize)));
     kernel.quantize({reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &quantA}, ctx->m,
                     ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
     ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &quantA};
     return do_compute<Launcher, ParamA>(p, ctx, param_a);
   } else {
-    ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK};
+    auto rA = kernel.createStorage(ctx->m, ctx->k, ctx->blocksize);
+    if (p->asym) rA.assign(reinterpret_cast<int8_t*>(get_workspace(rA.mSize)));
+    ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->deseries_wei->mK, &rA};
     return do_compute<Launcher, ParamA>(p, ctx, param_a);
   }
 }
@@ -250,10 +256,12 @@ void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
     return parse_activation<TASK, GemmCore, WeightKBlockS4>(p, ctx);
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1") {
+    TORCH_CHECK(p->asym == false, "Qbits: only support sym alg in fp4/nf4 woq weight.");
     if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
       return parse_activation<TASK, GemmCore, WeightKBlockF4>(p, ctx);
   }
   if (p->weight_type == "fp8_e4m3" || p->weight_type == "fp8_e5m2") {
+    TORCH_CHECK(p->asym == false, "Qbits: only support sym alg in fp8 woq weight.");
     if constexpr (GemmCore::ISA != JblasAMX_INT8 && GemmCore::ISA != JblasAVX512_VNNI && GemmCore::ISA != JblasAVX_VNNI)
       return parse_activation<TASK, GemmCore, WeightKBlockF8>(p, ctx);
   }

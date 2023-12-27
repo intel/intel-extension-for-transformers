@@ -28,9 +28,10 @@ enum WOQ_TASK {
 };
 
 struct woq_config_param {
-  std::string compute_type;           // determin gemm core template
-  std::string weight_type;            // determin compress-weight template
-  std::string scale_type;             // determin scale param
+  std::string compute_type;  // determin gemm core template
+  std::string weight_type;   // determin compress-weight template
+  std::string scale_type;    // determin scale param
+  bool asym;
   dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
   dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
 };
