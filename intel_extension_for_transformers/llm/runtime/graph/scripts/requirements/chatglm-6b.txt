@@ -1,3 +1,0 @@
-# To avoid the error: 'ChatGLMTokenizer' object has no attribute 'sp_tokenizer'
--r common.txt
-transformers==4.33.1
