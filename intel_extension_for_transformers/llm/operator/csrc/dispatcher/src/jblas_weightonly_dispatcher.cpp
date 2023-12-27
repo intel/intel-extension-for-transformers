@@ -221,25 +221,21 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (p->src_dt == dispatcher_utils::QBITS_FP32) {
     if constexpr (GemmCore::ISA == JblasAMX_INT8 || GemmCore::ISA == JblasAVX512_VNNI ||
                   GemmCore::ISA == JblasAVX_VNNI) {
-      return parse_store<TASK, GemmCore, PrologueB, ActivationF32KBlockQuantize, dispatcher_utils::QBITS_FP32>(p, ctx);
+      return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeF32, dispatcher_utils::QBITS_FP32>(
+          p, ctx);
     } else {
-      if constexpr (GemmCore::ISA == JblasAMX_BF16) {
-        return parse_store<TASK, GemmCore, PrologueB, ActivationConverterFp32, dispatcher_utils::QBITS_FP32>(p, ctx);
-      } else {
-        return parse_store<TASK, GemmCore, PrologueB, ActivationBase, dispatcher_utils::QBITS_FP32>(p, ctx);
-      }
+      return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockBaseF32, dispatcher_utils::QBITS_FP32>(p,
+                                                                                                                  ctx);
     }
   }
   if (p->src_dt == dispatcher_utils::QBITS_BF16) {
     if constexpr (GemmCore::ISA == JblasAMX_INT8 || GemmCore::ISA == JblasAVX512_VNNI ||
                   GemmCore::ISA == JblasAVX_VNNI) {
-      return parse_store<TASK, GemmCore, PrologueB, ActivationBf16KBlockQuantize, dispatcher_utils::QBITS_BF16>(p, ctx);
+      return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockQuantizeBf16, dispatcher_utils::QBITS_BF16>(
+          p, ctx);
     } else {
-      if constexpr (GemmCore::ISA == JblasAMX_BF16) {
-        return parse_store<TASK, GemmCore, PrologueB, ActivationBase, dispatcher_utils::QBITS_BF16>(p, ctx);
-      } else {
-        return parse_store<TASK, GemmCore, PrologueB, ActivationConverterBf16, dispatcher_utils::QBITS_BF16>(p, ctx);
-      }
+      return parse_store<TASK, GemmCore, PrologueB, ShuffleActivationKBlockBaseBf16, dispatcher_utils::QBITS_BF16>(p,
+                                                                                                                   ctx);
     }
   }
 }
