@@ -58,11 +58,14 @@ struct woq_runtime_ctx {
   jblas::storage::gemm::IWeightBase* deseries_wei;
 };
 
-static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{
-    {"int4_clip", JBLAS_DTYPE::S4_CLIP}, {"int4_fullrange", JBLAS_DTYPE::S4_FULLRANGE},
-    {"nf4", JBLAS_DTYPE::F4_NF4},        {"fp4_e2m1_bnb", JBLAS_DTYPE::F4_BNB},
-    {"fp4_e2m1", JBLAS_DTYPE::F4_E2M1},  {"fp8_e4m3", JBLAS_DTYPE::F8_E4M3},
-    {"fp8_e5m2", JBLAS_DTYPE::F8_E5M2}};
+static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{{"int8", JBLAS_DTYPE::S8},
+                                                          {"int4_clip", JBLAS_DTYPE::S4_CLIP},
+                                                          {"int4_fullrange", JBLAS_DTYPE::S4_FULLRANGE},
+                                                          {"nf4", JBLAS_DTYPE::F4_NF4},
+                                                          {"fp4_e2m1_bnb", JBLAS_DTYPE::F4_BNB},
+                                                          {"fp4_e2m1", JBLAS_DTYPE::F4_E2M1},
+                                                          {"fp8_e4m3", JBLAS_DTYPE::F8_E4M3},
+                                                          {"fp8_e5m2", JBLAS_DTYPE::F8_E5M2}};
 static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"fp32", JBLAS_DTYPE::F32},
                                                             {"fp8_e8m0", JBLAS_DTYPE::F8_E8M0}};
 
