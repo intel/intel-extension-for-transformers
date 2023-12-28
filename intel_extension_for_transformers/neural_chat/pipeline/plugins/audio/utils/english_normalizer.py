@@ -26,7 +26,7 @@ logging.basicConfig(
 class EnglishNormalizer:
     def __init__(self):
         self.correct_dict = {
-            "A": "Eigh",
+            "A": "eigh",
             "B": "bee",
             "C": "cee",
             "D": "dee",
@@ -34,7 +34,7 @@ class EnglishNormalizer:
             "F": "ef",
             "G": "jee",
             "H": "aitch",
-            "I": "I",
+            "I": "eye",
             "J": "jay",
             "K": "kay",
             "L": "el",
