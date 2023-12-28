@@ -57,10 +57,10 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
 
 static torch::Tensor woq_packq(const torch::Tensor& qweight, const torch::Tensor& scale, const torch::Tensor& zp,
                                const torch::Tensor& g_idx, const std::string& weight_type,
-                               const std::string& scale_type, std::string& compute_type, std::string& alg,
+                               const std::string& scale_type, const std::string& compute_type, const std::string& alg,
                                int64_t group_size) {
   torch::Tensor output;
-  woq::woq_packq_param p{compute_type, weight_type, scale_type, alg, static_cast<int>(group_size), g_idx.numel() == 0};
+  woq::woq_packq_param p{compute_type, weight_type, scale_type, alg, static_cast<int>(group_size), g_idx.numel() != 0};
   woq::woq_packq_ctx ctx{const_cast<torch::Tensor*>(&qweight),
                          const_cast<torch::Tensor*>(&scale),
                          const_cast<torch::Tensor*>(&zp),
@@ -146,6 +146,7 @@ TORCH_LIBRARY(jblasop, m) {
   m.def("woq_quantize", &woq_quantize);
   m.def("woq_linear", &woq_linear);
   m.def("woq_dequantize", &woq_dequantize);
+  m.def("woq_packq", &woq_packq);
   m.def("set_woq_workspace", &set_woq_workspace);
   m.def("matmul", &jblasop_gemm);
 }
