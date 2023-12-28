@@ -172,13 +172,14 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
 
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
     if constexpr (std::is_same_v<StorageWeight, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
-      typename Launcher::Param args{gp,
-                                    param_a,
-                                    dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                                    {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
-                                     p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-                                     p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
-                                    param_epi};
+      typename Launcher::Param args{
+          gp,
+          param_a,
+          dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
+          {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
+           p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
+           p->asym ? param_a.reduce->template RPtr<float>() : nullptr, p->asym ? param_a.reduce->lda : -1},
+          param_epi};
 
       if (p->asym || packedw->ShfIndice()) {
         jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
@@ -191,9 +192,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
       typename Launcher::Param args{gp,
                                     param_a,
                                     dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei),
-                                    {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
-                                     p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-                                     p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
+                                    {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep()},
                                     param_epi};
 
       if (p->asym || packedw->ShfIndice()) {

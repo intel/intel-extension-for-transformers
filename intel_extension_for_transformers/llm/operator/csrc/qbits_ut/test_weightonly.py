@@ -43,7 +43,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
-    if (asym and weight_type not in asym_configs) or compute_type == "int8":
+    if asym and (weight_type not in asym_configs or compute_type == "int8"):
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
