@@ -33,11 +33,11 @@ int32_t get_num_physical_cores() {
 #elif defined(__APPLE__) && defined(__MACH__)
   int32_t num_physical_cores;
   size_t len = sizeof(num_physical_cores);
-  int result = sysctlbyname("hw.perflevel0.physicalcpu", &num_physical_cores, &len, NULL, 0);
+  int result = syscall(SYS_sysctlbyname, "hw.perflevel0.physicalcpu", &num_physical_cores, &len, NULL, 0);
   if (result == 0) {
     return num_physical_cores;
   }
-  result = sysctlbyname("hw.physicalcpu", &num_physical_cores, &len, NULL, 0);
+  result = syscall(SYS_sysctlbyname, "hw.physicalcpu", &num_physical_cores, &len, NULL, 0);
   if (result == 0) {
     return num_physical_cores;
   }
