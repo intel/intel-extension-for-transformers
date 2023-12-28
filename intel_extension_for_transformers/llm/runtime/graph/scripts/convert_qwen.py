@@ -144,6 +144,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         nn = name
 
         print(src, ' -> ', name)
+        if list_vars[src].dtype == "torch.bfloat16":
+            list_vars[src]=list_vars[src].float()
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 

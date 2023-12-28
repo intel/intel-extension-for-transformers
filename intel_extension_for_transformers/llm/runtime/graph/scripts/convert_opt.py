@@ -148,6 +148,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     for name in list_vars.keys():
         # No gradients for these
         list_vars[name].requires_grad = False
+        if list_vars[name].dtype == "torch.bfloat16":
+            list_vars[name]=list_vars[name].float()
         data = list_vars[name].squeeze().numpy()
         print("Processing variable: {} with shape: {}".format(name, data.shape))
 

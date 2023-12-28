@@ -192,6 +192,7 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale,
         )
 
     # LLaMA v2 70B params.json

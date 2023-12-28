@@ -144,6 +144,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
             v = qkv[:, [-1]].reshape(n_head_kv * head_dim, head_dim * n_head)
 
             list_vars[src] = torch.cat((q, k, v)).reshape_as(list_vars[src])
+        if list_vars[src].dtype == "torch.bfloat16":
+            list_vars[src]=list_vars[src].float()   
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 

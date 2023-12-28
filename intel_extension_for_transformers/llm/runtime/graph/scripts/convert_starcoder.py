@@ -137,6 +137,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         counter += 1
 
     for name in list_vars.keys():
+        if list_vars[name].dtype == "torch.bfloat16":
+            list_vars[name]=list_vars[name].float()
         data = list_vars[name].squeeze().numpy()
         print("Processing variable: " + name + " with shape: ", data.shape)
 

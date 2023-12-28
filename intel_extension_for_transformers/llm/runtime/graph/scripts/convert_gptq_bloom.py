@@ -197,7 +197,8 @@ for name in list_vars.keys():
     ftype_cur = 0
     if ".weight" in name and list_vars[name].dim() == 2:
         ftype_cur = 2  # TODO(Zhenwei) support jblas
-
+    if list_vars[src].dtype == "torch.bfloat16":
+        list_vars[src]=list_vars[src].float()
     data = list_vars[src].squeeze().numpy()
     data = data.astype(np.float32)
 
