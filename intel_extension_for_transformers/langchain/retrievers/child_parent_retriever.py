@@ -16,10 +16,14 @@
 # limitations under the License.
 
 """The wrapper for Child-Parent retriever based on langchain"""
-from langchain.retrievers import MultiVectorRetriever
 from langchain_core.vectorstores import VectorStore
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.pydantic_v1 import Field
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun
 from enum import Enum
+from typing import List
+from langchain_core.documents import Document
+
 
 class SearchType(str, Enum):
     """Enumerator of the types of search to perform."""
@@ -30,15 +34,17 @@ class SearchType(str, Enum):
     """Maximal Marginal Relevance reranking of similarity search."""
 
 
-class ChildParentRetriever(MultiVectorRetriever):
+class ChildParentRetriever(BaseRetriever):
     """Retrieve from a set of multiple embeddings for the same document."""
-    
     vectorstore: VectorStore
-    """The underlying vectorstore to use to store small chunks
-    and their embedding vectors"""
     parentstore: VectorStore
-    
-    def get_context(self, query:str, *, run_manager: CallbackManagerForRetrieverRun):
+    id_key: str = "doc_id"
+    search_kwargs: dict = Field(default_factory=dict)
+    """Keyword arguments to pass to the search function."""
+    search_type: SearchType = SearchType.similarity
+    """Type of search to perform (similarity / mmr)"""
+
+    def get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
         """Get documents relevant to a query.
         Args:
             query: String to find relevant documents for
@@ -52,15 +58,20 @@ class ChildParentRetriever(MultiVectorRetriever):
             )
         else:
             sub_docs = self.vectorstore.similarity_search(query, **self.search_kwargs)
-        
+
         ids = []
         for d in sub_docs:
             if d.metadata['doc_id'] not in ids:
                 ids.append(d.metadata['doc_id'])
         retrieved_documents = self.parentstore.get(ids)
+        return retrieved_documents
+
+    def get_context(self, query):
         context = ''
         links = []
-        for doc in retrieved_documents:
-            context = context + doc.page_content + " "
-            links.append(doc.metadata['source'])
+        retrieved_documents = self.get_relevant_documents(query)
+        for doc in retrieved_documents['documents']:
+            context = context + doc + " "
+        for meta in retrieved_documents['metadatas']:
+            links.append(meta['source'])
         return context.strip(), links
