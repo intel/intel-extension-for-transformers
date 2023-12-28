@@ -390,6 +390,7 @@ class SmoothQuantConfig:
     tokenizer: Any = None
     calib_func: Any = None
     calib_dataset: str = "NeelNanda/pile-10k"
+    calib_shuffle: bool = True
     calib_iters: int = 100
     calib_padding: bool = False
     calib_len: int = 512

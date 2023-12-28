@@ -380,6 +380,7 @@ class _BaseQBitsAutoModelClass:
                 from torch.utils.data import DataLoader
 
                 calib_dataset = quantization_config.calib_dataset
+                calib_shuffle = quantization_config.calib_shuffle
                 calib_iters = quantization_config.calib_iters
                 calib_padding = quantization_config.calib_padding
                 calib_len = quantization_config.calib_len
@@ -392,7 +393,8 @@ class _BaseQBitsAutoModelClass:
                     if calib_dataset in ["mbpp", "openai_humaneval"]
                     else "train",
                 )
-                calib_dataset = calib_dataset.shuffle(seed=42)
+                if calib_shuffle:
+                    calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
                     if "prompt" in examples:

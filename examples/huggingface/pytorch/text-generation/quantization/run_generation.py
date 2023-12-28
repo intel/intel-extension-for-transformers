@@ -11,6 +11,7 @@ from intel_extension_for_transformers.transformers import (
     AutoModel,
 )
 from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers.utils import str2bool
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
@@ -66,6 +67,12 @@ parser.add_argument("--sq", action="store_true")
 parser.add_argument("--calib_iters", default=100, type=int, help="Calibration iters.")
 parser.add_argument(
     "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
 )
 parser.add_argument(
     "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
@@ -126,16 +133,14 @@ parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 parser.add_argument("--_commit_hash", default="main", type=str)
-parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
 args = parser.parse_args()
-
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
 check_min_version("4.31.0")
-
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
@@ -228,6 +233,7 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        calib_shuffle=args.calib_shuffle,
         calib_iters=args.calib_iters,
         calib_padding=args.calib_padding,
         calib_len=args.calib_len,
@@ -257,7 +263,6 @@ if quantization_config is not None:
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
         use_llm_runtime=args.use_llm_runtime,
-
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
