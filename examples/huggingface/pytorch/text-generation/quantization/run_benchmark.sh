@@ -119,6 +119,39 @@ function run_benchmark {
         model_name_or_path="THUDM/chatglm-6b"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         pip install transformers==4.33
+    elif [ "${topology}" = "falcon_7b" ]; then
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan_7b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan-7B"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan_13b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan-13B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_7b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_13b" ]; then
+        model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "qwen_7b" ]; then
+        model_name_or_path="Qwen/Qwen-7B"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
+	pip install transformers==4.35.2
+    elif [ "${topology}" = "mistral_7b" ]; then
+        model_name_or_path="Intel/neural-chat-7b-v3"
+    elif [ "${topology}" = "phi_1b" ]; then
+        model_name_or_path="susnato/phi-1_dev"
+	pip install transformers==4.36.1
+    elif [ "${topology}" = "phi_1_5b" ]; then
+        model_name_or_path="susnato/phi-1_5_dev"
+	pip install transformers==4.36.1
     fi
 
     if [[ ${int8} == "true" ]]; then

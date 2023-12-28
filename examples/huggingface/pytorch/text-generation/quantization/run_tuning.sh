@@ -140,6 +140,69 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         pip install transformers==4.33
+    elif [ "${topology}" = "falcon_7b" ]; then
+        alpha=0.7
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+	pip install transformers==4.33.3
+    elif [ "${topology}" = "baichuan_7b" ]; then
+        alpha=0.85
+        model_name_or_path="baichuan-inc/Baichuan-7B"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan_13b" ]; then
+        alpha=0.85
+        model_name_or_path="baichuan-inc/Baichuan-13B-Base"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_7b" ]; then
+        alpha=0.85
+        model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "baichuan2_13b" ]; then
+        alpha=0.55
+        model_name_or_path="baichuan-inc/Baichuan2-13B-Base"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        pip install transformers==4.33
+    elif [ "${topology}" = "qwen_7b" ]; then
+        alpha=0.9
+        model_name_or_path="Qwen/Qwen-7B"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
+	pip install transformers==4.35.2
+    elif [ "${topology}" = "mistral_7b" ]; then
+        alpha=0.8
+        model_name_or_path="Intel/neural-chat-7b-v3"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+    elif [ "${topology}" = "phi_1b" ]; then
+        alpha=0.5
+        model_name_or_path="susnato/phi-1_dev"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+	pip install transformers==4.36.1
+    elif [ "${topology}" = "phi_1_5b" ]; then
+        alpha=0.5
+        model_name_or_path="susnato/phi-1_5_dev"
+        extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+	pip install tranformers==4.36.1
     fi
 
     if [ ${script} = "run_generation.py" ];then

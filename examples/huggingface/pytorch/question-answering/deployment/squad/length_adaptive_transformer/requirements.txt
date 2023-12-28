@@ -1,5 +1,5 @@
 torchprofile
-transformers==4.34.1
+transformers
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92

@@ -35,6 +35,8 @@
 
 #include "common.h"
 #include "core/layers/jblas_common.hpp"
+#include "core/layers/jblas_gemm.h"
+#include "jblas/jit_blas_parallel.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
@@ -74,6 +76,7 @@ class Model {
   py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
     if (!check_input_and_count_padding(input_ids)) return py::array_t<float>();
     const auto& logits = evaluate_(input_ids);
+    for (auto& input_id : curr_input_ids) input_id.clear();  // clear curr_input_ids after eval
     return py::array_t<float, py::array::c_style>(logits.size(), logits.data())
         .reshape({py::ssize_t(-1), static_cast<py::ssize_t>(ctx->model.hparams.n_vocab)});
   }
@@ -88,30 +91,42 @@ class Model {
     generate_count = 0;
   }
 
-  static size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                            const quant_params_internal params, int nthread, int n, int k);
-  static size_t jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
-                               int k);
-  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> dst) {
+  static size_t np_jblas_qpack(py::array_t<int8_t> src_w, py::array_t<float> src_scales, py::array_t<int8_t> src_zeros,
+                               py::array_t<int32_t> g_idx, py::array_t<int8_t> dst, const std::string& weight_dtype,
+                               const std::string& alg, int group_size, const std::string& scale_dtype,
+                               const std::string& compute_dtype, int threads) {
     int8_t* w_ptr = src_w.mutable_data();
     float* scales_ptr = src_scales.mutable_data();
+    int8_t* zeros_ptr = nullptr;
+    if (src_zeros.size() != 0) {
+      zeros_ptr = src_zeros.mutable_data();
+    }
+    int32_t* g_idx_ptr = nullptr;
+    if (g_idx.size() != 0) {
+      g_idx_ptr = g_idx.mutable_data();
+    }
     int8_t* dst_ptr = dst.mutable_data();
 
     quant_params_internal q_params;
-    q_params.bits = quant_bits::q4;
-    q_params.scale_dtype = quant_sdtype::fp32;
-    q_params.compute_dtype = quant_comp::int8;
-    q_params.group_size = 128;
-    return Model::jblas_qpack(w_ptr, scales_ptr, nullptr, dst_ptr, q_params, 1, src_w.shape(0), src_w.shape(1));
+    q_params.bits = parse_bits(weight_dtype);
+    q_params.scale_dtype = parse_scale_dtype(scale_dtype);
+    q_params.compute_dtype = parse_compute_type(compute_dtype, /*ggml_arg=*/0);
+    q_params.alg = parse_alg(alg);
+    q_params.group_size = group_size;
+    return jblas_qpack(w_ptr, scales_ptr, zeros_ptr, dst_ptr, q_params, threads, src_w.shape(1), src_w.shape(0),
+                       g_idx_ptr);
   }
 
-  static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst) {
+  static size_t np_jblas_quantize(py::array_t<float> src_w, py::array_t<int8_t> dst, const std::string& weight_dtype,
+                                  const std::string& alg, int group_size, const std::string& scale_dtype,
+                                  const std::string& compute_dtype, int threads) {
     quant_params_internal q_params;
-    q_params.bits = quant_bits::q4;
-    q_params.scale_dtype = quant_sdtype::fp32;
-    q_params.compute_dtype = quant_comp::int8;
-    q_params.group_size = 32;
-    return Model::jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, 8, src_w.shape(0), src_w.shape(1));
+    q_params.bits = parse_bits(weight_dtype);
+    q_params.scale_dtype = parse_scale_dtype(scale_dtype);
+    q_params.compute_dtype = parse_compute_type(compute_dtype, /*ggml_arg=*/0);
+    q_params.alg = parse_alg(alg);
+    q_params.group_size = group_size;
+    return jblas_quantize(src_w.mutable_data(), dst.mutable_data(), q_params, threads, src_w.shape(0), src_w.shape(1));
   }
 
  private:
@@ -584,57 +599,6 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   return 0;
 }
 
-size_t Model::jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                          const quant_params_internal params, int nthread, int n, int k) {
-  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;  // NOLINT
-  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
-  cd->setThreads(nthread);
-  // int8: using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
-  static Kernel kernel;
-  auto packedw = kernel.createStorage(n, k, params.group_size);
-
-  // jblas::utils::aligned_vector<int8_t> buffer(packedw.mSize);
-  packedw.assign(dstbptr);
-
-  jblas::utils::aligned_vector<int8_t> tmpq(n * k);
-  std::copy(src_w, src_w + n * k, tmpq.data());
-
-  int nk_scale = jblas::utils::updiv(k, packedw.mBlockSize);
-  auto ssize = static_cast<size_t>(n * nk_scale);
-  jblas::utils::avector<float> Tscales(ssize);
-  std::copy(src_scales, src_scales + ssize, Tscales.data());
-
-  jblas::utils::avector<int8_t> Tzps(packedw.mIsAsym ? ssize : 0);
-
-  kernel.packQWeight(n, k, tmpq.data(), n, Tscales.data(), Tzps.data(), &packedw);
-
-  // kernel.unpackWeight(n, k, &packedw, dstbptr, n);
-  return packedw.mSize;
-}
-
-size_t Model::jblas_quantize(const float* src_w, void* dstpr, const quant_params_internal params, int nthread, int n,
-                             int k) {
-  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;  // NOLINT
-  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = reinterpret_cast<int8_t*>(dstpr);
-  cd->setThreads(nthread);
-  // using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-  using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
-  static Kernel kernel;
-  auto packedw = kernel.createStorage(n, k, params.group_size);
-
-  // jblas::utils::aligned_vector<int8_t> buffer(packedw.mSize);
-  packedw.assign(dstbptr);
-
-  kernel.packTransposeWeight(n, k, src_w, k, &packedw);
-  // kernel.unpackTransposeWeight(n, k, &packedw, dstbptr, n);
-  return packedw.mSize;
-}
-
 #if MODEL_NAME_ID == 1
 
 PYBIND11_MODULE(gptj_cpp, m)
@@ -717,7 +681,12 @@ PYBIND11_MODULE(qwen_cpp, m)
                   py::arg("threads") = 8)
       .def("is_token_end", &Model::is_token_end)
       .def("reset_token_end", &Model::reset_token_end)
-      .def_static("np_jblas_qpack", &Model::np_jblas_qpack)
-      .def_static("np_jblas_quantize", &Model::np_jblas_quantize)
+      .def_static("np_jblas_qpack", &Model::np_jblas_qpack, "QPack tensor to jblas format", py::arg("src_w"),
+                  py::arg("src_scales"), py::arg("src_zeros"), py::arg("g_idx"), py::arg("dst"),
+                  py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("threads") = 8)
+      .def_static("np_jblas_quantize", &Model::np_jblas_quantize, "Quantize tensor to jblas format", py::arg("src_w"),
+                  py::arg("dst"), py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "int8", py::arg("threads") = 8)
       .def("reinit", &Model::reinit);
 }

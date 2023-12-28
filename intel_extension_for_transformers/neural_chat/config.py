@@ -92,11 +92,20 @@ class ModelArguments:
             "help": "The specific model version to use (can be a branch name, tag name or commit id)."
         },
     )
+    token: str = field(
+        default=None,
+        metadata={
+            "help": (
+                "The token to use as HTTP bearer authorization for remote files. If not specified, will use the token "
+                "generated when running `huggingface-cli login` (stored in `~/.huggingface`)."
+            )
+        },
+    )
     use_auth_token: bool = field(
         default=False,
         metadata={
-            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
-            "with private models)."
+            "help": "The `use_auth_token` argument is deprecated and will be removed in v4.34."
+            "Please use `token` instead."
         },
     )
     trust_remote_code: bool = field(
@@ -380,7 +389,7 @@ class TTSFinetuningConfig:
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.1
-    top_k: int = 1
+    top_k: int = 40
     top_p: float = 0.75
     repetition_penalty: float = 1.1
     num_beams: int = 0
@@ -412,7 +421,7 @@ class LoadingModelConfig:
 
 class PipelineConfig:
     def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-7b-chat-hf",
+                 model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",

@@ -30,9 +30,7 @@ from transformers.trainer import (
     logger,
 )
 from typing import List, Optional
-
-from llava_utils import is_optimum_habana_available
-
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero # pylint: disable=E0401
@@ -291,7 +289,7 @@ class LLaVATrainer(Trainer):
             super(LLaVATrainer, self)._save(output_dir, state_dict)
 
 
-if is_optimum_habana_available():
+if is_hpu_available:
     from optimum.habana import GaudiConfig, GaudiTrainer
     from torch.utils.data import Sampler
     from transformers.trainer import (

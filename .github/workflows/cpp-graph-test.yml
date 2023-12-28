@@ -5,10 +5,9 @@ on:
     branches: [main]
     paths:
        - '.github/workflows/cpp-graph-test.yml'
-       - '.github/workflows/script/models/cpp_graph_inference.sh'
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
        - 'intel_extension_for_transformers/llm/library/jblas/**'
-       - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
+       - '!**/*.md'
   workflow_dispatch:
     inputs:
       compiler_version:
@@ -70,8 +69,19 @@ jobs:
 
       - name: BF16 Benchmark
         run: |
-          cd ${{ github.workspace }}/.github/workflows/script/models
-          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} ${{ env.INPUT_COMPILER_VERSION }}
+          WORKSPACE=${{ env.WORKING_DIR }} bash -eo pipefail ${{ env.GRAPH_DIR }}/scripts/ci/cpp_graph_inference.sh \
+            --local_models="${{ github.workspace }}/.github/workflows/script/models/local_models.json" \
+            --cores_list="48," \
+            --input_list="32,1024" \
+            -- \
+            cpp-graph-test \
+            ${{ matrix.modelName }} \
+            ${{ env.GRAPH_DIR }} \
+            ${{ env.WORKING_DIR }} \
+            ${{ env.INPUT_COMPILER_VERSION }}
+        env:
+          WORKSPACE: ${{ env.WORKING_DIR }}
+          GRAPH_DIR: ${{ env.WORKING_DIR }}/intel_extension_for_transformers/llm/runtime/graph
       
       - name: Rename summary
         run: |
@@ -137,7 +147,7 @@ jobs:
           /usr/bin/bash generate_report.sh --workflow=deploy
           sed -n '/<body>/,/<\/body>/p' generated/report.html | sed -r '/^$/d' | sed -r 's/^ +//g' >> $GITHUB_STEP_SUMMARY
         env:
-          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          RUN_DISPLAY_URL: https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
           JOB_STATUS: succeed
           MR_source_branch: ${{ github.head_ref }}

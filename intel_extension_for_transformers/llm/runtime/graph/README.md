@@ -24,29 +24,196 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 LLM Runtime supports the following models:
 ### Text Generation
-| Model Name | INT8 | INT4 | Transformer Version |
-|---|:---:|:---:|:---:|
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ |  Latest |
-|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ |  Latest |
-|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ |  Latest |
-|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ |  Latest |
-|[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ |  4.28.1 or newer |
-|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ |  Latest |
-|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ |  Latest |
-|[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |  Latest |
-|[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  Latest |
-|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |  4.33.1 |
-|[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |  4.33.1 |
-|[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ | 4.34.0 or newer |
-|[Qwen-7B](https://huggingface.co/Qwen/Qwen-7B-Chat), [Qwen-14b](https://huggingface.co/Qwen/Qwen-14B-Chat)| ✅ | ✅ |  Latest |
 
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Model Name</th>
+    <th colspan="2">INT8</th>
+    <th colspan="2">INT4</th>
+    <th rowspan="2">Transformer Version</th>
+  </tr>
+  <tr>
+    <th>RTN</th>
+    <th>GPTQ</th>
+    <th>RTN</th>
+    <th>GPTQ</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><a href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-7B</a>,
+    <a href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-13B</a>,
+    <a href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-70B</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/decapoda-research/llama-7b-hf" target="_blank" rel="noopener noreferrer">LLaMA-7B</a>,
+    <a href="https://huggingface.co/decapoda-research/llama-13b-hf" target="_blank" rel="noopener noreferrer">LLaMA-13B</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-j-6b" target="_blank" rel="noopener noreferrer">GPT-J-6B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-neox-20b" target="_blank" rel="noopener noreferrer">GPT-NeoX-20B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/databricks/dolly-v2-3b" target="_blank" rel="noopener noreferrer">Dolly-v2-3B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>4.28.1 or newer</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/mosaicml/mpt-7b" target="_blank" rel="noopener noreferrer">MPT-7B</a>,
+    <a href="https://huggingface.co/mosaicml/mpt-30b" target="_blank" rel="noopener noreferrer">MPT-30B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/tiiuae/falcon-7b" target="_blank" rel="noopener noreferrer">Falcon-7B</a>,
+    <a href="https://huggingface.co/tiiuae/falcon-40b" target="_blank" rel="noopener noreferrer">Falcon-40B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/bigscience/bloomz-7b1" target="_blank" rel="noopener noreferrer">BLOOM-7B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/facebook/opt-125m" target="_blank" rel="noopener noreferrer">OPT-125m</a>,
+    <a href="https://huggingface.co/facebook/opt-1.3b" target="_blank" rel="noopener noreferrer">OPT-1.3B</a>,
+    <a href="https://huggingface.co/facebook/opt-13b" target="_blank" rel="noopener noreferrer">OPT-13B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+    <tr>
+    <td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-1</a>,
+    <a href="https://huggingface.co/Intel/neural-chat-7b-v3-2" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-2</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/THUDM/chatglm-6b" target="_blank" rel="noopener noreferrer">ChatGLM-6B</a>,
+    <a href="https://huggingface.co/THUDM/chatglm2-6b" target="_blank" rel="noopener noreferrer">ChatGLM2-6B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>4.33.1</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/baichuan-inc/Baichuan-13B-Chat" target="_blank" rel="noopener noreferrer">Baichuan-13B-Chat</a>,
+    <a href="https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat" target="_blank" rel="noopener noreferrer">Baichuan2-13B-Chat</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>4.33.1</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/mistralai/Mistral-7B-v0.1" target="_blank" rel="noopener noreferrer">Mistral-7B</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>4.34.0 or newer</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/Qwen/Qwen-7B-Chat" target="_blank" rel="noopener noreferrer">Qwen-7B</a>,
+    <a href="https://huggingface.co/Qwen/Qwen-14B-Chat" target="_blank" rel="noopener noreferrer">Qwen-14B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+</tbody>
+</table>
 
 ### Code Generation
-| Model Name | INT8 | INT4 | Transformer Version |
-|---|:---:|:---:|:---:|
-|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ |  Latest |
-|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ |  Latest |
 
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Model Name</th>
+    <th colspan="2">INT8</th>
+    <th colspan="2">INT4</th>
+    <th rowspan="2">Transformer Version</th>
+  </tr>
+  <tr>
+    <th>RTN</th>
+    <th>GPTQ</th>
+    <th>RTN</th>
+    <th>GPTQ</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><a href="https://huggingface.co/codellama/CodeLlama-7b-hf" target="_blank" rel="noopener noreferrer">Code-LLaMA-7B</a>,
+    <a href="https://huggingface.co/codellama/CodeLlama-13b-hf" target="_blank" rel="noopener noreferrer">Code-LLaMA-13B</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+    <tr>
+    <td><a href="https://huggingface.co/ise-uiuc/Magicoder-S-DS-6.7B" target="_blank" rel="noopener noreferrer">Magicoder-6.7B</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>Latest</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/bigcode/starcoderbase-1b" target="_blank" rel="noopener noreferrer">StarCoder-1B</a>,
+    <a href="https://huggingface.co/bigcode/starcoderbase-3b" target="_blank" rel="noopener noreferrer">StarCoder-3B</a>,
+    <a href="https://huggingface.co/bigcode/starcoder" target="_blank" rel="noopener noreferrer">StarCoder-15.5B</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
+</tbody>
+</table>
 
 ## How to Use
 There are two methods for utilizing the LLM runtime:
@@ -69,7 +236,7 @@ You can use Python API to run Hugging Face model simply. Here is the sample code
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -101,7 +268,7 @@ To enable [StreamingLLM for infinite inference](./docs/infinite_inference.md), h
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, there existed a little girl,"
 
@@ -118,14 +285,14 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
-Argument description of WeightOnlyQuantConfig:
+Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
-| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                           |
-| weight_dtype      | String      | Data type of quantized weight: int4/int8 (default int4)                                 |
+| compute_dtype     | String      | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                           |
+| weight_dtype      | String      | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default int4)                                 |
 | alg               | String      | Quantization algorithm: sym/asym (default sym)                                          |
-| group_size        | Int         | Group size: Int (default: 32)                                                           |
-| scale_dtype       | String      | Data type of scales: fp32/bf16 (default fp32)                                           |
+| group_size        | Int         | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                           |
+| scale_dtype       | String      | Data type of scales: fp32/bf16/fp8 (default fp32)                                           |
 | use_ggml          | Bool        | Enable ggml for quantization and inference (default: False)                             |
 | use_quant         | Bool        | Determine whether or not the model will be quantized. (default: True)                  |
 
@@ -255,15 +422,15 @@ You can run LLM with one-click python script including conversion, quantization 
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
-Argument description of run.py:
+Argument description of run.py ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument                    | Description                                                                                                   |
 | --------------              | ---------------------------------------------------------------------                                         |
 | model                       | Directory containing model file or model id: String                                                           |
-| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| --weight_dtype              | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4e2m1)/nf4 (default int4)                                                       |
 | --alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
-| --group_size                | Group size: Int (default: 32)                                                                                 |
-| --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
-| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                                                 |
+| --group_size                | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                                                 |
+| --scale_dtype               | Data type of scales: fp32/bf16/fp8 (dafault fp32)                                                                 |
+| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                                                 |
 | --use_ggml                  | Enable ggml for quantization and inference                                                                    |
 | -p / --prompt               | Prompt to start generation with: String (default: empty)                                                      |
 | -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
@@ -306,7 +473,7 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
-Argument description of quantize.py:
+Argument description of quantize.py ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
 | Argument        | Description                                                  |
 | --------------  | -----------------------------------------------------------  |
 | --model_file    | Path to the fp32 model: String                               |
@@ -314,12 +481,26 @@ Argument description of quantize.py:
 | --build_dir     | Path to the build file: String                               |
 | --config        | Path to the configuration file: String (default: "")         |
 | --nthread       | Number of threads to use: Int (default: 1)                   |
-| --weight_dtype  | Data type of quantized weight: int4/int8 (default: int4)     |
+| --weight_dtype  | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default: int4)     |
 | --alg           | Quantization algorithm to use: sym/asym (default: sym)       |
-| --group_size    | Group size: Int (default: 32)                                |
-| --scale_dtype   | Data type of scales: bf16/fp32 (default: fp32)               |
-| --compute_dtype | Data type of Gemm computation: int8/bf16/fp32 (default: int8)|
+| --group_size    | Group size: Int 32/128/-1 (per channel) (default: 32)                                |
+| --scale_dtype   | Data type of scales: bf16/fp32/fp8 (default: fp32)               |
+| --compute_dtype | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)|
 | --use_ggml      | Enable ggml for quantization and inference                   |
+
+#### Supported Matrix Multiplication Data Types Combinations
+
+Our LLM runtime supports  INT4 / INT8 / FP8 (E4M3, E5M2) / FP4 (E2M1) / NF4 weight-only quantization and FP32 / FP16 / BF16 / INT8 computation forward matmul on the Intel platforms. Here are the all supported data types combinations for matmul operations (quantization and forward).
+> This table will be updated frequently due to active development
+
+| Weight dtype | Compute dtype (default value if missing or wrong setting) | Scale dtype (default if missing or wrong setting) | algo (default if missing or wrong setting) |
+|---|:---:|:---:|:---:|
+| FP32 | FP32 | NA | NA |
+| INT8 | INT8 / BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym / asym (sym) |
+| INT4 | INT8 / BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym / asym (sym) |
+| FP8 (E4M3, E5M2) | BF16 / FP16 / FP32 (FP32) | FP8 (FP8) | sym (sym) |
+| FP4 (E2M1) | BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym (sym) |
+| NF4 | BF16 / FP16 / FP32 (FP32) | BF16 / FP32 (FP32) | sym (sym) |
 
 
 ### 2. Inference LLM

@@ -27,38 +27,9 @@ function pytest() {
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
     export GLOG_minloglevel=2
 
-    # Kill the neuralchat server processes
-    ports="5000 6000 6001 6060 7000 7070 7777 8000 8080 9000 9090"
-    # Loop through each port and find associated PIDs
-    for port in $ports; do
-        # Use lsof to find the processes associated with the port
-        pids=$(lsof -ti :$port)
-        if [ -n "$pids" ]; then
-            echo "Processes running on port $port: $pids"
-            # Terminate the processes gracefully with SIGTERM
-            kill $pids
-            echo "Terminated processes on port $port."
-        else
-            echo "No processes found on port $port."
-        fi
-    done
-
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >> run.sh
     sort run.sh -o run.sh
-    echo -e '
-ports="5000 6000 6001 6060 7000 7070 7777 8000 8080 9000 9090"
-for port in $ports; do
-    pids=$(lsof -ti :$port)
-    if [ -n "$pids" ]; then
-        echo "Processes running on port $port: $pids"
-        kill $pids
-        echo "Terminated processes on port $port."
-    else
-        echo "No processes found on port $port."
-    fi
-done
-' >> run.sh
     coverage erase
 
     # run UT

@@ -50,7 +50,7 @@ class TestWeightOnly(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        cls.workspace = "./woq_config_tmp"
+        cls.workspace = "./woq_tmp"
         # if workspace not exist, crate it
         if not os.path.exists(cls.workspace):
             os.mkdir(cls.workspace)
@@ -59,7 +59,7 @@ class TestWeightOnly(unittest.TestCase):
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
         shutil.rmtree('tmp', ignore_errors=True)
-    
+
     def test_woq_config(self):
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
         diff_res = config.to_diff_dict()
@@ -71,18 +71,30 @@ class TestWeightOnly(unittest.TestCase):
         config.to_json_file(f"{self.workspace}/config.json")
         print(config)
 
+    def test_woq_config_post_init_runtime(self):
+        config = WeightOnlyQuantConfig(weight_dtype="fp4", compute_dtype="int8", scheme="asym",
+                                       scale_dtype="fp8")
+        config.post_init_runtime()
+        config_dict = config.to_dict()
+        self.assertEqual(config_dict["weight_dtype"], "fp4_e2m1")
+        self.assertEqual(config_dict["compute_dtype"], "fp32")
+        self.assertEqual(config_dict["scheme"], "sym")
+        self.assertEqual(config_dict["scale_dtype"], "fp32")
+        config.to_json_file(f"{self.workspace}/config_post_init_runtime.json")
+        print(config)
+
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.weight_only_jblasop.qbits_quantize(
-            raw_wei, True, 32, "fp32", "s8_scalef32")
+        compress_wei = torch.ops.jblasop.woq_quantize(
+            raw_wei, True, 32, "fp32", "int8", "fp32")
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
-            compress_wei, revert_wei, True, "fp32", "s8_scalef32")
+        torch.ops.jblasop.woq_dequantize(
+            compress_wei, revert_wei, True, "fp32", "int8", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(revert_wei)
-            activation = torch.rand(1,32, dtype=torch.float)
+            activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
 
             config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
@@ -94,11 +106,11 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        compress_wei = torch.ops.weight_only_jblasop.qbits_quantize(
-            raw_wei, True, 32, "fp32", "s4fullrange_scalef32")
+        compress_wei = torch.ops.jblasop.woq_quantize(
+            raw_wei, True, 32, "fp32", "int4_fullrange", "fp32")
         revert_wei = torch.zeros(2, 32, dtype=torch.float)
-        torch.ops.weight_only_jblasop.qbits_dequantize(
-            compress_wei, revert_wei, True, "fp32", "s4fullrange_scalef32")
+        torch.ops.jblasop.woq_dequantize(
+            compress_wei, revert_wei, True, "fp32", "int4_fullrange", "fp32")
         for bias in [True, False]:
             model = M(with_bias=bias)
             with torch.no_grad():
@@ -130,6 +142,20 @@ class TestWeightOnly(unittest.TestCase):
         )
         module_list = []
         for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearQBits):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+
+    def test_auto_model_saving_loading(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        module_list = []
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearQBits):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+        model.save_pretrained(self.workspace)
+        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace)
+        for name, module in loaded_model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
@@ -185,7 +211,7 @@ class TestWeightOnly(unittest.TestCase):
         model.print_trainable_parameters()
         lora_weights = {}
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+            if isinstance(module, QuantizedLoraLinearQBits) and "int8" in module.weight_dtype:
                 lora_weights[name] = [
                     getattr(module.lora_A, module.active_adapter[0]).weight.clone(),
                     getattr(module.lora_B, module.active_adapter[0]).weight.clone()
@@ -200,7 +226,7 @@ class TestWeightOnly(unittest.TestCase):
         )
         trainer.train()
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+            if isinstance(module, QuantizedLoraLinearQBits) and "int8" in module.weight_dtype:
                 self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter[0]).weight).any())
                 self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter[0]).weight).any())
 

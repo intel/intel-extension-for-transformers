@@ -140,35 +140,6 @@ class HelpCommand:
         return True
 
 
-@cli_register(name='neuralchat.version', description='Show version of current neuralchat package.')
-class VersionCommand:
-    """
-    VersionCommand class for displaying the package version.
-
-    This class provides the functionality to display the version of the neuralchat
-    package either through the command-line interface or programmatically. It utilizes
-    the __version__ attribute to determine the package version.
-
-    Attributes:
-        None
-
-    Methods:
-        execute(argv): Executes the version display and returns a success status.
-    """
-    def execute(self, argv: List[str]) -> bool:
-        try:
-            from ..version import __version__
-            version = __version__
-        except ImportError:
-            version = 'Not an official release'
-
-        msg = 'Package Version:\n'
-        msg += '    {}\n\n'.format(version)
-
-        logger.info(msg)
-        return True
-
-
 class TextVoiceChatExecutor(BaseCommandExecutor):
     """
     TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
@@ -203,6 +174,8 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
         self.parser.add_argument(
             '--output_audio_path', type=str, default=None, help='Audio output path if the prompt is audio file.')
+        self.parser.add_argument(
+            '--device', type=str, default=None, help='Specify chat on which device.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -213,6 +186,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
         prompt = parser_args.query
         model_name = parser_args.model_name_or_path
         output_audio_path = parser_args.output_audio_path
+        device = parser_args.device
         if os.path.exists(prompt):
             if is_audio_file(prompt):
                 plugins.asr.enable = True
@@ -221,7 +195,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
                     plugins.tts.args["output_audio_path"]=output_audio_path
 
         if model_name:
-            self.config = PipelineConfig(model_name_or_path=model_name, plugins=plugins)
+            self.config = PipelineConfig(model_name_or_path=model_name, plugins=plugins, device=device)
         else:
             self.config = PipelineConfig(plugins=plugins)
         self.chatbot = build_chatbot(self.config)
@@ -229,7 +203,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             res = self(prompt)
             logger.info(res)
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.info("TextVoiceChatExecutor Exception: {}".format(e))
             return False
 
@@ -250,7 +224,11 @@ class FinetuingExecutor(BaseCommandExecutor):
         self.parser.add_argument(
             '--base_model', type=str, default=None, help='Base model path or name for finetuning.')
         self.parser.add_argument(
-            '--config', type=str, default=None, help='Configuration file path for finetuning.')
+            '--device', type=str, default=None, help='Specify finetune model on which device.')
+        self.parser.add_argument(
+            '--train_file', type=str, default=None, help='Specify train file path.')
+        self.parser.add_argument(
+            '--max_steps', type=str, default=None, help='Specify max steps of finetuning.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -258,19 +236,25 @@ class FinetuingExecutor(BaseCommandExecutor):
         """
         parser_args = self.parser.parse_args(argv)
         base_model = parser_args.base_model
-        config = parser_args.config
+        device = parser_args.device
+        train_file = parser_args.train_file
+        max_steps = parser_args.max_steps
 
-        model_args = ModelArguments()
-        data_args = DataArguments()
-        training_args = TrainingArguments(output_dir="./output")
-        finetune_args= FinetuningArguments()
-
+        model_args = ModelArguments(model_name_or_path=base_model)
+        data_args = DataArguments(train_file=train_file)
+        training_args = TrainingArguments(
+            output_dir='./tmp',
+            do_train=True,
+            max_steps=max_steps,
+            overwrite_output_dir=True
+        )
+        finetune_args = FinetuningArguments(device=device)
         self.finetuneCfg = TextGenerationFinetuningConfig(model_args, data_args, training_args, finetune_args)
         try:
             res = self()
             logger.info(res)
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.info("FinetuingExecutor Exception: {}".format(e))
             return False
 

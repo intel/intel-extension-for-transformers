@@ -57,7 +57,7 @@ class RetrievalAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, bot, use_deepspeed, world_size, host, port) -> None:
+    def set_chatbot(self, bot, use_deepspeed=False, world_size=1, host="0.0.0.0", port="80") -> None:
         self.chatbot = bot
         self.use_deepspeed = use_deepspeed
         self.world_size = world_size
@@ -68,13 +68,13 @@ class RetrievalAPIRouter(APIRouter):
         if self.chatbot is None:
             raise RuntimeError("Retrievalbot instance has not been set.")
         return self.chatbot
-    
+
     def handle_retrieval_request(self, request: RetrievalRequest) -> RetrievalResponse:
         bot = self.get_chatbot()
         # TODO: NeuralChatBot.retrieve_model()
         result = bot.predict(request)
         return RetrievalResponse(content=result)
-    
+
 
 router = RetrievalAPIRouter()
 RETRIEVAL_FILE_PATH = os.getenv("RETRIEVAL_FILE_PATH", default="./photoai_retrieval_docs")+'/'
@@ -101,13 +101,12 @@ async def retrieval_upload_link(request: Request):
         try:
             print("[askdoc - upload_link] starting to append local db...")
             instance = plugins['retrieval']["instance"]
-            instance.append_localdb(append_path=link_list, persist_path=persist_path)
+            instance.append_localdb(append_path=link_list, persist_directory=persist_path)
             print(f"[askdoc - upload_link] kb appended successfully")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
             return Response(content="Error occurred while uploading links.", status_code=500)
         return {"Succeed"}
-    
     # create new kb with link
     else:
         print(f"[askdoc - upload_link] create")
@@ -119,7 +118,7 @@ async def retrieval_upload_link(request: Request):
         cur_path = Path(path_prefix) / f"{user_id}-{kb_id}"
         os.makedirs(path_prefix, exist_ok=True)
         cur_path.mkdir(parents=True, exist_ok=True)
-        
+
         user_upload_dir = Path(path_prefix) / f"{user_id}-{kb_id}/upload_dir"
         user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
         user_upload_dir.mkdir(parents=True, exist_ok=True)
@@ -130,13 +129,12 @@ async def retrieval_upload_link(request: Request):
             # get retrieval instance and reload db with new knowledge base
             print("[askdoc - upload_link] starting to create local db...")
             instance = plugins['retrieval']["instance"]
-            instance.create(input_path=link_list, persist_dir=str(user_persist_dir))
+            instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
             print(f"[askdoc - upload_link] kb created successfully")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
             return "Error occurred while uploading files."
         return {"knowledge_base_id": kb_id}
-        
 
 @router.post("/v1/aiphotos/askdoc/create")
 async def retrieval_create(request: Request,
@@ -176,10 +174,10 @@ async def retrieval_create(request: Request,
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - create] starting to create local db...")
         instance = plugins['retrieval']["instance"]
-        instance.create(input_path=str(user_upload_dir), persist_dir=str(user_persist_dir))
+        instance.create(input_path=str(user_upload_dir), persist_directory=str(user_persist_dir))
         print(f"[askdoc - create] kb created successfully")
-    except Exception as e:
-        logger.info(f"[askdoc - create] create knowledge base failes! {e}")
+    except Exception as e:  # pragma: no cover
+        logger.info(f"[askdoc - create] create knowledge base failed! {e}")
         return "Error occurred while uploading files."
     return {"knowledge_base_id": kb_id}
 
@@ -216,9 +214,9 @@ async def retrieval_append(request: Request,
         # get retrieval instance and reload db with new knowledge base
         print("[askdoc - append] starting to append to local db...")
         instance = plugins['retrieval']["instance"]
-        instance.append_localdb(append_path=save_file_name, persist_path=persist_path)
+        instance.append_localdb(append_path=save_file_name, persist_directory=persist_path)
         print(f"[askdoc - append] new file successfully appended to kb")
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.info(f"[askdoc - append] create knowledge base failes! {e}")
         return "Error occurred while uploading files."
     return "Succeed"
@@ -326,7 +324,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     try:
         with mysql_db.transaction():
             mysql_db.insert(sql, None)
-    except:
+    except:  # pragma: no cover
         raise Exception("""Exception occurred when inserting data into MySQL, 
                         please check the db session and your syntax.""")
     else:
@@ -342,8 +340,7 @@ def get_feedback_from_db():
     sql = f"SELECT * FROM feedback ;"
     try:
         feedback_list = mysql_db.fetch_all(sql)
-
-    except:
+    except:  # pragma: no cover
         raise Exception("""Exception occurred when querying data from MySQL, \
                         please check the db session and your syntax.""")
     else:
@@ -373,5 +370,3 @@ def get_feedback_from_db():
             data_generator(), 
             media_type='text/csv', 
             headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
-
-

@@ -108,7 +108,7 @@ NeuralChat supports fine-tuning the pretrained large language model (LLM) for te
 
 ```shell
 # Command line
-neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+neuralchat finetune --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/finetuning/config/finetuning.yaml
 ```
 
 ```python
@@ -124,7 +124,7 @@ NeuralChat provides typical model optimization technologies, like `Automatic Mix
 
 ```shell
 # Command line
-neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.yaml
+neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
 ```
 
 ```python
@@ -137,17 +137,19 @@ chatbot = build_chatbot(pipeline_cfg)
 ## Validated Model List
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
 |Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
-|------------------------------------|---|---|--- | --- |
-|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
-|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅
-|LLaMA series| ✅| ✅|✅| ✅
-|LLaMA2 series| ✅| ✅|✅| ✅
-|MPT series| ✅| ✅|✅| ✅
-|Mistral| ✅| ✅|✅| ✅
-|ChatGLM series| ✅| ✅|✅| ✅
-|Qwen series| ✅| ✅|✅| ✅
-|StarCoder series|   |   |   | ✅
-|CodeLLaMA series|   |   |   | ✅
+|------------------------------------|:---:|:---:|:---:|:---:|
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
+|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
+|LLaMA series| ✅| ✅|✅| ✅    |
+|LLaMA2 series| ✅| ✅|✅| ✅    |
+|MPT series| ✅| ✅|✅| ✅    |
+|Mistral| ✅| ✅|✅| ✅    |
+|Mixtral-8x7b-v0.1| ✅| ✅|✅| ✅    |
+|ChatGLM series| ✅| ✅|✅| ✅    |
+|Qwen series| ✅| ✅|✅| ✅    |
+|StarCoder series|   |   |   | ✅ |
+|CodeLLaMA series|   |   |   | ✅ |
+|CodeGen series|   |   |   | ✅ |
 
 
 ## Restful API

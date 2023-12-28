@@ -292,7 +292,7 @@ class TestQuantization(unittest.TestCase):
             if 'MatMul' in tensor.name:
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
-    
+
     @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
             "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
@@ -325,7 +325,7 @@ class TestQuantization(unittest.TestCase):
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                    calib_iters=5,
+                                    calib_iters=2,
                                     ipex_opt_llm=False
                                     )
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -333,7 +333,23 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
-
+        # SQ auto
+        recipes = {
+            "smooth_quant": True,
+            "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
+                "alpha_min":0.5, "alpha_step":0.1, "shared_criterion": "mean", "do_blockwise": False}},
+            }
+        sq_config = SmoothQuantConfig(
+                            tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                            calib_iters=2,
+                            recipes=recipes,
+                            ipex_opt_llm=False
+                            )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config,
+                                                    use_llm_runtime=False
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         # weight-only
         #RTN
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")
@@ -365,6 +381,17 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))
+        # fp8
+        woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
+        woq_model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
+        )
+        output = woq_model(dummy_input)
+        print(float(output[0][0][0][0]))
+        self.assertTrue(
+            isclose(float(output[0][0][0][0]), -6.790275573730469, rel_tol=1e-04)
+        )
+
         # amp
         amp_config = MixedPrecisionConfig() 
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,

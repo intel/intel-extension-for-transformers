@@ -24,6 +24,9 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
+from ..utils.error_utils import set_latest_error
+from ..errorcode import ErrorCodes
 import logging
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
@@ -160,7 +163,8 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+              "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -182,7 +186,12 @@ class BaseModel(ABC):
                             if response == "Response with template.":
                                 return plugin_instance.response_template, link
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:
@@ -198,8 +207,22 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
-        response = predict_stream(
-            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
+        try:
+            response = predict_stream(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -243,7 +266,8 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -285,9 +309,15 @@ class BaseModel(ABC):
             conv_template.append_message(conv_template.roles[1], None)
             query = conv_template.get_prompt()
 
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
         # LLM inference
-        response = predict(
-            **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        try:
+            response = predict(
+                **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
+        except Exception as e:
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
@@ -375,19 +405,19 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_history=True)
         else:
-            clear_after_gen = True
+            clear_history = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
                 name = "neural-chat-7b-v2"
-                clear_after_gen = False
+                clear_history = False
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
+            self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
     def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
         self.get_conv_template(model_path, task)

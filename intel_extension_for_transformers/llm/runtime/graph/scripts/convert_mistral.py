@@ -151,6 +151,7 @@ class Params:
     ffn_hidden_size: int
     rms_norm_eps: float
     rope_theta: float
+    rope_scale: float
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -179,6 +180,7 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
+        rope_scale = config["factor"] if "factor" in config else 1
 
         return Params(
             n_vocab=n_vocab,
@@ -855,7 +857,8 @@ def lazy_load_torch_file(outer_fp: IO[bytes], path: Path) -> ModelPlus:
     return ModelPlus(model=as_dict, paths=[path], format='torch', vocab=None)
 
 
-SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {'F16': DT_F16, 'F32': DT_F32, 'I32': DT_I32, 'BOOL': DT_BOOL}
+SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {'F16': DT_F16, 'F32': DT_F32, 'I32': DT_I32, 'BOOL': DT_BOOL,
+                                               'BF16': DT_BF16}
 
 
 def lazy_load_safetensors_file(fp: IO[bytes], path: Path) -> ModelPlus:
@@ -1057,6 +1060,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("f", params.rms_norm_eps))
         self.fout.write(struct.pack("f", params.rope_theta))
+        self.fout.write(struct.pack("f", params.rope_scale))
 
         self.fout.write(
             struct.pack("i", 1)

@@ -27,13 +27,33 @@ from neural_compressor.config import PostTrainingQuantConfig
 logger = logging.getLogger(__name__)
 
 
-def replace_linear(model, modules_to_not_convert=None, current_key_name=None, quantization_config=None):
+DTYPE_BITS_MAPPING = {
+    "nf4": 4,
+    "fp4_e2m1_bnb": 4,
+    "fp4_e2m1": 4,
+    "int4_fullrange": 4,
+    "int4_clip": 4,
+    "fp8_e5m2": 8,
+    "fp8_e4m3": 8,
+    "int8": 8
+}
+
+
+def replace_linear(
+        model,
+        modules_to_not_convert=None,
+        current_key_name=None,
+        quantization_config=None,
+        device="cpu",
+        empty_weights=False
+    ):
     if modules_to_not_convert is None:
         modules_to_not_convert = ["lm_head"]
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
-        model, modules_to_not_convert, current_key_name, quantization_config
+         model, modules_to_not_convert, current_key_name, quantization_config, device=device,
+        empty_weights=empty_weights
     )
 
     if not is_replaced:
@@ -44,40 +64,6 @@ def replace_linear(model, modules_to_not_convert=None, current_key_name=None, qu
         )
 
     return model
-
-
-def get_weight_type_from_config(config):
-    if config.weight_dtype == "int8":
-        if config.scale_dtype == "fp32":
-            weight_type = "s8_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    elif config.weight_dtype == "int4_fullrange":
-        if config.scale_dtype == "fp32":
-            weight_type = "s4fullrange_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    elif config.weight_dtype == "int4_clip":
-        if config.scale_dtype == "fp32":
-            weight_type = "s4clip_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    elif config.weight_dtype == "fp4_e2m1_bnb":
-        if config.scale_dtype == "fp32":
-            weight_type = "fp4bnb_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    elif config.weight_dtype == "fp4_e2m1":
-        if config.scale_dtype == "fp32":
-            weight_type = "fp4e2m1_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    elif config.weight_dtype == "nf4":
-        if config.scale_dtype == "fp32":
-            weight_type = "nf4_scalef32"
-        else:
-            raise Exception("scale_dtype only support fp32 now!")
-    return weight_type
 
 
 def convert_dtype_2_str(dtype):
@@ -93,14 +79,19 @@ def convert_dtype_2_str(dtype):
 
 
 def _replace_linear(
-    model, modules_to_not_convert=None, current_key_name=None, quantization_config=None, is_replaced=False
+    model,
+    modules_to_not_convert=None,
+    current_key_name=None,
+    quantization_config=None,
+    is_replaced=False,
+    device="cpu",
+    empty_weights=False
 ):
     """
     Private method that wraps the recursion for module replacement.
 
-    Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
+    Returns the converted model and a boolean that indicates if the conversion has been successfully or not.
     """
-    weight_dtype = get_weight_type_from_config(quantization_config)
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
@@ -108,12 +99,25 @@ def _replace_linear(
 
         if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
-            from .nn import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
                     in_features = module.in_features
                     out_features = module.out_features
-
+                    if device == "cpu" or device == torch.device("cpu"):
+                        from .nn.modules import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
+                        model._modules[name] = QuantizedLinearQBits(
+                            in_features,
+                            out_features,
+                            module.bias is not None,
+                            compute_dtype=quantization_config.compute_dtype,
+                            compress_statistics=False,
+                            weight_dtype=quantization_config.weight_dtype,
+                            scale_dtype=quantization_config.scale_dtype,
+                            blocksize=quantization_config.group_size,
+                            scheme=quantization_config.scheme
+                        )
+                    else:
+                        raise Exception("{} device Unsupport weight only quantization!".format(device))
                     # if quantization_config.quantization_method() == "s8":
                     #     model._modules[name] = QuantizedLinearINT8(
                     #         in_features,
@@ -136,24 +140,16 @@ def _replace_linear(
                     #         scheme=quantization_config.scheme
                     #     )
                     #     is_replaced = True
-                    model._modules[name] = QuantizedLinearQBits(
-                        in_features,
-                        out_features,
-                        module.bias is not None,
-                        compute_dtype=quantization_config.compute_dtype,
-                        compress_statistics=False,
-                        weight_dtype=weight_dtype,
-                        blocksize=quantization_config.group_size,
-                        scheme=quantization_config.scheme
-                    )
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                model._modules[name].set_weights_bias(
-                    module.weight.data, None if module.bias is None else module.bias.data
-                )
+                if not empty_weights:
+                    model._modules[name].set_weights_bias(
+                        module.weight.data, None if module.bias is None else module.bias.data
+                    )
+
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,
@@ -161,16 +157,19 @@ def _replace_linear(
                 current_key_name,
                 quantization_config,
                 is_replaced=is_replaced,
+                device=device,
+                empty_weights=empty_weights,
             )
         # Remove the last key for recursion
         current_key_name.pop(-1)
     return model, is_replaced
 
 
-def convert_to_quantized_model(model, config):
+def convert_to_quantized_model(model, config, device="cpu"):
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
+    model_device = next(model.parameters()).device
     if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ']:
         from datasets import load_dataset
         from torch.utils.data import DataLoader
@@ -186,7 +185,7 @@ def convert_to_quantized_model(model, config):
                 + " from transformer import AutoTokenizer \n"
                 + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
             )
-            exit(0)           
+            exit(0)
 
         def tokenize_function(examples):
             if "prompt" in examples:
@@ -239,38 +238,41 @@ def convert_to_quantized_model(model, config):
             + "the calibration dataset is NeelNanda/pile-10k,"
             + "batchsize is 1 and calibration iteration is 100."
         )
-    bits = 1  # only for int8
-    if config.weight_dtype == "int8":
-        dtype = "int8"
-        bits = 8
-    elif "int4" in config.weight_dtype:
-        dtype = "int4"
+    if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
+        return replace_linear(model, None, None, config, device=device)
     else:
-        dtype = config.weight_dtype
-    conf = PostTrainingQuantConfig(
-        approach="weight_only",
-        op_type_dict={
-            ".*":{
-                "weight": {
-                    "bits": bits,
-                    "dtype":dtype,
-                    "group_size": config.group_size,  # -1 (per-channel)
-                    "scheme": config.scheme,
-                    "algorithm": config.algorithm, 
+        bits = DTYPE_BITS_MAPPING[config.weight_dtype]
+        if config.weight_dtype == "int8":
+            dtype = "int8"
+        elif "int4" in config.weight_dtype:
+            dtype = "int4"
+        else:
+            dtype = config.weight_dtype
+        conf = PostTrainingQuantConfig(
+            approach="weight_only",
+            op_type_dict={
+                ".*":{
+                    "weight": {
+                        "bits": bits,
+                        "dtype":dtype,
+                        "group_size": config.group_size,  # -1 (per-channel)
+                        "scheme": config.scheme,
+                        "algorithm": config.algorithm, 
+                    },
                 },
             },
-        },
-        recipes={
-            "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
-                        "enable_mse_search": config.mse_range},
-        },
-    )
-    # TEQ: set calib_func=None, use default training func as calib_func
-    # RTN: doesn't need calib_func
-    if config.algorithm in ['TEQ','RTN']:
-        calib_func=None
-    inc_model = quantization.fit(model,
-                                conf,
-                                calib_func=calib_func,
-                                calib_dataloader=calib_dataloader)
-    return replace_linear(inc_model.model, None, None, config)
+            recipes={
+                "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                            "enable_mse_search": config.mse_range},
+            },
+        )
+        # TEQ: set calib_func=None, use default training func as calib_func
+        # RTN: doesn't need calib_func
+        if config.algorithm in ['TEQ','RTN']:
+            calib_func=None
+        inc_model = quantization.fit(model,
+                                    conf,
+                                    calib_func=calib_func,
+                                    calib_dataloader=calib_dataloader)
+        return replace_linear(inc_model.model, None, None, config, device=device)
+

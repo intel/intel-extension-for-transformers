@@ -102,6 +102,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
     params = await request.json()
     image_list = params['image_list']
 
+    IMAGE_ROOT_PATH = get_image_root_path()
     image_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
     os.makedirs(image_path, exist_ok=True)
     mysql_db = MysqlDb()
@@ -451,6 +452,7 @@ async def handle_image_to_image(request: Request):
         img_id = img_info["imgId"]
         img_path = img_info["imgSrc"]
         userid, img_name = img_path.split('/')[-2], img_path.split('/')[-1]
+        IMAGE_ROOT_PATH = get_image_root_path()
         image_path = IMAGE_ROOT_PATH+'/'+userid+'/'+img_name
         logger.info(f'<image2Image> current image id: {img_id}, image path: {image_path}')
 

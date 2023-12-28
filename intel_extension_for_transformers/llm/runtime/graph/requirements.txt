@@ -1,11 +1,1 @@
-torch
-transformers
-numpy
-sentencepiece
-protobuf<3.20
-einops
-accelerate
-peft
-datasets
-transformers_stream_generator
-tiktoken
+-r scripts/requirements/common.txt
