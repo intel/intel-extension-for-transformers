@@ -147,7 +147,11 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
       if (packedw->ShfIndice()) shuf_size = param_a.reordered->mSize;
       tmpbuf = reinterpret_cast<int8_t*>(get_workspace(asym_size + shuf_size));
     }
-    if (p->asym) param_a.reduce->assign(tmpbuf);
+    if (p->asym) {
+      param_a.reduce->assign(tmpbuf);
+    } else {
+      param_a.reduce = nullptr;
+    }
     if (packedw->ShfIndice()) {
       param_a.reordered->assign(tmpbuf + asym_size);
       param_a.indices = packedw->ShfIndice();
@@ -159,7 +163,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
                                   dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
                                   {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
                                    p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-                                   param_a.reduce->template RPtr<float>(), param_a.reduce->lda},
+                                   p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
                                   param_epi};
     if (p->asym || packedw->ShfIndice()) {
       jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
