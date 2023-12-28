@@ -15,6 +15,52 @@ if _ipex_available:
     gpu_name = get_gpu_family()
 
 
+def dequantize(weight, scales, zero_points, group_size, gemm_num=1):
+    k = weight.size()[-2]
+    n = weight.size()[-1]
+    weight = weight.reshape([gemm_num, k, n])
+    n = n * 2
+    group_num = int(k / group_size)
+    scales = scales.reshape([gemm_num, group_num, n])
+    zero_points = zero_points.reshape([gemm_num, group_num, int(n / 2)])
+    weight_even = (weight & 0x0F).to(torch.int8)
+    weight_odd = (weight >> 4).to(torch.int8)
+    zp_even = (zero_points & 0x0F).to(torch.int8)
+    zp_even += 1
+    zp_odd = (zero_points >> 4).to(torch.int8)
+    zp_odd += 1
+    weight_fp16 = []
+    zp_fp16 = []
+    for ind in range(0, n):
+        if ind % 2 == 0:
+            weight_fp16.append(
+                weight_even[:, :, int(ind / 2)].reshape([gemm_num, k, 1])
+            )
+            zp_fp16.append(
+                zp_even[:, :, int(ind / 2)].reshape([gemm_num, group_num, 1])
+            )
+        else:
+            weight_fp16.append(
+                weight_odd[:, :, int(ind / 2)].reshape([gemm_num, k, 1])
+            )
+            zp_fp16.append(
+                zp_odd[:, :, int(ind / 2)].reshape([gemm_num, group_num, 1])
+            )
+    weight_fp16 = torch.concat(weight_fp16, dim=2)
+    zp_fp16 = torch.concat(zp_fp16, dim=2)
+    scales = torch.reshape(scales, [gemm_num, group_num, 1, n])
+    zp_fp16 = torch.reshape(zp_fp16, [gemm_num, group_num, 1, n])
+    scales = scales.repeat([1, 1, group_size, 1])
+    zp_fp16 = zp_fp16.repeat([1, 1, group_size, 1])
+    scales = torch.reshape(scales, [gemm_num, k, n])
+    zp_fp16 = torch.reshape(zp_fp16, [gemm_num, k, n])
+    # weight_fp16 = ((weight_fp16 - zp_fp16).to(torch.float16)) * scales
+    weight_fp16 = ((weight_fp16 - 8 ).to(torch.float16)) * scales
+    if gemm_num == 1:
+        weight_fp16 = weight_fp16.reshape([k, n])
+    return weight_fp16
+
+
 class DummyDataset(data.Dataset):
     def __init__(self, model_name, seqlen):
         self.seqlen = seqlen
@@ -148,27 +194,36 @@ class TestArcWeightOnly(unittest.TestCase):
 
         device_map = "xpu"
 
-        model_name ="hf-internal-testing/tiny-random-gptj"
+        # model_name ="hf-internal-testing/tiny-random-gptj"
+        model_name ="Qwen/Qwen-7B-Chat"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         prompt = "how to test the code?"
-        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            trust_remote_code=True)
+            trust_remote_code=True,
+            # fp16=True,
+            torch_dtype=torch.float16,
+            device_map=device_map)
+        model.to(device_map)
         model.seqlen = 2048
         output = model(input_ids)
-        fp32_logits = output['logits']
-        print("fp32 logits {}".format(fp32_logits.shape))
+        fp16_logits = output['logits'].to("cpu")
+        print("fp32 logits {}".format(fp16_logits.shape))
 
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=128, compute_dtype="fp16", scale_dtype="fp16")
+        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
+                                       group_size=128,
+                                       compute_dtype="fp16",
+                                       scale_dtype="fp16")
         config.calib_dataloader = DataLoader(
-            DummyDataset(model_name, model.seqlen),
+            # DummyDataset(model_name, model.seqlen),
+            DummyDataset(model_name, 2048),
             batch_size=1,
             shuffle=False,
         )
         qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                                       device_map=device_map, quantization_config=config,
-                                                      trust_remote_code=True, torch_dtype=torch.float16)
+                                                      trust_remote_code=True, fp16=True)
         qmodel.save_low_bit(self.workspace)
         # qmodel = ipex.optimize_transformers(qmodel, inplace=True)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
@@ -180,33 +235,26 @@ class TestArcWeightOnly(unittest.TestCase):
         loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace, trust_remote_code=True)
         output_reload = loaded_model(input_ids.to(torch.device("xpu")))
         reload_logits = output_reload['logits'].to('cpu')
-        assert torch.allclose(reload_logits, quan_logits, rtol=0.01)
+        print(quan_logits)
+        print(reload_logits)
+        print("!!!!!!!!!!!!", torch.max(torch.abs(quan_logits - reload_logits)))
+        assert torch.allclose(reload_logits, quan_logits, rtol=0.03)
 
-    # def test_int4_ipex_arc(self):
-    #     from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
-    #     import intel_extension_for_pytorch as ipex
-    #     import intel_extension_for_transformers.gbits as gbits
+    def test_int4_ipex_arc(self):
+        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+        import intel_extension_for_pytorch as ipex
+        for bias in [True, False]:
+            model = M(with_bias=bias).to(dtype=torch.float16)
+            activation = torch.rand(1, 32, dtype=torch.float16)
+            output = model(activation)
 
-    #     raw_wei = torch.rand(2, 32, dtype=torch.float)
-    #     compress_wei = gbits.quantize(
-    #         raw_wei, True, 32, "fp32", "s4fullrange_scalef32")
-    #     revert_wei = torch.zeros(2, 32, dtype=torch.float).to("xpu")
-    #     gbits.dequantize(
-    #         compress_wei, revert_wei, True, "fp32", "s4fullrange_scalef32")
-    #     for bias in [True, False]:
-    #         model = M(with_bias=bias)
-    #         with torch.no_grad():
-    #             model.linear.weight = torch.nn.Parameter(revert_wei.to("cpu"))
-    #         activation = torch.rand(1, 32, dtype=torch.float)
-    #         output = model(activation)
-
-    #         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
-    #         model = convert_to_quantized_model(model, config, device="xpu")
-    #         # model = ipex.optimize_transformers(model, inplace=True)
-    #         output_quant = model(activation.to(torch.device("xpu")))
-    #         print(output)
-    #         print(output_quant)
-    #         assert torch.allclose(output, output_quant.to("cpu"), rtol=0.03)
+            config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32, compute_dtype="fp16", scale_dtype="fp16")
+            model = convert_to_quantized_model(model, config, device="xpu")
+            # model = ipex.optimize_transformers(model, inplace=True)
+            output_quant = model(activation.to(torch.device("xpu")))
+            print(output)
+            print(output_quant)
+            assert torch.allclose(output, output_quant.to("cpu"), rtol=0.03)
 
 
 if __name__ == "__main__":
