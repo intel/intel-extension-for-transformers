@@ -234,21 +234,24 @@ def check_submodules():
         end = time.time()
         print(f' --- Submodule initialization took {end - start:.2f} sec')
     except Exception:
-        print(' --- Submodule initalization failed')
+        print(' --- Submodule initialization failed')
         print('Please run:\n\tgit submodule update --init --recursive')
         sys.exit(1)
 
 
 if __name__ == '__main__':
-    ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
+    ext_modules = []
+    if sys.platform != "darwin":
+        ext_modules.append(CMakeExtension("intel_extension_for_transformers.qbits",
+                                          "intel_extension_for_transformers/llm/operator/csrc", lib_only=True))
     if not SKIP_RUNTIME:
         check_submodules()
-        ext_modules.extend([
-            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
-            ])
-    cmdclass={'build_ext': CMakeBuild}
+        ext_modules.append(CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp",
+                                          "intel_extension_for_transformers/llm/runtime/graph/"))
+        if sys.platform != "darwin":
+            ext_modules.append(CMakeExtension("intel_extension_for_transformers.neural_engine_py",
+                                              "intel_extension_for_transformers/llm/runtime/deprecated/"))
+    cmdclass = {'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",
