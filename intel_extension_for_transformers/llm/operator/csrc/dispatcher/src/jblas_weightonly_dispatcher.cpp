@@ -47,16 +47,29 @@ template <class Launcher>
 void woq_dequantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   if (dispatcher_utils::initer.verbose) dispatcher_utils::timer.start();
   using PrologueB = typename Launcher::PrologueB;
+  using WType = typename Launcher::PrologueB::StorageWeight;
   static PrologueB kernel;
+  // TODO(zhe): using unify StorageWeightKBlockNInteger after sync with neural-speed(with NFloat ProB feature).
   if (ctx->transpose) {
-    kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
-                                 dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                                 ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
-                                 &dispatcher_utils::DefaultThreading);
+    if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
+      kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
+                                   dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
+                                   ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
+                                   &dispatcher_utils::DefaultThreading);
+    } else {
+      kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK, ctx->deseries_wei,
+                                   ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
+                                   &dispatcher_utils::DefaultThreading);
+    }
   } else {
-    kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
-                        dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+    if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
+      kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
+                          dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
+                          ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+    } else {
+      kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK, ctx->deseries_wei,
+                          ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+    }
   }
 }
 
@@ -158,17 +171,36 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     }
 
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
-    typename Launcher::Param args{gp,
-                                  param_a,
-                                  dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
-                                  {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
-                                   p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
-                                   p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
-                                  param_epi};
-    if (p->asym || packedw->ShfIndice()) {
-      jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+    if constexpr (std::is_same_v<StorageWeight, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
+      typename Launcher::Param args{gp,
+                                    param_a,
+                                    dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
+                                    {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
+                                     p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
+                                     p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
+                                    param_epi};
+
+      if (p->asym || packedw->ShfIndice()) {
+        jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      } else {
+        jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      }
     } else {
-      jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      // TODO(zhe): remove this branch after using NFloat ProB in nerual-speed, only need to reset paramC in differenct
+      // ProB.
+      typename Launcher::Param args{gp,
+                                    param_a,
+                                    dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei),
+                                    {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
+                                     p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
+                                     p->asym ? param_a.reduce->template RPtr<float>() : nullptr, ctx->deseries_wei->mK},
+                                    param_epi};
+
+      if (p->asym || packedw->ShfIndice()) {
+        jblas::parallel::GemmRunWithA<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      } else {
+        jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
+      }
     }
   }
   if (tmpbuf != woq_workspace && tmpbuf != nullptr) jblas::utils::afree(tmpbuf);

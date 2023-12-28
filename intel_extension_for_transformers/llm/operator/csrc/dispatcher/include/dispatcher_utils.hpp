@@ -56,8 +56,7 @@ class Timer {
   high_resolution_clock::time_point m_end;
 };
 static Timer timer;
-// static jblas::parallel::OMPThreading DefaultThreading(jblas::device::CpuDevice::getInstance()->getThreads());
-static jblas::parallel::OMPThreading DefaultThreading(1);
+static jblas::parallel::OMPThreading DefaultThreading(jblas::device::CpuDevice::getInstance()->getThreads());
 string get_torch_dt_name(torch::Tensor* tensor);
 
 }  // namespace dispatcher_utils
