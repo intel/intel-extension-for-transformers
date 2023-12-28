@@ -11,6 +11,7 @@ from intel_extension_for_transformers.transformers import (
     AutoModel,
 )
 from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers.utils import str2bool
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
@@ -68,9 +69,11 @@ parser.add_argument(
     "--calib_padding", action="store_true", help="Calibration dataset do padding."
 )
 parser.add_argument(
-    "--calib_shuffle", default=True, type=bool, help="Calibration dataset do shuffle."
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
 )
-
 parser.add_argument(
     "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
 )
@@ -134,12 +137,10 @@ parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
 args = parser.parse_args()
-
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
 check_min_version("4.31.0")
-
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
