@@ -65,7 +65,7 @@ class Model:
         elif model_type == "mistral":
             import intel_extension_for_transformers.llm.runtime.graph.mistral_cpp as cpp_model
         else:
-            raise TypeError("Unspported model type {}!".format(model_type))
+            raise TypeError("Unsupported model type {}!".format(model_type))
         self.module = cpp_model
 
     @staticmethod
@@ -212,7 +212,7 @@ class Model:
         if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
-    
+
     def pad_token_id(self):
         if self.tokenizer.pad_token_id == None:
             if self.batch_size == 1:
