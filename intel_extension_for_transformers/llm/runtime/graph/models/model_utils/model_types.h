@@ -135,6 +135,9 @@ struct model_hparams {
 
   // ChatGLM-1
   int32_t inner_hidden_size = 0;
+  int32_t rope_scaling_factor = 0;
+  float original_max_position_embeddings = 0.0f;
+  int32_t use_yarn = 0;
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
