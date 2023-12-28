@@ -258,7 +258,7 @@ class SentencePieceVocab:
         self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
         added_tokens: Dict[str, int]
         if fname_added_tokens is not None:
-            added_tokens = json.load(open(fname_added_tokens))
+            added_tokens = json.load(open(fname_added_tokens, encoding='utf-8'))
         else:
             added_tokens = {}
         vocab_size: int = self.sentencepiece_tokenizer.vocab_size()
