@@ -49,12 +49,14 @@ void woq_dequantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   using PrologueB = typename Launcher::PrologueB;
   static PrologueB kernel;
   if (ctx->transpose) {
-    kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK, ctx->deseries_wei,
+    kernel.unpackTransposeWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
+                                 dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
                                  ctx->output->data_ptr<float>(), ctx->deseries_wei->mK,
                                  &dispatcher_utils::DefaultThreading);
   } else {
-    kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK, ctx->deseries_wei, ctx->output->data_ptr<float>(),
-                        ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
+    kernel.unpackWeight(ctx->deseries_wei->mN, ctx->deseries_wei->mK,
+                        dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
+                        ctx->output->data_ptr<float>(), ctx->deseries_wei->mN, &dispatcher_utils::DefaultThreading);
   }
 }
 
@@ -65,12 +67,9 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   using WType = typename Launcher::PrologueB::StorageWeight;
   WType packedw(0);
   static Launcher launcher;
-  if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockS8>) {
-    packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, jblas::utils::jblas_dtype<float>,
-                                           jblas::utils::jblas_dtype<float>, p->asym);
-  } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockS4>) {
+  if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
-                                           jblas::utils::jblas_dtype<float>, jblas::utils::jblas_dtype<float>, p->asym);
+                                           scale2jblasdt_map[p->scale_type], jblas::utils::jblas_dtype<float>, p->asym);
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF4>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
                                            jblas::utils::jblas_dtype<float>);
@@ -119,7 +118,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
   using GemmCore = typename Launcher::GemmCore;
   using StorageWeight = typename Launcher::PrologueB::StorageWeight;
   int asym_size = 0, shuf_size = 0;
-  int8_t* tmpbuf;
+  int8_t* tmpbuf = nullptr;
   if constexpr (GemmCore::ISA == JblasAMX_INT8 || GemmCore::ISA == JblasAVX512_VNNI || GemmCore::ISA == JblasAVX_VNNI) {
     using Parallel = jblas::parallel::gemm::SchedulerKBlockS<GemmCore>;
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
@@ -133,8 +132,8 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
       param_a.indices = packedw->ShfIndice();
       launcher.mProA.quantize(param_a, ctx->m, ctx->deseries_wei->mK, &dispatcher_utils::DefaultThreading);
     }
-    typename Launcher::Param args{gp, param_a,
-                                  dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei), param_epi};
+    typename Launcher::Param args{
+        gp, param_a, dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei), param_epi};
     if (packedw->ShfIndice()) {
       jblas::parallel::GemmRun<Parallel>(launcher, args, &dispatcher_utils::DefaultThreading);
     } else {
@@ -157,7 +156,7 @@ void do_compute(woq_config_param* p, woq_runtime_ctx* ctx, ParamA param_a) {
     jblas::utils::GemmProblem gp(1, ctx->m, ctx->n, ctx->k, ctx->blocksize);
     typename Launcher::Param args{gp,
                                   param_a,
-                                  dynamic_cast<jblas::storage::gemm::IWeightKBlockBase*>(ctx->deseries_wei),
+                                  dynamic_cast<jblas::storage::gemm::StorageWeightKBlockNInteger*>(ctx->deseries_wei),
                                   {packedw->template SPtr<int8_t>(), packedw->SDtype(), packedw->CStep(),
                                    p->asym ? packedw->template ZPtr<int8_t>() : nullptr,
                                    param_a.reduce->template RPtr<float>(), param_a.reduce->lda},
@@ -272,11 +271,8 @@ void parse_activation(woq_config_param* p, woq_runtime_ctx* ctx) {
 template <WOQ_TASK TASK, class GemmCore>
 void parse_weight(woq_config_param* p, woq_runtime_ctx* ctx) {
   using namespace jblas::prologue_b::gemm;
-  if (p->weight_type == "int8") {
-    return parse_activation<TASK, GemmCore, WeightKBlockS8>(p, ctx);
-  }
-  if (p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange") {
-    return parse_activation<TASK, GemmCore, WeightKBlockS4>(p, ctx);
+  if (p->weight_type == "int8" || p->weight_type == "int4_clip" || p->weight_type == "int4_fullrange") {
+    return parse_activation<TASK, GemmCore, WeightKBlockNInteger>(p, ctx);
   }
   if (p->weight_type == "nf4" || p->weight_type == "fp4_e2m1_bnb" || p->weight_type == "fp4_e2m1") {
     TORCH_CHECK(p->asym == false, "Qbits: only support sym alg in fp4/nf4 woq weight.");
