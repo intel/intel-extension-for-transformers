@@ -171,12 +171,12 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
       cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     }
     ne_tensor *Qcur, *Kcur, *Vcur;
-    if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[1]->data,
-                                        model.layers[il].attn[2]->data, N, model.layers[il].attn[0]->ne[1],
+    if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[2]->data,
+                                        model.layers[il].attn[4]->data, N, model.layers[il].attn[0]->ne[1],
                                         model.layers[il].attn[0]->ne[0]) &&
         n_head == n_head_kv) {  // fused execution of QKV
       struct ne_tensor* QKVcur =
-          ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
+          ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[2], model.layers[il].attn[4], cur);
       const size_t qkv_size = head_size * n_head * N;
       const size_t qkv_bytes = qkv_size * ne_element_size(QKVcur);
       Qcur = ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 0 * qkv_bytes), head_size, n_head, N);
@@ -184,7 +184,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
       Vcur = ne_view_1d(ctx0, QKVcur, qkv_size, 2 * qkv_bytes);
     } else {
       Qcur = ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), head_size, n_head, N);
-      Kcur = ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size, n_head_kv, N);
+      Kcur = ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), head_size, n_head_kv, N);
       Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
     Qcur =
@@ -268,7 +268,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
       ne_set_name(cur, "KQV_merged_contiguous");
 
       // projection (no bias)
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[3], cur);
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[6], cur);
     } else {
       const auto k_size = kv_cache_info.k_bytes;
       const auto v_size = kv_cache_info.v_bytes;
@@ -324,7 +324,7 @@ static bool llama_model_eval_internal(model_context* ctx, const model_input* inp
       ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");
 
       // projection (no bias)
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[6], KQV_merged_contiguous);
     }
 #ifdef NE_TP_MODEL
     if (enable_tp) {

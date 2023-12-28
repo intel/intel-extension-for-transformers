@@ -285,9 +285,11 @@ struct model_file_loader {
     file.read_raw(&hparams.rms_norm_eps, sizeof(float));
     file.read_raw(&hparams.freq_base, sizeof(float));
     file.read_raw(&hparams.freq_scale, sizeof(float));
+    
     hparams.rope_scaling_factor = file.read_u32();
     hparams.original_max_position_embeddings = file.read_u32();
-    hparams.use_yarn = file.read_u32();
+    hparams.use_yarn = bool(file.read_u32());
+    // file.read_raw(&hparams.rope_scaling_factor, sizeof(float));
     
   }
 
