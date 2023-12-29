@@ -1,5 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
+#LN HACKEDtorch==2.1.0+cpu
+torch==2.1.0
 transformers
 numpy
 sentencepiece
