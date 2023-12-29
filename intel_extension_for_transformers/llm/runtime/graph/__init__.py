@@ -134,7 +134,7 @@ class Model:
             import platform
             sys_platform = platform.platform().lower()
             if threads is None:
-                if "windows" in sys_platform:
+                if "windows" in sys_platform or "macos" in sys_platform:
                     cpu_count = os.cpu_count()
                     generate_kwargs["threads"] = int(cpu_count)
                 else:
