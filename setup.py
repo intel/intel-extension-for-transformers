@@ -71,7 +71,7 @@ class CMakeBuild(build_ext):
 
     @staticmethod
     def _is_target_file(file_name: str) -> bool:
-        if file_name.endswith(".dll") or file_name.endswith(".exe") or file_name.endswith(".pyd"):
+        if file_name.endswith(".dll") or file_name.endswith(".exe") or file_name.endswith(".pyd") or file_name.endswith(".dylib"):
             return True
         if file_name.endswith(".so") or ".so." in file_name:
             return True
