@@ -192,6 +192,7 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale,
         )
 
     # LLaMA v2 70B params.json
@@ -1064,8 +1065,8 @@ class OutputFile:
 
         self.fout.write(
             struct.pack("i", 1)
-        )  
-        # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
+        )
+        # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
         # but bos_token_id = 1 in llama.cpp
         self.fout.write(struct.pack("i", 2))
 
