@@ -164,7 +164,7 @@ class Params:
             n_mult=256,
             n_head=n_embd // 128,
             n_head_kv=n_embd // 128,
-            f_norm_eps=1e-5,
+            rms_norm_eps=1e-5,
             n_layer=next(i for i in itertools.count() if f"model.layers.{i}.self_attn.q_proj.weight" not in model),
         )
 
@@ -1088,10 +1088,9 @@ class OutputFile:
 
     @staticmethod
     def write_vocab_only(fname_out: Path, vocab: Vocab) -> None:
+        params = Params(n_vocab=vocab.vocab_size, n_embd=0, n_mult=0, n_head=1, n_layer=0)
         of = OutputFile(fname_out)
-        params = Params(n_vocab=vocab.vocab_size, n_embd=0, n_mult=0, n_head=1, n_layer=0, file_type=NEFileType.AllF32)
-        of = OutputFile(fname_out)
-        of.write_file_header(params)
+        of.write_file_header(params, file_type=NEFileType.AllF32)
         of.write_vocab(vocab)
         of.fout.close()
 
