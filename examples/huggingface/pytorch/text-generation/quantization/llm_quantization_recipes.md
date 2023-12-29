@@ -19,7 +19,7 @@ pip install -v .
 # install requirements
 cd examples/huggingface/pytorch/text-generation/quantization
 pip install -r requirements.txt
-pip install git+https://github.com/intel/neural-compressor.git@3cb6d38f3e5a74c5657b0614c012c207dae4d5b1
+pip install git+https://github.com/intel/neural-compressor.git@v2.4.1rc
 pip install transformers==4.32.0
 pip install torch==2.1.1+cpu --index-url https://download.pytorch.org/whl/cpu
 pip install intel-extension-for-pytorch==2.1.100
@@ -148,7 +148,7 @@ python run_generation.py \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \
-    --alpha 0.5
+    --alpha 0.9
 ```
 
 ### Weight-Only Quantization
