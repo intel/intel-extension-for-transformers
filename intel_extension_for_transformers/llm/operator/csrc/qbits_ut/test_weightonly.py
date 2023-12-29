@@ -17,7 +17,7 @@
 
 from ut_utils import *
 
-cmpt_configs = {"int8": {"int8", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"}, "int4_fullrange": {
+cmpt_configs = {"int8": {"int8", "bf16", "fp32"}, "int4_clip": {"int8", "fp32", "bf16"}, "int4_fullrange": {
     "int8", "fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
     "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
 }
@@ -26,6 +26,7 @@ scale_configs = {"int8": {"fp32"}, "int4_clip": {"fp32"}, "int4_fullrange": {"fp
                  "fp8_e5m2": {"fp32", "fp8_e8m0"}, "fp8_e4m3": {"fp32", "fp8_e8m0"}}
 
 asym_configs = {"int8", "int4_clip", "int4_fullrange"}
+
 
 @capture_args
 @pytest.mark.parametrize("m", [256])

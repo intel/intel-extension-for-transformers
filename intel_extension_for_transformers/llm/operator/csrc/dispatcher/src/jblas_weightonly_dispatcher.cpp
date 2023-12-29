@@ -82,7 +82,7 @@ void woq_quantize(woq_config_param* p, woq_runtime_ctx* ctx) {
   static Launcher launcher;
   if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockNInteger>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
-                                           scale2jblasdt_map[p->scale_type], jblas::utils::jblas_dtype<float>, p->asym);
+                                           scale2jblasdt_map[p->scale_type], JBLAS_DTYPE::BF16, p->asym);
   } else if constexpr (std::is_same_v<WType, jblas::storage::gemm::StorageWeightKBlockF4>) {
     packedw = launcher.mProB.createStorage(ctx->n, ctx->k, ctx->blocksize, wei2jblasdt_map[p->weight_type],
                                            jblas::utils::jblas_dtype<float>);
