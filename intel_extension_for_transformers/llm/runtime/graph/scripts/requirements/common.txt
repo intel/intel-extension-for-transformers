@@ -1,6 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-#LN HACKEDtorch==2.1.0+cpu
-torch==2.1.0
+torch==2.1.0+cpu ; sys_platform != 'darwin'
+torch==2.1.0 ; sys_platform == 'darwin'
 transformers
 numpy
 sentencepiece
