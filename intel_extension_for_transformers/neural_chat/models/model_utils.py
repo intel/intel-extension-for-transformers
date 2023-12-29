@@ -911,7 +911,7 @@ def predict_stream(**params):
                                 max_new_tokens=max_new_tokens,
                                 ctx_size=max_new_tokens,
                                 ignore_prompt=True,
-                                interactive=True,
+                                interactive=False if "magicoder" in model_name.lower() else True,
                                 do_sample=do_sample,
                                 num_beams=num_beams,
                                 n_keep=2 if "chatglm" in model_name.lower() else 1
