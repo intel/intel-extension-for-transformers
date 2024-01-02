@@ -34,6 +34,7 @@ class RetrieverAdapter():
         if self.retrieval_type == "default":
             self.retriever = VectorStoreRetriever(vectorstore = document_store, **kwargs)
         elif self.retrieval_type == "child_parent":
-            self.retriever = ChildParentRetriever(parentstore=document_store, vectorstore=child_document_store, **kwargs) # pylint: disable=abstract-class-instantiated
+            self.retriever = ChildParentRetriever(parentstore=document_store, \
+                                                  vectorstore=child_document_store, **kwargs) # pylint: disable=abstract-class-instantiated
         else:
             logging.error('The chosen retrieval type remains outside the supported scope.')
