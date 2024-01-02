@@ -19,7 +19,6 @@
 from langchain_core.vectorstores import VectorStore
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.pydantic_v1 import Field
-from langchain.callbacks.manager import CallbackManagerForRetrieverRun
 from enum import Enum
 from typing import List
 from langchain_core.documents import Document
@@ -44,7 +43,7 @@ class ChildParentRetriever(BaseRetriever):
     search_type: SearchType = SearchType.similarity
     """Type of search to perform (similarity / mmr)"""
 
-    def get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
+    def get_relevant_documents(self, query: str) -> List[Document]:
         """Get documents relevant to a query.
         Args:
             query: String to find relevant documents for
