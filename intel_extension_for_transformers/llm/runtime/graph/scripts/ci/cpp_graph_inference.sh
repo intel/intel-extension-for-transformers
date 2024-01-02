@@ -149,6 +149,7 @@ model_name_map["baichuan-13b"]="baichuan-inc/Baichuan-13B-Chat"
 model_name_map["mistral-7b"]="mistralai/Mistral-7B-v0.1"
 model_name_map["qwen-7b"]="Qwen/Qwen-7B-Chat"
 model_name_map["magicoder"]="ise-uiuc/Magicoder-S-DS-6.7B"
+model_name_map["whisper"]="openai/whisper-tiny"
 
 function main() {
     conda_env="$1"
