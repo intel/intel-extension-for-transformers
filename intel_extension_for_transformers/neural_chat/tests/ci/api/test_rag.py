@@ -38,6 +38,7 @@ class TestChatbotBuilder(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/"
         plugins.retrieval.args["persist_directory"] = "./test_for_accuracy"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -62,6 +63,7 @@ class TestChatbotBuilder_txt(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./test_txt"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -86,6 +88,7 @@ class TestChatbotBuilder_docx(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.docx"
         plugins.retrieval.args["persist_directory"] = "./test_docx"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -110,6 +113,7 @@ class TestChatbotBuilder_xlsx(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.xlsx"
         plugins.retrieval.args["persist_directory"] = "./test_xlsx"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -134,6 +138,7 @@ class TestChatbotBuilder_xlsx_1(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.xlsx"
         plugins.retrieval.args["persist_directory"] = "./test_xlsx_1"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -158,6 +163,7 @@ class TestChatbotBuilder_xlsx_2(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_2.xlsx"
         plugins.retrieval.args["persist_directory"] = "./test_xlsx_2"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -182,6 +188,7 @@ class TestChatbotBuilder_jsonl(unittest.TestCase):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.jsonl"
         plugins.retrieval.args["persist_directory"] = "./test_jsonl"
+        plugins.retrieval.args["retrieval_type"] = 'default'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
