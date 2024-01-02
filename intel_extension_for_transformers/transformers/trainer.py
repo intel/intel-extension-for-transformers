@@ -49,7 +49,7 @@ from tqdm.auto import tqdm
 from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
-from transformers.file_utils import (
+from transformers.utils import (
     CONFIG_NAME,
     WEIGHTS_NAME,
     is_torch_tpu_available,
