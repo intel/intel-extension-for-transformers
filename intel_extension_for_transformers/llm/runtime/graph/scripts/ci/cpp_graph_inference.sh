@@ -252,7 +252,7 @@ function main() {
     for p in "${precision_list[@]}"; do
         precisions_seen[$p]=x
     done
-    if "${model}" != "whisper"; then
+    if [[ "${model}" == "whisper" ]]; then
         for p in "${extra_precision_list[@]}"; do
             [[ ${precisions_seen[$p]} ]] && continue
             precision_list+=("$p")
@@ -362,7 +362,7 @@ function main() {
                     export LANG=en_US.UTF-8
                     export LC_ALL=en_US.UTF-8
                     echo "=======  Inference Start  ======="
-                    if "${model}" == "whisper";then OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
+                    if [[ "${model}" == "whisper" ]];then OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
                         $infer_cmd -f "/tf_dataset2/models/pytorch/whisper-tiny/jfk.wav"
                     else
                         real_ctx=$ctx # TODO(Zhenzhong): use same ctx for  chatglm & baichuan
