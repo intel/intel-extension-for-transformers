@@ -203,6 +203,18 @@ class TestChatbotBuilder_child_parent(unittest.TestCase):
             shutil.rmtree("test", ignore_errors=True)
         if os.path.exists("test_child"):
             shutil.rmtree("test_child", ignore_errors=True)
+        if os.path.exists("test_docx_child"):
+            shutil.rmtree("test_docx_child", ignore_errors=True)
+        if os.path.exists("test_jsonl_child"):
+            shutil.rmtree("test_jsonl_child", ignore_errors=True)
+        if os.path.exists("test_txt_child"):
+            shutil.rmtree("test_txt_child", ignore_errors=True)
+        if os.path.exists("test_xlsx_child"):
+            shutil.rmtree("test_xlsx_child", ignore_errors=True)
+        if os.path.exists("test_xlsx_1_child"):
+            shutil.rmtree("test_xlsx_1_child", ignore_errors=True)
+        if os.path.exists("test_xlsx_2_child"):
+            shutil.rmtree("test_xlsx_2_child", ignore_errors=True)
         return super().tearDown()
 
     def test_retrieval_child_parent(self):
