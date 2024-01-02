@@ -67,7 +67,6 @@ from transformers.trainer_pt_utils import (
 )
 from transformers.trainer_utils import (
     HPSearchBackend,
-    ShardedDDPOption,
     TrainOutput,
     EvalLoopOutput,
     EvalPrediction,
@@ -762,7 +761,8 @@ class BaseTrainer():
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
-        delay_optimizer_creation = self.sharded_ddp is not None and self.sharded_ddp != ShardedDDPOption.SIMPLE
+        # delay_optimizer_creation = is_sagemaker_mp_enabled() or self.is_fsdp_xla_enabled or self.is_fsdp_enabled
+        delay_optimizer_creation = is_sagemaker_mp_enabled()
 
         if not delay_optimizer_creation:
             self.create_optimizer_and_scheduler(num_training_steps=max_steps)
