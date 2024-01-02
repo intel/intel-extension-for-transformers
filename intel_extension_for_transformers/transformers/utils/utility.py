@@ -17,6 +17,7 @@
 
 """Utils for pytorch framework."""
 
+import argparse
 import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
@@ -36,6 +37,15 @@ SPARSITY_CONFIG = "sparsity_config.json"
 
 torch = LazyImport("torch")
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def distributed_init(
     backend="gloo",

@@ -566,7 +566,8 @@ def load_model(
         logging.error(f"Exception: {e}")
         raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
-    if re.search("llama", model.config.architectures[0], re.IGNORECASE):
+    if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
+       not re.search("magicoder", model_name, re.IGNORECASE):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -910,7 +911,7 @@ def predict_stream(**params):
                                 max_new_tokens=max_new_tokens,
                                 ctx_size=max_new_tokens,
                                 ignore_prompt=True,
-                                interactive=True,
+                                interactive=False if "magicoder" in model_name.lower() else True,
                                 do_sample=do_sample,
                                 num_beams=num_beams,
                                 n_keep=2 if "chatglm" in model_name.lower() else 1
