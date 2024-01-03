@@ -206,16 +206,16 @@ class TestChatbotBuilder_child_parent(unittest.TestCase):
         return super().setUp()
 
     def tearDown(self) -> None:
-        if os.path.exists("test"):
-            shutil.rmtree("test", ignore_errors=True)
-        if os.path.exists("test_child"):
-            shutil.rmtree("test_child", ignore_errors=True)
+        if os.path.exists("test_rag"):
+            shutil.rmtree("test_rag", ignore_errors=True)
+        if os.path.exists("test_rag_child"):
+            shutil.rmtree("test_rag_child", ignore_errors=True)
         return super().tearDown()
 
     def test_retrieval_child_parent(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
-        plugins.retrieval.args["persist_directory"] = "./test"
+        plugins.retrieval.args["persist_directory"] = "./test_rag"
         plugins.retrieval.args["retrieval_type"] = "child_parent"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
