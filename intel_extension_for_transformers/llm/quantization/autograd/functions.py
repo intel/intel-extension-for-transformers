@@ -50,8 +50,8 @@ class MatMulKBit(torch.autograd.Function):
         # 2. Matmul
         # output = torch.nn.functional.linear(A, B_dequant, bias)
         torch.ops.jblasop.woq_linear(
-            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype, scale_dtype
-        )
+            A, B.data, bias, out, out.shape[-1], bias is not None, compute_dtype, weight_dtype, scale_dtype,
+        False)
         output = out
 
         # 3. Save state
@@ -106,5 +106,5 @@ def matmul_kbit(A: Tensor,
     else:
         torch.ops.jblasop.woq_linear(A, B.data, bias, out, out.shape[-1], bias
                                      is not None, compute_dtype, weight_dtype,
-                                     scale_dtype)
+                                     scale_dtype, False)
         return out

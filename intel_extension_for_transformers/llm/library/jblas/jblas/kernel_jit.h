@@ -57,7 +57,7 @@ class DequanS8FP {
 
     void generate(JBLAS_DTYPE dst_dt, int pack_row) {
       assert(pack_row == 1 || pack_row == 2 || pack_row == 4);
-      int scale_step = 64 / pack_row;
+      int zmm_scale_step = 64 / pack_row;
       Xbyak::Label data_label;
       inLocalLabel();  // use local label for multiple instance
       {
@@ -105,19 +105,23 @@ class DequanS8FP {
           return 4;  // f32 case.
         };
 
-        auto generateNTile = [&](int N, JBLAS_DTYPE dst_dt, int scale_step, std::string row_label) {
+        auto generateNTile = [&](int N, JBLAS_DTYPE dst_dt, int zmm_scale_step, std::string row_label) {
           if (pack_row == 2) {
             vmovups(Xbyak::Zmm(RegTmp), ptr[rip + data_label + 8]);
           } else if (pack_row == 4) {
             vmovups(Xbyak::Zmm(RegTmp), ptr[rip + data_label + 72]);
           }
           for (int i = 0; i < N; i++) {
-            vmovups(Xbyak::Zmm(RegScale + i), ptr[reg_scaleptr + i * scale_step]);
+            vmovups(Xbyak::Zmm(RegScale + i), ptr[reg_scaleptr + i * zmm_scale_step]);
             if (pack_row == 2 || pack_row == 4) {
               vpermd(Xbyak::Zmm(RegScale + i), Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegScale + i));
             }
             if (!is_sym) {
-              vpmovsxbd(Xbyak::Zmm(RegZP + i), ptr[reg_zpptr + i * 16]);
+              vpmovsxbd(Xbyak::Zmm(RegZP + i),
+                        ptr[reg_zpptr + i * zmm_scale_step / sizeof(float)]);  // revert to zp_step.
+              if (pack_row == 2 || pack_row == 4) {
+                vpermd(Xbyak::Zmm(RegZP + i), Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegZP + i));
+              }
             }
           }
           xor_(reg_iterrow, reg_iterrow);
@@ -163,32 +167,32 @@ class DequanS8FP {
         sub(reg_tmp, reg_itercol);
         cmp(reg_tmp, 64);
         jl(".proc48", T_NEAR);
-        generateNTile(4, dst_dt, scale_step, ".rowloop1");
+        generateNTile(4, dst_dt, zmm_scale_step, ".rowloop1");
         add(reg_itercol, 64);
         add(reg_srcptr, 1 * 64);
         add(reg_dstptr, get_dst_step() * 64);
-        add(reg_scaleptr, 4 * scale_step);
-        if (!is_sym) add(reg_zpptr, 1 * 64);
+        add(reg_scaleptr, 4 * 64 / pack_row);
+        if (!is_sym) add(reg_zpptr, 1 * 64 / pack_row);
         jmp(".colend", T_NEAR);
 
         L(".proc48");
         cmp(reg_tmp, 48);
         jl(".proc32", T_NEAR);
-        generateNTile(3, dst_dt, scale_step, ".rowloop2");
+        generateNTile(3, dst_dt, zmm_scale_step, ".rowloop2");
         add(reg_itercol, 48);
         add(reg_srcptr, 1 * 48);
         add(reg_dstptr, get_dst_step() * 48);
-        add(reg_scaleptr, 4 * scale_step);
-        if (!is_sym) add(reg_zpptr, 1 * 48);
+        add(reg_scaleptr, 4 * 48 / pack_row);
+        if (!is_sym) add(reg_zpptr, 1 * 48 / pack_row);
         jmp(".colend", T_NEAR);
 
         L(".proc32");
-        generateNTile(2, dst_dt, scale_step, ".rowloop3");
+        generateNTile(2, dst_dt, zmm_scale_step, ".rowloop3");
         add(reg_itercol, 32);
         add(reg_srcptr, 1 * 32);
         add(reg_dstptr, get_dst_step() * 32);
-        add(reg_scaleptr, 4 * scale_step);
-        if (!is_sym) add(reg_zpptr, 1 * 32);
+        add(reg_scaleptr, 4 * 32 / pack_row);
+        if (!is_sym) add(reg_zpptr, 1 * 32 / pack_row);
 
         L(".colend");
         cmp(reg_itercol, reg_colsize);
