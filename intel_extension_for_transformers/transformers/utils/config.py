@@ -180,9 +180,8 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         if not isinstance(self.group_size, int):
             raise ValueError("group_size must be a int")
 
-        if self.scheme not in ["asym"]:
-            logger.warning("scheme: {} is not support, only support 'asym' now!".format(self.scheme))
-            self.scheme = "asym"
+        if self.scheme not in ["sym"]:
+            raise ValueError("scheme: {} is not support, only support 'sym' now!".format(self.scheme))
 
     def post_init_runtime(self):
         r"""

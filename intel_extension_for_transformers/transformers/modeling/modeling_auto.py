@@ -270,8 +270,7 @@ class _BaseQBitsAutoModelClass:
             )
             model.eval()
             logger.info("Mixed Precision done.")
-
-        if isinstance(quantization_config, WeightOnlyQuantConfig):
+        elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
@@ -627,7 +626,6 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
 
             model.eval()
-            logger.info("SmoothQuant done.")
         model = model.to(device_map)
         return model
 

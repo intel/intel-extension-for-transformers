@@ -17,6 +17,7 @@
 
 
 import logging
+import gc
 import os
 from accelerate import init_empty_weights
 from datasets import load_dataset
@@ -58,7 +59,8 @@ def replace_linear(
         empty_weights=False
 ):
     if modules_to_not_convert is None:
-        modules_to_not_convert = ["lm_head"]
+        # modules_to_not_convert = ["lm_head"]
+        modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
@@ -94,10 +96,11 @@ def _replace_linear(
         if current_key_name is None:
             current_key_name = []
         current_key_name.append(name)
+        is_removed = False
 
         if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
             or (is_ipex_available and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
-           and name not in modules_to_not_convert:
+           and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -132,16 +135,16 @@ def _replace_linear(
                             compression_dtype=module.compression_dtype
                             if hasattr(module, "compression_dtype") else torch.int8,
                             compression_dim=module.compression_dim if hasattr(module, "compression_dim") else 0,
-                            g_idx=(hasattr(module, "g_idx") and module.g_idx is not None),
                             device=device,
                             use_optimum_format=module.use_optimum_format
                             if hasattr(module, "use_optimum_format") else False,
                         )
                         if isinstance(module, WeightOnlyLinear):
-                            model._modules[name].g_idx = module.g_idx
-                            model._modules[name].scales = module.scales
-                            if hasattr(module, "qzeros"):
-                                model._modules[name].qzeros = module.qzeros
+                            model._modules[name].set_scales_zps_gidx(
+                                module.scales,
+                                module.qzeros if hasattr(module, "qzeros") else None,
+                                module.g_idx if hasattr(module, "g_idx") else None
+                            )
                     else:
                         raise Exception("{} device Unsupport weight only quantization!".format(device))
 
@@ -153,8 +156,11 @@ def _replace_linear(
                 model._modules[name].set_weights_bias(
                     module.qweight.data if hasattr(module, "qweight") else model._modules[name].qweight.data,
                     None if module.bias is None else module.bias.data)
+                del module
+                gc.collect()
+                is_removed = True
 
-        if len(list(module.children())) > 0:
+        if not is_removed and len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,
                 modules_to_not_convert,

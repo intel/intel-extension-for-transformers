@@ -245,8 +245,9 @@ class TestArcWeightOnly(unittest.TestCase):
         import intel_extension_for_pytorch as ipex
         for bias in [True, False]:
             model = M(with_bias=bias).to(dtype=torch.float16)
+            model.to("xpu")
             activation = torch.rand(1, 32, dtype=torch.float16)
-            output = model(activation)
+            output = model(activation.to("xpu"))
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32, compute_dtype="fp16", scale_dtype="fp16")
             model = convert_to_quantized_model(model, config, device="xpu")
