@@ -102,6 +102,7 @@ bool isValidFilename(const std::string& filename) {
   return infile.good();
 }
 
+int64_t common_time_us() { return ne_time_us(); }
 void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
   fprintf(stderr, "usage: %s [options]\n", argv[0]);
   fprintf(stderr, "\n");
