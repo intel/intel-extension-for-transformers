@@ -335,7 +335,7 @@ inline JBLAS_CODE decompress_kblock_s8_fp(int8_t* srcptr, _DST_T* dstptr, int ro
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j += 1) {
       float tmp = static_cast<float>(srcptr[i * ld_src + j]);
-      if (zero_points != nullptr) tmp -= static_cast<float>(zero_points[kpos * NPad + j]);
+      if (zero_points != nullptr) tmp -= static_cast<float>(zero_points[kpos * NPad + j / _PACK_ROW]);
       dstptr[i * ld_dst + j] = static_cast<_DST_T>(tmp * sptr[j / _PACK_ROW]);
     }
   }

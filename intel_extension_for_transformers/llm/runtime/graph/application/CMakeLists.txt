@@ -68,7 +68,7 @@ compile_quant(quant_chatglm2  quant_model.cpp chatglm2  chatglm2)
 compile_quant(quant_baichuan  quant_model.cpp baichuan  baichuan)
 compile_quant(quant_mistral   quant_model.cpp mistral   llama)
 compile_quant(quant_qwen   quant_model.cpp qwen   qwen)
-
+compile_quant(quant_whisper   quant_whisper.cpp whisper   whisper)
 # all models running
 if (NE_PYTHON_API)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -127,4 +127,4 @@ compile_run(run_mistral   main_run.cpp   main_pybind.cpp mistral   llama)
 compile_run(run_qwen      main_run.cpp   main_pybind.cpp qwen      qwen)
 
 # speech recognition
-compile_run(run_whisper   audio_run.cpp ""              whisper   whisper)
+compile_run(run_whisper   audio_run.cpp  whisper_pybind.cpp whisper   whisper)

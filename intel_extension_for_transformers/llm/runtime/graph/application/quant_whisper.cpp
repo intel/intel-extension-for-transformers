@@ -11,72 +11,63 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-// Defines sigaction on msys:
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <stdint.h>
+#include <cassert>
+#include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <fstream>
 #include <map>
 #include <string>
-#include <exception>
-#include <utility>
-#include <unordered_map>
-#include <tuple>
-#include "models/model_utils/model_utils.h"
-#include "common.h"
+#include <vector>
+#include <regex>  //NOLINT
 #include "models/model_utils/quant_utils.h"
-
-std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_name) {
-  return ql_registry::create_ql(model_name);
-}
+#include "common.h"
 
 int main(int argc, char** argv) {
-  model_init_backend();
   quant_params q_params;
-#ifdef MODEL_NAME
-  q_params.model_name = MODEL_NAME;
-#endif
-
   if (quant_params_parse(argc, argv, q_params) == false) {
     return 1;
   }
-  model_archs mt = model_name_to_arch::init().find(q_params.model_name);
-  if (mt == MODEL_UNKNOWN) {
-    fprintf(stderr, "error, please set model_name \n");
-    exit(0);
-  }
-  q_params.model_arch = mt;
 
+  // needed to initialize f16 tables
+  {
+    struct ne_init_params params = {0, NULL, false};
+    struct ne_context* ctx = ne_init(params);
+    ne_free(ctx);
+  }
   const std::string fname_inp = q_params.model_file;
   const std::string fname_out = q_params.out_file;
-  ne_ftype ftype = quant_params_to_ftype(q_params);
-  printf("ne_ftype: %d\n", ftype);
-  const int nthread = q_params.nthread;
+  // printf("input_model_file:%s \n",fname_inp.c_str());
+
+  const ne_ftype ftype = quant_params_to_ftype(q_params);
+  if (ftype != NE_FTYPE_MOSTLY_Q4_0) {
+    fprintf(stderr, "%s: ITREX now only support quantize model to q4_0 \n", __func__);
+    return 1;
+  }
 
   const int64_t t_main_start_us = common_time_us();
 
   int64_t t_quantize_us = 0;
-  auto quant_layer = get_model_quant_layer(q_params.model_name);
+
   // load the model
   {
     const int64_t t_start_us = common_time_us();
 
-    if (model_quantize(q_params, quant_layer)) {
+    if (!whisper_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
       fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
       return 1;
     }
 
     t_quantize_us = common_time_us() - t_start_us;
   }
+
   // report timing
   {
     const int64_t t_main_end_us = common_time_us();
 
     printf("\n");
-    printf("%s: quantize time = %8.2f ms\n", __func__, t_quantize_us / 1000.0);
-    printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0);
+    printf("%s: quantize time = %8.2f ms\n", __func__, t_quantize_us / 1000.0f);
+    printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
   }
 
   return 0;

@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "whisper.h"
-
+#include "models/model_utils/quant_utils.h"
 #define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 
