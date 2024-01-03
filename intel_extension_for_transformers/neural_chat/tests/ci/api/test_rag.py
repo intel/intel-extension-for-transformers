@@ -201,8 +201,10 @@ class TestChatbotBuilder_jsonl(unittest.TestCase):
 
 class TestChatbotBuilder_child_parent(unittest.TestCase):
     def setUp(self):
-        if os.path.exists("test"):
-            shutil.rmtree("test", ignore_errors=True)
+        if os.path.exists("test_rag"):
+            shutil.rmtree("test_rag", ignore_errors=True)
+        if os.path.exists("test_rag_child"):
+            shutil.rmtree("test_rag_child", ignore_errors=True)
         return super().setUp()
 
     def tearDown(self) -> None:
