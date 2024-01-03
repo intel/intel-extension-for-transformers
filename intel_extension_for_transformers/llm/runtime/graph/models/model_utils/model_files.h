@@ -591,8 +591,12 @@ struct model_file_loader {
     ctx->data = NULL;
 
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.version, sizeof(ctx->header.version), &offset);
+    std::cout << "ctx->header.version = " << ctx->header.version << "  offset = " << offset << std::endl;
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.n_tensors, sizeof(ctx->header.n_tensors), &offset);
+    std::cout << "ctx->header.n_tensors, = " << ctx->header.n_tensors << "  offset = " << offset << std::endl;
     ok = ok && gguf_fread_el(file_gguf, &ctx->header.n_kv, sizeof(ctx->header.n_kv), &offset);
+    std::cout << "ctx->header.n_kv = " << ctx->header.n_kv << "  offset = " << offset << std::endl;
+
 
     if (ctx->header.version == 1) {
       fprintf(stderr, "%s: GGUFv1 is no longer supported. please use a more up-to-date version\n", __func__);
@@ -615,44 +619,57 @@ struct model_file_loader {
       struct gguf_kv* kv = &ctx->kv[i];
 
       ok = ok && gguf_fread_str(file_gguf, &kv->key, &offset);
+      std::cout << "key = " << kv->key.data << "  offset = " << offset << "  kv->type" << kv->type;
       ok = ok && gguf_fread_el(file_gguf, &kv->type, sizeof(kv->type), &offset);
 
       switch (kv->type) {
         case GGUF_TYPE_UINT8:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint8, sizeof(kv->value.uint8), &offset);
+          std::cout << "  kv->value.uint8 = " << kv->value.uint8 << std::endl;
           break;
         case GGUF_TYPE_INT8:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int8, sizeof(kv->value.int8), &offset);
+          std::cout << "  kv->value.int8 = " << kv->value.int8 << std::endl;
           break;
         case GGUF_TYPE_UINT16:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint16, sizeof(kv->value.uint16), &offset);
+          std::cout << "  kv->value.uint16 = " << kv->value.uint16 << std::endl;
           break;
         case GGUF_TYPE_INT16:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int16, sizeof(kv->value.int16), &offset);
+          std::cout << "  kv->value.int16 = " << kv->value.int16 << std::endl;
           break;
         case GGUF_TYPE_UINT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint32, sizeof(kv->value.uint32), &offset);
+          std::cout << "  kv->value.uint32 = " << kv->value.uint32 << std::endl;
           break;
         case GGUF_TYPE_INT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int32, sizeof(kv->value.int32), &offset);
+          std::cout << "  kv->value.int32 = " << kv->value.int32 << std::endl;
           break;
         case GGUF_TYPE_FLOAT32:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.float32, sizeof(kv->value.float32), &offset);
+          std::cout << "  kv->value.float32 = " << kv->value.float32 << std::endl;
           break;
         case GGUF_TYPE_UINT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.uint64, sizeof(kv->value.uint64), &offset);
+          std::cout << "  kv->value.uint64 = " << kv->value.uint64 << std::endl;
           break;
         case GGUF_TYPE_INT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.int64, sizeof(kv->value.int64), &offset);
+          std::cout << "  kv->value.int64 = " << kv->value.int64 << std::endl;
           break;
         case GGUF_TYPE_FLOAT64:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.float64, sizeof(kv->value.float64), &offset);
+          std::cout << "  kv->value.float64 = " << kv->value.float64 << std::endl;
           break;
         case GGUF_TYPE_BOOL:
           ok = ok && gguf_fread_el(file_gguf, &kv->value.bool_, sizeof(kv->value.bool_), &offset);
+          std::cout << "  kv->value.bool_ = " << kv->value.bool_ << std::endl;
           break;
         case GGUF_TYPE_STRING:
           ok = ok && gguf_fread_str(file_gguf, &kv->value.str, &offset);
+          std::cout << std::endl;
           break;
         case GGUF_TYPE_ARRAY: {
           ok = ok && gguf_fread_el(file_gguf, &kv->value.arr.type, sizeof(kv->value.arr.type), &offset);
@@ -671,6 +688,7 @@ struct model_file_loader {
             case GGUF_TYPE_FLOAT64:
             case GGUF_TYPE_BOOL: {
               kv->value.arr.data = malloc(kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type]);
+              std::cout << "  kv->value.arr.data = " << kv->value.arr.data << std::endl;
               ok = ok && gguf_fread_el(file_gguf, kv->value.arr.data,
                                        kv->value.arr.n * GGUF_TYPE_SIZE[kv->value.arr.type], &offset);
             } break;
@@ -695,6 +713,8 @@ struct model_file_loader {
       }
     }
 
+    std::cout << "offset = " << offset << std::endl;
+
     // read the tensor infos
     ctx->infos =
         reinterpret_cast<struct gguf_tensor_info*>(malloc(ctx->header.n_tensors * sizeof(struct gguf_tensor_info)));
@@ -707,13 +727,18 @@ struct model_file_loader {
       }
 
       ok = ok && gguf_fread_str(file_gguf, &info->name, &offset);
+      std::cout << "tensor info: " << info->name.data << "  offset = " << offset << "  info->ne[j]:   ";
+
       ok = ok && gguf_fread_el(file_gguf, &info->n_dims, sizeof(info->n_dims), &offset);
       for (uint32_t j = 0; j < info->n_dims; ++j) {
         ok = ok && gguf_fread_el(file_gguf, &info->ne[j], sizeof(info->ne[j]), &offset);
+        std::cout << " " << info->ne[j];
       }
+     
+      std::cout << std::endl;
       ok = ok && gguf_fread_el(file_gguf, &info->type, sizeof(info->type), &offset);
       ok = ok && gguf_fread_el(file_gguf, &info->offset, sizeof(info->offset), &offset);
-
+      
       if (!ok) {
         fprintf(stderr, "%s: failed to read tensor info\n", __func__);
         // fclose(file_gguf);
@@ -728,9 +753,13 @@ struct model_file_loader {
 
       uint32_t n_dims = info->n_dims;
       shard.ne.resize(n_dims);
+
+      std::cout << "                     ";
       for (uint32_t j = 0; j < info->n_dims; ++j) {
+        std::cout << " n_dims " << n_dims << "   shard.ne[j] = " << shard.ne[j] << "  ";
         shard.ne[j] = info->ne[j];
       }
+      std::cout << "                  ";
 
       if (n_dims < 1 || n_dims > 2) {
         throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
@@ -752,7 +781,10 @@ struct model_file_loader {
       shard.file_idx = 0;
       const size_t offs = file_offset(ctx, name.c_str());
       int length = info->ne[0] * info->ne[1] * info->ne[2] * info->ne[3] * 4;
-
+      std::cout << " name_len = " << name_len << " offs = " << offs << " length = " << length << "  name = " << name
+                << std::endl
+                << std::endl
+                << std::endl;
       shard.file_off = offs;
 
       auto it = tensors_map.name_to_idx.find(name);
@@ -783,6 +815,7 @@ struct model_file_loader {
 
     ctx->offset = offset;
     gguf_data_offset = offset;
+    std::cout << "gguf_data_offset = " << gguf_data_offset << std::endl;
 
     return ctx;
   }
@@ -919,36 +952,62 @@ struct model_file_loader {
 
     // get hparams kv
     GGUF_GET_KEY(ctx_gguf, hparams.n_vocab, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_vocab");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_embd");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_mult");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head_kv");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_layer");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_rot");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.embedding_length");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.block_count");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.attention.head_count");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.attention.head_count_kv");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.block_count");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.rope.dimension_count");
 
     uint32_t ftype = 1;
-    GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ftype");
+    GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "general.file_type");
     hparams.ftype = (enum ne_ftype)ftype;
 
-    GGUF_GET_KEY(ctx_gguf, hparams.max_seq_len, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "max_seq_len");
-    GGUF_GET_KEY(ctx_gguf, hparams.alibi_bias_max, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "alibi_bias_max");
-    GGUF_GET_KEY(ctx_gguf, hparams.clip_qkv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "clip_qkv");
-    GGUF_GET_KEY(ctx_gguf, hparams.par_res, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "par_res");
+    GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "llama.feed_forward_length");
 
-    GGUF_GET_KEY(ctx_gguf, hparams.word_embed_proj_dim, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
-                 "word_embed_proj_dim");
-    GGUF_GET_KEY(ctx_gguf, hparams.do_layer_norm_before, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
-                 "do_layer_norm_before");
 
-    GGUF_GET_KEY(ctx_gguf, hparams.multi_query_group_num, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
-                 "multi_query_group_num");
-    GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ffn_hidden_size");
-    GGUF_GET_KEY(ctx_gguf, hparams.inner_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "inner_hidden_size");
 
-    GGUF_GET_KEY(ctx_gguf, vocab.bos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "bos_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.eos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "eos_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.pad_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "pad_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.sep_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "sep_token_id");
+
+
+
+
+    // GGUF_GET_KEY(ctx_gguf, arch, gguf_get_val_str, GGUF_TYPE_STRING, false, "general.architecuture");
+    // GGUF_GET_KEY(ctx_gguf, magic, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "magic");
+    // GGUF_GET_KEY(ctx_gguf, version, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "version");
+
+    // // get hparams kv
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_vocab, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_vocab");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_embd");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_mult");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head_kv");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_layer");
+    // GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_rot");
+
+    // uint32_t ftype = 1;
+    // GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ftype");
+    // hparams.ftype = (enum ne_ftype)ftype;
+
+    // GGUF_GET_KEY(ctx_gguf, hparams.max_seq_len, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "max_seq_len");
+    // GGUF_GET_KEY(ctx_gguf, hparams.alibi_bias_max, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "alibi_bias_max");
+    // GGUF_GET_KEY(ctx_gguf, hparams.clip_qkv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "clip_qkv");
+    // GGUF_GET_KEY(ctx_gguf, hparams.par_res, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "par_res");
+
+    // GGUF_GET_KEY(ctx_gguf, hparams.word_embed_proj_dim, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
+    //              "word_embed_proj_dim");
+    // GGUF_GET_KEY(ctx_gguf, hparams.do_layer_norm_before, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
+    //              "do_layer_norm_before");
+
+    // GGUF_GET_KEY(ctx_gguf, hparams.multi_query_group_num, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
+    //              "multi_query_group_num");
+    // GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ffn_hidden_size");
+    // GGUF_GET_KEY(ctx_gguf, hparams.inner_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "inner_hidden_size");
+
+
+    // GGUF_GET_KEY(ctx_gguf, vocab.bos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "bos_token_id");
+    // GGUF_GET_KEY(ctx_gguf, vocab.eos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "eos_token_id");
+    // GGUF_GET_KEY(ctx_gguf, vocab.pad_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "pad_token_id");
+    // GGUF_GET_KEY(ctx_gguf, vocab.sep_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "sep_token_id");
 
     // load vocab
     std::string tokens = "tokenizer.ggml.tokens";
@@ -1235,7 +1294,7 @@ struct model_model_loader {
               if (it == tensors_map.name_to_idx.end()) {
                 it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
                 if (it == tensors_map.name_to_idx.end()) {
-                  it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+                  it = tensors_map.name_to_idx.find("token_embd.weight");
                   if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
                   if (it == tensors_map.name_to_idx.end()) {
                     throw std::string("missing tok_embeddings.weight");
@@ -1376,6 +1435,7 @@ struct model_model_loader {
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
       file.seek(lt.shards.at(0).file_off + file_loaders.at(0)->gguf_data_offset, SEEK_SET);
+      std::cout << " lt.shards.at(0).file_off  = " << lt.shards.at(0).file_off << " file_loaders.at(0)->gguf_data_offset= " <<  file_loaders.at(0)->gguf_data_offset << std::endl;
       file.read_raw(lt.data, lt.size);
     } else if (lt.split_type == SPLIT_BY_ROWS) {
       size_t offset = 0;
