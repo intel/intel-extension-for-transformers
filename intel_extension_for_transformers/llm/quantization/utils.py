@@ -59,8 +59,7 @@ def replace_linear(
         empty_weights=False
 ):
     if modules_to_not_convert is None:
-        # modules_to_not_convert = ["lm_head"]
-        modules_to_not_convert = []
+        modules_to_not_convert = ["lm_head"]
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
@@ -266,6 +265,13 @@ def convert_to_quantized_model(model, config, device="cpu"):
                         "group_size": config.group_size,  # -1 (per-channel)
                         "scheme": config.scheme,
                         "algorithm": config.algorithm,
+                    },
+                },
+            },
+            op_name_dict={
+                '.*lm_head':{ 	# re.match
+                    "weight": {
+                        'dtype': 'fp32'
                     },
                 },
             },
