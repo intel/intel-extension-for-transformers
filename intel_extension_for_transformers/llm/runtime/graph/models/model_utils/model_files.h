@@ -34,6 +34,7 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 #include "models/model_utils/gguf.h"
+#include <iostream>
 
 template <typename T>
 static T checked_mul(T a, T b) {
@@ -913,41 +914,41 @@ struct model_file_loader {
     uint32_t version = -1;
     std::string arch = "unknown";
     GGUF_GET_KEY(ctx_gguf, arch, gguf_get_val_str, GGUF_TYPE_STRING, false, "general.architecuture");
-    GGUF_GET_KEY(ctx_gguf, magic, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "magic");
-    GGUF_GET_KEY(ctx_gguf, version, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "version");
+    GGUF_GET_KEY(ctx_gguf, magic, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "magic");
+    GGUF_GET_KEY(ctx_gguf, version, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "version");
 
     // get hparams kv
-    GGUF_GET_KEY(ctx_gguf, hparams.n_vocab, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_vocab");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_embd");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_mult");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_head");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_head_kv");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_layer");
-    GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "n_rot");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_vocab, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_vocab");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_embd, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_embd");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_mult, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_mult");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_head_kv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_head_kv");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_layer, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_layer");
+    GGUF_GET_KEY(ctx_gguf, hparams.n_rot, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "n_rot");
 
     uint32_t ftype = 1;
-    GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "ftype");
+    GGUF_GET_KEY(ctx_gguf, ftype, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ftype");
     hparams.ftype = (enum ne_ftype)ftype;
 
-    GGUF_GET_KEY(ctx_gguf, hparams.max_seq_len, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "max_seq_len");
-    GGUF_GET_KEY(ctx_gguf, hparams.alibi_bias_max, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "alibi_bias_max");
-    GGUF_GET_KEY(ctx_gguf, hparams.clip_qkv, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "clip_qkv");
-    GGUF_GET_KEY(ctx_gguf, hparams.par_res, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "par_res");
+    GGUF_GET_KEY(ctx_gguf, hparams.max_seq_len, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "max_seq_len");
+    GGUF_GET_KEY(ctx_gguf, hparams.alibi_bias_max, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "alibi_bias_max");
+    GGUF_GET_KEY(ctx_gguf, hparams.clip_qkv, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "clip_qkv");
+    GGUF_GET_KEY(ctx_gguf, hparams.par_res, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "par_res");
 
-    GGUF_GET_KEY(ctx_gguf, hparams.word_embed_proj_dim, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+    GGUF_GET_KEY(ctx_gguf, hparams.word_embed_proj_dim, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
                  "word_embed_proj_dim");
-    GGUF_GET_KEY(ctx_gguf, hparams.do_layer_norm_before, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+    GGUF_GET_KEY(ctx_gguf, hparams.do_layer_norm_before, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
                  "do_layer_norm_before");
 
-    GGUF_GET_KEY(ctx_gguf, hparams.multi_query_group_num, gguf_get_val_u32, GGUF_TYPE_UINT32, true,
+    GGUF_GET_KEY(ctx_gguf, hparams.multi_query_group_num, gguf_get_val_u32, GGUF_TYPE_UINT32, false,
                  "multi_query_group_num");
-    GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "ffn_hidden_size");
-    GGUF_GET_KEY(ctx_gguf, hparams.inner_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, true, "inner_hidden_size");
+    GGUF_GET_KEY(ctx_gguf, hparams.ffn_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "ffn_hidden_size");
+    GGUF_GET_KEY(ctx_gguf, hparams.inner_hidden_size, gguf_get_val_u32, GGUF_TYPE_UINT32, false, "inner_hidden_size");
 
-    GGUF_GET_KEY(ctx_gguf, vocab.bos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, true, "bos_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.eos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, true, "eos_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.pad_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, true, "pad_token_id");
-    GGUF_GET_KEY(ctx_gguf, vocab.sep_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, true, "sep_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.bos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "bos_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.eos_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "eos_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.pad_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "pad_token_id");
+    GGUF_GET_KEY(ctx_gguf, vocab.sep_token_id, gguf_get_val_i32, GGUF_TYPE_INT32, false, "sep_token_id");
 
     // load vocab
     std::string tokens = "tokenizer.ggml.tokens";
