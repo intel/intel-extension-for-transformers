@@ -22,6 +22,7 @@ import torch
 from accelerate import init_empty_weights
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
+from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,28 @@ DTYPE_BITS_MAPPING = {
     "int8": 8
 }
 
+
+def unpack_weight(qweight, scales, qzeros, q_config):
+    group_size = q_config['group_size']
+    bits = q_config['bits']
+    wf = torch.tensor([[ 0,  4,  8, 12, 16, 20, 24, 28]], dtype=torch.int32)
+    zeros = torch.bitwise_right_shift(torch.unsqueeze(qzeros, 2).expand(-1, -1, 32 // bits),
+                                    wf.unsqueeze(0)).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
+
+    zeros = zeros + 1
+    # zeros = zeros.reshape(-1, 1, zeros.shape[1] * zeros.shape[2])
+    zeros = zeros.reshape(scales.shape)
+
+    # scales = scales
+    # scales = scales.reshape(-1, 1, scales.shape[-1])
+
+    weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1).expand(-1, 32 // bits, -1),
+                                    wf.unsqueeze(-1)).to(torch.int16 if bits == 8 else torch.int8)
+    torch.bitwise_and(weight,(2 ** bits) - 1, out=weight)
+    # int_weight = weight.reshape(-1, group_size, weight.shape[2])
+
+    return weight, scales, zeros
 
 def replace_linear(
         model,
@@ -77,6 +100,12 @@ def convert_dtype_2_str(dtype):
         string = "Unspport dtype"
     return string
 
+def permute_func(weights, n_head: int, n_head_kv: int):
+    if n_head_kv is not None and n_head != n_head_kv:
+        n_head //= n_head_kv
+    return (weights.reshape(n_head_kv, 2, weights.shape[0] // n_head_kv // 2, *weights.shape[1:])
+                .swapaxes(1, 2)
+                .reshape(weights.shape))
 
 def _replace_linear(
     model,
@@ -97,7 +126,7 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
 
-        if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
+        if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)) and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -146,9 +175,17 @@ def _replace_linear(
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
                 if not empty_weights:
-                    model._modules[name].set_weights_bias(
-                        module.weight.data, None if module.bias is None else module.bias.data
-                    )
+                    if quantization_config.algorithm == "GPTQ":
+                        # to do, auto get n_head, n_head_kv
+                        n_head = 12
+                        n_head_kv = n_head
+                        int_weight, gptq_scales, gptq_zeros = unpack_weight(module.qweight, module.scales, module.qzeros, quantization_config.gptq_quantize_config)
+                        model._modules[name].set_gptq_weights_bias(
+                            int_weight, gptq_scales, gptq_zeros, module.g_idx, quantization_config, n_head=n_head, n_head_kv=n_head_kv, permute_func=permute_func, bias=None if module.bias is None else module.bias.data)
+                    else:
+                        model._modules[name].set_weights_bias(
+                            module.weight.data, None if module.bias is None else module.bias.data
+                        )
 
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
@@ -170,7 +207,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
     calib_func = config.calib_func
     calib_iters = config.calib_iters
     model_device = next(model.parameters()).device
-    if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ']:
+    if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ', 'GPTQ']:
         from datasets import load_dataset
         from torch.utils.data import DataLoader
 
@@ -248,6 +285,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
             dtype = "int4"
         else:
             dtype = config.weight_dtype
+        recipes={
+            "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                        "enable_mse_search": config.mse_range},
+        }
+        if config.gptq_recipes is not None:
+            recipes["gptq_args"] = config.gptq_recipes
         conf = PostTrainingQuantConfig(
             approach="weight_only",
             op_type_dict={
@@ -261,18 +304,31 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     },
                 },
             },
-            recipes={
-                "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
-                            "enable_mse_search": config.mse_range},
-            },
+            recipes=recipes
         )
         # TEQ: set calib_func=None, use default training func as calib_func
         # RTN: doesn't need calib_func
-        if config.algorithm in ['TEQ','RTN']:
+        if config.algorithm in ['TEQ','RTN','GPTQ']:
             calib_func=None
         inc_model = quantization.fit(model,
                                     conf,
                                     calib_func=calib_func,
                                     calib_dataloader=calib_dataloader)
+        if config.algorithm == "GPTQ":
+            inc_model = inc_model.export_compressed_model(use_optimum_format=True)
+            quantize_config = {
+                "bits": bits,
+                "group_size": config.group_size,
+                "damp_percent": config.gptq_recipes["percdamp"],
+                "desc_act":  config.gptq_recipes["act_order"],
+                "sym": True if config.scheme=="sym" else False,
+                "true_sequential": True,
+                "model_name_or_path": "null",
+                "model_file_base_name": "model"
+            }
+
+            setattr(config, "gptq_quantize_config", quantize_config)
+            return replace_linear(inc_model, None, None, config, device=device)
+
         return replace_linear(inc_model.model, None, None, config, device=device)
 

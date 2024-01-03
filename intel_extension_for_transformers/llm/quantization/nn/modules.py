@@ -146,6 +146,48 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
+    def set_gptq_weights_bias(self, int_weight, gptq_scales, gptq_zeros, g_idx, q_config, n_head=0, n_head_kv=0, permute_func=None, bias=None):
+        shape = int_weight.shape
+        int_weight = int_weight.view(-1,int_weight.shape[-1])
+
+        if permute_func:
+            int_weight = permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
+            gptq_scales = permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
+            gptq_zeros = permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
+
+        if q_config.gptq_quantize_config['desc_act']:
+            int_weight2 = int_weight.clone()
+            group_size=q_config.gptq_quantize_config['group_size']
+            group_dict = {}
+            for i in range(len(g_idx)):
+                group_idx = g_idx[i].item()
+                if group_idx not in group_dict:
+                    target_idx = group_idx * group_size
+                    group_dict[group_idx] = 0
+                else:
+                    group_dict[group_idx] = group_dict[group_idx] + 1
+                    target_idx = group_idx * group_size + group_dict[group_idx]
+                int_weight2[target_idx] = int_weight[i]
+            int_weight = int_weight2
+
+        if q_config.gptq_quantize_config['bits'] == 4:
+            int_weight = (int_weight - 8) * 16
+            gptq_scales = gptq_scales / 16
+            gptq_zeros = (gptq_zeros - 8) * 16
+
+        packw = torch.ops.jblasop.woq_packq(
+                int_weight, gptq_scales.float(), gptq_zeros, g_idx, q_config.weight_dtype, q_config.scale_dtype, q_config.compute_dtype, not q_config.gptq_quantize_config["sym"], self.blocksize)
+        packw.resize_(shape)
+        self.weight = ParamsQBits(data=packw,
+                                  requires_grad=False,
+                                  quant_state={"scheme": self.scheme},
+                                  blocksize=self.blocksize,
+                                  compress_statistics=self.compress_statistics,
+                                  quant_dtype=self.weight_dtype,
+                                  scale_dtype=self.scale_dtype)
+        if bias is not None:
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
 class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
     # Lora implemented in a dense layer
     def __init__(
