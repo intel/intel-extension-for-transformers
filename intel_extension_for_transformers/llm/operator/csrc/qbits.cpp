@@ -57,10 +57,10 @@ static void inline init_woq_config_param(woq::woq_config_param* p, woq::woq_runt
 
 static torch::Tensor woq_packq(const torch::Tensor& qweight, const torch::Tensor& scale, const torch::Tensor& zp,
                                const torch::Tensor& g_idx, const std::string& weight_type,
-                               const std::string& scale_type, const std::string& compute_type, const std::string& alg,
-                               int64_t group_size) {
+                               const std::string& scale_type, const std::string& compute_type, bool asym,
+                               int64_t blocksize) {
   torch::Tensor output;
-  woq::woq_packq_param p{compute_type, weight_type, scale_type, alg, static_cast<int>(group_size), g_idx.numel() != 0};
+  woq::woq_packq_param p{compute_type, weight_type, scale_type, asym, static_cast<int>(blocksize), g_idx.numel() != 0};
   woq::woq_packq_ctx ctx{const_cast<torch::Tensor*>(&qweight),
                          const_cast<torch::Tensor*>(&scale),
                          const_cast<torch::Tensor*>(&zp),
@@ -72,14 +72,14 @@ static torch::Tensor woq_packq(const torch::Tensor& qweight, const torch::Tensor
   return output;
 }
 
-static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t block_size,
+static torch::Tensor woq_quantize(const torch::Tensor& fp32_weight, bool transpose, int64_t blocksize,
                                   const std::string& compute_type, const std::string& weight_type,
                                   const std::string& scale_type, bool asym) {
   torch::Tensor output;
   woq::woq_config_param p;
-  woq::woq_runtime_ctx ctx{
-      nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose, static_cast<int>(block_size)};
+  woq::woq_runtime_ctx ctx{nullptr, const_cast<torch::Tensor*>(&fp32_weight), nullptr, &output, transpose};
   init_woq_config_param<woq::WOQ_QUANTIZE>(&p, &ctx, compute_type, weight_type, scale_type, asym);
+  p.blocksize = static_cast<int>(blocksize);
   woq::dispatch_woq_task(&p, &ctx, woq::WOQ_QUANTIZE);
   return output;
 }

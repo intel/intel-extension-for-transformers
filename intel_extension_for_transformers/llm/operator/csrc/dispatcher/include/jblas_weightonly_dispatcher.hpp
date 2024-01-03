@@ -27,21 +27,20 @@ enum WOQ_TASK {
   WOQ_LINEAR,
 };
 
-struct woq_config_param {
+struct woq_param_base {
   std::string compute_type;  // determin gemm core template
-  std::string weight_type;   // determin compress-weight template
+  std::string weight_type;   // determin compressed-weight template
   std::string scale_type;    // determin scale param
   bool asym;
+  int blocksize;
+};
+
+struct woq_config_param : public woq_param_base {
   dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
   dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
 };
 
-struct woq_packq_param {
-  std::string compute_type;
-  std::string weight_type;
-  std::string scale_type;
-  std::string alg;  // sym/asym
-  int group_size;
+struct woq_packq_param : public woq_param_base {
   bool enable_act_shuffle;
 };
 
@@ -53,7 +52,7 @@ struct woq_packq_ctx {
 struct woq_runtime_ctx {
   torch::Tensor *activation, *weight, *bias, *output;
   bool transpose;
-  int blocksize, m, n, k, lda, ldo;
+  int m, n, k, lda, ldo;
   float alpha, beta;
   jblas::storage::gemm::IWeightBase* deseries_wei;
 };
