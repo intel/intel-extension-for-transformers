@@ -143,7 +143,6 @@ class Agent_QA():
         #     self.database = PGVector()
       
         if self.retrieval_type == 'default':  # Using vector store retriever
-            langchain_documents = 
             if append:
                 knowledge_base = self.database.from_documents(documents=langchain_documents, embedding=self.embeddings,
                                                               **kwargs)
