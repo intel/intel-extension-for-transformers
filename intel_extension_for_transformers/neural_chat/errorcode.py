@@ -16,7 +16,7 @@
 # limitations under the License.
 """Error code and constant value for Neural Chat."""
 
-STORAGE_THRESHOLD_GB = 30
+STORAGE_THRESHOLD_GB = 0.1
 GPU_MEMORY_THRESHOLD_MB = 6
 
 class ErrorCodes:
