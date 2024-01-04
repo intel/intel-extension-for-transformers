@@ -49,7 +49,7 @@ def document_transfer(data_collection):
 
 def document_append_id(documents):
     for _doc in documents:
-        _doc.metadata["doc_id"] = _doc["identify_id"]
+        _doc.metadata["doc_id"] = _doc.metadata["identify_id"]
     return documents
 
 
