@@ -366,7 +366,7 @@ inline float get_mxfp_maxnorm(const JBLAS_DTYPE t, int ebits, int mantissa_bits)
   return max_norm;
 }
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__APPLE__)
 static void request_perm_xtile_data() {
   unsigned long bitmask;
   long rc;

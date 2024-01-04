@@ -4,6 +4,7 @@ py-cpuinfo
 setuptools>=65
 setuptools_scm[toml]>=6.2
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
+torch==2.1.0+cpu ; sys_platform != 'darwin'
+torch==2.1.0 ; sys_platform == 'darwin'
 accelerate
 optimum-intel

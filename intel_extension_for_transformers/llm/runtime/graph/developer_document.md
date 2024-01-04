@@ -79,8 +79,8 @@ graph LR;
 
 We need to implement corresponding serialization methods from pytorch format, which is mainly divided into the following three steps.
 
-## 1.1.	Hyperparamters
-The term **"hyperparamters"** describes a value that is used to configure the behavior of a large language model; this is in contrast to the model's parameters, which are the weight that were derived in the training process that was used to create the model. Each model defines its own hyperparameter structure that defines the hyperparameter values accepted by that model. Valid ITREX graph files must list these values in the correct order, and each value must be represented using the correct data type. Although hyperparameters are different across models, some attributes appear in the hyperparameters for most models:
+## 1.1.	Hyperparameters
+The term **"hyperparameters"** describes a value that is used to configure the behavior of a large language model; this is in contrast to the model's parameters, which are the weight that were derived in the training process that was used to create the model. Each model defines its own hyperparameter structure that defines the hyperparameter values accepted by that model. Valid ITREX graph files must list these values in the correct order, and each value must be represented using the correct data type. Although hyperparameters are different across models, some attributes appear in the hyperparameters for most models:
 - n_vocab: the size of the model's vocabulary
 - n_embd: the size of the model's " embedding layer", which is used during prompt ingestion.
 - n_layer: the number of layers in the model; each layer represents a set of weights.
@@ -328,7 +328,7 @@ Most of our model examples only support single prompt processing. You need to ad
 +set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 +target_link_libraries(${TARGET} PUBLIC ne_layers jblas::jblas)
 ```
- and and new_model to [models_CMakeLists.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt).
+ and new_model to [models_CMakeLists.txt](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/graph/models/CMakeLists.txt).
  ```diff
 add_subdirectory(opt)
 add_subdirectory(bloom)

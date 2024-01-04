@@ -165,7 +165,7 @@ class Params:
             n_mult=256,
             n_head=n_embd // 128,
             n_head_kv=n_embd // 128,
-            f_norm_eps=1e-5,
+            rms_norm_eps=1e-5,
             n_layer=next(i for i in itertools.count() if f"model.layers.{i}.self_attn.q_proj.weight" not in model),
         )
 
@@ -203,7 +203,7 @@ class Params:
         )
 
     # LLaMA v2 70B params.json
-    # {"dim": 8192, "multiple_of": 4096, "ffn_dim_multiplier": 1.3, "n_heads": 64, "n_kv_heads": 8, 
+    # {"dim": 8192, "multiple_of": 4096, "ffn_dim_multiplier": 1.3, "n_heads": 64, "n_kv_heads": 8,
     #  "n_layers": 80, "norm_eps": 1e-05, "vocab_size": -1}
     @staticmethod
     def loadOriginalParamsJson(model: 'LazyModel', config_path: Path) -> 'Params':
@@ -230,8 +230,8 @@ class Params:
             n_head=n_head,
             n_head_kv=n_head_kv,
             ffn_hidden_size=ffn_hidden_size,
-            bos_token_id = bos_token_id,
-            eos_token_id = eos_token_id,
+            bos_token_id=bos_token_id,
+            eos_token_id=eos_token_id,
         )
 
     @staticmethod
@@ -278,7 +278,7 @@ class SentencePieceVocab:
     def sentencepiece_tokens(self) -> Iterable[Tuple[bytes, float]]:
         tokenizer = self.sentencepiece_tokenizer
         for i in range(self.params_vocab_size):
-            text: bytes           
+            text: bytes
             if i < tokenizer.vocab_size():
                 if tokenizer.is_unknown(i):
                     text = " \u2047 ".encode("utf-8")
@@ -1086,7 +1086,7 @@ class OutputFile:
         self.fout.write(struct.pack("f", params.rope_theta))
         self.fout.write(struct.pack("f", params.rope_scale))
 
-        # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json 
+        # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
         # but bos_token_id = 1 in llama.cpp
         self.fout.write(struct.pack("i", params.bos_token_id))
         self.fout.write(struct.pack("i", params.eos_token_id))
@@ -1108,10 +1108,9 @@ class OutputFile:
 
     @staticmethod
     def write_vocab_only(fname_out: Path, vocab: Vocab) -> None:
+        params = Params(n_vocab=vocab.vocab_size, n_embd=0, n_mult=0, n_head=1, n_layer=0)
         of = OutputFile(fname_out)
-        params = Params(n_vocab=vocab.vocab_size, n_embd=0, n_mult=0, n_head=1, n_layer=0, file_type=NEFileType.AllF32)
-        of = OutputFile(fname_out)
-        of.write_file_header(params)
+        of.write_file_header(params, file_type=NEFileType.AllF32)
         of.write_vocab(vocab)
         of.fout.close()
 

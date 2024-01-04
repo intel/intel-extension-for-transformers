@@ -67,7 +67,7 @@ class Model:
         elif model_type == "whisper":
             import intel_extension_for_transformers.llm.runtime.graph.whisper_cpp as cpp_model
         else:
-            raise TypeError("Unspported model type {}!".format(model_type))
+            raise TypeError("Unsupported model type {}!".format(model_type))
         self.module = cpp_model
 
     @staticmethod
@@ -136,7 +136,7 @@ class Model:
             import platform
             sys_platform = platform.platform().lower()
             if threads is None:
-                if "windows" in sys_platform:
+                if "windows" in sys_platform or "macos" in sys_platform:
                     cpu_count = os.cpu_count()
                     generate_kwargs["threads"] = int(cpu_count)
                 else:
@@ -215,7 +215,7 @@ class Model:
         if self.model_type == 'qwen':
             return self.tokenizer.special_tokens['<|endoftext|>']
         return self.tokenizer.eos_token_id
-    
+
     def pad_token_id(self):
         if self.tokenizer.pad_token_id == None:
             if self.batch_size == 1:

@@ -24,7 +24,7 @@ docker compose build
 OR
 ```bash
 docker pull intel/ai-tools:itrex-1.3.0
-docker pull intel/ai-tools:itrex-devel-1.3.0
+docker pull intel/ai-tools:itrex-1.3.0-devel
 ```
 
 ## Use Docker Image
