@@ -22,6 +22,7 @@ from langchain_core.pydantic_v1 import Field
 from enum import Enum
 from typing import List
 from langchain_core.documents import Document
+from langchain.callbacks.manager import CallbackManagerForRetrieverRun
 
 
 class SearchType(str, Enum):
@@ -43,7 +44,7 @@ class ChildParentRetriever(BaseRetriever):
     search_type: SearchType = SearchType.similarity
     """Type of search to perform (similarity / mmr)"""
 
-    def get_relevant_documents(self, query: str) -> List[Document]:
+    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRunr) -> List[Document]:
         """Get documents relevant to a query.
         Args:
             query: String to find relevant documents for
@@ -60,8 +61,8 @@ class ChildParentRetriever(BaseRetriever):
 
         ids = []
         for d in sub_docs:
-            if d.metadata['doc_id'] not in ids:
-                ids.append(d.metadata['doc_id'])
+            if d.metadata["identify_id"] not in ids:
+                ids.append(d.metadata['identify_id'])
         retrieved_documents = self.parentstore.get(ids)
         return retrieved_documents
 
