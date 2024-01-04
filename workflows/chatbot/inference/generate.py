@@ -162,6 +162,8 @@ def parse_args():
     )
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
+    parser.add_argument(
+        "--legacy_format", action='store_true', default=False,)
     args = parser.parse_args()
     return args
 
@@ -232,7 +234,9 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
-        ipex_int8=args.ipex_int8
+        ipex_int8=args.ipex_int8,
+        return_stats=args.return_stats,
+        legacy_format=args.legacy_format
     )
 
     if args.habana:
