@@ -44,7 +44,7 @@ class ChildParentRetriever(BaseRetriever):
     search_type: SearchType = SearchType.similarity
     """Type of search to perform (similarity / mmr)"""
 
-    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRunr) -> List[Document]:
+    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
         """Get documents relevant to a query.
         Args:
             query: String to find relevant documents for
