@@ -149,6 +149,7 @@ model_name_map["baichuan-13b"]="baichuan-inc/Baichuan-13B-Chat"
 model_name_map["mistral-7b"]="mistralai/Mistral-7B-v0.1"
 model_name_map["qwen-7b"]="Qwen/Qwen-7B-Chat"
 model_name_map["magicoder"]="ise-uiuc/Magicoder-S-DS-6.7B"
+model_name_map["whisper"]="openai/whisper-tiny"
 
 function main() {
     conda_env="$1"
@@ -231,6 +232,10 @@ function main() {
     elif [[ "${model}" == "magicoder" ]]; then
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
+    elif [[ "${model}" == "whisper" ]]; then
+        quant_script="./build/bin/quant_whisper"
+        infer_cmd="./build/bin/run_whisper"
+        precision_list+=("q4_0")
     else
         echo "Error: Unexpedted model: $model" 1>&2
         exit 1
@@ -247,11 +252,13 @@ function main() {
     for p in "${precision_list[@]}"; do
         precisions_seen[$p]=x
     done
-    for p in "${extra_precision_list[@]}"; do
-        [[ ${precisions_seen[$p]} ]] && continue
-        precision_list+=("$p")
-        precisions_seen[$p]=x
-    done
+    if [[ "${model}" != "whisper" ]]; then
+        for p in "${extra_precision_list[@]}"; do
+            [[ ${precisions_seen[$p]} ]] && continue
+            precision_list+=("$p")
+            precisions_seen[$p]=x
+        done
+    fi
 
     # init conda
     #. $(dirname ${CONDA_EXE})/../etc/profile.d/conda.sh
@@ -362,18 +369,20 @@ function main() {
                     export LANG=en_US.UTF-8
                     export LC_ALL=en_US.UTF-8
                     echo "=======  Inference Start  ======="
+                    if [[ "${model}" == "whisper" ]];then OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
+                        $infer_cmd -f "/tf_dataset2/models/nlp_toolkit/whisper-tiny/jfk.wav" -m ${model}-${precision}.bin
+                    else
+                        real_ctx=$ctx # TODO(Zhenzhong): use same ctx for  chatglm & baichuan
+                        [[ "${model}" == "chatglm2" || "${model}" == "chatglm-6b" ||
+                            "${model}" == "baichuan-13b" || "${model}" == "baichuan2-13b" ]] && real_ctx=2047
 
-                    real_ctx=$ctx # TODO(Zhenzhong): use same ctx for  chatglm & baichuan
-                    [[ "${model}" == "chatglm2" || "${model}" == "chatglm-6b" ||
-                        "${model}" == "baichuan-13b" || "${model}" == "baichuan2-13b" ]] && real_ctx=2047
+                        OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
+                            $infer_cmd --seed 1234 -t $cores_per_instance -b 2047 -c $real_ctx -n ${output} -m ${model}-${precision}.bin $extension -p "$prompt" 2>&1 | tee ${WORKSPACE}/${logs_file} || true &
+                        monitor
 
-                    OMP_NUM_THREADS=$cores_per_instance numactl -m 0 -C 0-$(($cores_per_instance - 1)) \
-                        $infer_cmd --seed 1234 -t $cores_per_instance -b 2047 -c $real_ctx -n ${output} -m ${model}-${precision}.bin $extension -p "$prompt" 2>&1 | tee ${WORKSPACE}/${logs_file} || true &
-                    monitor
-
-                    echo "=======  Inference End  ======="
-                    python $script_dir/calculate_percentiles.py ${WORKSPACE}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
-
+                        echo "=======  Inference End  ======="
+                        python $script_dir/calculate_percentiles.py ${WORKSPACE}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
+                    fi
                     if [[ "$cores_per_instance" == "${cores_list[@]: -1:1}" ]] &&
                         [[ "$batch_size_idx" == "0" ]] &&
                         [[ "$input_idx" == "0" ]] &&
