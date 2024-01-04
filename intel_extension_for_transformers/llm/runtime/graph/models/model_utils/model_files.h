@@ -225,7 +225,7 @@ struct model_file_loader {
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     read_magic(tensors_map);
-    read_tensor_metadata(file_idx, tensors_map);
+    // read_tensor_metadata(file_idx, tensors_map);
   }
 
   const char* gguf_type_name(enum gguf_type type) { return GGUF_TYPE_NAME[type]; }
@@ -457,6 +457,7 @@ struct model_file_loader {
 
     size_t data_offset = gguf_get_data_offset(ctx_gguf);
     size_t tensor_offset = gguf_get_tensor_offset(ctx_gguf, idx);
+    std::cout << "data_offset = " << data_offset << " tensor_offset = " << tensor_offset << std::endl;
     return data_offset + tensor_offset;
   }
 
@@ -735,9 +736,10 @@ struct model_file_loader {
         std::cout << " " << info->ne[j];
       }
      
-      std::cout << std::endl;
       ok = ok && gguf_fread_el(file_gguf, &info->type, sizeof(info->type), &offset);
+      std::cout << "  info->type = " << info->type << "  ";
       ok = ok && gguf_fread_el(file_gguf, &info->offset, sizeof(info->offset), &offset);
+      std::cout << "  info->offset = " << info->offset << "  ";
       
       if (!ok) {
         fprintf(stderr, "%s: failed to read tensor info\n", __func__);
@@ -749,12 +751,16 @@ struct model_file_loader {
       model_load_tensor_shard shard;
       std::string name = gguf_get_tensor_name(ctx, i);
       uint32_t name_len = name.length();
-      shard.type = (enum ne_type)0;
 
+      // TODO: 14有点问题其他都没问题。精度有问题现在
+      if (info->type != 14) {
+        shard.type = (enum ne_type)info->type;
+      }
+      
       uint32_t n_dims = info->n_dims;
       shard.ne.resize(n_dims);
 
-      std::cout << "                     ";
+      std::cout << std::endl;
       for (uint32_t j = 0; j < info->n_dims; ++j) {
         std::cout << " n_dims " << n_dims << "   shard.ne[j] = " << shard.ne[j] << "  ";
         shard.ne[j] = info->ne[j];
@@ -772,6 +778,7 @@ struct model_file_loader {
         case NE_TYPE_Q5_0:
         case NE_TYPE_Q5_1:
         case NE_TYPE_Q8_0:
+        case NE_TYPE_Q6_K:
         case NE_TYPE_JBLAS:
           break;
         default: {
@@ -820,28 +827,53 @@ struct model_file_loader {
     return ctx;
   }
 
-  size_t ggml_nbytes(const struct ne_tensor* tensor) {
-    size_t nbytes;
+  // int ggml_blck_size(enum ggml_type type) {
+  //   return type_traits[type].blck_size;
+  // }
 
-    // bloc_size of FP32 == 1
-    size_t blck_size = 1;
-    // size_t blck_size = ggml_blck_size(tensor->type);
-    if (blck_size == 1) {
-      // fp32 nbytes = 4;
-      nbytes = 4;
-      // nbytes = ggml_type_size(tensor->type);
-      for (int i = 0; i < GGML_MAX_DIMS; ++i) {
-        nbytes += (tensor->ne[i] - 1) * tensor->nb[i];
-      }
-    } else {
-      nbytes = tensor->ne[0] * tensor->nb[0] / blck_size;
-      for (int i = 1; i < GGML_MAX_DIMS; ++i) {
-        nbytes += (tensor->ne[i] - 1) * tensor->nb[i];
-      }
-    }
+  
 
-    return nbytes;
-  }
+  // size_t ggml_nbytes(const struct ggml_tensor * tensor) {
+  //     size_t nbytes;
+  //     size_t blck_size = ggml_blck_size(tensor->type);
+  //     if (blck_size == 1) {
+  //         nbytes = ggml_type_size(tensor->type);
+  //         for (int i = 0; i < GGML_MAX_DIMS; ++i) {
+  //             nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
+  //         }
+  //     }
+  //     else {
+  //         nbytes = tensor->ne[0]*tensor->nb[0]/blck_size;
+  //         for (int i = 1; i < GGML_MAX_DIMS; ++i) {
+  //             nbytes += (tensor->ne[i] - 1)*tensor->nb[i];
+  //         }
+  //     }
+
+  //     return nbytes;
+  // }
+
+  // size_t ggml_nbytes(const struct ne_tensor* tensor) {
+  //   size_t nbytes;
+
+  //   // bloc_size of FP32 == 1
+  //   size_t blck_size = 1;
+  //   // size_t blck_size = ggml_blck_size(tensor->type);
+  //   if (blck_size == 1) {
+  //     // fp32 nbytes = 4;
+  //     nbytes = 4;
+  //     // nbytes = ggml_type_size(tensor->type);
+  //     for (int i = 0; i < GGML_MAX_DIMS; ++i) {
+  //       nbytes += (tensor->ne[i] - 1) * tensor->nb[i];
+  //     }
+  //   } else {
+  //     nbytes = tensor->ne[0] * tensor->nb[0] / blck_size;
+  //     for (int i = 1; i < GGML_MAX_DIMS; ++i) {
+  //       nbytes += (tensor->ne[i] - 1) * tensor->nb[i];
+  //     }
+  //   }
+
+  //   return nbytes;
+  // }
 
   void read_ne_magic() {
     uint32_t magic = file.read_u32();
@@ -878,23 +910,50 @@ struct model_file_loader {
     throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
   }
 
-  void read_magic(model_load_tensors_map& tensors_map) {
-    std::string gguf = "GGUF";
-    char gguf_magic[4];
-    const size_t n = fread(&gguf_magic, 1, sizeof(gguf_magic), file.fp);
-    if (strcmp(gguf.c_str(), gguf_magic) == 0) {
-      std::cout << "loading the bin file with GGUF format." << std::endl;
-      fseek(file.fp, 0, SEEK_SET);
-      model_magic = 0;
-    } else {
-      std::cout << "loading the bin file with NE format." << std::endl;
-      fseek(file.fp, 0, SEEK_SET);
-      read_ne_magic();
-      read_hparams();
-      read_vocab();
-      model_magic = 1;
-      return;
+
+
+  struct ne_tensor * ne_get_tensor(struct ne_context * ctx, const char * name) {
+    struct ne_object * obj = ctx->objects_begin;
+
+    char * const mem_buffer = reinterpret_cast<char*>(ctx->mem_buffer);
+
+    while (obj != NULL) {
+        // if (obj->type == GGML_OBJECT_TENSOR) {
+        //     struct ne_tensor * cur = (struct ne_tensor *)(mem_buffer + obj->offs);
+        //     if (strcmp(cur->name, name) == 0) {
+        //         return cur;
+        //     }
+        // }
+        struct ne_tensor * cur = (struct ne_tensor *)(mem_buffer + obj->offs);
+        if (strcmp(cur->name, name) == 0) {
+                return cur;
+            }
+
+        obj = obj->next;
     }
+
+    return NULL;
+}
+
+
+  void read_magic(model_load_tensors_map& tensors_map) {
+    // std::string gguf = "GGUF";
+    // char gguf_magic[4];
+    // const size_t n = fread(&gguf_magic, 1, sizeof(gguf_magic), file.fp);
+    // std::cout << "gguf_magic = " << gguf_magic << std::endl;
+    // if (strcmp(gguf.c_str(), gguf_magic) == 0) {
+    //   std::cout << "loading the bin file with GGUF format." << std::endl;
+    //   fseek(file.fp, 0, SEEK_SET);
+    //   model_magic = 0;
+    // } else {
+    //   std::cout << "loading the bin file with NE format." << std::endl;
+    //   fseek(file.fp, 0, SEEK_SET);
+    //   read_ne_magic();
+    //   read_hparams();
+    //   read_vocab();
+    //   model_magic = 1;
+    //   return;
+    // }
 
     int n_kv = 0;
     int n_tensors = 0;
@@ -916,14 +975,17 @@ struct model_file_loader {
            llama_file_version_name(fver));
 
     // calcaute the tensor data size
-    // int64_t n_elements = 0;
-    // size_t  n_bytes    = 0;
-    // for (int i = 0; i < n_tensors; i++) {
-    //     const char * name = gguf_get_tensor_name(ctx_gguf, i);
-    //     struct ggml_tensor * t = ggml_get_tensor(ctx_meta, name);
-    //     n_elements += ne_nelements(t);
-    //     n_bytes    += ggml_nbytes(t);
-    // }
+    int64_t n_elements = 0;
+    size_t  n_bytes    = 0;
+    for (int i = 0; i < n_tensors; i++) {
+        const char * name = gguf_get_tensor_name(ctx_gguf, i);
+        std::cout << "name =  " << name << std::endl;
+        // struct ggml_tensor * t = ggml_get_tensor(ctx_meta, name);
+        // struct ne_tensor * t = ne_get_tensor(ctx_meta, name);
+        //std::cout << "t->name =  " << t->name << std::endl;
+        // n_elements += ne_nelements(t);
+        // n_bytes    += ggml_nbytes(t);
+    }
 
     for (int i = 0; i < n_kv; i++) {
       const char* name = gguf_get_key(ctx_gguf, i);
@@ -1428,6 +1490,8 @@ struct model_model_loader {
     jblas_packweight_copyattr(dst_fp32, *dst, dst_n, dst_k, src_n, *src);
     free(src_fp32);
   }
+
+
   void load_data_for(model_load_tensor& lt) {
     if (use_mmap) {
       MODEL_ASSERT(lt.shards.size() == 1);
@@ -1435,8 +1499,17 @@ struct model_model_loader {
     } else if (lt.split_type == SPLIT_NONE) {
       model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
       file.seek(lt.shards.at(0).file_off + file_loaders.at(0)->gguf_data_offset, SEEK_SET);
-      std::cout << " lt.shards.at(0).file_off  = " << lt.shards.at(0).file_off << " file_loaders.at(0)->gguf_data_offset= " <<  file_loaders.at(0)->gguf_data_offset << std::endl;
+      // std::cout << " lt.shards.at(0).file_off  = " << lt.shards.at(0).file_off << " file_loaders.at(0)->gguf_data_offset= " <<  file_loaders.at(0)->gguf_data_offset << std::endl;
+      // if (lt.name == "output.weight") {
+      //   file.read_raw(lt.data, 107520000);
+      // } else {
+      //   file.read_raw(lt.data, lt.size);
+      // }
       file.read_raw(lt.data, lt.size);
+      std::cout << "name = " << lt.name << " data_offset = " << file_loaders.at(0)->gguf_data_offset << " tensor_offset = " << lt.shards.at(0).file_off << " total = " << lt.shards.at(0).file_off + file_loaders.at(0)->gguf_data_offset << " lt.size = " << lt.size << " lt.type " << lt.type << std::endl;
+
+
+      
     } else if (lt.split_type == SPLIT_BY_ROWS) {
       size_t offset = 0;
       for (model_load_tensor_shard& shard : lt.shards) {

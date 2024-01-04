@@ -40,6 +40,13 @@ enum ne_type {
   NE_TYPE_Q5_1 = 7,
   NE_TYPE_Q8_0 = 8,
   NE_TYPE_Q8_1 = 9,
+    // k-quantizations
+  NE_TYPE_Q2_K = 10,
+  NE_TYPE_Q3_K = 11,
+  NE_TYPE_Q4_K = 12,
+  NE_TYPE_Q5_K = 13,
+  NE_TYPE_Q6_K = 14,
+  NE_TYPE_Q8_K = 15,
   NE_TYPE_I8,
   NE_TYPE_I16,
   NE_TYPE_I32,
@@ -96,6 +103,35 @@ typedef struct {
   uint8_t qh[4];          // 5-th bit of quants
   uint8_t qs[QK5_1 / 2];  // nibbles / quants
 } block_q5_1;
+
+// 6-bit quantization
+// weight is represented as x = a * q
+// 16 blocks of 16 elements each
+// Effectively 6.5625 bits per weight
+// Super-block size
+#ifdef GGML_QKK_64
+#define QK_K 64
+#define K_SCALE_SIZE 4
+#else
+#define QK_K 256
+#define K_SCALE_SIZE 12
+#endif
+typedef struct {
+    uint8_t ql[QK_K/2];      // quants, lower 4 bits
+    uint8_t qh[QK_K/4];      // quants, upper 2 bits
+    int8_t  scales[QK_K/16]; // scales, quantized with 8 bits
+    ne_fp16_t d;           // super-block scale
+} block_q6_K;
+static_assert(sizeof(block_q6_K) == sizeof(ne_fp16_t) + QK_K / 16 + 3*QK_K/4, "wrong q6_K block size/padding");
+
+// This is only used for intermediate quantization and dot products
+typedef struct {
+    float   d;              // delta
+    int8_t  qs[QK_K];       // quants
+    int16_t bsums[QK_K/16]; // sum of quants in groups of 16
+} block_q8_K;
+static_assert(sizeof(block_q8_K) == sizeof(float) + QK_K + QK_K/16*sizeof(int16_t), "wrong q8_K block size/padding");
+
 
 #define QK8_0 32
 typedef struct {

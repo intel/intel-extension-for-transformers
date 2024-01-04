@@ -101,6 +101,7 @@ enum ne_backend {
   NE_BACKEND_CUDA = 1,
 };
 
+
 // ne object
 struct ne_object {
   size_t offs;
