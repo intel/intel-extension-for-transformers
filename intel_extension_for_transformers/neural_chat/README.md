@@ -145,11 +145,13 @@ The table below displays the validated model list in NeuralChat for both inferen
 |MPT series| ✅| ✅|✅| ✅    |
 |Mistral| ✅| ✅|✅| ✅    |
 |Mixtral-8x7b-v0.1| ✅| ✅|✅| ✅    |
+|SOLAR Series| ✅| ✅|✅| ✅    |
 |ChatGLM series| ✅| ✅|✅| ✅    |
 |Qwen series| ✅| ✅|✅| ✅    |
 |StarCoder series|   |   |   | ✅ |
 |CodeLLaMA series|   |   |   | ✅ |
 |CodeGen series|   |   |   | ✅ |
+|MagicCoder series|   |   |   | ✅ |
 
 
 ## Restful API
