@@ -80,6 +80,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     f.write(struct.pack("f", config["rms_norm_eps"]))
     f.write(struct.pack("f", config["rope_theta"] if "rope_theta" in config else 10000))
+    f.write(struct.pack("f", 1))
 
     # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json
     # but bos_token_id = 1 in llama.cpp
