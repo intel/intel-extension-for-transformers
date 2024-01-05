@@ -163,7 +163,11 @@ def parse_args():
     parser.add_argument(
         "--return_stats", action='store_true', default=False,)
     parser.add_argument(
-        "--legacy_format", action='store_true', default=False,)
+        "--format_version",
+        type=str,
+        default="v2",
+        help="the version of return stats format",
+    )
     args = parser.parse_args()
     return args
 

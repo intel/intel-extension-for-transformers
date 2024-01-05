@@ -407,7 +407,7 @@ class GenerationConfig:
     use_fp16: bool = False
     ipex_int8: bool = False
     return_stats: bool = False
-    legacy_format: bool = False
+    format_version: str = "v2"
     task: str = ""
 
 @dataclass

@@ -23,6 +23,7 @@ from intel_extension_for_transformers.neural_chat import PipelineConfig, Generat
 from intel_extension_for_transformers.neural_chat import plugins
 import torch
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
+from intel_extension_for_transformers.neural_chat.plugins import global_plugins
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
@@ -163,11 +164,14 @@ class TestChatbotBuilder(unittest.TestCase):
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
 
-    def test_text_chat_stream_return_stats_with_legacy_format(self):
+    def test_text_chat_stream_return_stats_with_old_format(self):
+        if self.device != "cpu":
+            self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
+        global_plugins.reset_plugins()
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""
-        gen_config = GenerationConfig(return_stats=True, legacy_format=True)
+        gen_config = GenerationConfig(return_stats=True, format_version="v1")
         results, _ = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.", config=gen_config)
         for text in results:
             stream_text += text
@@ -175,6 +179,9 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIn("END_OF_STREAM_STATS=", stream_text)
 
     def test_text_chat_stream_return_stats(self):
+        if self.device != "cpu":
+            self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
+        global_plugins.reset_plugins()
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""
