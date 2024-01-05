@@ -392,7 +392,7 @@ class GenerationConfig:
     top_k: int = 40
     top_p: float = 0.75
     repetition_penalty: float = 1.1
-    num_beams: int = 0
+    num_beams: int = 1
     max_new_tokens: int = 256
     do_sample: bool = True
     num_return_sequences: int = 1

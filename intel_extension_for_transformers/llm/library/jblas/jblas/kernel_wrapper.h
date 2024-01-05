@@ -715,10 +715,10 @@ class ColBlockReduceSum {
   template <JBLAS_ISA ISA_T, typename SRC_T>
   static inline JBLAS_CODE forward(const SRC_T* srcptr, int ldsrc, int row, int col, int blocksize, float* reduce,
                                    int ldr) {
-    if constexpr (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f && std::is_same_v<SRC_T, float>) {
       return avx512f::col_block_reduce_sum<SRC_T>(srcptr, ldsrc, row, col, blocksize, reduce, ldr);
     }
-    if constexpr (utils::isa_base<ISA_T>::avx2) {
+    if constexpr (utils::isa_base<ISA_T>::avx2 && std::is_same_v<SRC_T, float>) {
       return avx2::col_block_reduce_sum<SRC_T>(srcptr, ldsrc, row, col, blocksize, reduce, ldr);
     }
     return ref::col_block_reduce_sum<SRC_T>(srcptr, ldsrc, row, col, blocksize, reduce, ldr);

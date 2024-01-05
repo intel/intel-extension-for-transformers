@@ -156,7 +156,7 @@ python run_generation.py \
     --trust_remote_code True \
     --calib_len 1024 \
     --fallback_add \
-    --calib_shuffle False \
+    --calib_padding \
     --tasks lambada_openai \
     --int8 --sq --accuracy \
     --batch_size 1 \

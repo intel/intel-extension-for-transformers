@@ -809,7 +809,7 @@ def predict_stream(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
         params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
@@ -851,9 +851,6 @@ def predict_stream(**params):
         streamer = TextIteratorStreamer(
             tokenizer, skip_prompt=True, skip_special_tokens=True
         )
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
 
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
@@ -1077,7 +1074,7 @@ def predict(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
     )
@@ -1102,10 +1099,6 @@ def predict(**params):
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower() or \
                                             "codegen" in model_name.lower()) else 1024
-
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
