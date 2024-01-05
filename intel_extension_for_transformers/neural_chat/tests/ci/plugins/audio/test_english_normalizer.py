@@ -52,7 +52,7 @@ class TestTTS(unittest.TestCase):
         text = "CVPR-15 ICML-21 PM2.5"
         text = self.normalizer.correct_abbreviation(text)
         result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "cee vee pea ar fifteen I cee em el twenty-one pea em two point five.")
+        self.assertEqual(result, "cee vee pea ar fifteen eye cee em el twenty-one pea em two point five.")
 
 if __name__ == "__main__":
     unittest.main()
