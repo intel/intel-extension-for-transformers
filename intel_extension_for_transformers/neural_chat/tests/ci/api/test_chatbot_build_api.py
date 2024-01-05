@@ -86,7 +86,6 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists("./output_audio.wav"))
-        plugins.tts.enable = False
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
@@ -97,7 +96,6 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="蔡英文是谁？")
         print("response: ", response)
         self.assertTrue(response, "Your query contains sensitive words, please try another query.")
-        plugins.safety_checker.enable = False
 
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
@@ -130,7 +128,6 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
-        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
@@ -146,7 +143,6 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
-        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
 
