@@ -23,7 +23,6 @@ from intel_extension_for_transformers.neural_chat import PipelineConfig, Generat
 from intel_extension_for_transformers.neural_chat import plugins
 import torch
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-from intel_extension_for_transformers.neural_chat.plugins import global_plugins
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
@@ -128,6 +127,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
@@ -143,6 +143,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
 
@@ -156,7 +157,6 @@ class TestChatbotBuilder(unittest.TestCase):
             self.assertIsNotNone(chatbot)
             response = chatbot.predict(query="What is Intel extension for transformers?")
             self.assertIsNotNone(response)
-            plugins.retrieval.enable = False
 
         # test local file
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
