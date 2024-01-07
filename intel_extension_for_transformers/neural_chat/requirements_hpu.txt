@@ -12,7 +12,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.354
 langchain_core
 python-docx
 librosa
