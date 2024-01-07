@@ -150,6 +150,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
 
         def _run_retrieval(local_dir):
+            plugins.tts.enable = False
             plugins.retrieval.enable = True
             plugins.retrieval.args["input_path"] = "../../../README.md"
             plugins.retrieval.args["embedding_model"] = local_dir
