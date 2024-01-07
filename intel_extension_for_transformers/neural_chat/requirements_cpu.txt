@@ -49,3 +49,4 @@ cchardet
 zhconv
 urllib3
 langid
+qdrant-client

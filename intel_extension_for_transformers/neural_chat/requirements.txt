@@ -71,3 +71,4 @@ urllib3
 langid
 diffusers==0.12.1
 transformers_stream_generator
+qdrant-client

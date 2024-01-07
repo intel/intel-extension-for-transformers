@@ -46,3 +46,4 @@ langid
 pymysql
 deepface
 exifread
+qdrant-client
