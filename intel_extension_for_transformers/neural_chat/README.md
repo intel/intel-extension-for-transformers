@@ -9,7 +9,17 @@ NeuralChat
 
 ## Introduction
 
-NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
+NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly. NeuralChat implements many features, such as:
+- Simple launcher to serve most popular LLMs
+- Token streaming using Server-Sent Events (SSE)
+- Weight-only quantization with [LLM runtime](../llm/runtime/graph/README.md)
+- Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes` with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and [Intel® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
+- Fine-tuning Support: Utilize fine-tuned models for specific tasks to achieve higher accuracy and performance
+- Distributed inference with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
+- OpenAI-compatible API server
+- Langchain-compatible API server
+- Support Intel CPUs, Intel XPUs, Habana HPU and NVIDIA GPUs.
+
 
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
@@ -25,11 +35,11 @@ NeuralChat is seamlessly integrated into the Intel Extension for Transformers. P
 
 ## Getting Started
 
-NeuralChat could be deployed locally or accessed through service.
+NeuralChat could be deployed non-persistent or accessed through persistent service.
 
-### Deploy Chatbot Locally
+### Deploy Chatbot Non-Persistent
 
-NeuralChat can be deployed locally and users can run it through command line or python code.
+NeuralChat can be deployed non-persistent and users can run it through command line or python code.
 
 ```shell
 # Command line
@@ -44,9 +54,9 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 print(response)
 ```
 
-### Deploy Chatbot Service
+### Deploy Chatbot Persistent Service
 
-NeuralChat can be deployed as a service and users can access it through curl with Restful API.
+NeuralChat can be deployed as a persistent service and users can access it through curl with Restful API.
 
 #### Launch Service
 
@@ -62,7 +72,9 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
 ```
 
-## Advanced Topics
+## Key Features
+
+### Optimizations
 
 ### Plugins
 
@@ -142,9 +154,10 @@ The table below displays the validated model list in NeuralChat for both inferen
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
 |LLaMA series| ✅| ✅|✅| ✅    |
 |LLaMA2 series| ✅| ✅|✅| ✅    |
+|GPT-J| ✅| ✅|✅| ✅    |
 |MPT series| ✅| ✅|✅| ✅    |
-|Mistral| ✅| ✅|✅| ✅    |
-|Mixtral-8x7b-v0.1| ✅| ✅|✅| ✅    |
+|Mistral series| ✅| ✅|✅| ✅    |
+|Mixtral series| ✅| ✅|✅| ✅    |
 |SOLAR Series| ✅| ✅|✅| ✅    |
 |ChatGLM series| ✅| ✅|✅| ✅    |
 |Qwen series| ✅| ✅|✅| ✅    |
