@@ -240,7 +240,7 @@ def main():
         num_return_sequences=args.num_return_sequences,
         ipex_int8=args.ipex_int8,
         return_stats=args.return_stats,
-        legacy_format=args.legacy_format
+        format_version=args.format_version
     )
 
     if args.habana:

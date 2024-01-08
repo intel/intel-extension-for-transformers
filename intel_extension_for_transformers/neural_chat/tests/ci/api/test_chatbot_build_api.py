@@ -167,7 +167,7 @@ class TestChatbotBuilder(unittest.TestCase):
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
 
-    def test_text_chat_stream_return_stats_with_old_format(self):
+    def test_text_chat_stream_return_stats_with_v1_format(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         stream_text = ""
