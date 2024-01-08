@@ -74,7 +74,41 @@ curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about I
 
 ## Key Features
 
-### Optimizations
+### Optimization
+
+NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to define a customized chatbot.
+
+```shell
+# Command line
+neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
+```
+
+#### Automatic Mixed Precision (AMP)
+
+NeuralChat utilizes Automatic Mixed Precision (AMP) optimization by default when no specific optimization method is specified by the user in the API.
+Nevertheless, users also have the option to explicitly specify this parameter, as demonstrated in the following Python code snippet.
+
+```python
+# Python code
+from intel_extension_for_transformers.neural_chat import build_chatbot, MixedPrecisionConfig
+pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
+chatbot = build_chatbot(pipeline_cfg)
+```
+
+#### Weight Only Quantization with LLM Runtime
+[LLM Runtime](../llm/runtime/graph/README.md) is designed to provide the efficient inference of large language models (LLMs) on Intel platforms in pure C/C++ with weight-only quantization kernels.
+
+```python
+# Python code
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
+loading_config = LoadingModelConfig(use_llm_runtime=True)
+config = PipelineConfig(
+    optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
+    loading_config=loading_config
+)
+chatbot = build_chatbot(config)
+```
 
 ### Plugins
 
@@ -82,7 +116,7 @@ NeuralChat introduces the `plugins` which offer a rich set of useful LLM utils a
 
 Below shows the supported plugins:
 
-- [Knowledge Retrieval](./pipeline/plugins/retrieval/)
+- [Knowledge Retrieval](./pipeline/plugins/retrieval/README.md)
 
     Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses.
 
@@ -130,22 +164,6 @@ finetune_cfg = TextGenerationFinetuningConfig() # support other finetuning confi
 finetune_model(finetune_cfg)
 ```
 
-### Optimization
-
-NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to define a customized chatbot.
-
-```shell
-# Command line
-neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
-```
-
-```python
-# Python code
-from intel_extension_for_transformers.neural_chat import build_chatbot, MixedPrecisionConfig
-pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
-chatbot = build_chatbot(pipeline_cfg)
-```
-
 ## Validated Model List
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
 |Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
@@ -189,6 +207,20 @@ NeuralChat supports the following RESTful APIs:
 - Face animation
 
 For more details, refer to this [README](./server/README.md)
+
+## Popular Applications based on NeuralChat
+
+### Text ChatBot
+
+
+### Voice ChatBot
+
+
+### Image AI Assistant
+
+
+### Neural Copilot
+
 
 
 ## Selected Notebooks 
