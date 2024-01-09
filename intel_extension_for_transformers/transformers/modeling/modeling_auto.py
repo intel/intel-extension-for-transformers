@@ -117,6 +117,12 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if re.search("baichuan", pretrained_model_name_or_path.lower()):
+            from intel_extension_for_transformers.transformers.modeling.utils import _get_relative_imports, _gradient_checkpointing_disable, _gradient_checkpointing_enable
+            transformers.dynamic_module_utils.get_relative_imports = _get_relative_imports
+            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_disable = _gradient_checkpointing_disable
+            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_enable = _gradient_checkpointing_enable
+
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info("Find quantization_config.json, trying to load quantized low bit model...")
             quantization_config = WeightOnlyQuantConfig.from_pretrained(
