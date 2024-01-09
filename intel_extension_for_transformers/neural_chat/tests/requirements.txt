@@ -70,3 +70,4 @@ optimum-intel==1.11.0
 zhconv
 diffusers
 transformers_stream_generator
+vllm

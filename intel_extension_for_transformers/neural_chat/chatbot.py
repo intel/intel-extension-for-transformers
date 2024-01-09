@@ -50,7 +50,6 @@ def build_chatbot(config: PipelineConfig=None):
     if available_storage_gb < STORAGE_THRESHOLD_GB:
         set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
         return
-        pass
 
     global plugins
     if not config:
