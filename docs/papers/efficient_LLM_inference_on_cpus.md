@@ -1,6 +1,6 @@
 # Efficient LLM Inference on CPUs
 
-In this tutorial, we will demonstrate how to reproduce data in paper [Efficient LLM Inference on CPUs](https://arxiv.org/pdf/2311.00502.pdf). 
+In this tutorial, we will demonstrate how to reproduce data in NeurIPS'23 paper [Efficient LLM Inference on CPUs](https://arxiv.org/pdf/2311.00502.pdf). 
 
 
 ## System Summary
