@@ -576,17 +576,17 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
-    from transformers import AutoTokenizer, TextStreamer
-    from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-    model_name = "/home/sdp/lzw/Llama-2-7b-chat-hf"     # Hugging Face model_id or local model
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-    runtime_model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
-    
+
     def __init__(self, *args, pretrained, model_format, **kwargs):
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
         self.model_format = model_format
+        if self.model_format == "runtime":
+            from transformers import AutoTokenizer, TextStreamer
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+            woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=True)
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=woq_config)
+            
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
                not os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")) and \
@@ -716,10 +716,11 @@ class AutoCausalLM(HuggingFaceAutoLM):
             input_bs, input_len = inputs.shape
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
-        if self.model_format != "onnx":
-            # output = self.model(inputs)
+        if self.model_format == "runtime":
             out = self.runtime_model(inputs, reinit=True)
-            output = {"logits": torch.tensor(out).unsqueeze(1)}
+            output = {"logits": torch.tensor(out).unsqueeze(0)}
+        elif self.model_format != "onnx":
+            output = self.model(inputs)
         else:
             inputs_names = [input.name for input in self.model.model.get_inputs()]
             if "position_ids" in inputs_names:
