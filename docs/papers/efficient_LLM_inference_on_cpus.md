@@ -26,9 +26,9 @@ cmake .. -G Ninja
 ninja
 ```
 
-### FP32 Baseline
+### FP32 Inference (Baseline)
 
->**Note**: Please donwload the coresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
+>**Note**: Please donwload the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
 
 
 #### 1. Convert Model
@@ -47,19 +47,21 @@ python scripts/convert.py local_model_path --outtype f32 --outfile model_f32.bin
 
 Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about paramters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#2-inference-llm)
 
+When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
+
 ```shell
-OMP_NUM_THREADS=48 numactl -m 0 -C 0-47 ./build/bin/run_<model_name> -m model_f32.bin  -p <prompt> -n 32 -t 48
+OMP_NUM_THREADS=48 numactl -m 0 -C 0-<cores-per-instance> ./build/bin/run_<model_name> -m model_f32.bin  -p <prompt> -n 32 -t 48
 ```
 
 ### INT4 Inference
 
->**Note**: Please donwload the coresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command. For converting models, please see above [Convert Model](#1-convert-model)
+>**Note**: Please donwload the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command. For converting models, please see above [Convert Model](#1-convert-model)
 
 #### 1. Quantization
 
 Quantize the converted FP32 model with INT4 as weight datatype, INT8 as compute datatype and 128 as group size.
 
-Please select `group_size` between 32 or 128. For details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#1-convert-and-quantize-llm)
+Please select `group_size` between 32 or 128. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#1-convert-and-quantize-llm)
 
 ```shell
 ./build/bin/quant_llama  --model_file model_f32.bin --out_file model_q4j128.bin --weight_dtype int4 --group_size 128 --compute_dtype int8 --nthread 24
@@ -67,7 +69,9 @@ Please select `group_size` between 32 or 128. For details about parameters and t
 
 #### 2. Inference
 
-Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For model details about paramters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#2-inference-llm)
+Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about paramters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.md#2-inference-llm)
+
+When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
 
 ```shell
 OMP_NUM_THREADS=48 numactl -m 0 -C 0-47 ./build/bin/run_<model_name> -m model_q4j128.bin  -p <prompt> -n 32 -t 48
@@ -93,7 +97,7 @@ pip install -r requirements.txt
 > export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
 > ```
 
-### FP32 Baseline
+### FP32 Accuracy (Baseline)
 
 There are four tasks/datasets can be selected to run accuracy: "lambada_openai", "piqa", "helloswag" and "winogrande", and you can choose one or more to get the final results. Here we take [Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) as an example.
 
