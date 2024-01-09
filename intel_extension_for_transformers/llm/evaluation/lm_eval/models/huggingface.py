@@ -611,7 +611,6 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
-
     def __init__(self, *args, pretrained, model_format, **kwargs):
         self.model_format = model_format
         if self.model_format == "runtime":
