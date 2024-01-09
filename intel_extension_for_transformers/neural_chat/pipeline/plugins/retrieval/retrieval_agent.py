@@ -26,7 +26,7 @@ from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmb
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
 from langchain.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
 import uuid
 from langchain_core.documents import Document
 import logging
@@ -133,10 +133,12 @@ class Agent_QA():
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
-            self.database = Chroma()
+            self.database = Chroma
+        elif self.vector_database == "Qdrant":
+            self.database = Qdrant
         # elif self.vector_database == "PGVector":
         #     self.database = PGVector()
-      
+
         if self.retrieval_type == 'default':  # Using vector store retriever
             if append:
                 knowledge_base = self.database.from_documents(documents=langchain_documents, embedding=self.embeddings,
@@ -145,6 +147,9 @@ class Agent_QA():
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
+            if self.vector_database == "Qdrant" and knowledge_base.is_local():
+               # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+               knowledge_base.client.close()
         elif self.retrieval_type == "child_parent":    # Using child-parent store retriever
             child_documents = self.splitter.split_documents(langchain_documents)
             if append:
@@ -158,6 +163,12 @@ class Agent_QA():
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs).retriever
+            if self.vector_database == "Qdrant" :
+                # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+                if knowledge_base.is_local():
+                    knowledge_base.client.close()
+                if child_knowledge_base.is_local():
+                    child_knowledge_base.client.close()
         logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):

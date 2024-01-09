@@ -95,7 +95,11 @@ class TestTTS(unittest.TestCase):
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/2.wav")
         set_seed(555)
         output_audio_path = self.tts.text2speech(text, output_audio_path, voice="default", do_batch_tts=True, batch_length=120)
+        result = self.asr.audio2text(output_audio_path)
         self.assertTrue(os.path.exists(output_audio_path))
+        self.assertEqual("intel extension for transformers is an innovative toolkit to accelerate transformer based " + \
+                         "models on intel platforms in particular effective on 4th intel xeon scalable processor " + \
+                            "sapphire rapids codenamed sapphire rapids", result)
 
     def test_create_speaker_embedding(self):
         driven_audio_path = \
@@ -116,6 +120,16 @@ class TestTTS(unittest.TestCase):
         # verify accuracy
         result = self.asr.audio2text(output_audio_path)
         self.assertEqual(text.lower(), result.lower())
+
+    def test_tts_messy_input(self):
+        text = "Please refer to the following responses to this inquiry:\n" + 244 * "* " + "*"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/6.wav")
+        set_seed(555)
+        output_audio_path = self.tts_noise_reducer.text2speech(text, output_audio_path, voice="default")
+        self.assertTrue(os.path.exists(output_audio_path))
+        # verify accuracy
+        result = self.asr.audio2text(output_audio_path)
+        self.assertEqual("please refer to the following responses to this inquiry", result.lower())
 
 if __name__ == "__main__":
     unittest.main()
