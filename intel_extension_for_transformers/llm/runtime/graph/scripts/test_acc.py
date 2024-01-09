@@ -1,11 +1,13 @@
 
+import sys
 from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-# test evaluate encoder_model + decoder_model_merged
+
+model_name = sys.argv[1]
 results = evaluate(
     model="hf-causal",
-    model_args='pretrained="/mnt/disk1/data2/zhenweil/models/gptq/Llama-2-7B-Chat-GPTQ",dtype=float32',
+    model_args=f'pretrained="{model_name}"',
     tasks=["lambada_openai"],
-    limit=5,
+    # limit=5,
     model_format="runtime"
 )
 
