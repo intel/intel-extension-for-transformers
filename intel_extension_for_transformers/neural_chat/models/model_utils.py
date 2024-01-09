@@ -331,6 +331,34 @@ def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
 
     return model.merge_and_unload()
 
+def load_model_vllm(
+        model,
+        vllm_engine_params,
+    ):
+    # breakpoint()
+    from vllm import LLM
+    eparams = vllm_engine_params
+    MODELS[model] = {}
+    llm = LLM(
+        model=model,
+        tokenizer=model,
+        tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
+        trust_remote_code=eparams.trust_remote_code if hasattr(eparams, 'trust_remote_code') else False,
+        tensor_parallel_size=eparams.tensor_parallel_size if hasattr(eparams, 'tensor_parallel_size') else 1,
+        dtype=eparams.dtype if hasattr(eparams, 'dtype') else 'auto',
+        quantization=eparams.quantization if hasattr(eparams, 'quantization') else None,
+        revision=eparams.revision if hasattr(eparams, 'revision') else None,
+        tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
+        seed=eparams.seed if hasattr(eparams, 'seed') else 0,
+        gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') else 0.9,
+        swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
+        enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
+        max_context_len_to_capture=eparams.max_context_len_to_capture \
+            if hasattr(eparams, 'max_context_len_to_capture') else 8192,
+    )
+    MODELS[model]["model"] = llm
+    logging.info("Model loaded.")
+
 def load_model(
     model_name,
     tokenizer_name,
@@ -344,7 +372,9 @@ def load_model(
     optimization_config=None,
     hf_access_token=None,
     use_llm_runtime=False,
-    assistant_model=None
+    assistant_model=None,
+    use_vllm=False,
+    vllm_engine_params=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -362,6 +392,8 @@ def load_model(
         ValueError
     """
     print("Loading model {}".format(model_name))
+    if use_vllm:
+        return load_model_vllm(model=model_name, vllm_engine_params=vllm_engine_params)
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
@@ -675,7 +707,7 @@ def load_model(
                 model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    print("Model loaded.")
+    logging.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -1088,6 +1120,16 @@ def predict(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
+    if('vllm' in str(MODELS[model_name]['model'])):
+        from vllm import SamplingParams
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_new_tokens
+        )
+        output = model.generate(prompt, sampling_params)
+        output = output[0].outputs[0].text
+        return output
     tokenizer = MODELS[model_name]["tokenizer"]
     assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:

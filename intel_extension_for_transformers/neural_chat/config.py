@@ -419,6 +419,25 @@ class LoadingModelConfig:
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
+@dataclass
+class FrameworkConfig:
+    pass
+
+@dataclass
+class VllmEngineParams(FrameworkConfig):
+    # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
+    tensor_parallel_size: int = 1
+    quantization: str = None
+    gpu_memory_utilization: float = 0.9
+    swap_space: int = 4
+    enforce_eager: bool = False
+    max_context_len_to_capture: int = 8192
+
+@dataclass
+class ServingConfig:
+    framework: str = "vllm" # vllm/TGI
+    framework_config: FrameworkConfig = None
+
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
@@ -428,7 +447,8 @@ class PipelineConfig:
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None,
-                 assistant_model=None):
+                 assistant_model=None,
+                 serving_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -453,3 +473,4 @@ class PipelineConfig:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
+        self.serving_config = serving_config

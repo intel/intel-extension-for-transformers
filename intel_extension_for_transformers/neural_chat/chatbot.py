@@ -50,6 +50,7 @@ def build_chatbot(config: PipelineConfig=None):
     if available_storage_gb < STORAGE_THRESHOLD_GB:
         set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
         return
+        pass
 
     global plugins
     if not config:
@@ -161,7 +162,9 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
-
+    if config.serving_config and config.serving_config.framework == "vllm":
+        parameters["use_vllm"] = True
+        parameters["vllm_engine_params"] = config.serving_config.framework_config
     try:
         adapter.load_model(parameters)
     except RuntimeError as e:

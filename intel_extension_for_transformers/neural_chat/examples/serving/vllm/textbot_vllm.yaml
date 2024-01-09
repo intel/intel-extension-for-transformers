@@ -1,0 +1,17 @@
+host: 0.0.0.0
+port: 8000
+
+model_name_or_path: "facebook/opt-125m"
+device: "cuda"  
+
+serving:
+    framework: "vllm"
+    vllm_engine_params:
+        tensor_parallel_size: 1
+        gpu_memory_utilization: 0.9
+        swap_space: 4
+        enforce_eager: false
+        max_context_len_to_capture: 8192
+
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat']

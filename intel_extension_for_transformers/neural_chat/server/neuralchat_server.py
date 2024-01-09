@@ -111,6 +111,25 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
         assistant_model = config.get("assistant_model", None)
+        serving = config.get("serving", None)
+
+        serving_config = None
+        if serving:
+            from intel_extension_for_transformers.neural_chat.config import ServingConfig, VllmEngineParams
+            serving_framework = serving.get("framework")
+            if serving_framework == "vllm":
+                eparams = serving.get("vllm_engine_params", None)
+                serving_config = ServingConfig(
+                    framework="vllm", framework_config=VllmEngineParams(
+                        tensor_parallel_size = eparams.get('tensor_parallel_size', 1),
+                        quantization=eparams.get('quantization', None),
+                        gpu_memory_utilization=eparams.get('gpu_memory_utilization', 0.9),
+                        swap_space=eparams.get('swap_space', 4),
+                        enforce_eager=eparams.get('enforce_eager', False),
+                        max_context_len_to_capture=eparams.get('max_context_len_to_capture', 8192)
+                    ))
+            elif serving_framework == "TGI": # TODO
+                pass
 
         # plugin as service
         if plugin_as_service:
@@ -190,7 +209,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "plugins": plugins,
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
-                "assistant_model": assistant_model
+                "assistant_model": assistant_model,
+                "serving_config": serving_config
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
