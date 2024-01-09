@@ -181,7 +181,7 @@ class Params:
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
         rope_scale = 1
-        if config["rope_scaling"]:
+        if "rope_scaling" in config:
             rope_scale = config["rope_scaling"]["factor"] if "factor" in config["rope_scaling"] else 1
 
         return Params(
