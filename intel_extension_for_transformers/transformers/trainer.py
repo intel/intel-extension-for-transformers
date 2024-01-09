@@ -1176,9 +1176,7 @@ class BaseTrainer():
             else:
                 loss.backward()
         else:
-            if self.do_grad_scaling:
-                self.scaler.scale(loss).backward()
-            elif self.use_apex:
+            if self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
             elif NEW_DEEPSPEED_FLAG:
@@ -1265,9 +1263,7 @@ class BaseTrainer():
             else:
                 loss.backward()
         else:
-            if self.do_grad_scaling:
-                self.scaler.scale(loss).backward()
-            elif self.use_apex:
+            if self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
             elif NEW_DEEPSPEED_FLAG:
@@ -1360,9 +1356,7 @@ class BaseTrainer():
                 else:
                     loss.backward()
             else:
-                if self.do_grad_scaling:
-                    self.scaler.scale(loss).backward()
-                elif self.use_apex:
+                if self.use_apex:
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
                 elif NEW_DEEPSPEED_FLAG:
