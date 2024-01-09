@@ -433,7 +433,7 @@ class HuggingFaceAutoLM(BaseLM):
         if self._add_special_tokens is not None:
             return self._add_special_tokens
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return False
+            return True 
         elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
             return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
@@ -577,10 +577,11 @@ class AutoCausalLM(HuggingFaceAutoLM):
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
     from transformers import AutoTokenizer, TextStreamer
-    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+    from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
     model_name = "/home/sdp/lzw/Llama-2-7b-chat-hf"     # Hugging Face model_id or local model
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    runtime_model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
+    woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+    runtime_model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
     
     def __init__(self, *args, pretrained, model_format, **kwargs):
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
@@ -717,10 +718,8 @@ class AutoCausalLM(HuggingFaceAutoLM):
             inputs = torch.cat((bos, inputs), 1)
         if self.model_format != "onnx":
             # output = self.model(inputs)
-            output1 = self.runtime_model(inputs, reinit=True)
-            from transformers.modeling_outputs import CausalLMOutputWithPast
-            output = CausalLMOutputWithPast()
-            output.logits = output1
+            out = self.runtime_model(inputs, reinit=True)
+            output = {"logits": torch.tensor(out).unsqueeze(1)}
         else:
             inputs_names = [input.name for input in self.model.model.get_inputs()]
             if "position_ids" in inputs_names:
