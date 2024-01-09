@@ -56,12 +56,14 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
     def _load_auto_model(self, 
                          model_name_or_path, 
                          token: Optional[Union[bool, str]], 
-                         cache_folder: Optional[str]): # pragma: no cover
+                         cache_folder: Optional[str],
+                         trust_remote_code: bool = False): # pragma: no cover
         """Creates a simple Transformer + Mean Pooling model and returns the modules."""
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
-            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token, 
+                                                                    "trust_remote_code": trust_remote_code})
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
@@ -69,7 +71,8 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
     def _load_sbert_model(self, 
                           model_name_or_path: str, 
                           token: Optional[Union[bool, str]], 
-                          cache_folder: Optional[str]):
+                          cache_folder: Optional[str],
+                          trust_remote_code: bool = False):
         """Loads a full sentence-transformers model."""
         # Check if the config_sentence_transformers.json file exists (exists since v2 of the framework)
         config_sentence_transformers_json_path = sentence_transformers.util.load_file_path(
@@ -121,8 +124,9 @@ class OptimizedInstructor(InstructorEmbedding.INSTRUCTOR):
                         break
                 if "model_args" in kwargs:
                     kwargs["model_args"]["token"] = token
+                    kwargs["model_args"]["trust_remote_code"] = trust_remote_code
                 else:
-                    kwargs["model_args"] = {"token": token}
+                    kwargs["model_args"] = {"token": token, "trust_remote_code": trust_remote_code}
                 module = OptimizedInstructorTransformer(model_name_or_path, cache_dir=cache_folder, **kwargs)
             elif module_config['idx']==1:
                 module_class = InstructorEmbedding.INSTRUCTOR_Pooling
