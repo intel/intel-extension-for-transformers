@@ -23,6 +23,7 @@ from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat.config import ServingConfig, VllmEngineParams
 from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
 from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
+import torch
 
 app = FastAPI()
 app.include_router(router)
@@ -30,6 +31,8 @@ client = TestClient(app)
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
+        if not torch.cuda.is_available():
+            self.skipTest("Only test this UT case on Nvidia GPU.")
         serving_config = ServingConfig(
                             framework="vllm", framework_config=VllmEngineParams(
                                 tensor_parallel_size = 1,

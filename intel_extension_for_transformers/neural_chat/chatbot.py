@@ -48,8 +48,9 @@ def build_chatbot(config: PipelineConfig=None):
     available_storage = psutil.disk_usage('/').free
     available_storage_gb = available_storage / (1024 ** 3)
     if available_storage_gb < STORAGE_THRESHOLD_GB:
-        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
-        return
+        logger.warning("System has run out of storage")
+        # set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        # return
 
     global plugins
     if not config:
