@@ -578,7 +578,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
     AUTO_PEFT_CLASS = peft.PeftModel
     from transformers import AutoTokenizer, TextStreamer
     from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-    model_name = "/home/sdp/dongbo/polyglot-ko-5.8b-chat"     # Hugging Face model_id or local model
+    model_name = "/home/sdp/lzw/Llama-2-7b-chat-hf"     # Hugging Face model_id or local model
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     runtime_model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
     
