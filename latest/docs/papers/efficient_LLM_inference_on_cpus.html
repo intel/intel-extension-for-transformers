@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Efficient LLM Inference on CPUs &mdash; Intel® Extension for Transformers 0.1.dev1+gf46a79e documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=68dfede1" />
+
+  
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Efficient LLM Inference on CPUs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/docs/papers/efficient_LLM_inference_on_cpus.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="efficient-llm-inference-on-cpus">
+<h1>Efficient LLM Inference on CPUs<a class="headerlink" href="#efficient-llm-inference-on-cpus" title="Link to this heading"></a></h1>
+<p>In this tutorial, we will demonstrate how to reproduce data in paper <a class="reference external" href="https://arxiv.org/pdf/2311.00502.pdf">Efficient LLM Inference on CPUs</a>.</p>
+<section id="system-summary">
+<h2>System Summary<a class="headerlink" href="#system-summary" title="Link to this heading"></a></h2>
+<p>Test by Intel on 09/19/2023. 1-node, 1x Intel(R) Xeon(R) Platinum 8480+ &#64;3.8GHz, 56 cores/socket, HT On, Turbo On, Total Memory 256GB (16x16GB DDR5 4800 MT/s [4800 MT/s]), BIOS 3A14.TEL2P1, microcode 0x2b0001b0, CentOS Stream 8, gcc (GCC) 8.5.0 20210514 (Red Hat 8.5.0-10), DL Models, Frameworks/Backends: PyTorch/ONNXRT/LLM Runtime/GGML, Datatype: FP32/INT8/BF16/FP8. Using 1 socket, 56 cores/instance, 1 instance and batch size 1.</p>
+<p>Performance varies by use, configuration and other factors. For more complete information about performance and benchmark results, visit www.intel.com/benchmarks</p>
+</section>
+<section id="run-performance-step-by-step">
+<h2>Run Performance Step by Step<a class="headerlink" href="#run-performance-step-by-step" title="Link to this heading"></a></h2>
+<section id="prepare-intel-extension-for-transformers">
+<h3>Prepare Intel Extension for Transformers<a class="headerlink" href="#prepare-intel-extension-for-transformers" title="Link to this heading"></a></h3>
+<p>Build from source</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
+<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
+ninja
+</pre></div>
+</div>
+</section>
+<section id="fp32-inference-baseline">
+<h3>FP32 Inference (Baseline)<a class="headerlink" href="#fp32-inference-baseline" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Note</strong>: Please donwload the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command.</p>
+</div></blockquote>
+<section id="convert-model">
+<h4>1. Convert Model<a class="headerlink" href="#convert-model" title="Link to this heading"></a></h4>
+<p>Convert Hugginface model.</p>
+<p>Please make sure you have donwloaded the model into local path</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+python<span class="w"> </span>scripts/convert.py<span class="w"> </span>local_model_path<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>model_f32.bin
+</pre></div>
+</div>
+</section>
+<section id="inference">
+<h4>2. Inference<a class="headerlink" href="#inference" title="Link to this heading"></a></h4>
+<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about paramters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
+<p>When running inference, we recommend using <code class="docutils literal notranslate"><span class="pre">numactl</span></code> to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting <code class="docutils literal notranslate"><span class="pre">cores-per-instance=48</span></code> (best performance from our practice). And you can try to find out the best settings on your server.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">48</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;cores-per-instance&gt;<span class="w"> </span>./build/bin/run_&lt;model_name&gt;<span class="w"> </span>-m<span class="w"> </span>model_f32.bin<span class="w">  </span>-p<span class="w"> </span>&lt;prompt&gt;<span class="w"> </span>-n<span class="w"> </span><span class="m">32</span><span class="w"> </span>-t<span class="w"> </span><span class="m">48</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="int4-inference">
+<h3>INT4 Inference<a class="headerlink" href="#int4-inference" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Note</strong>: Please donwload the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command. For converting models, please see above <a class="reference external" href="#1-convert-model">Convert Model</a></p>
+</div></blockquote>
+<section id="quantization">
+<h4>1. Quantization<a class="headerlink" href="#quantization" title="Link to this heading"></a></h4>
+<p>Quantize the converted FP32 model with INT4 as weight datatype, INT8 as compute datatype and 128 as group size.</p>
+<p>Please select <code class="docutils literal notranslate"><span class="pre">group_size</span></code> between 32 or 128. For more details about parameters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#1-convert-and-quantize-llm">argument description</a></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>./build/bin/quant_llama<span class="w">  </span>--model_file<span class="w"> </span>model_f32.bin<span class="w"> </span>--out_file<span class="w"> </span>model_q4j128.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">128</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8<span class="w"> </span>--nthread<span class="w"> </span><span class="m">24</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h4>2. Inference<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about paramters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
+<p>When running inference, we recommend using <code class="docutils literal notranslate"><span class="pre">numactl</span></code> to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting <code class="docutils literal notranslate"><span class="pre">cores-per-instance=48</span></code> (best performance from our practice). And you can try to find out the best settings on your server.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">48</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-47<span class="w"> </span>./build/bin/run_&lt;model_name&gt;<span class="w"> </span>-m<span class="w"> </span>model_q4j128.bin<span class="w">  </span>-p<span class="w"> </span>&lt;prompt&gt;<span class="w"> </span>-n<span class="w"> </span><span class="m">32</span><span class="w"> </span>-t<span class="w"> </span><span class="m">48</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="run-accuracy-step-by-step">
+<h2>Run Accuracy Step by Step<a class="headerlink" href="#run-accuracy-step-by-step" title="Link to this heading"></a></h2>
+<section id="prepare-environment">
+<h3>Prepare Environment<a class="headerlink" href="#prepare-environment" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install Intel Extension for Transformers</span>
+pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+<span class="c1"># Install requirements for running accuracy</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
+<span class="nb">cd</span><span class="w"> </span>examples/huggingface/pytorch/text-generation/quantization
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>Note</strong>: If <code class="docutils literal notranslate"><span class="pre">ImportError:</span> <span class="pre">/lib64/libstdc++.so.6:</span> <span class="pre">version</span> <span class="pre">``GLIBCXX_3.4.29``</span> <span class="pre">not</span> <span class="pre">found</span></code> error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>find<span class="w"> </span><span class="nv">$CONDA_PREFIX</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>libstdc++.so.6
+<span class="nb">export</span><span class="w"> </span><span class="nv">LD_PRELOAD</span><span class="o">=</span>&lt;the<span class="w"> </span>path<span class="w"> </span>of<span class="w"> </span>libstdc++.so.6&gt;:<span class="si">${</span><span class="nv">LD_PRELOAD</span><span class="si">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="fp32-accuracy-baseline">
+<h3>FP32 Accuracy (Baseline)<a class="headerlink" href="#fp32-accuracy-baseline" title="Link to this heading"></a></h3>
+<p>There are four tasks/datasets can be selected to run accuracy: “lambada_openai”, “piqa”, “helloswag” and “winogrande”, and you can choose one or more to get the final results. Here we take <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-hf">Llama-2-7b-hf</a> as an example.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>run_generation.py<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--model<span class="w"> </span>meta-llama/Llama-2-7b-hf<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--accuracy<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--batch_size<span class="w"> </span><span class="m">56</span><span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--tasks<span class="w"> </span><span class="s2">&quot;lambada_openai&quot;</span>,<span class="w"> </span><span class="s2">&quot;piqa&quot;</span>,<span class="w"> </span><span class="s2">&quot;hellaswag&quot;</span>,<span class="w"> </span><span class="s2">&quot;winogrande&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="int4-accuracy">
+<h3>INT4 Accuracy<a class="headerlink" href="#int4-accuracy" title="Link to this heading"></a></h3>
+<p>Quantize the model with INT4 as weight datatype and group size is 128.</p>
+<p>Please select <code class="docutils literal notranslate"><span class="pre">woq_group_size</span></code> between 32 or 128, and set <code class="docutils literal notranslate"><span class="pre">woq_weight_dtype</span></code> to <code class="docutils literal notranslate"><span class="pre">int4_clip</span></code></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>run_generation.py<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--model<span class="w"> </span>meta-llama/Llama-2-7b-hf<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--output_dir<span class="w">  </span>saved_results<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--woq<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--woq_weight_dtype<span class="w"> </span>int4_clip<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--woq_group_size<span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--accuracy<span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--batch_size<span class="w"> </span><span class="m">56</span><span class="w"> </span><span class="se">\</span>
+<span class="w">           </span>--tasks<span class="w"> </span><span class="s2">&quot;lambada_openai&quot;</span>,<span class="w"> </span><span class="s2">&quot;piqa&quot;</span>,<span class="w"> </span><span class="s2">&quot;hellaswag&quot;</span>,<span class="w"> </span><span class="s2">&quot;winogrande&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fe9958257e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
