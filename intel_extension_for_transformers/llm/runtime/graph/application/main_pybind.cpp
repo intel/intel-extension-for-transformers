@@ -209,6 +209,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   ctx->generation_conf.length_penalty = length_penalty;
   ctx->generation_conf.do_early_stopping = early_stopping;
   if (pad_token != -1) ctx->vocab.pad_token_id = pad_token;
+  ctx->logits_all=true;
 }
 
 void Model::reinit() {
