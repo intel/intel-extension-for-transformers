@@ -12,6 +12,10 @@ SRC_DIRS = [
     os.path.join("../../examples/huggingface/pytorch/", dirname)
     for dirname in [
         "question-answering/quantization/",
+    ],
+    os.path.join("../examples/huggingface/pytorch/", dirname)
+    for dirname in [
+        "question-answering/quantization/",
     ]
 ]
 sys.path.extend(SRC_DIRS)
