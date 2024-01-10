@@ -432,8 +432,10 @@ class HuggingFaceAutoLM(BaseLM):
         """
         if self._add_special_tokens is not None:
             return self._add_special_tokens
+        elif self.model_format == "runtime":
+            return True
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return True 
+            return False 
         elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
             return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
