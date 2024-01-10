@@ -162,8 +162,7 @@ print(response)
 ```
 
 RAG demo video:
-
-
+https://github.com/intel/intel-extension-for-transformers/assets/104267837/d12c0123-3c89-461b-8456-3b3f03e3f12e
 
 The detailed description about RAG plugin, please refer to [README](./pipeline/plugins/retrieval/README.md)
 
