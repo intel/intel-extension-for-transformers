@@ -412,6 +412,7 @@ while True:
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
+pip install -r requirements.txt  # under graph folder
 ```
 
 Build from source
