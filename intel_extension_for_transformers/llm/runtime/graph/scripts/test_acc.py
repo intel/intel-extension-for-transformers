@@ -12,16 +12,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import sys
+import argparse
 from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
-model_name = sys.argv[1]
-model_format = sys.argv[2]
-results = evaluate(
-    model="hf-causal",
-    model_args=f'pretrained="{model_name}"',
-    tasks=["lambada_openai"],
-    # limit=5,
-    model_format=f"{model_format}"
-)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Evaluate diff for a model")
+    parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
+    parser.add_argument('--tasks', type=str, default="lambada_openai")
+    parser.add_argument('--model_format', type=str, default="torch")
+    args = parser.parse_args()
 
-print(results)
+    model_name = args.model_name
+    model_format = args.model_format
+    tasks = args.tasks
+    results = evaluate(
+        model="hf-causal",
+        model_args=f'pretrained="{model_name}"',
+        tasks=[f"tasks"],
+        # limit=5,
+        model_format=f"{model_format}"
+    )
+
+    print(results)
