@@ -34,9 +34,10 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 - Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes` with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and [Intel® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
 - Fine-tuning Support: Utilize fine-tuned models for specific tasks to achieve higher accuracy and performance
 - Distributed inference with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
+- Tensor parallelism strategy for distributed inference/training on multi-node and multi-socket
 - OpenAI-compatible API
 - Langchain-compatible API
-- Support multi-frameworks serving, such as TGI, vLLM
+- Support multi-frameworks serving, such as TGI, vLLM, Triton
 - Support Intel CPUs, Intel XPUs, Habana HPU and NVIDIA GPUs.
 
 
@@ -152,7 +153,6 @@ Consider this straightforward example: by providing the URL of the CES main page
 
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
-
 plugins.retrieval.enable = True
 plugins.retrieval.args["input_path"]=["https://www.ces.tech/"]
 conf = PipelineConfig(plugins=plugins)
@@ -162,29 +162,55 @@ print(response)
 ```
 
 RAG demo video:
+
 https://github.com/intel/intel-extension-for-transformers/assets/104267837/d12c0123-3c89-461b-8456-3b3f03e3f12e
 
 The detailed description about RAG plugin, please refer to [README](./pipeline/plugins/retrieval/README.md)
 
-## Chatbot with Multimodal
+## Chatbot with Multimedia
+
+NeuralChat integrates multiple plugins to enhance multimedia capabilities in chatbot applications. The Audio Processing and Text-to-Speech (TTS) Plugin is a software component specifically designed to improve audio-related functionalities, especially for TalkingBot. Additionally, NeuralChat supports image and video plugins to facilitate tasks involving image and video generation.
+
+Test audio sample download:
+
+```shell
+wget -c https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav
+```
+
+Python Code for Audio Processing and TTS:
+
+```python
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
+plugins.asr.enable = True
+plugins.tts.enable = True
+plugins.tts.args["output_audio_path"] = "./response.wav"
+pipeline_config = PipelineConfig(plugins=plugins)
+chatbot = build_chatbot(pipeline_config)
+response = chatbot.predict(query="./sample.wav")
+```
 
 Multimodal demo video:
+
 https://github.com/intel/intel-extension-for-transformers/assets/104267837/b5a3f2c4-f7e0-489b-9513-661b400b8983
 
+Please check this [example](./examples/deployment/photo_ai/README.md) for details.
 
+## Code Generation
 
-## Neural Copliot
-
+Code generation represents another significant application of Language Model (LM) technology. NeuralChat supports various popular code generation models across different devices and provides services akin to GitHub Copilot.
 
 Neural Copilot demo video:
+
 https://github.com/intel/intel-extension-for-transformers/assets/104267837/1328969a-e60e-48b9-a1ef-5252279507a7
+
+Please check this [example](./examples/deployment/codegen/) for details.
 
 
 # Advanced Topics
 
 ## Optimization
 
-NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to define a customized chatbot.
+NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to run a high througput chatbot.
 
 ### Automatic Mixed Precision (AMP)
 
@@ -197,6 +223,22 @@ from intel_extension_for_transformers.neural_chat import build_chatbot, MixedPre
 pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
+
+### Weight Only Quantization
+
+
+
+```python
+# Python code
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+loading_config = LoadingModelConfig(use_llm_runtime=True)
+config = PipelineConfig(
+    optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
+)
+chatbot = build_chatbot(config)
+```
+
+
 
 ### Weight Only Quantization with LLM Runtime
 [LLM Runtime](../llm/runtime/graph/README.md) is designed to provide the efficient inference of large language models (LLMs) on Intel platforms in pure C/C++ with weight-only quantization kernels.
@@ -237,7 +279,7 @@ Safety checker enables the sensitive content check on inputs and outputs of the 
 plugins.safety_checker.enable = True
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
-response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+response = chatbot.predict("Who is lihongzhi?")
 print(response)
 ```
 
