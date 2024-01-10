@@ -28,7 +28,7 @@ if __name__ == "__main__":
     results = evaluate(
         model="hf-causal",
         model_args=f'pretrained="{model_name}"',
-        tasks=[f"tasks"],
+        tasks=[f"{tasks}"],
         # limit=5,
         model_format=f"{model_format}"
     )
