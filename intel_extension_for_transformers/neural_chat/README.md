@@ -218,10 +218,9 @@ https://github.com/intel/intel-extension-for-transformers/assets/104267837/13289
 
 Please check this [example](./examples/deployment/codegen/README.md) for details.
 
-## Inference and finetuning with Docker
+## Inference with Docker
 
-The easiest way of getting started is using the official Docker file. To performance inference, please check [inference with Docker](./docker/inference/README.md).
-For finetuning, please check [finetuning with Docker](./docker/finetuning/README.md). We're on track to release the official Docker containers.
+The easiest way of getting started is using the official Docker file. To performance inference, please check [inference with Docker](./docker/inference/README.md). We're on track to release the official Docker containers.
 
 
 # Advanced Topics
@@ -302,6 +301,8 @@ For detailed fine-tuning instructions, please refer to the documentation below.
 [How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2](./examples/finetuning/finetune_neuralchat_v3/README.md)
 
 [Text-To-Speech (TTS) model finetuning](./examples/finetuning/tts/README.md)
+
+And NeuralChat also provides Docker file tailored for easy fine-tuning. Explore details in [finetuning with Docker](./docker/finetuning/README.md).
 
 
 ## Safety Checker
