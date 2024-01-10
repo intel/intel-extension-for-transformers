@@ -425,6 +425,10 @@ class FrameworkConfig:
 
 @dataclass
 class VllmEngineParams(FrameworkConfig):
+    # to use continuous batching during serving, use_async_engine should be set true,
+    # otherwise, serving is offline and synchronous, which means the next batch will only
+    # be queued and processed after the processing of the last batch is finished
+    use_async_engine: bool = True
     # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
     tensor_parallel_size: int = 1
     quantization: str = None

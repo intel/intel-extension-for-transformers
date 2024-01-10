@@ -19,7 +19,7 @@ from fastapi.routing import APIRouter
 from fastapi.responses import StreamingResponse
 # pylint: disable=E0611
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, AsyncIterator
 from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
@@ -78,7 +78,7 @@ class TextChatAPIRouter(APIRouter):
         return self.handle_chat_completion_request(request)
 
 
-    def handle_chat_completion_request(self, request: ChatCompletionRequest):
+    async def handle_chat_completion_request(self, request: ChatCompletionRequest):
         chatbot = self.get_chatbot()
 
         try:
@@ -123,7 +123,16 @@ class TextChatAPIRouter(APIRouter):
                         plugins["cache"]["instance"].post_llm_inference_actions(request.prompt, buffered_texts)
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             else:
-                response = chatbot.predict(query=request.prompt, config=config)
+                ret = chatbot.predict(query=request.prompt, config=config)
+                if isinstance(ret, AsyncIterator):
+                    async for request_output in ret:
+                        # top 1 request outputs
+                        final_output = request_output.outputs[0].text
+                        # TODO streaming response
+                        # return ChatCompletionResponse(response=final_output)
+                    response = final_output
+                else:
+                    response = ret
         except Exception as e:
             logger.error(f"An error occurred: {e}")
         else:
@@ -147,7 +156,8 @@ async def chat_completion_endpoint(chat_request: ChatCompletionRequest):
     ret = check_completion_request(chat_request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
-    return router.handle_chat_completion_request(chat_request)
+    res = await router.handle_chat_completion_request(chat_request)
+    return res
 
 @router.post("/v1/models")
 async def show_available_models():

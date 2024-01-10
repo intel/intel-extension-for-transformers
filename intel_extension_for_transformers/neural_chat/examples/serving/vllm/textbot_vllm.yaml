@@ -25,11 +25,15 @@ host: 0.0.0.0
 port: 8000
 
 model_name_or_path: "facebook/opt-125m"
-device: "cuda"  
+device: "cuda"
 
 serving:
     framework: "vllm"
     vllm_engine_params:
+        # to use continuous batching during serving, use_async_engine should be set true,
+        # otherwise, serving is offline and synchronous, which means the next batch will only
+        # be queued and processed after the processing of the last batch is finished
+        use_async_engine: true
         tensor_parallel_size: 1
         gpu_memory_utilization: 0.9
         swap_space: 4

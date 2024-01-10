@@ -35,6 +35,7 @@ class UnitTest(unittest.TestCase):
             self.skipTest("Only test this UT case on Nvidia GPU.")
         serving_config = ServingConfig(
                             framework="vllm", framework_config=VllmEngineParams(
+                                use_async_engine=False,
                                 tensor_parallel_size = 1,
                                 quantization=None,
                                 gpu_memory_utilization=0.9,
@@ -55,7 +56,6 @@ class UnitTest(unittest.TestCase):
         )
         response = client.post("/v1/chat/completions", json=chat_request.dict())
         assert response.status_code == 200
-
 
 if __name__ == "__main__":
     unittest.main()
