@@ -224,7 +224,7 @@ Please check this [example](./examples/deployment/codegen/README.md) for details
 
 ## Inference with Docker
 
-The easiest way of getting started is using the official Docker file. To performance inference, please check [inference with Docker](./docker/inference/README.md). We're on track to release the official Docker containers.
+The easiest way of getting started is using the official Docker file. To perform inference, please check [inference with Docker](./docker/inference/README.md). We're on track to release the official Docker containers.
 
 
 # Advanced Topics
