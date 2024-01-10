@@ -7,7 +7,25 @@ NeuralChat
 ---
 <div align="left">
 
-## Introduction
+## Table of contents
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+  - [Deploy Chatbot Non-Persistent](#deploy-chatbot-non-persistent)
+  - [Deploy Chatbot Persistent Service](#deploy-chatbot-persistent-service)
+  - [Chatbot with RAG](#chatbot-with-rag)
+  - [Chatbot with Multimodal](#chatbot-with-multimodal)
+  - [Neural Copliot](#neural-copliot)
+- [Advanced Topics](#advanced-topics)
+  - [Optimization](#optimization)
+  - [Fine-tuning](#fine-tuning)
+  - [Safety Checker](#safety-checker)
+  - [Caching](#caching)
+- [Models](#models)
+- [Notebooks](#notebooks)
+
+# Introduction
 
 NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly. NeuralChat implements many features, such as:
 - Simple launcher to serve most popular LLMs
@@ -16,8 +34,9 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 - Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes` with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and [Intel® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
 - Fine-tuning Support: Utilize fine-tuned models for specific tasks to achieve higher accuracy and performance
 - Distributed inference with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
-- OpenAI-compatible API server
-- Langchain-compatible API server
+- OpenAI-compatible API
+- Langchain-compatible API
+- Support multi-frameworks serving, such as TGI, vLLM
 - Support Intel CPUs, Intel XPUs, Habana HPU and NVIDIA GPUs.
 
 
@@ -29,15 +48,31 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 
 > NeuralChat is under active development with some experimental features (APIs are subject to change).
 
-## Installation
+# Installation
 
 NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Please refer to [Installation](../../docs/installation.md) page for step by step instructions.
 
-## Getting Started
+Install NeuralChat dependencies:
+```shell
+# the dependencies for cpu device
+pip install -r requirements_cpu.txt
+```
+
+```shell
+# the dependencies for hpu device
+pip install -r requirements_hpu.txt
+```
+
+```shell
+# the dependencies for xpu device
+pip install -r requirements_xpu.txt
+```
+
+# Getting Started
 
 NeuralChat could be deployed non-persistent or accessed through persistent service.
 
-### Deploy Chatbot Non-Persistent
+## Deploy Chatbot Non-Persistent
 
 NeuralChat can be deployed non-persistent and users can run it through command line or python code.
 
@@ -54,36 +89,98 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 print(response)
 ```
 
-### Deploy Chatbot Persistent Service
+## Deploy Chatbot Persistent Service
 
 NeuralChat can be deployed as a persistent service and users can access it through curl with Restful API.
 
-#### Launch Service
+### Launch Service
 
 
 ```shell
 neuralchat_server start --config_file ./server/config/neuralchat.yaml
 ```
 
-#### Access Service
+### OpenAI-Compatible RESTful APIs
 
+NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands. See [neuralchat_api.md](./docs/neuralchat_api.md).
 
+### Access Service
+
+#### Using Curl
 ```shell
 curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
 ```
 
-## Key Features
+#### Using Python Requests Library
 
-### Optimization
+```python
+import requests
+url = 'http://127.0.0.1:80/v1/chat/completions'
+headers = {'Content-Type': 'application/json'}
+data = '{"prompt": "Tell me about Intel Xeon Scalable Processors."}'
+response = requests.post(url, headers=headers, data=data)
+print(response.json())
+```
+
+#### Using OpenAI Client Library
+```python
+from openai import Client
+client = Client(your_api_key)  # Replace 'your_api_key' with your actual OpenAI API key
+completion = client.ChatCompletion.create(prompt="Tell me about Intel Xeon Scalable Processors.")
+print(completion)
+```
+
+## Chatbot with RAG
+NeuralChat introduces 'plugins' that provide a comprehensive range of helpful LLM utilities and features to enhance the chatbot's capabilities. One such plugin is RAG(Retrieval-Augmented Generation), widely utilized in knowledge-based chatbot applications.
+
+Taking inspiration from earlier chatbot frameworks like [langchain](https://github.com/langchain-ai/langchain), [Llama-Index](https://github.com/run-llama/llama_index) and [haystack](https://github.com/deepset-ai/haystack), the NeuralChat API simplifies the creation and utilization of chatbot models, seamlessly integrating the powerful capabilities of RAG. This API serves as both an easy-to-use extension for langchain users and a user-friendly deployment solution for the general user.
+
+To ensure a seamless user experience, the plugin has been designed to be compatible with common file formats such as txt, xlsx, csv, word, pdf, html and json/jsonl. It's essential to note that for optimal functionality, certain file formats must adhere to specific structural guidelines.
+
+|  File Type   | Predefined Structure  |
+|  :----:  | :----:  |
+| txt  | NA |
+| html  | NA |
+| markdown  | NA |
+| word  | NA |
+| pdf  | NA |
+| xlsx  | ['Questions', 'Answers']<br>['question', 'answer', 'link']<br>['context', 'link'] |
+| csv  | ['question', 'correct_answer'] |
+| json/jsonl  | {'content':xxx, 'link':xxx}|
+
+Consider this straightforward example: by providing the URL of the CES main page, the chatbot can engage in a conversation based on the content from that webpage.
+
+```python
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
+
+plugins.retrieval.enable = True
+plugins.retrieval.args["input_path"]=["https://www.ces.tech/"]
+conf = PipelineConfig(plugins=plugins)
+chatbot = build_chatbot(conf)
+response = chatbot.predict("When is CES 2024?")
+print(response)
+```
+
+RAG demo video:
+
+
+
+The detailed description about RAG plugin, please refer to [README](./pipeline/plugins/retrieval/README.md)
+
+## Chatbot with Multimodal
+
+
+## Neural Copliot
+
+
+
+# Advanced Topics
+
+## Optimization
 
 NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to define a customized chatbot.
 
-```shell
-# Command line
-neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
-```
-
-#### Automatic Mixed Precision (AMP)
+### Automatic Mixed Precision (AMP)
 
 NeuralChat utilizes Automatic Mixed Precision (AMP) optimization by default when no specific optimization method is specified by the user in the API.
 Nevertheless, users also have the option to explicitly specify this parameter, as demonstrated in the following Python code snippet.
@@ -95,7 +192,7 @@ pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
 
-#### Weight Only Quantization with LLM Runtime
+### Weight Only Quantization with LLM Runtime
 [LLM Runtime](../llm/runtime/graph/README.md) is designed to provide the efficient inference of large language models (LLMs) on Intel platforms in pure C/C++ with weight-only quantization kernels.
 
 ```python
@@ -110,45 +207,7 @@ config = PipelineConfig(
 chatbot = build_chatbot(config)
 ```
 
-### Plugins
-
-NeuralChat introduces the `plugins` which offer a rich set of useful LLM utils and features to augment the chatbot's capability. Such plugins are applied in the chatbot pipeline for inference.
-
-Below shows the supported plugins:
-
-- [Knowledge Retrieval](./pipeline/plugins/retrieval/README.md)
-
-    Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses.
-
-- [Query Caching](./pipeline/plugins/caching/)
-
-    Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time
-
-- [Prompt Optimization](./pipeline/plugins/prompt/)
-
-    Prompt optimization supports auto prompt engineering to improve user prompts.
-
-- [Memory Controller](./pipeline/plugins/memory/)
-
-    Memory controller enables the efficient memory utilization.
-
-- [Safety Checker](./pipeline/plugins/security/)
-
-    Safety checker enables the sensitive content check on inputs and outputs of the chatbot.
-
-User could enable, disable, and even change the default behavior of all supported plugins like below
-
-```python
-from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
-
-plugins.retrieval.enable = True
-plugins.retrieval.args["input_path"]="./assets/docs/"
-conf = PipelineConf(plugins=plugins)
-chatbot = build_chatbot(conf)
-
-```
-
-### Fine-tuning
+## Fine-tuning
 
 NeuralChat supports fine-tuning the pretrained large language model (LLM) for text-generation, summarization, code generation tasks, and even TTS model, for user to create the customized chatbot.
 
@@ -164,7 +223,33 @@ finetune_cfg = TextGenerationFinetuningConfig() # support other finetuning confi
 finetune_model(finetune_cfg)
 ```
 
-## Validated Model List
+## Safety Checker
+
+Safety checker enables the sensitive content check on inputs and outputs of the chatbot.
+
+```python
+plugins.safety_checker.enable = True
+conf = PipelineConfig(plugins=plugins)
+chatbot = build_chatbot(conf)
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+print(response)
+```
+
+## Caching
+
+When LLM service encounters higher traffic levels, the expenses related to LLM API calls can become substantial. Additionally, LLM services might exhibit slow response times. Hence, we leverage GPTCache to build a semantic caching plugin for storing LLM responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time.
+
+```python
+plugins.cache.enable = True
+conf = PipelineConfig(plugins=plugins)
+chatbot = build_chatbot(conf)
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+print(response)
+```
+
+# Models
+
+## Supported  Models
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
 |Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
 |------------------------------------|:---:|:---:|:---:|:---:|
@@ -185,45 +270,7 @@ The table below displays the validated model list in NeuralChat for both inferen
 |MagicCoder series|   |   |   | ✅ |
 
 
-## Restful API
-
-### OpenAI-Compatible RESTful APIs & SDK
-NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands. See [neuralchat_api.md](./docs/neuralchat_api.md).
-
-The following OpenAI APIs are supported:
-
-- Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)
-- Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)
-
-### Additional useful RESTful APIs
-In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
-NeuralChat supports the following RESTful APIs:
-- Finetuning
-- Audio Chat
-- Document Retrieval
-- Code Generation
-- Text to Image
-- Image to Image
-- Face animation
-
-For more details, refer to this [README](./server/README.md)
-
-## Popular Applications based on NeuralChat
-
-### Text ChatBot
-
-
-### Voice ChatBot
-
-
-### Image AI Assistant
-
-
-### Neural Copilot
-
-
-
-## Selected Notebooks 
+# Notebooks
 
 Welcome to use Jupyter notebooks to explore how to create, deploy, and customize chatbots on multiple architectures, including Intel Xeon Scalable Processors, Intel Gaudi2, Intel Xeon CPU Max Series, Intel Data Center GPU Max Series, Intel Arc Series, and Intel Core Processors, and others. The selected notebooks are shown below:
 
