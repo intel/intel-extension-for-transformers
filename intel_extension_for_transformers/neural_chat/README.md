@@ -17,6 +17,7 @@ NeuralChat
   - [Chatbot with RAG](#chatbot-with-rag)
   - [Chatbot with Multimodal](#chatbot-with-multimodal)
   - [Neural Copliot](#neural-copliot)
+  - [Inference and finetuning with Docker](#inference-and-finetuning-with-docker)
 - [Advanced Topics](#advanced-topics)
   - [Optimization](#optimization)
   - [Fine-tuning](#fine-tuning)
@@ -59,20 +60,19 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 
 NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Please refer to [Installation](../../docs/installation.md) page for step by step instructions.
 
-Install NeuralChat dependencies:
+Once you've installed the Intel Extension for Transformers, install NeuralChat's dependencies based on your device:
 ```shell
-# the dependencies for cpu device
+# For CPU device
 pip install -r requirements_cpu.txt
-```
 
-```shell
-# the dependencies for hpu device
+# For HPU device
 pip install -r requirements_hpu.txt
-```
 
-```shell
-# the dependencies for xpu device
+# For XPU device
 pip install -r requirements_xpu.txt
+
+# For CUDA
+pip install -r requirements.txt
 ```
 
 # Getting Started
@@ -121,6 +121,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about I
 #### Using Python Requests Library
 
 ```python
+# Python code
 import requests
 url = 'http://127.0.0.1:80/v1/chat/completions'
 headers = {'Content-Type': 'application/json'}
@@ -131,8 +132,12 @@ print(response.json())
 
 #### Using OpenAI Client Library
 ```python
+# Python code
 from openai import Client
-client = Client(your_api_key)  # Replace 'your_api_key' with your actual OpenAI API key
+# Replace 'your_api_key' with your actual OpenAI API key
+api_key = 'your_api_key'
+backend_url = 'http://127.0.0.1:80/v1/chat/completions' 
+client = Client(api_key=api_key, base_url=backend_url)
 completion = client.ChatCompletion.create(prompt="Tell me about Intel Xeon Scalable Processors.")
 print(completion)
 ```
@@ -140,7 +145,7 @@ print(completion)
 ## Chatbot with RAG
 NeuralChat introduces 'plugins' that provide a comprehensive range of helpful LLM utilities and features to enhance the chatbot's capabilities. One such plugin is RAG(Retrieval-Augmented Generation), widely utilized in knowledge-based chatbot applications.
 
-Taking inspiration from earlier chatbot frameworks like [langchain](https://github.com/langchain-ai/langchain), [Llama-Index](https://github.com/run-llama/llama_index) and [haystack](https://github.com/deepset-ai/haystack), the NeuralChat API simplifies the creation and utilization of chatbot models, seamlessly integrating the powerful capabilities of RAG. This API serves as both an easy-to-use extension for langchain users and a user-friendly deployment solution for the general user.
+Taking inspiration from earlier chatbot frameworks like [langchain](https://github.com/langchain-ai/langchain), [Llama-Index](https://github.com/run-llama/llama_index) and [haystack](https://github.com/deepset-ai/haystack), the NeuralChat API simplifies the creation and utilization of chatbot models, seamlessly integrating the powerful capabilities of RAG. This API design serves as both an easy-to-use extension for langchain users and a user-friendly deployment solution for the general user.
 
 To ensure a seamless user experience, the plugin has been designed to be compatible with common file formats such as txt, xlsx, csv, word, pdf, html and json/jsonl. It's essential to note that for optimal functionality, certain file formats must adhere to specific structural guidelines.
 
@@ -158,6 +163,7 @@ To ensure a seamless user experience, the plugin has been designed to be compati
 Consider this straightforward example: by providing the URL of the CES main page, the chatbot can engage in a conversation based on the content from that webpage.
 
 ```python
+# python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
 plugins.retrieval.enable = True
 plugins.retrieval.args["input_path"]=["https://www.ces.tech/"]
@@ -186,6 +192,7 @@ wget -c https://github.com/intel/intel-extension-for-transformers/blob/main/inte
 Python Code for Audio Processing and TTS:
 
 ```python
+# Python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig, plugins
 plugins.asr.enable = True
 plugins.tts.enable = True
@@ -203,13 +210,18 @@ Please check this [example](./examples/deployment/photo_ai/README.md) for detail
 
 ## Code Generation
 
-Code generation represents another significant application of Language Model (LM) technology. NeuralChat supports various popular code generation models across different devices and provides services similar to GitHub Copilot. NeuralChat copilot is a hybrid copilot which involves real-time code generation using client PC combines with deeper server-based insight. Users have the flexibility to deploy a robust Large Language Model (LLM) in the public cloud or on-premises servers, facilitating the generation of extensive code excerpts based on user commands or comments. Additionally, users can employ an optimized LLM on their local PC as an AI assistant capable of addressing queries related to user code, elucidating code segments, refactoring, identifying and rectifying code anomalies, generating unit tests, and more.
+Code generation represents another significant application of Large Language Model(LLM) technology. NeuralChat supports various popular code generation models across different devices and provides services similar to GitHub Copilot. NeuralChat copilot is a hybrid copilot which involves real-time code generation using client PC combines with deeper server-based insight. Users have the flexibility to deploy a robust Large Language Model (LLM) in the public cloud or on-premises servers, facilitating the generation of extensive code excerpts based on user commands or comments. Additionally, users can employ an optimized LLM on their local PC as an AI assistant capable of addressing queries related to user code, elucidating code segments, refactoring, identifying and rectifying code anomalies, generating unit tests, and more.
 
 Neural Copilot demo video:
 
 https://github.com/intel/intel-extension-for-transformers/assets/104267837/1328969a-e60e-48b9-a1ef-5252279507a7
 
 Please check this [example](./examples/deployment/codegen/README.md) for details.
+
+## Inference and finetuning with Docker
+
+The easiest way of getting started is using the official Docker file. To performance inference, please check [inference with Docker](./docker/inference/README.md).
+For finetuning, please check [finetuning with Docker](./docker/finetuning/README.md). We're on track to release the official Docker containers.
 
 
 # Advanced Topics
@@ -278,11 +290,17 @@ finetune_model(finetune_cfg)
 ```
 
 For detailed fine-tuning instructions, please refer to the documentation below.
+
 [NeuralChat Fine-tuning](./examples/finetuning/instruction/README.md)
+
 [Direct Preference Optimization](./examples/finetuning/dpo_pipeline/README.md)
+
 [Reinforcement Learning from Human Feedback](./examples/finetuning/ppo_pipeline/README.md)
+
 [Multi-Modal](./examples/finetuning/multi_modal/README.md)
+
 [How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2](./examples/finetuning/finetune_neuralchat_v3/README.md)
+
 [Text-To-Speech (TTS) model finetuning](./examples/finetuning/tts/README.md)
 
 
@@ -291,6 +309,7 @@ For detailed fine-tuning instructions, please refer to the documentation below.
 We prioritize the safe and responsible use of NeuralChat for everyone. Nevertheless, owing to the inherent capabilities of large language models (LLMs), we cannot assure that the generated outcomes are consistently safe and beneficial for users. To address this, we've developed a safety checker that meticulously reviews and filters sensitive or harmful words that might surface in both input and output contexts.
 
 ```python
+# python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 plugins.safety_checker.enable = True
 conf = PipelineConfig(plugins=plugins)
@@ -306,6 +325,7 @@ The detailed description about RAG plugin, please refer to [README](./pipeline/p
 When LLM service encounters higher traffic levels, the expenses related to LLM API calls can become substantial. Additionally, LLM services might exhibit slow response times. Hence, we leverage GPTCache to build a semantic caching plugin for storing LLM responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time.
 
 ```python
+# python code
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 plugins.cache.enable = True
 conf = PipelineConfig(plugins=plugins)
