@@ -48,19 +48,14 @@ Classes
 
    Retrieve from a set of multiple embeddings for the same document.
 
-   .. py:attribute:: vectorstore
-      :type: langchain_core.vectorstores.VectorStore
+   .. py:attribute:: search_kwargs
+      :type: dict
 
-      The underlying vectorstore to use to store small chunks
-      and their embedding vectors
+      Keyword arguments to pass to the search function.
 
-   .. py:method:: get_context(query: str, *, run_manager: langchain.callbacks.manager.CallbackManagerForRetrieverRun)
+   .. py:attribute:: search_type
+      :type: SearchType
 
-      Get documents relevant to a query.
-      :param query: String to find relevant documents for
-      :param run_manager: The callbacks handler to use
-
-      :returns: The concatation of the retrieved documents and the link
-
+      Type of search to perform (similarity / mmr)
 
 
