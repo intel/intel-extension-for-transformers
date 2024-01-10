@@ -167,9 +167,9 @@ https://github.com/intel/intel-extension-for-transformers/assets/104267837/d12c0
 
 The detailed description about RAG plugin, please refer to [README](./pipeline/plugins/retrieval/README.md)
 
-## Chatbot with Multimedia
+## Chatbot with Multimodal
 
-NeuralChat integrates multiple plugins to enhance multimedia capabilities in chatbot applications. The Audio Processing and Text-to-Speech (TTS) Plugin is a software component specifically designed to improve audio-related functionalities, especially for TalkingBot. Additionally, NeuralChat supports image and video plugins to facilitate tasks involving image and video generation.
+NeuralChat integrates multiple plugins to enhance multimodal capabilities in chatbot applications. The Audio Processing and Text-to-Speech (TTS) Plugin is a software component specifically designed to improve audio-related functionalities, especially for TalkingBot. Additionally, NeuralChat supports image and video plugins to facilitate tasks involving image and video generation.
 
 Test audio sample download:
 
@@ -197,13 +197,13 @@ Please check this [example](./examples/deployment/photo_ai/README.md) for detail
 
 ## Code Generation
 
-Code generation represents another significant application of Language Model (LM) technology. NeuralChat supports various popular code generation models across different devices and provides services akin to GitHub Copilot.
+Code generation represents another significant application of Language Model (LM) technology. NeuralChat supports various popular code generation models across different devices and provides services similar to GitHub Copilot. NeuralChat copilot is a hybrid copilot which involves real-time code generation using client PC combines with deeper server-based insight. Users have the flexibility to deploy a robust Large Language Model (LLM) in the public cloud or on-premises servers, facilitating the generation of extensive code excerpts based on user commands or comments. Additionally, users can employ an optimized LLM on their local PC as an AI assistant capable of addressing queries related to user code, elucidating code segments, refactoring, identifying and rectifying code anomalies, generating unit tests, and more.
 
 Neural Copilot demo video:
 
 https://github.com/intel/intel-extension-for-transformers/assets/104267837/1328969a-e60e-48b9-a1ef-5252279507a7
 
-Please check this [example](./examples/deployment/codegen/) for details.
+Please check this [example](./examples/deployment/codegen/README.md) for details.
 
 
 # Advanced Topics
