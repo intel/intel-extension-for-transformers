@@ -408,7 +408,7 @@ while True:
     outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
 ```
 
-## How to use: Python script
+## How to use: Straightforward Python script
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
