@@ -81,7 +81,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     f.write(struct.pack("f", config["rms_norm_eps"]))
     f.write(struct.pack("f", config["rope_theta"] if "rope_theta" in config else 10000))
     rope_scale = 1
-    if "rope_scaling" in config:
+    if "rope_scaling" in config and config["rope_scaling"] is not None:
         rope_scale = config["rope_scaling"]["factor"] if "factor" in config["rope_scaling"] else 1
     f.write(struct.pack("f", rope_scale))
 
