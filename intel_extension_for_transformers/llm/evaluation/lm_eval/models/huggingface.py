@@ -251,6 +251,7 @@ class HuggingFaceAutoLM(BaseLM):
                 offload_folder,
             )
         self._device = device
+        self.model_format = model_format
         if model_format == "torch":
             self.model = self._create_auto_model(
                 pretrained=pretrained,
