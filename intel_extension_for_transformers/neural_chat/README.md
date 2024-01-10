@@ -31,7 +31,7 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 - Simple launcher to serve most popular LLMs
 - Token streaming using Server-Sent Events (SSE)
 - Weight-only quantization with [LLM runtime](../llm/runtime/graph/README.md)
-- Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes` with [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and [Intel® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
+- Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` leverage `RTN/AWQ/TEQ` algorithms and `BitsandBytes` using [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and [Intel® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
 - Fine-tuning Support: Utilize fine-tuned models for specific tasks to achieve higher accuracy and performance
 - Distributed inference with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
 - Tensor parallelism strategy for distributed inference/training on multi-node and multi-socket
@@ -44,6 +44,12 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
   <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
+</p>
+</a>
+
+<a target="_blank" href="./assets/pictures/neuralchat_architecture.png">
+<p align="center">
+  <img src="./assets/pictures/neuralchat_architecture.png" alt="NeuralChat" width=600 height=500>
 </p>
 </a>
 
@@ -210,7 +216,7 @@ Please check this [example](./examples/deployment/codegen/README.md) for details
 
 ## Optimization
 
-NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to run a high througput chatbot.
+NeuralChat provides typical model optimization technologies, like `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`, to allow user to run a high-througput chatbot.
 
 ### Automatic Mixed Precision (AMP)
 
@@ -226,7 +232,7 @@ chatbot = build_chatbot(pipeline_cfg)
 
 ### Weight Only Quantization
 
-
+Compared to normal quantization like W8A8, weight only quantization is probably a better trade-off to balance the performance and the accuracy. NeuralChat leverages [Intel® Neural Compressor](https://github.com/intel/neural-compressor) to provide efficient weight only quantization.
 
 ```python
 # Python code
@@ -236,12 +242,11 @@ config = PipelineConfig(
     optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4_fullrange")
 )
 chatbot = build_chatbot(config)
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
-
-
 ### Weight Only Quantization with LLM Runtime
-[LLM Runtime](../llm/runtime/graph/README.md) is designed to provide the efficient inference of large language models (LLMs) on Intel platforms in pure C/C++ with weight-only quantization kernels.
+[LLM Runtime](../llm/runtime/graph/README.md) is designed to provide the efficient inference of large language models (LLMs) on Intel platforms in pure C/C++ with optimized weight-only quantization kernels. Applying weight-only quantization with LLM Runtime can yield enhanced performance. However, please be mindful that it might impact accuracy. Presently, we're employing GPTQ for weight-only quantization with LLM Runtime to ensure the accuracy.
 
 ```python
 # Python code
@@ -253,6 +258,7 @@ config = PipelineConfig(
     loading_config=loading_config
 )
 chatbot = build_chatbot(config)
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 ## Fine-tuning
@@ -271,11 +277,21 @@ finetune_cfg = TextGenerationFinetuningConfig() # support other finetuning confi
 finetune_model(finetune_cfg)
 ```
 
+For detailed fine-tuning instructions, please refer to the documentation below.
+[NeuralChat Fine-tuning](./examples/finetuning/instruction/README.md)
+[Direct Preference Optimization](./examples/finetuning/dpo_pipeline/README.md)
+[Reinforcement Learning from Human Feedback](./examples/finetuning/ppo_pipeline/README.md)
+[Multi-Modal](./examples/finetuning/multi_modal/README.md)
+[How to train Intel/neural-chat-7b-v3-1 on Intel Gaudi2](./examples/finetuning/finetune_neuralchat_v3/README.md)
+[Text-To-Speech (TTS) model finetuning](./examples/finetuning/tts/README.md)
+
+
 ## Safety Checker
 
-Safety checker enables the sensitive content check on inputs and outputs of the chatbot.
+We prioritize the safe and responsible use of NeuralChat for everyone. Nevertheless, owing to the inherent capabilities of large language models (LLMs), we cannot assure that the generated outcomes are consistently safe and beneficial for users. To address this, we've developed a safety checker that meticulously reviews and filters sensitive or harmful words that might surface in both input and output contexts.
 
 ```python
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 plugins.safety_checker.enable = True
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
@@ -283,17 +299,22 @@ response = chatbot.predict("Who is lihongzhi?")
 print(response)
 ```
 
+The detailed description about RAG plugin, please refer to [README](./pipeline/plugins/security/README.md)
+
 ## Caching
 
 When LLM service encounters higher traffic levels, the expenses related to LLM API calls can become substantial. Additionally, LLM services might exhibit slow response times. Hence, we leverage GPTCache to build a semantic caching plugin for storing LLM responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time.
 
 ```python
+from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 plugins.cache.enable = True
 conf = PipelineConfig(plugins=plugins)
 chatbot = build_chatbot(conf)
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 print(response)
 ```
+
+The detailed description about Caching plugin, please refer to [README](./pipeline/plugins/caching/README.md)
 
 # Models
 
