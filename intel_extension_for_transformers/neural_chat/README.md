@@ -168,9 +168,16 @@ The detailed description about RAG plugin, please refer to [README](./pipeline/p
 
 ## Chatbot with Multimodal
 
+Multimodal demo video:
+https://github.com/intel/intel-extension-for-transformers/assets/104267837/b5a3f2c4-f7e0-489b-9513-661b400b8983
+
+
 
 ## Neural Copliot
 
+
+Neural Copilot demo video:
+https://github.com/intel/intel-extension-for-transformers/assets/104267837/1328969a-e60e-48b9-a1ef-5252279507a7
 
 
 # Advanced Topics
