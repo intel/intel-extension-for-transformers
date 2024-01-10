@@ -15,23 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser 
 import unittest
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker import SafetyChecker
 
-
-class TestMemory(unittest.TestCase):
+class TestSafetyChecker(unittest.TestCase):
     def setUp(self):
         return super().setUp()
 
     def tearDown(self) -> None:
         return super().tearDown()
 
-    def test_html_loader(self):
-        url = ['https://www.ces.tech/']
-        doc_parser = DocumentParser(max_chuck_size=512, min_chuck_size = 10, process=True)
-        vectordb = None
-        vectordb = doc_parser.load(url)
-        self.assertIsNotNone(vectordb)
+    def test_safety_checker(self):
+        safety_checker = SafetyChecker()
+        response = safety_checker.post_llm_inference_actions(response='ADMIN?')
+        self.assertTrue(response, "******")
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     unittest.main()
