@@ -584,7 +584,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
         if self.model_format == "runtime":
             from transformers import AutoTokenizer, TextStreamer
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-            woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=True)
+            woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
             self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=woq_config)
             
         if self.model_format == "onnx":
@@ -717,7 +717,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
         if self.model_format == "runtime":
-            out = self.runtime_model(inputs, reinit=True)
+            out = self.runtime_model(inputs, reinit=True, logits_all=True)
             output = {"logits": torch.tensor(out).unsqueeze(0)}
         elif self.model_format != "onnx":
             output = self.model(inputs)

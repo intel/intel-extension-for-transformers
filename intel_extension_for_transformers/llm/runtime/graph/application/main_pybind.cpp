@@ -74,7 +74,8 @@ class Model {
   // deprecated API
   std::vector<std::vector<model_token>> generate_tokens(const std::vector<std::vector<model_token>>& input_ids);
   const std::vector<float>& evaluate_(const std::vector<std::vector<model_token>>& input_ids);
-  py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids) {
+  py::array_t<float> evaluate(const std::vector<std::vector<model_token>>& input_ids, bool logits_all=false) {
+    if (logits_all) ctx->logits_all=true;
     if (!check_input_and_count_padding(input_ids)) return py::array_t<float>();
     const auto& logits = evaluate_(input_ids);
     for (auto& input_id : curr_input_ids) input_id.clear();  // clear curr_input_ids after eval
@@ -209,7 +210,6 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int n_
   ctx->generation_conf.length_penalty = length_penalty;
   ctx->generation_conf.do_early_stopping = early_stopping;
   if (pad_token != -1) ctx->vocab.pad_token_id = pad_token;
-  ctx->logits_all=true;
 }
 
 void Model::reinit() {
@@ -674,7 +674,8 @@ PYBIND11_MODULE(qwen_cpp, m)
            py::arg("batch_size") = 1, py::arg("pad_token") = -1, py::arg("memory_dtype") = "auto")
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("evaluate", &Model::evaluate, "Evaluate token with input ids and output logits",
-           py::arg("input_ids") = std::vector<std::vector<model_token>>{})
+           py::arg("input_ids") = std::vector<std::vector<model_token>>{},
+           py::arg("logits_all") = false)
       // deprecated API
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
