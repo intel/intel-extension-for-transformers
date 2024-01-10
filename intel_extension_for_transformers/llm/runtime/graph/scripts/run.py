@@ -167,7 +167,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_cmd.extend(["--outfile", Path(work_path, "ne_{}_f32.bin".format(model_type))])
     convert_cmd.extend(["--outtype", "f32"])
     convert_cmd.append(args.model)
-    print("convert model ...")
+    print("Convert model ...")
     subprocess.run(convert_cmd)
 
     # 2. quantize
@@ -185,7 +185,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.use_ggml:
         quant_cmd.extend(["--use_ggml"])
     quant_cmd.extend(["--build_dir", args.build_dir])
-    print("quantize model ...")
+    print("Quantize model ...")
     subprocess.run(quant_cmd)
 
     # 3. inference
@@ -204,7 +204,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     infer_cmd.extend(["--build_dir", args.build_dir])
     if args.shift_roped_k:
         infer_cmd.extend(["--shift-roped-k"])
-    print("inferce model ...")
+    print("Inference model ...")
     subprocess.run(infer_cmd)
 
 
