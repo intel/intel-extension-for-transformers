@@ -14,7 +14,7 @@ on:
       - intel_extension_for_transformers/llm/operator/**
       - tests/**
       - .github/workflows/unit-test-optimize.yml
-      - .github/workflows/script/unitTest/**
+      - '.github/workflows/script/unitTest/run_unit_test_optimize.sh'
       - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
   workflow_dispatch:
 
