@@ -10,3 +10,4 @@ peft
 datasets
 transformers_stream_generator
 tiktoken
+neural_speed
