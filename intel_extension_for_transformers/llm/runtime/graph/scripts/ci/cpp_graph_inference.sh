@@ -36,7 +36,7 @@ drop_caches=false
 ppl_fp32_test=false
 ppl_mf16_test=false
 local_models=""
-
+mode=latency
 # parse named arguments
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -81,6 +81,10 @@ while [ $# -gt 0 ]; do
     --ppl_mf16_test)
         # be careful to turn this on; it will double the workload
         ppl_mf16_test=true
+        ;;
+    --mode=*)
+        # default is latency
+        mode=`echo $1 | sed "s/[-a-zA-Z0-9_]*=//"`;;
         ;;
     --)
         shift
