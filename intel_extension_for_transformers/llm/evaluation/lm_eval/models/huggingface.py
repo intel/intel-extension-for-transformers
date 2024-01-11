@@ -581,14 +581,17 @@ class AutoCausalLM(HuggingFaceAutoLM):
     AUTO_PEFT_CLASS = peft.PeftModel
 
     def __init__(self, *args, pretrained, model_format, **kwargs):
-        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
-
         self.model_format = model_format
         if self.model_format == "runtime":
+            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+            use_gptq = kwargs.pop("use_gptq", False)
+            self.woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=use_gptq)
+        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
+
+        if self.model_format == "runtime":
             from transformers import AutoTokenizer, TextStreamer
-            from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-            woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=woq_config)
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config)
             
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
