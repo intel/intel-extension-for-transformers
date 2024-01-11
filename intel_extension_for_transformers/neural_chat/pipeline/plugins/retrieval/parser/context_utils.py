@@ -199,7 +199,6 @@ def load_unstructured_data(input):
     text = re.sub(r'\s+', ' ', text)
     return text
 
-
 def get_chuck_data(content, max_length, min_length, input):
     """Process the context to make it maintain a suitable length for the generation."""
     sentences = re.split('(?<=[!.?])', content)

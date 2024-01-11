@@ -243,6 +243,7 @@ class Agent_QA():
         logging.info("The retriever is successfully built.")
 
 
+
     def pre_llm_inference_actions(self, model_name, query):
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
