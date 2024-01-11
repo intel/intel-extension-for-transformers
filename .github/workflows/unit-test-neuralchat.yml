@@ -12,6 +12,7 @@ on:
       - 'intel_extension_for_transformers/llm/quantization/**'
       - 'intel_extension_for_transformers/llm/runtime/graph/**'
       - 'intel_extension_for_transformers/transformers/**'
+      - 'intel_extension_for_transformers/langchain/**'
       - '!intel_extension_for_transformers/neural_chat/docs/**'
       - '!intel_extension_for_transformers/neural_chat/examples/**'
       - '!intel_extension_for_transformers/neural_chat/assets/**'

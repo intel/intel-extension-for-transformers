@@ -8,8 +8,11 @@ from intel_extension_for_transformers.transformers.modeling import OptimizedMode
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # example test for question-answering quantization with IPEX only for now
+EXAMPLE_PATH="../../examples/huggingface/pytorch/"
+if not os.path.exists(EXAMPLE_PATH):
+    EXAMPLE_PATH="../examples/huggingface/pytorch/"
 SRC_DIRS = [
-    os.path.join("../../examples/huggingface/pytorch/", dirname)
+    os.path.join(EXAMPLE_PATH, dirname)
     for dirname in [
         "question-answering/quantization/",
     ]

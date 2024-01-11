@@ -1,12 +1,14 @@
 transformers>=4.35.2
 peft==0.6.2
 fschat==0.2.32
-torch==2.1.0
+torch
 torchaudio==2.1.0
 torchvision==0.16.0
 intel_extension_for_pytorch
 num2words
 speechbrain
+onnxruntime>=1.16.3
+onnx>=1.15.0
 paddlepaddle
 paddlespeech
 shortuuid
@@ -40,7 +42,6 @@ tiktoken==0.4.0
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 spacy
 neural-compressor
-onnxruntime
 pymysql
 deepface
 exifread
