@@ -122,7 +122,6 @@ class CMakeBuild(build_ext):
             f"-DDNNL_CPU_RUNTIME=OMP",
             f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
-            f"-DNE_PYTHON_API=ON",
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
@@ -245,8 +244,7 @@ if __name__ == '__main__':
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
-            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
+            #CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
             ])
     cmdclass={'build_ext': CMakeBuild}
 
@@ -272,7 +270,7 @@ if __name__ == '__main__':
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
-                'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
+                #'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
                 'neuralchat = intel_extension_for_transformers.neural_chat.cli.cli_commands:neuralchat_execute',
                 'neuralchat_server = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_server_execute',
                 'neuralchat_client = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_client_execute'

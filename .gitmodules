@@ -79,6 +79,3 @@
 [submodule "intel_extension_for_transformers/llm/runtime/third_party/xbyak"]
 	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/xbyak
 	url = https://github.com/herumi/xbyak.git
-[submodule "intel_extension_for_transformers/llm/runtime/graph/application/third_party/pybind11"]
-	path = intel_extension_for_transformers/llm/runtime/graph/application/third_party/pybind11
-	url = https://github.com/pybind/pybind11.git
