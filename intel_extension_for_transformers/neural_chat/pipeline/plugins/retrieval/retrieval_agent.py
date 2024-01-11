@@ -241,7 +241,7 @@ class Agent_QA():
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
         logging.info("The retriever is successfully built.")
-
+        
 
 
     def pre_llm_inference_actions(self, model_name, query):
