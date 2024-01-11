@@ -398,6 +398,25 @@ function main() {
         task_name="${model}-fp32-${cores_per_instance}-${batch_size_list[@]:0:1}-${input_list[@]:0:1}-${output}"
         ppl_eval "$task_name" "$cores_per_instance" "$model_path" "$model-fp32.bin"
     fi
+    if [[ "${mode}" == "accuracy" ]]; then
+        cores_per_instance=56
+        if [[ "$use_gptq" == "false" ]]; then
+            precision=q4_j_i8_g128
+            logs_file="${model}-${precision}-${cores_per_instance}_accuracy.log"
+            python ${WORKSPACE}/nlp-models/examples/huggingface/llmruntime/runtime_acc.py --model_name $model_path \
+                    --model_format torch --tasks "lambada_openai" 2>&1 | tee ${WORKSPACE}/${logs_file}
+            accuracy="$(tail -n 10 "${WORKSPACE}/${logs_file}" | grep -E "Accuracy for lambada_openai is: " | awk -F':' '{print $2}' | sed 's/[^0-9.]*//g')"
+            echo "accuracy for ${model} of lambda openai is ${accuracy}"
+        else
+            precision=q4_j_i8_g128_gptq
+            logs_file="${model}-${precision}-${cores_per_instance}_accuracy.log"
+            python ${WORKSPACE}/nlp-models/examples/huggingface/llmruntime/runtime_acc.py --model_name $model_path \
+                    --model_format torch --tasks "lambada_openai" 2>&1 | tee ${WORKSPACE}/${logs_file}
+            accuracy="$(tail -n 10 "${WORKSPACE}/${logs_file}" | grep -E "Accuracy for lambada_openai is: " | awk -F':' '{print $2}' | sed 's/[^0-9.]*//g')"
+            echo "accuracy for ${model} of lambda openai is ${accuracy}"
+        fi
+        echo "engine,accuracy,${model},${precision},${cores_per_instance},${accuracy},$log_prefix/$logs_file" >> ${WORKSPACE}/cpp_graph_summary.log
+    fi
     conda deactivate >/dev/null 2>&1
 }
 
