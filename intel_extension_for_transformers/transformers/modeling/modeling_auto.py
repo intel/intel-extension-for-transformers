@@ -259,7 +259,7 @@ class _BaseQBitsAutoModelClass:
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
-                from intel_extension_for_transformers.llm.runtime.graph import Model
+                from neural_speed import Model
 
                 model = Model()
                 model.init(
