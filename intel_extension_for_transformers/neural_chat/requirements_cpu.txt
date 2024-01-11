@@ -12,7 +12,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.354
 langchain_core
 python-docx
 scikit-learn
@@ -49,3 +49,4 @@ cchardet
 zhconv
 urllib3
 langid
+qdrant-client
