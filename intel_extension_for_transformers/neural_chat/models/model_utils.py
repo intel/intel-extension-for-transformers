@@ -343,7 +343,7 @@ def load_model_vllm(
         from vllm.engine.arg_utils import AsyncEngineArgs
         # Here we remove uncommon parameters to start a AsyncLLMEngine
         # refer to https://github.com/vllm-project/vllm/blob/main/vllm/engine/arg_utils.py
-        async_engine_args = AsyncEngineArgs(
+        async_engine_args = AsyncEngineArgs( # pylint: disable=E1123
             model=model,
             tokenizer=model,
             tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
@@ -354,7 +354,8 @@ def load_model_vllm(
             revision=eparams.revision if hasattr(eparams, 'revision') else None,
             tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
             seed=eparams.seed if hasattr(eparams, 'seed') else 0,
-            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') else 0.9,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
             swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
             enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
             max_context_len_to_capture=eparams.max_context_len_to_capture \
@@ -377,7 +378,8 @@ def load_model_vllm(
             revision=eparams.revision if hasattr(eparams, 'revision') else None,
             tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
             seed=eparams.seed if hasattr(eparams, 'seed') else 0,
-            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') else 0.9,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
             swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
             enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
             max_context_len_to_capture=eparams.max_context_len_to_capture \
@@ -1157,7 +1159,7 @@ def predict(**params):
         )
         # vllm may return a AsyncIterator[RequestOutput] with async engine
         # or a List[RequestOutput] with offline sync engine
-        if MODELS[model_name]["vllm_async"]:
+        if "vllm_async" in MODELS[model_name]:
             request_id = str(uuid.uuid4().hex)
             output_list_or_generator = model.generate(prompt, sampling_params, request_id)
             # directly return the async iterator
