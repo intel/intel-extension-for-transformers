@@ -177,11 +177,22 @@ def _replace_linear(
                 if not empty_weights:
                     if quantization_config.algorithm == "GPTQ":
                         # to do, auto get n_head, n_head_kv
-                        n_head = 12
+                        n_head = 32
                         n_head_kv = n_head
+                        # import pdb;pdb.set_trace();
                         int_weight, gptq_scales, gptq_zeros = unpack_weight(module.qweight, module.scales, module.qzeros, quantization_config.gptq_quantize_config)
+                        # weight = weight.reshape(weight.shape[0] * weight.shape[1], weight.shape[2])
+                        # #weight = weight.transpose(0,1)
+                        # g_idx = module.g_idx
+                        # import pdb;pdb.set_trace();
+                        # weight = (gptq_scales[g_idx.long()] * (weight - gptq_zeros[g_idx.long()]))
+                        # print(current_key_name)
+                        # print(weight)
+                        # import pdb;pdb.set_trace();
+
+                        p_func = permute_func if name in ["q_proj", "k_proj"] else None
                         model._modules[name].set_gptq_weights_bias(
-                            int_weight, gptq_scales, gptq_zeros, module.g_idx, quantization_config, n_head=n_head, n_head_kv=n_head_kv, permute_func=permute_func, bias=None if module.bias is None else module.bias.data)
+                            int_weight, gptq_scales, gptq_zeros, module.g_idx, quantization_config, n_head=n_head, n_head_kv=n_head_kv, permute_func=p_func, bias=None if module.bias is None else module.bias.data)
                     else:
                         model._modules[name].set_weights_bias(
                             module.weight.data, None if module.bias is None else module.bias.data
@@ -310,12 +321,22 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # RTN: doesn't need calib_func
         if config.algorithm in ['TEQ','RTN','GPTQ']:
             calib_func=None
-        inc_model = quantization.fit(model,
-                                    conf,
-                                    calib_func=calib_func,
-                                    calib_dataloader=calib_dataloader)
+
+        # inc_model = quantization.fit(model,
+        #                             conf,
+        #                             calib_func=calib_func,
+        #                             calib_dataloader=calib_dataloader)
+        #import pdb;pdb.set_trace();
         if config.algorithm == "GPTQ":
-            inc_model = inc_model.export_compressed_model(use_optimum_format=True)
+            from neural_compressor.utils.load_huggingface import export_compressed_model
+            inc_model = export_compressed_model(model, "llama_gptq")
+            # return inc_model
+            # inc_model = inc_model.export_compressed_model(use_optimum_format=True)
+            #torch.save(inc_model.state_dict(), "./compressed_model.pt")
+            from transformers import AutoModelForCausalLM
+            lm_head = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf").lm_head
+            inc_model.lm_head=lm_head
+            import pdb;pdb.set_trace();
             quantize_config = {
                 "bits": bits,
                 "group_size": config.group_size,

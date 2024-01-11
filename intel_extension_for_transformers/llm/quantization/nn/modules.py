@@ -24,6 +24,7 @@ from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
 from peft.tuners.lora import LoraLayer, LoraModel
 from peft.utils.other import transpose
 from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
+import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
 
 
 torch.ops.load_library(
@@ -147,6 +148,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
     def set_gptq_weights_bias(self, int_weight, gptq_scales, gptq_zeros, g_idx, q_config, n_head=0, n_head_kv=0, permute_func=None, bias=None):
+        #import pdb;pdb.set_trace();
         shape = int_weight.shape
         int_weight = int_weight.view(-1,int_weight.shape[-1])
 
@@ -174,9 +176,24 @@ class QuantizedLinearQBits(torch.nn.Linear):
             int_weight = (int_weight - 8) * 16
             gptq_scales = gptq_scales / 16
             gptq_zeros = (gptq_zeros - 8) * 16
+        if q_config.gptq_quantize_config['sym']:
+            gptq_zeros = torch.empty(0, dtype=torch.int8)
 
-        packw = torch.ops.jblasop.woq_packq(
-                int_weight, gptq_scales.float(), gptq_zeros, g_idx, q_config.weight_dtype, q_config.scale_dtype, q_config.compute_dtype, not q_config.gptq_quantize_config["sym"], self.blocksize)
+        if not q_config.gptq_quantize_config['desc_act']:
+            g_idx = torch.empty(0, dtype=torch.int32)
+
+        dst = torch.zeros((int_weight.shape[0], int_weight.shape[1] * 4), dtype=torch.int8)
+        byte_size = cpp_model.Model.np_jblas_qpack(int_weight, gptq_scales.float(), gptq_zeros, g_idx, dst,
+                                            weight_dtype="int4" if q_config.gptq_quantize_config['bits'] == 4 else "int8",
+                                            group_size=q_config.gptq_quantize_config['group_size'],
+                                            alg="sym" if q_config.gptq_quantize_config['sym'] else "asym",
+                                            compute_dtype="int8")
+        packw = dst.flatten()[:byte_size]
+        #import pdb;pdb.set_trace();
+
+        #packw = torch.ops.jblasop.woq_packq(
+        #        int_weight, gptq_scales.float(), gptq_zeros, g_idx, q_config.weight_dtype, q_config.scale_dtype, q_config.compute_dtype, not q_config.gptq_quantize_config["sym"], self.blocksize)
+        import pdb;pdb.set_trace();
         packw.resize_(shape)
         self.weight = ParamsQBits(data=packw,
                                   requires_grad=False,
