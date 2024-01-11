@@ -398,8 +398,7 @@ function main() {
         task_name="${model}-fp32-${cores_per_instance}-${batch_size_list[@]:0:1}-${input_list[@]:0:1}-${output}"
         ppl_eval "$task_name" "$cores_per_instance" "$model_path" "$model-fp32.bin"
     fi
-    if [[ "${mode}" == "accuracy" ]]; then
-        cores_per_instance=56
+    if [[ "${mode}" == "accuracy" ]]; then6
         if [[ "$use_gptq" == "false" ]]; then
             precision=q4_j_i8_g128
             logs_file="${model}-${precision}-${cores_per_instance}_accuracy.log"
@@ -415,7 +414,16 @@ function main() {
             accuracy="$(tail -n 10 "${WORKSPACE}/${logs_file}" | grep -E "Accuracy for lambada_openai is: " | awk -F':' '{print $2}' | sed 's/[^0-9.]*//g')"
             echo "accuracy for ${model} of lambda openai is ${accuracy}"
         fi
-        echo "engine,accuracy,${model},${precision},${cores_per_instance},${accuracy},$log_prefix/$logs_file" >> ${WORKSPACE}/cpp_graph_summary.log
+        for cores_per_instance_idx in "${!cores_list[@]}"; do
+            cores_per_instance=${cores_list[cores_per_instance_idx]}
+            for batch_size_idx in "${!batch_size_list[@]}"; do
+                batch_size=${batch_size_list[batch_size_idx]}
+                for input_idx in "${!input_list[@]}"; do
+                    input=${input_list[input_idx]}
+                    echo "engine,accuracy,${model},${precision},${batch_size},${input},32,${cores_per_instance},${accuracy},$log_prefix/$logs_file" >> ${WORKSPACE}/cpp_graph_summary.log
+                done
+            done
+        done 
     fi
     conda deactivate >/dev/null 2>&1
 }
