@@ -239,6 +239,7 @@ async def retrieval_chat(request: Request):
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
+    return_link = params['return_link']
     logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
                 stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
@@ -309,7 +310,7 @@ async def retrieval_chat(request: Request):
                     formatted_str = formatted_str.replace('**:', '</b>:').replace('**', '<b>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
-            if link != []:
+            if return_link and link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
                 for single_link in link:
                     # skip empty link

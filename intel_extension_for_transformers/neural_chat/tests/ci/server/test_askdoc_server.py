@@ -174,7 +174,8 @@ class UnitTest(unittest.TestCase):
             "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
-            "max_new_tokens": 64
+            "max_new_tokens": 64,
+            "return_link": False
         }
         response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
         assert response.status_code == 200
