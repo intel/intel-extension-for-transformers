@@ -19,6 +19,7 @@ import unittest
 import torch
 from unittest.mock import MagicMock, patch
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 class TestBuildChatbotExceptions(unittest.TestCase):
 
@@ -157,13 +158,57 @@ class TestBuildChatbotExceptions(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
+    def test_adapter_load_model_value_error_unknown(self, mock_load_model):
+        # Test value error exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_load_model.side_effect = ValueError("load_model: unknown ValueError occurred")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
+    def test_adapter_load_model_environmentvalue_error_unknown(self, mock_load_model):
+        # Test value error exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_load_model.side_effect = ValueError("load_model: unknown EnvironmentError occurred")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
+    def test_adapter_load_model_error_unexpected(self, mock_load_model):
+        # Test value error exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_load_model.side_effect = ValueError("load_model: an unexpected error occurred")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
+    def test_adapter_load_model_unsupported_model(self, mock_load_model):
+        # Test value error exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_load_model.side_effect = ValueError("unsupported model name or path {model_name}")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
+    def test_adapter_load_model_unsupported_device(self, mock_load_model):
+        # Test value error exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_load_model.side_effect = ValueError("unsupported device {device}, only supports cpu, xpu, cuda and hpu now.")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
     def test_adapter_load_model_exception(self, mock_load_model):
         # Test generic exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         mock_load_model.side_effect = Exception("Some generic error")
         result = build_chatbot(config)
         self.assertIsNone(result)
-
 
 if __name__ == '__main__':
     unittest.main()
