@@ -18,15 +18,22 @@
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.plugins import plugins
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 def main():
     plugins.retrieval.enable = True
     plugins.retrieval.args["input_path"] = "./Annual_Report.pdf"
-    pipeline_args = PipelineConfig(plugins=plugins)
+    pipeline_args = PipelineConfig(model_name_or_path="Intel/neural-chat-7b-v3-1",
+                                   plugins=plugins)
     chatbot = build_chatbot(pipeline_args)
 
     response = chatbot.predict(query="What is IDM 2.0?")
-    print(response)
+    logging.info(response)
 
 if __name__ == "__main__":
     main()

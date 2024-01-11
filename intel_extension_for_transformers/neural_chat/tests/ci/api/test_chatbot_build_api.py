@@ -17,17 +17,26 @@
 
 import unittest
 import os
+import shutil
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
+import torch
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 # All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
+        self.device = get_device_type()
         return super().setUp()
 
-    def tearDown(self) -> None:
-        return super().tearDown()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if os.path.exists("./output"):
+            shutil.rmtree("./output")
+        for filename in os.listdir("./"):
+            if filename.endswith(".wav"):
+                os.remove(filename)
 
     def test_build_chatbot_with_default_config(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -47,17 +56,20 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_generationcfg(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        chatbot = build_chatbot(config)
-        self.assertIsNotNone(chatbot)
-        config = GenerationConfig(max_new_tokens=512, temperature=0.1)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
-        print(response)
-        self.assertIsNotNone(response)
+        for task in ['completion', 'chat', 'summarization']:
+            config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+            chatbot = build_chatbot(config)
+            self.assertIsNotNone(chatbot)
+            config = GenerationConfig(max_new_tokens=512, temperature=0.1, task=task)
+            response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
+            print(response)
+            self.assertIsNotNone(response)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
-        plugins.tts.args["output_audio_path"]="./output_audio.wav"
+        plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"
+        plugins.tts.args["output_audio_path"] = "./output_audio.wav"
         pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
@@ -73,6 +85,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists("./output_audio.wav"))
+        plugins.tts.enable = False
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
@@ -83,6 +96,7 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="蔡英文是谁？")
         print("response: ", response)
         self.assertTrue(response, "Your query contains sensitive words, please try another query.")
+        plugins.safety_checker.enable = False
 
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
@@ -92,7 +106,67 @@ class TestChatbotBuilder(unittest.TestCase):
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
-        print("response: ", response)
+        self.assertIsNotNone(response)
+
+        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceEmbeddings
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        plugins.retrieval.args["embedding_model"] = "thenlper/gte-base"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
+
+        # test intel_extension_for_transformers.langchain.embeddings.HuggingFaceInstructEmbeddings
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        plugins.retrieval.args["embedding_model"] = "hkunlp/instructor-large"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+    def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
+        if self.device != "cpu":
+            self.skipTest("Only support Intel/bge-base-en-v1.5-sts-int8-static run on Intel CPU")
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../../README.md"
+        # Intel/bge-base-en-v1.5-sts-int8-static is private now, so we need to load it from local.
+        plugins.retrieval.args["embedding_model"] = \
+            "/tf_dataset2/inc-ut/bge-base-en-v1.5-sts-int8-static"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="What is Intel extension for transformers?")
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+    def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
+
+        def _run_retrieval(local_dir):
+            plugins.tts.enable = False
+            plugins.retrieval.enable = True
+            plugins.retrieval.args["input_path"] = "../../../README.md"
+            plugins.retrieval.args["embedding_model"] = local_dir
+            pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                             plugins=plugins)
+            chatbot = build_chatbot(pipeline_config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="What is Intel extension for transformers?")
+            self.assertIsNotNone(response)
+            plugins.retrieval.enable = False
+
+        # test local file
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
+
 
 if __name__ == '__main__':
     unittest.main()

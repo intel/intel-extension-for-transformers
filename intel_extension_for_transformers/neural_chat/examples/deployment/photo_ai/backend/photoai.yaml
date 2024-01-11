@@ -21,10 +21,16 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: 0.0.0.0
-port: 9000
+port: 7000
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
+model_name_or_path: "Intel/neural-chat-7b-v3-1"
 device: "auto"
+
+# optimization:
+#     use_llm_runtime: true
+#     optimization_type: "weight_only"
+#     compute_dtype: "int8"
+#     weight_dtype: "int4"
 
 asr:
     enable: true
@@ -44,10 +50,14 @@ tts:
 ner:
     enable: true
     args:
-        device: "cpu"
-        model_path: "./Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
-        bf16: true
 
+retrieval:
+    enable: true
+    args:
+        input_path: "./photoai_retrieval_docs/default/input_path"
+        persist_dir: "./photoai_retrieval_docs/default/persist_dir"
+        response_template: "We cannot find suitable content to answer your query."
+        append: False
 
-tasks_list: ['voicechat', 'photoai']
+tasks_list: ['voicechat', 'retrieval', 'photoai']

@@ -28,7 +28,6 @@ from tqdm import tqdm
 
 logging.basicConfig()
 logger = logging.getLogger('perplexity')
-
 '''
 Preparing test dataset:
 
@@ -52,13 +51,12 @@ def get_ppl(sum_nll, sum_nll2, cnt: int):
     nll = sum_nll / cnt
     nll2 = sum_nll2 / cnt
     ppl = math.exp(nll)
-    return ppl, 0. if cnt <= 1 else math.sqrt((nll2 - nll * nll) / (cnt-1))
+    return ppl, 0. if cnt <= 1 else math.sqrt((nll2 - nll * nll) / (cnt - 1))
 
 
 def perplexity(model_name, dataset_name, **kwargs):
     import datasets
-    from intel_extension_for_transformers.transformers import (
-        AutoModelForCausalLM, WeightOnlyQuantConfig)
+    from intel_extension_for_transformers.transformers import (AutoModelForCausalLM, WeightOnlyQuantConfig)
     from transformers import AutoTokenizer, AutoConfig
     model_name = try_resolve_dir(model_name)
     dataset_name = try_resolve_dir(dataset_name)
@@ -104,8 +102,11 @@ def perplexity(model_name, dataset_name, **kwargs):
         model.model_type = Model.get_model_type(model.config)
         model.tokenizer = tokenizer
     else:
-        woq_kwargs = {k: kwargs[k] for k in kwargs if k in
-                      ['use_cache', 'compute_dtype', 'weight_dtype', 'scale_dtype', 'group_size', 'use_ggml']}
+        woq_kwargs = {
+            k: kwargs[k]
+            for k in kwargs
+            if k in ['use_cache', 'compute_dtype', 'weight_dtype', 'scale_dtype', 'group_size', 'use_ggml']
+        }
         woq_config = WeightOnlyQuantConfig(**woq_kwargs)
         model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
@@ -113,7 +114,7 @@ def perplexity(model_name, dataset_name, **kwargs):
     model_kwargs = {**default_model_kwargs, **model_kwargs}
 
     ppl_hist = [{} for _ in range(n_sampels)]  # ppl_hist[i_sample][end_pos] = ppl
-    sum_nll = [0. for _ in range(n_sampels)]   # sum of negative log likelyhood
+    sum_nll = [0. for _ in range(n_sampels)]  # sum of negative log likelyhood
     sum_nll2 = [0. for _ in range(n_sampels)]  # sum of nll square
 
     pbar = tqdm(range(n_pred_per_sample * n_sampels))
@@ -186,9 +187,7 @@ def add_quant_args(parser: argparse.ArgumentParser):
                        type=str,
                        help="path to quantized weight; other quant args will be ignored if specified",
                        default="")
-    group.add_argument('--use_cache',
-                       action="store_true",
-                       help="Use local quantized model if file exists")
+    group.add_argument('--use_cache', action="store_true", help="Use local quantized model if file exists")
     group.add_argument(
         "--weight_dtype",
         choices=["int4", "int8"],
@@ -201,9 +200,7 @@ def add_quant_args(parser: argparse.ArgumentParser):
         help="Quantization algorithm to use: sym/asym (default: sym)",
         default="sym",
     )
-    group.add_argument(
-        "--group_size", type=int, help="Group size: Int (default: 32)", default=32
-    )
+    group.add_argument("--group_size", type=int, help="Group size: Int (default: 32)", default=32)
     group.add_argument(
         "--scale_dtype",
         type=str,
@@ -245,7 +242,7 @@ def add_run_args(parser: argparse.ArgumentParser):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model givan a dataset")
+    parser = argparse.ArgumentParser(description="Evaluate perplexity for a model given a dataset")
     parser.add_argument('--model_name', type=str, default="~/Llama-2-7b-chat-hf")
     parser.add_argument('--dataset_name', type=str, default="~/pg19-data-test")
     parser.add_argument('--ctx_size', type=int, default=256)
@@ -253,7 +250,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_threads', type=int)
     parser.add_argument('--n_pred_per_sample', type=int)
     parser.add_argument('--n_sampels', type=int)
-    parser.add_argument('--data_text_concat', action="store_true")
+    parser.add_argument('--data_text_concat', action="store_true", default=None)
     parser.add_argument('--fig_path', type=str, default="out/ppl.png")
     add_quant_args(parser)
     add_run_args(parser)

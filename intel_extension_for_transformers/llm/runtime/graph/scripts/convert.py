@@ -19,14 +19,18 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
+model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder", "whisper": "whisper"}
 
 
-def convert_model(model, outfile, outtype):
+def convert_model(model, outfile, outtype, whisper_repo_path=None):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
-    path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
+    gpt_model = 'gptq' in str(model).lower()
+    if gpt_model:
+        path = Path(Path(__file__).parent.absolute(), "convert_gptq_{}.py".format(model_type))
+    else:
+        path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
     cmd = []
     cmd.extend(["python", path])
     cmd.extend(["--outfile", outfile])
@@ -36,10 +40,9 @@ def convert_model(model, outfile, outtype):
     print("cmd:", cmd)
     subprocess.run(cmd)
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(
-        description="Convert a PyTorch model to a NE compatible file"
-    )
+    parser = argparse.ArgumentParser(description="Convert a PyTorch model to a NE compatible file")
     parser.add_argument(
         "--outtype",
         choices=["f32", "f16"],
@@ -47,9 +50,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="f32",
     )
     parser.add_argument("--outfile", type=Path, required=True, help="path to write to")
-    parser.add_argument(
-        "model", type=Path, help="directory containing model file or model id"
-    )
+    parser.add_argument("--whisper_repo_path", type=Path, required=False, help="path to whisper repo")
+    parser.add_argument("model", type=Path, help="directory containing model file or model id")
     args = parser.parse_args(args_in)
 
     if args.model.exists():
@@ -57,7 +59,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    convert_model(dir_model, args.outfile, args.outtype)
+    convert_model(dir_model, args.outfile, args.outtype, args.whisper_repo_path)
 
 
 if __name__ == "__main__":

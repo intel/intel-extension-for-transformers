@@ -27,9 +27,10 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -42,16 +43,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -64,7 +66,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fname_out = args.outfile.as_posix()
 
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
 
     print("Loading model: ", dir_model)
@@ -73,8 +75,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     hparams = model.config.to_dict()
     list_vars = model.state_dict()
     fout = open(fname_out, "wb")
-    
-    fout.write(b"ggjt"[::-1])#0x67676d6c)) # magic: ggml in hex
+
+    fout.write(b"ggjt"[::-1])  #0x67676d6c)) # magic: ggml in hex
     values = [
         1,  # file version
         hparams["vocab_size"],
@@ -86,7 +88,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         hparams["rotary_dim"],
         ftype
     ]
-    fout.write(struct.pack("i" * len(values), *values))                                                                                                          
+    fout.write(struct.pack("i" * len(values), *values))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("f", 0))
@@ -97,41 +99,43 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
+    fout.write(struct.pack("f", 1.0))  # rope_factor
+
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
     fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
-    
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
+
     encoder = tokenizer.vocab
     # Add added_tokens (special tokens) to the encoder
     encoder_added = tokenizer.get_added_vocab()
 
     for i, key in enumerate(sorted(encoder, key=encoder.get)):
-    # for key in encoder:
+        # for key in encoder:
         text = bytearray([byte_decoder[c] for c in key])
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         if key not in encoder_added:
-            fout.write(struct.pack("f",0.0 - i))
+            fout.write(struct.pack("f", 0.0 - i))
         else:
             fout.write(struct.pack("f", -10000))
 
-    
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
         print("Processing variable: " + name + " with shape: ", data.shape)
-    
+
         # we don't need these
         if name.endswith("attn.masked_bias") or name.endswith(".attn.bias"):
             print("  Skipping variable: " + name)
             continue
-    
+
         n_dims = len(data.shape)
-    
+
         # ftype == 0 -> float32, ftype == 1 -> float16
         ftype_cur = 0
         if ftype != 0:
@@ -148,21 +152,22 @@ def main(args_in: Optional[List[str]] = None) -> None:
                 print("  Converting to float32")
                 data = data.astype(np.float32)
                 ftype_cur = 0
-    
+
         str = name.encode('utf-8')
         shape = data.shape
         fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
         fout.write(struct.pack("i" * n_dims, *shape[::-1]))
         fout.write(str)
         fout.seek((fout.tell() + 31) & -32)
-    
+
         # data
         data.tofile(fout)
-    
+
     fout.close()
 
     print("Done. Output file: " + fname_out)
     print("")
+
 
 if __name__ == '__main__':
     main()

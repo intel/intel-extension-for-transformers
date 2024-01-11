@@ -14,37 +14,61 @@
 #pragma once
 #include <ATen/core/TensorBody.h>
 #include <torch/torch.h>
-#include "jblas/jit_blas_weight_compression.h"
+#include "jblas/jit_blas_storage.h"
+#include "../include/dispatcher_utils.hpp"
 #include <string.h>
 #include <assert.h>
 #include <iostream>
+namespace woq {
 
-enum QBITS_TASK {
-  QBITS_QUANTIZE,
-  QBITS_DEQUANTIZE,
-  QBITS_LINEAR,
+enum WOQ_TASK {
+  WOQ_QUANTIZE,
+  WOQ_DEQUANTIZE,
+  WOQ_LINEAR,
 };
 
-enum QBITS_DT {
-  QBITS_FP32,
-  QBITS_BF16,
-  QBITS_FP16,
-};
-
-struct qbits_config_param {
+struct woq_param_base {
   std::string compute_type;  // determin gemm core template
-  std::string weight_type;   // determin compress-weight template
-  QBITS_DT src_dt;           // determin activation related template
-  QBITS_DT dst_dt;           // determin write_back template
+  std::string weight_type;   // determin compressed-weight template
+  std::string scale_type;    // determin scale param
+  bool asym;
+  int blocksize;
 };
 
-struct qbits_runtime_ctx {
+struct woq_config_param : public woq_param_base {
+  dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
+  dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
+};
+
+struct woq_packq_param : public woq_param_base {
+  bool enable_act_shuffle;
+};
+
+struct woq_packq_ctx {
+  torch::Tensor *qweight, *scale, *zp, *g_idx, *output;
+  int n, k;
+};
+
+struct woq_runtime_ctx {
   torch::Tensor *activation, *weight, *bias, *output;
   bool transpose;
-  int64_t blocksize, m, n, k, lda, ldo;
+  int m, n, k, lda, ldo;
   float alpha, beta;
-  jblas::prologue::weight_comp::gemm_kblcok::WeightBase* deseries_wei;
+  jblas::storage::gemm::IWeightBase* deseries_wei;
 };
 
-void task_dispatcher(qbits_config_param* p, qbits_runtime_ctx* ctx, QBITS_TASK task);
-void set_jblas_workspace(torch::Tensor* workspace);
+static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{{"int8", JBLAS_DTYPE::S8},
+                                                          {"int4_clip", JBLAS_DTYPE::S4_CLIP},
+                                                          {"int4_fullrange", JBLAS_DTYPE::S4_FULLRANGE},
+                                                          {"nf4", JBLAS_DTYPE::F4_NF4},
+                                                          {"fp4_e2m1_bnb", JBLAS_DTYPE::F4_BNB},
+                                                          {"fp4_e2m1", JBLAS_DTYPE::F4_E2M1},
+                                                          {"fp8_e4m3", JBLAS_DTYPE::F8_E4M3},
+                                                          {"fp8_e5m2", JBLAS_DTYPE::F8_E5M2}};
+static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"fp32", JBLAS_DTYPE::F32},
+                                                            {"fp8_e8m0", JBLAS_DTYPE::F8_E8M0}};
+
+void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
+void jblas_packq(woq_packq_param* p, woq_packq_ctx* ctx);
+void set_woq_workspace(torch::Tensor* workspace);
+}  // namespace woq

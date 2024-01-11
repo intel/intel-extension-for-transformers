@@ -71,7 +71,7 @@ class CMakeBuild(build_ext):
 
     @staticmethod
     def _is_target_file(file_name: str) -> bool:
-        if file_name.endswith(".dll") or file_name.endswith(".exe"):
+        if file_name.endswith(".dll") or file_name.endswith(".exe") or file_name.endswith(".pyd"):
             return True
         if file_name.endswith(".so") or ".so." in file_name:
             return True
@@ -266,7 +266,7 @@ if __name__ == '__main__':
         # otherwise CMakeExtension's source files will be included in final installation
         include_package_data=False,
         package_data={
-            '': ['*.yaml'],
+            '': ["*.yaml", "*.mat"],
         },
         cmdclass=cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,

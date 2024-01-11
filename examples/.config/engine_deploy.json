@@ -641,7 +641,7 @@
     "prepare": {
       "cmd": "python optimize_llm.py",
       "params": {
-         "model": "/tf_dataset2/models/nlp_toolkit/dolly-v2-3b",
+         "model": "/tf_dataset2/models/pytorch/dolly_v2_3b",
          "dtype": "fp32/bf16/int8",
          "output_model": "ir",
          "pt_file": "pt"
@@ -651,7 +651,7 @@
       "cmd": "python run_llm.py",
       "params": {
         "max-new-tokens": "32",
-        "model": "/tf_dataset2/models/nlp_toolkit/dolly-v2-3b",
+        "model": "/tf_dataset2/models/pytorch/dolly_v2_3b",
         "model_path": "ir"
       }
     },

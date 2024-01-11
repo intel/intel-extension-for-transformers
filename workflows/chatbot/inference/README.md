@@ -107,6 +107,18 @@ python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
 
 Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox, mpt, llama. You can use the parameter `use_hpu_graphs` to speed up the inference.
 
+you can use '--peft_model_path' to apply you peft finetuned output model during generation.
+
+```bash
+python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
+        --base_model_path "meta-llama/Llama-2-70b-chat-hf" \
+        --peft_model_path <peft_model_output_folder>
+        --habana \
+        --use_hpu_graphs \
+        --use_kv_cache \
+        --task chat \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+```
 
 # Additional Notes
 

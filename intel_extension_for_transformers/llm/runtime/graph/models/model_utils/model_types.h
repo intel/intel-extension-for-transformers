@@ -77,7 +77,9 @@ enum model_archs {
   MODEL_BLOOM,
   MODEL_BAICHUAN,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM
+  MODEL_CHATGLM,
+  MODEL_QWEN,
+  MODEL_WHISPER
 };
 
 static const size_t MB = 1024 * 1024;
@@ -124,6 +126,9 @@ struct model_hparams {
   int32_t par_res = 1;                // for neox 1 = true, 0 = false
   uint32_t word_embed_proj_dim = 0;   // for opt
   bool do_layer_norm_before = false;  // for opt
+  float rms_norm_eps = 1e-6f;         // rms norm epsilon
+  float freq_base = 10000.0f;         // rope theta
+  float freq_scale = 1.0f;            // rope scale factor
 
   // ChatGLM-2
   int32_t multi_query_group_num = 0;
@@ -298,7 +303,7 @@ struct model_context {
   std::vector<float> logits;
   bool logits_all = false;
 
-  // input embedding (1-dimensional array: [n_embd])
+  // input embedding (1-dimensional array: [n_embd * batch_size])
   std::vector<float> embedding;
 
   // memory buffers used to evaluate the model
@@ -447,7 +452,8 @@ class model_name_to_arch {
       {"mpt", MODEL_MPT},         {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
       {"dolly", MODEL_GPTNEOX},   {"polyglot", MODEL_GPTNEOX},  {"starcoder", MODEL_STARCODER},
       {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},       {"chatglm2", MODEL_CHATGLM2},
-      {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}, {"mistral", MODEL_LLAMA}};
+      {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}, {"mistral", MODEL_LLAMA},
+      {"qwen", MODEL_QWEN},       {"whisper", MODEL_WHISPER}};
 };
 
 #ifdef __cplusplus

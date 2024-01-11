@@ -18,9 +18,12 @@ This example demonstrates how to finetune the pretrained large language model (L
 Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
+pip install transformers==4.34.1
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
 python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
+>**Note**: Suggest using transformers no higher than 4.34.1
+
 ### Docker 
 Pick either one of below options to setup docker environment.
 #### Option 1 : Build Docker image from scratch
@@ -94,11 +97,20 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
 
-3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
+3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/ultrachat_200k](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k).
 
 4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.
 
 5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+
+### Dataset related arguments
+- **dataset_name**: The name of the dataset to use (via the datasets library).
+- **dataset_config_name**: The configuration name of the dataset to use (via the datasets library).
+- **train_file**: The input training data file (a text file).
+- **validation_file**: An optional input evaluation data file to evaluate the perplexity on (a text file).
+- **max_seq_length**: The maximum total input sequence length after tokenization. Sequences longer than this will be truncated.
+- **validation_split_percentage**: The percentage of the train set used as validation set in case there's no validation split.
+- **dataset_concatenation**: Whether to concatenate the sentence for more efficient training.
 
 # Finetune
 
@@ -178,7 +190,8 @@ python finetune_clm.py \
         --output_dir ./codellama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer True \
-        --no_cuda
+        --no_cuda \
+        --task code-generation
 ```
 
 **For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
@@ -280,6 +293,7 @@ python finetune_clm.py \
         --peft lora \
         --use_fast_tokenizer True \
         --no_cuda \
+        --task code-generation
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
@@ -345,9 +359,9 @@ source $torch_ccl_path/env/setvars.sh
 
 The following command enables training with a total of 16 processes on 4 Xeons (node0/1/2/3, 2 sockets each node. taking node0 as the master node), ppn (processes per node) is set to 4, with two processes running per one socket. The variables OMP_NUM_THREADS/CCL_WORKER_COUNT can be tuned for optimal performance.
 
-In node0, you need to create a configuration file which contains the IP addresses of each node (for example hostfile) and pass that configuration file path as an argument.
+In node0, you need to create a configuration file which contains the IP addresses of each node (for example nodefile) and pass that configuration file path as an argument.
 ``` bash
- cat hostfile
+ cat nodefile
  xxx.xxx.xxx.xxx #node0 ip
  xxx.xxx.xxx.xxx #node1 ip
  xxx.xxx.xxx.xxx #node2 ip
@@ -402,12 +416,39 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --dataset_concatenation \
     --do_train \
     --trust_remote_code True \
+    --use_fast_tokenizer True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
 ```
 you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft
+
+## 3. Multi-node Fine-tuning in AWS m7i SPR instances
+
+### Build Docker image with customized SSH server port from scratch
+AWS instances have a SSH server on by default, so we need to start SSH Server with different port inside the docker instance.  
+Users could pick their CUSTOM_PORT but we should not use 22 as the SSH Server port inside the docker instance.  
+Please refer to this section : [How to build docker images for NeuralChat FineTuning](../../../docker/finetuning/README.md#21-build-docker-image) and add `--build-arg SSHD_PORT=<CUSTOM_PORT>` to build docker image from scratch.   
+
+ex : using 2345 as the CUSTOM_PORT  
+```bash
+docker build --build-arg UBUNTU_VER=22.04 --build-arg SSHD_PORT=2345 -f intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} . --target cpu
+```  
+
+### Add one AWS inbound rule for distributed training
+Allow all network traffic inside the cluster, so that distributed training runs unencumbered.   
+AWS provides a safe and convenient way to do this with security groups. We just need to create a security group that allows all traffic from instances configured with that same security group and make sure to attach it to all instances in the cluster.  
+Here's how my setup looks.  
+<img src="../../../assets/pictures/AWS_inbound_rule.png" alt="AWS_inbound" >  
+Users could also refer to [a huggingface blog](https://huggingface.co/blog/intel-sapphire-rapids) for more details.
+
+### Same Instructions as Multi-node Fine-tuning in Xeon SPR session
+Please follow previous Multi-node Fine-tuning in Xeon SPR session with the docker image and AWS inbound rule changes.  
+For the IPs in nodefile, please **use private IP instead of public IP**.  
+<img src="../../../assets/pictures/AWS_private_ip.png" alt="AWS_private">  
+
+
 
 ## 1. Single Card Fine-tuning in Habana DL1
 
@@ -543,8 +584,55 @@ python gaudi_spawn.py \
         --use_lazy_mode \
 ```
 
+Multi-card finetuning of Llama2-70B with DeepSpeed ZeRO-3 optimization and LoRA in 8 Gaudi2 card
+The following command requires Habana DeepSpeed 1.13.0 or later.
+
+```bash
+PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 python gaudi_spawn.py \
+        --world_size 8 --use_deepspeed finetune_clm.py \
+        --model_name_or_path "meta-llama/Llama-2-70b-chat-hf" \
+        --bf16 True \
+        --dataset_name tatsu-lab/alpaca \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./llama2_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --device "hpu" \
+        --use_habana \
+        --use_lazy_mode \
+        --deepspeed llama2_ds_zero3_config.json \
+
+```
+
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
+
+
+# Evaluation Metrics
+
+- **train loss:** `--do_train` is setted for training, `train loss` will be logged during training.
+
+- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` arguement (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
+
+- **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval ture` and `--lm_eval_tasks truthfulqa_mc`
+
+- **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
+
+- **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
+

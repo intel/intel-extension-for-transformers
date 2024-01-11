@@ -45,9 +45,10 @@ Install required dependencies for this example
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion
 
 pip install -r requirements.txt
-pip install transformers==4.28.1
+pip install transformers==4.34.1
 pip install diffusers==0.12.1
 ```
+>**Note**: Please use transformers no higher than 4.34.1
 
 ## Environment Variables (Optional)
 ```shell

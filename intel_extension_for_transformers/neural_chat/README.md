@@ -108,7 +108,7 @@ NeuralChat supports fine-tuning the pretrained large language model (LLM) for te
 
 ```shell
 # Command line
-neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+neuralchat finetune --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/finetuning/config/finetuning.yaml
 ```
 
 ```python
@@ -124,7 +124,7 @@ NeuralChat provides typical model optimization technologies, like `Automatic Mix
 
 ```shell
 # Command line
-neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.yaml
+neuralchat optimize --base_model "Intel/neural-chat-7b-v3-1" --config pipeline/optimization/config/optimization.yaml
 ```
 
 ```python
@@ -136,13 +136,45 @@ chatbot = build_chatbot(pipeline_cfg)
 
 ## Validated Model List
 The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
-|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
-|------------------------------------|---|---|--- | --- |
-|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
-|LLaMA series| ✅| ✅|✅| ✅
-|LLaMA2 series| ✅| ✅|✅| ✅
-|MPT series| ✅| ✅|✅| ✅
-|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+|Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
+|------------------------------------|:---:|:---:|:---:|:---:|
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
+|Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
+|LLaMA series| ✅| ✅|✅| ✅    |
+|LLaMA2 series| ✅| ✅|✅| ✅    |
+|MPT series| ✅| ✅|✅| ✅    |
+|Mistral| ✅| ✅|✅| ✅    |
+|Mixtral-8x7b-v0.1| ✅| ✅|✅| ✅    |
+|ChatGLM series| ✅| ✅|✅| ✅    |
+|Qwen series| ✅| ✅|✅| ✅    |
+|StarCoder series|   |   |   | ✅ |
+|CodeLLaMA series|   |   |   | ✅ |
+|CodeGen series|   |   |   | ✅ |
+
+
+## Restful API
+
+### OpenAI-Compatible RESTful APIs & SDK
+NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use NeuralChat as a local drop-in replacement for OpenAI APIs. The NeuralChat server is compatible with both [openai-python library](https://github.com/openai/openai-python) and cURL commands. See [neuralchat_api.md](./docs/neuralchat_api.md).
+
+The following OpenAI APIs are supported:
+
+- Chat Completions. (Reference: https://platform.openai.com/docs/api-reference/chat)
+- Completions. (Reference: https://platform.openai.com/docs/api-reference/completions)
+
+### Additional useful RESTful APIs
+In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications.
+NeuralChat supports the following RESTful APIs:
+- Finetuning
+- Audio Chat
+- Document Retrieval
+- Code Generation
+- Text to Image
+- Image to Image
+- Face animation
+
+For more details, refer to this [README](./server/README.md)
+
 
 ## Selected Notebooks 
 

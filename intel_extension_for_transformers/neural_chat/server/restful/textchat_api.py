@@ -58,8 +58,12 @@ class TextChatAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
 
-    def set_chatbot(self, chatbot) -> None:
+    def set_chatbot(self, chatbot, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80) -> None:
         self.chatbot = chatbot
+        self.use_deepspeed = use_deepspeed
+        self.world_size = world_size
+        self.host = host
+        self.port = port
 
     def get_chatbot(self):
         if self.chatbot is None:
@@ -85,6 +89,10 @@ class TextChatAPIRouter(APIRouter):
                 if attr == "stream":
                     continue
                 setattr(config, attr, value)
+            if chatbot.device == "hpu":
+                config.device = "hpu"
+                config.use_hpu_graphs = True
+                config.task = "chat"
             buffered_texts = ""
             if request.stream:
                 generator, link = chatbot.predict_stream(query=request.prompt, config=config)

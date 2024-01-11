@@ -49,9 +49,10 @@
 //   - n_input    num of model_input
 //   - n_threads: number of threads to use
 //
-static bool llama_model_eval_internal(model_context& lctx, const model_input* inputs, const int n_input,
+static bool llama_model_eval_internal(model_context* ctx, const model_input* inputs, const int n_input,
                                       const int n_threads) {
-  // TODO static batching for now
+  model_context& lctx = *ctx;
+  // static batching for now
   const int N = inputs->n_tokens;
   const int n_past = inputs->n_past;
   const int n_total = inputs->n_total;
@@ -150,7 +151,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 #ifdef NE_TP_MODEL
   if (enable_tp) {
     // need to broadcast the ids
-    broadcast(p_ctx, (float*)embd->data, N * ne_element_size(embd));
+    broadcast(p_ctx, reinterpret_cast<float*>(embd->data), N * ne_element_size(embd));
   }
 #endif
 
@@ -164,7 +165,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 
     // norm
     {
-      cur = ne_rms_norm(ctx0, inpL);
+      cur = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
       // cur = cur*attention_norm(broadcasted)
       cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
@@ -186,15 +187,16 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
       Kcur = ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size, n_head_kv, N);
       Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
-    Qcur = ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0);
+    Qcur =
+        ne_rope_inplace(ctx0, Qcur, std::max(n_cached - N, n_past), n_rot, 0, 0, hparams.freq_base, hparams.freq_scale);
     ne_set_name(Qcur, "Qcur");
     Kcur = ne_rope_inplace(  // n_ctx exceeds but it will be shift-roped back with cached K
-        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0);
+        ctx0, Kcur, (is_ring_full ? n_ctx : n_past), n_rot, 0, 0, hparams.freq_base, hparams.freq_scale);
     ne_set_name(Kcur, "Kcur");
     Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, head_size * n_head_kv, N));
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    const float attn_scale = 1.0f / sqrtf(float(head_size));
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_size));
     if (!run_mha_reordered) {
       // store key and value to memory
       {
@@ -220,7 +222,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
-        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base,
+                                  hparams.freq_scale);
       }
       K = ne_permute(ctx0, K, 0, 2, 1, 3);
       ne_set_name(K, "K");
@@ -300,7 +303,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
         // Currently we only cache cossin for N == 1 in model-wide; It may be worthwhile to cache cossin for other N in
         // a single eval execution
         if (N == 1) cossin_cache = kv_self.cossin;
-        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache);
+        K = ne_rope_shift_inplace(ctx0, K, -N, n_rot, 0, 0, n_keep, cossin_cache, hparams.freq_base,
+                                  hparams.freq_scale);
       }
       ne_set_name(K, "K");
 
@@ -336,7 +340,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
     {
       // norm
       {
-        cur = ne_rms_norm(ctx0, inpFF);
+        cur = ne_rms_norm(ctx0, inpFF, hparams.rms_norm_eps);
 
         // cur = cur*ffn_norm(broadcasted)
         cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
@@ -352,13 +356,13 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
         cur = ne_silu(ctx0, cur);
         cur = ne_mul(ctx0, cur, tmp);
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
-#ifdef NE_TP_MODEL
-        // ffn2 and ffn0 use split row, ffn1 use split column
-        if (enable_tp) {
-          cur = ne_all_reduce(ctx0, cur);
-        }
-#endif
       }
+#ifdef NE_TP_MODEL
+      // ffn2 and ffn0 use split row, ffn1 use split column
+      if (enable_tp) {
+        cur = ne_all_reduce(ctx0, cur);
+      }
+#endif
     }
 
     cur = ne_add(ctx0, cur, inpFF);
@@ -373,7 +377,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL, hparams.rms_norm_eps);
 
     // inpL = inpL*norm(broadcasted)
     inpL = ne_mul(ctx0, inpL, model.others[1]);
@@ -409,11 +413,12 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)), sizeof(float) * n_vocab * N);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), reinterpret_cast<float*>(ne_get_data(inpL)) + (n_vocab * (N - 1)),
+             sizeof(float) * n_vocab);
     }
   }
 
@@ -422,7 +427,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
     auto& embedding_out = lctx.embedding;
 
     embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+    memcpy(embedding_out.data(), reinterpret_cast<float*>(ne_get_data(embeddings)) + (n_embd * (N - 1)),
+           sizeof(float) * n_embd);
   }
 
   if (mem_per_token == 0) {
@@ -446,13 +452,13 @@ static bool llama_model_eval_internal(model_context& lctx, const model_input* in
 }
 
 int model_eval(struct model_context* ctx, const model_input* inputs, const int n_input, int n_threads) {
-  if (!llama_model_eval_internal(*ctx, inputs, n_input, n_threads)) {
+  if (!llama_model_eval_internal(ctx, inputs, n_input, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
 
   // get a more accurate load time, upon first eval
-  // TODO: fix this
+
   if (!ctx->has_evaluated_once) {
     ctx->t_load_us = ne_time_us() - ctx->t_start_us;
     ctx->has_evaluated_once = true;

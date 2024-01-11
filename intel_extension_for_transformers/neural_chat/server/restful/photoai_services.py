@@ -33,7 +33,9 @@ from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
-IMAGE_ROOT_PATH = "/home/nfs_images"
+def get_image_root_path():
+    IMAGE_ROOT_PATH = os.getenv("IMAGE_ROOT_PATH")
+    return IMAGE_ROOT_PATH
 
 
 def check_user_ip(user_ip: str) -> bool:
@@ -280,6 +282,7 @@ def process_single_image(img_id, img_path, user_id):
         logger.info(f'[background - single] Can not generate caption for image.')
 
     # process faces for image
+    IMAGE_ROOT_PATH = get_image_root_path()
     db_path = IMAGE_ROOT_PATH+"/user"+user_id
     try:
         process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
@@ -358,7 +361,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             img_face_list = mysql_db.fetch_all(sql=find_face_sql)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while selecting info from image_face: {e}")
+            raise Exception(f"Exception occurred while selecting info from image_face: {e}")
         logger.info(f"[background - face] reference image and faces: {img_face_list}")
         # wrong ref image found
         if img_face_list == ():
@@ -385,7 +388,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                mysql_db.insert(sql=insert_img_face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting info into image_face: {e}")
+            raise Exception(f"Exception occurred while inserting info into image_face: {e}")
         # current face matched and saved into db, delete from face_xywh_list
         logger.info(f'[background - face] image_face data inserted: {insert_img_face_sql}')
         if image_xywh in face_xywh_list:
@@ -408,7 +411,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 mysql_db.insert(sql=face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting new face into face_info: {e}")
+            raise Exception(f"Exception occurred while inserting new face into face_info: {e}")
         logger.info(f"[background - face] face {tag} inserted into db.")
         face_id = mysql_db.fetch_one(f"SELECT * FROM face_info WHERE face_tag='{tag}';")['face_id']
         logger.info(f"[background - face] new face id is: {face_id}")
@@ -419,7 +422,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 mysql_db.insert(sql=img_face_sql, params=None)
         except Exception as e:
             logger.error("[background - face] "+str(e))
-            raise Exception(f"Exception ocurred while inserting new face into image_face: {e}")
+            raise Exception(f"Exception occurred while inserting new face into image_face: {e}")
         logger.info(f"[background - face] img_face {img_face_sql} inserted into db.")
     mysql_db._close()
     logger.info(f"[background - face] Image {image_id} face process finished.")
@@ -716,16 +719,22 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
 
 
 def delete_user_infos(user_id: str):
-    logger.info(f'[delete user] start query from ner results')
+    logger.info(f'[delete user] start delete user info')
 
     try:
         mysql_db = MysqlDb()
         with mysql_db.transaction():
-            # delete image_face and face_info
-            logger.info(f'[delete user] delete image_face and face_info of user {user_id}.')
+            # delete image_face
+            logger.info(f'[delete user] delete image_face of user {user_id}.')
             mysql_db.delete(
-                sql=f"""DELETE image_face, face_info FROM image_face 
-                INNER JOIN face_info ON image_face.face_id=face_info.face_id WHERE user_id='{user_id}'""", 
+                sql=f"""DELETE FROM image_face WHERE user_id='{user_id}'""", 
+                params=None)
+            
+            # delete face_info
+            logger.info(f'[delete user] delete face_info of user {user_id}.')
+            mysql_db.delete(
+                sql=f"""DELETE face_info FROM face_info LEFT JOIN image_face 
+                ON face_info.face_id = image_face.face_id WHERE image_face.face_id IS NULL""", 
                 params=None)
 
             # delete image_info
@@ -743,6 +752,7 @@ def delete_user_infos(user_id: str):
     # delete local images
     try:
         logger.info(f'[delete user] delete local images of user {user_id}.')
+        IMAGE_ROOT_PATH = get_image_root_path()
         folder_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
         if not os.path.exists(folder_path):
             logger.info(f'[delete user] no image folder for user {user_id}')
@@ -761,7 +771,8 @@ def delete_user_infos(user_id: str):
 
 
 def forward_req_to_sd_inference_runner(inputs):
-    resp = requests.post("http://{}:{}".format("198.175.88.27", "80"),
+    image2image_ip = os.environ.get("IMAGE2IMAGE_IP")
+    resp = requests.post("http://{}:{}".format(image2image_ip, "80"),
                          data=json.dumps(inputs), timeout=200)
     try:
         img_str = json.loads(resp.text)["img_str"]

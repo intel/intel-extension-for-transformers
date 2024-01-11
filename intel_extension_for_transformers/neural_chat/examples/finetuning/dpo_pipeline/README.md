@@ -7,7 +7,9 @@ For Better aligning human preferences, we apply Direct Preference Optimization (
 
 ```shell
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>**Note**: Suggest using transformers no higher than 4.34.1
 
 ## 2. Prepare reference dataset
 
@@ -16,18 +18,52 @@ We select 12k examples from [Orca](https://arxiv.org/abs/2306.02707) style datas
 
 ## 3. Training
 
-```
-python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
-```
 
 ### Training on Habana
 
 Follow install guidance in [optimum-habana](https://github.com/huggingface/optimum-habana)
 
 ```
-python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True --use_habana --use_lazy_mode --pad_max true
+python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True --use_habana --use_lazy_mode --pad_max true --report_to none --torch_dtype bfloat16 --use_hpu_graphs_for_training
+```
+training in 8 habana cards
+```
+python ../instruction/gaudi_spawn.py --world_size 8 --use_mpi dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-chat-hf" --output_dir "llama" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --num_train_epochs 3  --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16  --use_auth_token True --use_habana --use_lazy_mode --pad_max true --report_to none --torch_dtype bfloat16 --use_hpu_graphs_for_training
 ```
 
+
+### Training on CPU (SPR)
+
+
+```
+python dpo_clm.py \
+        --model_name_or_path "./mosaicml/mpt-7b" \
+        --output_dir "./finetuned_model_lora_plus_dpo" \
+        --per_device_train_batch_size 2 \
+        --gradient_accumulation_steps 2 \
+        --learning_rate 5e-4 \
+        --max_steps 1000 \
+        --save_steps 10 \
+        --logging_steps 10 \
+        --lora_alpha 16 \
+        --lora_rank 16 \
+        --lora_dropout 0.05 \
+        --dataset_name Intel/orca_dpo_pairs \
+        --bf16 \
+        --max_length 1024 \
+        --max_prompt_length 512 \
+        --lr_scheduler_type "cosine" \
+        --warmup_steps 100 \
+        --use_cpu true \
+        --gradient_checkpointing true \
+        --lora_all_linear false \
+        --lora_target_modules 'k_proj' 'q_proj' 'v_proj'
+```
+
+### Training on GPU
+```
+python dpo_clm.py --model_name_or_path "mosaicml/mpt-7b" --output_dir "mpt_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
+```
 
 
 ## 4. Evaluation

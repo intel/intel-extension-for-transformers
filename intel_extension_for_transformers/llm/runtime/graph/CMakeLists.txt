@@ -60,10 +60,8 @@ option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"            
 option(NE_FMA                    "neural_engine: enable FMA"                                     ON)
 option(NE_AMX                    "neural_engine: enable AMX"                                     OFF)
 
-# in MSVC F16C is implied with AVX2/AVX512
-if (NOT MSVC)
-    option(NE_F16C               "neural_engine: enable F16C"                                    ON)
-endif()
+
+option(NE_F16C                   "neural_engine: enable F16C"                                    ON)
 
 # 3rd party libs
 option(NE_ONEDNN                 "neural_engine: use oneDNN"                                     ON)
@@ -91,7 +89,14 @@ option(NE_GELU_VEC               "neural_engine: enable vec in gelu"            
 if (NE_GELU_VEC)
     add_compile_definitions(NE_GELU_USE_VEC)
 endif()
-option(NE_PYTHON_API              "neural_engine: use python api"                                  OFF)
+option(NE_PYTHON_API             "neural_engine: use python api"                                 OFF)
+option(NE_SIMD_VEC_DOT_F16       "neural_engine: enable vec_dot_fp16 SIMD optimization"          ON)
+
+option(BUILD_SHARED_LIBS        "If build as shared libs"                                        ON)
+
+if (NE_SIMD_VEC_DOT_F16)
+    add_compile_definitions(NE_SIMD_VEC_DOT_F16)
+endif()
 
 if(NE_BUILD_TESTS)
     enable_testing()
@@ -99,7 +104,6 @@ endif()
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX)
-
     if (BUILD_SHARED_LIBS)
         set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()

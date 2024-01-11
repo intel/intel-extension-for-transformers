@@ -24,9 +24,9 @@ from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQ
 def cmpData(numa, numb):
     totalErr = ((numa - numb)**2).sum()
     totalNum = (numa**2).sum()
-    diff2 = np.sqrt(totalErr/totalNum)
+    diff2 = np.sqrt(totalErr / totalNum)
 
-    cos = np.dot(numa, numb)/(np.linalg.norm(numa)*np.linalg.norm(numb))
+    cos = np.dot(numa, numb) / (np.linalg.norm(numa) * np.linalg.norm(numb))
     return {"diff2": diff2, "cos": cos}
 
 
@@ -36,11 +36,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     woq_configs = {
-        "fp32": WeightOnlyQuantConfig(use_cache=True, not_quant=True),
+        "fp32": WeightOnlyQuantConfig(use_cache=True, use_quant=False),
         "ggml_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True, use_ggml=True),
         "jblas_int4": WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_cache=True),
         "jblas_int8": WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8", use_cache=True),
-        }
+    }
     prompt = "What is the meaning of life?"
 
     model_name = args.model_name
@@ -48,12 +48,14 @@ if __name__ == "__main__":
     inputs = tokenizer(prompt, return_tensors="pt")
 
     pt_model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-    pt_model.eval() 
-    pt_logits = pt_model(input_ids=inputs.input_ids).logits[:,-1]
+    pt_model.eval()
+    pt_logits = pt_model(input_ids=inputs.input_ids).logits[:, -1]
 
     for config_type in woq_configs:
-        itrex_model = AutoModel.from_pretrained(model_name, quantization_config=woq_configs[config_type], 
-                                                use_llm_runtime=True, trust_remote_code=True)
+        itrex_model = AutoModel.from_pretrained(model_name,
+                                                quantization_config=woq_configs[config_type],
+                                                use_llm_runtime=True,
+                                                trust_remote_code=True)
         itrex_logits = itrex_model(inputs.input_ids)
 
         print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))

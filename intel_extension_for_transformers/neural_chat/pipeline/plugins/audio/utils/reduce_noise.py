@@ -16,13 +16,19 @@
 # limitations under the License.
 
 import torch
+# pylint: disable=E1102
 from torch.nn.functional import conv1d, conv2d
 from typing import Union, Optional
-import torch
 from torch.types import Number
 from scipy.io import wavfile
 from pydub import AudioSegment
 import numpy as np
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 @torch.no_grad()
 def amp_to_db(x: torch.Tensor, eps=torch.finfo(torch.float64).eps, top_db=40) -> torch.Tensor:
@@ -222,7 +228,7 @@ class TorchGate(torch.nn.Module):
             sig_mask (torch.Tensor): Binary mask of the same shape as X_db, where values greater than the threshold
             are set to 1, and the rest are set to 0.
         """
-        if xn is not None:
+        if xn is not None: # pragma: no cover
             XN = torch.stft(
                 xn,
                 n_fft=self.n_fft,
@@ -348,19 +354,19 @@ class TorchGate(torch.nn.Module):
         return y.to(dtype=x.dtype)
 
 class NoiseReducer:
-    def __init__(self):
-        self.sr = 16000
-        self.tg = TorchGate(self.sr)
+    def __init__(self, sr=16000, nonstationary=False):
+        self.sr = sr
+        self.tg = TorchGate(sr=self.sr, nonstationary=nonstationary)
 
     def reduce_audio_amplify(self, output_audio_path, y):
         original_sound = AudioSegment.from_file(output_audio_path, format="wav")
-        print("[1/2] reduce noise")
+        logging.info("[1/2] reduce noise")
         reduced_noise = self.tg(torch.tensor(y, dtype=torch.float32).unsqueeze(0))
         wavfile.write(f"{output_audio_path}_rn.wav", self.sr, reduced_noise.numpy()[0])
         original_db = original_sound.dBFS
         rn_sound = AudioSegment.from_file(f"{output_audio_path}_rn.wav", format="wav")
         rn_db = rn_sound.dBFS
-        print(f"[2/2] amplifying {original_db - rn_db} dB")
+        logging.info("[2/2] amplifying %s dB", original_db - rn_db)
         rn_am_sound = rn_sound.apply_gain(original_db - rn_db)
         rn_am_sound.export(f"{output_audio_path}_rn_ap.wav")
         return f"{output_audio_path}_rn_ap.wav"

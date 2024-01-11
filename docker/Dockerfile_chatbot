@@ -21,9 +21,9 @@
 #
 # ============================================================================
 # How to build: 
-#   docker build ./ -f Dockerfile_chatbot -t chatbot:latest
+#   docker build ./ -f Dockerfile_chatbot -t chatbot_finetune:latest
 # If you need to use proxy, please use the following command
-#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile_chatbot -t chatbot:latest
+#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile_chatbot -t chatbot_finetune:latest
 
 ## SPR environment
 ARG UBUNTU_VER=22.04
@@ -32,118 +32,135 @@ FROM ubuntu:${UBUNTU_VER} as cpu
 ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
 
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    python3-pip && \
-    apt-get clean autoclean && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
-RUN apt-get update && apt-get install -y build-essential autoconf ffmpeg lsof \
-    wget numactl git openssh-server ca-certificates cmake vim npm curl && \
-    apt-get clean autoclean && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt update \
+    && apt install -y build-essential wget numactl git openssh-server libgl1-mesa-glx libjemalloc2 google-perftools \
+    && apt install -y python${PYTHON_VERSION} python3-pip \
+    && pip install --upgrade pip setuptools wheel \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Download ITREX code
-#RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
 RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
-COPY . /intel-extension-for-transformers
 
-# Install miniconda
-ENV CONDA_DIR /opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /opt/conda
-
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && \
-    source ~/.nvm/nvm.sh && \
-    nvm install 18.17.1 && \
-    nvm use 18.17.1
-
-RUN wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb && \
-    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-
-# Put conda in path so we can use conda activate
-SHELL ["/bin/bash", "--login", "-c"]
-ENV PATH=$CONDA_DIR/bin:$PATH
-RUN conda init bash && \
-    unset -f conda && \
-    export PATH=$CONDA_DIR/bin/:${PATH} && \
-    conda config --add channels intel && \
-    conda create -yn neuralchat python=${PYTHON_VERSION} && \
-    echo "conda activate neuralchat" >> ~/.bashrc && \
-    source ~/.bashrc
-
-RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
+RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && \
+    pip install -v . && \
+    cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
-    cd /intel-extension-for-transformers/examples/huggingface/pytorch/code-generation/quantization && pip install -r requirements.txt --no-cache-dir && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses -y && \
-    conda install jemalloc gperftools -c conda-forge -y && \
-    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.2 tokenizers einops peft && \
-    pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install intel_extension_for_pytorch==2.1.0 && \
-    pip install torchaudio==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+    pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
+    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
 RUN passwd -d root
 RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
+        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+EXPOSE 22
 
-WORKDIR /intel-extension-for-transformers/
+WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
 CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
+ARG ITREX_VER=main
 
 RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-COPY ./inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+# Download ITREX code
+SHELL ["/bin/bash", "--login", "-c"]
+RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf /intel-extension-for-transformers/* && rm -rf /intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} /intel-extension-for-transformers ; fi
+WORKDIR /intel-extension-for-transformers
+
+# Build ITREX
+RUN cd /intel-extension-for-transformers && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
+    pip install -r requirements.txt && \
+    pip install -v .
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
-    pip install peft && \
-    pip install einops && \
-    pip install datasets && \
+    pip install peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.11 origin/1.11.0 && \
-    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    git checkout -b v1.12 origin/1.12.0 && \
+    git apply /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e .
 
-# Download ITREX code
-ARG ITREX_VER=main
-ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
-
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+# Install dependency
+RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt
-
-# Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
-    pip install transformers==4.32.0 && \
-    pip install accelerate==0.22.0
+    pip install -r requirements_hpu.txt && \
+    pip install transformers==4.34.1 && \
+    pip install accelerate==0.24.0 && \
+    pip install datasets==2.14.7 && \
+    pip install pymysql
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
+## NVIDIA GPU environment
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04 as nvgpu
+
+ARG ITREX_VER=main
+ARG PYTHON_VERSION=3.10
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+ARG REPO_PATH=""
+
+# See http://bugs.python.org/issue19846
+ENV LANG C.UTF-8
+
+# Install system dependencies
+SHELL ["/bin/bash", "--login", "-c"]
+RUN apt update \
+    && apt install -y build-essential \
+    && apt install -y wget numactl git nvidia-cuda* \
+    && apt install -y openssh-server \
+    && apt install -y python${PYTHON_VERSION} python3-pip \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Download ITREX code
+RUN mkdir -p /intel-extension-for-transformers
+COPY ${REPO_PATH} /intel-extension-for-transformers
+RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
+WORKDIR /intel-extension-for-transformers
+
+RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction/requirements.txt
+RUN pip install -r /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/requirements.txt
+RUN cd /intel-extension-for-transformers && sed -i '/^torch==/d' requirements.txt && pip install -r requirements.txt && pip install -v .
+
+WORKDIR /intel-extension-for-transformers
+
+CMD ["/usr/sbin/sshd", "-D"]

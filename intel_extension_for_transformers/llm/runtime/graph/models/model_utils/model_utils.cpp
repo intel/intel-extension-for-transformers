@@ -32,19 +32,21 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <mutex>
+#include <mutex>  //NOLINT
 #include <numeric>
 #include <queue>
 #include <random>
 #include <sstream>
-#include <thread>
+#include <thread>  //NOLINT
 #include <unordered_map>
 
 #include "application/common.h"
 #include "core/layers/jblas_common.hpp"
 #include "core/layers/mha_dense.h"
 #include "core/ne_layers.h"
-// #include "jblas/jblas/jit_blas_weight_compression.h"
+#include "core/layers/jblas_gemm.h"
+#include "jblas/jit_blas_parallel.h"
+
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_utils.h"
@@ -56,9 +58,9 @@
 //
 
 // non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
-static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
-                          const int n_ctx, const int batch_size, const int beam_size, const bool shift_roped_k,
-                          model_struct* model) {
+static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache,  // NOLINT
+                          const ne_type wtype, const int n_ctx, const int batch_size, const int beam_size,
+                          const bool shift_roped_k, model_struct* model) {
   const auto n_layer = hparams.n_layer;
   const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
   const auto head_size = hparams.n_embd / hparams.n_head;
@@ -104,8 +106,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
         const int head_size = hparams.n_embd / hparams.n_head;
         const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv);
+        k_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, head_size, n_ctx, heads_kv, batch_size * beam_size);
+        v_cache = d_ne_new_tensor_4d(model->ctx, NE_TYPE_F16, n_ctx, head_size, heads_kv, batch_size * beam_size);
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -140,11 +142,13 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     const auto cossin_dtype = wtype == NE_TYPE_JBLAS ? NE_TYPE_F16 : wtype;
     cache.cossin = ne_new_tensor_1d(cache.ctx, cossin_dtype, head_size, NE_SIZE_CALC);
     ne_set_name(cache.cossin, "cossin(-1)");
-    float theta = -1;
+
+    float freq_base = hparams.freq_base;
+    float theta = -1 * hparams.freq_scale;
     float theta_scale = (model != nullptr && model->arch == MODEL_CHATGLM2)
-                            ? std::pow(10000.f, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
-                        : hparams.n_rot > 0 ? std::pow(10000.f, -2.0f / hparams.n_rot)
-                                            : std::pow(10000.f, -2.0f / head_size);
+                            ? std::pow(freq_base, -2.0f / (head_size / 2))  // chatglm2 has their DIM_SCALE of 2
+                        : hparams.n_rot > 0 ? std::pow(freq_base, -2.0f / hparams.n_rot)
+                                            : std::pow(freq_base, -2.0f / head_size);
     if (cossin_dtype == NE_TYPE_F16) {
       const auto data = reinterpret_cast<ne_fp16_t*>(cache.cossin->data);
       for (int i = 0; i < head_size; i += 2) {
@@ -211,13 +215,13 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers, bool use_mmap,
-                       bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,  // NOLINT
+                       bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
     lctx.t_start_us = ne_time_us();
     lctx.model.arch = arch;
-    model_load_internal(fname, arch, lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+    model_load_internal(fname, arch, &lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
     lctx.t_load_us = ne_time_us() - lctx.t_start_us;
     return true;
@@ -249,7 +253,7 @@ static_assert(std::is_trivially_copyable<model_sp_symbol>::value, "model_sp_symb
 
 struct model_sp_bigram {
   struct comparator {
-    bool operator()(model_sp_bigram& l, model_sp_bigram& r) {
+    bool operator()(model_sp_bigram& l, model_sp_bigram& r) {  // NOLINT
       return (l.score < r.score) || (l.score == r.score && l.left > r.left);
     }
   };
@@ -264,7 +268,7 @@ struct model_sp_bigram {
 // original implementation:
 // https://github.com/ggerganov/model.cpp/commit/074bea2eb1f1349a0118239c4152914aecaa1be4
 struct model_tokenizer {
-  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {}
+  model_tokenizer(const model_vocab& vocab) : vocab_(vocab) {}  // NOLINT
 
   void tokenize(const std::string& text, std::vector<model_vocab::id>& output) {
     // split string into utf8 chars
@@ -325,7 +329,7 @@ struct model_tokenizer {
 
       if (token == vocab_.token_to_id.end()) {
         // output any symbols that did not form tokens as bytes.
-        for (int j = 0; j < (int)symbol.n; ++j) {
+        for (int j = 0; j < static_cast<int>(symbol.n); ++j) {
           model_vocab::id token_id = static_cast<uint8_t>(symbol.text[j]) + 3;
           output.push_back(token_id);
         }
@@ -418,13 +422,13 @@ void model_sample_softmax(struct model_context* ctx, model_token_data_array* can
 void model_sample_top_k(struct model_context* ctx, model_token_data_array* candidates, int k, size_t min_keep) {
   const int64_t t_start_sample_us = ne_time_us();
 
-  k = std::max(k, (int)min_keep);
-  k = std::min(k, (int)candidates->size);
+  k = std::max(k, static_cast<int>(min_keep));
+  k = std::min(k, static_cast<int>(candidates->size));
 
   // Sort scores in descending order
   if (!candidates->sorted) {
     auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
-    if (k == (int)candidates->size) {
+    if (k == static_cast<int>(candidates->size)) {
       std::sort(candidates->data, candidates->data + candidates->size, comp);
     } else {
       std::partial_sort(candidates->data, candidates->data + k, candidates->data + candidates->size, comp);
@@ -652,7 +656,7 @@ model_token model_sample_top_k_top_p(struct model_context* ctx, const int n_logi
     }
 
     cumsum = 1.0 / cumsum;
-    for (int i = 0; i < (int)probs.size(); i++) {
+    for (int i = 0; i < static_cast<int>(probs.size()); i++) {
       probs[i] *= cumsum;
     }
   }
@@ -719,7 +723,8 @@ void model_sample_frequency_and_presence_penalties(struct model_context* ctx, mo
     }
 
     int count = token_iter->second;
-    candidates->data[i].logit -= float(count) * alpha_frequency + float(count > 0) * alpha_presence;
+    candidates->data[i].logit -=
+        static_cast<float>(count) * alpha_frequency + static_cast<float>((count > 0)) * alpha_presence;
   }
 
   candidates->sorted = false;
@@ -732,7 +737,7 @@ void model_sample_frequency_and_presence_penalties(struct model_context* ctx, mo
 model_token model_sample_token_mirostat(struct model_context* ctx, model_token_data_array* candidates, float tau,
                                         float eta, int m, float* mu) {
   assert(ctx);
-  auto N = float(model_n_vocab(ctx));
+  auto N = static_cast<float>(model_n_vocab(ctx));
   int64_t t_start_sample_us;
   t_start_sample_us = ne_time_us();
 
@@ -743,7 +748,7 @@ model_token model_sample_token_mirostat(struct model_context* ctx, model_token_d
   float sum_ti_bi = 0.0;
   float sum_ti_sq = 0.0;
   for (size_t i = 0; i < size_t(m - 1) && i < candidates->size - 1; ++i) {
-    float t_i = logf(float(i + 2) / float(i + 1));
+    float t_i = logf(static_cast<float>(i + 2) / static_cast<float>(i + 1));
     float b_i = logf(candidates->data[i].p / candidates->data[i + 1].p);
     sum_ti_bi += t_i * b_i;
     sum_ti_sq += t_i * t_i;
@@ -755,7 +760,7 @@ model_token model_sample_token_mirostat(struct model_context* ctx, model_token_d
   float k = powf((epsilon_hat * powf(2, *mu)) / (1 - powf(N, -epsilon_hat)), 1 / s_hat);
 
   // Sample the next word X using top-k sampling
-  model_sample_top_k(nullptr, candidates, int(k), 1);
+  model_sample_top_k(nullptr, candidates, static_cast<int>(k), 1);
   if (ctx) {
     ctx->t_sample_us += ne_time_us() - t_start_sample_us;
   }
@@ -859,283 +864,6 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 }
 
 //
-// quantization
-//
-quant_params_internal quant_params_to_internal(const quant_params& params) {
-  return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
-                               parse_scale_dtype(params.scale_dtype),
-                               parse_compute_type(params.compute_dtype, params.use_ggml)};
-}
-
-size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
-  using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
-  using namespace ne_jblas;
-  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  auto dstbptr = (int8_t*)dstpr;
-  cd->setThreads(nthread);
-  if (params.scale_dtype != quant_sdtype::fp32) {
-    // TODO(BesTLA): add unified scale type
-    printf("Current not support none-float scale, reset to f32\n");
-  }
-  if (params.bits == quant_bits::q4) {
-    if (params.compute_dtype == quant_comp::int8) {
-      if (params.alg != quant_alg::sym) {
-        printf("Current not support asymmetric int8 computation, reset to symmetric\n");
-      }
-      if (params.group_size == -1) {
-        using Kernel = WeiS4ClipFp32PerN<GcCompInt8, JblasAVX512F>;
-        using KernelRef = WeiS4ClipFp32PerN<GcCompInt8, JblasNoSIMD>;
-        static Kernel kernel;
-        static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, false);
-        packedw.assign(dstbptr);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        }
-        return packedw.mSize;
-      } else {
-        using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
-        using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
-        static Kernel kernel;
-        static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size);
-        packedw.assign(dstbptr);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        }
-        return packedw.mSize;
-      }
-    } else if (params.compute_dtype == quant_comp::fp32) {
-      using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512F>;
-      using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
-      static Kernel kernel;
-      static KernelRef kernelref;
-      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
-      packedw.assign(dstbptr);
-      if (cd->AVX512_FP16()) {
-        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      } else {
-        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      }
-      return packedw.mSize;
-    } else if (params.compute_dtype == quant_comp::bf16) {
-      using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAVX512F>;
-      using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
-      static Kernel kernel;
-      static KernelRef kernelref;
-      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
-      packedw.assign(dstbptr);
-      if (cd->AMX_BF16()) {
-        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      } else {
-        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      }
-      return packedw.mSize;
-    }
-
-  } else if (params.bits == quant_bits::q8) {
-    // TODO add 8bit quantization
-    if (params.compute_dtype == quant_comp::int8) {
-      if (params.alg != quant_alg::sym) {
-        printf("Current not support asymmetric int8 computation, reset to symmetric\n");
-      }
-      if (params.group_size == -1) {
-        using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32PerN<GcCompInt8, JblasNoSIMD>;
-        static Kernel kernel;
-        static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, false);
-        packedw.assign(dstbptr);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        }
-        return packedw.mSize;
-      } else {
-        using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
-        static Kernel kernel;
-        static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size);
-        packedw.assign(dstbptr);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-        }
-        return packedw.mSize;
-      }
-    } else if (params.compute_dtype == quant_comp::fp32) {
-      using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512F>;
-      using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
-      static Kernel kernel;
-      static KernelRef kernelref;
-      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
-      packedw.assign(dstbptr);
-      if (cd->AVX512_FP16()) {
-        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      } else {
-        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      }
-      return packedw.mSize;
-    } else if (params.compute_dtype == quant_comp::bf16) {
-      using Kernel = WeiS8Fp32<GcCompBf16, JblasAVX512F>;
-      using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
-      static Kernel kernel;
-      static KernelRef kernelref;
-      auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
-      packedw.assign(dstbptr);
-      if (cd->AMX_BF16()) {
-        kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      } else {
-        kernelref.packTransposeWeight(n, k, f32ptr, k, &packedw);
-      }
-      return packedw.mSize;
-    }
-  }
-  return 0;
-}
-
-size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, int nthread, size_t nelements) {
-  std::vector<int64_t> hist_cur(1 << 4, 0);
-  std::vector<std::thread> workers;
-  std::mutex mutex;
-  int chunk_size = 32 * 512;
-  const int nchunk = (nelements + chunk_size - 1) / chunk_size;
-  const int nthread_use = nthread > 1 ? std::max(1, std::min(nthread, nchunk)) : 1;
-  size_t new_size = 0;
-  if (nthread_use < 2) {
-    new_size = ne_quantize_chunk(new_type, f32ptr, dstpr, 0, nelements, hist_cur.data());
-  } else {
-    size_t counter = 0;
-    new_size = 0;
-    auto compute = [&mutex, &counter, &hist_cur, &new_size, new_type, f32ptr, dstpr, nelements, chunk_size]() {
-      std::vector<int64_t> local_hist;
-      size_t local_size = 0;
-      while (true) {
-        std::unique_lock<std::mutex> lock(mutex);
-        size_t first = counter;
-        counter += chunk_size;
-        if (first >= nelements) {
-          if (!local_hist.empty()) {
-            for (int j = 0; j < int(local_hist.size()); ++j) {
-              hist_cur[j] += local_hist[j];
-            }
-            new_size += local_size;
-          }
-          break;
-        }
-        lock.unlock();
-        size_t last = std::min(nelements, first + chunk_size);
-        if (local_hist.empty()) {
-          local_hist.resize(hist_cur.size(), 0);
-        }
-        local_size += ne_quantize_chunk(new_type, f32ptr, dstpr, first, last - first, local_hist.data());
-      }
-    };
-    if ((int)workers.size() < nthread_use - 1) {
-      workers.resize(nthread_use - 1);
-    }
-    for (int it = 0; it < nthread_use - 1; ++it) {
-      workers[it] = std::thread(compute);
-    }
-    compute();
-    for (int it = 0; it < nthread_use - 1; ++it) {
-      workers[it].join();
-    }
-  }
-  return new_size;
-}
-
-void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,
-                        model_file_saver& saver, size_t& size_org, size_t& size_new) {
-  size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
-  enum ne_type new_type = quant_params_to_type(params);
-  model_buffer work;
-  work.resize(nelements * 4);  // upper bound on size
-  void* new_data = work.addr;
-  size_t new_size = 0;
-  float* f32_data = NULL;
-  model_buffer f32_conv_buf;
-  if (tensor.type == NE_TYPE_F32) {
-    f32_data = (float*)tensor.data;
-  } else if (tensor.type == NE_TYPE_F16) {
-    f32_conv_buf.resize(nelements * sizeof(float));
-    f32_data = (float*)f32_conv_buf.addr;
-    const auto* f16_data = (const ne_fp16_t*)tensor.data;
-    for (size_t i = 0; i < nelements; i++) {
-      f32_data[i] = ne_fp16_to_fp32(f16_data[i]);
-    }
-  } else {
-    throw format("type %s unsupported for integer quantization", ne_type_name(tensor.type));
-  }
-  printf("quantizing .. ");
-  fflush(stdout);
-  if (new_type == NE_TYPE_JBLAS) {
-    int k_ = tensor.ne.at(0);
-    int n_ = tensor.ne.at(1);
-    new_size = jblas_quantize(f32_data, work.addr, params, nthread, n_, k_);
-    printf("JBLAS ");
-  } else if (new_type >= NE_TYPE_Q4_0 && new_type < NE_TYPE_JBLAS) {
-    new_size = ggml_quantize(f32_data, work.addr, new_type, nthread, nelements);
-    printf("GGML ");
-  }
-  printf("size = %8.2f MB -> %8.2f MB\n", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
-
-__WRITE_FILE:
-  size_org += tensor.size;
-  size_new += new_size;
-  saver.write_tensor(tensor, new_type, new_data, new_size);
-  printf("\n");
-}
-
-static void model_quantize_internal(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
-  auto ftype = quant_params_to_ftype(params);
-  quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
-  int nthread = params.nthread;
-  if (nthread <= 0) {
-    nthread = std::thread::hardware_concurrency();
-  }
-  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
-                                                                          /*vocab_only*/ false));
-  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
-  size_t total_size_org = 0;
-  size_t total_size_new = 0;
-  size_t idx = 0;
-  for (model_load_tensor& tensor : model_loader->tensors_map.tensors) {
-    model_buffer read_data;
-    read_data.resize(tensor.size);
-    tensor.data = read_data.addr;
-    model_loader->load_data_for(tensor);
-    printf("[%4zu/%4zu] %36s - %16s, type = %6s, ", ++idx, model_loader->tensors_map.tensors.size(),
-           tensor.name.c_str(), model_format_tensor_shape(tensor.ne).c_str(), ne_type_name(tensor.type));
-    std::vector<int64_t> tmpne(tensor.ne.size());
-    for (size_t i = 0; i < tmpne.size(); i++) {
-      tmpne[i] = static_cast<int64_t>(tensor.ne[i]);
-    }
-    auto lconfig = quant_layer->get_layer_config(tensor.name, tmpne, tensor.type);
-    bool quantize = lconfig.valid();
-    printf("%s,", lconfig.getstr().c_str());
-    if (quantize) {
-      ne_common_quantize(nthread, lconfig, tensor, file_saver, total_size_org, total_size_new);
-    } else {
-      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
-      total_size_org += tensor.size;
-      total_size_new += tensor.size;
-      file_saver.write_tensor(tensor, tensor.type, tensor.data, tensor.size);
-      printf("\n");
-    }
-  }
-  printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
-  printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
-}
-
-//
 // interface implementation
 //
 
@@ -1152,7 +880,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   if (params.progress_callback == NULL) {
     params.progress_callback_user_data = &cur_percentage;
     params.progress_callback = [](float progress, void* ctx) {
-      unsigned* cur_percentage_p = (unsigned*)ctx;
+      unsigned* cur_percentage_p = reinterpret_cast<unsigned*>(ctx);
       unsigned percentage = (unsigned)(100 * progress);
       while (percentage > *cur_percentage_p) {
         *cur_percentage_p = percentage;
@@ -1175,6 +903,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     ctx->beam_search = true;
     ctx->beam_size = params.beam_size;
     ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  } else {
+    ctx->kv_n_ctx_block = ctx->batch_size;
   }
   const model_archs arch = params.arch;
 
@@ -1259,16 +989,6 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
-  try {
-    model_quantize_internal(params, quant_layer);
-    return 0;
-  } catch (const std::string& err) {
-    fprintf(stderr, "%s: failed to quantize: %s\n", __func__, err.c_str());
-    return 1;
-  }
-}
-
 int model_apply_lora_from_file_internal(struct model_context* ctx, const char* path_lora, const char* path_base_model,
                                         int n_threads) {
   fprintf(stderr, "%s: applying lora adapter from '%s' - please wait ...\n", __func__, path_lora);
@@ -1286,13 +1006,13 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
   // verify magic and version
   {
     uint32_t magic;
-    fin.read((char*)&magic, sizeof(magic));
+    fin.read(reinterpret_cast<char*>(&magic), sizeof(magic));
     if (magic != MODEL_FILE_MAGIC_GGLA) {
       fprintf(stderr, "%s: bad file magic\n", __func__);
       return 1;
     }
     uint32_t format_version;
-    fin.read((char*)&format_version, sizeof(format_version));
+    fin.read(reinterpret_cast<char*>(&format_version), sizeof(format_version));
 
     if (format_version != 1) {
       fprintf(stderr, "%s: unsupported file version\n", __func__);
@@ -1302,9 +1022,9 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
 
   int32_t lora_r;
   int32_t lora_alpha;
-  fin.read((char*)&lora_r, sizeof(lora_r));
-  fin.read((char*)&lora_alpha, sizeof(lora_alpha));
-  float scaling = (float)lora_alpha / (float)lora_r;
+  fin.read(reinterpret_cast<char*>(&lora_r), sizeof(lora_r));
+  fin.read(reinterpret_cast<char*>(&lora_alpha), sizeof(lora_alpha));
+  float scaling = static_cast<float>(lora_alpha) / static_cast<float>(lora_r);
 
   fprintf(stderr, "%s: r = %d, alpha = %d, scaling = %.2f\n", __func__, lora_r, lora_alpha, scaling);
 
@@ -1426,7 +1146,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     size_t tensor_data_size = ne_nbytes(lora_tensor);
     offset = (offset + 31) & -32;
     fin.seekg(offset);
-    fin.read((char*)lora_tensor->data, tensor_data_size);
+    fin.read(reinterpret_cast<char*>(lora_tensor->data), tensor_data_size);
 
     lora_tensors[name] = lora_tensor;
 
@@ -1445,7 +1165,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
         model_load_tensor& lt = model_loader->tensors_map.tensors[idx];
         base_t =
             model_loader->get_tensor(base_name, {(uint32_t)dest_t->ne[0], (uint32_t)dest_t->ne[1]}, NE_BACKEND_CPU);
-        lt.data = (uint8_t*)lt.ne_tensor->data;
+        lt.data = reinterpret_cast<uint8_t*>(lt.ne_tensor->data);
         model_loader->load_data_for(lt);
         lt.ne_tensor->data = lt.data;
       } else {
@@ -1507,7 +1227,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     }
   }
 
-  // TODO: this should be in a destructor, it will leak on failure
+  // this should be in a destructor, it will leak on failure
   ne_free(lora_ctx);
   if (base_ctx) {
     ne_free(base_ctx);
@@ -1558,8 +1278,10 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 
   const auto& model_hparams = lctx->model.hparams;
+  // printf("n_head_kv=%s,multi_query_group_num=%s",model_hparams.n_head_kv,model_hparams.multi_query_group_num);
   NE_ASSERT(("Can not set n_head_kv and multi_query_group_num at the same time",
-             model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0));
+             model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0 ||
+                 model_hparams.n_head_kv == model_hparams.multi_query_group_num));
   attn_shape_t attn_shape = {
       /* .batch_size = */ lparams.batch_size * lparams.beam_size,
       /* .head_num = */ static_cast<int>(model_hparams.n_head),
@@ -1832,11 +1554,11 @@ size_t model_set_state_data(struct model_context* ctx, uint8_t* src) {
       gf.n_threads = 1;
 
       ne_tensor* kin3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer, NE_SIZE_CALC);
-      kin3d->data = (void*)inp;
+      kin3d->data = reinterpret_cast<void*>(inp);
       inp += ne_nbytes(kin3d);
 
       ne_tensor* vin3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer, NE_SIZE_CALC);
-      vin3d->data = (void*)inp;
+      vin3d->data = reinterpret_cast<void*>(inp);
       inp += ne_nbytes(vin3d);
 
       ne_tensor* k3d =
@@ -1949,9 +1671,9 @@ bool model_save_session_file(struct model_context* ctx, const char* path_session
 int model_tokenize(struct model_context* ctx, const char* text, model_token* tokens, int n_max_tokens, bool add_bos) {
   auto res = model_tokenize(ctx->vocab, text, add_bos);
 
-  if (n_max_tokens < (int)res.size()) {
+  if (n_max_tokens < static_cast<int>(res.size())) {
     fprintf(stderr, "%s: too many tokens\n", __func__);
-    return -((int)res.size());
+    return -(static_cast<int>(res.size()));
   }
 
   for (size_t i = 0; i < res.size(); i++) {
@@ -1963,7 +1685,7 @@ int model_tokenize(struct model_context* ctx, const char* text, model_token* tok
 
 std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
   // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-  std::vector<model_token> res(text.size() + (int)add_bos);
+  std::vector<model_token> res(text.size() + static_cast<int>(add_bos));
   const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
   assert(n >= 0);
   res.resize(n);
@@ -2078,14 +1800,54 @@ static void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq
   }
 }
 
+static void jblas_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                         const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
+  const auto& kv_self = ctx->model.kv_self;
+  const auto& hparams = ctx->model.hparams;
+  const int heads_kv = hparams.multi_query_group_num > 0 ? hparams.multi_query_group_num : hparams.n_head;
+  const int head_size = hparams.n_embd / hparams.n_head;
+  const int n_ctx = ctx->n_ctx;
+  const auto kv_n_ctx_block = ctx->kv_n_ctx_block;
+  NE_ASSERT(("Invalid end position!", n_ctx >= p1));
+  kv_cache_info_t kv_cache_info;
+  kv_shape_t kv_shape{
+      /* .head_num = */ static_cast<uint32_t>(heads_kv),
+      /* .head_size = */ static_cast<uint32_t>(head_size),
+      /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
+  };
+  jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
+  const auto k_bytes = kv_cache_info.k_bytes;
+  const auto v_bytes = kv_cache_info.v_bytes;
+
+  jblas_fusion_attn_fp32_batch_cpy_kv_args_t seq_cpy_param{
+      /* .src = */ nullptr,
+      /* .dst = */ nullptr,
+      /* .heads_kv = */ heads_kv,
+      /* .head_size = */ head_size,
+      /* .seq_off = */ p0,
+      /* .seq_size = */ p1 - p0,
+      /* .seq_max = */ n_ctx,
+      /* .no_zeroing = */ false,
+  };
+  for (int il = 0; il < ctx->model.layers.size(); ++il) {
+    const auto k_data = reinterpret_cast<char*>(kv_self.k->data) + il * kv_n_ctx_block * k_bytes;
+    seq_cpy_param.src = k_data + seq_id_src * k_bytes;
+    seq_cpy_param.dst = k_data + seq_id_dst * k_bytes;
+    jblas_fusion_attn_fp32_batch_cpy_k(&seq_cpy_param);
+
+    const auto v_data = reinterpret_cast<char*>(kv_self.v->data) + il * kv_n_ctx_block * v_bytes;
+    seq_cpy_param.src = v_data + seq_id_src * v_bytes;
+    seq_cpy_param.dst = v_data + seq_id_dst * v_bytes;
+    jblas_fusion_attn_fp32_batch_cpy_v(&seq_cpy_param);
+  }
+}
+
 void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src, const model_seq_id& seq_id_dst,
                             const model_pos& p0, const model_pos& p1) {
-  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
+  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS)
     ne_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
-  } else {
-    return;
-    // jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
-  }
+  else
+    jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
 }
 
 static ne_tensor* ne_model_kv_cache_seq_concat(struct ne_cgraph* cgraph, struct model_context* moctx,
@@ -2180,7 +1942,7 @@ struct logits_info {
     float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
   };
 
-  logits_info(struct model_context* lctx)
+  logits_info(struct model_context* lctx)  // NOLINT
       : ctx(lctx),
         logits(model_get_logits(lctx)),
         batch_size(lctx->batch_size),
@@ -2267,11 +2029,8 @@ void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
                                           const std::vector<int> request_running_indices,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
-  // TODO beam search unsupport shift kv cache when prompt + new_tokens > nctx
-  if (ctx->model.kv_self.has_shift) {
-    fprintf(stderr, "%s: error: unimplement shifted kv cache update\n", __func__);
-    return;
-  }
+  // beam search unsupport shift kv cache when prompt + new_tokens > nctx
+  NE_ASSERT(("error: unimplement shifted kv cache update\n", !ctx->model.kv_self.has_shift));
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("start to update kv cache for next step...\n");
 #endif
@@ -2304,7 +2063,7 @@ void beam_search_kv_cache_reorder::update(const std::vector<uint32_t>& n_past,
         if (cur_id == cpy_id) continue;
         model_pos p0 = cur_n_prompt_tokens;
         model_pos p1 = cur_n_past;
-        // TODO too long text
+        // too long text
         if (cur_n_past > n_ctx) {
           // all token hidden states cache should be updated
           p0 = 0;
@@ -2339,7 +2098,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
                                                                       const std::vector<int> beam_indices,
                                                                       const int& sample_scale, const int& dim) {
   MODEL_ASSERT(dim == -1);  // raise unimplemented error
-  // TODO different requests may have different num_beams (ctx->beam_size >= num_beams[i])?
+  // different requests may have different num_beams (ctx->beam_size >= num_beams[i])?
   const int request_running_bs = ctx->request_running_bs;
   logits_info li(ctx);
   std::vector<uint32_t> cur_lens;

@@ -17,7 +17,7 @@
 """Configs for Neural Chat."""
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
@@ -81,7 +81,7 @@ class ModelArguments:
         },
     )
     use_fast_tokenizer: bool = field(
-        default=False,
+        default=True,
         metadata={
             "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
         },
@@ -92,11 +92,20 @@ class ModelArguments:
             "help": "The specific model version to use (can be a branch name, tag name or commit id)."
         },
     )
+    token: str = field(
+        default=None,
+        metadata={
+            "help": (
+                "The token to use as HTTP bearer authorization for remote files. If not specified, will use the token "
+                "generated when running `huggingface-cli login` (stored in `~/.huggingface`)."
+            )
+        },
+    )
     use_auth_token: bool = field(
         default=False,
         metadata={
-            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
-            "with private models)."
+            "help": "The `use_auth_token` argument is deprecated and will be removed in v4.34."
+            "Please use `token` instead."
         },
     )
     trust_remote_code: bool = field(
@@ -228,9 +237,6 @@ class DataArguments:
             )
         },
     )
-    eval_dataset_size: int = field(
-        default=500, metadata={"help": "Size of validation dataset."}
-    )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     preprocessing_num_workers: Optional[int] = field(
         default=None,
@@ -312,7 +318,7 @@ class FinetuningArguments:
         },
     )
     lora_all_linear: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
     task: Optional[str] = field(
@@ -322,7 +328,7 @@ class FinetuningArguments:
             },
     )
     do_lm_eval: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
     )
     lm_eval_tasks: Optional[List[str]] = field(
@@ -344,6 +350,10 @@ class FinetuningArguments:
     bits: int = field(
         default=4,
         metadata={"help": "How many bits to use."}
+    )
+    full_finetune: bool = field(
+        default=False,
+        metadata={"help": "Finetune the entire model without adapters."}
     )
 
 @dataclass
@@ -379,10 +389,10 @@ class TTSFinetuningConfig:
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.1
-    top_k: int = 1
+    top_k: int = 40
     top_p: float = 0.75
     repetition_penalty: float = 1.1
-    num_beams: int = 0
+    num_beams: int = 1
     max_new_tokens: int = 256
     do_sample: bool = True
     num_return_sequences: int = 1
@@ -405,18 +415,20 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    world_size: int = 1
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
 class PipelineConfig:
     def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-7b-chat-hf",
+                 model_name_or_path="Intel/neural-chat-7b-v3-1",
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
                  plugins=plugins,
                  loading_config=None,
-                 optimization_config=None):
+                 optimization_config=None,
+                 assistant_model=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -435,7 +447,9 @@ class PipelineConfig:
             WeightOnlyQuantConfig,
             BitsAndBytesConfig
         )
-        self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else \
+            MixedPrecisionConfig(dtype="float16" if self.device == "cuda" else "bfloat16")
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
+        self.assistant_model = assistant_model

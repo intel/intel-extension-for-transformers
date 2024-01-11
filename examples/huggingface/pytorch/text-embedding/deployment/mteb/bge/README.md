@@ -1,0 +1,132 @@
+Step-by-Step
+=======
+This document describes the end-to-end workflow for Huggingface model [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5), [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) and [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) with LLM Runtime backend.
+
+Here we take the [BAAI/bge-base-en-v1.5](https://huggingface.co/BAAI/bge-base-en-v1.5) as an example.
+
+# Prerequisite
+## Prepare Python Environment
+Create a python environment, optionally with autoconf for jemalloc support.
+```shell
+conda create -n <env name> python=3.8 [autoconf]
+conda activate <env name>
+```
+
+Check that `gcc` version is higher than 9.0.
+```shell
+gcc -v
+```
+
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
+```shell
+# Install from pypi
+pip install intel-extension-for-transformers
+
+# Or, install from source code
+cd <intel_extension_for_transformers_folder>
+pip install -r requirements.txt
+pip install -v .
+```
+
+Install required dependencies for this example
+```shell
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/mrpc/bge_large
+pip install -r requirements.txt
+pip install transformers==4.34.1
+```
+>**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+>**Note**: Please use transformers no higher than 4.34.1
+
+## Environment Variables (Optional)
+```shell
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
+export WEIGHT_SHARING=1
+export INST_NUM=<inst num>
+```
+>**Note**: This step is optional.
+
+# Inference Pipeline
+
+LLM Runtime can support the following data types:
+| Model Name | FP32 | BF16 | Static INT8 | Dynamic INT8
+|---|:---:|:---:|:---:|:---:|
+|[BGE-Small](https://huggingface.co/BAAI/bge-small-en-v1.5), [BGE-Base](https://huggingface.co/BAAI/bge-base-en-v1.5), [BGE-Large](https://huggingface.co/BAAI/bge-large-en-v1.5)| ✅ | ✅ | ✅ | ✅
+
+We provide with three `modes`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+You can run fp32 model inference by setting `precision=fp32`, command as follows:
+```shell
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=fp32 --mode=throughput
+```
+By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
+```shell
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=int8 --mode=throughput
+```
+By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
+```shell
+bash run_bge.sh --model=BAAI/bge-base-en-v1.5 --precision=dynamic_int8 --mode=throughput
+```
+
+
+You could also using python API as follows:
+```python
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModel
+
+sentences_batch = ['sentence-1', 'sentence-2', 'sentence-3', 'sentence-4']
+
+tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-base-en-v1.5')
+encoded_input = tokenizer(sentences_batch,
+                            padding=True,
+                            truncation=True,
+                            max_length=512,
+                            return_tensors="np")
+
+engine_input = [encoded_input['input_ids'], encoded_input['token_type_ids'], encoded_input['attention_mask']]
+
+model = AutoModel.from_pretrained('./model_and_tokenizer/int8-model.onnx', use_embedding_runtime=True)
+sentence_embeddings = model.generate(engine_input)['last_hidden_state:0']
+
+print("Sentence embeddings:", sentence_embeddings)
+```
+
+
+# Benchmark
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+
+By setting `--dynamic_quanzite` for FP32 model, you could benchmark dynamic quantize int8 model.
+## Accuracy
+Python API Command as follows:
+```shell
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --dataset_name=glue --task_name=mrpc --batch_size=8
+```
+
+If you just want a quick start, you could try a small set of dataset, like this:
+```shell
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --dataset_name=glue --task_name=mrpc --batch_size=8 --max_eval_samples=10
+```
+
+>**Note**: The accuracy of partial dataset is unauthentic.
+
+## Performance
+Python API command as follows:
+```shell
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --dataset_name=glue --task_name=mrpc  --batch_size=1 --seq_len=128
+```
+
+You could use C++ API as well. First, you need to compile the model to IR. And then, you could run C++.
+
+> **Note**: The warmup below is recommended to be 1/10 of iterations and no less than 3.
+```shell
+export GLOG_minloglevel=2
+export OMP_NUM_THREADS=<cpu_cores>
+export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
+export UNIFIED_BUFFER=1
+numactl -C 0-<cpu_cores-1> neural_engine \
+  --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> \
+  --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
+```

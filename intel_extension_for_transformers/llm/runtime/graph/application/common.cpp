@@ -23,7 +23,7 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
-#include <thread>
+#include <thread>  // NOLINT
 #include <type_traits>
 #include <utility>
 
@@ -33,7 +33,7 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
-#include <regex>
+#include <regex>  // NOLINT
 #include <locale>
 #include <codecvt>
 #include <sstream>
@@ -91,7 +91,7 @@ int32_t get_num_physical_cores() {
     return num_physical_cores;
   }
 #elif defined(_WIN32)
-  // TODO: Implement
+  // TODO(Yucheng): Implement
 #endif
   unsigned int n_threads = std::thread::hardware_concurrency();
   return n_threads > 0 ? (n_threads <= 4 ? n_threads : n_threads / 2) : 4;
@@ -102,6 +102,7 @@ bool isValidFilename(const std::string& filename) {
   return infile.good();
 }
 
+int64_t common_time_us() { return ne_time_us(); }
 void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
   fprintf(stderr, "usage: %s [options]\n", argv[0]);
   fprintf(stderr, "\n");
@@ -124,7 +125,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
           "  --repeat-last-n N     last n tokens to consider for penalize (default: %d, 0 = disabled, -1 = ctx_size)\n",
           params.repeat_last_n);
   fprintf(stderr, "  --repeat-penalty N    penalize repeat sequence of tokens (default: %.2f, 1.0 = disabled)\n",
-          (double)params.repeat_penalty);
+          static_cast<double>(params.repeat_penalty));
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
   fprintf(stderr, "  -c N, --ctx-size N    size of the prompt context (default: %d)\n", params.n_ctx);
   fprintf(stderr, "  -b N, --batch_size N  batch size for prompt processing (default: %d)\n", params.n_batch);
@@ -133,7 +134,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
   fprintf(stderr, "\n");
 }
 
-bool common_params_parse(int argc, char** argv, common_params& params) {
+bool common_params_parse(int argc, char** argv, common_params& params) {  // NOLINT
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
@@ -194,7 +195,7 @@ bool common_params_parse(int argc, char** argv, common_params& params) {
   return true;
 }
 
-std::string gpt_random_prompt(std::mt19937& rng) {
+std::string gpt_random_prompt(std::mt19937& rng) {  // NOLINT
   const int r = rng() % 10;
   switch (r) {
     case 0:
@@ -224,7 +225,7 @@ std::string gpt_random_prompt(std::mt19937& rng) {
   return "The";
 }
 
-std::vector<int> gpt_random_ids(std::mt19937& rng) {
+std::vector<int> gpt_random_ids(std::mt19937& rng) {  // NOLINT
   const int l = rng() % 10 + 1;
   std::vector<int> res(l, 0);
   for (int i = 0; i < l; ++i) {
@@ -441,45 +442,16 @@ std::map<std::string, std::vector<gpt_vocab::id>> extract_tests_from_file(const 
   return tests;
 }
 
-void test_gpt_tokenizer(gpt_vocab& vocab, const std::string& fpath_test) {
-  std::map<std::string, std::vector<gpt_vocab::id>> tests = extract_tests_from_file(fpath_test);
-
-  size_t n_fails = 0;
-
-  for (const auto& test : tests) {
-    std::vector<gpt_vocab::id> tokens = gpt_tokenize(vocab, test.first);
-
-    if (tokens != test.second) {
-      n_fails++;
-
-      // print out failure cases
-      fprintf(stderr, "%s : failed test: '%s'\n", __func__, test.first.c_str());
-      fprintf(stderr, "%s : tokens in hf:   ", __func__);
-      for (const auto& t : test.second) {
-        fprintf(stderr, "%s(%d), ", vocab.id_to_token[t].c_str(), t);
-      }
-      fprintf(stderr, "\n");
-      fprintf(stderr, "%s : tokens in ggml: ", __func__);
-      for (const auto& t : tokens) {
-        fprintf(stderr, "%s(%d), ", vocab.id_to_token[t].c_str(), t);
-      }
-      fprintf(stderr, "\n");
-    }
-  }
-
-  fprintf(stderr, "%s : %lu tests failed out of %lu tests.\n", __func__, n_fails, tests.size());
-}
-
-bool gpt_vocab_init(const std::string& fname, gpt_vocab& vocab) {
+bool gpt_vocab_init(const std::string& fname, gpt_vocab* vocab) {
   printf("%s: loading vocab from '%s'\n", __func__, fname.c_str());
 
-  vocab.token_to_id = ::json_parse(fname);
+  vocab->token_to_id = ::json_parse(fname);
 
-  for (const auto& kv : vocab.token_to_id) {
-    vocab.id_to_token[kv.second] = kv.first;
+  for (const auto& kv : vocab->token_to_id) {
+    vocab->id_to_token[kv.second] = kv.first;
   }
 
-  printf("%s: vocab size = %d\n", __func__, (int)vocab.token_to_id.size());
+  printf("%s: vocab size = %d\n", __func__, static_cast<int>(vocab->token_to_id.size()));
 
   // print the vocabulary
   // for (auto kv : vocab.token_to_id) {
@@ -490,7 +462,7 @@ bool gpt_vocab_init(const std::string& fname, gpt_vocab& vocab) {
 }
 
 gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits, int top_k, double top_p, double temp,
-                                     std::mt19937& rng) {
+                                     std::mt19937& rng) {  // NOLINT
   int n_logits = vocab.id_to_token.size();
   std::vector<std::pair<double, gpt_vocab::id>> logits_id;
   logits_id.reserve(n_logits);
@@ -544,7 +516,7 @@ gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits
     }
 
     cumsum = 1.0 / cumsum;
-    for (int i = 0; i < (int)probs.size(); i++) {
+    for (size_t i = 0; i < probs.size(); i++) {
       probs[i] *= cumsum;
     }
   }
@@ -564,7 +536,7 @@ gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits
 gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float* logits,
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
-                                            float repeat_penalty, std::mt19937& rng) {
+                                            float repeat_penalty, std::mt19937& rng) {  // NOLINT
   int n_logits = vocab.id_to_token.size();
 
   const auto* plogits = logits;
@@ -649,7 +621,7 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float*
     }
 
     cumsum = 1.0 / cumsum;
-    for (int i = 0; i < (int)probs.size(); i++) {
+    for (size_t i = 0; i < probs.size(); i++) {
       probs[i] *= cumsum;
     }
   }
@@ -677,11 +649,13 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
           "  --config              path to the configuration file (default: "
           ")\n");
   fprintf(stderr, "  --nthread             number of threads to use (default: 1)\n");
-  fprintf(stderr, "  --weight_dtype        number of bits to use for quantization (default: int4)\n");
+  fprintf(stderr,
+          "  --weight_dtype        number of bits to use for quantization: int4/int8/fp8_e4m3/fp8_e5m2/"
+          "fp4_e2m1/nf4 (default: int4)\n");
   fprintf(stderr, "  --alg                 quantization algorithm to use: sym/asym (default: sym)\n");
-  fprintf(stderr, "  --group_size          group size (default: 32)\n");
-  fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
-  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
+  fprintf(stderr, "  --group_size          group size: 32/128/-1 (per channel) (default: 32)\n");
+  fprintf(stderr, "  --scale_dtype         fp32/bf16/fp8 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)\n");
   fprintf(stderr, "  --use_ggml            enable ggml for quantization and inference\n");
   fprintf(stderr,
           "  --model_name          model name like falcon / llama (default: "
@@ -689,7 +663,7 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr, "\n");
 }
 
-bool quant_params_parse(int argc, char** argv, quant_params& params) {
+bool quant_params_parse(int argc, char** argv, quant_params& params) {  // NOLINT
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
     if (arg == "--model_file") {
@@ -702,6 +676,12 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.nthread = std::stoi(argv[++i]);
     } else if (arg == "--weight_dtype") {
       params.weight_dtype = argv[++i];
+      if (params.weight_dtype == "fp8") {
+        params.weight_dtype = "fp8_e4m3";
+      }
+      if (params.weight_dtype == "fp4") {
+        params.weight_dtype = "fp4_e2m1";
+      }
     } else if (arg == "--alg") {
       params.alg = argv[++i];
     } else if (arg == "--group_size") {
@@ -779,7 +759,7 @@ ne_type quant_params_to_type(const quant_params& params) {
   return NE_TYPE_F32;
 }
 
-void console_init(console_state& con_st) {
+void console_init(console_state& con_st) {  // NOLINT
 #if defined(_WIN32)
   // Windows-specific console initialization
   DWORD dwMode = 0;
@@ -826,7 +806,7 @@ void console_init(console_state& con_st) {
 #endif
 }
 
-void console_cleanup(console_state& con_st) {
+void console_cleanup(console_state& con_st) {  // NOLINT
   // Reset console color
   console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
 
@@ -842,7 +822,7 @@ void console_cleanup(console_state& con_st) {
 }
 
 /* Keep track of current color of output, and emit ANSI code if it changes. */
-void console_set_color(console_state& con_st, console_color_t color) {
+void console_set_color(console_state& con_st, console_color_t color) {  // NOLINT
   if (con_st.use_color && con_st.color != color) {
     fflush(stdout);
     switch (color) {
@@ -882,7 +862,7 @@ char32_t getchar32() {
   return static_cast<char32_t>(wc);
 }
 
-void pop_cursor(console_state& con_st) {
+void pop_cursor(const console_state& con_st) {
 #if defined(_WIN32)
   if (con_st.hConsole != NULL) {
     CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
@@ -911,7 +891,7 @@ int estimateWidth(char32_t codepoint) {
 #endif
 }
 
-int put_codepoint(console_state& con_st, const char* utf8_codepoint, size_t length, int expectedWidth) {
+int put_codepoint(const console_state& con_st, const char* utf8_codepoint, size_t length, int expectedWidth) {
 #if defined(_WIN32)
   CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
   if (!GetConsoleScreenBufferInfo(con_st.hConsole, &bufferInfo)) {
@@ -969,7 +949,7 @@ int put_codepoint(console_state& con_st, const char* utf8_codepoint, size_t leng
 #endif
 }
 
-void replace_last(console_state& con_st, char ch) {
+void replace_last(const console_state& con_st, char ch) {
 #if defined(_WIN32)
   pop_cursor(con_st);
   put_codepoint(con_st, &ch, 1, 1);
@@ -978,42 +958,42 @@ void replace_last(console_state& con_st, char ch) {
 #endif
 }
 
-void append_utf8(char32_t ch, std::string& out) {
+void append_utf8(char32_t ch, std::string* out) {
   if (ch <= 0x7F) {
-    out.push_back(static_cast<unsigned char>(ch));
+    out->push_back(static_cast<unsigned char>(ch));
   } else if (ch <= 0x7FF) {
-    out.push_back(static_cast<unsigned char>(0xC0 | ((ch >> 6) & 0x1F)));
-    out.push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0xC0 | ((ch >> 6) & 0x1F)));
+    out->push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
   } else if (ch <= 0xFFFF) {
-    out.push_back(static_cast<unsigned char>(0xE0 | ((ch >> 12) & 0x0F)));
-    out.push_back(static_cast<unsigned char>(0x80 | ((ch >> 6) & 0x3F)));
-    out.push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0xE0 | ((ch >> 12) & 0x0F)));
+    out->push_back(static_cast<unsigned char>(0x80 | ((ch >> 6) & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
   } else if (ch <= 0x10FFFF) {
-    out.push_back(static_cast<unsigned char>(0xF0 | ((ch >> 18) & 0x07)));
-    out.push_back(static_cast<unsigned char>(0x80 | ((ch >> 12) & 0x3F)));
-    out.push_back(static_cast<unsigned char>(0x80 | ((ch >> 6) & 0x3F)));
-    out.push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0xF0 | ((ch >> 18) & 0x07)));
+    out->push_back(static_cast<unsigned char>(0x80 | ((ch >> 12) & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0x80 | ((ch >> 6) & 0x3F)));
+    out->push_back(static_cast<unsigned char>(0x80 | (ch & 0x3F)));
   } else {
     // Invalid Unicode code point
   }
 }
 
 // Helper function to remove the last UTF-8 character from a string
-void pop_back_utf8_char(std::string& line) {
-  if (line.empty()) {
+void pop_back_utf8_char(std::string* line) {
+  if (line->empty()) {
     return;
   }
 
-  size_t pos = line.length() - 1;
+  size_t pos = line->length() - 1;
 
   // Find the start of the last UTF-8 character (checking up to 4 bytes back)
   for (size_t i = 0; i < 3 && pos > 0; ++i, --pos) {
-    if ((line[pos] & 0xC0) != 0x80) break;  // Found the start of the character
+    if (((*line)[pos] & 0xC0) != 0x80) break;  // Found the start of the character
   }
-  line.erase(pos);
+  line->erase(pos);
 }
 
-bool console_readline(console_state& con_st, std::string& line) {
+bool console_readline(console_state& con_st, std::string& line) {  // NOLINT
   console_set_color(con_st, CONSOLE_COLOR_USER_INPUT);
   if (con_st.out != stdout) {
     fflush(stdout);
@@ -1065,12 +1045,12 @@ bool console_readline(console_state& con_st, std::string& line) {
             replace_last(con_st, ' ');
             pop_cursor(con_st);
           }
-          pop_back_utf8_char(line);
+          pop_back_utf8_char(&line);
         } while (count == 0 && !widths.empty());
       }
     } else {
       int offset = line.length();
-      append_utf8(input_char, line);
+      append_utf8(input_char, &line);
       int width = put_codepoint(con_st, line.c_str() + offset, line.length() - offset, estimateWidth(input_char));
       if (width < 0) {
         width = 0;

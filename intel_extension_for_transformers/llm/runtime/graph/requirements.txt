@@ -1,9 +1,1 @@
-torch
-transformers
-numpy
-sentencepiece
-protobuf<3.20
-einops
-accelerate
-peft
-datasets
+-r scripts/requirements/common.txt

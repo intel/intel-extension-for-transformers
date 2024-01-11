@@ -30,9 +30,10 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple, TypeVar,
+                    Union)
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -45,16 +46,17 @@ def bytes_to_unicode():
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     n = 0
     for b in range(2**8):
         if b not in bs:
             bs.append(b)
-            cs.append(2**8+n)
+            cs.append(2**8 + n)
             n += 1
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
@@ -70,7 +72,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
     ftype = 0
-    if args.outtype== "f16":
+    if args.outtype == "f16":
         ftype = 1
 
     tokenizer = AutoTokenizer.from_pretrained(dir_model)
@@ -90,17 +92,16 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #ne_file_version = 0x00000001 # v1
 
     hparams["multiple_of"] = 1
-    fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
+    fout.write(struct.pack("i", ne_file_magic))  # magic: ne in hex
     #fout.write(struct.pack("i", ne_file_version))
 
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
-    fout.write(struct.pack("i", 0)) # dummy data
+    fout.write(struct.pack("i", 0))  # dummy data
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
     fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
     fout.write(struct.pack("i", hparams["num_hidden_layers"]))
-    fout.write(struct.pack("i", int((hparams["hidden_size"] / hparams["num_attention_heads"]
-                                ) * hparams["rotary_pct"])))
+    fout.write(struct.pack("i", int((hparams["hidden_size"] / hparams["num_attention_heads"]) * hparams["rotary_pct"])))
     fout.write(struct.pack("i", ftype))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("f", 0.0))
@@ -112,7 +113,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    
+    fout.write(struct.pack("f", hparams.get("rms_norm_eps", 1e-6)))  # rms norm eps
+    fout.write(struct.pack("f", 10000.0))  # freq_base
+    fout.write(struct.pack("f", 1.0))  # rope_factor
+
     fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
     fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
     fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
@@ -124,19 +128,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # Add added_tokens (special tokens) to the encoder
     encoder.update(tokenizer.get_added_vocab())
     byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
+    byte_decoder = {v: k for k, v in byte_encoder.items()}
 
     counter = 0
     # sort by value
     for key in sorted(encoder, key=encoder.get):
         # workaround for key error when c not found
-        text=""
+        text = ""
         for c in key:
             if c not in byte_decoder:
                 text += c
             else:
-                text += chr(byte_decoder[c] )
-        text = bytearray( text, encoding="utf-8" )
+                text += chr(byte_decoder[c])
+        text = bytearray(text, encoding="utf-8")
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         counter += 1
@@ -175,8 +179,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
             data = data.astype(np.float16)
             ftype_cur = 1
         else:
-            print("  Converting to float32", data.shape,
-                data[:3, :3].tolist() if n_dims > 1 else data[:3].tolist())
+            print("  Converting to float32", data.shape, data[:3, :3].tolist() if n_dims > 1 else data[:3].tolist())
             data = data.astype(np.float32)
 
         # header

@@ -1,7 +1,5 @@
 paddlepaddle
-paddlenlp
 paddlespeech
-paddle2onnx
 transformers
 soundfile
 datasets
@@ -9,3 +7,4 @@ pydub
 python-multipart
 speechbrain
 librosa
+zhconv

@@ -5,5 +5,5 @@ rouge-score
 nltk
 py7zr
 torch==2.1.0
-transformers==4.34.1
+transformers
 protobuf

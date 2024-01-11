@@ -22,7 +22,6 @@
 #include "application/common.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_types.h"
-#include "models/model_utils/quant_config.h"
 
 #ifdef MODEL_SHARED
 #if defined(_WIN32) && !defined(__MINGW32__)
@@ -50,7 +49,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context* ctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data);
 
@@ -62,12 +61,10 @@ MODEL_API struct model_context_params model_context_default_params();
 
 MODEL_API bool model_mmap_supported();
 MODEL_API bool model_mlock_supported();
-
 // TODO: not great API - very likely to change
 // Initialize the model + ne backend
 // Call once at the start of the program
 MODEL_API void model_init_backend();
-
 MODEL_API int64_t model_time_us();
 
 // Various functions for loading a ne model model.
@@ -77,12 +74,6 @@ MODEL_API struct model_context* model_init_from_file(const char* path_model, str
 
 // Frees all allocated memory
 MODEL_API void model_free(struct model_context* ctx);
-
-// TODO: not great API - very likely to change
-// Returns 0 on success
-// param - from args
-// quant_layer - depends on each model's config
-MODEL_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
 
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for
@@ -95,7 +86,6 @@ MODEL_API int model_apply_lora_from_file(struct model_context* ctx, const char* 
 
 // Returns the number of tokens in the KV cache
 MODEL_API int model_get_kv_cache_token_count(const struct model_context* ctx);
-
 // Sets the current rng seed.
 MODEL_API void model_set_rng_seed(struct model_context* ctx, int seed);
 
@@ -302,7 +292,7 @@ struct beam {
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
 
   void print() const {
-    printf("length: %d, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
+    printf("length: %ld, score: %12.6f, eos: %d, request_idx: %d, beam_idx: %d, done: %d, tokens:\n", token_ids.size(),
            score, eos(), request_idx, beam_idx, done);
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));

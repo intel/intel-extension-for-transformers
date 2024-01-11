@@ -15,53 +15,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import subprocess
 import unittest
-import time
-import os
-import json
-from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
+import torch
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat import PipelineConfig
+from transformers.utils import is_bitsandbytes_available
+from intel_extension_for_transformers.transformers import BitsAndBytesConfig
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import router
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
+
+app = FastAPI()
+app.include_router(router)
+client = TestClient(app)
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         if not (is_bitsandbytes_available() and torch.cuda.is_available()):
-            self.skipTest("Skipping this test on CPU.")
-        yaml_file_path = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/ci/server/textchat_bits_and_bytes.yaml"
-        if os.path.exists(yaml_file_path):
-            command = f'neuralchat_server start \
-                        --config_file {yaml_file_path} \
-                        --log_file "./neuralchat.log"'
-        else:
-            command = 'neuralchat_server start \
-                        --config_file "./ci/server/textchat_bits_and_bytes.yaml" \
-                        --log_file "./neuralchat.log"'
-        try:
-            self.server_process = subprocess.Popen(command,
-                                    universal_newlines=True, shell=True) # nosec
-            time.sleep(30)
-        except subprocess.CalledProcessError as e:
-            print("Error while executing command:", e)
-        self.client_executor = TextChatClientExecutor()
+            self.skipTest("Only test this UT case on Nvidia GPU.")
+        optimization_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                                 bnb_4bit_use_double_quant=True,
+                                                 bnb_4bit_compute_dtype="bfloat16")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m", device="cuda",
+                                optimization_config=optimization_config)
+        chatbot = build_chatbot(config)
+        router.set_chatbot(chatbot)
 
-    def test_text_chat(self):
-        result = self.client_executor(
+    def test_text_chat_with_bitsandbytes(self):
+        # Create a sample chat completion request object
+        chat_request = ChatCompletionRequest(
             prompt="Tell me about Intel Xeon processors.",
-            server_ip="127.0.0.1",
-            port=6060)
-        self.assertEqual(result.status_code, 200)
-        print(json.loads(result.text))
-
-        result = self.client_executor(
-            prompt="Tell me about Intel Xeon processors.",
-            server_ip="127.0.0.1",
-            port=6060,
-            stream=True)
-        self.assertEqual(result.status_code, 200)
-        for chunk in result.iter_lines(decode_unicode=False, delimiter=b"\0"):
-            print(chunk)
-
+        )
+        response = client.post("/v1/chat/completions", json=chat_request.dict())
+        assert response.status_code == 200
 
 if __name__ == "__main__":
     unittest.main()
