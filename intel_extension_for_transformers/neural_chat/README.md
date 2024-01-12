@@ -59,7 +59,7 @@ Once the service is running, you can use the OpenAI-compatible endpoint `/v1/cha
 
 #### Using Curl
 ```shell
-curl http://localhost:8000/v1/chat/completions \
+curl http://127.0.0.1:80/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d '{
     "model": "Intel/neural-chat-7b-v3-1",
