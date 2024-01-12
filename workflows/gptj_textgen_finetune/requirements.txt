@@ -1,0 +1,14 @@
+transformers
+datasets
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+intel_extension_for_pytorch
+intel-extension-for-transformers
+sentencepiece
+peft
+nltk
+evaluate
+pytest
+scikit-learn
+sigopt
+xformers
