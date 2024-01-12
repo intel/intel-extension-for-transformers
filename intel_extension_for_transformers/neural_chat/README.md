@@ -5,56 +5,17 @@ NeuralChat
 <h3> A customizable chatbot framework to create your own chatbot within minutes</h3>
 
 ---
-<div align="left">
 
-## Table of contents
-
-- [Introduction](#introduction)
-- [Installation](#installation)
-- [Getting Started](#getting-started)
-  - [Deploy Chatbot Non-Persistent](#deploy-chatbot-non-persistent)
-  - [Deploy Chatbot Persistent Service](#deploy-chatbot-persistent-service)
-  - [Chatbot with RAG](#chatbot-with-rag)
-  - [Chatbot with Multimodal](#chatbot-with-multimodal)
-  - [Neural Copliot](#neural-copliot)
-  - [Inference with Docker](#inference-with-docker)
-- [Advanced Topics](#advanced-topics)
-  - [Optimization](#optimization)
-  - [Fine-tuning](#fine-tuning)
-  - [Safety Checker](#safety-checker)
-  - [Caching](#caching)
-- [Serving](#serving)
-  - [TGI](#tgi)
-  - [vLLM](#vllm)
-  - [Triton](#triton)
-- [Models](#models)
-- [Notebooks](#notebooks)
+[í ½í¸ƒAPI](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[í ½í²»Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[í ½í³–Notebooks](./docs/full_notebooks.md)
+</div>
 
 # Introduction
 
-NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., IntelÂ® XeonÂ® Scalable processors, HabanaÂ® GaudiÂ® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly. NeuralChat implements many features, such as:
-- Simple launcher to serve most popular LLMs
-- Token streaming using Server-Sent Events (SSE)
-- Weight-only quantization with [LLM runtime](../llm/runtime/graph/README.md)
-- Quantization technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` leverage `RTN/AWQ/TEQ` algorithms and `BitsandBytes` using [IntelÂ® Neural Compressor](https://github.com/intel/neural-compressor) and [IntelÂ® extension for pytorch](https://github.com/intel/intel-extension-for-pytorch)
-- Fine-tuning Support: Utilize fine-tuned models for specific tasks to achieve higher accuracy and performance
-- Distributed inference with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
-- Tensor parallelism strategy for distributed inference/training on multi-node and multi-socket
-- OpenAI-compatible API
-- Langchain-compatible API
-- Support multi-frameworks serving, such as TGI, vLLM, Triton
-- Support Intel CPUs, Intel XPUs, Habana HPU and NVIDIA GPUs.
+NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., IntelÂ® XeonÂ® Scalable processors, HabanaÂ® GaudiÂ® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
 
-
-<a target="_blank" href="./assets/pictures/neuralchat.png">
+<a target="_blank" href="./docs/images/neuralchat_arch.png">
 <p align="center">
-  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
-</p>
-</a>
-
-<a target="_blank" href="./assets/pictures/neuralchat_architecture.png">
-<p align="center">
-  <img src="./assets/pictures/neuralchat_architecture.png" alt="NeuralChat" width=600 height=500>
+  <img src="./docs/images/neuralchat_arch.png" alt="NeuralChat" width=600 height=800>
 </p>
 </a>
 
