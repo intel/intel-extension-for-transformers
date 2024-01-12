@@ -119,8 +119,6 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={CMAKE_BUILD_TYPE}",
             f"-DNE_VERSION_STRING={self.distribution.get_version()}",
-            f"-DDNNL_CPU_RUNTIME=OMP",
-            f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
         ]
         if sys.platform == "linux":  # relative_rpath
