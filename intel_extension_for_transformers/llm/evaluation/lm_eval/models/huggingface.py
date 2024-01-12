@@ -324,17 +324,32 @@ class HuggingFaceAutoLM(BaseLM):
                 with init_empty_weights():
                     if self._config.model_type =="chatglm":
                         self.AUTO_MODEL_CLASS = transformers.AutoModel
-                    model = self.AUTO_MODEL_CLASS.from_pretrained(
-                        pretrained,
-                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                        low_cpu_mem_usage=low_cpu_mem_usage,
-                        device_map=device_map,
-                        max_memory=max_memory,
-                        offload_folder=offload_folder,
-                        load_in_8bit=load_in_8bit,
-                        trust_remote_code=trust_remote_code,
-                        torch_dtype=torch_dtype
-                    )
+                    if re.search("qwen-72b", self._config._name_or_path.lower()):
+                        model = self.AUTO_MODEL_CLASS.from_pretrained(
+                            pretrained,
+                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                            low_cpu_mem_usage=low_cpu_mem_usage,
+                            device_map=device_map,
+                            max_memory=max_memory,
+                            offload_folder=offload_folder,
+                            load_in_8bit=load_in_8bit,
+                            trust_remote_code=trust_remote_code,
+                            torch_dtype=torch_dtype,
+                            fp32=(bool(torch_dtype==torch.float32)),
+                            fp16=(bool(torch_dtype==torch.float16)),
+                        )
+                    else:
+                        model = self.AUTO_MODEL_CLASS.from_pretrained(
+                            pretrained,
+                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                            low_cpu_mem_usage=low_cpu_mem_usage,
+                            device_map=device_map,
+                            max_memory=max_memory,
+                            offload_folder=offload_folder,
+                            load_in_8bit=load_in_8bit,
+                            trust_remote_code=trust_remote_code,
+                            torch_dtype=torch_dtype
+                        )   
             else:
                 if load_in_4bit:
                     assert (
@@ -354,18 +369,34 @@ class HuggingFaceAutoLM(BaseLM):
                             model_kwargs[
                                 "bnb_4bit_use_double_quant"
                             ] = bnb_4bit_use_double_quant
-                model = self.AUTO_MODEL_CLASS.from_pretrained(
-                    pretrained,
-                    revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                    low_cpu_mem_usage=low_cpu_mem_usage,
-                    device_map=device_map,
-                    max_memory=max_memory,
-                    offload_folder=offload_folder,
-                    load_in_8bit=load_in_8bit,
-                    trust_remote_code=trust_remote_code,
-                    torch_dtype=torch_dtype,
-                    **model_kwargs,
-                )
+                if re.search("qwen-72b", self._config._name_or_path.lower()):
+                    model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                        low_cpu_mem_usage=low_cpu_mem_usage,
+                        device_map=device_map,
+                        max_memory=max_memory,
+                        offload_folder=offload_folder,
+                        load_in_8bit=load_in_8bit,
+                        trust_remote_code=trust_remote_code,
+                        torch_dtype=torch_dtype,
+                        **model_kwargs,
+                        fp32=(bool(torch_dtype==torch.float32)),
+                        fp16=(bool(torch_dtype==torch.float16)),
+                    )
+                else:
+                    model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                        low_cpu_mem_usage=low_cpu_mem_usage,
+                        device_map=device_map,
+                        max_memory=max_memory,
+                        offload_folder=offload_folder,
+                        load_in_8bit=load_in_8bit,
+                        trust_remote_code=trust_remote_code,
+                        torch_dtype=torch_dtype,
+                        **model_kwargs
+                    )
         else:
             from auto_gptq import AutoGPTQForCausalLM    # pylint: disable=E0401
 
@@ -590,7 +621,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                 "'decoder_model_merged.onnx', 'model.onnx'] in {}.".format(
                     pretrained)
                 )
-            
+
             import optimum.version
             import onnxruntime as ort
             from transformers import PretrainedConfig
@@ -678,7 +709,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                                                         pretrained,
                                                         use_cache=False,
                                                         use_io_binding=False)
-            
+
     def _create_auto_tokenizer(
         self,
         *,
