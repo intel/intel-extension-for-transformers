@@ -195,12 +195,22 @@ async def retrieval_append(request: Request,
 
     user_id = request.client.host
     logger.info(f'[askdoc - append] user id is: {user_id}')
-    path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
+    if knowledge_base_id == 'default':
+        path_prefix = RETRIEVAL_FILE_PATH + 'default'
+    else:
+        path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
-        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
-            Please check kb_id and save path again."
+        if knowledge_base_id == 'default':
+            os.makedirs(Path(path_prefix), exist_ok=True)
+            os.makedirs(Path(path_prefix) / 'upload_dir', exist_ok=True)
+            os.makedirs(Path(path_prefix) / 'persist_dir', exist_ok=True)
+            logger.info(f"Default kb {path_prefix} does not exist, create.")
+        else:
+            logger.info(f"kbid [{knowledge_base_id}] does not exist for user {user_id}")
+            return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+                Please check kb_id and save path again."
     cur_time = get_current_beijing_time()
     logger.info(f"[askdoc - append] upload path: {upload_path}")
 
@@ -241,7 +251,9 @@ async def retrieval_chat(request: Request):
     max_new_tokens = params['max_new_tokens']
     return_link = params['return_link']
     logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
-                stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
+                origin_query: '{origin_query}', stream mode: '{stream}', \
+                max_new_tokens: '{max_new_tokens}', \
+                return_link: '{return_link}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
 
     path_prefix = RETRIEVAL_FILE_PATH
@@ -331,7 +343,7 @@ async def retrieval_chat(request: Request):
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-@router.post("/v1/askdoc/feedback")
+@router.post("/v1/aiphotos/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
     mysql_db = MysqlDb()
@@ -363,7 +375,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
         return "Succeed"
 
 
-@router.get("/v1/askdoc/downloadFeedback")
+@router.get("/v1/aiphotos/askdoc/downloadFeedback")
 def get_feedback_from_db():
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
