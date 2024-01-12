@@ -12,9 +12,9 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(jblas_dispatcher LANGUAGES C CXX)
+project(bestla_dispatcher LANGUAGES C CXX)
 if(NOT WIN32)
-set(CMAKE_CXX_FLAGS "-fconcepts")
+set(CMAKE_CXX_FLAGS "-fPIC -fconcepts")
 endif()
 file(GLOB SOURCES 
     ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -23,16 +23,17 @@ file(GLOB HEADERS
     ${PROJECT_SOURCE_DIR}/include/*.hpp
 )
 
-add_subdirectory(../../../library/jblas jblas_out)
+include(FetchContent)
+include(neural_speed.cmake)
 
-add_library(jblas_dispatcher STATIC ${HEADERS} ${SOURCES})
+add_library(bestla_dispatcher STATIC ${HEADERS} ${SOURCES})
 if(WIN32)
 # MSVC does not allow sth like -fconcepts
-set_target_properties(jblas_dispatcher PROPERTIES C_STANDARD 20 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
-set_target_properties(jblas_dispatcher PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+set_target_properties(bestla_dispatcher PROPERTIES C_STANDARD 20 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
+set_target_properties(bestla_dispatcher PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 endif()
 
-set_target_properties(jblas_dispatcher PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(jblas_dispatcher PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(jblas_dispatcher "${TORCH_LIBRARIES}" jblas::jblas)
+set_target_properties(bestla_dispatcher PROPERTIES POSITION_INDEPENDENTBTLA_CODE ON)
+set_target_properties(bestla_dispatcher PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(bestla_dispatcher OpenMP::OpenMP_CXX OpenMP::OpenMP_C "${TORCH_LIBRARIES}" bestla::bestla)
 set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
