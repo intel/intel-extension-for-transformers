@@ -30,6 +30,7 @@ from transformers import BatchEncoding
 
 from lm_eval import utils
 from lm_eval.base import BaseLM
+import re
 
 TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
 
