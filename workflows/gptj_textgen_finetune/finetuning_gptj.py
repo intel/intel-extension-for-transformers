@@ -326,20 +326,6 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
     
-    #sigopt.log_dataset("GPTJ MNLI fine tuning with LoRA and 30k data v2")
-    #sigopt.log_model("GPTJ")
-    #sigopt.params.setdefault("learning_rate", 0.0002)
-    #sigopt.params.setdefault("target_modules", "q_proj,v_proj")
-    #sigopt.params.setdefault("epochs", 3)
-    #sigopt.params.setdefault("lora_alpha", 54)
-    #sigopt.params.setdefault("temperature", 0.4)
-    #sigopt.params.setdefault("top_p", 0.8)
-    #sigopt.params.setdefault("top_k", 70)
-    
-    #training_args.learning_rate = sigopt.params.learning_rate    
-    #training_args.num_train_epochs = sigopt.params.epochs    
-    #target_modules = sigopt.params.target_modules.split(",")
-    
     # Get the datasets: You can just provide the name of one of the public datasets available on the hub at
     # https://huggingface.co/datasets/ -the dataset will be downloaded automatically from the datasets Hub).
     #
@@ -413,23 +399,15 @@ def main():
          load_from_cache_file=False,
          fn_kwargs={"tokenizer": tokenizer},
      )
-    # print("validation dataset row 1 after tokenize : ", eval_dataset[0])
 
     # Load model
-    #config = model_args.config_name
-    #config = transformers.PretrainedConfig.from_json_file(model_args.config_name)
     config = transformers.GPTJConfig.from_json_file(model_args.config_name)
-    #config = json.load(model_args.config_name)
-    #config = transformers.GPTJConfig.get_config_dict(model_args.config_name)
-    #config = transformers.PretrainedConfig.to_dict(config_orig)
-    print("Config orig", config)
     config.temperature = 0.2
     config.top_k = 70
     config.top_p = 0.4
     config.task_specific_params["text-generation"]["temperature"] = 0.2
     config.task_specific_params["text-generation"]["top_k"] = 70
     config.task_specific_params["text-generation"]["top_p"] = 0.4
-    print("config new", config)
     
 
     model = GPTJForCausalLM.from_pretrained(
@@ -444,14 +422,11 @@ def main():
 
     peft_config = LoraConfig(
         r=finetune_args.lora_rank,
-        #lora_alpha=sigopt.params.lora_alpha,
         lora_alpha=54,
         lora_dropout=finetune_args.lora_dropout,
-        #target_modules=target_modules,
-        target_modules=["q_proj","v_proj","k_proj","out_proj"],#"fc_in","fc_out"],
+        target_modules=["q_proj","v_proj","k_proj","out_proj"],
         bias="none",
         task_type=TaskType.CAUSAL_LM,
-        #modules_to_save=["act","ln_f"]
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
@@ -462,7 +437,6 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        #eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
