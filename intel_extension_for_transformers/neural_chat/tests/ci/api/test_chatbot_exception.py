@@ -27,7 +27,9 @@ from intel_extension_for_transformers.neural_chat.config import (
     FinetuningArguments,
     TextGenerationFinetuningConfig,
 )
-from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
+from intel_extension_for_transformers.neural_chat.chatbot import finetune_model, optimize_model
+from intel_extension_for_transformers.transformers import MixedPrecisionConfig, WeightOnlyQuantConfig
+from transformers import AutoModelForCausalLM
 import unittest
 import shutil
 import os
@@ -337,6 +339,35 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         )
         mock_finetune.side_effect = Exception("Some generic error")
         self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+class TestOptimizeModelExceptions(unittest.TestCase):
+    def setUp(self):
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        return super().tearDown()
+    
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.transformers.MixedPrecisionConfig')
+    def test_amp_optimize_fail(self,mock_optimize):
+        config = MixedPrecisionConfig(dtype="float16" if torch.cuda.is_available() else "bfloat16")
+        model = AutoModelForCausalLM.from_pretrained(
+                "facebook/opt-125m",
+                low_cpu_mem_usage=True,
+            )
+        mock_optimize.side_effect = Exception
+        optimize_model(model=model,config=config)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.transformers.WeightOnlyQuantConfig')
+    def test_weight_only_quant_optimize_fail(self,mock_optimize):
+        config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+        model = AutoModelForCausalLM.from_pretrained(
+                "facebook/opt-125m",
+                low_cpu_mem_usage=True,
+            )
+        mock_optimize.side_effect = Exception
+        optimize_model(model=model,config=config)
 
 if __name__ == '__main__':
     unittest.main()
