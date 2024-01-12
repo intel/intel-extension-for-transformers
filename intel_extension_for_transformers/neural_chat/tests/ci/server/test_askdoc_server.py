@@ -185,7 +185,8 @@ class UnitTest(unittest.TestCase):
         feedback_data = {
             "question": "When is CES 2024?",
             "answer": "CES 2024 taking place Jan. 9-12, in Las Vegas.",
-            "feedback": "1"  # Feedback can be '1' for like or '0' for dislike
+            "feedback": "1",  # Feedback can be '1' for like or '0' for dislike
+            "comments": "Good answer."
         }
         # Mocking the MysqlDb class
         with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
@@ -198,8 +199,8 @@ class UnitTest(unittest.TestCase):
 
     def test_get_feedback_from_db(self):
         feedback_data = [
-            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01'},
-            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02'},
+            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01', "comments": "Comments 1"},
+            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02', "comments": "Comments 2"},
         ]
 
         # Mocking the MysqlDb class and fetch_all method
