@@ -47,7 +47,7 @@ NeuralChat provides OpenAI-compatible APIs for LLM inference, so you can use Neu
 
 ### Launch Service
 
-NeuralChat default runs "Intel/neural-chat-7b-v3-1",
+NeuralChat defaults to running the "Intel/neural-chat-7b-v3-1" model, and you can customize the chatbot service by configuring the YAML file.
 
 ```shell
 neuralchat_server start --config_file ./server/config/neuralchat.yaml
@@ -55,11 +55,19 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 
 ### Access Service
 
-Once the service is running, you can use the `/v1/chat/completions` endpoint by doing requests. You can use below ways to query the endpoints.
+Once the service is running, you can use the OpenAI-compatible endpoint `/v1/chat/completions` by doing requests. You can use below ways to query the endpoints.
 
 #### Using Curl
 ```shell
-curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
+curl http://localhost:8000/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+    "model": "Intel/neural-chat-7b-v3-1",
+    "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}
+    ]
+    }'
 ```
 
 #### Using Python Requests Library
@@ -69,7 +77,10 @@ curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about I
 import requests
 url = 'http://127.0.0.1:80/v1/chat/completions'
 headers = {'Content-Type': 'application/json'}
-data = '{"prompt": "Tell me about Intel Xeon Scalable Processors."}'
+data = '{"model": "Intel/neural-chat-7b-v3-1", "messages": [ \
+          {"role": "system", "content": "You are a helpful assistant."}, \
+          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."}] \
+       }'
 response = requests.post(url, headers=headers, data=data)
 print(response.json())
 ```
@@ -80,10 +91,16 @@ print(response.json())
 from openai import Client
 # Replace 'your_api_key' with your actual OpenAI API key
 api_key = 'your_api_key'
-backend_url = 'http://127.0.0.1:80/v1/chat/completions' 
+backend_url = 'http://127.0.0.1:80/v1/chat/completions'
 client = Client(api_key=api_key, base_url=backend_url)
-completion = client.ChatCompletion.create(prompt="Tell me about Intel Xeon Scalable Processors.")
-print(completion)
+chat_response = client.ChatCompletion.create(
+      model="Intel/neural-chat-7b-v3-1",
+      messages=[
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": "Tell me about Intel Xeon Scalable Processors."},
+      ]
+)
+print(chat_response)
 ```
 
 ## Langchain Extension APIs
