@@ -328,7 +328,14 @@ async def retrieval_chat(request: Request):
                     # skip empty link
                     if single_link == None:
                         continue
-                    raw_link = single_link["source"]
+                    logger.info(f"[askdoc - chat] single link: {single_link}")
+                    if isinstance(single_link, str):
+                        raw_link = single_link
+                    elif isinstance(single_link, dict):
+                        raw_link = single_link["source"]
+                    else:
+                        logger.info(f"[askdoc - chat] wrong link format")
+                        continue
                     # skip local file link
                     if not raw_link.startswith("http"):
                         continue
