@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_ml import MultilangTextToSpeech
 import unittest, os, shutil
 
 class TestChineseTextToSpeech(unittest.TestCase):
@@ -27,9 +27,10 @@ class TestChineseTextToSpeech(unittest.TestCase):
         shutil.rmtree('./tmp_audio', ignore_errors=True)
 
     def test_pre_llm_inference_actions(self):
-        text = "欢迎来到英特尔"
+        text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
-        output_audio_path = ChineseTextToSpeech().post_llm_inference_actions(text, output_audio_path)
+        output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(text, output_audio_path)
+        breakpoint()
         self.assertTrue(os.path.exists(output_audio_path))
 
 if __name__ == "__main__":
