@@ -22,7 +22,7 @@ cmpt_configs = {"int8": {"int8", "bf16", "fp32"}, "int4_clip": {"int8", "fp32", 
     "fp8_e5m2": {"fp32", "bf16"}, "fp8_e4m3": {"fp32", "bf16"}
 }
 
-scale_configs = {"int8": {"fp32"}, "int4_clip": {"fp32"}, "int4_fullrange": {"fp32"}, "fp4_e2m1_bnb": {"fp32"}, "fp4_e2m1": {"fp32"}, "nf4": {"fp32"},
+scale_configs = {"int8": {"fp32", "bf16"}, "int4_clip": {"fp32", "bf16"}, "int4_fullrange": {"fp32", "bf16"}, "fp4_e2m1_bnb": {"fp32", "bf16"}, "fp4_e2m1": {"fp32", "bf16"}, "nf4": {"fp32", "bf16"},
                  "fp8_e5m2": {"fp32", "fp8_e8m0"}, "fp8_e4m3": {"fp32", "fp8_e8m0"}}
 
 asym_configs = {"int8", "int4_clip", "int4_fullrange"}
@@ -35,7 +35,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 @pytest.mark.parametrize("blocksize", [128, -1])
 @pytest.mark.parametrize("compute_type", ["int8", "bf16", "fp32"])
 @pytest.mark.parametrize("weight_type", ["int8", "int4_clip", "int4_fullrange", "nf4", "fp4_e2m1_bnb", "fp4_e2m1", "fp8_e5m2", "fp8_e4m3"])
-@pytest.mark.parametrize("scale_type", ["fp32", "fp8_e8m0"])
+@pytest.mark.parametrize("scale_type", ["fp32", "bf16", "fp8_e8m0"])
 @pytest.mark.parametrize("asym", [True, False])
 @pytest.mark.parametrize("transpose", [True, False])
 @pytest.mark.parametrize("add_bias", [True, False])
@@ -44,7 +44,7 @@ asym_configs = {"int8", "int4_clip", "int4_fullrange"}
 def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=True):
     if compute_type not in cmpt_configs[weight_type] or scale_type not in scale_configs[weight_type]:
         pytest.skip()
-    if asym and (weight_type not in asym_configs or compute_type == "int8"):
+    if asym and (weight_type not in asym_configs or compute_type == "int8" or scale_type!="fp32"):
         pytest.skip()
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
@@ -58,10 +58,10 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-    compress_wei = torch.ops.jblasop.woq_quantize(
+    compress_wei = torch.ops.bestlaop.woq_quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type, scale_type, asym)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
-    torch.ops.jblasop.woq_dequantize(
+    torch.ops.bestlaop.woq_dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type, scale_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
@@ -72,7 +72,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, scale_type, asym, transp
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
-    torch.ops.jblasop.woq_linear(
+    torch.ops.bestlaop.woq_linear(
         tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, scale_type, asym)
     if dst_dt == "bf16":
         tar_dst = tar_dst.to(torch.float)

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
+      - '.github/workflows/script/unitTest/run_unit_test_neuralchat.sh'
       - 'intel_extension_for_transformers/neural_chat/**'
       - 'requirements.txt'
       - 'setup.py'

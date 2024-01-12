@@ -14,7 +14,7 @@
 #pragma once
 #include <ATen/core/TensorBody.h>
 #include <torch/torch.h>
-#include "jblas/jit_blas_storage.h"
+#include "bestla/bestla_storage.h"
 #include "../include/dispatcher_utils.hpp"
 #include <string.h>
 #include <assert.h>
@@ -54,21 +54,21 @@ struct woq_runtime_ctx {
   bool transpose;
   int m, n, k, lda, ldo;
   float alpha, beta;
-  jblas::storage::gemm::IWeightBase* deseries_wei;
+  bestla::storage::gemm::IWeightBase* deseries_wei;
 };
 
-static std::map<std::string, JBLAS_DTYPE> wei2jblasdt_map{{"int8", JBLAS_DTYPE::S8},
-                                                          {"int4_clip", JBLAS_DTYPE::S4_CLIP},
-                                                          {"int4_fullrange", JBLAS_DTYPE::S4_FULLRANGE},
-                                                          {"nf4", JBLAS_DTYPE::F4_NF4},
-                                                          {"fp4_e2m1_bnb", JBLAS_DTYPE::F4_BNB},
-                                                          {"fp4_e2m1", JBLAS_DTYPE::F4_E2M1},
-                                                          {"fp8_e4m3", JBLAS_DTYPE::F8_E4M3},
-                                                          {"fp8_e5m2", JBLAS_DTYPE::F8_E5M2}};
-static std::map<std::string, JBLAS_DTYPE> scale2jblasdt_map{{"fp32", JBLAS_DTYPE::F32},
-                                                            {"fp8_e8m0", JBLAS_DTYPE::F8_E8M0}};
+static std::map<std::string, BTLA_DTYPE> wei2bestladt_map{{"int8", BTLA_DTYPE::S8},
+                                                          {"int4_clip", BTLA_DTYPE::S4_CLIP},
+                                                          {"int4_fullrange", BTLA_DTYPE::S4_FULLRANGE},
+                                                          {"nf4", BTLA_DTYPE::F4_NF4},
+                                                          {"fp4_e2m1_bnb", BTLA_DTYPE::F4_BNB},
+                                                          {"fp4_e2m1", BTLA_DTYPE::F4_E2M1},
+                                                          {"fp8_e4m3", BTLA_DTYPE::F8_E4M3},
+                                                          {"fp8_e5m2", BTLA_DTYPE::F8_E5M2}};
+static std::map<std::string, BTLA_DTYPE> scale2bestladt_map{
+    {"fp32", BTLA_DTYPE::F32}, {"bf16", BTLA_DTYPE::BF16}, {"fp8_e8m0", BTLA_DTYPE::F8_E8M0}};
 
 void dispatch_woq_task(woq_config_param* p, woq_runtime_ctx* ctx, WOQ_TASK task);
-void jblas_packq(woq_packq_param* p, woq_packq_ctx* ctx);
+void bestla_packq(woq_packq_param* p, woq_packq_ctx* ctx);
 void set_woq_workspace(torch::Tensor* workspace);
 }  // namespace woq
