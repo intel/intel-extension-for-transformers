@@ -43,6 +43,7 @@
 
 int32_t get_num_physical_cores();
 
+int64_t common_time_us();
 struct common_params {
   int32_t n_threads = get_num_physical_cores();
 

@@ -22,7 +22,6 @@
 #include "application/common.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_types.h"
-#include "models/model_utils/quant_config.h"
 
 #ifdef MODEL_SHARED
 #if defined(_WIN32) && !defined(__MINGW32__)
@@ -62,12 +61,10 @@ MODEL_API struct model_context_params model_context_default_params();
 
 MODEL_API bool model_mmap_supported();
 MODEL_API bool model_mlock_supported();
-
 // TODO: not great API - very likely to change
 // Initialize the model + ne backend
 // Call once at the start of the program
 MODEL_API void model_init_backend();
-
 MODEL_API int64_t model_time_us();
 
 // Various functions for loading a ne model model.
@@ -78,15 +75,6 @@ MODEL_API struct model_context* model_init_from_file(const char* path_model, str
 // Frees all allocated memory
 MODEL_API void model_free(struct model_context* ctx);
 
-// TODO: not great API - very likely to change
-// Returns 0 on success
-// param - from args
-// quant_layer - depends on each model's config
-MODEL_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
-size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps, void* dstpr,
-                   const quant_params_internal params, int nthread, int n, int k, int* g_idx);
-size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, size_t n,
-                      size_t k);
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for
 // the layers modified by the adapter. Can be NULL to use the current loaded
@@ -98,7 +86,6 @@ MODEL_API int model_apply_lora_from_file(struct model_context* ctx, const char* 
 
 // Returns the number of tokens in the KV cache
 MODEL_API int model_get_kv_cache_token_count(const struct model_context* ctx);
-
 // Sets the current rng seed.
 MODEL_API void model_set_rng_seed(struct model_context* ctx, int seed);
 

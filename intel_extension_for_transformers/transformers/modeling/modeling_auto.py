@@ -53,6 +53,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     QUANT_CONFIG,
     WEIGHTS_NAME,
     WEIGHTS_INDEX_NAME,
+    SAFE_WEIGHTS_NAME,
 )
 from intel_extension_for_transformers.llm.quantization.utils import replace_linear
 from transformers.configuration_utils import PretrainedConfig
@@ -727,6 +728,13 @@ class _BaseQBitsAutoModelClass:
                         pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_INDEX_NAME, variant)
                     )
                     is_sharded = True
+                elif os.path.isfile(
+                    os.path.join(pretrained_model_name_or_path, subfolder, _add_variant(SAFE_WEIGHTS_NAME, variant))
+                ):
+                    # Load from a safetensors checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path, subfolder, _add_variant(SAFE_WEIGHTS_NAME, variant)
+                    )
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
                 archive_file = pretrained_model_name_or_path
                 is_local = True

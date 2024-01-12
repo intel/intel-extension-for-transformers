@@ -4,3 +4,4 @@ protobuf
 intel-tensorflow
 transformers
 evaluate
+accelerate

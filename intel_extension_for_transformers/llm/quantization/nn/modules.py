@@ -133,8 +133,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
-        weight = torch.ops.jblasop.woq_quantize(
-            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        weight = torch.ops.bestlaop.woq_quantize(
+            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
         weight.resize_(shape)
         self.weight = ParamsQBits(data=weight,
                                   requires_grad=False,
@@ -202,7 +202,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 f"You are now additionally merging {','.join(self.active_adapters)}."
             )
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
-        torch.ops.jblasop.woq_dequantize(
+        torch.ops.bestlaop.woq_dequantize(
             self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         w_data = w_dequant
         for active_adapter in self.active_adapters:
@@ -221,8 +221,8 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                     w_data = orig_weights
                 else:
                     w_data += self.get_delta_weight(active_adapter)
-        weight = torch.ops.jblasop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        weight = torch.ops.bestlaop.woq_quantize(
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype
@@ -233,15 +233,15 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             print("Already unmerged. Nothing to do.")
             return
         w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
-        torch.ops.jblasop.woq_dequantize(
+        torch.ops.bestlaop.woq_dequantize(
             self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
         w_data = w_dequant
         while len(self.merged_adapters) > 0:
             active_adapter = self.merged_adapters.pop()
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
-        weight = torch.ops.jblasop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+        weight = torch.ops.bestlaop.woq_quantize(
+            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
         self.weight = ParamsQBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype

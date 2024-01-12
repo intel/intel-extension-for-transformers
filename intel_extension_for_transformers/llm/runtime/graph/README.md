@@ -164,6 +164,18 @@ LLM Runtime supports the following models:
     <td> </td>
     <td>Latest</td>
   </tr>
+    <tr>
+    <td><a href="https://huggingface.co/openai/whisper-tiny" target="_blank" rel="noopener noreferrer">Whisper-tiny</a>,
+    <a href="https://huggingface.co/openai/whisper-base" target="_blank" rel="noopener noreferrer">Whisper-base</a>
+    <a href="https://huggingface.co/openai/whisper-small" target="_blank" rel="noopener noreferrer">Whisper-small</a>
+    <a href="https://huggingface.co/openai/whisper-medium" target="_blank" rel="noopener noreferrer">Whisper-medium</a>
+    <a href="https://huggingface.co/openai/whisper-large" target="_blank" rel="noopener noreferrer">Whisper-large</a></td>
+    <td>✅</td>
+    <td> </td>
+    <td>✅</td>
+    <td> </td>
+    <td>Latest</td>
+  </tr>
 </tbody>
 </table>
 
@@ -283,6 +295,15 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
 ```
 
+To use whisper to Audio-to-text, here is the sample code
+```python
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+model_name = "Local path for whisper"     # please use local path
+woq_config = WeightOnlyQuantConfig(use_ggml=True) #Currently, only Q40 is supported
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config)
+model('Local audio file')
+```
+
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 Argument description of WeightOnlyQuantConfig ([supported MatMul combinations](#supported-matrix-multiplication-data-types-combinations)):
@@ -387,10 +408,11 @@ while True:
     outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True, do_sample=True)
 ```
 
-## How to use: Python script
+## How to use: Straightforward Python script
 Install from binary
 ```shell
 pip install intel-extension-for-transformers
+pip install -r requirements.txt  # under graph folder
 ```
 
 Build from source
