@@ -14,12 +14,12 @@
 #pragma once
 
 #include <torch/serialize/input-archive.h>
-namespace jblas_gemm {
-struct jblas_gemm_runtime_ctx {
+namespace bestla_gemm {
+struct bestla_gemm_runtime_ctx {
   torch::Tensor *matA, *matB, *matC;
   bool matB_trans;
   int m, n, k;
 };
 
-void dispatch_jblas_gemm(jblas_gemm_runtime_ctx* ctx);
-}  // namespace jblas_gemm
+void dispatch_bestla_gemm(bestla_gemm_runtime_ctx* ctx);
+}  // namespace bestla_gemm
