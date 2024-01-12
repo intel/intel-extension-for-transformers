@@ -20,7 +20,7 @@ import torch
 from unittest.mock import MagicMock, patch
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
-from transformers import TrainingArguments, Seq2SeqTrainingArguments
+from transformers import TrainingArguments
 from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
@@ -185,7 +185,7 @@ json_data = \
 """
 test_data_file = './alpaca_test.json'
 
-class TestFinetuneExceptions(unittest.TestCase):
+class TestFinetuneModelExceptions(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.device = get_device_type()
@@ -198,13 +198,6 @@ class TestFinetuneExceptions(unittest.TestCase):
                     max_steps=3,
                     overwrite_output_dir=True)
 
-            self.seq2seq_training_args = Seq2SeqTrainingArguments(
-                    output_dir='./tmp',
-                    do_train=True,
-                    max_steps=3,
-                    overwrite_output_dir=True)
-
-
     @classmethod
     def tearDownClass(self):
         shutil.rmtree('./tmp', ignore_errors=True)
@@ -214,7 +207,6 @@ class TestFinetuneExceptions(unittest.TestCase):
     @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
     def test_finetune_error_dataset_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
-        mock_finetune.side_effect = FileNotFoundError("Couldn't find a dataset script")
         data_args = DataArguments(train_file=test_data_file)
         finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
         finetune_cfg = TextGenerationFinetuningConfig(
@@ -223,8 +215,128 @@ class TestFinetuneExceptions(unittest.TestCase):
             training_args=self.training_args,
             finetune_args=finetune_args
         )
+        mock_finetune.side_effect = FileNotFoundError("Couldn't find a dataset script")
         self.assertRaises(FileNotFoundError,finetune_model,finetune_cfg)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_error_validation_file_not_found(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = ValueError("--do_eval requires a validation dataset")
+        self.assertRaises(ValueError,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_error_train_file_not_found(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = ValueError("--do_train requires a train dataset")
+        self.assertRaises(ValueError,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_lora_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="lora")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_llama_adapter_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="llama_adapter")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_ptun_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="ptun")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_prefix_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="prefix")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_prompt_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="prompt")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_error_generic(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception("Some generic error")
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
 
 if __name__ == '__main__':
     unittest.main()
