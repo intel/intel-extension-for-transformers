@@ -244,7 +244,7 @@ if __name__ == '__main__':
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([
-            #CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
             ])
     cmdclass={'build_ext': CMakeBuild}
 
