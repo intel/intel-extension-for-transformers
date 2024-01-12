@@ -4,9 +4,7 @@ NeuralChat
 ===========================
 <h3> A customizable chatbot framework to create your own chatbot within minutes</h3>
 
----
-
-[í ½í¸ƒAPI](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[í ½í²»Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[í ½í³–Notebooks](./docs/full_notebooks.md)
+[ðŸ˜ƒAPI](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[ðŸ’»Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[ðŸ“–Notebooks](./docs/full_notebooks.md)
 </div>
 
 # Introduction
@@ -15,7 +13,7 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 
 <a target="_blank" href="./docs/images/neuralchat_arch.png">
 <p align="center">
-  <img src="./docs/images/neuralchat_arch.png" alt="NeuralChat" width=600 height=800>
+  <img src="./docs/images/neuralchat_arch.png" alt="NeuralChat" width=800 height=612>
 </p>
 </a>
 
