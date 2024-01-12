@@ -25,9 +25,7 @@ from neural_compressor.model.torch_model import IPEXModel, PyTorchModel
 from neural_compressor.utils.pytorch import load
 from transformers import AutoModel, PretrainedConfig
 from transformers.file_utils import add_start_docstrings
-from transformers.modeling_utils import no_init_weights
 from transformers.models.auto.auto_factory import _get_model_class
-from transformers.utils.generic import ContextManagers
 from optimum.exporters import TasksManager
 
 from optimum.intel.neural_compressor import INCConfig
@@ -268,9 +266,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
                 decoder = model
             else:
                 model_class = _get_model_class(config, cls.auto_model_class._model_mapping)
-                init_contexts = [no_init_weights(_enable=True)]
-                with ContextManagers(init_contexts):
-                    model = model_class(config)
+                model = model_class(config)
 
                 # Load the model from local directory
                 if os.path.isdir(model_id):
