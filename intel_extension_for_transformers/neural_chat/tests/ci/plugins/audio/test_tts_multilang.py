@@ -30,7 +30,6 @@ class TestChineseTextToSpeech(unittest.TestCase):
         text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
         output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(text, output_audio_path)
-        breakpoint()
         self.assertTrue(os.path.exists(output_audio_path))
 
 if __name__ == "__main__":

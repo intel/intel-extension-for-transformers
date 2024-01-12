@@ -368,8 +368,8 @@ class BaseModel(ABC):
             plugin_name = "tts"
             if is_plugin_enabled("tts"):
                 plugin_name = "tts"
-            elif  is_plugin_enabled("tts_chinese"):
-                plugin_name = "tts_chinese"
+            elif  is_plugin_enabled("tts_multilang"):
+                plugin_name = "tts_multilang"
             else:
                 raise Exception("Please specify the TTS plugin!")
             plugin_instance = get_plugin_instance(plugin_name)
@@ -434,12 +434,10 @@ class BaseModel(ABC):
         """
         if plugin_name == "tts":
             self.tts = instance
-        if plugin_name == "tts_chinese":
-            self.tts_chinese = instance
+        if plugin_name == "tts_multilang":
+            self.tts_multilang = instance
         if plugin_name == "asr":
             self.asr = instance
-        if plugin_name == "asr_chinese":
-            self.asr_chinese = instance
         if plugin_name == "retrieval":
             self.retrieval = instance
         if plugin_name == "cache":

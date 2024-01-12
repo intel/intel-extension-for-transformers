@@ -4,8 +4,6 @@ peft
 fschat==0.2.32
 num2words
 speechbrain
-paddlepaddle
-paddlespeech
 shortuuid
 gptcache
 evaluate
@@ -44,3 +42,8 @@ zhconv
 urllib3
 langid
 qdrant-client
+vector_quantize_pytorch
+cn2an
+pyopenjtalk; sys_platform == 'linux'
+openjtalk; sys_platform != 'linux'
+jaconv

@@ -1,5 +1,3 @@
-paddlepaddle
-paddlespeech
 transformers
 soundfile
 datasets

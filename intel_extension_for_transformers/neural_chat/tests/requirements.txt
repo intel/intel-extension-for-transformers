@@ -9,8 +9,6 @@ num2words
 speechbrain
 onnxruntime>=1.16.3
 onnx>=1.15.0
-paddlepaddle
-paddlespeech
 shortuuid
 gptcache
 evaluate

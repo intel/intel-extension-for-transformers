@@ -29,8 +29,7 @@ NeuralChat provides a default chatbot configuration in `./config/neuralchat.yaml
 |                           | args.voice               | "default"                               | A valid TTS voice                 |
 |                           | args.stream_mode         | false                                   | true, false                       |
 |                           | args.output_audio_path   | "./output_audio.wav"                    | A valid file path                 |
-| asr_chinese               | enable                   | false                                   | true, false                       |
-| tts_chinese               | enable                   | false                                   | true, false                       |
+| tts_multilang             | enable                   | false                                   | true, false                       |
 |                           | args.device              | "cpu"                                   | "cpu", "hpu", "xpu", "cuda"       |
 |                           | args.spk_id              | 0                                       | A valid speaker ID                |
 |                           | args.stream_mode         | false                                   | true, false                       |

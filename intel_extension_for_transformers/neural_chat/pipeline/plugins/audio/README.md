@@ -24,17 +24,11 @@ For other operating systems such as CentOS, you will need to make slight adjustm
 
 # Multilingual Automatic Speech Recognition (ASR)
 
-## Dependencies Installation
-
-To use the ASR module, you need to install the necessary dependencies. You can do this by running the following command:
-
-```bash
-pip install transformers datasets pydub
-```
+We support multilingual Automatic Speech Recognition using Whisper.
 
 ## Usage
 
-The AudioSpeechRecognition class provides functionality for converting English/Multiligual audio to text. Here's how to use it:
+The AudioSpeechRecognition class provides functionality for converting English/Multilingual audio to text. Here's how to use it:
 
 ```python
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import AudioSpeechRecognition
@@ -49,20 +43,12 @@ print("ASR Result:", result)
 
 # English Text-to-Speech (TTS)
 
-## Dependencies Installation
-
-To use the English TTS module, you need to install the required dependencies. Run the following command:
-
-```bash
-pip install transformers soundfile speechbrain
-```
-
 ## Usage
 
 The TextToSpeech class in your module provides the capability to convert English text to speech. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import TextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
 tts = TextToSpeech()
 text_to_speak = "Hello, this is a sample text."  # Replace with your text
 output_audio_path = "./output.wav"  # Replace with the desired output audio path
@@ -70,33 +56,26 @@ voice = "default"  # You can choose between "default," "pat," or a custom voice
 tts.text2speech(text_to_speak, output_audio_path, voice)
 ```
 
-# Chinese Text-to-Speech (TTS)
+# Multi Language Text-to-Speech (TTS)
 
-## Dependencies Installation
+We support multilingual multi-speaker text to speech functionalities (Chinese, English, Japanese) on top of the project [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2), with [IPEX](https://github.com/intel/intel-extension-for-pytorch) BFloat16 inference optimization on Xeon CPU. We finetune our [checkpoints](https://huggingface.co/spycsh/bert-vits-thchs-6-8000) with partial data (6 speakers) from the audio dataset [THCHS-30](https://www.openslr.org/18/).
 
-To use the Chinese TTS module, you need to install the required dependencies. Run the following command:
-
-```bash
-pip install paddlespeech paddlepaddle
-```
 
 ## Usage
 
-The ChineseTextToSpeech class within your module provides functionality for TTS. Here's how to use it:
+The MultilangTextToSpeech class within your module provides functionality for TTS. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio import ChineseTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_ml import MultilangTextToSpeech
 # Initialize the TTS module
-tts = ChineseTextToSpeech()
+tts = MultilangTextToSpeech()
 # Define the text you want to convert to speech
-text_to_speak = "你好，这是一个示例文本。"  # Replace with your Chinese text
+text_to_speak = "欢迎来到英特尔，welcome to Intel。こんにちは！"  # Replace with your Chinese text
 # Specify the output audio path
 output_audio_path = "./output.wav"  # Replace with your desired output audio path
 # Perform text-to-speech conversion
-tts.text2speech(text_to_speak)
+tts.text2speech(text_to_speak, output_audio_path)
 
-# If you want to stream the generation of audio from a text generator (e.g., a language model),
-# you can use the following method:
-# audio_generator = your_text_generator_function()  # Replace with your text generator
-# tts.stream_text2speech(audio_generator)
+# If you want to change the speaker, change the sid
+# tts.text2speech(text_to_speak, output_audio_path, sid=1)
 ```

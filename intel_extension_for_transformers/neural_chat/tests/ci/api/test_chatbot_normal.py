@@ -100,10 +100,10 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         self.assertIsNotNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    def test_enable_plugin_tts_chinese(self):
+    def test_enable_plugin_tts_multilang(self):
         # Test enabling Chinese Text-to-Speech plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        config.plugins = {"tts_chinese": {"enable": True, "args": {}}}
+        config.plugins = {"tts_multilang": {"enable": True, "args": {}}}
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 
