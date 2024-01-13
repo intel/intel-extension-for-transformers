@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+g04f5ef6 documentation</title>
+  <title>Setup Conda &mdash; Intel® Extension for Transformers 0.1.dev1+gaabb2fc documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -97,6 +97,22 @@
 Locate the downloaded installer file (e.g., Miniconda3-latest-Windows-x86_64.exe for Miniconda). Double-click the installer to launch it.
 To create a new Conda environment, use the command: “conda create -n myenv python=3.9.0”</p>
 </section>
+<section id="install-visual-cpp-build-tools">
+<h1>Install visual cpp build tools<a class="headerlink" href="#install-visual-cpp-build-tools" title="Link to this heading"></a></h1>
+<p>Visual C++ Build Tools is a package provided by Microsoft that includes tools required to build C++ projects using Visual Studio without installing the full Visual Studio IDE. These tools are essential for compiling, linking, and building intel extension for transformers.</p>
+<p>To install the Visual C++ Build Tools, visit the following link: <a class="reference external" href="https://visualstudio.microsoft.com/visual-cpp-build-tools/">Visual C++ Build Tools</a>.
+Once there, you’ll find download options and instructions for installation based on your specific requirements.</p>
+</section>
+<section id="install-intel-extension-for-transformers">
+<h1>Install intel extension for transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Link to this heading"></a></h1>
+<p>Install the intel extension for transformers from source code to get the latest features of LLM runtime.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
+<span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
 <section id="install-python-dependencies">
 <h1>Install Python dependencies<a class="headerlink" href="#install-python-dependencies" title="Link to this heading"></a></h1>
 <p>Install dependencies using pip</p>
@@ -180,7 +196,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="nv">trans
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f05b14bcac0> 
+   <jinja2.runtime.BlockReference object at 0x7f1d3e78bf40> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
