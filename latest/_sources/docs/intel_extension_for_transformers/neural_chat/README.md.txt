@@ -4,7 +4,7 @@ NeuralChat
 ===========================
 <h3> A customizable framework to create your own LLM-driven AI apps within minutes</h3>
 
-[🌟RESTful API](./docs/neuralchat_api.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Notebooks](./docs/full_notebooks.html)
+🌟[RESTful API](./docs/neuralchat_api.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;💻[Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;📖[Notebooks](./docs/full_notebooks.html)
 </div>
 
 # Introduction
