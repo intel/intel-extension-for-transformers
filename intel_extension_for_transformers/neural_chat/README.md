@@ -2,14 +2,20 @@
 
 NeuralChat
 ===========================
-<h3> A customizable chatbot framework to create your own chatbot within minutes</h3>
+<h3> A customizable framework to create your own LLM-driven app within minutes</h3>
 
-[😃API](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Notebooks](./docs/full_notebooks.md)
+[😃ARESTful API](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Notebooks](./docs/full_notebooks.md)
 </div>
 
 # Introduction
 
-NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
+NeuralChat is a powerful and flexible open framework that empowers you to effortlessly create LLM-centric AI applications, including chatbots and copilots.
+* Support the commodity hardware like [Intel Xeon Scalable processors](https://www.intel.com/content/www/us/en/products/details/processors/xeon/scalable.html), [Intel Gaudi AI processors](https://habana.ai/products), [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/data-center-gpu/max-series.html) and NVidia GPUs
+* Built on top of leading AI frameworks (e.g., [PyTorch](https://pytorch.org/) and domain libraries (e.g., [Hugging Face](https://github.com/huggingface), [Langchain](https://www.langchain.com/))
+* Support the model customizations through parameter-efficient fine-tuning, quantization, and sparsity. Released [Intel NeuralChat-7B LLM](https://huggingface.co/Intel/neural-chat-7b-v3-1), ranking #1 in Hugging Face leaderboard in Nov'23
+* Provide a rich set of plugins that can augment the AI applications through retrieval-augmented generation (e.g., [fastRAG](https://github.com/IntelLabs/fastRAG/tree/main)), content moderation, query caching, more
+* Integrate with popular serving frameworks (e.g., [vLLM](https://github.com/vllm-project/vllm), [TGI](https://github.com/huggingface/text-generation-inference), [Triton](https://developer.nvidia.com/triton-inference-server))
+* Support [OpenAI](https://platform.openai.com/docs/introduction)-compatible API to simplify the creation of new AI applications or the migration of existing applications 
 
 <a target="_blank" href="./docs/images/neuralchat_arch.png">
 <p align="center">
@@ -17,7 +23,7 @@ NeuralChat is a customizable chat framework designed to easily create user own c
 </p>
 </a>
 
-> NeuralChat is under active development with some experimental features (APIs are subject to change).
+> NeuralChat is under active development (APIs are subject to change).
 
 # Installation
 
