@@ -2,7 +2,7 @@
 
 NeuralChat
 ===========================
-<h3> A customizable framework to create your own LLM-driven app within minutes</h3>
+<h3> A customizable framework to create your own LLM-driven apps within minutes</h3>
 
 [😃ARESTful API](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Notebooks](./docs/full_notebooks.md)
 </div>
@@ -10,12 +10,11 @@ NeuralChat
 # Introduction
 
 NeuralChat is a powerful and flexible open framework that empowers you to effortlessly create LLM-centric AI applications, including chatbots and copilots.
-* Support the commodity hardware like [Intel Xeon Scalable processors](https://www.intel.com/content/www/us/en/products/details/processors/xeon/scalable.html), [Intel Gaudi AI processors](https://habana.ai/products), [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/data-center-gpu/max-series.html) and NVidia GPUs
+* Support  hardware like [Intel Xeon Scalable processors](https://www.intel.com/content/www/us/en/products/details/processors/xeon/scalable.html), [Intel Gaudi AI processors](https://habana.ai/products), [Intel® Data Center GPU Max Series](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/data-center-gpu/max-series.html) and NVidia GPUs
 * Built on top of leading AI frameworks (e.g., [PyTorch](https://pytorch.org/) and domain libraries (e.g., [Hugging Face](https://github.com/huggingface), [Langchain](https://www.langchain.com/))
 * Support the model customizations through parameter-efficient fine-tuning, quantization, and sparsity. Released [Intel NeuralChat-7B LLM](https://huggingface.co/Intel/neural-chat-7b-v3-1), ranking #1 in Hugging Face leaderboard in Nov'23
 * Provide a rich set of plugins that can augment the AI applications through retrieval-augmented generation (e.g., [fastRAG](https://github.com/IntelLabs/fastRAG/tree/main)), content moderation, query caching, more
-* Integrate with popular serving frameworks (e.g., [vLLM](https://github.com/vllm-project/vllm), [TGI](https://github.com/huggingface/text-generation-inference), [Triton](https://developer.nvidia.com/triton-inference-server))
-* Support [OpenAI](https://platform.openai.com/docs/introduction)-compatible API to simplify the creation of new AI applications or the migration of existing applications 
+* Integrate with popular serving frameworks (e.g., [vLLM](https://github.com/vllm-project/vllm), [TGI](https://github.com/huggingface/text-generation-inference), [Triton](https://developer.nvidia.com/triton-inference-server)). Support [OpenAI](https://platform.openai.com/docs/introduction)-compatible API to simplify the creation or migration of AI applications
 
 <a target="_blank" href="./docs/images/neuralchat_arch.png">
 <p align="center">
