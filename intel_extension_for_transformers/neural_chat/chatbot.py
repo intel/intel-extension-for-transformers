@@ -114,7 +114,7 @@ def build_chatbot(config: PipelineConfig=None):
                     from .pipeline.plugins.audio.tts import TextToSpeech
                     plugins[plugin_name]['class'] = TextToSpeech
                 elif plugin_name == "tts_multilang":
-                    from .pipeline.plugins.audio.tts_ml import MultilangTextToSpeech
+                    from .pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
                     plugins[plugin_name]['class'] = MultilangTextToSpeech
                 elif plugin_name == "asr":
                     from .pipeline.plugins.audio.asr import AudioSpeechRecognition

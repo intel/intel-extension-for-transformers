@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_ml import MultilangTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
 import unittest, os, shutil
 
 class TestChineseTextToSpeech(unittest.TestCase):

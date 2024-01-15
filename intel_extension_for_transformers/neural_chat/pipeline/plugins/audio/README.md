@@ -66,7 +66,7 @@ We support multilingual multi-speaker text to speech functionalities (Chinese, E
 The MultilangTextToSpeech class within your module provides functionality for TTS. Here's how to use it:
 
 ```python
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_ml import MultilangTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
 # Initialize the TTS module
 tts = MultilangTextToSpeech()
 # Define the text you want to convert to speech
