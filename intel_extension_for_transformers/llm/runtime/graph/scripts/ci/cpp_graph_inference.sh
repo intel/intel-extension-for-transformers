@@ -84,7 +84,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mode=*)
         # default is latency
-        mode=`echo $1 | sed "s/[-a-zA-Z0-9_]*=//"`;;
+        mode=`echo $1 | sed "s/[-a-zA-Z0-9_]*=//"`
         ;;
     --)
         shift
@@ -402,7 +402,7 @@ function main() {
         task_name="${model}-fp32-${cores_per_instance}-${batch_size_list[@]:0:1}-${input_list[@]:0:1}-${output}"
         ppl_eval "$task_name" "$cores_per_instance" "$model_path" "$model-fp32.bin"
     fi
-    if [[ "${mode}" == "accuracy" ]]; then6
+    if [[ "${mode}" == "accuracy" ]]; then
         if [[ "$use_gptq" == "false" ]]; then
             precision=q4_j_i8_g128
             logs_file="${model}-${precision}-${cores_per_instance}_accuracy.log"
