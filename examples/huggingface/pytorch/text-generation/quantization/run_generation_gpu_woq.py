@@ -17,7 +17,7 @@ parser.add_argument(
     "--model", nargs="?", default="Qwen/Qwen-7B-Chat", const="Qwen/Qwen-7B-Chat"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--trust_remote_code", default=True)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -48,13 +48,13 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, 
 parser.add_argument("--woq", action="store_true")
 parser.add_argument("--woq_algo", default="RTN", choices=['RTN'], 
                     help="Weight-only parameter.")
-parser.add_argument("--woq_dtype", type=str, default="int8", 
-                    choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
+parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
+                    choices=["int4_fullrange"])
 parser.add_argument("--woq_group_size", type=int, default=64)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="cpu")
-parser.add_argument("--compute_dtype", default="fp32")
+parser.add_argument("--compute_dtype", default="fp16")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
@@ -65,7 +65,7 @@ torch_dtype = torch.float16 if args.compute_dtype == "fp16" else torch.float32
 
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
-check_min_version("4.32.0")
+check_min_version("4.31.0")
 
 # get model config
 config = AutoConfig.from_pretrained(
@@ -87,7 +87,10 @@ else:
 
 quantization_config = None
 if args.woq:
-    quantization_config = WeightOnlyQuantConfig(compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype, group_size=args.woq_group_size) #default is A32W4G32
+    quantization_config = WeightOnlyQuantConfig(
+        compute_dtype=args.compute_dtype, weight_dtype=args.woq_dtype,
+        group_size=args.woq_group_size, scale_dtype=args.compute_dtype
+    ) #default is A16W4G16
 
 # get model
 if quantization_config is not None:

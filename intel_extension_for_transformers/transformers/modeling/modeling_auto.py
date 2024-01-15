@@ -54,57 +54,33 @@ from ..utils.utility import (
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
 )
-from ...llm.quantization.utils import replace_linear
+from ...llm.quantization.utils import (
+    convert_dtype_str2torch,
+    convert_dtype_torch2str,
+    convert_to_quantized_model,
+    replace_linear
+)
 from ...utils.utils import get_gpu_family, supported_gpus
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
-from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch, convert_dtype_torch2str
-
 from typing import Union
 
 torch = LazyImport("torch")
 
 
-def device_is_xpu(device_map):
-    use_xpu = (
-            True
-            if device_map == torch.device("xpu")
-            or device_map == "xpu"
-            else False
-        )
-
-    return use_xpu
-
-def check_xpu_type(device_map, gpu_type="max"):
-    if gpu_type not in supported_gpus():
-        assert False, "unsupported gpu type {}".format(gpu_type)
-
-    if not device_is_xpu(device_map):
-        return False
-
-    import intel_extension_for_pytorch
-    assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
-    name = get_gpu_family()
-    return name == gpu_type
-
-def save_low_bit_weight_by_ipex(model, save_directory, param_dtype):
-    quantized_ckpt = "{}/torch.pt".format(save_directory)
-
-    new_model = model.to(param_dtype)
-    model_state = new_model.state_dict()
-    torch.save(model_state, quantized_ckpt)
-    print("Save quantized model weight by ipex to {}".format(quantized_ckpt))
-
 def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
     assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
-    device_map = self.device_map
 
     if os.path.isfile(save_directory):
         logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
         return
 
     os.makedirs(save_directory, exist_ok=True)
+    # use transformers original `save_pretrained` function
+    del self.save_pretrained
     self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
+    import types
+    self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
     # it's not necessary to load the entire model to extract its keys
@@ -140,26 +116,36 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
             token=kwargs.get("token"),
         )
 
+    self.quantization_config.low_bit_model = True
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
-    if check_xpu_type(device_map, "max"):
-        save_low_bit_weight_by_ipex(
-            self, save_directory, convert_dtype_str2torch(self.quantization_config.compute_dtype)
-        )
-
-
-def int4_type_list():
-    return ['nf4',
-            'int4_fullrange',
-            'int4_clip',
-            'fp4_e2m1'
-            'fp4_e2m1_bnb']
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
+            logger.info("Find quantization_config.json, trying to load quantized low bit model...")
+            quantization_config = WeightOnlyQuantConfig.from_pretrained(
+                pretrained_model_name_or_path,
+                _configuration_file=QUANT_CONFIG,
+                **kwargs,
+            )
+            if quantization_config is None or quantization_config.low_bit_model != True:
+                logger.warning("Quantization_config loading failed. If you want to load saved " \
+                               "low bit model, please check your quantization_config.json.")
+            else:
+                logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
+                try:
+                    model = cls.load_low_bit(pretrained_model_name_or_path)
+                    logger.info("Saved low bit model loading successfully. Other input args " \
+                                "will be ignored.")
+                    return model
+                except:
+                    logger.error("Saved low bit model loading failed, please check your model.")
+                    exit(0)
+
         if kwargs.get("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
                 Graph,
@@ -193,8 +179,7 @@ class _BaseQBitsAutoModelClass:
             return model
         use_cpu = (
             True
-            if device_map == torch.device("cpu")
-            or device_map == "cpu"
+            if device_map == torch.device("cpu") or device_map == "cpu"
             else False
         )
         use_xpu = (
@@ -235,18 +220,16 @@ class _BaseQBitsAutoModelClass:
                             compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="nf4"
                         )
                 else:
-                    assert (quantization_config.weight_dtype in int4_type_list()), \
-                        "Quantization_config.weight_dtype should be one of {}.".format(int4_type_list())
-
-                    assert (convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype), \
-                        "Quantization_config.compute_dtype {} should be same as torch_dtype {}.".format(
-                            quantization_config.compute_dtype, torch_dtype)
-
+                    assert (
+                        "4" in quantization_config.weight_dtype
+                        and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype
+                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
+                    f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
                     if use_llm_runtime:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype="int8", weight_dtype="int8"
+                            compute_dtype="bf16", weight_dtype="int8"
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
@@ -265,9 +248,22 @@ class _BaseQBitsAutoModelClass:
                 kwargs["torch_dtype"] = torch.float16
             else:
                 kwargs["torch_dtype"] = torch.bfloat16
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path, *model_args, **kwargs
-            )
+            kwargs["low_cpu_mem_usage"] = True
+            try:
+                model = cls.ORIG_MODEL.from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                model.config.update({"low_cpu_mem_usage": True})
+            except NotImplementedError:
+                logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
+                            "will fall to traditional load method with higher memory consumption.")
+                kwargs["low_cpu_mem_usage"] = False
+                model = cls.ORIG_MODEL.from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                model.config.update({"low_cpu_mem_usage": False})
+            model = model.to("cpu")
+            model.config.update({"device": "cpu"})
             model.eval()
             logger.info("Mixed Precision done.")
         elif isinstance(quantization_config, WeightOnlyQuantConfig):
@@ -309,32 +305,16 @@ class _BaseQBitsAutoModelClass:
                     model.config.update({"low_cpu_mem_usage": False})
                 model.eval()
                 model.config.update({"device": "cpu"})
-                is_max = False
                 if use_xpu:
                     import intel_extension_for_pytorch
                     assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
                     model.config.update({"device": "xpu"})
-                    name = get_gpu_family()
-                    if name == "max":
-                        model.config.update({"intel_gpu": "max"})
-                        is_max = True
-                    elif name != "arc":
-                        raise Exception("{} device Unsupport weight only quantization!".format(device_map))
-                    else:
-                        model.config.update({"intel_gpu": "arc"})
-                if is_max:
-                    from intel_extension_for_transformers.llm.quantization.utils import (
-                        convert_to_quantized_model_by_ipex as convert_to_quantized_model,
-                    )
-                else:
-                    from ...llm.quantization.utils import convert_to_quantized_model
                 if (
                     not torch.cuda.is_available()
                     or device_map == "cpu"
                     or device_map == torch.device("cpu")
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
-                model.eval()
                 if use_cpu:
                     quantization_config.post_init()
                 elif use_xpu:
@@ -344,7 +324,7 @@ class _BaseQBitsAutoModelClass:
             model.device_map = device_map
             model.quantization_config = quantization_config
             import types
-            model.save_low_bit = types.MethodType(save_low_bit, model)
+            model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             try:
@@ -374,11 +354,10 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
             model.eval()
             model_type = model.config.model_type.replace("_", "-")
-            if "falcon" in model_type and transformers.__version__ > "4.33":
-                ipex.nn.utils._model_convert.replace_customized_linear_with_linear(
-                    model.eval()
+            if "falcon" in model_type:
+                logger.warning(
+                    "Please use transformers 4.33.3 if you would like to apply smoothquant to Falcon."
                 )
-                quantization_config.ipex_opt_llm = False
             if "llama" in model_type and transformers.__version__ >= "4.36.0":
                 quantization_config.ipex_opt_llm = False
             logger.info("Applying SmoothQuant.")
@@ -428,17 +407,24 @@ class _BaseQBitsAutoModelClass:
                     exit(0)
 
                 from datasets import load_dataset
+                from torch.utils.data import DataLoader
 
                 calib_dataset = quantization_config.calib_dataset
-                calib_len = quantization_config.calib_len
+                calib_shuffle = quantization_config.calib_shuffle
                 calib_iters = quantization_config.calib_iters
+                calib_padding = quantization_config.calib_padding
+                calib_len = quantization_config.calib_len
+                calib_pad_val = quantization_config.calib_pad_val
+                from torch.nn.functional import pad
+
                 calib_dataset = load_dataset(
                     calib_dataset,
                     split="test"
                     if calib_dataset in ["mbpp", "openai_humaneval"]
                     else "train",
                 )
-                calib_dataset = calib_dataset.shuffle(seed=42)
+                if calib_shuffle:
+                    calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
                     if "prompt" in examples:
@@ -462,26 +448,47 @@ class _BaseQBitsAutoModelClass:
                     attention_mask_padded = []
                     for text in batch:
                         input_ids = text["input_ids"]
-                        input_ids = (
-                            input_ids[:calib_len]
-                            if len(input_ids) > calib_len
-                            else input_ids
-                        )
+                        if not calib_padding:
+                            input_ids = (
+                                input_ids[: int(calib_len)]
+                                if len(input_ids) > int(calib_len)
+                                else input_ids
+                            )  # no_padding
+                        else:
+                            pad_len = calib_len - input_ids.shape[0]
+                            input_ids = pad(
+                                input_ids, (0, pad_len), value=calib_pad_val
+                            )
+
                         last_ind.append(input_ids.shape[0] - 1)
-                        attention_mask = torch.ones(len(input_ids))
+                        if model_type in ["bloom", "qwen"]:
+                            attention_mask = torch.ones(len(input_ids) +1)
+                            attention_mask[0] = 0
+                        else:
+                            attention_mask = torch.ones(len(input_ids))
                         position_ids = torch.arange(len(input_ids))
                         input_ids_padded.append(input_ids)
                         attention_mask_padded.append(attention_mask)
                         position_ids_padded.append(position_ids)
-                    return (
-                        {
-                            "input_ids": torch.vstack(input_ids_padded),
-                            "attention_mask": torch.vstack(attention_mask_padded),
-                            "position_ids": torch.vstack(position_ids_padded),
-                            "past_key_values": past_key_values,
-                        },
-                        torch.tensor(last_ind),
-                    )
+                    if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "position_ids": torch.vstack(position_ids_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
+                    else:
+                        return (
+                            {
+                                "input_ids": torch.vstack(input_ids_padded),
+                                "attention_mask": torch.vstack(attention_mask_padded),
+                                "past_key_values": past_key_values,
+                            },
+                            torch.tensor(last_ind),
+                        )
 
                 def collate_batch_for_chatglm(batch):
                     last_ind = []
@@ -574,17 +581,6 @@ class _BaseQBitsAutoModelClass:
                                 "position_ids": inputs["position_ids"],
                                 "past_key_values": inputs["past_key_values"],
                             }
-                        elif model_type == "falcon":
-                            input_bs, input_len = inputs["input_ids"].shape
-                            outputs = model(inputs["input_ids"])
-                            example_inputs["past_key_values"] = outputs[1]
-                            example_inputs["attention_mask"] = torch.ones(
-                                input_bs, input_len
-                            )
-                            example_inputs["position_ids"] = (
-                                inputs["position_ids"][:, -1:] + 1
-                            )
-                            example_inputs["input_ids"] = inputs["input_ids"][:, -1:]
                         else:
                             example_inputs = inputs
                     else:
@@ -611,7 +607,8 @@ class _BaseQBitsAutoModelClass:
                 conf,
                 calib_func=calib_func,
                 calib_dataloader=calib_dataloader
-                if quantization_config.recipes["smooth_quant_args"]["alpha"] == "auto" else None,
+                if quantization_config.recipes["smooth_quant_args"]["alpha"] == "auto"
+                else None,
             )
             logger.info("SmoothQuant done.")
         else:
@@ -626,7 +623,6 @@ class _BaseQBitsAutoModelClass:
                 model = model.float()
 
             model.eval()
-        model = model.to(device_map)
         return model
 
     @classmethod
@@ -636,11 +632,9 @@ class _BaseQBitsAutoModelClass:
                      **kwargs):
         """
         Load a low bit optimized model (including INT4, INT5 and INT8) from a saved ckpt.
-
         :param pretrained_model_name_or_path: str value, Path to load the optimized model ckpt.
         # :param optimize_model: boolean value, Whether to further optimize the low_bit llm model.
         #                        Default to be True.
-
         :return: a model instance
         """
         from transformers.modeling_utils import no_init_weights, get_checkpoint_shard_files, _add_variant
@@ -836,11 +830,11 @@ class _BaseQBitsAutoModelClass:
             model = model_class(config, *model_args, **kwargs)
 
         # Loading args may differ based on their usage
-        if device_map == "cpu" or intel_gpu == "arc":
+        if device_map == "cpu" or device_map == "xpu":
             model = replace_linear(
                 model, quantization_config=quantization_config, device=device_map, empty_weights=True
             )
-        elif intel_gpu != "max":
+        else:
             raise Exception("Unsupport device: {}.{}".format(device_map, intel_gpu))
 
         if is_sharded:
@@ -895,16 +889,8 @@ class _BaseQBitsAutoModelClass:
                 pass
         for param in model.parameters():
             param.requires_grad_(False)
-
-        if intel_gpu == "max":
-            from intel_extension_for_transformers.llm.quantization.utils import load_quantized_model_by_ipex
-            quantized_ckpt = "{}/torch.pt".format(pretrained_model_name_or_path)
-            print("load quantized weight by ipex from {}".format(quantized_ckpt))
-            model = load_quantized_model_by_ipex(model, quantization_config, quantized_ckpt, \
-                                                 amp_dtype=torch.float16, device=device_map)
-        elif intel_gpu == "arc":
+        if device_map == "xpu":
             model = model.to("xpu")
-
         return model
 
 

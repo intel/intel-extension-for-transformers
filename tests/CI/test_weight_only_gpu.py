@@ -160,9 +160,9 @@ class TestWeightOnly(unittest.TestCase):
         )
         model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, use_llm_runtime=False, device_map = device_map, \
                                                         quantization_config = config)
-        model.save_low_bit(self.workspace)
+        model.save_pretrained(self.workspace)
         model = None
-        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace)
+        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace)
         module_list = []
         # QuantizedLinearGPU_PVC = ipex.nn.optimize_transformers.modules.Layers.IpexFastLinear
         QuantizedLinearGPU_PVC = ipex.nn.utils._quantize_convert.INT4Linear
@@ -194,15 +194,13 @@ class TestArcWeightOnly(unittest.TestCase):
 
         device_map = "xpu"
 
-        # model_name ="hf-internal-testing/tiny-random-gptj"
-        model_name ="Qwen/Qwen-7B-Chat"
+        model_name ="hf-internal-testing/tiny-random-gptj"
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         prompt = "how to test the code?"
         input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             trust_remote_code=True,
-            # fp16=True,
             torch_dtype=torch.float16,
             device_map=device_map)
         model.to(device_map)
@@ -223,16 +221,16 @@ class TestArcWeightOnly(unittest.TestCase):
         )
         qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                                       device_map=device_map, quantization_config=config,
-                                                      trust_remote_code=True, fp16=True)
-        qmodel.save_low_bit(self.workspace)
-        # qmodel = ipex.optimize_transformers(qmodel, inplace=True)
+                                                      trust_remote_code=True, torch_dtype=torch.float16)
+        qmodel.save_pretrained(self.workspace)
+        qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True)
         output_quant = qmodel(input_ids.to(torch.device("xpu")))
         quan_logits = output_quant['logits'].to('cpu')
         print("int4 logits {}".format(quan_logits.shape))
 
         # move model to CPU
         qmodel.to("cpu")
-        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace, trust_remote_code=True)
+        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace, trust_remote_code=True)
         output_reload = loaded_model(input_ids.to(torch.device("xpu")))
         reload_logits = output_reload['logits'].to('cpu')
         print(quan_logits)
@@ -251,11 +249,11 @@ class TestArcWeightOnly(unittest.TestCase):
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32, compute_dtype="fp16", scale_dtype="fp16")
             model = convert_to_quantized_model(model, config, device="xpu")
-            # model = ipex.optimize_transformers(model, inplace=True)
+            model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True)
             output_quant = model(activation.to(torch.device("xpu")))
             print(output)
             print(output_quant)
-            assert torch.allclose(output, output_quant.to("cpu"), rtol=0.03)
+            assert torch.allclose(output, output_quant, rtol=0.03)
 
 
 if __name__ == "__main__":

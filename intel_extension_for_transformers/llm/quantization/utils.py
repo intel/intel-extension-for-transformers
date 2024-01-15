@@ -18,6 +18,7 @@
 
 import logging
 import gc
+import math
 import os
 from accelerate import init_empty_weights
 from datasets import load_dataset
@@ -138,12 +139,19 @@ def _replace_linear(
                             use_optimum_format=module.use_optimum_format
                             if hasattr(module, "use_optimum_format") else False,
                         )
-                        if isinstance(module, WeightOnlyLinear):
-                            model._modules[name].set_scales_zps_gidx(
-                                module.scales,
-                                module.qzeros if hasattr(module, "qzeros") else None,
-                                module.g_idx if hasattr(module, "g_idx") else None
-                            )
+                        if quantization_config.algorithm == "GPTQ":
+                            g_idx = module.g_idx if hasattr(module, "g_idx") else \
+                                torch.zeros(in_features, dtype=torch.int32).to(device)
+                        else:
+                            g_idx = None
+                        model._modules[name].set_scales_zps_gidx(
+                            module.scales if hasattr(module, "scales") else torch.ones(
+                                    (out_features, math.ceil(in_features / quantization_config.group_size)),
+                                    dtype=convert_dtype_str2torch(quantization_config.compute_dtype),
+                                    device=torch.device(device)),
+                            module.qzeros if hasattr(module, "qzeros") else None,
+                            g_idx
+                        )
                     else:
                         raise Exception("{} device Unsupport weight only quantization!".format(device))
 
@@ -152,8 +160,17 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
+                if not hasattr(module, "qweight"):
+                    if device == "cpu" or device == torch.device("cpu"):
+                        weight = module.weight.data
+                    else:
+                        n_pack = 8 // DTYPE_BITS_MAPPING[quantization_config.weight_dtype]
+                        weight = torch.zeros(
+                            (math.ceil(out_features / n_pack), in_features),
+                            dtype=torch.int8, device=torch.device(device)
+                        )
                 model._modules[name].set_weights_bias(
-                    module.qweight.data if hasattr(module, "qweight") else model._modules[name].qweight.data,
+                    module.qweight.data if hasattr(module, "qweight") else weight,
                     None if module.bias is None else module.bias.data)
                 del module
                 gc.collect()
@@ -330,6 +347,8 @@ def convert_dtype_torch2str(dtype):
         return "fp16"
     elif dtype == torch.bfloat16:
         return "bf16"
+    elif isinstance(dtype, str) and dtype in ["int8", "fp32", "fp16", "bf16"]:
+        return dtype
     else:
         assert False, "Unsupport pytorch dtype {} to str dtype".format(dtype)
 
