@@ -6,11 +6,9 @@ import torch
 from transformers import AutoConfig, AutoTokenizer
 from transformers.generation import GenerationConfig
 import intel_extension_for_pytorch as ipex
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_str2torch
 from transformers.utils import check_min_version
-from intel_extension_for_transformers.transformers import (
-    WeightOnlyQuantConfig,
-)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -24,6 +22,9 @@ parser.add_argument(
 parser.add_argument(
     "--max-new-tokens", default=32, type=int, help="output max new tokens"
 )
+parser.add_argument(
+    "--num_beams", default=1, type=int, help="number of beams"
+)
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
@@ -34,11 +35,13 @@ parser.add_argument(
 parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
 # ============Benchmark configs==============
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
-parser.add_argument("--num_warmup", default=0, type=int, help="num warmup")
+parser.add_argument("--do_profiling", action="store_true")
+parser.add_argument("--profile_token_latency", action="store_true")
+parser.add_argument("--iters", default=10, type=int, help="num iter")
+parser.add_argument("--num_warmup", default=3, type=int, help="num warmup")
 # ============Accuracy configs==============
 parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int,
+parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
@@ -50,7 +53,7 @@ parser.add_argument("--woq_algo", default="RTN", choices=['RTN'],
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
                     choices=["int4_fullrange"])
-parser.add_argument("--woq_group_size", type=int, default=64)
+parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--device", default="cpu")
@@ -61,7 +64,7 @@ parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 # =======================================
 args = parser.parse_args()
-torch_dtype = torch.float16 if args.compute_dtype == "fp16" else torch.float32
+torch_dtype = convert_dtype_str2torch(args.compute_dtype)
 
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
@@ -109,70 +112,91 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       load_in_8bit=args.load_in_8bit,
                                                       use_llm_runtime=False
                                                       )
-tokenizer.save_pretrained(args.output_dir)
 if user_model is not None:
-    user_model.save_low_bit(args.output_dir)
+    user_model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
 
 if args.benchmark:
-    prompt = "也许你能给我介绍一下中国的首都么？"
+    prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
     print("---- Prompt size:", input_size)
 
-    user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
-    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device)
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True) if user_model is None else user_model
+    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
     # start
-    total_time = 0.0
     num_iter = args.iters
     num_warmup = args.num_warmup
     prompt = [prompt] * args.batch_size
-    total_token_num = 0
+    amp_enabled = True
+    amp_dtype = torch_dtype
 
-    total_latency = 0
-    first_token_latency = 0
-    gen_texts = []
-    for j in range(args.max_new_tokens):
-        total_time = 0.0
-        with torch.inference_mode(), torch.no_grad():
-            for i in range(num_iter):
-                if j==0:
-                    inp = tokenizer(prompt, return_tensors="pt").to(args.device)
-                    attention_mask = inp["attention_mask"] if "attention_mask" in inp else torch.ones(inp["input_ids"].shape)
-                else:
-                    inp = {"input_ids": input_ids,
-                            "past_key_values": past_key_values,
-                            "attention_mask": attention_mask}
+    generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
+    if args.profile_token_latency:
+        generate_kwargs["token_latency"] = True
+
+    total_time = 0.0
+    total_list = []
+    with torch.inference_mode(), torch.no_grad(), torch.autocast(
+        device_type=args.device,
+        enabled=amp_enabled,
+        dtype=amp_dtype if amp_enabled else None,
+    ):
+        for i in range(num_iter + num_warmup):
+            with torch.autograd.profiler_legacy.profile(enabled=args.do_profiling, use_xpu=(args.device=="xpu"), record_shapes=False) as prof:
+                input_ids = tokenizer(
+                    prompt, return_tensors="pt").input_ids.to(args.device)
                 tic = time.time()
-                out = user_model(**inp)
+                output = user_model.generate(
+                    input_ids, max_new_tokens=int(args.max_new_tokens), **generate_kwargs
+                )
                 toc = time.time()
-                gen_id = torch.argmax(out[0][:, -1:, :], axis = -1).to("cpu")
-                gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
-                if i >= num_warmup:
-                    total_time += toc - tic
-            gen_texts.extend(gen_text)
-        latency = total_time / (num_iter - num_warmup) / args.batch_size
-        throughput = (num_iter - num_warmup) / total_time
-        if j == 0:
-            print("\n", "-" * 10, "Summary:", "-" * 10)
-            print("Generated token index:", j+1)
-            print("Inference latency: %.5f sec." % latency)
-            print("Throughput: {} samples/sec".format(throughput))
-            first_token_latency = latency
-        input_ids = gen_id.to(args.device)
-        past_key_values = out[1]
-        attention_mask = torch.ones((attention_mask.shape[0], attention_mask.shape[1] + 1)).to(args.device)
-        total_latency += latency
+                gen_ids = output[0] if args.profile_token_latency else output
+                gen_text = tokenizer.batch_decode(
+                    gen_ids, skip_special_tokens=True)
+                if args.device == "xpu":
+                    torch.xpu.synchronize()
+            if args.do_profiling and i >= num_warmup and (i == num_warmup or i == num_iter + num_warmup - 1):
+                print(f"Save pt for iter {i}")
+                torch.save(prof.key_averages().table(
+                    sort_by="self_xpu_time_total"), f"./profile_{i}.pt")
+                # torch.save(prof.table(sort_by="id", row_limit=-1),
+                #            './profile_id.pt')
+                # torch.save(prof.key_averages(
+                #     group_by_input_shape=True).table(), "./profile_detail.pt")
+                prof.export_chrome_trace(f"./trace_{i}.json")
+            input_tokens_lengths = [x.shape[0] for x in input_ids]
+            output_tokens_lengths = [x.shape[0] for x in gen_ids]
+            total_new_tokens = [
+                o - i if user_model.config.model_type != "t5" else o
+                for i, o in zip(input_tokens_lengths, output_tokens_lengths)
+            ]
+            print(gen_text, total_new_tokens, flush=True)
+            print("Iteration: %d, Time: %.6f sec" % (i, toc - tic), flush=True)
+            if i >= num_warmup:
+                total_time += toc - tic
+                if args.profile_token_latency:
+                    total_list.append(output[1])
 
-    print(prompt[0] + ":\n" + "".join(gen_texts))
-    print("first token inference latency: %.5f sec." % first_token_latency)
-    next_token_latency = (total_latency - first_token_latency) / (args.max_new_tokens - 1)
-    print("next token inference latency: %.5f sec." % next_token_latency)
-    average_latency = total_latency / args.max_new_tokens
-    print("Average inference latency: %.5f sec." % latency)
-    average_throughput = args.max_new_tokens / total_latency
+    print("\n", "-" * 10, "Summary:", "-" * 10)
+    latency = total_time / (num_iter - num_warmup)
+    print("Inference latency: %.5f sec." % latency)
+    throughput = (args.max_new_tokens + input_size) / latency
     print("Average throughput: {} samples/sec".format(throughput))
+
+    if args.profile_token_latency:
+        import numpy as np
+        from itertools import chain
+
+        first_latency = np.mean([x[0] for x in total_list])
+        average_2n = list(chain(*[x[1:] for x in total_list]))
+        average_2n.sort()
+        average_2n_latency = np.mean(average_2n)
+        print("First token average latency: %.5f sec." % first_latency)
+        print("Average 2... latency: %.5f sec." % average_2n_latency)
+        print(total_list)
+
 
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
