@@ -89,6 +89,7 @@ class TestQuantization(unittest.TestCase):
         shutil.rmtree('int8-model.onnx', ignore_errors=True)
         shutil.rmtree('export.onnx', ignore_errors=True)
         shutil.rmtree('./local_model_dir', ignore_errors=True)
+        shutil.rmtree('./int8_model', ignore_errors=True)
 
     def test_fx_model_quant(self):
         fp32_output = self.trainer.predict(self.dummy_dataset).predictions
@@ -350,6 +351,23 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        # load_int8_model
+        from transformers import AutoConfig
+        config = AutoConfig.from_pretrained(
+            model_name_or_path,
+            torchscript=True,
+            use_cache=True,
+            trust_remote_code=False,
+        )
+        output_dir = "./int8_model"
+        config.save_pretrained(output_dir)
+        q_model.save(output_dir)
+        int8_model = AutoModelForCausalLM.from_pretrained(output_dir,
+                                                     load_int8_model=True,
+                                                     use_llm_runtime=False,
+                                                     device_map="cpu"
+                                                )
+        self.assertTrue(isinstance(int8_model.model, torch.jit.ScriptModule))
         # weight-only
         #RTN
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange")
