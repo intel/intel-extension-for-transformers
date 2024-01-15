@@ -132,6 +132,7 @@ parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
+parser.add_argument("--load_int8_model", action="store_true")
 parser.add_argument("--_commit_hash", default="main", type=str)
 parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
@@ -272,6 +273,16 @@ elif args.load_in_4bit or args.load_in_8bit:
         load_in_8bit=args.load_in_8bit,
         _commit_hash=args._commit_hash,
         use_llm_runtime=args.use_llm_runtime,
+    )
+elif args.load_int8_model:
+    # int8 model loading
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        config=config,
+        trust_remote_code=args.trust_remote_code,
+        _commit_hash=args._commit_hash,
+        use_llm_runtime=args.use_llm_runtime,
+        load_int8_model=args.load_int8_model,
     )
 elif (not args.int8 and not args.int8_bf16_mixed) or args.restore:
     if args.peft_model_id is not None:

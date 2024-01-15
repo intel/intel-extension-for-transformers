@@ -137,6 +137,16 @@ class _BaseQBitsAutoModelClass:
                 except:
                     logger.error("Saved low bit model loading failed, please check your model.")
                     exit(0)
+        if kwargs.get("load_int8_model", False):
+            from intel_extension_for_transformers.llm.evaluation.models import TSModelCausalLMForITREX
+
+            trust_remote_code = kwargs.get("trust_remote_code", None)
+            int8_model = TSModelCausalLMForITREX.from_pretrained(
+                    pretrained_model_name_or_path,
+                    file_name="best_model.pt",
+                    trust_remote_code=trust_remote_code,
+                    )
+            return int8_model
 
         if kwargs.get("use_embedding_runtime", False):
             from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import (
