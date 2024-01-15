@@ -2,7 +2,7 @@
 
 This document describes the step-by-step instructions to run large language models (LLMs) on 4th Gen Intel® Xeon® Scalable Processor (codenamed Sapphire Rapids) with [PyTorch](https://pytorch.org/) and [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch).
 
-The scripts [run_generation.py](./run_generation.py) provide two quantization approaches respectively (SmoothQuant, Weight-Only Quantization) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and return last token prediction accuracy by `trainer`.
+The scripts [run_generation.py](./run_generation.py) provide two quantization approaches respectively (SmoothQuant, Weight-Only Quantization) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor) and return last word prediction accuracy by [lm-eval](https://github.com/EleutherAI/lm-evaluation-harness/tree/master).
 
 # Validated Models
 
