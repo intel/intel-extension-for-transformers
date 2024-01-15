@@ -182,7 +182,6 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
         if attention_mask is None:
             inputs["attention_mask"] = torch.ones_like(input_ids)
         if model_type == "chatglm":
-            inputs.pop("attention_mask")
             if re.search("THUDM/chatglm-6b", self.config.auto_map["AutoConfig"]):
                 position_ids = self.prepare_inputs_for_generation(input_ids)[
                     "position_ids"

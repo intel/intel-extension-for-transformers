@@ -255,6 +255,7 @@ def generate_dummy_past_key_values_for_opt_llm(config, input_bs, num_beams=1):
 
 
 IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan"}
+
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
@@ -265,7 +266,8 @@ MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "imagegpt",
     "llama",
     "mistral",
-    "chatglm"
+    "chatglm",
+    "baichuan"
 }
 
 def get_example_inputs(model_config, batch_size=1, tokenizer=None, num_beams=4):

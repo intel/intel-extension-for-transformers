@@ -61,18 +61,28 @@ from typing import Union
 
 torch = LazyImport("torch")
 
-def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
-    assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
+
+def save_low_bit(
+    self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs
+):
+    assert hasattr(
+        self, "quantization_config"
+    ), f"Detected this model is not a low-bit model."
 
     if os.path.isfile(save_directory):
-        logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
+        logger.error(
+            f"Provided path ({save_directory}) should be a directory, not a file"
+        )
         return
 
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
     del self.save_pretrained
-    self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
+    self.save_pretrained(
+        save_directory=save_directory, push_to_hub=push_to_hub, **kwargs
+    )
     import types
+
     self.save_pretrained = types.MethodType(save_low_bit, self)
     # We conveniently save all the keys of the model to have them on hand,
     # so that when using 'low_cpumem load',
@@ -87,7 +97,8 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
 
         if use_auth_token is not None:
             logger.warning.warn(
-                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers.", FutureWarning
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers.",
+                FutureWarning,
             )
             if token is not None:
                 raise ValueError(
@@ -112,36 +123,60 @@ def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: boo
     self.quantization_config.low_bit_model = True
     self.quantization_config.save_pretrained(save_directory, **kwargs)
 
+
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         if re.search("baichuan", pretrained_model_name_or_path.lower()):
-            from intel_extension_for_transformers.transformers.modeling.utils import _get_relative_imports, _gradient_checkpointing_disable, _gradient_checkpointing_enable
-            transformers.dynamic_module_utils.get_relative_imports = _get_relative_imports
-            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_disable = _gradient_checkpointing_disable
-            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_enable = _gradient_checkpointing_enable
+            from intel_extension_for_transformers.transformers.modeling.utils import (
+                _get_relative_imports,
+                _gradient_checkpointing_disable,
+                _gradient_checkpointing_enable,
+            )
+
+            transformers.dynamic_module_utils.get_relative_imports = (
+                _get_relative_imports
+            )
+            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_disable = (
+                _gradient_checkpointing_disable
+            )
+            transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_enable = (
+                _gradient_checkpointing_enable
+            )
 
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
-            logger.info("Find quantization_config.json, trying to load quantized low bit model...")
+            logger.info(
+                "Find quantization_config.json, trying to load quantized low bit model..."
+            )
             quantization_config = WeightOnlyQuantConfig.from_pretrained(
                 pretrained_model_name_or_path,
                 _configuration_file=QUANT_CONFIG,
                 **kwargs,
             )
             if quantization_config is None or quantization_config.low_bit_model != True:
-                logger.warning("Quantization_config loading failed. If you want to load saved " \
-                               "low bit model, please check your quantization_config.json.")
+                logger.warning(
+                    "Quantization_config loading failed. If you want to load saved "
+                    "low bit model, please check your quantization_config.json."
+                )
             else:
-                logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
+                logger.info(
+                    "quantization_config: {}".format(
+                        quantization_config.to_json_string()
+                    )
+                )
                 try:
                     model = cls.load_low_bit(pretrained_model_name_or_path)
-                    logger.info("Saved low bit model loading successfully. Other input args " \
-                                "will be ignored.")
+                    logger.info(
+                        "Saved low bit model loading successfully. Other input args "
+                        "will be ignored."
+                    )
                     return model
                 except:
-                    logger.error("Saved low bit model loading failed, please check your model.")
+                    logger.error(
+                        "Saved low bit model loading failed, please check your model."
+                    )
                     exit(0)
 
         if kwargs.get("use_embedding_runtime", False):
@@ -166,7 +201,7 @@ class _BaseQBitsAutoModelClass:
         quantization_config = kwargs.pop("quantization_config", None)
 
         use_llm_runtime = kwargs.pop("use_llm_runtime", True)
-        device_map = kwargs.get("device_map", 'cpu')
+        device_map = kwargs.get("device_map", "cpu")
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -249,8 +284,10 @@ class _BaseQBitsAutoModelClass:
                 )
                 model.config.update({"low_cpu_mem_usage": True})
             except NotImplementedError:
-                logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
-                            "will fall to traditional load method with higher memory consumption.")
+                logger.info(
+                    "Failed to load models with `low_cpu_mem_usage` specified, "
+                    "will fall to traditional load method with higher memory consumption."
+                )
                 kwargs["low_cpu_mem_usage"] = False
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path, *model_args, **kwargs
@@ -296,10 +333,13 @@ class _BaseQBitsAutoModelClass:
                     convert_to_quantized_model,
                 )
 
-                model = convert_to_quantized_model(model, quantization_config, device=device_map)
+                model = convert_to_quantized_model(
+                    model, quantization_config, device=device_map
+                )
             # add quantization_config and save_low_bit to pretrained model dynamically
             model.quantization_config = quantization_config
             import types
+
             model.save_pretrained = types.MethodType(save_low_bit, model)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
@@ -438,7 +478,7 @@ class _BaseQBitsAutoModelClass:
 
                         last_ind.append(input_ids.shape[0] - 1)
                         if model_type in ["bloom", "qwen"]:
-                            attention_mask = torch.ones(len(input_ids) +1)
+                            attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:
                             attention_mask = torch.ones(len(input_ids))
@@ -487,10 +527,12 @@ class _BaseQBitsAutoModelClass:
                                 else input_ids
                             )
                         prepared_inputs = model.prepare_inputs_for_generation(input_ids)
+                        attention_mask = torch.ones_like(input_ids)
                         last_ind.append(input_ids.shape[1] - 1)
                     return (
                         {
                             "input_ids": input_ids,
+                            "attention_mask": attention_mask,
                             "position_ids": prepared_inputs["position_ids"],
                             "past_key_values": past_key_values,
                         },
@@ -519,13 +561,7 @@ class _BaseQBitsAutoModelClass:
                         for i, (inputs, last_ind) in enumerate(calib_dataloader):
                             if i >= calib_iters:
                                 break
-                            if model_type == "chatglm":
-                                model(
-                                    input_ids=inputs["input_ids"],
-                                    past_key_values=inputs["past_key_values"],
-                                    position_ids=inputs["position_ids"],
-                                )
-                            elif model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
+                            if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
                                 model(
                                     input_ids=inputs["input_ids"],
                                     past_key_values=inputs["past_key_values"],
@@ -551,14 +587,12 @@ class _BaseQBitsAutoModelClass:
             if example_inputs is None:
                 for i, (inputs, last_ind) in enumerate(calib_dataloader):
                     if model_type in MODEL_TYPES_REQUIRING_POSITION_IDS:
-                        if model_type == "chatglm":
-                            example_inputs = {
-                                "input_ids": inputs["input_ids"],
-                                "position_ids": inputs["position_ids"],
-                                "past_key_values": inputs["past_key_values"],
-                            }
-                        else:
-                            example_inputs = inputs
+                        example_inputs = {
+                            "input_ids": inputs["input_ids"],
+                            "attention_mask": inputs["attention_mask"],
+                            "position_ids": inputs["position_ids"],
+                            "past_key_values": inputs["past_key_values"],
+                        }
                     else:
                         example_inputs = {
                             "input_ids": inputs["input_ids"],
@@ -602,10 +636,7 @@ class _BaseQBitsAutoModelClass:
         return model
 
     @classmethod
-    def load_low_bit(cls,
-                     pretrained_model_name_or_path,
-                     *model_args,
-                     **kwargs):
+    def load_low_bit(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         """
         Load a low bit optimized model (including INT4, INT5 and INT8) from a saved ckpt.
         :param pretrained_model_name_or_path: str value, Path to load the optimized model ckpt.
@@ -613,11 +644,23 @@ class _BaseQBitsAutoModelClass:
         #                        Default to be True.
         :return: a model instance
         """
-        from transformers.modeling_utils import no_init_weights, get_checkpoint_shard_files, _add_variant
-        from transformers.dynamic_module_utils import resolve_trust_remote_code, \
-            get_class_from_dynamic_module
+        from transformers.modeling_utils import (
+            no_init_weights,
+            get_checkpoint_shard_files,
+            _add_variant,
+        )
+        from transformers.dynamic_module_utils import (
+            resolve_trust_remote_code,
+            get_class_from_dynamic_module,
+        )
         from transformers.models.auto.configuration_auto import AutoConfig
-        from transformers.utils import ContextManagers, cached_file, download_url, extract_commit_hash, is_remote_url
+        from transformers.utils import (
+            ContextManagers,
+            cached_file,
+            download_url,
+            extract_commit_hash,
+            is_remote_url,
+        )
         from transformers.generation.configuration_utils import GenerationConfig
         from transformers.models.auto.auto_factory import _get_model_class
         from accelerate.big_modeling import init_empty_weights
@@ -645,7 +688,11 @@ class _BaseQBitsAutoModelClass:
         commit_hash = kwargs.get("_commit_hash", None)
         _fast_init = kwargs.get("_fast_init", True)
 
-        user_agent = {"file_type": "model", "framework": "pytorch", "from_auto_class": from_auto_class}
+        user_agent = {
+            "file_type": "model",
+            "framework": "pytorch",
+            "from_auto_class": from_auto_class,
+        }
         if from_pipeline is not None:
             user_agent["using_pipeline"] = from_pipeline
 
@@ -658,7 +705,9 @@ class _BaseQBitsAutoModelClass:
             _configuration_file=QUANT_CONFIG,
             **kwargs,
         )
-        assert quantization_config is not None, "Detect this model is not a low-bit model."
+        assert (
+            quantization_config is not None
+        ), "Detect this model is not a low-bit model."
         kwargs["trust_remote_code"] = trust_remote_code
         config, kwargs = AutoConfig.from_pretrained(
             pretrained_model_name_or_path,
@@ -693,15 +742,20 @@ class _BaseQBitsAutoModelClass:
         intel_gpu = config_dict.pop("intel_gpu", None)
         low_cpu_mem_usage = config_dict.pop("low_cpu_mem_usage", True)
 
-        has_remote_code = hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map
+        has_remote_code = (
+            hasattr(config, "auto_map") and cls.ORIG_MODEL.__name__ in config.auto_map
+        )
         has_local_code = type(config) in cls.ORIG_MODEL._model_mapping.keys()
         trust_remote_code = resolve_trust_remote_code(
-            trust_remote_code, pretrained_model_name_or_path, has_local_code, has_remote_code
+            trust_remote_code,
+            pretrained_model_name_or_path,
+            has_local_code,
+            has_remote_code,
         )
         if has_remote_code and trust_remote_code:
             class_ref = config.auto_map[cls.ORIG_MODEL.__name__]
             model_class = get_class_from_dynamic_module(
-                class_ref, pretrained_model_name_or_path,  **kwargs
+                class_ref, pretrained_model_name_or_path, **kwargs
             )
             if os.path.isdir(pretrained_model_name_or_path):
                 model_class.register_for_auto_class(cls.ORIG_MODEL.__name__)
@@ -719,18 +773,30 @@ class _BaseQBitsAutoModelClass:
             is_local = os.path.isdir(pretrained_model_name_or_path)
             if is_local:
                 if os.path.isfile(
-                    os.path.join(pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_NAME, variant))
+                    os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(WEIGHTS_NAME, variant),
+                    )
                 ):
                     # Load from a PyTorch checkpoint
                     archive_file = os.path.join(
-                        pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_NAME, variant)
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(WEIGHTS_NAME, variant),
                     )
                 elif os.path.isfile(
-                    os.path.join(pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_INDEX_NAME, variant))
+                    os.path.join(
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(WEIGHTS_INDEX_NAME, variant),
+                    )
                 ):
                     # Load from a sharded PyTorch checkpoint
                     archive_file = os.path.join(
-                        pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_INDEX_NAME, variant)
+                        pretrained_model_name_or_path,
+                        subfolder,
+                        _add_variant(WEIGHTS_INDEX_NAME, variant),
                     )
                     is_sharded = True
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
@@ -751,7 +817,9 @@ class _BaseQBitsAutoModelClass:
                 logger.info(f"loading weights file {archive_file}")
                 resolved_archive_file = archive_file
             else:
-                logger.info(f"loading weights file {filename} from cache at {resolved_archive_file}")
+                logger.info(
+                    f"loading weights file {filename} from cache at {resolved_archive_file}"
+                )
         else:
             resolved_archive_file = None
 
@@ -784,7 +852,10 @@ class _BaseQBitsAutoModelClass:
         if torch_dtype is not None:
             if isinstance(torch_dtype, str):
                 if torch_dtype == "auto":
-                    if hasattr(config, "torch_dtype") and config.torch_dtype is not None:
+                    if (
+                        hasattr(config, "torch_dtype")
+                        and config.torch_dtype is not None
+                    ):
                         torch_dtype = config.torch_dtype
                     else:
                         if is_sharded and "dtype" in sharded_metadata:
@@ -792,7 +863,9 @@ class _BaseQBitsAutoModelClass:
                         else:
                             torch_dtype = torch.float32
                 else:
-                    assert False, f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
+                    assert (
+                        False
+                    ), f'`torch_dtype` can be either `torch.dtype` or `"auto"`, but received {torch_dtype}'
             dtype_orig = model_class._set_default_torch_dtype(torch_dtype)
 
         # Pretrained Model
@@ -808,7 +881,10 @@ class _BaseQBitsAutoModelClass:
         # Loading args may differ based on their usage
         if device_map == "cpu" or intel_gpu == "arc":
             model = replace_linear(
-                model, quantization_config=quantization_config, device=device_map, empty_weights=True
+                model,
+                quantization_config=quantization_config,
+                device=device_map,
+                empty_weights=True,
             )
         elif intel_gpu == "max":
             pass
@@ -818,8 +894,10 @@ class _BaseQBitsAutoModelClass:
         if is_sharded:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
         else:
-            with open(os.path.join(pretrained_model_name_or_path,
-                                   "all_checkpoint_keys.json"), "r") as json_file:
+            with open(
+                os.path.join(pretrained_model_name_or_path, "all_checkpoint_keys.json"),
+                "r",
+            ) as json_file:
                 loaded_data = json.load(json_file)
             loaded_state_dict_keys = loaded_data["all_checkpoint_keys"]
 
