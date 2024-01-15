@@ -126,10 +126,6 @@ RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements_hpu.txt && \
-    pip install transformers==4.34.1 && \
-    pip install accelerate==0.24.0 && \
-    pip install datasets==2.14.7 && \
-    pip install pymysql && \
     pip uninstall -y intel_extension_for_pytorch
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
