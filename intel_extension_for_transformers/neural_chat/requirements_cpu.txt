@@ -53,3 +53,4 @@ cn2an
 pyopenjtalk; sys_platform == 'linux'
 openjtalk; sys_platform != 'linux'
 jaconv
+webrtcvad
