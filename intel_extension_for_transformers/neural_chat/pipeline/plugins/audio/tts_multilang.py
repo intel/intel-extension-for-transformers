@@ -76,7 +76,7 @@ class BertVITSModel():
         logging.info(f"**** split_by_language takes: {time.time() - split_by_language_S} sec")
         text_to_generate = [[i[0] for i in sentences_list]]
         lang_to_generate = [[i[1] for i in sentences_list]]
-        
+
         audio_list = []
         for idx, piece in enumerate(text_to_generate):
             audio = self.infer_multilang(
@@ -87,7 +87,7 @@ class BertVITSModel():
             audio_list.append(audio)
 
         audio_concat = np.concatenate(audio_list)
-        return audio_concat        
+        return audio_concat
 
     def get_bert_feature(self, norm_text, word2ph, language_str):
         bert_models_map = {"ZH": self.cn_bert_model, "EN": self.en_bert_model, "JP": self.jp_bert_model}
