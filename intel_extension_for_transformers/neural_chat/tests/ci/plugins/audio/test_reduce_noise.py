@@ -27,7 +27,7 @@ class TestReduceNoise(unittest.TestCase):
         self.audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         if not os.path.exists(self.audio_path):
             self.audio_path = "../assets/audio/welcome.wav"
-        self.y, sr = librosa.load(self.audio_path, 16000)
+        self.y, sr = librosa.load(self.audio_path, sr=16000)
         self.reducer = NoiseReducer(sr=sr)
         self.reducer_nonstationary = NoiseReducer(sr=sr, nonstationary=True)
         
