@@ -23,9 +23,11 @@ from torch.nn import functional as F
 
 from .commons import subsequent_mask, convert_pad_shape
 import logging
-
-logger = logging.getLogger(__name__)
-
+logging.basicConfig(
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.INFO
+)
 
 class LayerNorm(nn.Module):
     def __init__(self, channels, eps=1e-5):
