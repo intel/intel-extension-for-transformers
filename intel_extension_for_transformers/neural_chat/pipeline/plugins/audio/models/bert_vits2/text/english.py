@@ -24,9 +24,13 @@ from transformers import DebertaV2Tokenizer
 
 from .symbols import symbols
 
+from huggingface_hub import hf_hub_download
+
 current_file_path = os.path.dirname(__file__)
-CMU_DICT_PATH = os.path.join(current_file_path, "cmudict.rep")
-CACHE_PATH = os.path.join(current_file_path, "cmudict_cache.pickle")
+# CMU_DICT_PATH = os.path.join(current_file_path, "cmudict.rep")
+# CACHE_PATH = os.path.join(current_file_path, "cmudict_cache.pickle")
+CMU_DICT_PATH = hf_hub_download(repo_id="spycsh/bert-vits-thchs-6-8000", filename="cmudict.rep",)
+CACHE_PATH = hf_hub_download(repo_id="spycsh/bert-vits-thchs-6-8000", filename="cmudict_cache.pickle",)
 _g2p = G2p()
 LOCAL_PATH = "microsoft/deberta-v3-large"
 tokenizer = DebertaV2Tokenizer.from_pretrained(LOCAL_PATH)

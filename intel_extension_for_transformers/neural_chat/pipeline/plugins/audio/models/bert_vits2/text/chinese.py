@@ -25,10 +25,17 @@ from pypinyin import lazy_pinyin, Style
 from ..text.symbols import punctuation
 from ..text.tone_sandhi import ToneSandhi
 
-current_file_path = os.path.dirname(__file__)
+from huggingface_hub import hf_hub_download
+
+# current_file_path = os.path.dirname(__file__)
+# pinyin_to_symbol_map = {
+#     line.split("\t")[0]: line.strip().split("\t")[1]
+#     for line in open(os.path.join(current_file_path, "opencpop-strict.txt")).readlines()
+# }
+pinyin_to_symbol_map_path = hf_hub_download(repo_id="spycsh/bert-vits-thchs-6-8000", filename="opencpop-strict.txt",)
 pinyin_to_symbol_map = {
     line.split("\t")[0]: line.strip().split("\t")[1]
-    for line in open(os.path.join(current_file_path, "opencpop-strict.txt")).readlines()
+    for line in open(pinyin_to_symbol_map_path).readlines()
 }
 
 import jieba.posseg as psg
