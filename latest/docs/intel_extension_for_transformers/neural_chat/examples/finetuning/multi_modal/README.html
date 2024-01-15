@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multi-Modal &mdash; Intel® Extension for Transformers 0.1.dev1+ga09f92d documentation</title>
+  <title>Multi-Modal &mdash; Intel® Extension for Transformers 0.1.dev1+gd753cb8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -91,6 +91,14 @@
   <section id="multi-modal">
 <h1>Multi-Modal<a class="headerlink" href="#multi-modal" title="Link to this heading"></a></h1>
 <p>Large Language and Vision Assistant (LLaVA) is a multi-modal training framework that proposed from <a class="reference external" href="https://arxiv.org/abs/2304.08485">Visual Instruction Tuning</a> and <a class="reference external" href="https://arxiv.org/abs/2310.03744">Improved Baselines with Visual Instruction Tuning</a>. This example demonstrates how to train mult-modal model on Intel Gaudi2.</p>
+<section id="validated-model-list">
+<h2>Validated Model List<a class="headerlink" href="#validated-model-list" title="Link to this heading"></a></h2>
+<p>|Pretrained model| LLaVA |
+|————————————|—|
+|Mistral series| ✅|
+|LLaMA series| ✅|</p>
+<p><strong>Note:</strong> For Salesforce/codegen25-7b-* series models same with LLaMA architecture, need install <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">transformers==4.33.2</span></code> refer <a class="reference external" href="https://github.com/salesforce/CodeGen/issues/82">this</a></p>
+</section>
 <section id="train">
 <h2>Train<a class="headerlink" href="#train" title="Link to this heading"></a></h2>
 <p>LLaVA training consists of two stages: (1) feature alignment stage: use our 558K subset of the LAION-CC-SBU dataset to connect a <em>frozen pretrained</em> vision encoder to a <em>frozen LLM</em>; (2) visual instruction tuning stage: use 150K GPT-generated multimodal instruction-following data, plus around 515K VQA data from academic-oriented tasks, to teach the model to follow multimodal instructions.</p>
@@ -169,7 +177,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7feebd230850> 
+   <jinja2.runtime.BlockReference object at 0x7f70e5aebaf0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
