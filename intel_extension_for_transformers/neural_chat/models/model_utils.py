@@ -54,7 +54,9 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
-
+from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
+from intel_extension_for_transformers.neural_chat.utils.error_utils import set_latest_error
+from intel_extension_for_transformers.neural_chat.config import DeviceOptions
 import shutil
 
 if is_deepspeed_available():
@@ -362,6 +364,21 @@ def load_model(
         ValueError
     """
     print("Loading model {}".format(model_name))
+
+    # Validate input parameters
+    if device not in [option.name.lower() for option in DeviceOptions]:
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
+
+    if device == "cuda":
+        if not torch.cuda.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
+    elif device == "xpu":
+        if not torch.xpu.is_available():
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+            return
+
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
@@ -423,18 +440,21 @@ def load_model(
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
-            raise ValueError(f"load_model: model config is not found, {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
         else:
-            raise ValueError(f"load_model: unknown ValueError occurred, {e}")
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError(f"load_model: model name or path is not found, {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
         else:
-            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except Exception as e:
         logging.error(f"Exception: {e}")
-        raise ValueError(f"load_model: an unexpected error occurred, {e}")
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
 
     MODELS[model_name]["model_type"] = config.model_type
 
@@ -450,12 +470,14 @@ def load_model(
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError(f"load_model: tokenizer is not found, {e}")
+            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
         else:
-            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except Exception as e:
         logging.error(f"Exception: {e}")
-        raise ValueError(f"load_model: an unexpected error occurred, {e}")
+        set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
 
     load_to_meta = model_on_meta(config)
 
@@ -555,17 +577,26 @@ def load_model(
                     file_name="best_model.pt"
                 )
         else:
-            raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
+            logging.error(f"unsupported model name or path {model_name}, \
+                only supports t5/llama/mpt/gptj/bloom/opt/qwen/chatglm/mistral/mixtral/gpt_bigcode/phi model type now.")
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+            return
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: model name or path is not found")
+            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
         else:
-            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
     except Exception as e:
         logging.error(f"Exception: {e}")
-        raise ValueError(f"load_model: an unexpected error occurred, {e}")
+        if "No space left on device" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        elif "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_CACHE_DIR_NO_WRITE_PERMISSION)
+        else:
+            set_latest_error(ErrorCodes.ERROR_GENERIC)
+        return
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
        not re.search("magicoder", model_name, re.IGNORECASE):
@@ -604,7 +635,23 @@ def load_model(
         if peft_path and not (use_deepspeed and load_to_meta):
             from peft import PeftModel
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            try:
+                model = model.to(torch.bfloat16)
+            except RuntimeError as e:
+                logging.error(f"Exception: {e}")
+                if "out of memory" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                elif "devices are busy or unavailable" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                elif "tensor does not have a device" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                else:
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
+            except Exception as e:
+                logging.error(f"Exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
             model = model.merge_and_unload()
 
         if not use_deepspeed:
@@ -627,7 +674,23 @@ def load_model(
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(dtype=torch_dtype)
+            try:
+                model = model.to(dtype=torch_dtype)
+            except RuntimeError as e:
+                logging.error(f"Exception: {e}")
+                if "out of memory" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                elif "devices are busy or unavailable" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                elif "tensor does not have a device" in str(e):
+                    set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                else:
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
+            except Exception as e:
+                logging.error(f"Exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_GENERIC)
+                return
 
         if device == "cpu":
             if torch_dtype == torch.bfloat16 and not ipex_int8:
@@ -655,11 +718,29 @@ def load_model(
                     )
         elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
-                model = model.eval().to(device)
+                try:
+                    model = model.eval().to(device)
+                except RuntimeError as e:
+                    logging.error(f"Exception: {e}")
+                    if "out of memory" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
+                    elif "devices are busy or unavailable" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
+                    elif "tensor does not have a device" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
+                    else:
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                    return
+                except Exception as e:
+                    logging.error(f"Exception: {e}")
+                    set_latest_error(ErrorCodes.ERROR_GENERIC)
+                    return
         else:
-            raise ValueError(
+            logging.error(
                 f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
             )
+            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+            return
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -763,6 +844,28 @@ short stories, and make jokes.</s>
 
     return result
 
+SEQUENCE_LENGTH_KEYS = [
+    "max_sequence_length",
+    "seq_length",
+    "max_position_embeddings",
+    "max_seq_len",
+    "model_max_length",
+]
+
+def get_context_length(config):
+    """Get the context length of a model from a huggingface model config."""
+    rope_scaling = getattr(config, "rope_scaling", None)
+    if rope_scaling:
+        rope_scaling_factor = config.rope_scaling["factor"]
+    else:
+        rope_scaling_factor = 1
+
+    for key in SEQUENCE_LENGTH_KEYS:
+        val = getattr(config, key, None)
+        if val is not None:
+            return int(rope_scaling_factor * val)
+    return 2048
+
 output_token_len = 0
 def predict_stream(**params):
     """
@@ -853,6 +956,15 @@ def predict_stream(**params):
             tokenizer, skip_prompt=True, skip_special_tokens=True
         )
 
+    context_len = get_context_length(model.config)
+    length = min(max_new_tokens, context_len - input_token_len)
+    if length <= 0:
+        logging.error(f"This model's maximum context length is {context_len} tokens. \
+            However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+        )
+        set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+        return
+
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
         get_stop_token_ids(model, tokenizer),
@@ -928,6 +1040,9 @@ def predict_stream(**params):
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
+                logging.error(f"model.generate exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+                return
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -970,13 +1085,18 @@ def predict_stream(**params):
                     return output_token
             except Exception as e:
                 errors_queue.put(e)
+                logging.error(f"model.generate exception: {e}")
+                set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+                return
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     else:
-        raise ValueError(
-            f"unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
+        logging.error(
+            f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
         )
+        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        return
     output_word_len = 0
 
     generation_thread.join(0.1)
@@ -1108,6 +1228,15 @@ def predict(**params):
         assistant_model=assistant_model
     )
 
+    context_len = get_context_length(model.config)
+    length = min(max_new_tokens, context_len - input_token_len)
+    if length <= 0:
+        logging.error(f"This model's maximum context length is {context_len} tokens. \
+            However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+        )
+        set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+        return
+
     if device in ["cpu", "cuda", "xpu"]:
         if device in ["cuda", "xpu"]:
             input_tokens = prepare_inputs(
@@ -1125,44 +1254,49 @@ def predict(**params):
             num_return_sequences=num_return_sequences,
         )
         dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
-        with torch.no_grad():
-            if device == "cpu":
-                context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            elif device == "cuda":
-                context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            elif device == "xpu":
-                context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            if ipex_int8:
-                generation_output = model.generate(
-                        **input_tokens,
-                        **generate_kwargs,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True
-                        )
-            else:
-                with context:
-                    if is_llm_runtime_model(model):  # optimized model gerenate
+        try:
+            with torch.no_grad():
+                if device == "cpu":
+                    context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                elif device == "cuda":
+                    context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                elif device == "xpu":
+                    context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                    if ipex_int8:
                         generation_output = model.generate(
-                            input_tokens['input_ids'],
-                            temperature=temperature,
-                            top_p=top_p,
-                            top_k=top_k,
-                            repetition_penalty=repetition_penalty,
-                            max_new_tokens=max_new_tokens,
-                            ctx_size=max_new_tokens,
-                            ignore_prompt=True,
-                            interactive=True,
-                            do_sample=do_sample,
-                            num_beams=num_beams,
-                            seed=1
-                        )
+                                **input_tokens,
+                                **generate_kwargs,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True
+                                )
                     else:
-                        generation_output = model.generate(
-                            **input_tokens,
-                            **generate_kwargs,
-                            generation_config=generation_config,
-                            return_dict_in_generate=True
-                        )
+                        with context:
+                            if is_llm_runtime_model(model):  # optimized model gerenate
+                                generation_output = model.generate(
+                                    input_tokens['input_ids'],
+                                    temperature=temperature,
+                                    top_p=top_p,
+                                    top_k=top_k,
+                                    repetition_penalty=repetition_penalty,
+                                    max_new_tokens=max_new_tokens,
+                                    ctx_size=max_new_tokens,
+                                    ignore_prompt=True,
+                                    interactive=True,
+                                    do_sample=do_sample,
+                                    num_beams=num_beams,
+                                    seed=1
+                                )
+                            else:
+                                generation_output = model.generate(
+                                    **input_tokens,
+                                    **generate_kwargs,
+                                    generation_config=generation_config,
+                                    return_dict_in_generate=True
+                                )
+        except Exception as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)
@@ -1183,18 +1317,23 @@ def predict(**params):
         generation_config.temperature = temperature
         generation_config.repetition_penalty = repetition_penalty
 
-        with torch.no_grad():
-            generation_output = model.generate(
-                **input_tokens,
-                **generate_kwargs,
-                generation_config=generation_config,
-                return_dict_in_generate=True,
-                output_scores=True,
-                max_new_tokens=max_new_tokens,
-                lazy_mode=True,
-                hpu_graphs=use_hpu_graphs,
-                ignore_eos=False,
-            )
+        try:
+            with torch.no_grad():
+                generation_output = model.generate(
+                    **input_tokens,
+                    **generate_kwargs,
+                    generation_config=generation_config,
+                    return_dict_in_generate=True,
+                    output_scores=True,
+                    max_new_tokens=max_new_tokens,
+                    lazy_mode=True,
+                    hpu_graphs=use_hpu_graphs,
+                    ignore_eos=False,
+                )
+        except Exception as e:
+            logging.error(f"model.generate exception: {e}")
+            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
     if is_llm_runtime_model(model):  # optimized model gerenate
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:

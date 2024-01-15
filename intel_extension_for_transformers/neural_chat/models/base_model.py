@@ -193,6 +193,9 @@ class BaseModel(ABC):
                                 if plugin_name == "asr":
                                     if "[ASR ERROR] Audio format not supported" in str(e):
                                         set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                elif plugin_name == "":
+                                    if "[Rereieval ERROR] intent detection failed" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:

@@ -19,11 +19,10 @@
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
-from .config import DeviceOptions
 from .plugins import plugins
 
 from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
-from .utils.error_utils import set_latest_error
+from .utils.error_utils import set_latest_error, get_latest_error
 import psutil
 import torch
 from .config_logging import configure_logging
@@ -44,29 +43,9 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
-    # Check for out of storage
-    available_storage = psutil.disk_usage('/').free
-    available_storage_gb = available_storage / (1024 ** 3)
-    if available_storage_gb < STORAGE_THRESHOLD_GB:
-        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
-        return
-
     global plugins
     if not config:
         config = PipelineConfig()
-    # Validate input parameters
-    if config.device not in [option.name.lower() for option in DeviceOptions]:
-        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        return
-
-    if config.device == "cuda":
-        if not torch.cuda.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
-    elif config.device == "xpu":
-        if not torch.xpu.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -139,10 +118,23 @@ def build_chatbot(config: PipelineConfig=None):
                     plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    logger.error(f"build_chatbot: unknown plugin, error code: {get_latest_error()}")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                try:
+                    plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                except Exception as e:
+                    if "[Rereieval ERROR] Document format not supported" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                        logger.error(f"build_chatbot: retrieval plugin init failed, error code: {get_latest_error()}")
+                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
+                        logger.error(f"build_chatbot: safety checker plugin init failed, error code: {get_latest_error()}")
+                    else:
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                        logger.error(f"build_chatbot: plugin init failed, error code: {get_latest_error()}")
+                    return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
     parameters = {}
@@ -163,37 +155,9 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
 
-    try:
-        adapter.load_model(parameters)
-    except RuntimeError as e:
-        logger.error(f"Exception: {e}")
-        if "out of memory" in str(e):
-            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-        elif "devices are busy or unavailable" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
-        elif "tensor does not have a device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    except ValueError as e:
-        logger.error(f"Exception: {e}")
-        if "load_model: unsupported device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        elif "load_model: unsupported model" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-        elif "load_model: tokenizer is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
-        elif "load_model: model name or path is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
-        elif "load_model: model config is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        set_latest_error(ErrorCodes.ERROR_GENERIC)
+    adapter.load_model(parameters)
+    if get_latest_error():
+        logger.error(f"build_chatbot: failed to load_model, error code: {get_latest_error()}")
         return
     return adapter
 
@@ -231,6 +195,8 @@ def finetune_model(config: BaseFinetuningConfig):
             set_latest_error(ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
         elif config.finetune_args.peft == "prompt":
             set_latest_error(ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
+        elif "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
 

@@ -245,7 +245,11 @@ class Agent_QA():
 
 
     def pre_llm_inference_actions(self, model_name, query):
-        intent = self.intent_detector.intent_detection(model_name, query)
+        try:
+            intent = self.intent_detector.intent_detection(model_name, query)
+        except Exception as e:
+            logging.info("intent detection failed, {e}")
+            raise Exception("[Rereieval ERROR] intent detection failed!")
         links = []
         context = ''
         assert self.retriever is not None, logging.info("Please check the status of retriever")
