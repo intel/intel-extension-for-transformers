@@ -501,6 +501,7 @@ def load_model(
             or config.model_type == "llama"
             or config.model_type == "mistral"
             or config.model_type == "mixtral"
+            or config.model_type == "phi"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -509,7 +510,7 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
-                    trust_remote_code=True if (config.model_type == "qwen" or \
+                    trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
                         re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (

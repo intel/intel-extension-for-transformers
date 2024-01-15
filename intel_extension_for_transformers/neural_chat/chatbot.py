@@ -97,7 +97,8 @@ def build_chatbot(config: PipelineConfig=None):
          "starcoder" in config.model_name_or_path.lower() or \
          "codegen" in config.model_name_or_path.lower() or \
          "magicoder" in config.model_name_or_path.lower() or \
-         "mixtral" in config.model_name_or_path.lower():
+         "mixtral" in config.model_name_or_path.lower() or \
+         "phi-2" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
