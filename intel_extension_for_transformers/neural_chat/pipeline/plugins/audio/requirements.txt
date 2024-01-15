@@ -1,8 +1,0 @@
-transformers
-soundfile
-datasets
-pydub
-python-multipart
-speechbrain
-librosa
-zhconv
