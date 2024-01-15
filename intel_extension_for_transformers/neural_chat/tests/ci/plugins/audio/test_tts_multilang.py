@@ -18,7 +18,7 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
 import unittest, os, shutil
 
-class TestChineseTextToSpeech(unittest.TestCase):
+class TestMultilangTextToSpeech(unittest.TestCase):
     def setUp(self):
         shutil.rmtree('./tmp_audio', ignore_errors=True)
         os.mkdir('./tmp_audio')
