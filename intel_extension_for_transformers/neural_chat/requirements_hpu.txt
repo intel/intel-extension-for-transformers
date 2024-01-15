@@ -44,6 +44,7 @@ langid
 qdrant-client
 vector_quantize_pytorch
 cn2an
+pypinyin
 pyopenjtalk; sys_platform == 'linux'
 openjtalk; sys_platform != 'linux'
 jaconv
