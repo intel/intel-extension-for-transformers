@@ -21,10 +21,8 @@ from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .plugins import plugins
 
-from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
+from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error
-import psutil
-import torch
 from .config_logging import configure_logging
 logger = configure_logging()
 
@@ -185,7 +183,9 @@ def finetune_model(config: BaseFinetuningConfig):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
         logger.error(f"Exception: {e}")
-        if config.finetune_args.peft == "lora":
+        if "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
+        elif config.finetune_args.peft == "lora":
             set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
         elif config.finetune_args.peft == "llama_adapter":
             set_latest_error(ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
@@ -195,8 +195,6 @@ def finetune_model(config: BaseFinetuningConfig):
             set_latest_error(ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
         elif config.finetune_args.peft == "prompt":
             set_latest_error(ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
-        elif "Permission denied" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
         else:
             set_latest_error(ErrorCodes.ERROR_GENERIC)
 

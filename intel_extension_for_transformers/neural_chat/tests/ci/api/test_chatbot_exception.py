@@ -29,6 +29,9 @@ from intel_extension_for_transformers.neural_chat.config import (
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model, optimize_model
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import BitsAndBytesConfig
+from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
+from intel_extension_for_transformers.neural_chat.utils.error_utils import get_latest_error
 from transformers import AutoModelForCausalLM
 import unittest
 import shutil
@@ -37,13 +40,13 @@ import os
 class TestBuildChatbotExceptions(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    def test_out_of_storage(self):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_out_of_storage(self, mock_from_pretrained):
         # Simulate out of storage scenario
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        with unittest.mock.patch('psutil.disk_usage') as mock_disk_usage:
-            mock_disk_usage.return_value.free = 0  # Set free storage to 0
-            result = build_chatbot(config)
-            self.assertIsNone(result)
+        mock_from_pretrained.side_effect = Exception("No space left on device")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_invalid_device(self):
@@ -80,101 +83,101 @@ class TestBuildChatbotExceptions(unittest.TestCase):
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_out_of_memory(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_out_of_memory(self, mock_from_pretrained):
         # Test out of memory exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = RuntimeError("Mocked exception: out of memory")
+        mock_from_pretrained.side_effect = Exception("out of memory")
         result = build_chatbot(config=config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_device_busy(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_device_busy(self, mock_from_pretrained):
         # Test device busy or unavailable exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = RuntimeError("devices are busy or unavailable")
+        mock_from_pretrained.side_effect = RuntimeError("devices are busy or unavailable")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_device_not_found(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_device_not_found(self, mock_from_pretrained):
         # Test device not found exception handling
-        mock_load_model.side_effect = RuntimeError("tensor does not have a device")
+        mock_from_pretrained.side_effect = RuntimeError("tensor does not have a device")
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_runtime_exception(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_runtime_exception(self, mock_from_pretrained):
         # Test generic exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = RuntimeError("Some generic error")
+        mock_from_pretrained.side_effect = RuntimeError("Some generic error")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_unsupported_device(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_unsupported_device(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: unsupported device")
+        mock_from_pretrained.side_effect = ValueError("load_model: unsupported device")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_unsupported_model(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_unsupported_model(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: unsupported model")
+        mock_from_pretrained.side_effect = ValueError("load_model: unsupported model")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_tokenizer_not_found(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_tokenizer_not_found(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: tokenizer is not found")
+        mock_from_pretrained.side_effect = ValueError("load_model: tokenizer is not found")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_model_not_found(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_model_not_found(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: model name or path is not found")
+        mock_from_pretrained.side_effect = ValueError("load_model: model name or path is not found")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_model_config_not_found(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_model_config_not_found(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: model config is not found")
+        mock_from_pretrained.side_effect = ValueError("load_model: model config is not found")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_value_error_generic(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_value_error_generic(self, mock_from_pretrained):
         # Test value error exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = ValueError("load_model: some generic error")
+        mock_from_pretrained.side_effect = ValueError("load_model: some generic error")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.neural_chat.models.model_utils.load_model')
-    def test_adapter_load_model_exception(self, mock_load_model):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_exception(self, mock_from_pretrained):
         # Test generic exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        mock_load_model.side_effect = Exception("Some generic error")
+        mock_from_pretrained.side_effect = Exception("Some generic error")
         result = build_chatbot(config)
         self.assertIsNone(result)
 
@@ -249,6 +252,21 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         )
         mock_finetune.side_effect = ValueError("--do_train requires a train dataset")
         self.assertRaises(ValueError,finetune_model,finetune_cfg)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    def test_finetune_permission_denied_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="lora")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception("Permission denied")
+        self.assertRaises(Exception,finetune_model,finetune_cfg)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
@@ -346,28 +364,45 @@ class TestOptimizeModelExceptions(unittest.TestCase):
 
     def tearDown(self) -> None:
         return super().tearDown()
-    
+
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.transformers.MixedPrecisionConfig')
+    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
     def test_amp_optimize_fail(self,mock_optimize):
         config = MixedPrecisionConfig(dtype="float16" if torch.cuda.is_available() else "bfloat16")
         model = AutoModelForCausalLM.from_pretrained(
                 "facebook/opt-125m",
                 low_cpu_mem_usage=True,
             )
-        mock_optimize.side_effect = Exception
-        optimize_model(model=model,config=config)
+        mock_optimize.side_effect = Exception("AMP optimization")
+        optimize_model(model, config)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_AMP_OPTIMIZATION_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.transformers.WeightOnlyQuantConfig')
+    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
     def test_weight_only_quant_optimize_fail(self,mock_optimize):
         config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
         model = AutoModelForCausalLM.from_pretrained(
                 "facebook/opt-125m",
                 low_cpu_mem_usage=True,
             )
-        mock_optimize.side_effect = Exception
-        optimize_model(model=model,config=config)
+        mock_optimize.side_effect = Exception("WOQ optimization")
+        optimize_model(model, config)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_WEIGHT_ONLY_QUANT_OPTIMIZATION_FAIL)
+
+    @unittest.skipIf(get_device_type() != 'cuda', "Only run this test on CUDA")
+    @patch('intel_extension_for_transformers.llm.quantization.optimization.Optimization.optimize')
+    def test_bitsandbytes_quant_optimize_fail(self,mock_optimize):
+        config = BitsAndBytesConfig(load_in_4bit=True,
+                        bnb_4bit_quant_type='nf4',
+                        bnb_4bit_use_double_quant=True,
+                        bnb_4bit_compute_dtype="bfloat16")
+        model = AutoModelForCausalLM.from_pretrained(
+                "facebook/opt-125m",
+                low_cpu_mem_usage=True,
+            )
+        mock_optimize.side_effect = Exception("BitsAndBytes optimization")
+        optimize_model(model, config)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_BITS_AND_BYTES_OPTIMIZATION_FAIL)
 
 if __name__ == '__main__':
     unittest.main()

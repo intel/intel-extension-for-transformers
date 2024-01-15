@@ -592,6 +592,8 @@ def load_model(
         logging.error(f"Exception: {e}")
         if "No space left on device" in str(e):
             set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
+        elif "out of memory" in str(e):
+            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
         elif "Permission denied" in str(e):
             set_latest_error(ErrorCodes.ERROR_CACHE_DIR_NO_WRITE_PERMISSION)
         else:
