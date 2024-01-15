@@ -252,6 +252,7 @@ class HuggingFaceAutoLM(BaseLM):
                 offload_folder,
             )
         self._device = device
+        self.model_format = model_format
         if model_format == "torch":
             self.model = self._create_auto_model(
                 pretrained=pretrained,
@@ -464,8 +465,10 @@ class HuggingFaceAutoLM(BaseLM):
         """
         if self._add_special_tokens is not None:
             return self._add_special_tokens
+        elif self.model_format == "runtime":
+            return True
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return False
+            return False 
         elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
             return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
@@ -608,10 +611,20 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
+
     def __init__(self, *args, pretrained, model_format, **kwargs):
+        self.model_format = model_format
+        if self.model_format == "runtime":
+            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+            use_gptq = kwargs.pop("use_gptq", False)
+            self.woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=use_gptq)
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
-        self.model_format = model_format
+        if self.model_format == "runtime":
+            from transformers import AutoTokenizer, TextStreamer
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config)
+            
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
                not os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")) and \
@@ -741,7 +754,10 @@ class AutoCausalLM(HuggingFaceAutoLM):
             input_bs, input_len = inputs.shape
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
-        if self.model_format != "onnx":
+        if self.model_format == "runtime":
+            out = self.runtime_model(inputs, reinit=True, logits_all=True)
+            output = {"logits": torch.tensor(out).unsqueeze(0)}
+        elif self.model_format != "onnx":
             output = self.model(inputs)
         else:
             inputs_names = [input.name for input in self.model.model.get_inputs()]
