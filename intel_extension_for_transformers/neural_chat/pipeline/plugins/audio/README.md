@@ -6,7 +6,7 @@ The Audio Processing and Text-to-Speech (TTS) Plugin is a software component des
 
 - **Audio Speech Recognition (ASR)**: The ASR plugin support speech recognition, allowing it to transcribe spoken words into text. This can be used for applications like voice commands, transcription services, and voice-controlled interfaces. It supports both English and Chinese.
 
-- **Multi-Language Support**: The plugins typically supports multiple languages and accents, making it versatile for global applications and catering to diverse user bases. The ASR plugin supports tens of languages that the Whisper model supports. The TTS plugin supports English, Chinese and Japanese currently.
+- **Multi-Language Support**: The plugins typically support multiple languages and accents, making it versatile for global applications and catering to diverse user bases. The ASR plugin supports tens of languages that the Whisper model supports. The TTS plugin supports English, Chinese and Japanese currently.
 
 - **Integration**: Developers can easily integrate this plugin into their applications or systems using APIs.
 
