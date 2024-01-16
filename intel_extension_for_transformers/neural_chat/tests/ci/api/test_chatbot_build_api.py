@@ -167,6 +167,27 @@ class TestChatbotBuilder(unittest.TestCase):
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
         _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
 
+    def test_text_chat_stream_return_stats_with_v1_format(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        stream_text = ""
+        gen_config = GenerationConfig(return_stats=True, format_version="v1")
+        results, _ = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.", config=gen_config)
+        for text in results:
+            stream_text += text
+            print(text)
+        self.assertIn("END_OF_STREAM_STATS=", stream_text)
+
+    def test_text_chat_stream_return_stats(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        stream_text = ""
+        gen_config = GenerationConfig(return_stats=True)
+        results, _ = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.", config=gen_config)
+        for text in results:
+            stream_text += text
+            print(text)
+        self.assertIn("| Key                    | Value                       |", stream_text)
 
 if __name__ == '__main__':
     unittest.main()
