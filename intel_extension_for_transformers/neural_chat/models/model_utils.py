@@ -1251,7 +1251,6 @@ def predict(**params):
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
         return
 
-    generation_output = None
     if device in ["cpu", "cuda", "xpu"]:
         if device in ["cuda", "xpu"]:
             input_tokens = prepare_inputs(
@@ -1277,37 +1276,37 @@ def predict(**params):
                     context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                 elif device == "xpu":
                     context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-                    if ipex_int8:
-                        generation_output = model.generate(
+                if ipex_int8:
+                    generation_output = model.generate(
+                            **input_tokens,
+                            **generate_kwargs,
+                            generation_config=generation_config,
+                            return_dict_in_generate=True
+                            )
+                else:
+                    with context:
+                        if is_llm_runtime_model(model):  # optimized model gerenate
+                            generation_output = model.generate(
+                                input_tokens['input_ids'],
+                                temperature=temperature,
+                                top_p=top_p,
+                                top_k=top_k,
+                                repetition_penalty=repetition_penalty,
+                                max_new_tokens=max_new_tokens,
+                                ctx_size=max_new_tokens,
+                                ignore_prompt=True,
+                                interactive=True,
+                                do_sample=do_sample,
+                                num_beams=num_beams,
+                                seed=1
+                            )
+                        else:
+                            generation_output = model.generate(
                                 **input_tokens,
                                 **generate_kwargs,
                                 generation_config=generation_config,
                                 return_dict_in_generate=True
-                                )
-                    else:
-                        with context:
-                            if is_llm_runtime_model(model):  # optimized model gerenate
-                                generation_output = model.generate(
-                                    input_tokens['input_ids'],
-                                    temperature=temperature,
-                                    top_p=top_p,
-                                    top_k=top_k,
-                                    repetition_penalty=repetition_penalty,
-                                    max_new_tokens=max_new_tokens,
-                                    ctx_size=max_new_tokens,
-                                    ignore_prompt=True,
-                                    interactive=True,
-                                    do_sample=do_sample,
-                                    num_beams=num_beams,
-                                    seed=1
-                                )
-                            else:
-                                generation_output = model.generate(
-                                    **input_tokens,
-                                    **generate_kwargs,
-                                    generation_config=generation_config,
-                                    return_dict_in_generate=True
-                                )
+                            )
         except Exception as e:
             logging.error(f"model.generate exception: {e}")
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
