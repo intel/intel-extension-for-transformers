@@ -27,6 +27,9 @@ else
     echo "Not found requirements.txt file."
 fi
 # install packages
+pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
+pip install accelerate nlpaug nltk schema optimum-intel==1.11.0 optimum==1.13.3 peft==0.6.2
+# install neural-speed
 git clone https://github.com/intel/neural-speed.git
 cd neural-speed && pip install -r requirements.txt && pip install .
 cd ..
