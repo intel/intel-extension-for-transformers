@@ -1,6 +1,3 @@
-[submodule "intel_extension_for_transformers/llm/library/xbyak"]
-	path = intel_extension_for_transformers/llm/library/xbyak
-	url = https://github.com/herumi/xbyak.git
 [submodule "intel_extension_for_transformers/llm/runtime/third_party/oneDNN"]
 	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/oneDNN
 	url = https://github.com/oneapi-src/oneDNN.git
