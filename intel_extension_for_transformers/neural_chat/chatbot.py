@@ -22,7 +22,7 @@ from .config import BaseFinetuningConfig
 from .plugins import plugins
 
 from .errorcode import ErrorCodes
-from .utils.error_utils import set_latest_error, get_latest_error
+from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
 from .config_logging import configure_logging
 logger = configure_logging()
 
@@ -42,6 +42,7 @@ def build_chatbot(config: PipelineConfig=None):
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
     global plugins
+    clear_latest_error()
     if not config:
         config = PipelineConfig()
 
@@ -80,6 +81,7 @@ def build_chatbot(config: PipelineConfig=None):
         adapter = BaseModel()
     else:
         set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+        logger.error("build_chatbot: unknown model")
         return
 
     # register plugin instance in model adaptor
@@ -155,9 +157,9 @@ def build_chatbot(config: PipelineConfig=None):
 
     adapter.load_model(parameters)
     if get_latest_error():
-        logger.error(f"build_chatbot: failed to load_model, error code: {get_latest_error()}")
         return
-    return adapter
+    else:
+        return adapter
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -165,7 +167,7 @@ def finetune_model(config: BaseFinetuningConfig):
     Args:
         config (BaseFinetuningConfig): Configuration for finetuning the model.
     """
-
+    clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
@@ -206,6 +208,7 @@ def optimize_model(model, config, use_llm_runtime=False):
         config (OptimizationConfig): The configuration required for optimizing the model.
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
+    clear_latest_error()
     optimization = Optimization(optimization_config=config)
     try:
         model = optimization.optimize(model, use_llm_runtime)
