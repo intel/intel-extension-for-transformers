@@ -25,6 +25,8 @@ build/
 _build
 dist/
 .cache/
+examples/huggingface/pytorch/text-generation/quantization/saved_data/
+intel_extension_for_transformers/llm/runtime/graph/saved_data/
 
 # build / dist files
 /intel_extension_for_transformers/intel_extension_for_transformers[.-]*/

@@ -38,15 +38,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model_path = args.model.as_posix()
 
     model, config, quantize_config = load_gptq_model(model_path)
-    lm_head_state_dict = model["lm_head.weight"]
-    import pdb;pdb.set_trace();
-    from neural_compressor.utils.load_huggingface import export_compressed_model
-    from transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
-    model = export_compressed_model(model, "/mnt/data2/changwa1/intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/quantization/llama_gptq")
-    model = model.state_dict()
-    model["lm_head.weight"] = lm_head_state_dict
-    import pdb;pdb.set_trace();
     f = open(out_path, "wb")
 
     # 1. write hparams
@@ -115,7 +106,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     convert_fp32_tensor("model.embed_tokens.weight", "tok_embeddings.weight", list_vars, f)
     convert_fp32_tensor("model.norm.weight", "norm.weight", list_vars, f)
     convert_fp32_tensor("lm_head.weight", "output.weight", list_vars, f)
-    #convert_q4_jblas_tensor("lm_head", "output.weight", list_vars, f, quantize_config, n_head)
+
     for i in range(n_layer):
         convert_q4_jblas_tensor(f"model.layers.{i}.self_attn.q_proj",
                     f"layers.{i}.attention.wq.weight", list_vars, f, quantize_config, n_head, n_head,
