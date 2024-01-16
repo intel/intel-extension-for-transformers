@@ -115,14 +115,11 @@ class MatMulKBit(torch.autograd.Function):
         grad_A, grad_B, grad_bias = None, None, None
 
         B_dequant = torch.zeros(grad_output.shape[-1], A.shape[-1], dtype=torch.float)
-<<<<<<< Updated upstream
-        torch.ops.bestlaop.woq_dequantize(
-            B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype)
-=======
+
         torch.ops.jblasop.woq_dequantize(
             B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype
         )
->>>>>>> Stashed changes
+
         B = B_dequant
 
         if req_gradBias:
@@ -152,11 +149,6 @@ def matmul_kbit(
             A, B, out, bias, compute_dtype, weight_dtype, scale_dtype
         )
     else:
-<<<<<<< Updated upstream
-        torch.ops.bestlaop.woq_linear(A, B.data, bias, out, out.shape[-1], bias
-                                     is not None, compute_dtype, weight_dtype,
-                                     scale_dtype, False)
-=======
         torch.ops.jblasop.woq_linear(
             A,
             B.data,
@@ -170,5 +162,4 @@ def matmul_kbit(
             False,
         )
 
->>>>>>> Stashed changes
         return out
