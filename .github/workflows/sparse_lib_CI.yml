@@ -4,12 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'intel_extension_for_transformers/llm/library/kernels/**'
-      - 'intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/**'
+      - 'intel_extension_for_transformers/llm/runtime/deprecated/kernels/**'
       - '.github/workflows/sparse_lib_CI.yml'
       - '.github/workflows/script/SparseLibCI'
-      - '!intel_extension_for_transformers/llm/library/kernels/docs/**'
-      - '!intel_extension_for_transformers/llm/library/kernels/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

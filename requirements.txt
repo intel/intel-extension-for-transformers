@@ -7,4 +7,3 @@ setuptools_scm[toml]>=6.2
 torch==2.1.0+cpu
 accelerate
 optimum-intel
-git+https://github.com/intel/neural-speed.git
