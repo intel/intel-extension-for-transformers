@@ -82,5 +82,5 @@ ner:
         spacy_model: "en_core_web_lg"
 
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'， 'photoai']
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'image2image', 'finetune', 'photoai', 'codegen']
 tasks_list: ['textchat', 'retrieval']
