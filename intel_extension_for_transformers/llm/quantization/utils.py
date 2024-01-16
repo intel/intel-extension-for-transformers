@@ -305,6 +305,9 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     },
                 },
             },
+            op_name_dict={"lm_head": {"weight": {"dtype": "fp32"}}}
+            if config.algorithm == "GPTQ"
+            else None,
             recipes=recipes,
         )
         # TEQ: set calib_func=None, use default training func as calib_func
