@@ -55,3 +55,6 @@ pyopenjtalk; sys_platform == 'linux'
 openjtalk; sys_platform != 'linux'
 jaconv
 webrtcvad
+g2p_en
+inflect
+jieba

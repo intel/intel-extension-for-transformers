@@ -135,20 +135,7 @@ class TransformerCouplingBlock(nn.Module):
 
         self.flows = nn.ModuleList()
 
-        self.wn = (
-            FFT(
-                hidden_channels,
-                filter_channels,
-                n_heads,
-                n_layers,
-                kernel_size,
-                p_dropout,
-                isflow=True,
-                gin_channels=self.gin_channels,
-            )
-            if share_parameter
-            else None
-        )
+        self.wn = None
 
         for i in range(n_flows):
             self.flows.append(

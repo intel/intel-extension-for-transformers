@@ -39,15 +39,12 @@ def kata2phoneme(text: str) -> str:
     elif text.startswith("ー"):
         return ["ー"] + kata2phoneme(text[1:])
     res = []
-    prev = None
     while text:
         if re.match(_MARKS, text):
             res.append(text)
             text = text[1:]
             continue
         if text.startswith("ー"):
-            if prev:
-                res.append(prev[-1])
             text = text[1:]
             continue
         res += pyopenjtalk.g2p(text).lower().replace("cl", "q").split(" ")
