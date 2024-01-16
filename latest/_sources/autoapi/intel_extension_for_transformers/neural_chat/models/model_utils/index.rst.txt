@@ -115,6 +115,8 @@ Functions
    :type `use_cache`: bool
    :param `ipex_int8`: Whether to use IPEX int8 model to inference.
    :type `ipex_int8`: bool
+   :param `format_version`: the format version of return stats.
+   :type `format_version`: string
 
    :returns: A generator that yields the generated streaming text.
    :rtype: generator
