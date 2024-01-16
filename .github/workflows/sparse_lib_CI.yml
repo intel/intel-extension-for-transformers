@@ -30,26 +30,26 @@ jobs:
     steps:
       - name: Docker Clean Up
         run: |
-          podman ps -a
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-              podman start ${{ env.CONTAINER_NAME }}
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}
               echo "remove left files through container ..."
-              podman exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
       - name: Docker Build
         run: |
-          podman build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
 
       - name: Docker Run
         run: |
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-            podman stop ${{ env.CONTAINER_NAME }}
-            podman rm -vf ${{ env.CONTAINER_NAME }} || true
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop ${{ env.CONTAINER_NAME }}
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
-          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
             -v ${{ github.workspace }}:/intel-extension-for-transformers \
             -e report_title="SparseLib Test" \
             -e BUILD_NUMBER="${{ github.run_number }}" \
@@ -72,12 +72,12 @@ jobs:
       - name: SparseLib Test
         id: SparseLib-Test
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "bash /intel-extension-for-transformers/.github/workflows/script/SparseLibCI/run_sparse_lib.sh"
 
       - name: Generate Report
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "bash /generate_sparse_lib.sh"
 
       - name: Publish pipeline artifact
