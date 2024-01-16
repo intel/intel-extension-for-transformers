@@ -4,7 +4,7 @@ NeuralChat
 ===========================
 <h3> A customizable framework to create your own LLM-driven AI apps within minutes</h3>
 
-🌟[RESTful API](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;💻[Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;📖[Notebooks](./docs/full_notebooks.md)
+🌟[RESTful API](./docs/neuralchat_api.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;🔥[Features](./docs/advanced_features.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;💻[Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;📖[Notebooks](./docs/full_notebooks.md)
 </div>
 
 # Introduction
@@ -135,12 +135,6 @@ docs=retriever.get_relevant_documents("Intel")
 Please refer to this [documentation](./pipeline/plugins/retrieval/README.md) for more details.
 
 
-## Advanced Features
-
-NeuralChat introduces `plugins` that offer a wide range of useful LLM utilities and features, enhancing the capabilities of the chatbot. Additionally, NeuralChat provides advanced model optimization technologies such as `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`. These technologies enable users to run a high-throughput chatbot efficiently. NeuralChat further supports fine-tuning the pretrained LLMs for tasks such as text generation, summarization, code generation, and even Text-to-Speech (TTS) models, allowing users to create customized chatbots tailored to their specific needs.
-
-Please refer to this [documentation](./docs/advanced_features.md) for more details.
-
 # Models
 
 ## Supported  Models
@@ -163,17 +157,6 @@ The table below displays the validated model list in NeuralChat for both inferen
 |CodeGen series|   |   |   | ✅ |
 |MagicCoder series|   |   |   | ✅ |
 
-# Notebooks
-
-We provide Jupyter notebooks to help users explore how to create, deploy, and customize chatbots on different hardware architecture. The selected notebooks are shown below:
-
-| Notebook | Title                                       | Description                                                | Link                                           |
-| ------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
-| #1     | Getting Started on Intel CPU SPR          | Learn how to create chatbot on SPR                      | [Notebook](./docs/notebooks/build_chatbot_on_spr.ipynb) |
-| #2     | Getting Started on Habana Gaudi1/Gaudi2   | Learn how to create chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb) |
-| #3     | Deploying Chatbot on Intel CPU SPR        | Learn how to deploy chatbot on SPR                      | [Notebook](./docs/notebooks/deploy_chatbot_on_spr.ipynb) |
-| #4     | Deploying Chatbot on Habana Gaudi1/Gaudi2 | Learn how to deploy chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
-| #5     | Deploying Chatbot with Load Balance       | Learn how to deploy chatbot with load balance on SPR    | [Notebook](./docs/notebooks/chatbot_with_load_balance.ipynb) |
+## Supported Plugins
 
 
-🌟Please refer to [HERE](docs/full_notebooks.md) for the full notebooks.
