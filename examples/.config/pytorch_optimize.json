@@ -1384,6 +1384,29 @@
       }
     }
   },
+  "llama2_7b_gen_woq_gptq": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "llama2_7b_int4_gptq",
+        "task": "generation",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "llama2_7b_int4_gptq",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_j_6b_gen_woq_bab": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
