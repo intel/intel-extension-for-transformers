@@ -311,13 +311,17 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # RTN: doesn't need calib_func
         if config.algorithm in ["TEQ", "RTN", "GPTQ"]:
             calib_func = None
-        model_type = model.config.model_type
-        # default is llama2-7b
-        num_attention_heads = (
-            model.config.num_attention_heads
-            if hasattr(model.config, "num_attention_heads")
-            else 32
-        )
+        if hasattr(model, "config"):
+            model_type = model.config.model_type
+            # default is llama2-7b
+            num_attention_heads = (
+                model.config.num_attention_heads
+                if hasattr(model.config, "num_attention_heads")
+                else 32
+            )
+        else:
+            model_type = None
+            num_attention_heads = None
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
