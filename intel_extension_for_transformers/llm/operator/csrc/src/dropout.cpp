@@ -17,9 +17,9 @@
 #include <cassert>
 
 #include "../include/dropout.hpp"
-#include "jblas/jit_blas_utils.h"
-#include "jblas/kernel_avx2.h"
-#include "jblas/kernel_avx512f.h"
+#include "bestla/bestla_utils.h"
+#include "bestla/kernel_avx2.h"
+#include "bestla/kernel_avx512f.h"
 
 #pragma GCC push_options
 #pragma GCC target("avx512f", "avx512bw", "avx512vl")
@@ -52,8 +52,8 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
 #else
-      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
-      bf16_mul_scale = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
+      bf16_ans = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_mul_scale = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
 #endif
       _mm256_storeu_si256((__m256i*)(data + i * dt_size), bf16_ans);
       _mm256_storeu_si256((__m256i*)(mask_ptr + i * dt_size), bf16_mul_scale);
@@ -81,8 +81,8 @@ static inline void write_rand(char* data, int thread_idx, int64_t elt_num, int d
       bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
       bf16_mul_scale = (__m256i)_mm512_cvtneps_pbh(mul_scale);
 #else
-      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
-      bf16_mul_scale = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
+      bf16_ans = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_mul_scale = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(mul_scale);
 #endif
       _mm256_mask_storeu_epi16(data + i * dt_size, ls_mask, bf16_ans);
       _mm256_mask_storeu_epi16(mask_ptr + i * dt_size, ls_mask, bf16_mul_scale);
@@ -109,7 +109,7 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
 #if CompileBF16()
       bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
 #else
-      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_ans = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
 #endif
       _mm256_storeu_si256((__m256i*)(grad + i * dt_size), bf16_ans);
     }
@@ -132,7 +132,7 @@ static inline void mul(char* grad, int thread_idx, int64_t elt_num, int dt_size,
 #if CompileBF16()
       bf16_ans = (__m256i)_mm512_cvtneps_pbh(ans);
 #else
-      bf16_ans = jblas::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
+      bf16_ans = bestla::kernel::avx512f::zmm_cvt_fp32_bf16(ans);
 #endif
       _mm256_mask_storeu_epi16(grad + i * dt_size, ls_mask, bf16_ans);
     }
@@ -164,8 +164,8 @@ static inline void write_rand_avx2(char* data, int thread_idx, int64_t elt_num, 
       auto bf16_v = _mm_loadu_si128(reinterpret_cast<__m128i*>(data + i * dt_size));
       auto fp32_v = _mm256_castsi256_ps(_mm256_bslli_epi128(_mm256_cvtepu16_epi32(bf16_v), 2));
       fp32_v = _mm256_mul_ps(fp32_v, mul_scale);
-      auto ans = jblas::kernel::avx2::cvt_fp32_to_bf16(fp32_v, &bf16_and_helper, &bf16_add_helper);
-      auto bf16_scale = jblas::kernel::avx2::cvt_fp32_to_bf16(mul_scale, &bf16_and_helper, &bf16_add_helper);
+      auto ans = bestla::kernel::avx2::cvt_fp32_to_bf16(fp32_v, &bf16_and_helper, &bf16_add_helper);
+      auto bf16_scale = bestla::kernel::avx2::cvt_fp32_to_bf16(mul_scale, &bf16_and_helper, &bf16_add_helper);
       _mm_store_ps(reinterpret_cast<float*>(data + i * dt_size), _mm_castsi128_ps(ans));
       _mm_store_ps(reinterpret_cast<float*>(mask_ptr + i * dt_size), _mm_castsi128_ps(bf16_scale));
     }
@@ -185,8 +185,8 @@ static inline void write_rand_avx2(char* data, int thread_idx, int64_t elt_num, 
         fp_mask_ptr[i + j] = mul_scale_arr[j];
       }
     } else {
-      jblas::utils::bf16* bf16_data_ptr = reinterpret_cast<jblas::utils::bf16*>(data);
-      jblas::utils::bf16* bf16_mask_ptr = reinterpret_cast<jblas::utils::bf16*>(mask_ptr);
+      bestla::utils::bf16* bf16_data_ptr = reinterpret_cast<bestla::utils::bf16*>(data);
+      bestla::utils::bf16* bf16_mask_ptr = reinterpret_cast<bestla::utils::bf16*>(mask_ptr);
       mul_scale = _mm256_blendv_ps(mul_scale, ymm_scale, zero_mask);
       float mul_scale_arr[8];
       _mm256_storeu_ps(mul_scale_arr, mul_scale);
@@ -215,7 +215,7 @@ static inline void mul_avx2(char* grad, int thread_idx, int64_t elt_num, int dt_
       auto fp32_grad = _mm256_castsi256_ps(_mm256_bslli_epi128(_mm256_cvtepu16_epi32(bf16_grad), 2));
       auto fp32_mask = _mm256_castsi256_ps(_mm256_bslli_epi128(_mm256_cvtepu16_epi32(bf16_mask), 2));
       fp32_grad = _mm256_mul_ps(fp32_grad, fp32_mask);
-      auto ans = jblas::kernel::avx2::cvt_fp32_to_bf16(fp32_grad, &bf16_and_helper, &bf16_add_helper);
+      auto ans = bestla::kernel::avx2::cvt_fp32_to_bf16(fp32_grad, &bf16_and_helper, &bf16_add_helper);
       _mm_store_ps(reinterpret_cast<float*>(grad + i * dt_size), _mm_castsi128_ps(ans));
     }
   }
@@ -227,8 +227,8 @@ static inline void mul_avx2(char* grad, int thread_idx, int64_t elt_num, int dt_
         fp_data_ptr[i + j] = fp_data_ptr[i + j] * fp_mask_ptr[i + j];
       }
     } else {
-      jblas::utils::bf16* bf16_data_ptr = reinterpret_cast<jblas::utils::bf16*>(grad);
-      jblas::utils::bf16* bf16_mask_ptr = reinterpret_cast<jblas::utils::bf16*>(mask_ptr);
+      bestla::utils::bf16* bf16_data_ptr = reinterpret_cast<bestla::utils::bf16*>(grad);
+      bestla::utils::bf16* bf16_mask_ptr = reinterpret_cast<bestla::utils::bf16*>(mask_ptr);
       for (int j = 0; j < (elt_num - align_elt_num); j++) {
         bf16_data_ptr[i + j].fromfloat(bf16_data_ptr[i + j].tofloat() * bf16_mask_ptr[i + j].tofloat());
       }
@@ -240,7 +240,7 @@ static inline void mul_avx2(char* grad, int thread_idx, int64_t elt_num, int dt_
 torch::Tensor dropout_fwd(torch::Tensor& output, double p) {
   auto elt_num = output.numel();
   auto core_num = omp_get_max_threads();
-  auto task_each_core = jblas::utils::updiv(int(elt_num / core_num), 16) * 16;
+  auto task_each_core = bestla::utils::updiv(int(elt_num / core_num), 16) * 16;
   torch::Tensor mask = torch::empty_like(output);
 #pragma omp parallel
   {
@@ -279,7 +279,7 @@ torch::Tensor dropout_fwd(torch::Tensor& output, double p) {
 void dropout_bwd(torch::Tensor& grad, torch::Tensor& mask) {
   auto elt_num = grad.numel();
   auto core_num = omp_get_max_threads();
-  auto task_each_core = jblas::utils::updiv(int(elt_num / core_num), 16) * 16;
+  auto task_each_core = bestla::utils::updiv(int(elt_num / core_num), 16) * 16;
 #pragma omp parallel
   {
     auto ker_idx = omp_get_thread_num();

@@ -3,6 +3,14 @@
 
 Large Language and Vision Assistant (LLaVA) is a multi-modal training framework that proposed from [Visual Instruction Tuning](https://arxiv.org/abs/2304.08485) and [Improved Baselines with Visual Instruction Tuning](https://arxiv.org/abs/2310.03744). This example demonstrates how to train mult-modal model on Intel Gaudi2.
 
+## Validated Model List
+|Pretrained model| LLaVA | 
+|------------------------------------|---|
+|Mistral series| ✅|
+|LLaMA series| ✅|
+
+**Note:** For Salesforce/codegen25-7b-* series models same with LLaMA architecture, need install `pip install transformers==4.33.2` refer [this](https://github.com/salesforce/CodeGen/issues/82)
+
 ## Train
 
 LLaVA training consists of two stages: (1) feature alignment stage: use our 558K subset of the LAION-CC-SBU dataset to connect a *frozen pretrained* vision encoder to a *frozen LLM*; (2) visual instruction tuning stage: use 150K GPT-generated multimodal instruction-following data, plus around 515K VQA data from academic-oriented tasks, to teach the model to follow multimodal instructions.

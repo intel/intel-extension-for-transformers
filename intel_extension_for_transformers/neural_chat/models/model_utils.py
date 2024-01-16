@@ -501,6 +501,7 @@ def load_model(
             or config.model_type == "llama"
             or config.model_type == "mistral"
             or config.model_type == "mixtral"
+            or config.model_type == "phi"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -509,7 +510,7 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
-                    trust_remote_code=True if (config.model_type == "qwen" or \
+                    trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
                         re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (
@@ -793,6 +794,7 @@ def predict_stream(**params):
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
+        `format_version` (string): the format version of return stats.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -821,6 +823,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
+    format_version = params["format_version"] if "format_version" in params else "v2"
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -1016,17 +1019,27 @@ def predict_stream(**params):
             0
         )
     if return_stats:
-        stats = {
-            "input_token_len": str(input_token_len),
-            "output_token_len": str(output_token_len),
-            "duration": str(duration) + " ms",
-            "first_token_latency": str(first_token_latency) + " ms",
-            "msecond_per_token": str(msecond_per_token) + " ms",
-        }
-        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
-        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
-        for key, value in stats.items():
-            yield "| {:<22} | {:<27} |\n".format(key, value)
+        if format_version == "v1":
+            stats = {
+                "input_token_len": input_token_len,
+                "output_token_len": output_token_len,
+                "duration": duration,
+                "first_token_latency": first_token_latency,
+                "msecond_per_token": msecond_per_token,
+            }
+            yield "END_OF_STREAM_STATS={}".format(stats)
+        else:
+            stats = {
+                "input_token_len": str(input_token_len),
+                "output_token_len": str(output_token_len),
+                "duration": str(duration) + " ms",
+                "first_token_latency": str(first_token_latency) + " ms",
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
+            yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
+            for key, value in stats.items():
+                yield "| {:<22} | {:<27} |\n".format(key, value)
 
 
 def predict(**params):
