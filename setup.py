@@ -53,7 +53,7 @@ RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 
 ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
 USE_ARC = False
-if ipex_available and get_gpu_family() == "arc":
+if ipex_available and (get_gpu_family() == "arc" or get_gpu_family() == "max"):
     from torch.xpu.cpp_extension import DPCPPExtension, DpcppBuildExtension
     SKIP_RUNTIME = True
     RUNTIME_ONLY = False
@@ -84,7 +84,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
 install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
-opt_install_requires_list = ['neural_compressor', 'transformers==4.34.1']
+opt_install_requires_list = ['neural_compressor', 'transformers==4.31.0']
 
 
 packages_list = find_packages()
