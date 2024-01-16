@@ -26,7 +26,7 @@ env:
 
 jobs:
   sparselib:
-    runs-on: [self-hosted, Linux, X64, spr]
+    runs-on: itrex-node
     steps:
       - name: Docker Clean Up
         run: |
