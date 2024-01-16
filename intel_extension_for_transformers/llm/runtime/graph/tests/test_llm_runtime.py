@@ -22,8 +22,8 @@ import unittest
 
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig, AutoModelForCausalLM
-from nueral_speed.convert import convert_model
-from nueral_speed import Model
+from neural_speed.convert import convert_model
+from neural_speed import Model
 
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
