@@ -1239,6 +1239,7 @@ def predict(**params):
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
         return
 
+    generation_output = None
     if device in ["cpu", "cuda", "xpu"]:
         if device in ["cuda", "xpu"]:
             input_tokens = prepare_inputs(

@@ -116,7 +116,7 @@ def build_chatbot(config: PipelineConfig=None):
                     plugins[plugin_name]['class'] = Image2Image
                 else: # pragma: no cover
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
-                    logger.error(f"build_chatbot: unknown plugin, error code: {get_latest_error()}")
+                    logger.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
@@ -125,13 +125,13 @@ def build_chatbot(config: PipelineConfig=None):
                 except Exception as e:
                     if "[Rereieval ERROR] Document format not supported" in str(e):
                         set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
-                        logger.error(f"build_chatbot: retrieval plugin init failed, error code: {get_latest_error()}")
+                        logger.error("build_chatbot: retrieval plugin init failed")
                     elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
                         set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
-                        logger.error(f"build_chatbot: safety checker plugin init failed, error code: {get_latest_error()}")
+                        logger.error("build_chatbot: safety checker plugin init failed")
                     else:
                         set_latest_error(ErrorCodes.ERROR_GENERIC)
-                        logger.error(f"build_chatbot: plugin init failed, error code: {get_latest_error()}")
+                        logger.error("build_chatbot: plugin init failed")
                     return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
