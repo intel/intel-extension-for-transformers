@@ -216,7 +216,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if not q_config.gptq_quantize_config["desc_act"]:
             g_idx = torch.empty(0, dtype=torch.int32)
 
-        packw = torch.ops.jblasop.woq_packq(
+        packw = torch.ops.bestlaop.woq_packq(
             int_weight,
             gptq_scales.float(),
             gptq_zeros,
