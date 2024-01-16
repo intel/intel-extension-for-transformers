@@ -178,7 +178,7 @@ class Image2ImageAPIRouter(APIRouter):
 router = Image2ImageAPIRouter()
 
 
-@router.post("/plugin/image2image")
+@router.post("/v1/image2image")
 async def do_inference(request: Request):
     start_time = time.time()
     try:

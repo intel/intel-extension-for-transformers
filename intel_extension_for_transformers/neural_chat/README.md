@@ -183,14 +183,15 @@ Modify the `model_name_or_path` parameter in the YAML configuration file to load
 ### Rich Plugins
 
 NeuralChat includes support for various plugins to enhance its capabilities:
-* [**Speech Processing**](./pipeline/plugins/audio/README.md)
-    * Text-to-Speech (TTS)
-    * Automatic Speech Recognition (ASR)
 
-* [**RAG (Retrieval-Augmented Generation)**](./pipeline/plugins/retrieval/README.md)
-* [**Safety Checker**](./pipeline/plugins/security/README.md)
-* [**Caching**](./pipeline/plugins/caching/README.md)
-* [**Named Entity Recognition (NER)**](./pipeline/plugins/ner/README.md)
+- [**Speech Processing**](./pipeline/plugins/audio/README.md)
+  - Text-to-Speech (TTS)
+  - Automatic Speech Recognition (ASR)
+
+- [**RAG (Retrieval-Augmented Generation)**](./pipeline/plugins/retrieval/README.md)
+- [**Safety Checker**](./pipeline/plugins/security/README.md)
+- [**Caching**](./pipeline/plugins/caching/README.md)
+- [**Named Entity Recognition (NER)**](./pipeline/plugins/ner/README.md)
 
 ### Multimodal APIs
 
@@ -214,4 +215,4 @@ In addition to the text-based chat RESTful API, NeuralChat offers several helpfu
 | faceanimation  | /v1/face_animation                    |
 | finetune       | /v1/finetune                          |
 
-Modify the `tasks_list` parameter in the YAML configuration file to use different RESTful APIs.
+Modify the `tasks_list` parameter in the YAML configuration file to seamlessly leverage different RESTful APIs as per your project needs.

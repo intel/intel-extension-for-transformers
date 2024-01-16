@@ -44,7 +44,7 @@ api_router_mapping = {
     'faceanimation': faceanimation_router,
     'photoai': photoai_router,
     'plugin_audio': plugin_audio_router,
-    "plugin_image2image": plugin_image2image_router,
+    "image2image": plugin_image2image_router,
     'codegen': codegen_router,
 }
 
