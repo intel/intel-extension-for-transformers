@@ -303,7 +303,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.jblasop.woq_dequantize(
+        torch.ops.bestlaop.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -329,7 +329,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 else:
                     w_data += self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.jblasop.woq_quantize(
+        weight = torch.ops.bestlaop.woq_quantize(
             w_data,
             True,
             self.blocksize,
@@ -359,7 +359,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             self.in_features,
             dtype=list(self.lora_A.values())[0].weight.dtype,
         )
-        torch.ops.jblasop.woq_dequantize(
+        torch.ops.bestlaop.woq_dequantize(
             self.weight.data,
             w_dequant,
             True,
@@ -374,7 +374,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
 
-        weight = torch.ops.jblasop.woq_quantize(
+        weight = torch.ops.bestlaop.woq_quantize(
             w_data,
             True,
             self.blocksize,

@@ -116,7 +116,7 @@ class MatMulKBit(torch.autograd.Function):
 
         B_dequant = torch.zeros(grad_output.shape[-1], A.shape[-1], dtype=torch.float)
 
-        torch.ops.jblasop.woq_dequantize(
+        torch.ops.bestlaop.woq_dequantize(
             B, B_dequant, True, ctx.compute_dtype, ctx.weight_dtype, ctx.scale_dtype
         )
 
@@ -149,8 +149,7 @@ def matmul_kbit(
             A, B, out, bias, compute_dtype, weight_dtype, scale_dtype
         )
     else:
-        import pdb;pdb.set_trace();
-        torch.ops.jblasop.woq_linear(
+        torch.ops.bestlaop.woq_linear(
             A,
             B.data,
             bias,
