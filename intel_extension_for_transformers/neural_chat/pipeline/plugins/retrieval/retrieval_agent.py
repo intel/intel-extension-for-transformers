@@ -248,7 +248,7 @@ class Agent_QA():
         try:
             intent = self.intent_detector.intent_detection(model_name, query)
         except Exception as e:
-            logging.info("intent detection failed, {e}")
+            logging.info(f"intent detection failed, {e}")
             raise Exception("[Rereieval ERROR] intent detection failed!")
         links = []
         context = ''

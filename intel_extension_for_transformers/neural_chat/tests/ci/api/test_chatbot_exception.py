@@ -32,6 +32,7 @@ from intel_extension_for_transformers.transformers import MixedPrecisionConfig, 
 from intel_extension_for_transformers.transformers import BitsAndBytesConfig
 from intel_extension_for_transformers.neural_chat.errorcode import ErrorCodes
 from intel_extension_for_transformers.neural_chat.utils.error_utils import get_latest_error
+from intel_extension_for_transformers.neural_chat import plugins
 from transformers import AutoModelForCausalLM
 import unittest
 import shutil
@@ -180,6 +181,76 @@ class TestBuildChatbotExceptions(unittest.TestCase):
         mock_from_pretrained.side_effect = Exception("Some generic error")
         result = build_chatbot(config)
         self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('transformers.models.opt.modeling_opt.OPTForCausalLM.forward')
+    def test_model_generate_exception(self, mock_forward):
+        # Test model inference exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        mock_forward.side_effect = Exception("Model inference error")
+        result = chatbot.predict("Tell me about Intel.")
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection.IntentDetector.intent_detection')
+    def test_model_intent_detection_exception(self, mock_intent_detection):
+        # test intent detection exception handling
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
+        plugins.retrieval.args["persist_directory"] = "./test_txt"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        mock_intent_detection.side_effect = Exception("intent detect error")
+        result = chatbot.predict("Tell me about Intel.")
+        self.assertIsNone(result)
+        plugins.retrieval.enable = False
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection.IntentDetector.intent_detection')
+    def test_model_intent_detection_stream_exception(self, mock_intent_detection):
+        # test intent detection exception handling
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
+        plugins.retrieval.args["persist_directory"] = "./test_txt"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        mock_intent_detection.side_effect = Exception("intent detect error")
+        result = chatbot.predict_stream("Tell me about Intel.")
+        self.assertIsNone(result)
+        plugins.retrieval.enable = False
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_asr_audio_format_exception(self):
+        plugins.asr.enable = True
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"] = "./response.wav"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m", plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
+        if not os.path.exists(audio_path):
+            audio_path = "../assets/video/intel.mp4"
+        response = chatbot.predict(query=audio_path)
+        self.assertIsNone(response)
+        plugins.asr.enable = False
+        plugins.tts.enable = False
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_asr_audio_format_stream_exception(self):
+        plugins.asr.enable = True
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"] = "./response.wav"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m", plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
+        if not os.path.exists(audio_path):
+            audio_path = "../assets/video/intel.mp4"
+        response = chatbot.predict_stream(query=audio_path)
+        self.assertIsNone(response)
+        plugins.asr.enable = False
+        plugins.tts.enable = False
 
 json_data = \
 """
@@ -357,6 +428,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         )
         mock_finetune.side_effect = Exception("Some generic error")
         self.assertRaises(Exception,finetune_model,finetune_cfg)
+
 
 class TestOptimizeModelExceptions(unittest.TestCase):
     def setUp(self):
