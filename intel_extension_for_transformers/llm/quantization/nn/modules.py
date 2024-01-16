@@ -29,7 +29,6 @@ from intel_extension_for_transformers.llm.quantization.autograd import matmul_kb
 torch.ops.load_library(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libqbits.so")
 )
-file = open("1.txt", mode="w")
 
 
 class DropoutQBits_(torch.autograd.Function):
@@ -136,7 +135,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.compute_dtype,
             self.weight_dtype,
             self.scale_dtype,
-            g_idx=self.g_idx,
             do_dequant=self.training,
         )
         shape[-1] = self.out_features
@@ -146,7 +144,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
-        weight = torch.ops.jblasop.woq_quantize(
+        weight = torch.ops.bestlaop.woq_quantize(
             weight_data,
             True,
             self.blocksize,

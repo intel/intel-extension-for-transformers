@@ -296,7 +296,7 @@ class TestQuantization(unittest.TestCase):
     @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
             "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
-        model_name_or_path = "facebook/opt-125m"
+        model_name_or_path = "hf-internal-testing/tiny-random-gptj"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
@@ -307,7 +307,28 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
-
+        #GPTQ
+        gptq_recipes = {
+            "act_order": False,
+            "percdamp": 0.01,
+            "block_size": 32 ,
+            "nsamples": 3,
+            "use_max_length": True,
+            "pad_max_length": 256,
+        }
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_clip",
+                                        gptq_recipes=gptq_recipes,
+                                        tokenizer=tokenizer,
+                                        algorithm="GPTQ")
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config,
+                                                    use_llm_runtime=False
+                                                )
+        output = woq_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.14677585661411285, rel_tol=1e-04))
+        model_name_or_path="facebook/opt-125m"
+        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
+        dummy_input = fp32_model.dummy_inputs["input_ids"]
         # smooth-quant
         recipes = {
                 "smooth_quant": True,
@@ -380,14 +401,13 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))  
         # fp8
         woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
         woq_model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
         )
         output = woq_model(dummy_input)
-        print(float(output[0][0][0][0]))
         self.assertTrue(
             isclose(float(output[0][0][0][0]), -6.790275573730469, rel_tol=1e-04)
         )

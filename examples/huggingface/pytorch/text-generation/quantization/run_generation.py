@@ -378,7 +378,9 @@ if args.int8 or args.int8_bf16_mixed:
             trust_remote_code=args.trust_remote_code,
         )
 
+
 if args.benchmark:
+    user_model.eval()
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -433,6 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
+
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )

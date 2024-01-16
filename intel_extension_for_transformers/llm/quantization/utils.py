@@ -146,10 +146,15 @@ def _replace_linear(
                         p_func = None
                         n_head = None
                         n_head_kv = None
-                        from gptq_utils import unpack_weight, permute_func
+                        from .gptq_utils import unpack_weight, permute_func
 
-                        if model.model_type == "llama":
-                            n_head = model.config.num_attention_heads
+                        if (
+                            quantization_config.gptq_quantize_config["model_type"]
+                            == "llama"
+                        ):
+                            n_head = quantization_config.gptq_quantize_config[
+                                "num_attention_heads"
+                            ]
                             n_head_kv = n_head
                             p_func = (
                                 permute_func if name in ["q_proj", "k_proj"] else None
@@ -306,7 +311,13 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # RTN: doesn't need calib_func
         if config.algorithm in ["TEQ", "RTN", "GPTQ"]:
             calib_func = None
-
+        model_type = model.config.model_type
+        # default is llama2-7b
+        num_attention_heads = (
+            model.config.num_attention_heads
+            if hasattr(model.config, "num_attention_heads")
+            else 32
+        )
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )
@@ -314,6 +325,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if config.algorithm == "GPTQ":
             inc_model = inc_model.export_compressed_model(use_optimum_format=True)
             inc_model.eval()
+
             quantize_config = {
                 "bits": bits,
                 "group_size": config.group_size,
@@ -323,6 +335,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 "true_sequential": True,
                 "model_name_or_path": "null",
                 "model_file_base_name": "model",
+                "model_type": model_type,
+                "num_attention_heads": num_attention_heads,
             }
 
             setattr(config, "gptq_quantize_config", quantize_config)
