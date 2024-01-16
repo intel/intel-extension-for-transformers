@@ -53,19 +53,7 @@ jobs:
 
       - name: Env build
         run: |
-          bash ${{ github.workspace }}/.github/workflows/script/prepare_env_with_conda.sh "cpp-graph-test" "3.8"
-
-      - name: Binary build
-        # cpp model does not requires itrex package
-        if: 0 == 1
-        run: |
-          cd ${{ github.workspace }}
-          conda activate cpp-graph-test || source activate cpp-graph-test
-          pip install build --upgrade
-          pip install -r requirements.txt
-          python setup.py sdist bdist_wheel
-          pip install dist/intel_extension_for_transformers*.whl
-          pip list
+          bash ${{ github.workspace }}/.github/workflows/script/prepare_env_with_conda.sh "cpp-graph-test-itrex" "3.8"
 
       - name: BF16 Benchmark
         run: |
@@ -74,7 +62,7 @@ jobs:
             --cores_list="48," \
             --input_list="32,1024" \
             -- \
-            cpp-graph-test \
+            cpp-graph-test-itrex \
             ${{ matrix.modelName }} \
             ${{ env.GRAPH_DIR }} \
             ${{ env.WORKING_DIR }} \

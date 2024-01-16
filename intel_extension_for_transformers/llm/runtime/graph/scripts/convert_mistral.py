@@ -180,7 +180,9 @@ class Params:
         ffn_hidden_size = config["intermediate_size"]
         rms_norm_eps = config["rms_norm_eps"]
         rope_theta = config["rope_theta"] if "rope_theta" in config else 10000
-        rope_scale = config["factor"] if "factor" in config else 1
+        rope_scale = 1
+        if config.get("rope_scaling") is not None:
+            rope_scale = config["rope_scaling"].get("factor", 1)
 
         return Params(
             n_vocab=n_vocab,
@@ -192,6 +194,7 @@ class Params:
             ffn_hidden_size=ffn_hidden_size,
             rms_norm_eps=rms_norm_eps,
             rope_theta=rope_theta,
+            rope_scale=rope_scale
         )
 
     # LLaMA v2 70B params.json
@@ -246,7 +249,7 @@ class SentencePieceVocab:
         self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
         added_tokens: Dict[str, int]
         if fname_added_tokens is not None:
-            added_tokens = json.load(open(fname_added_tokens))
+            added_tokens = json.load(open(fname_added_tokens, encoding='utf-8'))
         else:
             added_tokens = {}
         vocab_size: int = self.sentencepiece_tokenizer.vocab_size()
