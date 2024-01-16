@@ -55,3 +55,5 @@ build_tmp
 .DS_Store
 examples/huggingface/pytorch/text-classification/early-exit/wandb
 examples/huggingface/pytorch/text-classification/early-exit/.venv
+/intel_extension_for_transformers/llm/runtime/graph/.vs
+examples/huggingface/pytorch/text-classification/early-exit/test/output_*/
