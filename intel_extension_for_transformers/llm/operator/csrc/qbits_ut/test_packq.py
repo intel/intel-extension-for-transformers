@@ -20,7 +20,7 @@ from ut_utils import *
 
 def convert_idx(g_idx,  k, blocksize):
     ret_idx = torch.zeros(k, dtype=int)
-    g_counter = torch.zeros(blocksize, dtype=int)
+    g_counter = torch.zeros((k+blocksize-1) // blocksize, dtype=int)
     for i in range(k):
         ret_idx[g_idx[i]*blocksize+g_counter[g_idx[i]]] = i
         g_counter[g_idx[i]] += 1
