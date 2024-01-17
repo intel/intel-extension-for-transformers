@@ -72,4 +72,3 @@ zhconv
 diffusers
 transformers_stream_generator
 qdrant-client
-git+https://github.com/intel/neural-speed
