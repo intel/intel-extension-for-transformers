@@ -178,8 +178,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         permute_func=None,
         bias=None,
     ):
-        int_weight = int_weight.view(-1, int_weight.shape[-1])
-
         if permute_func:
             int_weight = (
                 permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
@@ -217,8 +215,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
             g_idx = torch.empty(0, dtype=torch.int32)
 
         packw = torch.ops.bestlaop.woq_packq(
-            int_weight,
-            gptq_scales.float(),
+            int_weight.contiguous(),
+            gptq_scales.float().contiguous(),
             gptq_zeros,
             g_idx,
             q_config.weight_dtype,

@@ -23,7 +23,7 @@ from accelerate import init_empty_weights
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
 from neural_compressor.adaptor.torch_utils.model_wrapper import WeightOnlyLinear
-
+from transformers import AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,7 @@ def _replace_linear(
                             module.qzeros,
                             quantization_config.gptq_quantize_config,
                         )
+                        int_weight = int_weight.view(-1, int_weight.shape[-1])
                         model._modules[name].set_gptq_weights_bias(
                             int_weight,
                             gptq_scales,
@@ -327,6 +328,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
         else:
             model_type = None
             num_attention_heads = None
+
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
         )

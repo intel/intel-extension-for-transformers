@@ -425,7 +425,8 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1327059119939804, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.15788349509239197, rel_tol=1e-04))
+
     def test_export(self):
         # test model with model_id
         self.trainer.export_to_onnx("export.onnx")
