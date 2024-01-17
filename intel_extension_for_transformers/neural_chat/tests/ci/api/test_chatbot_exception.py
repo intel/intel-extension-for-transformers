@@ -138,6 +138,14 @@ class TestBuildChatbotExceptions(unittest.TestCase):
         self.assertIsNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_adapter_unknown_plugin(self):
+        # Test unknown plugin exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                plugins={"unknown_plugin": {"enable": True, "class": None, "args": {}, "instance": None}})
+        result = build_chatbot(config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     @patch('transformers.AutoModelForCausalLM.from_pretrained')
     def test_adapter_load_model_value_error_tokenizer_not_found(self, mock_from_pretrained):
         # Test value error exception handling

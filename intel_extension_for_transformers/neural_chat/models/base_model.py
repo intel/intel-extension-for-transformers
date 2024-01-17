@@ -182,9 +182,8 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
-                        if plugin_name == "asr" and not is_audio_file(query):
-                            set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
-                            return
+                        if plugin_name == "asr" and not os.path.exists(query):
+                            continue
                         if plugin_name == "retrieval":
                             try:
                                 response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
@@ -291,9 +290,8 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
-                        if plugin_name == "asr" and not is_audio_file(query):
-                            set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
-                            return
+                        if plugin_name == "asr" and not os.path.exists(query):
+                            continue
                         if plugin_name == "retrieval":
                             try:
                                 response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
