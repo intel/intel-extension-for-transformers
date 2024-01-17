@@ -52,6 +52,8 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["return_stats"] = config.return_stats
+    params["format_version"] = config.format_version
     params["assistant_model"] = assistant_model
     params["device"] = device
     return params
