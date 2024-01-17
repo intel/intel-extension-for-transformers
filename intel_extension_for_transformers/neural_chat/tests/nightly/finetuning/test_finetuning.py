@@ -26,15 +26,9 @@ from intel_extension_for_transformers.neural_chat.config import (
     TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 from intel_extension_for_transformers.neural_chat.config_logging import configure_logging
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available, get_device_type
 logger = configure_logging()
-
-def is_optimum_habana_available():
-    import importlib
-    from transformers.utils.import_utils import is_optimum_available
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
-
 
 json_data = \
 """
@@ -52,7 +46,7 @@ class TestFinetuning(unittest.TestCase):
         with open(test_data_file, mode='w') as f:
             f.write(json_data)
 
-        if is_optimum_habana_available() and self.device == "hpu":
+        if is_hpu_available:
             from optimum.habana import GaudiTrainingArguments, GaudiSeq2SeqTrainingArguments
             self.training_args = GaudiTrainingArguments(
                     output_dir='./tmp',
@@ -103,7 +97,7 @@ class TestFinetuning(unittest.TestCase):
         finetune_model(finetune_cfg)
 
     def test_finetune_clm_qlora(self):
-        if self.device == "hpu" and is_optimum_habana_available():
+        if self.device == "hpu":
             logger.info("hpu pass")
             return
 
@@ -176,7 +170,7 @@ class TestFinetuning(unittest.TestCase):
         finetune_model(finetune_cfg)
 
     def test_finetune_seq2seq_qlora(self):
-        if self.device == "hpu" and is_optimum_habana_available():
+        if self.device == "hpu":
             logger.info("hpu pass")
             return
 

@@ -30,6 +30,7 @@ from transformers import BatchEncoding
 
 from lm_eval import utils
 from lm_eval.base import BaseLM
+import re
 
 TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
 
@@ -115,7 +116,8 @@ class HuggingFaceAutoLM(BaseLM):
         bnb_4bit_compute_dtype: Optional[Union[str, torch.dtype]] = None,
         bnb_4bit_use_double_quant: Optional[bool] = False,
         init_empty_weights: Optional[bool] = False,
-        model_format: Optional[str] = "torch"
+        model_format: Optional[str] = "torch",
+        _commit_hash: Optional[str] = None
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
         Args:
@@ -250,6 +252,7 @@ class HuggingFaceAutoLM(BaseLM):
                 offload_folder,
             )
         self._device = device
+        self.model_format = model_format
         if model_format == "torch":
             self.model = self._create_auto_model(
                 pretrained=pretrained,
@@ -323,17 +326,32 @@ class HuggingFaceAutoLM(BaseLM):
                 with init_empty_weights():
                     if self._config.model_type =="chatglm":
                         self.AUTO_MODEL_CLASS = transformers.AutoModel
-                    model = self.AUTO_MODEL_CLASS.from_pretrained(
-                        pretrained,
-                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                        low_cpu_mem_usage=low_cpu_mem_usage,
-                        device_map=device_map,
-                        max_memory=max_memory,
-                        offload_folder=offload_folder,
-                        load_in_8bit=load_in_8bit,
-                        trust_remote_code=trust_remote_code,
-                        torch_dtype=torch_dtype
-                    )
+                    if re.search("qwen-72b", self._config._name_or_path.lower()):
+                        model = self.AUTO_MODEL_CLASS.from_pretrained(
+                            pretrained,
+                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                            low_cpu_mem_usage=low_cpu_mem_usage,
+                            device_map=device_map,
+                            max_memory=max_memory,
+                            offload_folder=offload_folder,
+                            load_in_8bit=load_in_8bit,
+                            trust_remote_code=trust_remote_code,
+                            torch_dtype=torch_dtype,
+                            fp32=(bool(torch_dtype==torch.float32)),
+                            fp16=(bool(torch_dtype==torch.float16)),
+                        )
+                    else:
+                        model = self.AUTO_MODEL_CLASS.from_pretrained(
+                            pretrained,
+                            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                            low_cpu_mem_usage=low_cpu_mem_usage,
+                            device_map=device_map,
+                            max_memory=max_memory,
+                            offload_folder=offload_folder,
+                            load_in_8bit=load_in_8bit,
+                            trust_remote_code=trust_remote_code,
+                            torch_dtype=torch_dtype
+                        )   
             else:
                 if load_in_4bit:
                     assert (
@@ -353,18 +371,34 @@ class HuggingFaceAutoLM(BaseLM):
                             model_kwargs[
                                 "bnb_4bit_use_double_quant"
                             ] = bnb_4bit_use_double_quant
-                model = self.AUTO_MODEL_CLASS.from_pretrained(
-                    pretrained,
-                    revision=revision + ("/" + subfolder if subfolder is not None else ""),
-                    low_cpu_mem_usage=low_cpu_mem_usage,
-                    device_map=device_map,
-                    max_memory=max_memory,
-                    offload_folder=offload_folder,
-                    load_in_8bit=load_in_8bit,
-                    trust_remote_code=trust_remote_code,
-                    torch_dtype=torch_dtype,
-                    **model_kwargs,
-                )
+                if re.search("qwen-72b", self._config._name_or_path.lower()):
+                    model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                        low_cpu_mem_usage=low_cpu_mem_usage,
+                        device_map=device_map,
+                        max_memory=max_memory,
+                        offload_folder=offload_folder,
+                        load_in_8bit=load_in_8bit,
+                        trust_remote_code=trust_remote_code,
+                        torch_dtype=torch_dtype,
+                        **model_kwargs,
+                        fp32=(bool(torch_dtype==torch.float32)),
+                        fp16=(bool(torch_dtype==torch.float16)),
+                    )
+                else:
+                    model = self.AUTO_MODEL_CLASS.from_pretrained(
+                        pretrained,
+                        revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                        low_cpu_mem_usage=low_cpu_mem_usage,
+                        device_map=device_map,
+                        max_memory=max_memory,
+                        offload_folder=offload_folder,
+                        load_in_8bit=load_in_8bit,
+                        trust_remote_code=trust_remote_code,
+                        torch_dtype=torch_dtype,
+                        **model_kwargs
+                    )
         else:
             from auto_gptq import AutoGPTQForCausalLM    # pylint: disable=E0401
 
@@ -431,8 +465,10 @@ class HuggingFaceAutoLM(BaseLM):
         """
         if self._add_special_tokens is not None:
             return self._add_special_tokens
+        elif self.model_format == "runtime":
+            return True
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return False
+            return False 
         elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
             return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
@@ -575,10 +611,20 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
     AUTO_PEFT_CLASS = peft.PeftModel
+
     def __init__(self, *args, pretrained, model_format, **kwargs):
+        self.model_format = model_format
+        if self.model_format == "runtime":
+            from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+            use_gptq = kwargs.pop("use_gptq", False)
+            self.woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_gptq=use_gptq)
         super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
 
-        self.model_format = model_format
+        if self.model_format == "runtime":
+            from transformers import AutoTokenizer, TextStreamer
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+            self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config)
+            
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
                not os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")) and \
@@ -589,7 +635,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                 "'decoder_model_merged.onnx', 'model.onnx'] in {}.".format(
                     pretrained)
                 )
-            
+
             import optimum.version
             import onnxruntime as ort
             from transformers import PretrainedConfig
@@ -677,7 +723,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
                                                         pretrained,
                                                         use_cache=False,
                                                         use_io_binding=False)
-            
+
     def _create_auto_tokenizer(
         self,
         *,
@@ -708,7 +754,10 @@ class AutoCausalLM(HuggingFaceAutoLM):
             input_bs, input_len = inputs.shape
             bos = torch.tensor([64790, 64792]).repeat(input_bs, 1)
             inputs = torch.cat((bos, inputs), 1)
-        if self.model_format != "onnx":
+        if self.model_format == "runtime":
+            out = self.runtime_model(inputs, reinit=True, logits_all=True)
+            output = {"logits": torch.tensor(out).unsqueeze(0)}
+        elif self.model_format != "onnx":
             output = self.model(inputs)
         else:
             inputs_names = [input.name for input in self.model.model.get_inputs()]

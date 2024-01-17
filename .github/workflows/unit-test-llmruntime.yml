@@ -6,7 +6,7 @@ on:
     paths:
       - intel_extension_for_transformers/llm/runtime/graph/**
       - .github/workflows/unit-test-llmruntime.yml
-      - .github/workflows/script/unitTest/**
+      - '.github/workflows/script/unitTest/run_unit_test_llmruntime.sh'
       - '!intel_extension_for_transformers/llm/runtime/graph/docs/**'
       - '!intel_extension_for_transformers/llm/runtime/graph/*.md'
   workflow_dispatch:

@@ -30,6 +30,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
 
 import json
 import os
@@ -53,6 +55,10 @@ from ..utils.utility import (
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
+    QUANT_CONFIG,
+    WEIGHTS_NAME,
+    WEIGHTS_INDEX_NAME,
+    SAFE_WEIGHTS_NAME,
 )
 from ...llm.quantization.utils import (
     convert_dtype_str2torch,
@@ -60,13 +66,62 @@ from ...llm.quantization.utils import (
     convert_to_quantized_model,
     replace_linear
 )
-from ...utils.utils import get_gpu_family, supported_gpus
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
 
 torch = LazyImport("torch")
 
+def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
+    assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
+
+    if os.path.isfile(save_directory):
+        logger.error(f"Provided path ({save_directory}) should be a directory, not a file")
+        return
+
+    os.makedirs(save_directory, exist_ok=True)
+    # use transformers original `save_pretrained` function
+    del self.save_pretrained
+    self.save_pretrained(save_directory=save_directory, push_to_hub=push_to_hub, **kwargs)
+    import types
+    self.save_pretrained = types.MethodType(save_low_bit, self)
+    # We conveniently save all the keys of the model to have them on hand,
+    # so that when using 'low_cpumem load',
+    # it's not necessary to load the entire model to extract its keys
+    # and we can avoid gc not triggered potentially.
+    all_checkpoint_keys = {"all_checkpoint_keys": list(self.state_dict().keys())}
+    json_file_path = os.path.join(save_directory, "all_checkpoint_keys.json")
+    with open(json_file_path, "w") as json_file:
+        json.dump(all_checkpoint_keys, json_file)
+    if push_to_hub:
+        use_auth_token = kwargs.pop("use_auth_token", None)
+
+        if use_auth_token is not None:
+            logger.warning.warn(
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers.", FutureWarning
+            )
+            if token is not None:
+                raise ValueError(
+                    "`token` and `use_auth_token` are both specified. Please set only the argument `token`."
+                )
+            token = use_auth_token
+
+        if token is not None:
+            kwargs["token"] = token
+        commit_message = kwargs.pop("commit_message", None)
+        repo_id = kwargs.pop("repo_id", save_directory.split(os.path.sep)[-1])
+        repo_id = self._create_repo(repo_id, **kwargs)
+        files_timestamps = self._get_files_timestamps(save_directory)
+        self._upload_modified_files(
+            save_directory,
+            repo_id,
+            files_timestamps,
+            commit_message=commit_message,
+            token=kwargs.get("token"),
+        )
+
+    self.quantization_config.low_bit_model = True
+    self.quantization_config.save_pretrained(save_directory, **kwargs)
 
 def save_low_bit(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
     assert hasattr(self, "quantization_config"), f"Detected this model is not a low-bit model."
@@ -271,7 +326,7 @@ class _BaseQBitsAutoModelClass:
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
-                from intel_extension_for_transformers.llm.runtime.graph import Model
+                from neural_speed import Model
 
                 model = Model()
                 model.init(
@@ -757,6 +812,13 @@ class _BaseQBitsAutoModelClass:
                         pretrained_model_name_or_path, subfolder, _add_variant(WEIGHTS_INDEX_NAME, variant)
                     )
                     is_sharded = True
+                elif os.path.isfile(
+                    os.path.join(pretrained_model_name_or_path, subfolder, _add_variant(SAFE_WEIGHTS_NAME, variant))
+                ):
+                    # Load from a safetensors checkpoint
+                    archive_file = os.path.join(
+                        pretrained_model_name_or_path, subfolder, _add_variant(SAFE_WEIGHTS_NAME, variant)
+                    )
             elif os.path.isfile(os.path.join(subfolder, pretrained_model_name_or_path)):
                 archive_file = pretrained_model_name_or_path
                 is_local = True

@@ -20,7 +20,8 @@ function pytest() {
     local coverage_log_dir=$1
     mkdir -p ${coverage_log_dir}
     pip install --no-cache-dir protobuf==3.20.0
-
+    ## install transformers==4.34.1, to work with SharedDPO API
+    pip install transformers
     cd /intel-extension-for-transformers/tests/CI || exit 1
     JOB_NAME=unit_test
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log

@@ -90,7 +90,7 @@ def _replace_linear(
     """
     Private method that wraps the recursion for module replacement.
 
-    Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
+    Returns the converted model and a boolean that indicates if the conversion has been successfully or not.
     """
     for name, module in model.named_children():
         if current_key_name is None:
@@ -106,9 +106,8 @@ def _replace_linear(
                 with init_empty_weights():
                     in_features = module.in_features
                     out_features = module.out_features
-
                     if device == "cpu" or device == torch.device("cpu"):
-                        from .nn.cpu import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
+                        from .nn.modules import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
                         model._modules[name] = QuantizedLinearQBits(
                             in_features,
                             out_features,
@@ -263,7 +262,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                     "the calibration dataset is NeelNanda/pile-10k," +
                     "batchsize is 1 and calibration iteration is 100.")
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
-        return replace_linear(model, None, None, config)
+        return replace_linear(model, None, None, config, device=device)
     else:
         bits = DTYPE_BITS_MAPPING[config.weight_dtype]
         if config.weight_dtype == "int8":
@@ -311,19 +310,19 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      conf,
                                      calib_func=calib_func,
                                      calib_dataloader=calib_dataloader)
-        model = inc_model.export_compressed_model(compression_dtype=torch.int8,
-                                                  compression_dim=0,
-                                                  use_optimum_format=False,
-                                                  scale_dtype=convert_dtype_str2torch(config.scale_dtype))
-        q_model = replace_linear(model,
-                                 None,
-                                 None,
-                                 config,
-                                 device=device)
-        if device == "xpu" or (is_ipex_available
-                               and device == torch.device("xpu")):
-            q_model = q_model.to("xpu")
-        return q_model
+        if device == "xpu" or device == torch.device("xpu"):
+            model = inc_model.export_compressed_model(compression_dtype=torch.int8,
+                                                      compression_dim=0,
+                                                      use_optimum_format=False,
+                                                      scale_dtype=convert_dtype_str2torch(config.scale_dtype))
+            q_model = replace_linear(model,
+                                     None,
+                                     None,
+                                     config,
+                                     device=device)
+            return q_model.to("xpu")
+        else:
+        return replace_linear(inc_model.model, None, None, config, device=device)
 
 
 def convert_dtype_str2torch(str_dtype):

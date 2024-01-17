@@ -389,10 +389,10 @@ class TTSFinetuningConfig:
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.1
-    top_k: int = 1
+    top_k: int = 40
     top_p: float = 0.75
     repetition_penalty: float = 1.1
-    num_beams: int = 0
+    num_beams: int = 1
     max_new_tokens: int = 256
     do_sample: bool = True
     num_return_sequences: int = 1
@@ -406,6 +406,8 @@ class GenerationConfig:
     max_gpu_memory: int = None
     use_fp16: bool = False
     ipex_int8: bool = False
+    return_stats: bool = False
+    format_version: str = "v2"
     task: str = ""
 
 @dataclass

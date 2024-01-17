@@ -22,7 +22,7 @@ class ChineseTextToSpeech():
     def __init__(self):
         self.tts_executor = TTSExecutor()
 
-    def text2speech(self, input, output_audio_path):
+    def text2speech(self, input, output_audio_path): # pragma: no cover
         "Chinese text to speech and dump to the output_audio_path."
         self.tts_executor(
             text=input,
@@ -43,5 +43,5 @@ class ChineseTextToSpeech():
             device=paddle.get_device())
         return output_audio_path
 
-    def post_llm_inference_actions(self, text, output_audio_path):
+    def post_llm_inference_actions(self, text, output_audio_path): # pragma: no cover
         return self.text2speech(text, output_audio_path)

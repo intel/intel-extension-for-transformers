@@ -10,13 +10,30 @@ Visit the [Miniconda download page](https://docs.conda.io/projects/miniconda/en/
 Locate the downloaded installer file (e.g., Miniconda3-latest-Windows-x86_64.exe for Miniconda). Double-click the installer to launch it. 
 To create a new Conda environment, use the command: "conda create -n myenv python=3.9.0"
 
+# Install visual cpp build tools
+
+Visual C++ Build Tools is a package provided by Microsoft that includes tools required to build C++ projects using Visual Studio without installing the full Visual Studio IDE. These tools are essential for compiling, linking, and building intel extension for transformers.
+
+To install the Visual C++ Build Tools, visit the following link: [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+Once there, you'll find download options and instructions for installation based on your specific requirements.
+
+# Install intel extension for transformers
+
+Install the intel extension for transformers from source code to get the latest features of LLM runtime.
+
+```bash
+pip clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers
+pip install -r requirements.txt
+pip install -e .
+```
+
 # Install Python dependencies
 
 Install dependencies using pip
 
 ```bash
 pip install ../../../../../requirements_pc.txt
-# make sure you install the latest version of transformers
 pip install transformers==4.35.2
 ```
 

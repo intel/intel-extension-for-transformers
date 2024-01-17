@@ -8,11 +8,12 @@ Token classification assigns a label to individual tokens in a sentence. One of 
 ## 1. Environment
 ```
 pip install -r requirements.txt
+pip install transformers==4.34.1
 ```
+>**Note**: Please use transformers no higher than 4.34.1
 
 
 # Run
-
 
 ## 1. Quantization
  

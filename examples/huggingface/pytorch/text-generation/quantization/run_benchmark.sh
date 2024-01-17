@@ -129,7 +129,7 @@ function run_benchmark {
     elif [ "${topology}" = "baichuan_13b" ]; then
         model_name_or_path="baichuan-inc/Baichuan-13B-Base"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-        extra_cmd=$extra_cmd" --revision 14d5b0e204542744900f6fb52422c6d633bdcb00"
+        extra_cmd=$extra_cmd" --_commit_hash 14d5b0e204542744900f6fb52422c6d633bdcb00"
         pip install transformers==4.33
     elif [ "${topology}" = "baichuan2_7b" ]; then
         model_name_or_path="baichuan-inc/Baichuan2-7B-Base"
@@ -142,12 +142,16 @@ function run_benchmark {
     elif [ "${topology}" = "qwen_7b" ]; then
         model_name_or_path="Qwen/Qwen-7B"
         extra_cmd=$extra_cmd" --trust_remote_code True"
+        extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
+	pip install transformers==4.35.2
     elif [ "${topology}" = "mistral_7b" ]; then
         model_name_or_path="Intel/neural-chat-7b-v3"
     elif [ "${topology}" = "phi_1b" ]; then
         model_name_or_path="susnato/phi-1_dev"
+	pip install transformers==4.36.1
     elif [ "${topology}" = "phi_1_5b" ]; then
         model_name_or_path="susnato/phi-1_5_dev"
+	pip install transformers==4.36.1
     fi
 
     if [[ ${int8} == "true" ]]; then

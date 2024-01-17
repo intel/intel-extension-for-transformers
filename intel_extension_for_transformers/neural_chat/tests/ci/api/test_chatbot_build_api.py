@@ -17,6 +17,7 @@
 
 import unittest
 import os
+import shutil
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
@@ -29,8 +30,13 @@ class TestChatbotBuilder(unittest.TestCase):
         self.device = get_device_type()
         return super().setUp()
 
-    def tearDown(self) -> None:
-        return super().tearDown()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if os.path.exists("./output"):
+            shutil.rmtree("./output")
+        for filename in os.listdir("./"):
+            if filename.endswith(".wav"):
+                os.remove(filename)
 
     def test_build_chatbot_with_default_config(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -59,6 +65,7 @@ class TestChatbotBuilder(unittest.TestCase):
             print(response)
             self.assertIsNotNone(response)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
         plugins.tts.args["device"] = "cuda" if torch.cuda.is_available() else "cpu"
@@ -78,6 +85,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists("./output_audio.wav"))
+        plugins.tts.enable = False
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
@@ -88,6 +96,7 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="蔡英文是谁？")
         print("response: ", response)
         self.assertTrue(response, "Your query contains sensitive words, please try another query.")
+        plugins.safety_checker.enable = False
 
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
@@ -120,6 +129,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_build_chatbot_with_retrieval_plugin_bge_int8(self):
         if self.device != "cpu":
@@ -135,6 +145,49 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="What is Intel extension for transformers?")
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
+
+    def test_build_chatbot_with_retrieval_plugin_using_local_file(self):
+
+        def _run_retrieval(local_dir):
+            plugins.tts.enable = False
+            plugins.retrieval.enable = True
+            plugins.retrieval.args["input_path"] = "../../../README.md"
+            plugins.retrieval.args["embedding_model"] = local_dir
+            pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                             plugins=plugins)
+            chatbot = build_chatbot(pipeline_config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="What is Intel extension for transformers?")
+            self.assertIsNotNone(response)
+            plugins.retrieval.enable = False
+
+        # test local file
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/gte-base")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/instructor-large")
+        _run_retrieval(local_dir="/tf_dataset2/inc-ut/bge-base-en-v1.5")
+
+    def test_text_chat_stream_return_stats_with_v1_format(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        stream_text = ""
+        gen_config = GenerationConfig(return_stats=True, format_version="v1")
+        results, _ = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.", config=gen_config)
+        for text in results:
+            stream_text += text
+            print(text)
+        self.assertIn("END_OF_STREAM_STATS=", stream_text)
+
+    def test_text_chat_stream_return_stats(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        stream_text = ""
+        gen_config = GenerationConfig(return_stats=True)
+        results, _ = chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors.", config=gen_config)
+        for text in results:
+            stream_text += text
+            print(text)
+        self.assertIn("| Key                    | Value                       |", stream_text)
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,6 +24,7 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -51,6 +52,8 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["return_stats"] = config.return_stats
+    params["format_version"] = config.format_version
     params["assistant_model"] = assistant_model
     params["device"] = device
     return params
@@ -162,7 +165,9 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-              "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+              "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+              "phi-2" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -205,6 +210,16 @@ class BaseModel(ABC):
 
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
+
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
 
         try:
             response = predict_stream(
@@ -254,7 +269,8 @@ class BaseModel(ABC):
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
-               "starcoder" in self.model_name or "codellama" in self.model_name.lower():
+               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -295,6 +311,9 @@ class BaseModel(ABC):
             conv_template.append_message(conv_template.roles[0], query)
             conv_template.append_message(conv_template.roles[1], None)
             query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
 
         # LLM inference
         try:
@@ -389,19 +408,19 @@ class BaseModel(ABC):
         if self.conv_template:
             return
         if not task:
-            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name, clear_history=True)
         else:
-            clear_after_gen = True
+            clear_history = True
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
                 name = "neural-chat-7b-v2"
-                clear_after_gen = False
+                clear_history = False
             elif task == "summarization":
                 name = "summarization"
             else:
                 raise NotImplementedError(f"Unsupported task {task}.")
-            self.conv_template = PromptTemplate(name, clear_after_gen=clear_after_gen)
+            self.conv_template = PromptTemplate(name, clear_history=clear_history)
 
     def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
         self.get_conv_template(model_path, task)

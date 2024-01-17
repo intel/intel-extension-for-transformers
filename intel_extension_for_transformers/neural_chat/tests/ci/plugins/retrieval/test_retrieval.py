@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.indexing import DocumentIndexing
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.parser.parser import DocumentParser 
 import unittest
 
 
@@ -28,9 +28,9 @@ class TestMemory(unittest.TestCase):
 
     def test_html_loader(self):
         url = ['https://www.ces.tech/']
-        doc_parser = DocumentIndexing(retrieval_type="dense",process=False)
+        doc_parser = DocumentParser(max_chuck_size=512, min_chuck_size = 10, process=True)
         vectordb = None
-        vectordb = doc_parser.KB_construct(url)
+        vectordb = doc_parser.load(url)
         self.assertIsNotNone(vectordb)
 
 if __name__ == "__main__":

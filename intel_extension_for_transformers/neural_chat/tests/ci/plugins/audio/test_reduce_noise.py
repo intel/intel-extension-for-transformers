@@ -19,6 +19,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.r
 import unittest
 import os
 import librosa
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestReduceNoise(unittest.TestCase):
     @classmethod
@@ -35,10 +36,12 @@ class TestReduceNoise(unittest.TestCase):
     def tearDownClass(self):
         pass
 
+    @unittest.skipIf(get_device_type() == 'xpu' or get_device_type() == 'hpu', "Skip this test on XPU and HPU devices")
     def test_reduce_noise_stationary(self):
         output_audio_path = self.reducer.reduce_audio_amplify(self.audio_path, self.y)
         self.assertTrue(os.path.exists(output_audio_path))
 
+    @unittest.skipIf(get_device_type() == 'xpu' or get_device_type() == 'hpu', "Skip this test on XPU and HPU devices")
     def test_reduce_noise_nonstationary(self):
         output_audio_path = self.reducer_nonstationary.reduce_audio_amplify(self.audio_path, self.y)
         self.assertTrue(os.path.exists(output_audio_path))

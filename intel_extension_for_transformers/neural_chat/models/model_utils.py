@@ -45,8 +45,7 @@ from transformers import (
     AutoConfig,
     TextIteratorStreamer,
     StoppingCriteriaList,
-    StoppingCriteria,
-    LlamaForCausalLM
+    StoppingCriteria
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
@@ -140,10 +139,11 @@ def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, tok
     Dumps metadata into a JSON file for DeepSpeed-inference.
     """
     checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank, token)
-    if local_rank == 0:
+    if local_rank == 0 and len(checkpoint_files) != 0:
         data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
         with open(checkpoints_json, "w") as fp:
             json.dump(data, fp)
+    return len(checkpoint_files) != 0
 
 
 def model_on_meta(config):
@@ -264,8 +264,19 @@ def init_deepspeed_inference(model, model_name_or_path, peft_path, use_hpu_graph
     # Make sure all devices/nodes have access to the model checkpoints
     if is_meta:
         checkpoints_json = "checkpoints.json"
-        write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path, local_rank,
-                               checkpoints_json, token)
+        ret = write_checkpoints_json(merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                local_rank, checkpoints_json, token)
+        if ret == False:
+            is_meta = False
+            generation_config = model.generation_config
+            model = AutoModelForCausalLM.from_pretrained(
+                merged_model_dir if merged_model_dir is not None else model_name_or_path,
+                use_auth_token=token,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True
+            )
+            model.generation_config = generation_config
+
 
     torch.distributed.barrier()
 
@@ -393,20 +404,39 @@ def load_model(
     # load assistant model
     if assistant_model:
         print("Loading assistant model...")
-        if 'llama' in assistant_model.lower():
-            assistant_model_class = LlamaForCausalLM
-        else:
-            assistant_model_class = AutoModelForCausalLM
+        assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
         assis_model = assistant_model_class.from_pretrained(
-            assistant_model, 
-            low_cpu_mem_usage=True, 
+            assistant_model,
+            low_cpu_mem_usage=True,
             torch_dtype=torch_dtype)
         assis_model = assis_model.eval().to(device)
         assis_model = assis_model.to(memory_format=torch.channels_last)
         MODELS[model_name]["assistant_model"] = assis_model
     else:
         MODELS[model_name]["assistant_model"] = None
+
+    try:
+        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
+                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+    except ValueError as e:
+        logging.error(f"Exception: {e}")
+        if "Unrecognized model in" in str(e):
+            raise ValueError(f"load_model: model config is not found, {e}")
+        else:
+            raise ValueError(f"load_model: unknown ValueError occurred, {e}")
+    except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
+        if "not a local folder and is not a valid model identifier" in str(e):
+            raise ValueError(f"load_model: model name or path is not found, {e}")
+        else:
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
+
+    MODELS[model_name]["model_type"] = config.model_type
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(
@@ -418,20 +448,14 @@ def load_model(
                 re.search("chatglm", model_name, re.IGNORECASE)) else False,
         )
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
-            raise ValueError("load_model: tokenizer is not found")
+            raise ValueError(f"load_model: tokenizer is not found, {e}")
         else:
-            raise
-
-    try:
-        config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
-                                            if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
-    except ValueError as e:
-        if "Unrecognized model in" in str(e):
-            raise ValueError("load_model: model config is not found")
-        else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
     load_to_meta = model_on_meta(config)
 
@@ -470,17 +494,15 @@ def load_model(
                     trust_remote_code=True)
         elif ((
             re.search("gpt", model_name, re.IGNORECASE)
-            or re.search("mpt", model_name, re.IGNORECASE)
-            or re.search("bloom", model_name, re.IGNORECASE)
-            or re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v3", model_name, re.IGNORECASE)
-            or re.search("qwen", model_name, re.IGNORECASE)
-            or re.search("starcoder", model_name, re.IGNORECASE)
-            or re.search("codellama", model_name, re.IGNORECASE)
-            or re.search("mistral", model_name, re.IGNORECASE)
-        ) and not ipex_int8) or re.search("opt", model_name, re.IGNORECASE):
+            or config.model_type == "bloom"
+            or config.model_type == "qwen"
+            or config.model_type == "gpt_bigcode"
+            or config.model_type == "mpt"
+            or config.model_type == "llama"
+            or config.model_type == "mistral"
+            or config.model_type == "mixtral"
+            or config.model_type == "phi"
+        ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name,
@@ -488,11 +510,12 @@ def load_model(
                     torch_dtype=torch_dtype,
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
-                    trust_remote_code=True if re.search("qwen", model_name, re.IGNORECASE) else False
+                    trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
+                        re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (
-                (re.search("starcoder", model_name, re.IGNORECASE)
-                or re.search("codellama", model_name, re.IGNORECASE)
+                (config.model_type == "gpt_bigcode"
+                 or config.model_type == "llama"
                 ) and ipex_int8
             ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -508,9 +531,9 @@ def load_model(
                         model_name,
                         file_name="best_model.pt",
                     )
-        elif(
-                (re.search("llama", model_name, re.IGNORECASE)
-                or re.search("opt", model_name, re.IGNORECASE)
+        elif (
+                (config.model_type == "llama"
+                or config.model_type == "opt"
                 or re.search("gpt_neox", model_name, re.IGNORECASE)
                 or re.search("gptj", model_name, re.IGNORECASE)
                 or re.search("falcon", model_name, re.IGNORECASE)
@@ -533,14 +556,19 @@ def load_model(
                 )
         else:
             raise ValueError(f"unsupported model name or path {model_name}, \
-            only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT/MISTRAL/CODELLAMA/STARCODER now.")
+            only supports t5/llama/mpt/gptj/bloom/opt/qwen/mistral/mixtral/gpt_bigcode model type now.")
     except EnvironmentError as e:
+        logging.error(f"Exception: {e}")
         if "not a local folder and is not a valid model identifier" in str(e):
             raise ValueError("load_model: model name or path is not found")
         else:
-            raise
+            raise ValueError(f"load_model: unknown EnvironmentError occurred, {e}")
+    except Exception as e:
+        logging.error(f"Exception: {e}")
+        raise ValueError(f"load_model: an unexpected error occurred, {e}")
 
-    if re.search("llama", model.config.architectures[0], re.IGNORECASE):
+    if re.search("llama", model.config.architectures[0], re.IGNORECASE) and \
+       not re.search("magicoder", model_name, re.IGNORECASE):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
         model.generation_config.bos_token_id = 1
@@ -703,7 +731,7 @@ def get_generate_kwargs(
     return generate_kwargs
 
 def is_llm_runtime_model(model):
-    from intel_extension_for_transformers.llm.runtime.graph import Model
+    from neural_speed import Model
     if isinstance(model, Model):
         return True
     else:
@@ -716,9 +744,23 @@ def remove_prompt_history(model_name, prompt):
         if matches:
             result = "[INST]" + matches[-1] + "[/INST]"
     elif re.search("chatglm", model_name, re.IGNORECASE):
-        matches = re.findall(r'\n\n(\[Round \d+\]\n\n问：.*?\n答：)', prompt, re.DOTALL)
+        pattern = re.compile(r'问：.*?\n答：', re.DOTALL)
+        matches = pattern.findall(prompt)
         if matches:
-            result = matches[-1]
+            result = matches[-1].replace("问：", "").replace("\n答：", "").strip()
+    elif re.search("neuralchat", model_name, re.IGNORECASE):
+        matches = re.findall(r'### User:.*?### Assistant:', prompt, re.DOTALL)
+        if matches:
+            result = '''
+### System:
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, \
+but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry,\
+short stories, and make jokes.</s>
+''' + matches[-1]
+
     return result
 
 output_token_len = 0
@@ -752,6 +794,7 @@ def predict_stream(**params):
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
+        `format_version` (string): the format version of return stats.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -768,7 +811,7 @@ def predict_stream(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
         params["model_name"] if "model_name" in params else "Intel/neural-chat-7b-v3-1"
     )
@@ -780,6 +823,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
+    format_version = params["format_version"] if "format_version" in params else "v2"
     prompt = params["prompt"]
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
@@ -793,16 +837,24 @@ def predict_stream(**params):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
-                                            "starcoder" in model_name.lower()) else 1024
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
 
-    streamer = TextIteratorStreamer(
-        tokenizer, skip_prompt=True, skip_special_tokens=True
-    )
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
+    if is_llm_runtime_model(model):
+        if "chatglm" in model_name.lower():
+            prompt = tokenizer.build_prompt(prompt)
+            input_tokens = tokenizer([prompt], return_tensors="pt").input_ids
+            input_token_len = input_tokens.shape[-1]
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+        else:
+            input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+            streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
+    else:
+        input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
+        streamer = TextIteratorStreamer(
+            tokenizer, skip_prompt=True, skip_special_tokens=True
+        )
 
-    input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
         get_stop_token_ids(model, tokenizer),
@@ -847,25 +899,25 @@ def predict_stream(**params):
                             )
 
                     else:
-                        with context:
-                            global output_token_len
-                            if is_llm_runtime_model(model):  # optimized model gerenate
-                                output_token=model.generate(
-                                    input_tokens['input_ids'],
-                                    streamer=streamer,
-                                    temperature=temperature,
-                                    top_p=top_p,
-                                    top_k=top_k,
-                                    repetition_penalty=repetition_penalty,
-                                    max_new_tokens=max_new_tokens,
-                                    ctx_size=max_new_tokens,
-                                    ignore_prompt=True,
-                                    interactive=True,
-                                    do_sample=do_sample,
-                                    num_beams=num_beams,
-                                    seed=1
-                                )
-                            else:
+                        global output_token_len
+                        if is_llm_runtime_model(model):  # optimized model gerenate
+                            output_token=model.generate(
+                                input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
+                                streamer=streamer,
+                                temperature=temperature,
+                                top_p=top_p,
+                                top_k=top_k,
+                                repetition_penalty=repetition_penalty,
+                                max_new_tokens=max_new_tokens,
+                                ctx_size=max_new_tokens,
+                                ignore_prompt=True,
+                                interactive=False if "magicoder" in model_name.lower() else True,
+                                do_sample=do_sample,
+                                num_beams=num_beams,
+                                n_keep=2 if "chatglm" in model_name.lower() else 1
+                            )
+                        else:
+                            with context:
                                 output_token=model.generate(
                                     **input_tokens,
                                     **generate_kwargs,
@@ -952,23 +1004,42 @@ def predict_stream(**params):
     first_token_latency = int(
         (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    msecond_per_token = (
-        duration  / (output_token_len - input_token_len)
-        if output_token_len != 1
-        else 0
-    )
+    if is_llm_runtime_model(model):
+        msecond_per_token = (
+            duration  / output_token_len
+            if output_token_len != 1
+            else
+            0
+        )
+    else:
+        msecond_per_token = (
+            duration  / (output_token_len - input_token_len)
+            if output_token_len != 1
+            else
+            0
+        )
     if return_stats:
-        stats = {
-            "input_token_len": str(input_token_len),
-            "output_token_len": str(output_token_len),
-            "duration": str(duration) + " ms",
-            "first_token_latency": str(first_token_latency) + " ms",
-            "msecond_per_token": str(msecond_per_token) + " ms",
-        }
-        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
-        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
-        for key, value in stats.items():
-            yield "| {:<22} | {:<27} |\n".format(key, value)
+        if format_version == "v1":
+            stats = {
+                "input_token_len": input_token_len,
+                "output_token_len": output_token_len,
+                "duration": duration,
+                "first_token_latency": first_token_latency,
+                "msecond_per_token": msecond_per_token,
+            }
+            yield "END_OF_STREAM_STATS={}".format(stats)
+        else:
+            stats = {
+                "input_token_len": str(input_token_len),
+                "output_token_len": str(output_token_len),
+                "duration": str(duration) + " ms",
+                "first_token_latency": str(first_token_latency) + " ms",
+                "msecond_per_token": str(msecond_per_token) + " ms",
+            }
+            yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
+            yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
+            for key, value in stats.items():
+                yield "| {:<22} | {:<27} |\n".format(key, value)
 
 
 def predict(**params):
@@ -1016,7 +1087,7 @@ def predict(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
     )
@@ -1039,11 +1110,8 @@ def predict(**params):
         prompt = remove_prompt_history(model_name, prompt)
         max_new_tokens = max_new_tokens if (max_new_tokens > 1024 or \
                                             "codellama" in model_name.lower() or \
-                                            "starcoder" in model_name.lower()) else 1024
-
-    if num_beams == 0:
-        num_beams = 1
-        do_sample = True
+                                            "starcoder" in model_name.lower() or \
+                                            "codegen" in model_name.lower()) else 1024
 
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
@@ -1145,6 +1213,8 @@ def predict(**params):
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
+    if "@@ Response" in output:
+        return output.split("@@ Response")[1].strip()
     if "### Assistant" in output:
         return output.split("### Assistant:")[1].strip()
     if "\nassistant\n" in output:
