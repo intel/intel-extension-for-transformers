@@ -52,6 +52,8 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["return_stats"] = config.return_stats
+    params["format_version"] = config.format_version
     params["assistant_model"] = assistant_model
     params["device"] = device
     return params
@@ -168,7 +170,8 @@ class BaseModel(ABC):
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+              "phi-2" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions

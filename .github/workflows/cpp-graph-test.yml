@@ -62,7 +62,7 @@ jobs:
             --cores_list="48," \
             --input_list="32,1024" \
             -- \
-            cpp-graph-test \
+            cpp-graph-test-itrex \
             ${{ matrix.modelName }} \
             ${{ env.GRAPH_DIR }} \
             ${{ env.WORKING_DIR }} \

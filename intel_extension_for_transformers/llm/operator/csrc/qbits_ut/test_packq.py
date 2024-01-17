@@ -45,16 +45,16 @@ def test(m, k, n, weight_type, scale_type, compute_type, asym, blocksize, dump_t
     cvt_idx = convert_idx(g_idx, k, blocksize)
     zp = torch.randint(-4, 4, [k//blocksize, n], dtype=torch.int8)
     scale = torch.rand(k//blocksize, n, dtype=torch.float)
-    packw = torch.ops.jblasop.woq_packq(
+    packw = torch.ops.bestlaop.woq_packq(
         raw_s8_wei, scale, zp, g_idx, weight_type, scale_type, compute_type, asym, blocksize)
     revert_wei = torch.zeros(k, n, dtype=torch.float)
-    torch.ops.jblasop.woq_dequantize(
+    torch.ops.bestlaop.woq_dequantize(
         packw, revert_wei, False, compute_type, weight_type, scale_type)
     ref_act = torch.rand(m, k, dtype=torch.float)
     tar_act = ref_act.clone()
     ref_act = torch.index_select(ref_act, 1, cvt_idx)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-    torch.ops.jblasop.woq_linear(
+    torch.ops.bestlaop.woq_linear(
         tar_act, packw, torch.empty(0), tar_dst, n, False, compute_type, weight_type, scale_type, asym)
     ref_dst = torch.matmul(ref_act, revert_wei)
     if dump_tensor:
