@@ -68,7 +68,6 @@ class AudioSpeechRecognition():
 
         audio_path: the path to the input audio, e.g. ~/xxx.mp3
         """
-        breakpoint()
         start = time.time()
         if audio_path.split(".")[-1] in ['flac', 'ogg', 'aac', 'm4a']:
             audio_path = self._convert_audio_type(audio_path)
