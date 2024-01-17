@@ -166,6 +166,9 @@ def build_chatbot(config: PipelineConfig=None):
     if config.serving_config and config.serving_config.framework == "vllm":
         parameters["use_vllm"] = True
         parameters["vllm_engine_params"] = config.serving_config.framework_config
+    else:
+        parameters["use_vllm"] = False
+        parameters["vllm_engine_params"] = None
     try:
         adapter.load_model(parameters)
     except RuntimeError as e:
