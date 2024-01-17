@@ -1,2 +1,0 @@
--r common.txt
-transformers>=4.34.0

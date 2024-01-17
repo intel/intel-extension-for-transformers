@@ -814,7 +814,7 @@ def get_generate_kwargs(
     return generate_kwargs
 
 def is_llm_runtime_model(model):
-    from intel_extension_for_transformers.llm.runtime.graph import Model
+    from neural_speed import Model
     if isinstance(model, Model):
         return True
     else:
