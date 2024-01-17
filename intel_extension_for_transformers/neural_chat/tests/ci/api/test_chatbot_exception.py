@@ -94,6 +94,15 @@ class TestBuildChatbotExceptions(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_adapter_load_model_cache_dir_no_write_permission(self, mock_from_pretrained):
+        # Test out of memory exception handling
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        mock_from_pretrained.side_effect = Exception("Permission denied")
+        result = build_chatbot(config=config)
+        self.assertIsNone(result)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
     def test_adapter_load_model_device_busy(self, mock_from_pretrained):
         # Test device busy or unavailable exception handling
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
@@ -246,6 +255,29 @@ class TestBuildChatbotExceptions(unittest.TestCase):
         plugins.tts.enable = False
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_model_doc_format_not_supported_exception(self):
+        # test retrieval doc formate= exception handling
+        doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
+        if not os.path.exists(doc_path):
+            doc_path = "../assets/video/intel.mp4"
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = doc_path
+        plugins.retrieval.args["persist_directory"] = "./test_txt"
+        plugins.retrieval.args["retrieval_type"] = 'default'
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        self.assertIsNone(chatbot)
+        plugins.retrieval.enable = False
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    def test_model_safety_checker_exception(self):
+        # test safety checker exception handling
+        from intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker import SafetyChecker
+        with self.assertRaises(Exception) as context:
+            safety_checker = SafetyChecker(dict_path="./")
+        self.assertEqual(str(context.exception), "[SafetyChecker ERROR] Sensitive check file not found!")
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_asr_audio_format_stream_exception(self):
         plugins.asr.enable = True
         plugins.tts.enable = True
@@ -288,7 +320,7 @@ class TestFinetuneModelExceptions(unittest.TestCase):
         os.remove(test_data_file)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_dataset_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -300,10 +332,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = FileNotFoundError("Couldn't find a dataset script")
-        self.assertRaises(FileNotFoundError,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_DATASET_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_validation_file_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -315,10 +348,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = ValueError("--do_eval requires a validation dataset")
-        self.assertRaises(ValueError,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_train_file_not_found(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -330,25 +364,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = ValueError("--do_train requires a train dataset")
-        self.assertRaises(ValueError,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
-    def test_finetune_permission_denied_finetune_fail(self, mock_finetune):
-        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
-        data_args = DataArguments(train_file=test_data_file)
-        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="lora")
-        finetune_cfg = TextGenerationFinetuningConfig(
-            model_args=model_args,
-            data_args=data_args,
-            training_args=self.training_args,
-            finetune_args=finetune_args
-        )
-        mock_finetune.side_effect = Exception("Permission denied")
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
-
-    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_lora_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -360,10 +380,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_llama_adapter_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -375,10 +396,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_ptun_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -390,10 +412,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PTUN_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_prefix_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -405,10 +428,11 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PREFIX_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_prompt_finetune_fail(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
@@ -420,14 +444,31 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_PROMPT_FINETUNE_FAIL)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
-    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning')
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
+    def test_finetune_data_no_permission_finetune_fail(self, mock_finetune):
+        model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
+        data_args = DataArguments(train_file=test_data_file)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft="lora")
+        finetune_cfg = TextGenerationFinetuningConfig(
+            model_args=model_args,
+            data_args=data_args,
+            training_args=self.training_args,
+            finetune_args=finetune_args
+        )
+        mock_finetune.side_effect = Exception("Permission denied")
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('intel_extension_for_transformers.llm.finetuning.finetuning.Finetuning.finetune')
     def test_finetune_error_generic(self, mock_finetune):
         model_args = ModelArguments(model_name_or_path="facebook/opt-125m")
         data_args = DataArguments(train_file=test_data_file)
-        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False)
+        finetune_args = FinetuningArguments(device=self.device, do_lm_eval=False, peft=None)
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
@@ -435,7 +476,8 @@ class TestFinetuneModelExceptions(unittest.TestCase):
             finetune_args=finetune_args
         )
         mock_finetune.side_effect = Exception("Some generic error")
-        self.assertRaises(Exception,finetune_model,finetune_cfg)
+        finetune_model(finetune_cfg)
+        self.assertEqual(get_latest_error(), ErrorCodes.ERROR_GENERIC)
 
 
 class TestOptimizeModelExceptions(unittest.TestCase):

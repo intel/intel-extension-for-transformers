@@ -116,7 +116,7 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "image2image": # pragma: no cover
                     from .pipeline.plugins.image2image.image2image import Image2Image
                     plugins[plugin_name]['class'] = Image2Image
-                else: # pragma: no cover
+                else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
                     logger.error("build_chatbot: unknown plugin")
                     return
