@@ -1,8 +1,3 @@
-# Enable clang-format when you do "git commit"
-script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-echo $script_dir
-source ${script_dir}/intel_extension_for_transformers/llm/library/xetla/tools/scripts/clang_format.sh
-
 # Set up the environment for Intel oneAPI DPC++/C++ Compiler
 # ONEAPI_INSTALL_PATH below assumes you installed to the default folder /opt/intel/oneapi
 # If you customized the installation folder, please update ONEAPI_INSTALL_PATH to your custom folder
