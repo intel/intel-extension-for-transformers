@@ -292,7 +292,7 @@ prompt = "Once upon a time"
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
-model = AutoModelForCausalLM.from_pretrained(model_name = model_name, model_file = model_file)
+model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
