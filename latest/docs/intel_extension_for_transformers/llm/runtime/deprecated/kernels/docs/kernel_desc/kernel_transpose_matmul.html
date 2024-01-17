@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Transposed MatMul &mdash; Intel® Extension for Transformers 0.1.dev1+gc0a89c5 documentation</title>
+  <title>Transposed MatMul &mdash; Intel® Extension for Transformers 0.1.dev1+g2c5f8b0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -178,12 +178,12 @@ In real computation, we evaluate this equation over multiple heads and over mult
 <section id="matmul-avx512f-p2031-p2013">
 <h3>Matmul_avx512f_p2031_p2013<a class="headerlink" href="#matmul-avx512f-p2031-p2013" title="Link to this heading"></a></h3>
 <p>The following figure illustrates loops iterated by this kernel:</p>
-<p><img alt="matmul_avx512f_p2031_p2013 loops" src="../../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_loops1.png" /></p>
+<p><img alt="matmul_avx512f_p2031_p2013 loops" src="../../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_loops.png" /></p>
 <p>The inner-most loop body performs computation for each tile, where the results of multiplication continuously accumulate on a group of vector registers. The following figure shows a 16x1 tile (or 16x16 tile in terms of elements).</p>
 <blockquote>
 <div><p>Note: The $Q$ matrix in the first and second loops is drawn transposed in the figure for a better demonstration of the memory layout.</p>
 </div></blockquote>
-<p><img alt="matmul_avx512f_p2031_p2013 tile" src="../../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_tile1.png" /></p>
+<p><img alt="matmul_avx512f_p2031_p2013 tile" src="../../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_tile.png" /></p>
 <p>where lighter cells indicate values used in following steps along the k-axis.</p>
 </section>
 </section>
@@ -196,9 +196,9 @@ In real computation, we evaluate this equation over multiple heads and over mult
 <section id="matmul-vnni-noperm-p2013-p1302">
 <h3>Matmul_vnni_noperm_p2013_p1302<a class="headerlink" href="#matmul-vnni-noperm-p2013-p1302" title="Link to this heading"></a></h3>
 <p>The following figure illustrates loops iterated by the <code class="docutils literal notranslate"><span class="pre">vnni_noperm_p2013_p1302</span></code> kernel:</p>
-<p><img alt="matmul_vnni_noperm_p2031_p1302 loops" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_loops1.svg" /></p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 loops" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_loops.svg" /></p>
 <p>As the memory format does not match what VNNI needs, the kernel tile continuously performs two <code class="docutils literal notranslate"><span class="pre">transpose_4B_8x8</span></code> on both the left and right matrix for each step of 32 elements along the reduction axis:</p>
-<p><img alt="matmul_vnni_noperm_p2031_p1302 transform8x8" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_transform8x81.png" /></p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 transform8x8" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_transform8x8.png" /></p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -225,11 +225,11 @@ In real computation, we evaluate this equation over multiple heads and over mult
 </tr>
 </tbody>
 </table><p>Following the reordering, the kernel tile computes over 16x32x16 as the graph below demonstrated (similar legends applied):</p>
-<p><img alt="matmul_vnni_noperm_p2031_p1302 tile" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_tile1.png" /></p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 tile" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_tile.png" /></p>
 <section id="reorder-beforehand">
 <h4>Reorder beforehand<a class="headerlink" href="#reorder-beforehand" title="Link to this heading"></a></h4>
 <p>Notice that sub-matrices from both the left and right matrices need to be reordered multiple times in the above workflow, leading to suboptimal performance. To avoid this overhead, we perform reordering on a temporary piece of memory beforehand. It turned out to be able to boost performance by more than twofold on large matrices. The following figure shows the loops iterated by this kernel:</p>
-<p><img alt="matmul_vnni_noperm_p2031_p1302_cpy loops" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_cpy_loops1.svg" /></p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302_cpy loops" src="../../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_cpy_loops.svg" /></p>
 <p>Users can specify <code class="docutils literal notranslate"><span class="pre">op_attrs[&quot;unified&quot;]</span> <span class="pre">=</span> <span class="pre">&quot;true&quot;</span></code> to roll back to the non-copied implementation on small workloads where the transpose-copy introduces higher overhead than it saves.</p>
 </section>
 </section>
@@ -253,7 +253,7 @@ In real computation, we evaluate this equation over multiple heads and over mult
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ffa25e04a30> 
+   <jinja2.runtime.BlockReference object at 0x7f5e13fa6fe0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sparse GEMM VNNI &mdash; Intel® Extension for Transformers 0.1.dev1+gc0a89c5 documentation</title>
+  <title>Sparse GEMM VNNI &mdash; Intel® Extension for Transformers 0.1.dev1+g2c5f8b0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -141,11 +141,11 @@ VNNI introduces the following GEMM calculation:</p>
 <p>As shown in the figure below, the sparse pattern in the weight (the left matrix) is 4x1, where 4 is in the output channel dimensions, 1 is in the input channel dimensions. In terms of a typical GEMM, we say that <strong>4</strong> is in <strong>M</strong> dimensions and <strong>1</strong> is in <strong>K</strong> dimension. For the rest part of this doc, we will use GEMM concept which usually uses <strong>M</strong>, <strong>K</strong>, <strong>N</strong> for the first, second and third dimension.</p>
 <p>After compression, we concatenate each <strong>4x1</strong> block in the same row into some <strong>4x4</strong> blocks (there will be some padding in rows where the number of non-zero blocks is not a multiple of 4, as shown in the second and third row of blocks in the image). Then for each row (maybe including paddings) in a <strong>4x4</strong> block, we broadcast them to 4x16 elements, which meet the accumulation and parallelization dimensions of VNNI. For the activation (right) matrix, we pick 4 (or less if we added padding when preparing weight data) 1x16 blocks according to sparse indices and concatenate them into 4x16 blocks in column major. That is the second matrix we prepared for VNNI.</p>
 <p>For a typical GEMM (MxKxN) problem, a high performance GEMM micro-kernel needs to tile in (mxkxn) which means taking m rows of matrix A and n columns of matrix B to improve the density of FMA instructions, therefore reducing bubbles in the assembly line. In the <strong>4x4</strong> block, the <strong>“4”</strong> is corresponding to the <strong>m</strong> in micro-kernels, and the <strong>“4”</strong> by the concatenate along rows is just for VNNI accumulation dimensions.</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_4x11.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_4x1.png" /></p>
 <section id="on-the-fly-activation-reordering">
 <h2>On the fly activation reordering<a class="headerlink" href="#on-the-fly-activation-reordering" title="Link to this heading"></a></h2>
 <p>To use the VNNI instruction, the activation needs to be prepared in zmm registers in the order of 16x4. The following graph demonstrates this process:
-<img alt="4x16_to_vnni_format" src="../../../../../../../../_images/4x16_to_vnni_format1.png" /></p>
+<img alt="4x16_to_vnni_format" src="../../../../../../../../_images/4x16_to_vnni_format.png" /></p>
 <blockquote>
 <div><p>Cell highlight colors indicate 4x 16-byte vectors.</p>
 </div></blockquote>
@@ -154,11 +154,11 @@ VNNI introduces the following GEMM calculation:</p>
 <section id="candidate-patterns">
 <h2>Candidate patterns<a class="headerlink" href="#candidate-patterns" title="Link to this heading"></a></h2>
 <p>Transposition is not a default option for matrix multiplication but a workaround we found after investigation. Without transposition, activation multiplies weight, and the major dimension of the left matrix (K) must be used for accumulation. Therefore, we need to use the N dim for parallelization which is sparse. Unfortunately, this leads to the difficulty of storing results in a non-consecutive memory location.</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_4x11.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_4x1.png" /></p>
 <p>Adopting the 1x16 pattern and using concatenation to get the accumulation dimension is also a bad idea, as it means loading 4 separate elements in a row on the dense matrix. Therefore, we must apply transposition so that the second dimension of the dense matrix is used for accumulation, leaving the leading dimension for parallelization.</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_1x161.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_1x16.png" /></p>
 <p>Given that transposition is necessary, an alternative pattern is <strong>“1x4”</strong>, where the concatenation cost is saved but missing tiling means lower density of micro-kernels, which will bring more harm for performance.</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_1x41.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_1x4.png" /></p>
 <blockquote>
 <div><p>Comparison between <strong>“1x4”</strong> and <strong>“4x1”</strong></p>
 <ol class="simple">
@@ -167,7 +167,7 @@ VNNI introduces the following GEMM calculation:</p>
 </ol>
 </div></blockquote>
 <p>We performed a simulation by changing the <strong>“4x1”</strong> to <strong>“2x1”</strong>, which means tiling along the M dimensions becomes 2. As a result, the following table demonstrates about 1/3 perf drop, and we expect more performance drop with totally no tiling.</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_perf1.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_perf.png" /></p>
 <p>In conclusion, <strong>“4x1”</strong> brings higher performance which is about ~2(+) times against <strong>“1x4”</strong> (estimated from differences between tiling and no tiling.)</p>
 </section>
 </section>
@@ -189,7 +189,7 @@ VNNI introduces the following GEMM calculation:</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ffa25fdb9d0> 
+   <jinja2.runtime.BlockReference object at 0x7f5e17fa5870> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

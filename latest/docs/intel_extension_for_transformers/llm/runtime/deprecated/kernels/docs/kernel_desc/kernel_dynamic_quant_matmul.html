@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dynamic Quant Matmul &mdash; Intel® Extension for Transformers 0.1.dev1+gc0a89c5 documentation</title>
+  <title>Dynamic Quant Matmul &mdash; Intel® Extension for Transformers 0.1.dev1+g2c5f8b0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -138,7 +138,7 @@
 <li><p>Transpose the reordered matrix with tile of <code class="docutils literal notranslate"><span class="pre">(tile_k/4)*64</span></code> as the basic unit, its purpose is to <code class="docutils literal notranslate"><span class="pre">row-major</span></code> access weight matrix when we reduce on the <code class="docutils literal notranslate"><span class="pre">K-dim</span></code>, such access behavior is more friendly to cache.</p></li>
 </ol>
 <p>The whole weight matrix preprocessing process can be represented by the following figure
-<img alt="wei_preprocess" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_wei_preprocess1.png" /></p>
+<img alt="wei_preprocess" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_wei_preprocess.png" /></p>
 </section>
 <section id="different-jit-paths-for-different-weight-size">
 <h3>different jit-paths for different weight size<a class="headerlink" href="#different-jit-paths-for-different-weight-size" title="Link to this heading"></a></h3>
@@ -174,9 +174,9 @@
 <p>The <code class="docutils literal notranslate"><span class="pre">scale_reduce_quantization</span></code> kernel can reduce the scales then apply dynamic-quantization. All of the cores will do reduce calculation and store the scales to their private buffer but only one core will write to the real-scale-dst address so we needn’t reduce-scale-sync. <code class="docutils literal notranslate"><span class="pre">scale_reduce_quantization</span></code> also promise the data processed by each core in 2nd stage is same as the previous (s8s8bf16 gemm) stage, which make the most cache-friendliness.</p>
 <p>In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both <code class="docutils literal notranslate"><span class="pre">M-dim</span></code> and <code class="docutils literal notranslate"><span class="pre">N-dim</span></code> as the weight is too large or the M assign to each core is too small in one-stage jit-path. It desides the <code class="docutils literal notranslate"><span class="pre">M</span></code> and <code class="docutils literal notranslate"><span class="pre">N</span></code> that each core is responsible for processing duing initialization. We split N-dim until the size of the weight processed by each core is less than L2-cache meanwhile the M processed by each core is large enough.</p>
 <p>The activation, weight and dst that each core is responsible for processing are roughly as follows</p>
-<p><img alt="NM_dim_parallel" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_MN_parallel1.png" /></p>
+<p><img alt="NM_dim_parallel" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_MN_parallel.png" /></p>
 <p>Finally, we can intuitively feel the performance benefits of kernel executing on a suitable jit path through the following chart.</p>
-<div align=center>  <p><img alt="perf_chat" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_perf_chat1.png" /></p>
+<div align=center>  <p><img alt="perf_chat" src="../../../../../../../../_images/kernel_dynamic_quant_matmul_perf_chat.png" /></p>
 </div></section>
 </section>
 </section>
@@ -199,7 +199,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ffa27ba85e0> 
+   <jinja2.runtime.BlockReference object at 0x7f5e146c0760> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

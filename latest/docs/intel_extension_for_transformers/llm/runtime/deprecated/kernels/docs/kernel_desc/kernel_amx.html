@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sparse GEMM AMX &mdash; Intel® Extension for Transformers 0.1.dev1+gc0a89c5 documentation</title>
+  <title>Sparse GEMM AMX &mdash; Intel® Extension for Transformers 0.1.dev1+g2c5f8b0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -135,13 +135,13 @@
 </pre></div>
 </div>
 <p>Like the <strong>VNNI</strong>, <strong>AMX-BF16</strong> needs re-layout the right matrix as following:</p>
-<p><img alt="image" src="../../../../../../../../_images/kernel_amx_bf16x16_relayout1.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_amx_bf16x16_relayout.png" /></p>
 <p>As a successor to <strong>AVX512</strong> series sparse pattern, <strong>AMX</strong> pattern split the matrix into many <strong>1x16</strong> blocks and then concatenate them to meet AMX 32x16 requirements.
 You can refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ig_expand=159,653,1854,5965,5461,1742,2774,4964,4916,4925,4944,1745,1589,4089,4120,5390,5389,5388,2782,4541,6243,6255,4541,1510,2244,6836,7263,2250,5360,5388,5389,5390,5352,5353,5324,5381,4626,7264,6172,649,6159,6897,7264,7267,2795,2782,2913,1431,1385,5381,574,572,5381,5380,5379,5378,5377,5376,5375,5374,5373,5390,5389,5388,5360,5359,6897,6905,6830,6897,6903,6857,7265,6501,6519,6582,488,4506,5240,5459,5478,5489,5488,5487,5480,5463,640,6206,640,2808,4469,4470,4471,4463,4472,4469,2801,2759,2782,2787,640,2949,2949,2890,2913,2912,2585,2585,2585,7041,7043,572,640,4369,6903,6903,2756,1827,6529,572,7264,2749,5645,2808,2795,2782,7260,4469,7267,7266,2139,1998,2756,2750,2753,7439,7259,7259,7439,4376,6172,6255,6252,7498,7400,7343,6410,6951,5289,4087,4111,4107,2250,6951,6947,6944,4374,4107,707,4107,4108,1753,6955,4107,4108,4114,4111,607,4123,4114,4111,6955,6923,6937,4111,607,581,572,4111,2244,1595,2579,2585,2585,1998,2008,5446,7263,7263,2769,2782,2808,2782,2769,2782,2769,2782&amp;techs=AMX">intrinsics guide</a> for ISA details.</p>
 </section>
 <section id="pattern">
 <h2>Pattern<a class="headerlink" href="#pattern" title="Link to this heading"></a></h2>
-<p><img alt="image" src="../../../../../../../../_images/kernel_amx_bf16x16_calc1.png" /></p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_amx_bf16x16_calc.png" /></p>
 <p>Let the left matrix in the above image be A and the right be B. In our case, A is transposed weight(sparse), B is transposed activation. A can be compressed offline or before the inference, so we could directly use <code class="docutils literal notranslate"><span class="pre">tileloadd</span></code> instruction for 32 nonzero blocks in A (they’re stored consecutively in memory). For B, We need 32 rows of 16 consecutive values for one <code class="docutils literal notranslate"><span class="pre">tdpbf16ps</span></code>. This may be good because 16 values in one row are consecutive and can be loaded via <code class="docutils literal notranslate"><span class="pre">vmovdqu32</span></code> (through we are handling BF16). However, there are two tradeoff. The first is that the 32x16 tiles of B need to be reordered to AMX layout as the images shows. The second is that the activation matrix needs to be transposed, which may be more time-consuming</p>
 <p>Alternatively, considering A as activation and B as weight can save a lot of time because weight is fixed and can be compressed, concatenated and reordered offline. However, the loading of activation is a disaster because all 32 <strong>16x1</strong> blocks are not consecutive can will greatly impact performance, related experiments WIP.</p>
 </section>
@@ -176,7 +176,7 @@ You can refer to <a class="reference external" href="https://www.intel.com/conte
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ffa25fdacb0> 
+   <jinja2.runtime.BlockReference object at 0x7f5e149a3b50> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

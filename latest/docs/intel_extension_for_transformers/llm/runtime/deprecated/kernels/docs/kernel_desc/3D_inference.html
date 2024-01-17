@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Inference &mdash; Intel® Extension for Transformers 0.1.dev1+gc0a89c5 documentation</title>
+  <title>3D Inference &mdash; Intel® Extension for Transformers 0.1.dev1+g2c5f8b0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -128,15 +128,15 @@ $$W^{T}\times A^{T}= D^{T}$$</p>
 <h2>Cache Issues<a class="headerlink" href="#cache-issues" title="Link to this heading"></a></h2>
 <p>In modern computer architecture, in order to make better use of the spatial locality of the program, the CPU will fetch the data blocks near the fetched data into the cache-line. In the Intel Xeon CPU, the size of a cache-line is 64Byte. A cache organization form is called <code class="docutils literal notranslate"><span class="pre">N-way</span> <span class="pre">set</span> <span class="pre">associative</span> <span class="pre">cache</span></code>. The entire cache is divided into several cache-sets, and each cache-set has cache-lines with the number of the <code class="docutils literal notranslate"><span class="pre">way</span></code>.</p>
 <p>Consider that we want to access several 64Byte-aligned memory blocks <code class="docutils literal notranslate"><span class="pre">B1</span></code>, <code class="docutils literal notranslate"><span class="pre">B2</span></code>…, each memory block size is 64Byte (AVX512 SIMD register bit-width, and also the cache-line size), if these memory blocks are accessed continuously at this time , they can be evenly mapped to different cache-sets. But if the access behavior is discontinuous, the cache set cannot be fully utilized. In the worst case of access stride(<code class="docutils literal notranslate"><span class="pre">cache-line</span></code> size * <code class="docutils literal notranslate"><span class="pre">cache-set</span></code> num), even every memory access will be mapped to the same cache-set. Therefore cache utilization is very low and cache misses will occur very frequently.</p>
-<p><img alt="cache_mapping" src="../../../../../../../../_images/cache_mapping1.png" /></p>
+<p><img alt="cache_mapping" src="../../../../../../../../_images/cache_mapping.png" /></p>
 <p>In <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code>algorithm, when we load the activation matrix in column-major, it must introduce the accessing memory behavior with stride and the stride is equal to the last dim of the activation matrix. A specific CPU core will build a specific tile in the destination matrix and the L1/L2 cache is private to the core. When the size of the activation matrix is too large, perhaps the L2 cache can’t fully cache the activation matrix that the core needs to compute the tile. Therefore, we should reduce the size of the tile calculated by each core to reduce the size of the activation matrix in the cache and make the access stride  configurable to avoid frequent L2 cache miss due to the large size of the cached data.</p>
 </section>
 <section id="spmm-vnni-3d-inference">
 <h2>SPMM_VNNI 3D Inference<a class="headerlink" href="#spmm-vnni-3d-inference" title="Link to this heading"></a></h2>
 <p>We propose a <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature in the <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code> kernel for reducing the size of the activation matrix accessed by each core when building tiles meanwhile make the access stride configurable.<br />Considering the shape of the activation matrix is <code class="docutils literal notranslate"><span class="pre">MxK</span></code>, we can split the <code class="docutils literal notranslate"><span class="pre">M-dim</span></code> and give the activation matrix 3D view which means <code class="docutils literal notranslate"><span class="pre">BxM'xK</span></code> where $B\times M^{’}=M$. Please see the below picture.</p>
-<p><img alt="2D_to_3D" src="../../../../../../../../_images/2D_to_3D1.png" /></p>
+<p><img alt="2D_to_3D" src="../../../../../../../../_images/2D_to_3D.png" /></p>
 <p>After enabling <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature, the shape of transposed activation matrix processed by each core changes to <code class="docutils literal notranslate"><span class="pre">BxKxM'</span></code> and each core will build B <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> tiles. Compared with 2D inference, the cache space required for the activation matrix that each core is responsible for caching when build <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> block is reduced to $\frac{1}{B}$, meanwhile, the access stride is change to M’ which is configurable.</p>
-<p><img alt="3D_spmm" src="../../../../../../../../_images/3D_spmm1.png" /></p>
+<p><img alt="3D_spmm" src="../../../../../../../../_images/3D_spmm.png" /></p>
 </section>
 </section>
 
@@ -157,7 +157,7 @@ $$W^{T}\times A^{T}= D^{T}$$</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7ffa25c95720> 
+   <jinja2.runtime.BlockReference object at 0x7f5e1449cee0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
