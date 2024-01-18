@@ -170,7 +170,7 @@ function run_benchmark {
         elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
             model_name_or_path="meta-llama/Llama-2-7b-hf"
             extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
-            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 32"
+            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
             pip install tranformers==4.35.2
         else
             extra_cmd=$extra_cmd" --int8"

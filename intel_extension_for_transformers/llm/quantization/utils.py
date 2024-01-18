@@ -243,7 +243,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
             input_ids_padded = []
             for text in batch:
                 input_ids = text["input_ids"]
-                input_ids = input_ids[:512] if len(input_ids) > 512 else input_ids
+                input_ids = input_ids[:512] if (len(input_ids) > 512 and config.algorithm != "GPTQ") else input_ids
                 input_ids_padded.append(input_ids)
             return torch.vstack(input_ids_padded)
 
