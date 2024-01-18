@@ -285,7 +285,7 @@ elif args.woq:
             scale_dtype=args.woq_scale_dtype,
             weight_dtype=args.woq_weight_dtype,
             scheme=args.woq_scheme,
-            group_size=args.woq_group_size,
+            group_size=args.gptq_block_size,
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
             gptq_recipes=gptq_recipes,
