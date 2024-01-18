@@ -217,8 +217,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         packw = torch.ops.bestlaop.woq_packq(
             int_weight.contiguous(),
             gptq_scales.float().contiguous(),
-            gptq_zeros,
-            g_idx,
+            gptq_zeros.contiguous(),
+            g_idx.contiguous(),
             q_config.weight_dtype,
             q_config.scale_dtype,
             q_config.compute_dtype,
