@@ -201,7 +201,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ## 🎯Validated  Models
 You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 
-Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For comprehensive accuracy and performance data, though not the most up-to-date, please refer to the [Release data](./docs/release_data.md). 
+Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [Neural Speed (Intel Optimized llamacpp)](https://github.com/intel/neural-speed). For comprehensive accuracy and performance data, though not the most up-to-date, please refer to the [Release data](./docs/release_data.md). 
 
 ## 📖Documentation
 <table>
@@ -213,7 +213,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 <tbody>
   <tr>
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">Neural Speed</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">NEURALCHAT</th>
@@ -228,10 +228,10 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM RUNTIME</th>
+    <th colspan="8" align="center">NEURAL SPEED</th>
   </tr>
  <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">Neural Speed</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-python-api">Streaming LLM</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/docs/tensor_parallelism.md">Tensor Parallelism</a></td>
