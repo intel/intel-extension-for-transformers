@@ -86,6 +86,10 @@ function main() {
     apt-get install libsm6 libxext6 -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    git clone https://github.com/intel/neural-speed.git
+    cd neural-speed && pip install -r requirements.txt && pip install .
+    cd ..
+    pip list | grep neural-speed
     python -m pip install --upgrade --force-reinstall torch
     pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6
     cd ${WORKING_DIR} || exit 1
