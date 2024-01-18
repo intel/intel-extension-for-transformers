@@ -111,7 +111,60 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         peft_model_path = config.get("peft_model_path", "")
         plugin_as_service = config.get("plugin_as_service", False)
         assistant_model = config.get("assistant_model", None)
+        serving = config.get("serving", None)
 
+        if serving:
+            serving_framework = serving.get("framework")
+            # TGI serving
+            if serving_framework == "tgi":
+                tgi_params = serving.get("tgi_engine_params", None)
+                tgi_model_id = tgi_params.get('model_id', "mistralai/Mistral-7B-Instruct-v0.1")
+                tgi_sharded = tgi_params.get('sharded', False)
+                tgi_num_shard = tgi_params.get('num_shard', 1)
+                tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
+                # construct tgi command
+                tgi_cmd = "docker run -p 9876:80 --name tgi_service"
+                if device == "cpu":
+                    tgi_cmd += " --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                    # sharded is not supported on CPU
+                    if tgi_sharded:
+                        tgi_sharded = False
+                elif device == "gpu":
+                    tgi_cmd += " --gpus all --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
+                    pass
+                elif device == "hpu":
+                    create_docker_cmd = f"git clone https://github.com/huggingface/tgi-gaudi.git && \
+                        cd tgi-gaudi && docker build -t tgi_gaudi ."
+                    try:
+                        # create docker image first
+                        logger.info(f"<neuralchat_server> create docker command = {create_docker_cmd}")
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        subprocess.Popen(create_docker_cmd, shell=True, executable="/bin/bash")   # nosec
+                        logger.info("creating tgi habana docker image...")
+                        time.sleep(200)
+                    except Exception as e:
+                        raise RuntimeError(f"Error in tgi habana docker image creation: {e}")
+                    # add tgi_cmd
+                    if tgi_sharded and tgi_num_shard > 1:
+                        tgi_cmd += "-e PT_HPU_ENABLE_LAZY_COLLECTIVES=true"
+                    tgi_cmd += f"--runtime=habana -e HABANA_VISIBLE_DEVICES={tgi_habana_visible_devices} \
+                        -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --ipc=host tgi_gaudi"
+                else:
+                    logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
+                    raise Exception("Please specify device for tgi.")
+                tgi_cmd += f"--model-id {tgi_model_id} --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
+                # start tgi service
+                try:
+                    logger.info(f"<neuralchat_server> build docker container. cmd: {tgi_cmd}")
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                    subprocess.Popen(tgi_cmd, shell=True, executable="/bin/bash")   # nosec
+                    logger.info("Building docker container...")
+                    time.sleep(200)
+                except Exception as e:
+                    raise RuntimeError(f"Error when building docker container: {e}")
+        
         # plugin as service
         if plugin_as_service:
             # register plugin instances
