@@ -63,24 +63,22 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         self.assertIsNotNone(result)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('torch.cuda.is_available', MagicMock(return_value=True))
     def test_valid_cuda_device(self):
         # Test with valid CUDA configuration
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "cuda"
-        torch.cuda.is_available = MagicMock(return_value=True)
         result = build_chatbot(config)
         self.assertIsNone(result)
-        torch.cuda.is_available = MagicMock(return_value=False)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
+    @patch('torch.xpu.is_available', MagicMock(return_value=True))
     def test_valid_xpu_device(self):
         # Test with valid XPU configuration
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.device = "xpu"
-        torch.xpu.is_available = MagicMock(return_value=True)
         result = build_chatbot(config)
         self.assertIsNone(result)
-        torch.xpu.is_available = MagicMock(return_value=False)
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_valid_cpu_device(self):
@@ -121,7 +119,7 @@ class TestBuildChatbotNormalCases(unittest.TestCase):
         # Test enabling Retrieval plugin
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         config.plugins = {"retrieval": {"enable": True, "args": 
-            {"input_path": "./gaudi2.txt", "persist_dir": "./output"}}}
+            {"input_path": "./gaudi2.txt", "persist_directory": "./output"}}}
         result = build_chatbot(config)
         self.assertIsNotNone(result)
 

@@ -85,6 +85,7 @@ class DocumentParser:
                                          self.max_chuck_size, self.min_chuck_size)
         else:
             logging.info("This file {} is ignored. Will support this file format soon.".format(input))
+            raise Exception("[Rereieval ERROR] Document format not supported!")
         return chuck
 
     def parse_html(self, input):
@@ -130,4 +131,5 @@ class DocumentParser:
                     paragraphs += chuck
                 else:
                     logging.info("This file {} is ignored. Will support this file format soon.".format(filename))
+                    raise Exception("[Rereieval ERROR] Document format not supported!")
         return paragraphs
