@@ -10,3 +10,7 @@ peft
 datasets
 transformers_stream_generator
 tiktoken
+py-cpuinfo
+cmake
+gguf
+git+https://github.com/intel/neural-speed.git
