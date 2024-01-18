@@ -19,13 +19,10 @@
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
-from .config import DeviceOptions
 from .plugins import plugins
 
-from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
-from .utils.error_utils import set_latest_error
-import psutil
-import torch
+from .errorcode import ErrorCodes
+from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
 from .config_logging import configure_logging
 logger = configure_logging()
 
@@ -44,29 +41,10 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
-    # Check for out of storage
-    available_storage = psutil.disk_usage('/').free
-    available_storage_gb = available_storage / (1024 ** 3)
-    if available_storage_gb < STORAGE_THRESHOLD_GB:
-        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
-        return
-
     global plugins
+    clear_latest_error()
     if not config:
         config = PipelineConfig()
-    # Validate input parameters
-    if config.device not in [option.name.lower() for option in DeviceOptions]:
-        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        return
-
-    if config.device == "cuda":
-        if not torch.cuda.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
-    elif config.device == "xpu":
-        if not torch.xpu.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -97,11 +75,13 @@ def build_chatbot(config: PipelineConfig=None):
          "starcoder" in config.model_name_or_path.lower() or \
          "codegen" in config.model_name_or_path.lower() or \
          "magicoder" in config.model_name_or_path.lower() or \
-         "mixtral" in config.model_name_or_path.lower():
+         "mixtral" in config.model_name_or_path.lower() or \
+         "phi-2" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+        logger.error("build_chatbot: unknown model")
         return
 
     # register plugin instance in model adaptor
@@ -136,12 +116,25 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "image2image": # pragma: no cover
                     from .pipeline.plugins.image2image.image2image import Image2Image
                     plugins[plugin_name]['class'] = Image2Image
-                else: # pragma: no cover
+                else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    logger.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                try:
+                    plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                except Exception as e:
+                    if "[Rereieval ERROR] Document format not supported" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                        logger.error("build_chatbot: retrieval plugin init failed")
+                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
+                        logger.error("build_chatbot: safety checker plugin init failed")
+                    else:
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                        logger.error("build_chatbot: plugin init failed")
+                    return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
     parameters = {}
@@ -162,39 +155,11 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
 
-    try:
-        adapter.load_model(parameters)
-    except RuntimeError as e:
-        logger.error(f"Exception: {e}")
-        if "out of memory" in str(e):
-            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-        elif "devices are busy or unavailable" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
-        elif "tensor does not have a device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
+    adapter.load_model(parameters)
+    if get_latest_error():
         return
-    except ValueError as e:
-        logger.error(f"Exception: {e}")
-        if "load_model: unsupported device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        elif "load_model: unsupported model" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-        elif "load_model: tokenizer is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
-        elif "load_model: model name or path is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
-        elif "load_model: model config is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    return adapter
+    else:
+        return adapter
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -202,7 +167,7 @@ def finetune_model(config: BaseFinetuningConfig):
     Args:
         config (BaseFinetuningConfig): Configuration for finetuning the model.
     """
-
+    clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
@@ -220,7 +185,9 @@ def finetune_model(config: BaseFinetuningConfig):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
         logger.error(f"Exception: {e}")
-        if config.finetune_args.peft == "lora":
+        if "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
+        elif config.finetune_args.peft == "lora":
             set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
         elif config.finetune_args.peft == "llama_adapter":
             set_latest_error(ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
@@ -241,6 +208,7 @@ def optimize_model(model, config, use_llm_runtime=False):
         config (OptimizationConfig): The configuration required for optimizing the model.
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
+    clear_latest_error()
     optimization = Optimization(optimization_config=config)
     try:
         model = optimization.optimize(model, use_llm_runtime)

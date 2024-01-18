@@ -1,1 +1,12 @@
--r scripts/requirements/common.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+transformers
+numpy
+sentencepiece
+protobuf<3.20
+einops
+accelerate
+peft
+datasets
+transformers_stream_generator
+tiktoken

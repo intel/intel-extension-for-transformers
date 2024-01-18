@@ -1,13 +1,6 @@
 name: CPP Graph Test
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-       - '.github/workflows/cpp-graph-test.yml'
-       - 'intel_extension_for_transformers/llm/runtime/graph/**'
-       - 'intel_extension_for_transformers/llm/library/jblas/**'
-       - '!**/*.md'
   workflow_dispatch:
     inputs:
       compiler_version:
@@ -62,7 +55,7 @@ jobs:
             --cores_list="48," \
             --input_list="32,1024" \
             -- \
-            cpp-graph-test \
+            cpp-graph-test-itrex \
             ${{ matrix.modelName }} \
             ${{ env.GRAPH_DIR }} \
             ${{ env.WORKING_DIR }} \
