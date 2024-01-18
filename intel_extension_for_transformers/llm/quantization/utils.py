@@ -146,7 +146,7 @@ def _replace_linear(
                         p_func = None
                         n_head = None
                         n_head_kv = None
-                        from .gptq_utils import unpack_weight, permute_func
+                        from .gptq_utils import unpack_weight
 
                         if (
                             quantization_config.gptq_quantize_config["model_type"]
@@ -156,9 +156,7 @@ def _replace_linear(
                                 "num_attention_heads"
                             ]
                             n_head_kv = n_head
-                            p_func = (
-                                permute_func if name in ["q_proj", "k_proj"] else None
-                            )
+                            p_func = None
 
                         int_weight, gptq_scales, gptq_zeros = unpack_weight(
                             module.qweight,
