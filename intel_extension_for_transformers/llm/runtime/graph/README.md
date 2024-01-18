@@ -1,3 +1,7 @@
+
+> LLM Runtime has been renamed as **Neural Speed** and seperated as individual project, see [here](https://github.com/intel/neural-speed/tree/main) for more details.
+
+
 # LLM Runtime
 
 LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:
