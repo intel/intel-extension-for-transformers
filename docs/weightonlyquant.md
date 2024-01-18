@@ -18,6 +18,11 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 |       AWQ      |  &#10004;  | stay tuned |
 |      TEQ      | &#10004; | stay tuned |
 |      GPTQ      | stay tuned | &#10004; |
+
+| Support Device |  PyTorch  |  LLM Runtime  |  RTN  |  AWQ  |  TEQ |  GPTQ  |
+|:--------------:|:----------:|:----------:|:----------:|:----------:|:----:|:----:|
+|     CPU        |  &#10004;  |  stay tuned  |  &#10004;  |  &#10004;  |  &#10004;  |  &#10004;  |
+|     GPU        |  &#10004;  |  stay tuned  |  &#10004;  |  &#10004;  |  &#10004;  |  stay tuned  |
 > **RTN:** A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.
 
 > **GPTQ:** A new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly efficient. The weights of each column are updated based on the fixed-scale pseudo-quantization error and the inverse of the Hessian matrix calculated from the activations. The updated columns sharing the same scale may generate a new max/min value, so the scale needs to be saved for restoration.
@@ -27,7 +32,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 > **TEQ:** A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.
 
 
-## Examples
+## Examples For CPU
 
 Our motivation is improve CPU support for weight only quantization, since `bitsandbytes` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`WeightOnlyQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
 
@@ -135,4 +140,82 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 |       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
 |       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
 
-> Note: Only supports CPU device for now. For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
+> Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
+
+## Examples For GPU
+Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with Intel-extension-for-pytorch. Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
+Here are the example codes.
+
+#### Prepare Dependency Packages
+1. Install Oneapi Package  
+Weight-only quantization ops only exist in "dev/QLLM" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
+
+2. Build and Install PyTorch and Intel-extension-for-pytorch
+```
+python -m pip install torch==2.1.0a0  -f https://developer.intel.com/ipex-whl-stable-xpu
+
+source /opt/intel/oneapi/setvars.sh
+
+git clone https://github.com/intel-innersource/frameworks.ai.pytorch.ipex-gpu.git ipex-gpu
+cd ipex-gpu
+git checkout -b dev/QLLM origin/dev/QLLM
+git submodule update --init --recursive
+
+Pip install -r requirements.txt
+python setup.py install
+```
+
+3. Install Intel-extension-for-transformers and Neural-compressor
+```
+pip install neural-compressor
+pip install intel-extension-for-transformers
+```
+
+4. Run The Example
+```
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from transformers import AutoTokenizer
+
+device_map = "xpu"
+model_name ="hf-internal-testing/tiny-random-gptj"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "how to test the code?"
+input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
+                               algorithm="RTN",
+                               group_size=32,
+                               compute_dtype="fp16",
+                               scale_dtype="fp16")
+qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
+                                              device_map=device_map,quantization_config=config,
+                                              trust_remote_code=True, torch_dtype=torchfloat16)
+
+# saving model, it should be executed before ipex.optimize_transformers function is called. 
+qmodel.save_pretrained("saved_dir")
+
+# optimize the model with ipex, it will improve performance.
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
+output = user_model.generate(
+    input_ids, max_new_tokens=32, **generate_kwargs
+)
+gen_text = tokenizer.batch_decode(
+    output, skip_special_tokens=True
+)
+
+# loading quantized model
+loaded_model = AutoModelForCausalLM.from_pretrained(
+    "saved_dir", trust_remote_code=True, device_map=device_map
+)
+
+# Before executed the loaded model, you can call ipex.optimize_transformers function.
+loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+
+```
+>Note:
+> * Saving quantized model should be executed before the optimize_transformers function is called.
+> * The optimize_transformers function is designed to optimize transformer-based models within frontend Python modules, with a particular focus on Large Language Models (LLMs). It provides optimizations for both model-wise and content-generation-wise. The detail of `optimize_transformers`, please refer to [the link](https://github.com/intel/intel-extension-for-pytorch/blob/xpu-main/docs/tutorials/llm/llm_optimize_transformers.md).

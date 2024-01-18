@@ -88,7 +88,7 @@ class TestArcWeightOnly(unittest.TestCase):
         print("fp32 logits {}".format(fp16_logits.shape))
 
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
-                                       group_size=128,
+                                       group_size=32,
                                        compute_dtype="fp16",
                                        scale_dtype="fp16")
         config.calib_dataloader = DataLoader(
