@@ -322,7 +322,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                                      device=device)
             return q_model.to("xpu")
         else:
-        return replace_linear(inc_model.model, None, None, config, device=device)
+            return replace_linear(inc_model.model, None, None, config, device=device)
 
 
 def convert_dtype_str2torch(str_dtype):

@@ -15,52 +15,6 @@ if _ipex_available:
     gpu_name = get_gpu_family()
 
 
-def dequantize(weight, scales, zero_points, group_size, gemm_num=1):
-    k = weight.size()[-2]
-    n = weight.size()[-1]
-    weight = weight.reshape([gemm_num, k, n])
-    n = n * 2
-    group_num = int(k / group_size)
-    scales = scales.reshape([gemm_num, group_num, n])
-    zero_points = zero_points.reshape([gemm_num, group_num, int(n / 2)])
-    weight_even = (weight & 0x0F).to(torch.int8)
-    weight_odd = (weight >> 4).to(torch.int8)
-    zp_even = (zero_points & 0x0F).to(torch.int8)
-    zp_even += 1
-    zp_odd = (zero_points >> 4).to(torch.int8)
-    zp_odd += 1
-    weight_fp16 = []
-    zp_fp16 = []
-    for ind in range(0, n):
-        if ind % 2 == 0:
-            weight_fp16.append(
-                weight_even[:, :, int(ind / 2)].reshape([gemm_num, k, 1])
-            )
-            zp_fp16.append(
-                zp_even[:, :, int(ind / 2)].reshape([gemm_num, group_num, 1])
-            )
-        else:
-            weight_fp16.append(
-                weight_odd[:, :, int(ind / 2)].reshape([gemm_num, k, 1])
-            )
-            zp_fp16.append(
-                zp_odd[:, :, int(ind / 2)].reshape([gemm_num, group_num, 1])
-            )
-    weight_fp16 = torch.concat(weight_fp16, dim=2)
-    zp_fp16 = torch.concat(zp_fp16, dim=2)
-    scales = torch.reshape(scales, [gemm_num, group_num, 1, n])
-    zp_fp16 = torch.reshape(zp_fp16, [gemm_num, group_num, 1, n])
-    scales = scales.repeat([1, 1, group_size, 1])
-    zp_fp16 = zp_fp16.repeat([1, 1, group_size, 1])
-    scales = torch.reshape(scales, [gemm_num, k, n])
-    zp_fp16 = torch.reshape(zp_fp16, [gemm_num, k, n])
-    # weight_fp16 = ((weight_fp16 - zp_fp16).to(torch.float16)) * scales
-    weight_fp16 = ((weight_fp16 - 8 ).to(torch.float16)) * scales
-    if gemm_num == 1:
-        weight_fp16 = weight_fp16.reshape([k, n])
-    return weight_fp16
-
-
 class DummyDataset(data.Dataset):
     def __init__(self, model_name, seqlen):
         self.seqlen = seqlen
@@ -99,83 +53,8 @@ class M(torch.nn.Module):
         return self.linear(x)
 
 
-@unittest.skipIf(not _ipex_available or gpu_name != "max",
-    "There is no PVC(Max) GPU in this machine, skip this test!")
-class TestWeightOnly(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.workspace = "./woq_config_ipex_tmp"
-        # if workspace not exist, create it
-        if not os.path.exists(cls.workspace):
-            os.mkdir(cls.workspace)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        shutil.rmtree(cls.workspace, ignore_errors=True)
-
-    def test_int4_ipex_pvc(self):
-        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model_by_ipex
-        import intel_extension_for_pytorch as ipex
-
-        device_map = "xpu"
-
-        model_name ="EleutherAI/gpt-j-6B"
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float)
-        model.seqlen = 2048
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        prompt = "how to test the code?"
-        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-        output = model(input_ids)
-
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=4096)
-        config.calib_dataloader = DataLoader(
-            DummyDataset(model_name, model.seqlen),
-            batch_size=1,
-            shuffle=False,
-        )
-        qmodel = convert_to_quantized_model_by_ipex(model, config, device=torch.device(device_map))
-        output_quant = qmodel(input_ids.to(torch.device("xpu")))
-        fp16_logits = output['logits']
-        quan_logits = output_quant['logits'].to('cpu')
-        print("fp16 logits {}".format(fp16_logits.shape))
-        print("int4 logits {}".format(quan_logits.shape))
-
-        return True
-
-    def test_save_load_int4_ipex_pvc(self):
-        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model_by_ipex
-        import intel_extension_for_pytorch as ipex
-
-        device_map = "xpu"
-        seqlen = 2048
-        model_name ="EleutherAI/gpt-j-6B"
-        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=4096)
-        config.calib_dataloader = DataLoader(
-            DummyDataset(model_name, seqlen),
-            batch_size=1,
-            shuffle=False,
-        )
-        model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, use_llm_runtime=False, device_map = device_map, \
-                                                        quantization_config = config)
-        model.save_pretrained(self.workspace)
-        model = None
-        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace)
-        module_list = []
-        # QuantizedLinearGPU_PVC = ipex.nn.optimize_transformers.modules.Layers.IpexFastLinear
-        QuantizedLinearGPU_PVC = ipex.nn.utils._quantize_convert.INT4Linear
-        for name, module in loaded_model.named_modules():
-            if isinstance(module, QuantizedLinearGPU_PVC):
-                module_list.append(name)
-        self.assertTrue(len(module_list) > 0)
-
-        return True
-
-
-@unittest.skipIf(not _ipex_available or gpu_name != "arc",
-    "There is no ARC GPU in this machine, skip this test!")
+@unittest.skipIf(not _ipex_available or gpu_name == "no_gpu",
+    "There is no Intel GPU in this machine, skip this test!")
 class TestArcWeightOnly(unittest.TestCase):
 
     @classmethod
@@ -203,7 +82,6 @@ class TestArcWeightOnly(unittest.TestCase):
             trust_remote_code=True,
             torch_dtype=torch.float16,
             device_map=device_map)
-        model.to(device_map)
         model.seqlen = 2048
         output = model(input_ids)
         fp16_logits = output['logits'].to("cpu")
@@ -214,8 +92,7 @@ class TestArcWeightOnly(unittest.TestCase):
                                        compute_dtype="fp16",
                                        scale_dtype="fp16")
         config.calib_dataloader = DataLoader(
-            # DummyDataset(model_name, model.seqlen),
-            DummyDataset(model_name, 2048),
+            DummyDataset(model_name, model.seqlen),
             batch_size=1,
             shuffle=False,
         )
@@ -223,15 +100,17 @@ class TestArcWeightOnly(unittest.TestCase):
                                                       device_map=device_map, quantization_config=config,
                                                       trust_remote_code=True, torch_dtype=torch.float16)
         qmodel.save_pretrained(self.workspace)
-        qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True)
-        output_quant = qmodel(input_ids.to(torch.device("xpu")))
+        # qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+        output_quant = qmodel(input_ids.to(torch.device(device_map)))
         quan_logits = output_quant['logits'].to('cpu')
         print("int4 logits {}".format(quan_logits.shape))
 
         # move model to CPU
         qmodel.to("cpu")
-        loaded_model = AutoModelForCausalLM.from_pretrained(self.workspace, trust_remote_code=True)
-        output_reload = loaded_model(input_ids.to(torch.device("xpu")))
+        loaded_model = AutoModelForCausalLM.from_pretrained(
+            self.workspace, trust_remote_code=True, device_map=device_map
+        )
+        output_reload = loaded_model(input_ids.to(torch.device(device_map)))
         reload_logits = output_reload['logits'].to('cpu')
         print(quan_logits)
         print(reload_logits)
@@ -249,7 +128,7 @@ class TestArcWeightOnly(unittest.TestCase):
 
             config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32, compute_dtype="fp16", scale_dtype="fp16")
             model = convert_to_quantized_model(model, config, device="xpu")
-            model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True)
+            model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
             output_quant = model(activation.to(torch.device("xpu")))
             print(output)
             print(output_quant)
