@@ -30,6 +30,7 @@ serving:
     framework: "tgi"
     tgi_engine_params:
         model_id: "mistralai/Mistral-7B-Instruct-v0.1"
+        # not supported on CPU
         sharded: true
         num_shard: 4
         # only when device=="hpu"
