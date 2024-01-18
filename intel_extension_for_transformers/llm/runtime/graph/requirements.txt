@@ -11,6 +11,6 @@ datasets
 transformers_stream_generator
 tiktoken
 py-cpuinfo
-gguf
 cmake
+gguf
 git+https://github.com/intel/neural-speed.git
