@@ -64,6 +64,7 @@ class TextToSpeech():
                 run_opts={"device": "cpu"},
                 savedir=os.path.join("/tmp", self.spk_model_name))
         except Exception as e: # pragma: no cover
+            print(e)
             logging.warning("[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
             self.speaker_model = None
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
