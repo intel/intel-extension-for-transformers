@@ -27,11 +27,6 @@
 
 /intel_extension_for_transformers/llm/runtime/deprecated/Cmake* yu.luo@intel.com
 /intel_extension_for_transformers/llm/runtime/deprecated/cmake/ yu.luo@intel.com
-/intel_extension_for_transformers/llm/library/jblas yu.luo@intel.com
-/intel_extension_for_transformers/llm/runtime/graph hengyu.meng@intel.com
-/intel_extension_for_transformers/llm/runtime/graph/scripts zhenwei.liu@intel.com
-/intel_extension_for_transformers/llm/runtime/graph/__init__.py zhenwei.liu@intel.com
-/intel_extension_for_transformers/llm/library hengyu.meng@intel.com
 /intel_extension_for_transformers/llm/runtime/deprecated bo1.dong@intel.com
 /intel_extension_for_transformers/llm/operator bo1.dong@intel.com
 /intel_extension_for_transformers/llm/evaluation chang1.wang@intel.com
