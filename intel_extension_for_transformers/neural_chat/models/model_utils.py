@@ -556,8 +556,8 @@ def load_model(
         elif (
                 (config.model_type == "llama"
                 or config.model_type == "opt"
-                or re.search("gpt_neox", model_name, re.IGNORECASE)
-                or re.search("gpt-j", model_name, re.IGNORECASE)
+                or config.model_type == "gpt_neox"
+                or config.model_type == "gptj"
                 or re.search("falcon", model_name, re.IGNORECASE)
                 ) and ipex_int8
         ):
