@@ -128,6 +128,7 @@ class Agent_QA():
                 )
         except Exception as e:
             logging.error("Please selet a proper embedding model.")
+            logging.error(e)
         
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
