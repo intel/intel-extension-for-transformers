@@ -153,10 +153,12 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 else:
                     logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
                     raise Exception("Please specify device for tgi.")
-                tgi_cmd += f"--model-id {tgi_model_id} --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
+                tgi_cmd += f" --model-id {tgi_model_id}"
+                if tgi_sharded and tgi_num_shard > 1:
+                    tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
                 # start tgi service
                 try:
-                    logger.info(f"<neuralchat_server> build docker container. cmd: {tgi_cmd}")
+                    logger.info(f"<neuralchat_server> Run docker. cmd: {tgi_cmd}")
                     sys.stdout.flush()
                     sys.stderr.flush()
                     subprocess.Popen(tgi_cmd, shell=True, executable="/bin/bash")   # nosec
