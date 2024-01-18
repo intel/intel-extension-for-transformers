@@ -21,6 +21,7 @@ Functions
    intel_extension_for_transformers.neural_chat.models.model_utils.model_on_meta
    intel_extension_for_transformers.neural_chat.models.model_utils.model_is_optimized
    intel_extension_for_transformers.neural_chat.models.model_utils.load_model
+   intel_extension_for_transformers.neural_chat.models.model_utils.get_context_length
    intel_extension_for_transformers.neural_chat.models.model_utils.predict_stream
    intel_extension_for_transformers.neural_chat.models.model_utils.predict
 
@@ -68,6 +69,11 @@ Functions
    :returns: None
 
    :raises ValueError:
+
+
+.. py:function:: get_context_length(config)
+
+   Get the context length of a model from a huggingface model config.
 
 
 .. py:function:: predict_stream(**params)
