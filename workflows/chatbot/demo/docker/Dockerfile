@@ -97,7 +97,7 @@ RUN source activate && conda activate chatbot-demo && \
     pip install schema python-multipart speechbrain soundfile gptcache pydub && \
     pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602 && \
     pip uninstall sentence_transformers -y && \
-    pip install git+https://github.com/UKPLab/sentence-transformers.git
+    pip install git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
 
 
 # Add user
