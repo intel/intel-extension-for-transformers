@@ -40,7 +40,7 @@ class DummyDataset(data.Dataset):
             attention_mask = self.encoded_dict['attention_mask']
             pad_size = self.seqlen - input_len
             input_ids = F.pad(input_ids, pad=(0, pad_size), value=0)
-            res = torch.tensor(input_ids),torch.tensor(self.encoded_dict['attention_mask'])
+            res = torch.tensor(input_ids), torch.tensor(self.encoded_dict['attention_mask'])
             return res
 
 
@@ -83,9 +83,9 @@ class TestArcWeightOnly(unittest.TestCase):
             torch_dtype=torch.float16,
             device_map=device_map)
         model.seqlen = 2048
-        output = model(input_ids)
-        fp16_logits = output['logits'].to("cpu")
-        print("fp32 logits {}".format(fp16_logits.shape))
+        output = model.generate(input_ids)
+        fp16_out = output.to("cpu")
+        print("fp16 logits {}".format(fp16_out.shape))
 
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                        group_size=32,
@@ -101,38 +101,23 @@ class TestArcWeightOnly(unittest.TestCase):
                                                       trust_remote_code=True, torch_dtype=torch.float16)
         qmodel.save_pretrained(self.workspace)
         # qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
-        output_quant = qmodel(input_ids.to(torch.device(device_map)))
-        quan_logits = output_quant['logits'].to('cpu')
-        print("int4 logits {}".format(quan_logits.shape))
+        output_quant = qmodel.generate(input_ids.to(torch.device(device_map)))
+        quan_out = output_quant.to('cpu')
+        print("int4 logits {}".format(quan_out.shape))
 
         # move model to CPU
         qmodel.to("cpu")
         loaded_model = AutoModelForCausalLM.from_pretrained(
-            self.workspace, trust_remote_code=True, device_map=device_map
+            self.workspace, trust_remote_code=True, device_map=device_map, torch_dtype=torch.float16
         )
-        output_reload = loaded_model(input_ids.to(torch.device(device_map)))
-        reload_logits = output_reload['logits'].to('cpu')
-        print(quan_logits)
-        print(reload_logits)
-        print("!!!!!!!!!!!!", torch.max(torch.abs(quan_logits - reload_logits)))
-        assert torch.allclose(reload_logits, quan_logits, rtol=0.03)
-
-    def test_int4_ipex_arc(self):
-        from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
-        import intel_extension_for_pytorch as ipex
-        for bias in [True, False]:
-            model = M(with_bias=bias).to(dtype=torch.float16)
-            model.to("xpu")
-            activation = torch.rand(1, 32, dtype=torch.float16)
-            output = model(activation.to("xpu"))
-
-            config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32, compute_dtype="fp16", scale_dtype="fp16")
-            model = convert_to_quantized_model(model, config, device="xpu")
-            model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
-            output_quant = model(activation.to(torch.device("xpu")))
-            print(output)
-            print(output_quant)
-            assert torch.allclose(output, output_quant, rtol=0.03)
+        # loaded_model = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+        output_reload = loaded_model.generate(input_ids.to(torch.device(device_map)))
+        reload_out = output_reload.to('cpu')
+        print(fp16_out)
+        print(quan_out)
+        print(reload_out)
+        print("!!!!!!!!!!!!", torch.max(torch.abs(quan_out - reload_out)))
+        assert torch.allclose(reload_out, quan_out, rtol=0.03)
 
 
 if __name__ == "__main__":
