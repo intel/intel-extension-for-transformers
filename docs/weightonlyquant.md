@@ -5,7 +5,9 @@ Weight Only Quantization (WOQ)
 
 2. [Supported Framework Model Matrix](#supported-framework-model-matrix)
 
-3. [Examples](#examples)
+3. [Examples For CPU](#examples-for-cpu)
+
+4. [Examples For GPU](#examples-for-gpu)
 
 ## Introduction
 
@@ -143,7 +145,8 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 > Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
 
 ## Examples For GPU
-Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with Intel-extension-for-pytorch. Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
+Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
+We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
 Here are the example codes.
 
 #### Prepare Dependency Packages
