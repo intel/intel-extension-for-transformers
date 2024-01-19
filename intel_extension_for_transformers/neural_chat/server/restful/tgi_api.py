@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-import httpx
+import types
 from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.request import TGIRequest
@@ -73,6 +73,8 @@ class TextGenerationAPIRouter(APIRouter):
                 parameters=request.parameters,
                 stream=True
             )
+            if not isinstance(response_stream, types.GeneratorType):
+                return response_stream
             def stream_generator():
                 for output in response_stream:
                     yield f"data: {output}\n\n"
