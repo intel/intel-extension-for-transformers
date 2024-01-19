@@ -2,9 +2,9 @@
 > LLM Runtime has been renamed as **Neural Speed** and seperated as individual project, see [here](https://github.com/intel/neural-speed/tree/main) for more details.
 
 
-# LLM Runtime
+# Neural Speed
 
-LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:
+Neural Speed is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our Neural Speed has the following features:
 
 - Modular design to support new models
 - [Highly optimized low precision kernels](core/README.md)
@@ -12,7 +12,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 - Support CPU (x86 platforms only) and Intel GPU (WIP)
 - Support 4bits and 8bits quantization
 
-> LLM Runtime is under active development so APIs are subject to change.
+> Neural Speed is under active development so APIs are subject to change.
 
 ## Supported Hardware
 | Hardware | Optimization |
@@ -26,11 +26,11 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 ## Supported Models
 
-LLM Runtime supports the following models:
+Neural Speed supports the following models:
 [model list](https://github.com/intel/neural-speed/blob/main/docs/supported_models.md)
 
 ## How to Use
-There are methods for utilizing the LLM runtime:
+There are methods for utilizing the Neural Speed:
 - [Transformer-based API](#How-to-use-Transformer-based-API)
 
 
