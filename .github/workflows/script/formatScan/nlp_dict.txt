@@ -2430,3 +2430,4 @@ Zyczynski
 CES
 DPCPP
 QLLM
+Qwen
