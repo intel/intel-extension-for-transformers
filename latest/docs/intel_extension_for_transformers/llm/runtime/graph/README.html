@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g33fb193 documentation</title>
+  <title>Neural Speed &mdash; Intel® Extension for Transformers 0.1.dev1+gea58cd5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -78,7 +78,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">LLM Runtime</li>
+      <li class="breadcrumb-item active">Neural Speed</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/graph/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -88,9 +88,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="llm-runtime">
-<h1>LLM Runtime<a class="headerlink" href="#llm-runtime" title="Link to this heading"></a></h1>
-<p>LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>, which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:</p>
+  <blockquote>
+<div><p>LLM Runtime has been renamed as <strong>Neural Speed</strong> and seperated as individual project, see <a class="reference external" href="https://github.com/intel/neural-speed/tree/main">here</a> for more details.</p>
+</div></blockquote>
+<section id="neural-speed">
+<h1>Neural Speed<a class="headerlink" href="#neural-speed" title="Link to this heading"></a></h1>
+<p>Neural Speed is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>, which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our Neural Speed has the following features:</p>
 <ul class="simple">
 <li><p>Modular design to support new models</p></li>
 <li><p><a class="reference external" href="core/README.html">Highly optimized low precision kernels</a></p></li>
@@ -99,7 +102,7 @@
 <li><p>Support 4bits and 8bits quantization</p></li>
 </ul>
 <blockquote>
-<div><p>LLM Runtime is under active development so APIs are subject to change.</p>
+<div><p>Neural Speed is under active development so APIs are subject to change.</p>
 </div></blockquote>
 <section id="supported-hardware">
 <h2>Supported Hardware<a class="headerlink" href="#supported-hardware" title="Link to this heading"></a></h2>
@@ -114,223 +117,21 @@
 </section>
 <section id="supported-models">
 <h2>Supported Models<a class="headerlink" href="#supported-models" title="Link to this heading"></a></h2>
-<p>LLM Runtime supports the following models:</p>
-<section id="text-generation">
-<h3>Text Generation<a class="headerlink" href="#text-generation" title="Link to this heading"></a></h3>
-<table>
-<thead>
-  <tr>
-    <th rowspan="2">Model Name</th>
-    <th colspan="2">INT8</th>
-    <th colspan="2">INT4</th>
-    <th rowspan="2">Transformer Version</th>
-  </tr>
-  <tr>
-    <th>RTN</th>
-    <th>GPTQ</th>
-    <th>RTN</th>
-    <th>GPTQ</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td><a href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-7B</a>,
-    <a href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-13B</a>,
-    <a href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf" target="_blank" rel="noopener noreferrer">LLaMA2-70B</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/decapoda-research/llama-7b-hf" target="_blank" rel="noopener noreferrer">LLaMA-7B</a>,
-    <a href="https://huggingface.co/decapoda-research/llama-13b-hf" target="_blank" rel="noopener noreferrer">LLaMA-13B</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/EleutherAI/gpt-j-6b" target="_blank" rel="noopener noreferrer">GPT-J-6B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/EleutherAI/gpt-neox-20b" target="_blank" rel="noopener noreferrer">GPT-NeoX-20B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/databricks/dolly-v2-3b" target="_blank" rel="noopener noreferrer">Dolly-v2-3B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>4.28.1 or newer</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/mosaicml/mpt-7b" target="_blank" rel="noopener noreferrer">MPT-7B</a>,
-    <a href="https://huggingface.co/mosaicml/mpt-30b" target="_blank" rel="noopener noreferrer">MPT-30B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/tiiuae/falcon-7b" target="_blank" rel="noopener noreferrer">Falcon-7B</a>,
-    <a href="https://huggingface.co/tiiuae/falcon-40b" target="_blank" rel="noopener noreferrer">Falcon-40B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/bigscience/bloomz-7b1" target="_blank" rel="noopener noreferrer">BLOOM-7B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/facebook/opt-125m" target="_blank" rel="noopener noreferrer">OPT-125m</a>,
-    <a href="https://huggingface.co/facebook/opt-1.3b" target="_blank" rel="noopener noreferrer">OPT-1.3B</a>,
-    <a href="https://huggingface.co/facebook/opt-13b" target="_blank" rel="noopener noreferrer">OPT-13B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-    <tr>
-    <td><a href="https://huggingface.co/Intel/neural-chat-7b-v3-1" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-1</a>,
-    <a href="https://huggingface.co/Intel/neural-chat-7b-v3-2" target="_blank" rel="noopener noreferrer">Neural-Chat-7B-v3-2</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/THUDM/chatglm-6b" target="_blank" rel="noopener noreferrer">ChatGLM-6B</a>,
-    <a href="https://huggingface.co/THUDM/chatglm2-6b" target="_blank" rel="noopener noreferrer">ChatGLM2-6B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>4.33.1</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/baichuan-inc/Baichuan-13B-Chat" target="_blank" rel="noopener noreferrer">Baichuan-13B-Chat</a>,
-    <a href="https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat" target="_blank" rel="noopener noreferrer">Baichuan2-13B-Chat</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>4.33.1</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/mistralai/Mistral-7B-v0.1" target="_blank" rel="noopener noreferrer">Mistral-7B</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>4.34.0 or newer</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/Qwen/Qwen-7B-Chat" target="_blank" rel="noopener noreferrer">Qwen-7B</a>,
-    <a href="https://huggingface.co/Qwen/Qwen-14B-Chat" target="_blank" rel="noopener noreferrer">Qwen-14B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-    <tr>
-    <td><a href="https://huggingface.co/openai/whisper-tiny" target="_blank" rel="noopener noreferrer">Whisper-tiny</a>,
-    <a href="https://huggingface.co/openai/whisper-base" target="_blank" rel="noopener noreferrer">Whisper-base</a>
-    <a href="https://huggingface.co/openai/whisper-small" target="_blank" rel="noopener noreferrer">Whisper-small</a>
-    <a href="https://huggingface.co/openai/whisper-medium" target="_blank" rel="noopener noreferrer">Whisper-medium</a>
-    <a href="https://huggingface.co/openai/whisper-large" target="_blank" rel="noopener noreferrer">Whisper-large</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-</tbody>
-</table></section>
-<section id="code-generation">
-<h3>Code Generation<a class="headerlink" href="#code-generation" title="Link to this heading"></a></h3>
-<table>
-<thead>
-  <tr>
-    <th rowspan="2">Model Name</th>
-    <th colspan="2">INT8</th>
-    <th colspan="2">INT4</th>
-    <th rowspan="2">Transformer Version</th>
-  </tr>
-  <tr>
-    <th>RTN</th>
-    <th>GPTQ</th>
-    <th>RTN</th>
-    <th>GPTQ</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td><a href="https://huggingface.co/codellama/CodeLlama-7b-hf" target="_blank" rel="noopener noreferrer">Code-LLaMA-7B</a>,
-    <a href="https://huggingface.co/codellama/CodeLlama-13b-hf" target="_blank" rel="noopener noreferrer">Code-LLaMA-13B</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>Latest</td>
-  </tr>
-    <tr>
-    <td><a href="https://huggingface.co/ise-uiuc/Magicoder-S-DS-6.7B" target="_blank" rel="noopener noreferrer">Magicoder-6.7B</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>Latest</td>
-  </tr>
-  <tr>
-    <td><a href="https://huggingface.co/bigcode/starcoderbase-1b" target="_blank" rel="noopener noreferrer">StarCoder-1B</a>,
-    <a href="https://huggingface.co/bigcode/starcoderbase-3b" target="_blank" rel="noopener noreferrer">StarCoder-3B</a>,
-    <a href="https://huggingface.co/bigcode/starcoder" target="_blank" rel="noopener noreferrer">StarCoder-15.5B</a></td>
-    <td>✅</td>
-    <td> </td>
-    <td>✅</td>
-    <td> </td>
-    <td>Latest</td>
-  </tr>
-</tbody>
-</table></section>
+<p>Neural Speed supports the following models:
+<a class="reference external" href="https://github.com/intel/neural-speed/blob/main/docs/supported_models.html">model list</a></p>
 </section>
 <section id="how-to-use">
 <h2>How to Use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h2>
-<p>There are two methods for utilizing the LLM runtime:</p>
+<p>There are methods for utilizing the Neural Speed:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p></li>
-<li><p><a class="reference external" href="#How-to-use-Straightforward-Python-script">Straightforward Python script</a></p></li>
 </ul>
 </section>
 <section id="how-to-use-transformer-based-api">
 <h2>How to use: Transformer-based API<a class="headerlink" href="#how-to-use-transformer-based-api" title="Link to this heading"></a></h2>
 <section id="install">
 <h3>1. Install<a class="headerlink" href="#install" title="Link to this heading"></a></h3>
-<p>Install from binary</p>
+<p>Install from binary, please ensure that your GCC version is higher than 10.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w">  </span><span class="c1"># under graph folder</span>
 </pre></div>
@@ -517,249 +318,6 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 </div>
 </section>
 </section>
-<section id="how-to-use-straightforward-python-script">
-<h2>How to use: Straightforward Python script<a class="headerlink" href="#how-to-use-straightforward-python-script" title="Link to this heading"></a></h2>
-<p>Install from binary</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
-pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w">  </span><span class="c1"># under graph folder</span>
-</pre></div>
-</div>
-<p>Build from source</p>
-<blockquote>
-<div><p>:warning: <strong>If you want to use <code class="docutils literal notranslate"><span class="pre">from_pretrain</span></code> API</strong>: please follow <a class="reference external" href="#How-to-use-Transformer-based-API">Transformer-based API</a></p>
-</div></blockquote>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux and WSL</span>
-<span class="c1"># make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder</span>
-git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
-mkdir<span class="w"> </span>build
-<span class="nb">cd</span><span class="w"> </span>build
-cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
-ninja
-</pre></div>
-</div>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="c"># Windows</span>
-<span class="c"># Install VisualStudio 2022 and open &#39;Developer PowerShell for VS 2022&#39;</span>
-<span class="c"># make sure your path is in intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph folder</span>
-<span class="n">mkdir</span> <span class="n">build</span>
-<span class="nb">cd </span><span class="n">build</span>
-<span class="n">cmake</span> <span class="p">..</span>
-<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span> <span class="p">-</span><span class="n">-config</span> <span class="n">Release</span>
-</pre></div>
-</div>
-<section id="run-llm-with-python-script">
-<h3>1. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
-<p>You can run LLM with one-click python script including conversion, quantization and inference.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">scripts</span><span class="o">/</span><span class="n">run</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">model</span><span class="o">-</span><span class="n">path</span><span class="w"> </span><span class="o">--</span><span class="n">weight_dtype</span><span class="w"> </span><span class="n">int4</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;She opened the door and see&quot;</span>
-</pre></div>
-</div>
-<p>Argument description of run.py (<a class="reference external" href="#supported-matrix-multiplication-data-types-combinations">supported MatMul combinations</a>):
-| Argument                    | Description                                                                                                   |
-| ————–              | ———————————————————————                                         |
-| model                       | Directory containing model file or model id: String                                                           |
-| –weight_dtype              | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4e2m1)/nf4 (default int4)                                                       |
-| –alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
-| –group_size                | Group size: Int, 32/128/-1 (per channel) (default: 32)                                                                                 |
-| –scale_dtype               | Data type of scales: fp32/bf16/fp8 (dafault fp32)                                                                 |
-| –compute_dtype             | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)                                                 |
-| –use_ggml                  | Enable ggml for quantization and inference                                                                    |
-| -p / –prompt               | Prompt to start generation with: String (default: empty)                                                      |
-| -n / –n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
-| -t / –threads              | Number of threads to use during computation: Int (default: 56)                                                |
-| -b / –batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |
-| -c / –ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length) |
-| -s / –seed                 | NG seed: Int (default: -1, use random seed for &lt; 0)                                                           |
-| –repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                      |
-| –color                     | Colorise output to distinguish prompt and user input from generations                                         |
-| –keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |
-| –shift-roped-k             | Use <a class="reference external" href="./docs/infinite_inference.html#shift-rope-k-and-ring-buffer">ring-buffer</a> and thus do not re-computing after reaching ctx_size (default: False) |</p>
-</section>
-</section>
-<section id="advanced-usage">
-<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
-<p>Besides the one-click script, LLM Runtime also offers the detailed script: 1) convert and quantize, and 2) inference.</p>
-<section id="convert-and-quantize-llm">
-<h3>1. Convert and Quantize LLM<a class="headerlink" href="#convert-and-quantize-llm" title="Link to this heading"></a></h3>
-<p>LLM Runtime assumes the compatible model format as <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a> and <a class="reference external" href="https://github.com/ggerganov/ggml">ggml</a>. You can also convert the model by following the below steps:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert the model directly use model id in Hugging Face. (recommended)</span>
-python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>EleutherAI/gpt-j-6b
-
-<span class="c1"># or you can download fp32 model (e.g., LLAMA2) from Hugging Face at first, then convert the pytorch model to ggml format.</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
-python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>model_path
-
-<span class="c1"># To convert model with PEFT(Parameter-Efficient Fine-Tuning) adapter, you need to merge the PEFT adapter into the model first, use below command to merge the PEFT adapter and save the merged model, afterwards you can use &#39;scripts/convert.py&#39; just like above mentioned.</span>
-python<span class="w"> </span>scripts/load_peft_and_merge.py<span class="w"> </span>--model_name_or_path<span class="w"> </span>meta-llama/Llama-2-7b-hf<span class="w"> </span>--peft_name_or_path<span class="w"> </span>dfurman/llama-2-7b-instruct-peft<span class="w"> </span>--save_path<span class="w"> </span>./Llama-2-7b-hf-instruct-peft
-
-<span class="c1"># quantize weights of fp32 ggml bin</span>
-<span class="c1"># model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly</span>
-<span class="c1"># optimized INT4 model with group size 128 (recommended)</span>
-python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">128</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8
-
-<span class="c1"># Alternativly you could run ggml q4_0 format like following</span>
-python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_0.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--use_ggml
-<span class="c1"># optimized INT4 model with group size 32</span>
-python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">32</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8
-</pre></div>
-</div>
-<p>Argument description of quantize.py (<a class="reference external" href="#supported-matrix-multiplication-data-types-combinations">supported MatMul combinations</a>):
-| Argument        | Description                                                  |
-| ————–  | ———————————————————–  |
-| –model_file    | Path to the fp32 model: String                               |
-| –out_file      | Path to the quantized model: String                          |
-| –build_dir     | Path to the build file: String                               |
-| –config        | Path to the configuration file: String (default: “”)         |
-| –nthread       | Number of threads to use: Int (default: 1)                   |
-| –weight_dtype  | Data type of quantized weight: int4/int8/fp8(=fp8_e4m3)/fp8_e5m2/fp4(=fp4_e2m1)/nf4 (default: int4)     |
-| –alg           | Quantization algorithm to use: sym/asym (default: sym)       |
-| –group_size    | Group size: Int 32/128/-1 (per channel) (default: 32)                                |
-| –scale_dtype   | Data type of scales: bf16/fp32/fp8 (default: fp32)               |
-| –compute_dtype | Data type of Gemm computation: int8/bf16/fp16/fp32 (default: fp32)|
-| –use_ggml      | Enable ggml for quantization and inference                   |</p>
-<section id="supported-matrix-multiplication-data-types-combinations">
-<h4>Supported Matrix Multiplication Data Types Combinations<a class="headerlink" href="#supported-matrix-multiplication-data-types-combinations" title="Link to this heading"></a></h4>
-<p>Our LLM runtime supports  INT4 / INT8 / FP8 (E4M3, E5M2) / FP4 (E2M1) / NF4 weight-only quantization and FP32 / FP16 / BF16 / INT8 computation forward matmul on the Intel platforms. Here are the all supported data types combinations for matmul operations (quantization and forward).</p>
-<blockquote>
-<div><p>This table will be updated frequently due to active development</p>
-</div></blockquote>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>Weight dtype</th>
-<th style="text-align: center;">Compute dtype (default value if missing or wrong setting)</th>
-<th style="text-align: center;">Scale dtype (default if missing or wrong setting)</th>
-<th style="text-align: center;">algo (default if missing or wrong setting)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>FP32</td>
-<td style="text-align: center;">FP32</td>
-<td style="text-align: center;">NA</td>
-<td style="text-align: center;">NA</td>
-</tr>
-<tr>
-<td>INT8</td>
-<td style="text-align: center;">INT8 / BF16 / FP16 / FP32 (FP32)</td>
-<td style="text-align: center;">BF16 / FP32 (FP32)</td>
-<td style="text-align: center;">sym / asym (sym)</td>
-</tr>
-<tr>
-<td>INT4</td>
-<td style="text-align: center;">INT8 / BF16 / FP16 / FP32 (FP32)</td>
-<td style="text-align: center;">BF16 / FP32 (FP32)</td>
-<td style="text-align: center;">sym / asym (sym)</td>
-</tr>
-<tr>
-<td>FP8 (E4M3, E5M2)</td>
-<td style="text-align: center;">BF16 / FP16 / FP32 (FP32)</td>
-<td style="text-align: center;">FP8 (FP8)</td>
-<td style="text-align: center;">sym (sym)</td>
-</tr>
-<tr>
-<td>FP4 (E2M1)</td>
-<td style="text-align: center;">BF16 / FP16 / FP32 (FP32)</td>
-<td style="text-align: center;">BF16 / FP32 (FP32)</td>
-<td style="text-align: center;">sym (sym)</td>
-</tr>
-<tr>
-<td>NF4</td>
-<td style="text-align: center;">BF16 / FP16 / FP32 (FP32)</td>
-<td style="text-align: center;">BF16 / FP32 (FP32)</td>
-<td style="text-align: center;">sym (sym)</td>
-</tr>
-</tbody>
-</table></section>
-</section>
-<section id="inference-llm">
-<h3>2. Inference LLM<a class="headerlink" href="#inference-llm" title="Link to this heading"></a></h3>
-<p>We provide LLM inference script to run the quantized model. Please reach <a class="reference external" href="mailto:itrex&#46;maintainers&#37;&#52;&#48;intel&#46;com">us</a> if you want to run using C++ API directly.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># recommed to use numactl to bind cores in Intel cpus for better performance</span>
-<span class="c1"># if you use different core numbers, please also  change -t arg value</span>
-<span class="c1"># please type prompt about codes when run `StarCoder`, for example, -p &quot;def fibonnaci(&quot;.</span>
-
-<span class="c1">#Linux and WSL</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
-
-<span class="c1"># if you want to generate fixed outputs, please set --seed arg, for example:</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span>
-
-<span class="c1"># if you want to reduce repeated generated texts, please set --repeat_penalty (value &gt; 1.0, default = 1.0), for example:</span>
-<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span>&lt;physic_cores&gt;<span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;physic_cores-1&gt;<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
-
-<span class="c1">#Windows</span>
-<span class="c1">#Recommend to build and run our project in WSL to get a better and stable performance</span>
-python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span>&lt;physic_cores<span class="p">|</span>P-cores&gt;<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
-</pre></div>
-</div>
-<p>Argument description of inference.py:
-| Argument                                          | Description                                                                                                                                                                             |
-| ————–                                    | ———————————————————————–                                                                                                                 |
-| –model_name                                      | Model name: String                                                                                                                                                                      |
-| -m / –model                                      | Path to the executed model: String                                                                                                                                                      |
-| –build_dir                                       | Path to the build file: String                                                                                                                                                          |
-| -p / –prompt                                     | Prompt to start generation with: String (default: empty)                                                                                                                                |
-| -n / –n_predict                                  | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                                                                                           |
-| -t / –threads                                    | Number of threads to use during computation: Int (default: 56)                                                                                                                          |
-| -b / –batch_size                                 | Batch size for prompt processing: Int (default: 512)                                                                                                                                    |
-| -c / –ctx_size                                   | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length)                                                                           |
-| -s / –seed                                       | NG seed: Int (default: -1, use random seed for &lt; 0)                                                                                                                                     |
-| –repeat_penalty                                  | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                                                                                                |
-| –color                                           | Colorise output to distinguish prompt and user input from generations                                                                                                                   |
-| –keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
-| –shift-roped-k                                   | Use <a class="reference external" href="./docs/infinite_inference.html#shift-rope-k-and-ring-buffer">ring-buffer</a> and thus do not re-computing after reaching ctx_size (default: False)                                      |
-| –glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
-| –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC11+ &amp; AMX) and fall back to fp16 if failed |</p>
-</section>
-<section id="tensor-parallelism-cross-nodes-sockets">
-<h3>3. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
-<p>We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket. You can refer to <a class="reference external" href="./docs/tensor_parallelism.html">tensor_parallelism.html</a> to enable this feature.</p>
-</section>
-<section id="contribution">
-<h3>4. Contribution<a class="headerlink" href="#contribution" title="Link to this heading"></a></h3>
-<p>You can consider adding your own models via <a class="reference external" href="./developer_document.html">graph developer document</a>.</p>
-</section>
-<section id="custom-stopping-criteria">
-<h3>5. Custom Stopping Criteria<a class="headerlink" href="#custom-stopping-criteria" title="Link to this heading"></a></h3>
-<p>You can customize the stopping criteria according to your own needs by processing the input_ids to determine if text generation needs to be stopped.
-Here is a simple example, which requires a minimum generation length of 80 tokens. Once the <code class="docutils literal notranslate"><span class="pre">min_length</span></code> is met, encountering a terminator <code class="docutils literal notranslate"><span class="pre">eos_token_id</span></code> will end the generation.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
-<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">StoppingCriteria</span><span class="p">,</span> <span class="n">StoppingCriteriaList</span>
-
-<span class="k">class</span> <span class="nc">StopOnTokens</span><span class="p">(</span><span class="n">StoppingCriteria</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">start_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">stop_token_id</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">min_length</span> <span class="o">=</span> <span class="n">min_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">start_length</span> <span class="o">=</span> <span class="n">start_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stop_token_id</span> <span class="o">=</span> <span class="n">stop_token_id</span>
-
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">,</span> <span class="n">scores</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_length</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_length</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">stop_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_token_id</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">input_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">stop_id</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-<span class="n">stopping_criteria</span> <span class="o">=</span> <span class="n">StoppingCriteriaList</span><span class="p">(</span>
-    <span class="p">[</span>
-        <span class="n">StopOnTokens</span><span class="p">(</span>
-            <span class="n">min_length</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
-            <span class="n">start_length</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">stop_token_id</span><span class="o">=</span><span class="p">[</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">],</span>
-        <span class="p">)</span>
-    <span class="p">]</span>
-<span class="p">)</span>
-
-<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">stopping_criteria</span><span class="o">=</span><span class="n">stopping_criteria</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="perplexity-measuring-model-quality">
-<h3>6. Perplexity (measuring model quality)<a class="headerlink" href="#perplexity-measuring-model-quality" title="Link to this heading"></a></h3>
-<p>You can use the <a class="reference external" href="./scripts/perplexity.py">scripts/perplexity.py</a> script to over a given (subset of) dataset. Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">scripts/perplexity.py</span> <span class="pre">--help</span></code> for detailed usage. For more infomation of the perplexity metric, see https://huggingface.co/docs/transformers/perplexity.</p>
-</section>
-</section>
 </section>
 
 
@@ -776,7 +334,7 @@ Here is a simple example, which requires a minimum generation length of 80 token
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f213dd4e050> 
+   <jinja2.runtime.BlockReference object at 0x7ff5cfc72b30> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
