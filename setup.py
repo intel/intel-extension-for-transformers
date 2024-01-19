@@ -1,4 +1,5 @@
 """Setup and install modules."""
+import importlib
 import os
 import subprocess
 import sys
@@ -7,6 +8,34 @@ from io import open
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+    Addtional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import torch
+    import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        return 'flex'
+    if 'GPU Max' in name:
+        return 'max'
+    if 'Arc(TM)' in name:
+        return 'arc'
+    assert False, "Unsupport GPU device: {}".format(name)
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -21,6 +50,13 @@ SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
 
 RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
+
+ipex_available = importlib.util.find_spec("intel_extension_for_pytorch") is not None
+IS_INTEL_GPU = False
+if ipex_available and (get_gpu_family() != "no_gpu"):
+    SKIP_RUNTIME = True
+    RUNTIME_ONLY = False
+    IS_INTEL_GPU = True
 
 if not SKIP_RUNTIME:
     from cmake import CMAKE_BIN_DIR
@@ -238,8 +274,11 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
+    if IS_INTEL_GPU:
+        ext_modules = []
+    else:
+        ext_modules = [CMakeExtension(
+            "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/csrc', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.extend([

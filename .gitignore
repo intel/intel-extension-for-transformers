@@ -1,3 +1,4 @@
+tests/*.pt
 /intel_extension_for_transformers/llm/runtime/graph/*
 !/intel_extension_for_transformers/llm/runtime/graph/*.*
 !/intel_extension_for_transformers/llm/runtime/graph/*/

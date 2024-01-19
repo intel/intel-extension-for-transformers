@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -15,4 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .modules import QuantizedLinearQBits
+
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./tgi.yaml", log_file="./tgi.log")
+
+if __name__ == "__main__":
+    main()

@@ -272,7 +272,7 @@ elif args.sq:
     )
 elif args.woq:
     if args.woq_algo == "GPTQ":
-        gptq_recipes = {
+        algorithm_args = {
             "act_order": args.gptq_actorder,
             "percdamp": args.gptq_percdamp,
             "block_size": args.gptq_block_size,
@@ -288,7 +288,7 @@ elif args.woq:
             group_size=args.gptq_block_size,
             algorithm=args.woq_algo,
             tokenizer=tokenizer,
-            gptq_recipes=gptq_recipes,
+            algorithm_args=algorithm_args,
         )
     else:
         quantization_config = WeightOnlyQuantConfig(
@@ -435,7 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-
+    user_model.eval()
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )

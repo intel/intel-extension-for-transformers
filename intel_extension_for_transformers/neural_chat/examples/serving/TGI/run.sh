@@ -15,4 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .modules import QuantizedLinearQBits
+# Kill the exist and re-run
+ps -ef |grep 'run_tgi' |awk '{print $2}' |xargs kill -9
+
+# KMP
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+
+# OMP
+export OMP_NUM_THREADS=52
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+
+# tc malloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
+
+nohup numactl -l -C 0-51 python -m run_tgi 2>&1 &

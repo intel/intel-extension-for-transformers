@@ -73,3 +73,9 @@ class FeedbackRequest(RequestBaseModel):
     question: str
     answer: str
     feedback: Optional[int] = 0
+
+
+class TGIRequest(RequestBaseModel):
+    inputs: str
+    parameters: Optional[dict] = None
+    stream: Optional[bool] = False
