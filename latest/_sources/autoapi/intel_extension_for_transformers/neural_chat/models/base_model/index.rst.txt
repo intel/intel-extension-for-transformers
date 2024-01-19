@@ -63,9 +63,11 @@ Functions
           "ipex_int8": False,
           "use_cache": True,
           "peft_path": "/path/to/peft",
-          "use_deepspeed": False
-          "hf_access_token": "user's huggingface access token"
-          "assistant_model": "assistant model name to speed up inference"
+          "use_deepspeed": False,
+          "hf_access_token": "user's huggingface access token",
+          "assistant_model": "assistant model name to speed up inference",
+          "use_vllm": "whether to use vllm for serving",
+          "vllm_engine_params": "vllm engine parameters if use_vllm is true",
       }
 
 
