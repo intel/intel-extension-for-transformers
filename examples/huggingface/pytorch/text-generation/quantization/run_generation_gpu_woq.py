@@ -119,12 +119,14 @@ if user_model is not None:
 if args.benchmark:
     prompt = "它完成了，并提交了。你可以在Android和网络上玩美味生存。在网络上玩是有效的，但你必须模拟多次触摸才能移动桌子."
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
     print("---- Prompt size:", input_size)
 
-    user_model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True) if user_model is None else user_model
-    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
+            if user_model is None else user_model
+    user_model = ipex.optimize_transformers(
+        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
     # start
     num_iter = args.iters
     num_warmup = args.num_warmup
@@ -200,8 +202,11 @@ if args.benchmark:
 
 if args.accuracy:
     from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-    user_model = AutoModelForCausalLM.load_low_bit(args.model, trust_remote_code=True) if user_model is None else user_model
-    user_model = ipex.optimize_transformers(user_model.eval(), device=args.device)
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model, trust_remote_code=args.trust_remote_code, device_map=args.device, torch_dtype=torch_dtype) \
+            if user_model is None else user_model
+    user_model = ipex.optimize_transformers(
+        user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
