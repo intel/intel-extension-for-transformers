@@ -56,7 +56,7 @@ parser.add_argument("--woq_dtype", type=str, default="int4_fullrange",
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
-parser.add_argument("--device", default="cpu")
+parser.add_argument("--device", default="xpu")
 parser.add_argument("--compute_dtype", default="fp16")
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
