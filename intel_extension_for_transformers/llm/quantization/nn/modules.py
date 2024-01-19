@@ -173,21 +173,8 @@ class QuantizedLinearQBits(torch.nn.Linear):
         gptq_zeros,
         g_idx,
         q_config,
-        n_head=0,
-        n_head_kv=0,
-        permute_func=None,
         bias=None,
     ):
-        if permute_func:
-            int_weight = (
-                permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
-            )
-            gptq_scales = (
-                permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
-            )
-            gptq_zeros = (
-                permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
-            )
 
         if q_config.gptq_quantize_config["desc_act"]:
             int_weight2 = int_weight.clone()
