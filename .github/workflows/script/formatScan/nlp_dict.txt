@@ -2431,3 +2431,14 @@ CES
 DPCPP
 QLLM
 Qwen
+Chroma
+HuggingFacePipeline
+Langchain
+NeuralChatServerExecutor
+RESTful
+RetrievalQA
+VectorStoreRetriever
+langchain
+retrievalQA
+vectorstore
+vectorstores
