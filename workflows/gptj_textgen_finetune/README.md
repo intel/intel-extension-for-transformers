@@ -10,6 +10,8 @@ GPT-J 6B is an open-source large language model (LLM) with 6B parameters. Like G
 
 This example demonstrates an end-end LLM fine-tuning workflow using [Glue MNLI](https://huggingface.co/datasets/glue/viewer/mnli/train) dataset and [LoRA](https://arxiv.org/abs/2106.09685) (Low-Rank Adaptation) technique to optimize the fine-tuning time.
 
+This workflow runs on Intel Xeon CPU platform and has been verified on Intel 4th Gen Xeon CPU.
+
 ### Dataset
 The MNLI dataset consists of pairs of sentences, a premise and a hypothesis. The task is to predict the relation between the premise and the hypothesis, which can be:
 Entailment: the premise entails the hypothesis, 
