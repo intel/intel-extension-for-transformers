@@ -37,5 +37,4 @@ serving:
         habana_visible_devices: "0,1"
 
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'， 'photoai']
-tasks_list: ['textchat']
+tasks_list: ['textchat', 'tgi']
