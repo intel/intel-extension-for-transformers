@@ -147,17 +147,6 @@ def _replace_linear(
                         n_head = None
                         n_head_kv = None
                         from .gptq_utils import unpack_weight
-
-                        if (
-                            quantization_config.gptq_quantize_config["model_type"]
-                            == "llama"
-                        ):
-                            n_head = quantization_config.gptq_quantize_config[
-                                "num_attention_heads"
-                            ]
-                            n_head_kv = n_head
-                            p_func = None
-
                         int_weight, gptq_scales, gptq_zeros = unpack_weight(
                             module.qweight,
                             module.scales,
@@ -171,9 +160,6 @@ def _replace_linear(
                             gptq_zeros,
                             module.g_idx,
                             quantization_config,
-                            n_head=None if n_head is None else n_head,
-                            n_head_kv=None if n_head_kv is None else n_head_kv,
-                            permute_func=None if p_func is None else p_func,
                             bias=None if module.bias is None else module.bias.data,
                         )
                     else:
@@ -313,19 +299,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
         # RTN: doesn't need calib_func
         if config.algorithm in ["TEQ", "RTN", "GPTQ"]:
             calib_func = None
-        # model_type and num_attention_heads for gptq llama
-        if hasattr(model, "config"):
-            model_type = (
-                model.config.model_type if hasattr(model.config, "model_type") else None
-            )
-            num_attention_heads = (
-                model.config.num_attention_heads
-                if hasattr(model.config, "num_attention_heads")
-                else None
-            )
-        else:
-            model_type = None
-            num_attention_heads = None
 
         inc_model = quantization.fit(
             model, conf, calib_func=calib_func, calib_dataloader=calib_dataloader
@@ -344,8 +317,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 "true_sequential": True,
                 "model_name_or_path": "null",
                 "model_file_base_name": "model",
-                "model_type": model_type,
-                "num_attention_heads": num_attention_heads,
             }
 
             setattr(config, "gptq_quantize_config", quantize_config)

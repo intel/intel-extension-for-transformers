@@ -113,10 +113,24 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         assistant_model = config.get("assistant_model", None)
         serving = config.get("serving", None)
 
+        serving_config = None
         if serving:
             serving_framework = serving.get("framework")
+            # vLLM Serving
+            if serving_framework == "vllm":
+                from intel_extension_for_transformers.neural_chat.config import ServingConfig, VllmEngineParams
+                eparams = serving.get("vllm_engine_params", None)
+                serving_config = ServingConfig(
+                    framework="vllm", framework_config=VllmEngineParams(
+                        tensor_parallel_size = eparams.get('tensor_parallel_size', 1),
+                        quantization=eparams.get('quantization', None),
+                        gpu_memory_utilization=eparams.get('gpu_memory_utilization', 0.9),
+                        swap_space=eparams.get('swap_space', 4),
+                        enforce_eager=eparams.get('enforce_eager', False),
+                        max_context_len_to_capture=eparams.get('max_context_len_to_capture', 8192)
+                    ))
             # TGI serving
-            if serving_framework == "tgi":
+            elif serving_framework == "tgi":
                 tgi_params = serving.get("tgi_engine_params", None)
                 tgi_model_id = tgi_params.get('model_id', "mistralai/Mistral-7B-Instruct-v0.1")
                 tgi_sharded = tgi_params.get('sharded', False)
@@ -166,7 +180,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     time.sleep(200)
                 except Exception as e:
                     raise RuntimeError(f"Error when building docker container: {e}")
-        
+
         # plugin as service
         if plugin_as_service:
             # register plugin instances
@@ -245,7 +259,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "plugins": plugins,
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
-                "assistant_model": assistant_model
+                "assistant_model": assistant_model,
+                "serving_config": serving_config
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
