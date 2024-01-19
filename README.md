@@ -158,7 +158,29 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 ## 🌱Getting  Started
 Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 
-### Chatbot 
+### Chatbot
+
+#### OpenAI-Compatible RESTful APIs
+NeuralChat provides OpenAI-compatible RESTful APIs for LLM inference, so you can use NeuralChat as a drop-in replacement for OpenAI APIs.
+You can start the NeuralChat server either using the Shell command or Python code.
+
+Using Shell Command:
+
+```shell
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+```
+
+Using Python Code:
+
+```python
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+server_executor = NeuralChatServerExecutor()
+server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
+```
+NeuralChat service can also be accessible through [OpenAI client library](https://github.com/openai/openai-python), `curl` commands, and `requests` library. See more in [NeuralChat](intel_extension_for_transformers/neural_chat/README.md).
+
+#### NeuralChat Python API
+
 ```python
 # pip install intel-extension-for-transformers
 from intel_extension_for_transformers.neural_chat import build_chatbot
@@ -166,9 +188,11 @@ chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
+### Transformers-based extension APIs
+ITREX enhances the user experience for compressing models by extending the capabilities of Hugging Face transformers APIs.
 Below is the sample code to enable weight-only INT4/INT8 inference. See more [examples](intel_extension_for_transformers/llm/runtime/graph).
 
-### INT4 Inference (CPU only)
+#### INT4 Inference (CPU only)
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -183,7 +207,7 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-### INT8 Inference (CPU only)
+#### INT8 Inference (CPU only)
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -197,6 +221,22 @@ streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
+
+### Langchain-based extension APIs
+ITREX provides a comprehensive suite of Langchain-based extension APIs, including advanced retrievers, embedding models and vector stores. These enhancements are carefully crafted to expand the capabilities of the original langchain API, ultimately boosting overall performance. This extension is specifically tailored to enhance the functionality and performance of RAG(Retrieval-Augmented Generation).
+
+Below is the sample code to enable enhanced Chroma API. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
+
+```python
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain.chains import RetrievalQA
+from langchain_core.vectorstores import VectorStoreRetriever
+from intel_extension_for_transformers.langchain.vectorstores import Chroma
+retriever = VectorStoreRetriever(vectorstore=Chroma(...))
+retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
+```
+
+
 
 ## 🎯Validated  Models
 You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
