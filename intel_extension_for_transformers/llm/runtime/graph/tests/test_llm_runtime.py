@@ -87,7 +87,9 @@ class TestLLMRUNTIME(unittest.TestCase):
         streamer = TextStreamer(tokenizer)
 
         model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
-        model.generate(inputs, streamer=streamer, max_new_tokens=10)
+        output = model.generate(inputs, streamer=streamer, max_new_tokens=10)
+        print("output = ", output)
+        assert(output == [[1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220, 28723, 985]])
 
 
     def test_beam_search(self):
