@@ -2428,3 +2428,14 @@ aj
 Życzyński
 Zyczynski
 CES
+Chroma
+HuggingFacePipeline
+Langchain
+NeuralChatServerExecutor
+RESTful
+RetrievalQA
+VectorStoreRetriever
+langchain
+retrievalQA
+vectorstore
+vectorstores
