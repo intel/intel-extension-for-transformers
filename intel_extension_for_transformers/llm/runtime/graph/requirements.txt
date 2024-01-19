@@ -13,4 +13,3 @@ tiktoken
 py-cpuinfo
 cmake
 gguf
-git+https://github.com/intel/neural-speed.git
