@@ -36,7 +36,7 @@ There are methods for utilizing the Neural Speed:
 
 ## How to use: Transformer-based API
 ### 1. Install
-Install from binary
+Install from binary, please ensure that your GCC version is higher than 10.
 ```shell
 pip install intel-extension-for-transformers
 pip install -r requirements.txt  # under graph folder
