@@ -424,10 +424,8 @@ def load_model(
         ValueError
     """
     print("Loading model {}".format(model_name))
-<<<<<<< HEAD
     if use_vllm:
         return load_model_vllm(model=model_name, vllm_engine_params=vllm_engine_params)
-=======
 
     # Validate input parameters
     if device not in [option.name.lower() for option in DeviceOptions]:
@@ -443,7 +441,6 @@ def load_model(
             set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
             return
 
->>>>>>> origin/main
     if device == "hpu":
         if use_deepspeed:
             import_deepspeed()
