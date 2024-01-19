@@ -128,6 +128,7 @@ class Agent_QA():
                 )
         except Exception as e:
             logging.error("Please selet a proper embedding model.")
+            logging.error(e)
         
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
@@ -245,7 +246,11 @@ class Agent_QA():
 
 
     def pre_llm_inference_actions(self, model_name, query):
-        intent = self.intent_detector.intent_detection(model_name, query)
+        try:
+            intent = self.intent_detector.intent_detection(model_name, query)
+        except Exception as e:
+            logging.info(f"intent detection failed, {e}")
+            raise Exception("[Rereieval ERROR] intent detection failed!")
         links = []
         context = ''
         assert self.retriever is not None, logging.info("Please check the status of retriever")
