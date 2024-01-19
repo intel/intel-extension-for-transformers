@@ -4,7 +4,7 @@ NeuralChat
 ===========================
 <h3> A customizable framework to create your own LLM-driven AI apps within minutes</h3>
 
-🌟[RESTful API](./docs/neuralchat_api.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;💻[Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;📖[Notebooks](./docs/full_notebooks.html)
+🌟[RESTful API](./docs/neuralchat_api.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;🔥[Features](./docs/advanced_features.html)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;💻[Examples](./examples)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;📖[Notebooks](./docs/full_notebooks.html)
 </div>
 
 # Introduction
@@ -52,8 +52,21 @@ NeuralChat provides OpenAI-compatible RESTful APIs for LLM inference, so you can
 
 NeuralChat launches a chatbot service using [Intel/neural-chat-7b-v3-1](https://huggingface.co/Intel/neural-chat-7b-v3-1) by default. You can customize the chatbot service by configuring the YAML file.
 
+
+You can start the NeuralChat server either using the shell command or Python code.
+
+Using Shell Command:
+
 ```shell
 neuralchat_server start --config_file ./server/config/neuralchat.yaml
+```
+
+Using Python Code:
+
+```python
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+server_executor = NeuralChatServerExecutor()
+server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
 ```
 
 ### Access the Service
@@ -135,45 +148,71 @@ docs=retriever.get_relevant_documents("Intel")
 Please refer to this [documentation](./pipeline/plugins/retrieval/README.html) for more details.
 
 
-## Advanced Features
+## Customizing the NeuralChat Service
 
-NeuralChat introduces `plugins` that offer a wide range of useful LLM utilities and features, enhancing the capabilities of the chatbot. Additionally, NeuralChat provides advanced model optimization technologies such as `Automatic Mixed Precision (AMP)` and `Weight Only Quantization`. These technologies enable users to run a high-throughput chatbot efficiently. NeuralChat further supports fine-tuning the pretrained LLMs for tasks such as text generation, summarization, code generation, and even Text-to-Speech (TTS) models, allowing users to create customized chatbots tailored to their specific needs.
+Users have the flexibility to customize the NeuralChat service by making modifications in the YAML configuration file. Detailed instructions can be found in the [documentation](./server/README.html).
 
-Please refer to this [documentation](./docs/advanced_features.html) for more details.
+### Supported Models
 
-# Models
+NeuralChat boasts support for various generative Transformer models available in [HuggingFace Transformers](https://huggingface.co/models). The following is a curated list of models validated for both inference and fine-tuning within NeuralChat:
 
-## Supported  Models
-The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
 |Pretrained model| Text Generation (Completions) | Text Generation (Chat Completions) | Summarization | Code Generation | 
 |------------------------------------|:---:|:---:|:---:|:---:|
 |Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅    |
 |Intel/neural-chat-7b-v3-1| ✅| ✅| ✅| ✅    |
-|LLaMA series| ✅| ✅|✅| ✅    |
-|LLaMA2 series| ✅| ✅|✅| ✅    |
-|GPT-J| ✅| ✅|✅| ✅    |
-|MPT series| ✅| ✅|✅| ✅    |
-|Mistral series| ✅| ✅|✅| ✅    |
-|Mixtral series| ✅| ✅|✅| ✅    |
-|SOLAR Series| ✅| ✅|✅| ✅    |
-|ChatGLM series| ✅| ✅|✅| ✅    |
-|Qwen series| ✅| ✅|✅| ✅    |
-|StarCoder series|   |   |   | ✅ |
-|CodeLLaMA series|   |   |   | ✅ |
-|CodeGen series|   |   |   | ✅ |
-|MagicCoder series|   |   |   | ✅ |
+|meta-llama/Llama-2-7b-chat-hf| ✅| ✅|✅| ✅    |
+|meta-llama/Llama-2-70b-chat-hf| ✅| ✅|✅| ✅    |
+|EleutherAI/gpt-j-6b| ✅| ✅|✅| ✅    |
+|mosaicml/mpt-7b-chat| ✅| ✅|✅| ✅    |
+|mistralai/Mistral-7B-v0.1| ✅| ✅|✅| ✅    |
+|mistralai/Mixtral-8x7B-Instruct-v0.1| ✅| ✅|✅| ✅    |
+|upstage/SOLAR-10.7B-Instruct-v1.0| ✅| ✅|✅| ✅    |
+|THUDM/chatglm2-6b| ✅| ✅|✅| ✅    |
+|THUDM/chatglm3-6b| ✅| ✅|✅| ✅    |
+|Qwen/Qwen-7B| ✅| ✅|✅| ✅    |
+|microsoft/phi-2| ✅| ✅|✅| ✅    |
+|bigcode/starcoder|   |   |   | ✅ |
+|codellama/CodeLlama-7b-hf|   |   |   | ✅ |
+|codellama/CodeLlama-34b-hf|   |   |   | ✅ |
+|Phind/Phind-CodeLlama-34B-v2|   |   |   | ✅ |
+|Salesforce/codegen2-7B|   |   |   | ✅ |
+|ise-uiuc/Magicoder-S-CL-7B|   |   |   | ✅ |
 
-# Notebooks
+Modify the `model_name_or_path` parameter in the YAML configuration file to load different models.
 
-We provide Jupyter notebooks to help users explore how to create, deploy, and customize chatbots on different hardware architecture. The selected notebooks are shown below:
+### Rich Plugins
 
-| Notebook | Title                                       | Description                                                | Link                                           |
-| ------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
-| #1     | Getting Started on Intel CPU SPR          | Learn how to create chatbot on SPR                      | [Notebook](./docs/notebooks/build_chatbot_on_spr.ipynb) |
-| #2     | Getting Started on Habana Gaudi1/Gaudi2   | Learn how to create chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb) |
-| #3     | Deploying Chatbot on Intel CPU SPR        | Learn how to deploy chatbot on SPR                      | [Notebook](./docs/notebooks/deploy_chatbot_on_spr.ipynb) |
-| #4     | Deploying Chatbot on Habana Gaudi1/Gaudi2 | Learn how to deploy chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
-| #5     | Deploying Chatbot with Load Balance       | Learn how to deploy chatbot with load balance on SPR    | [Notebook](./docs/notebooks/chatbot_with_load_balance.ipynb) |
+NeuralChat includes support for various plugins to enhance its capabilities:
 
+- [**Speech Processing**](./pipeline/plugins/audio/README.html)
+  - Text-to-Speech (TTS)
+  - Automatic Speech Recognition (ASR)
 
-🌟Please refer to [HERE](docs/full_notebooks.html) for the full notebooks.
+- [**RAG (Retrieval-Augmented Generation)**](./pipeline/plugins/retrieval/README.html)
+- [**Safety Checker**](./pipeline/plugins/security/README.html)
+- [**Caching**](./pipeline/plugins/caching/README.html)
+- [**Named Entity Recognition (NER)**](./pipeline/plugins/ner/README.html)
+
+### Multimodal APIs
+
+In addition to the text-based chat RESTful API, NeuralChat offers several helpful plugins in its RESTful API lineup to aid users in building multimodal applications. NeuralChat supports the following RESTful APIs:
+
+| Tasks List     | RESTful APIs                          |
+| -------------- | ------------------------------------- |
+| textchat       | /v1/chat/completions                  |
+|                | /v1/completions                       |
+| voicechat      | /v1/audio/speech                      |
+|                | /v1/audio/transcriptions              |
+|                | /v1/audio/translations                |
+| retrieval      | /v1/rag/create                        |
+|                | /v1/rag/append                        |
+|                | /v1/rag/upload_link                   |
+|                | /v1/rag/chat                          |
+| codegen        | /v1/code_generation                   |
+|                | /v1/code_chat                         |
+| text2image     | /v1/text2image                        |
+| image2image    | /v1/image2image                       |
+| faceanimation  | /v1/face_animation                    |
+| finetune       | /v1/finetune                          |
+
+Modify the `tasks_list` parameter in the YAML configuration file to seamlessly leverage different RESTful APIs as per your project needs.
