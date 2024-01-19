@@ -76,6 +76,20 @@ class TestLLMRUNTIME(unittest.TestCase):
             print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
 
 
+    def test_gguf_api(self):
+        model_name = "TheBloke/Mistral-7B-v0.1-GGUF"
+        model_file = "mistral-7b-v0.1.Q4_0.gguf"
+        tokenizer_name = "/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+
+        prompt = "Once upon a time"
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+        inputs = tokenizer(prompt, return_tensors="pt").input_ids
+        streamer = TextStreamer(tokenizer)
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
+        model.generate(inputs, streamer=streamer, max_new_tokens=10)
+
+
     def test_beam_search(self):
         model_name = "/tf_dataset2/models/pytorch/gpt-j-6B"  # or local path to model
         prompts = [
