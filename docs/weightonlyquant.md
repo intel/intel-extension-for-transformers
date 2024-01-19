@@ -19,7 +19,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 |       RTN      |  &#10004;  |  &#10004;  |
 |       AWQ      |  &#10004;  | stay tuned |
 |      TEQ      | &#10004; | stay tuned |
-|      GPTQ      | stay tuned | &#10004; |
+|      GPTQ      | &#10004; | &#10004; |
 
 | Support Device |  RTN  |  AWQ  |  TEQ |  GPTQ  |
 |:--------------:|:----------:|:----------:|:----------:|:----:|
@@ -140,7 +140,7 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 | Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
 |:--------------:|:----------:|:----------:|
 |       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  |
-|       PyTorch (use_llm_runtime=False)      |  stay tuned  | &#10004; |
+|       PyTorch (use_llm_runtime=False)      |  &#10004;  | &#10004; |
 
 > Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
 
