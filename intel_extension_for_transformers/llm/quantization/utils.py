@@ -179,17 +179,6 @@ def _replace_linear(
                             n_head = None
                             n_head_kv = None
                             from .gptq_utils import unpack_weight
-
-                            if (
-                                quantization_config.gptq_quantize_config["model_type"]
-                                == "llama"
-                            ):
-                                n_head = quantization_config.gptq_quantize_config[
-                                    "num_attention_heads"
-                                ]
-                                n_head_kv = n_head
-                                p_func = None
-
                             int_weight, gptq_scales, gptq_zeros = unpack_weight(
                                 module.qweight,
                                 module.scales,
@@ -203,9 +192,6 @@ def _replace_linear(
                                 gptq_zeros,
                                 module.g_idx,
                                 quantization_config,
-                                n_head=None if n_head is None else n_head,
-                                n_head_kv=None if n_head_kv is None else n_head_kv,
-                                permute_func=None if p_func is None else p_func,
                                 bias=None if module.bias is None else module.bias.data,
                             )
                         else:
@@ -385,8 +371,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 quantize_config = {
                     "bits": bits,
                     "group_size": config.group_size,
-                    "damp_percent": config.algorithm_args["percdamp"],
-                    "desc_act": config.algorithm_args["act_order"],
+                    "damp_percent": config.gptq_recipes["percdamp"],
+                    "desc_act": config.gptq_recipes["act_order"],
                     "sym": True if config.scheme == "sym" else False,
                     "true_sequential": True,
                     "model_name_or_path": "null",
@@ -397,7 +383,6 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 return replace_linear(inc_model, None, None, config, device=device)
 
             return replace_linear(inc_model.model, None, None, config, device=device)
-
 
 def convert_dtype_str2torch(str_dtype):
     if str_dtype == "int8":

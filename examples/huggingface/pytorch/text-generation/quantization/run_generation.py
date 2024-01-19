@@ -435,7 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-
+    user_model.eval()
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )
