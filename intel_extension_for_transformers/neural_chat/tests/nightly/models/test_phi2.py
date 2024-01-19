@@ -27,11 +27,11 @@ class TestPhi2Model(unittest.TestCase):
 
     def test_code_gen(self):
         config = PipelineConfig(
-            model_name_or_path="microsoft/phi-2")
+            model_name_or_path="/tf_dataset2/models/pytorch/phi-2")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Calculate 99+22=")
         print(result)
-        self.assertIn("The answer is 121", str(result))
+        self.assertIn("99 plus 22 equals 121", str(result))
 
 if __name__ == "__main__":
     unittest.main()
