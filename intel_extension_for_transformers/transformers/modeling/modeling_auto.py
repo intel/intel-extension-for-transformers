@@ -491,7 +491,7 @@ class _BaseQBitsAutoModelClass:
                             )
 
                         last_ind.append(input_ids.shape[0] - 1)
-                        if model_type in ["bloom", "qwen"]:
+                        if model_type in ["bloom", "qwen", "gpt-bigcode"]:
                             attention_mask = torch.ones(len(input_ids) + 1)
                             attention_mask[0] = 0
                         else:

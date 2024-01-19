@@ -127,10 +127,10 @@ def generate_dummy_past_key_values(config, input_bs):
         )
         return past_key_values
     elif config.model_type == "gpt_bigcode":
-        new_shape = [input_bs, 0, d_k * 2]
-        dummy_tensor = torch.zeros(size=new_shape)
+        new_shape = [input_bs, 1, d_k * 2]
+        dummy_tensor = torch.ones(size=new_shape).contiguous()
         past_key_values = tuple([dummy_tensor] * num_layers)
-        return past_key_values
+        return tuple(past_key_values)
     elif config.model_type == "qwen":
         new_shape = [input_bs, 1, num_key_value_heads, d_k]
         past_key_values = [
@@ -189,8 +189,8 @@ def generate_dummy_past_key_values_for_inference(config, input_bs):
     elif config.model_type == "gpt_bigcode":
         new_shape = [input_bs, 0, d_k * 2]
         dummy_tensor = torch.zeros(size=new_shape)
-        past_key_values = tuple([dummy_tensor] * num_layers)
-        return past_key_values
+        past_key_values = tuple([dummy_tensor] * num_layers).contiguous()
+        return tuple(past_key_values)
     elif config.model_type == "qwen":
         new_shape = [input_bs, 0, num_key_value_heads, d_k]
     elif config.model_type == "chatglm":
@@ -259,7 +259,6 @@ IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon"}
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
     "gpt2",
-    "gpt-bigcode",
     "gpt-neo",
     "gpt-neox",
     "gptj",
