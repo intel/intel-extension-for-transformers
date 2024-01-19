@@ -75,6 +75,7 @@ class TextGenerationAPIRouter(APIRouter):
             )
             def stream_generator():
                 if isinstance(response_stream, Iterable):
+                    # pylint: disable=not-an-iterable
                     for output in response_stream:
                         yield f"data: {output}\n\n"
                 else:
