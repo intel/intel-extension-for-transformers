@@ -191,7 +191,6 @@ if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
     if config.model_type == "gpt_bigcode":
-        # pdb;pdb.set_trace();
         input_ids = torch.randint(1, config.vocab_size, [3,5])
         from intel_extension_for_transformers.transformers.utils.utility import generate_dummy_past_key_values
         past_key_values = generate_dummy_past_key_values(config, input_ids.shape[0])
