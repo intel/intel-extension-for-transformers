@@ -100,6 +100,6 @@ async def tgi_generate(request: TGIRequest):
     return router.handle_tgi_generate_request(request)
 
 
-@router.post("/v1/tgi/generate")
+@router.post("/v1/tgi/generate_stream")
 async def tgi_generate_stream(request: TGIRequest):
     return router.handle_tgi_generate_stream_request(request)
