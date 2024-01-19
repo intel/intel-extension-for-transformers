@@ -344,7 +344,7 @@ class TestQuantization(unittest.TestCase):
                                                 )
         output = woq_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), 0.16110162436962128, rel_tol=1e-04))
-        AWQ
+        #AWQ
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                            calib_iters=5,
                                            tokenizer=tokenizer,
