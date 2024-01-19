@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.utils.data_augmentation &mdash; Intel® Extension for Transformers 0.1.dev1+g957785d documentation</title>
+  <title>intel_extension_for_transformers.utils.data_augmentation &mdash; Intel® Extension for Transformers 0.1.dev1+g81d4c56 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -98,11 +98,38 @@
 <h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation" title="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataAugmentation</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.utils.data_augmentation.AugmenterType" title="intel_extension_for_transformers.utils.data_augmentation.AugmenterType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AugmenterType</span></code></a></p></td>
+<td><p>Enumeration of types of augmentation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation" title="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataAugmentation</span></code></a></p></td>
 <td><p>DataAugmentation provides many ways to enhance existing datasets.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.utils.data_augmentation.get_augmenter_from_type" title="intel_extension_for_transformers.utils.data_augmentation.get_augmenter_from_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_augmenter_from_type</span></code></a>(aug_type)</p></td>
+<td><p>Get nlpaug's augmenter by augment_type name.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.AugmenterType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.utils.data_augmentation.</span></span><span class="sig-name descname"><span class="pre">AugmenterType</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.AugmenterType" title="Link to this definition"></a></dt>
+<dd><p>Enumeration of types of augmentation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.get_augmenter_from_type">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.utils.data_augmentation.</span></span><span class="sig-name descname"><span class="pre">get_augmenter_from_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aug_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.get_augmenter_from_type" title="Link to this definition"></a></dt>
+<dd><p>Get nlpaug’s augmenter by augment_type name.</p>
+<p>The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
+It provide many augmenter, please refer to <a class="reference external" href="https://github.com/makcedward/nlpaug#augmenter">https://github.com/makcedward/nlpaug#augmenter</a>.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.utils.data_augmentation.</span></span><span class="sig-name descname"><span class="pre">DataAugmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">augmenter_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation" title="Link to this definition"></a></dt>
@@ -201,7 +228,7 @@ user should set column_names if the sample contains multiple sentences:</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f14f0b4df60> 
+   <jinja2.runtime.BlockReference object at 0x7fa32a1a6f50> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

@@ -5,20 +5,12 @@
 
 .. autoapi-nested-parse::
 
-   Utility for data augmentation.
+   Utility.
 
 
 
 Module Contents
 ---------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.utils.utils.AugmenterType
-
 
 
 Functions
@@ -26,23 +18,22 @@ Functions
 
 .. autoapisummary::
 
-   intel_extension_for_transformers.utils.utils.get_augmenter_from_type
+   intel_extension_for_transformers.utils.utils.get_gpu_family
 
 
 
-.. py:class:: AugmenterType
+.. py:function:: get_gpu_family()
+
+   Get gpu device family info.
+
+   Return 'flex'|'max'|'arc'| 'no_gpu'| assert
+
+   Note, this function need to import intel_extension_for_pytorch
 
 
-
-
-   Enumeration of types of augmentation.
-
-
-.. py:function:: get_augmenter_from_type(aug_type: str)
-
-   Get nlpaug's augmenter by augment_type name.
-
-   The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
-   It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
+   Addtional info (common gpu name):
+     'Intel(R) Data Center GPU Flex 170'
+     'Intel(R) Data Center GPU Max 1100'
+     'Intel(R) Arc(TM) A770 Graphics'
 
 

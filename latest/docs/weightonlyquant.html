@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g957785d documentation</title>
+  <title>Weight Only Quantization (WOQ) &mdash; Intel® Extension for Transformers 0.1.dev1+g81d4c56 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
@@ -93,7 +93,8 @@
 <ol class="simple">
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#supported-framework-model-matrix">Supported Framework Model Matrix</a></p></li>
-<li><p><a class="reference external" href="#examples">Examples</a></p></li>
+<li><p><a class="reference external" href="#examples-for-cpu">Examples For CPU</a></p></li>
+<li><p><a class="reference external" href="#examples-for-gpu">Examples For GPU</a></p></li>
 </ol>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
@@ -127,11 +128,39 @@
 </tr>
 <tr>
 <td style="text-align: center;">GPTQ</td>
-<td style="text-align: center;">stay tuned</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+</tr>
+</tbody>
+</table><table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: center;">Support Device</th>
+<th style="text-align: center;">RTN</th>
+<th style="text-align: center;">AWQ</th>
+<th style="text-align: center;">TEQ</th>
+<th style="text-align: center;">GPTQ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">CPU</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
 <td style="text-align: center;">&#10004;</td>
 </tr>
 <tr>
+<td style="text-align: center;">GPU</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">stay tuned</td>
+<td style="text-align: center;">stay tuned</td>
+<td style="text-align: center;">stay tuned</td>
+</tr>
+<tr>
 <td style="text-align: center;">&gt; <strong>RTN:</strong> A quantification method that we can think of very intuitively. It does not require additional datasets and is a very fast quantization method. Generally speaking, RTN will convert the weight into a uniformly distributed integer data type, but some algorithms, such as Qlora, propose a non-uniform NF4 data type and prove its theoretical optimality.</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
 <td style="text-align: center;"></td>
 <td style="text-align: center;"></td>
 </tr>
@@ -146,8 +175,8 @@
 <div><p><strong>TEQ:</strong> A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.</p>
 </div></blockquote>
 </section>
-<section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="examples-for-cpu">
+<h2>Examples For CPU<a class="headerlink" href="#examples-for-cpu" title="Link to this heading"></a></h2>
 <p>Our motivation is improve CPU support for weight only quantization, since <code class="docutils literal notranslate"><span class="pre">bitsandbytes</span></code> only support CUDA GPU device. We have extended the <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> function so that <code class="docutils literal notranslate"><span class="pre">quantization_config</span></code> can accept <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28"><code class="docutils literal notranslate"><span class="pre">WeightOnlyQuantConfig</span></code></a> to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.</p>
 <section id="llm-runtime-example-code">
 <h3>LLM Runtime example code<a class="headerlink" href="#llm-runtime-example-code" title="Link to this heading"></a></h3>
@@ -251,9 +280,93 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
 <p>| Inference Framework |   Load GPT-Q model from HuggingFace |  Load the saved low-precision model from ITREX |
 |:————–:|:———-:|:———-:|
 |       LLM Runtime (use_llm_runtime=True)      |  ✔  |  ✔  |
-|       PyTorch (use_llm_runtime=False)      |  stay tuned  | ✔ |</p>
+|       PyTorch (use_llm_runtime=False)      |  ✔  | ✔ |</p>
 <blockquote>
-<div><p>Note: Only supports CPU device for now. For LLM runtime model loading usage, please refer to <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/graph/README.html#2-run-llm-with-transformer-based-api">graph readme</a></p>
+<div><p>Note: For LLM runtime model loading usage, please refer to <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/graph/README.html#2-run-llm-with-transformer-based-api">graph readme</a></p>
+</div></blockquote>
+</section>
+</section>
+<section id="examples-for-gpu">
+<h2>Examples For GPU<a class="headerlink" href="#examples-for-gpu" title="Link to this heading"></a></h2>
+<p>Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">Intel-extension-for-pytorch</a>. Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: “dev/QLLM”.<br />We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.<br />Here are the example codes.</p>
+<section id="prepare-dependency-packages">
+<h3>Prepare Dependency Packages<a class="headerlink" href="#prepare-dependency-packages" title="Link to this heading"></a></h3>
+<ol class="simple">
+<li><p>Install Oneapi Package<br />Weight-only quantization ops only exist in “dev/QLLM” branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow <a class="reference external" href="https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html">the link</a> to install the OneAPI to “/opt/intel folder”.</p></li>
+<li><p>Build and Install PyTorch and Intel-extension-for-pytorch</p></li>
+</ol>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">torch</span><span class="o">==</span><span class="mf">2.1.0</span><span class="n">a0</span><span class="w">  </span><span class="o">-</span><span class="n">f</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//developer.intel.com/ipex-whl-stable-xpu</span>
+
+<span class="n">source</span><span class="w"> </span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">intel</span><span class="o">/</span><span class="n">oneapi</span><span class="o">/</span><span class="n">setvars</span><span class="p">.</span><span class="n">sh</span>
+
+<span class="n">git</span><span class="w"> </span><span class="n">clone</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/intel-innersource/frameworks.ai.pytorch.ipex-gpu.git ipex-gpu</span>
+<span class="n">cd</span><span class="w"> </span><span class="n">ipex</span><span class="o">-</span><span class="n">gpu</span>
+<span class="n">git</span><span class="w"> </span><span class="n">checkout</span><span class="w"> </span><span class="o">-</span><span class="n">b</span><span class="w"> </span><span class="n">dev</span><span class="o">/</span><span class="n">QLLM</span><span class="w"> </span><span class="n">origin</span><span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">QLLM</span>
+<span class="n">git</span><span class="w"> </span><span class="n">submodule</span><span class="w"> </span><span class="n">update</span><span class="w"> </span><span class="o">--</span><span class="n">init</span><span class="w"> </span><span class="o">--</span><span class="n">recursive</span>
+
+<span class="n">Pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+<span class="n">python</span><span class="w"> </span><span class="n">setup</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">install</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>Install Intel-extension-for-transformers and Neural-compressor</p></li>
+</ol>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">neural</span><span class="o">-</span><span class="n">compressor</span>
+<span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">transformers</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>Run The Example</p></li>
+</ol>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="n">intel_extension_for_pytorch</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">ipex</span>
+<span class="n">from</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="p">.</span><span class="n">transformers</span><span class="p">.</span><span class="n">modeling</span><span class="w"> </span><span class="k">import</span><span class="w"> </span><span class="n">AutoModelForCausalLM</span>
+<span class="n">from</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="p">.</span><span class="n">transformers</span><span class="w"> </span><span class="k">import</span><span class="w"> </span><span class="n">WeightOnlyQuantConfig</span>
+<span class="n">from</span><span class="w"> </span><span class="n">transformers</span><span class="w"> </span><span class="k">import</span><span class="w"> </span><span class="n">AutoTokenizer</span>
+
+<span class="n">device_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;xpu&quot;</span>
+<span class="n">model_name</span><span class="w"> </span><span class="o">=</span><span class="s">&quot;hf-internal-testing/tiny-random-gptj&quot;</span>
+<span class="n">tokenizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AutoTokenizer</span><span class="p">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span><span class="w"> </span><span class="n">trust_remote_code</span><span class="o">=</span><span class="n">True</span><span class="p">)</span>
+<span class="n">prompt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;how to test the code?&quot;</span>
+<span class="n">input_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span><span class="w"> </span><span class="n">return_tensors</span><span class="o">=</span><span class="s">&quot;pt&quot;</span><span class="p">).</span><span class="n">input_ids</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device_map</span><span class="p">)</span>
+
+<span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">weight_dtype</span><span class="o">=</span><span class="s">&quot;int4_fullrange&quot;</span><span class="p">,</span>
+<span class="w">                               </span><span class="n">algorithm</span><span class="o">=</span><span class="s">&quot;RTN&quot;</span><span class="p">,</span>
+<span class="w">                               </span><span class="n">group_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="w">                               </span><span class="n">compute_dtype</span><span class="o">=</span><span class="s">&quot;fp16&quot;</span><span class="p">,</span>
+<span class="w">                               </span><span class="n">scale_dtype</span><span class="o">=</span><span class="s">&quot;fp16&quot;</span><span class="p">)</span>
+<span class="n">qmodel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AutoModelForCausalLM</span><span class="p">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span><span class="w"> </span><span class="n">use_llm_runtime</span><span class="o">=</span><span class="n">False</span><span class="p">,</span>
+<span class="w">                                              </span><span class="n">device_map</span><span class="o">=</span><span class="n">device_map</span><span class="p">,</span><span class="n">quantization_config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+<span class="w">                                              </span><span class="n">trust_remote_code</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">torch_dtype</span><span class="o">=</span><span class="n">torchfloat16</span><span class="p">)</span>
+
+<span class="cp"># saving model, it should be executed before ipex.optimize_transformers function is called. </span>
+<span class="n">qmodel</span><span class="p">.</span><span class="n">save_pretrained</span><span class="p">(</span><span class="s">&quot;saved_dir&quot;</span><span class="p">)</span>
+
+<span class="cp"># optimize the model with ipex, it will improve performance.</span>
+<span class="n">qmodel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ipex</span><span class="p">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">qmodel</span><span class="p">,</span><span class="w"> </span><span class="n">inplace</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="n">float16</span><span class="p">,</span><span class="w"> </span><span class="n">woq</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">device</span><span class="o">=</span><span class="n">device_map</span><span class="p">)</span>
+
+<span class="n">generate_kwargs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dict</span><span class="p">(</span><span class="n">do_sample</span><span class="o">=</span><span class="n">False</span><span class="p">,</span><span class="w"> </span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span><span class="w"> </span><span class="n">num_beams</span><span class="o">=</span><span class="n">args</span><span class="p">.</span><span class="n">num_beams</span><span class="p">)</span>
+<span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_model</span><span class="p">.</span><span class="n">generate</span><span class="p">(</span>
+<span class="w">    </span><span class="n">input_ids</span><span class="p">,</span><span class="w"> </span><span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span><span class="w"> </span><span class="o">**</span><span class="n">generate_kwargs</span>
+<span class="p">)</span>
+<span class="n">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tokenizer</span><span class="p">.</span><span class="n">batch_decode</span><span class="p">(</span>
+<span class="w">    </span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">skip_special_tokens</span><span class="o">=</span><span class="n">True</span>
+<span class="p">)</span>
+
+<span class="cp"># loading quantized model</span>
+<span class="n">loaded_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AutoModelForCausalLM</span><span class="p">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;saved_dir&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">trust_remote_code</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">device_map</span><span class="o">=</span><span class="n">device_map</span>
+<span class="p">)</span>
+
+<span class="cp"># Before executed the loaded model, you can call ipex.optimize_transformers function.</span>
+<span class="n">loaded_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ipex</span><span class="p">.</span><span class="n">optimize_transformers</span><span class="p">(</span><span class="n">loaded_model</span><span class="p">,</span><span class="w"> </span><span class="n">inplace</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="n">float16</span><span class="p">,</span><span class="w"> </span><span class="n">woq</span><span class="o">=</span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="n">device</span><span class="o">=</span><span class="n">device_map</span><span class="p">)</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>Note:</p>
+<ul class="simple">
+<li><p>Saving quantized model should be executed before the optimize_transformers function is called.</p></li>
+<li><p>The optimize_transformers function is designed to optimize transformer-based models within frontend Python modules, with a particular focus on Large Language Models (LLMs). It provides optimizations for both model-wise and content-generation-wise. The detail of <code class="docutils literal notranslate"><span class="pre">optimize_transformers</span></code>, please refer to <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch/blob/xpu-main/docs/tutorials/llm/llm_optimize_transformers.html">the link</a>.</p></li>
+</ul>
 </div></blockquote>
 </section>
 </section>
@@ -273,7 +386,7 @@ print<span class="o">(</span>gen_text<span class="o">)</span>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f14da648070> 
+   <jinja2.runtime.BlockReference object at 0x7fa32cbd2740> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
