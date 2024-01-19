@@ -31,6 +31,7 @@ from .photoai_api import router as photoai_router
 from .plugin_audio_api import router as plugin_audio_router
 from .plugin_image2image_api import router as plugin_image2image_router
 from .codegen_api import router as codegen_router
+from .tgi_api import router as tgi_router
 
 _router = APIRouter()
 
@@ -46,6 +47,7 @@ api_router_mapping = {
     'plugin_audio': plugin_audio_router,
     "plugin_image2image": plugin_image2image_router,
     'codegen': codegen_router,
+    'tgi': tgi_router
 }
 
 def setup_router(api_list, chatbot=None, enable_llm=True, use_deepspeed=False, world_size=1, host="0.0.0.0", port=80):

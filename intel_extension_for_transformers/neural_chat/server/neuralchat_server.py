@@ -123,7 +123,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 tgi_num_shard = tgi_params.get('num_shard', 1)
                 tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
                 # construct tgi command
-                tgi_cmd = "docker run -p 9876:80 --name tgi_service"
+                tgi_cmd = "docker run -p 9876:80 --name tgi_service -v ./data:/data"
                 if device == "cpu":
                     tgi_cmd += " --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.3"
                     # sharded is not supported on CPU
