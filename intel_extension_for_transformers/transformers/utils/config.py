@@ -67,6 +67,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.calib_dataset = kwargs.pop("calib_dataset", "NeelNanda/pile-10k")
         self.calib_dataloader = kwargs.pop("calib_dataloader", None)
         self.calib_iters = kwargs.pop("calib_iters", 100)
+        self.gptq_recipes = kwargs.pop("gptq_recipes", None)
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_gptq = use_gptq
