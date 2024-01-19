@@ -296,7 +296,7 @@ class TestQuantization(unittest.TestCase):
     @unittest.skipIf(PT_VERSION.release < Version("2.1.0").release,
             "Please use PyTroch 2.1.0 or higher version for executor backend")
     def test_quantization_for_llm(self):
-        model_name_or_path = "facebook/opt-125m"
+        model_name_or_path = "hf-internal-testing/tiny-random-gptj"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
@@ -307,22 +307,7 @@ class TestQuantization(unittest.TestCase):
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
-
-        # smooth-quant
-        recipes = {
-                "smooth_quant": True,
-                "smooth_quant_args": {"alpha": 0.5},
-                    }
-        sq_config = SmoothQuantConfig(
-                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                    calib_iters=5,
-                                    recipes=recipes
-                                )
-        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-                                                    quantization_config=sq_config,
-                                                    use_llm_runtime=False
-                                                )
-        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        #smooth-quant
         sq_config = SmoothQuantConfig(
                                     tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
                                     calib_iters=2,
@@ -333,7 +318,7 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
-        # SQ auto
+        #SQ auto
         recipes = {
             "smooth_quant": True,
             "smooth_quant_args": { "alpha": "auto", "auto_alpha_args":{"alpha_max": 0.6,
@@ -358,7 +343,7 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -6.498642921447754, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.16110162436962128, rel_tol=1e-04))
         #AWQ
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                            calib_iters=5,
@@ -369,7 +354,7 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -7.122483253479004, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.167221799492836, rel_tol=1e-04))
         #TEQ
         woq_config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                            calib_iters=5,
@@ -380,16 +365,15 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -6.6008710861206055, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.16387596726417542, rel_tol=1e-04))
         # fp8
         woq_config = WeightOnlyQuantConfig(weight_dtype="fp8_e5m2", scale_dtype="fp8_e8m0")
         woq_model = AutoModelForCausalLM.from_pretrained(
             model_name_or_path, quantization_config=woq_config, use_llm_runtime=False
         )
         output = woq_model(dummy_input)
-        print(float(output[0][0][0][0]))
         self.assertTrue(
-            isclose(float(output[0][0][0][0]), -6.790275573730469, rel_tol=1e-04)
+           isclose(float(output[0][0][0][0]), 0.16162332892417908, rel_tol=1e-04)
         )
 
         # amp
@@ -399,7 +383,7 @@ class TestQuantization(unittest.TestCase):
                                                     use_llm_runtime=False
                                                 )
         output = amp_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -7.78125, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1689453125, rel_tol=1e-04))
         # bitsandbytes, for cpu is fp32 model
         bab_config = BitsAndBytesConfig()
         bab_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -412,7 +396,7 @@ class TestQuantization(unittest.TestCase):
                                                      use_llm_runtime=False
                                                 )
         output = bit4_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -8.823737144470215, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.18955926597118378, rel_tol=1e-04))
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -421,7 +405,27 @@ class TestQuantization(unittest.TestCase):
                                                      device_map="cpu"
                                                 )
         output = bit8_model(dummy_input)
-        self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.1674591302871704, rel_tol=1e-04))
+
+        #GPTQ
+        gptq_recipes = {
+            "act_order": False,
+            "percdamp": 0.01,
+            "block_size": 32 ,
+            "nsamples": 3,
+            "use_max_length": True,
+            "pad_max_length": 256,
+        }
+        woq_config = WeightOnlyQuantConfig(weight_dtype="int4_clip",
+                                        gptq_recipes=gptq_recipes,
+                                        tokenizer=tokenizer,
+                                        algorithm="GPTQ")
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config,
+                                                    use_llm_runtime=False
+                                                )
+        output = woq_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), 0.17126554250717163, rel_tol=1e-04))
 
     def test_export(self):
         # test model with model_id

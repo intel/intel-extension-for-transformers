@@ -95,7 +95,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="RTN",
-    choices=["RTN", "AWQ", "TEQ"],
+    choices=["RTN", "AWQ", "TEQ", "GPTQ"],
     help="Weight-only parameter.",
 )
 parser.add_argument(
@@ -127,6 +127,37 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument(
+    "--gptq_actorder",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
@@ -240,13 +271,33 @@ elif args.sq:
         calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        compute_dtype=args.woq_compute_dtype,
-        scale_dtype=args.woq_scale_dtype,
-        weight_dtype=args.woq_weight_dtype,
-        scheme=args.woq_scheme,
-        group_size=args.woq_group_size,
-    )  # default is A32W4G32
+    if args.woq_algo == "GPTQ":
+        gptq_recipes = {
+            "act_order": args.gptq_actorder,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.gptq_block_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            gptq_recipes=gptq_recipes,
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+        )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -327,7 +378,9 @@ if args.int8 or args.int8_bf16_mixed:
             trust_remote_code=args.trust_remote_code,
         )
 
+
 if args.benchmark:
+    user_model.eval()
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -339,7 +392,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
             tic = time.time()
@@ -383,6 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
+
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )

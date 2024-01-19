@@ -36,9 +36,9 @@ class DropoutQBits_(torch.autograd.Function):
     def forward(ctx, input, probability):
         mask = torch.ops.qbits_customop.dropout_fwd(input, probability)
         if any(ctx.needs_input_grad[:1]):
-            ctx.tensors = (mask, )
+            ctx.tensors = (mask,)
         else:
-            ctx.tensors = (None, )
+            ctx.tensors = (None,)
         return input
 
     @staticmethod
@@ -47,9 +47,11 @@ class DropoutQBits_(torch.autograd.Function):
         mask = ctx.tensors[0]
         grad_input = None
 
-        if req_grad_input: grad_input = torch.ops.qbits_customop.dropout_bwd(grad_output, mask)
+        if req_grad_input:
+            grad_input = torch.ops.qbits_customop.dropout_bwd(grad_output, mask)
 
         return grad_input, None
+
 
 class DropoutQBits(torch.nn.Module):
     def __init__(self, p=0.0):
@@ -62,16 +64,17 @@ class DropoutQBits(torch.nn.Module):
         else:
             return input
 
+
 class ParamsQBits(torch.nn.Parameter):
     def __new__(
-            cls,
-            data=None,
-            requires_grad=True,
-            quant_state=None,
-            blocksize=32,
-            compress_statistics=True,
-            quant_dtype=None,
-            scale_dtype="fp32",
+        cls,
+        data=None,
+        requires_grad=True,
+        quant_state=None,
+        blocksize=32,
+        compress_statistics=True,
+        quant_dtype=None,
+        scale_dtype="fp32",
     ):
         if data is None:
             data = torch.empty(0)
@@ -94,7 +97,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias=True,
         compute_dtype="fp32",
         compress_statistics=True,
-        weight_dtype="int4_fullrange",
+        weight_dtype="int4_clip",
         scale_dtype="fp32",
         blocksize=32,
         scheme="sym",
@@ -113,8 +116,10 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if self.bias is not None and self.bias.dtype != x.dtype:
             self.bias.data = self.bias.data.to(x.dtype)
 
-        if getattr(self.weight, 'quant_state', None) is None:
-            print('FP4 quantization state not initialized. Please call .quantize_weights().')
+        if getattr(self.weight, "quant_state", None) is None:
+            print(
+                "FP4 quantization state not initialized. Please call .quantize_weights()."
+            )
 
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
@@ -123,8 +128,14 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if not x.is_contiguous():
             x = x.contiguous()
         out = matmul_kbit(
-            x.view(m, shape[-1]), self.weight, bias, out,
-            self.compute_dtype, self.weight_dtype, self.scale_dtype, do_dequant=self.training
+            x.view(m, shape[-1]),
+            self.weight,
+            bias,
+            out,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+            do_dequant=self.training,
         )
         shape[-1] = self.out_features
         out = out.view(shape)
@@ -134,17 +145,99 @@ class QuantizedLinearQBits(torch.nn.Linear):
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
         weight = torch.ops.bestlaop.woq_quantize(
-            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
+            weight_data,
+            True,
+            self.blocksize,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+            False,
+        )
         weight.resize_(shape)
-        self.weight = ParamsQBits(data=weight,
-                                  requires_grad=False,
-                                  quant_state={"scheme": self.scheme},
-                                  blocksize=self.blocksize,
-                                  compress_statistics=self.compress_statistics,
-                                  quant_dtype=self.weight_dtype,
-                                  scale_dtype=self.scale_dtype)
+        self.weight = ParamsQBits(
+            data=weight,
+            requires_grad=False,
+            quant_state={"scheme": self.scheme},
+            blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics,
+            quant_dtype=self.weight_dtype,
+            scale_dtype=self.scale_dtype,
+        )
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
+    def set_gptq_weights_bias(
+        self,
+        int_weight,
+        gptq_scales,
+        gptq_zeros,
+        g_idx,
+        q_config,
+        n_head=0,
+        n_head_kv=0,
+        permute_func=None,
+        bias=None,
+    ):
+        if permute_func:
+            int_weight = (
+                permute_func(int_weight.t(), n_head, n_head_kv).t().contiguous()
+            )
+            gptq_scales = (
+                permute_func(gptq_scales.t(), n_head, n_head_kv).t().contiguous()
+            )
+            gptq_zeros = (
+                permute_func(gptq_zeros.t(), n_head, n_head_kv).t().contiguous()
+            )
+
+        if q_config.gptq_quantize_config["desc_act"]:
+            int_weight2 = int_weight.clone()
+            group_size = q_config.gptq_quantize_config["group_size"]
+            group_dict = {}
+            for i in range(len(g_idx)):
+                group_idx = g_idx[i].item()
+                if group_idx not in group_dict:
+                    target_idx = group_idx * group_size
+                    group_dict[group_idx] = 0
+                else:
+                    group_dict[group_idx] = group_dict[group_idx] + 1
+                    target_idx = group_idx * group_size + group_dict[group_idx]
+                int_weight2[target_idx] = int_weight[i]
+            int_weight = int_weight2
+
+        if q_config.gptq_quantize_config["bits"] == 4:
+            int_weight = (int_weight - 8) * 16
+            gptq_scales = gptq_scales / 16
+            gptq_zeros = (gptq_zeros - 8) * 16
+        if q_config.gptq_quantize_config["sym"]:
+            gptq_zeros = torch.empty(0, dtype=torch.int8)
+
+        if not q_config.gptq_quantize_config["desc_act"]:
+            g_idx = torch.empty(0, dtype=torch.int32)
+
+        packw = torch.ops.bestlaop.woq_packq(
+            int_weight.contiguous(),
+            gptq_scales.float().contiguous(),
+            gptq_zeros.contiguous(),
+            g_idx.contiguous(),
+            q_config.weight_dtype,
+            q_config.scale_dtype,
+            q_config.compute_dtype,
+            not q_config.gptq_quantize_config["sym"],
+            self.blocksize,
+        )
+
+        self.weight = ParamsQBits(
+            data=packw,
+            requires_grad=False,
+            quant_state={"scheme": self.scheme},
+            blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics,
+            quant_dtype=self.weight_dtype,
+            scale_dtype=self.scale_dtype,
+        )
+        if bias is not None:
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
 
 class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
     # Lora implemented in a dense layer
@@ -169,7 +262,7 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
             scale_dtype=kwargs.get("scale_dtype", "fp32"),
             blocksize=kwargs.get("blocksize", 32),
             scheme=kwargs.get("scheme", "sym"),
-            device=kwargs.get("device",None)
+            device=kwargs.get("device", None),
         )
         LoraLayer.__init__(self, in_features=in_features, out_features=out_features)
 
@@ -184,7 +277,9 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
         except:
             qbits_customop_available = False
         if lora_dropout > 0 and qbits_customop_available:
-            self.lora_dropout = torch.nn.ModuleDict({adapter_name: DropoutQBits(p=lora_dropout)})
+            self.lora_dropout = torch.nn.ModuleDict(
+                {adapter_name: DropoutQBits(p=lora_dropout)}
+            )
 
     def merge(self, safe_merge: bool = False) -> None:
         """
@@ -201,9 +296,19 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                 f"Already following adapters were merged {','.join(self.merged_adapters)}. "
                 f"You are now additionally merging {','.join(self.active_adapters)}."
             )
-        w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
+        w_dequant = torch.zeros(
+            self.out_features,
+            self.in_features,
+            dtype=list(self.lora_A.values())[0].weight.dtype,
+        )
         torch.ops.bestlaop.woq_dequantize(
-            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+            self.weight.data,
+            w_dequant,
+            True,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+        )
         w_data = w_dequant
         for active_adapter in self.active_adapters:
             if active_adapter in self.lora_A.keys():
@@ -221,30 +326,70 @@ class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
                     w_data = orig_weights
                 else:
                     w_data += self.get_delta_weight(active_adapter)
+
         weight = torch.ops.bestlaop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
+            w_data,
+            True,
+            self.blocksize,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+            False,
+        )
+
         self.weight = ParamsQBits(
-            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype
+            data=weight,
+            requires_grad=False,
+            quant_state={"scheme": self.scheme},
+            blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics,
+            quant_dtype=self.weight_dtype,
+            scale_dtype=self.scale_dtype,
         )
 
     def unmerge(self) -> None:
         if not self.merged:
             print("Already unmerged. Nothing to do.")
             return
-        w_dequant = torch.zeros(self.out_features, self.in_features, dtype=list(self.lora_A.values())[0].weight.dtype)
+
+        w_dequant = torch.zeros(
+            self.out_features,
+            self.in_features,
+            dtype=list(self.lora_A.values())[0].weight.dtype,
+        )
         torch.ops.bestlaop.woq_dequantize(
-            self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype, self.scale_dtype)
+            self.weight.data,
+            w_dequant,
+            True,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+        )
+
         w_data = w_dequant
         while len(self.merged_adapters) > 0:
             active_adapter = self.merged_adapters.pop()
             if active_adapter in self.lora_A.keys():
                 w_data -= self.get_delta_weight(active_adapter)
+
         weight = torch.ops.bestlaop.woq_quantize(
-            w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype, self.scale_dtype, False)
+            w_data,
+            True,
+            self.blocksize,
+            self.compute_dtype,
+            self.weight_dtype,
+            self.scale_dtype,
+            False,
+        )
+
         self.weight = ParamsQBits(
-            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype, scale_dtype=self.scale_dtype
+            data=weight,
+            requires_grad=False,
+            quant_state={"scheme": self.scheme},
+            blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics,
+            quant_dtype=self.weight_dtype,
+            scale_dtype=self.scale_dtype,
         )
 
     def get_delta_weight(self, adapter) -> torch.Tensor:
@@ -320,9 +465,14 @@ class QBitsLoraModel(LoraModel):
             kwargs["scale_dtype"] = target.scale_dtype
             kwargs["blocksize"] = target.blocksize
             kwargs["scheme"] = target.scheme
-            new_module = QuantizedLoraLinearQBits(adapter_name, in_features, out_features, bias=bias, **kwargs)
+            new_module = QuantizedLoraLinearQBits(
+                adapter_name, in_features, out_features, bias=bias, **kwargs
+            )
         else:
-            new_module = QBitsLoraModel._create_new_module_(lora_config, adapter_name, target, **kwargs)
+            new_module = QBitsLoraModel._create_new_module_(
+                lora_config, adapter_name, target, **kwargs
+            )
         return new_module
+
 
 PEFT_TYPE_TO_MODEL_MAPPING[PeftType.LORA] = QBitsLoraModel

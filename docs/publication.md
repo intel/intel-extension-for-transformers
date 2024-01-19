@@ -1,5 +1,10 @@
-Full Publications/Events (38)
+Full Publications/Events (39)
 ==========
+
+## 2024 (1)
+* Video on YouTube: [CES 2024 Great Minds Keynote: Bringing the Limitless Potential of AI Everywhere: Intel Hybrid Copilot demo](https://youtu.be/70J3uO3eLZA?t=1348) (Jan 2024)
+
+
 ## 2023 (32)
 * Blog published on Medium: [Connect an AI agent with your API: Intel Neural-Chat 7b LLM can replace Open AI Function Calling](https://medium.com/11tensors/connect-an-ai-agent-with-your-api-intel-neural-chat-7b-llm-can-replace-open-ai-function-calling-242d771e7c79) (Dec 2023)
 * Blog published on 360 EEA (A News Platform about AI and LLMs): [Intel neural-chat-7b-v3-1](https://360eea.com/intel-neural-chat-7b-v3-1/) (Dec 2023)
