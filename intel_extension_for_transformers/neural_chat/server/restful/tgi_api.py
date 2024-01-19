@@ -16,9 +16,9 @@
 # limitations under the License.
 
 
-import types
 from fastapi import APIRouter
 from ...cli.log import logger
+from collections.abc import Iterable
 from ...server.restful.request import TGIRequest
 from starlette.responses import StreamingResponse
 from huggingface_hub import InferenceClient
@@ -74,7 +74,7 @@ class TextGenerationAPIRouter(APIRouter):
                 stream=True
             )
             def stream_generator():
-                if hasattr(response_stream, '__iter__'):
+                if isinstance(response_stream, Iterable):
                     for output in response_stream:
                         yield f"data: {output}\n\n"
                 else:
