@@ -61,6 +61,45 @@ class TestTGI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), "Mocked text generation result.")
 
+    def test_tgi_generate(self, mock_text_generation):
+        mock_text_generation.return_value = "Mocked text generation result."
+        request_data = {
+            "inputs": "Test text generation inputs.",
+            "parameters": {"max_new_tokens":10}
+        }
+        response = client.post("/v1/tgi/generate", json=request_data)
+
+        mock_text_generation.assert_called_once_with(
+            prompt="Test text generation inputs.",
+            best_of=1,
+            do_sample=True,
+            max_new_tokens=10,
+            repetition_penalty=1.03, 
+            temperature=0.5, 
+            top_k=10, 
+            top_p=0.95, 
+            typical_p=0.95,
+            stream=False
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), "Mocked text generation result.")
+
+    def test_tgi_generate_stream(self, mock_text_generation):
+        def mock_generator():
+            yield "Mocked text generation output part 1."
+            yield "Mocked text generation output part 2."
+        mock_text_generation.return_value = mock_generator()
+        request_data = {
+            "inputs": "Test text generation inputs.",
+            "parameters": {"max_new_tokens":10}
+        }
+        response = client.post("/v1/tgi/generate_stream", json=request_data)
+
+        self.assertEqual(response.status_code, 200)
+        lines = response.content.decode()
+        self.assertIn("Mocked text generation output part 1.", lines)
+        self.assertIn("Mocked text generation output part 2.", lines)
+
 
 if __name__ == "__main__":
     unittest.main()
