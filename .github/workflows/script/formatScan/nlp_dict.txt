@@ -2428,6 +2428,9 @@ aj
 Życzyński
 Zyczynski
 CES
+DPCPP
+QLLM
+Qwen
 Chroma
 HuggingFacePipeline
 Langchain

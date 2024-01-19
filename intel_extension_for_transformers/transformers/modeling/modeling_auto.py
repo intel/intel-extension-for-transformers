@@ -33,20 +33,25 @@
 import json
 import os
 
-import warnings
+import json
+import os
 import re
 import torch
 import transformers
-from intel_extension_for_transformers.transformers import (
+
+from ..utils import (
     BitsAndBytesConfig,
     MixedPrecisionConfig,
     SmoothQuantConfig,
     WeightOnlyQuantConfig,
-)
-from intel_extension_for_transformers.transformers.utils.utility import (
     logger,
     LazyImport,
+)
+from ..utils.utility import (
     generate_dummy_past_key_values,
+    QUANT_CONFIG,
+    WEIGHTS_NAME,
+    WEIGHTS_INDEX_NAME,
     generate_dummy_past_key_values_for_opt_llm,
     MODEL_TYPES_REQUIRING_POSITION_IDS,
     IPEX_OPT_LLM_SUPPORTED,
@@ -55,7 +60,12 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     WEIGHTS_INDEX_NAME,
     SAFE_WEIGHTS_NAME,
 )
-from intel_extension_for_transformers.llm.quantization.utils import replace_linear
+from ...llm.quantization.utils import (
+    convert_dtype_str2torch,
+    convert_dtype_torch2str,
+    convert_to_quantized_model,
+    replace_linear
+)
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 from typing import Union
@@ -218,16 +228,24 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
-        elif load_in_8bit or load_in_4bit:
-            use_cpu = (
-                True
-                if device_map == torch.device("cpu") or device_map == "cpu"
-                else False
-            )
+            return model
+        use_cpu = (
+            True
+            if device_map == torch.device("cpu") or device_map == "cpu"
+            else False
+        )
+        use_xpu = (
+            True
+            if device_map == torch.device("xpu")
+            or device_map == "xpu"
+            else False
+        )
+        if load_in_8bit or load_in_4bit:
             if (
                 is_accelerate_available()
                 and is_bitsandbytes_available()
                 and not use_cpu
+                and not use_xpu
             ):
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path,
@@ -241,10 +259,6 @@ class _BaseQBitsAutoModelClass:
                 return model
             logger.info("{} device is used.".format(device_map))
             if load_in_8bit or load_in_4bit or quantization_config is not None:
-                from intel_extension_for_transformers.llm.quantization.utils import (
-                    convert_to_quantized_model,
-                )
-
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
                 if quantization_config is None:
@@ -255,12 +269,12 @@ class _BaseQBitsAutoModelClass:
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype=torch_dtype, weight_dtype="nf4"
+                            compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="nf4"
                         )
                 else:
                     assert (
                         "4" in quantization_config.weight_dtype
-                        and quantization_config.compute_dtype == torch_dtype
+                        and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype
                     ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
@@ -271,7 +285,7 @@ class _BaseQBitsAutoModelClass:
                         )
                     else:
                         quantization_config = WeightOnlyQuantConfig(
-                            compute_dtype=torch_dtype, weight_dtype="int8"
+                            compute_dtype=convert_dtype_torch2str(torch_dtype), weight_dtype="int8"
                         )
                 else:
                     assert (
@@ -306,7 +320,7 @@ class _BaseQBitsAutoModelClass:
             model.config.update({"device": "cpu"})
             model.eval()
             logger.info("Mixed Precision done.")
-        if isinstance(quantization_config, WeightOnlyQuantConfig):
+        elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
@@ -325,32 +339,53 @@ class _BaseQBitsAutoModelClass:
                     use_quant=quantization_config.use_quant,
                     use_gptq=quantization_config.use_gptq,
                 )
+                model.quantization_config = quantization_config
                 return model
             else:
-                model = cls.ORIG_MODEL.from_pretrained(
-                    pretrained_model_name_or_path,
-                    torchscript=True
-                    if quantization_config.algorithm in ["TEQ", "AWQ"]
-                    else False,
-                    *model_args,
-                    **kwargs,
-                )
+                kwargs["low_cpu_mem_usage"] = True
+                kwargs["device_map"] = "cpu"
+                try:
+                    model = cls.ORIG_MODEL.from_pretrained(
+                        pretrained_model_name_or_path,
+                        torchscript=True
+                        if quantization_config.algorithm in ["TEQ", "AWQ"] and not use_xpu
+                        else False,
+                        *model_args,
+                        **kwargs,
+                    )
+                    model.config.update({"low_cpu_mem_usage": True})
+                except NotImplementedError:
+                    logger.info("Failed to load models with `low_cpu_mem_usage` specified, "
+                                "will fall to traditional load method with higher memory consumption.")
+                    kwargs["low_cpu_mem_usage"] = False
+                    model = cls.ORIG_MODEL.from_pretrained(
+                        pretrained_model_name_or_path,
+                        torchscript=True
+                        if quantization_config.algorithm in ["TEQ", "AWQ"] and not use_xpu
+                        else False,
+                        *model_args,
+                        **kwargs,
+                    )
+                    model.config.update({"low_cpu_mem_usage": False})
+                model.eval()
+                model.config.update({"device": "cpu"})
+                if use_xpu:
+                    import intel_extension_for_pytorch
+                    assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
+                    model.config.update({"device": "xpu"})
                 if (
                     not torch.cuda.is_available()
                     or device_map == "cpu"
                     or device_map == torch.device("cpu")
                 ) and model.config.model_type == "chatglm":
                     model = model.float()
-                model.eval()
-                quantization_config.post_init()
-                from intel_extension_for_transformers.llm.quantization.utils import (
-                    convert_to_quantized_model,
-                )
-
-                model = convert_to_quantized_model(
-                    model, quantization_config, device=device_map
-                )
+                if use_cpu:
+                    quantization_config.post_init()
+                elif use_xpu:
+                    quantization_config.post_init_xpu()
+                model = convert_to_quantized_model(model, quantization_config, device=device_map)
             # add quantization_config and save_low_bit to pretrained model dynamically
+            model.device_map = device_map
             model.quantization_config = quantization_config
             import types
 
@@ -360,7 +395,7 @@ class _BaseQBitsAutoModelClass:
             try:
                 import intel_extension_for_pytorch as ipex
             except ImportError:
-                warnings.warn(
+                logger.warning(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
             assert (
@@ -912,15 +947,13 @@ class _BaseQBitsAutoModelClass:
             model = model_class(config, *model_args, **kwargs)
 
         # Loading args may differ based on their usage
-        if device_map == "cpu" or intel_gpu == "arc":
+        if device_map == "cpu" or device_map == "xpu":
             model = replace_linear(
                 model,
                 quantization_config=quantization_config,
                 device=device_map,
                 empty_weights=True,
             )
-        elif intel_gpu == "max":
-            pass
         else:
             raise Exception("Unsupport device: {}.{}".format(device_map, intel_gpu))
 
@@ -978,6 +1011,8 @@ class _BaseQBitsAutoModelClass:
                 pass
         for param in model.parameters():
             param.requires_grad_(False)
+        if device_map == "xpu":
+            model = model.to("xpu")
         return model
 
 
