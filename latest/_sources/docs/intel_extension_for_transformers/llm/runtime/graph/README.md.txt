@@ -276,6 +276,26 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
+To directly load a GGUF model, here is the sample code:
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Specify the GGUF repo on the Hugginface
+model_name = "TheBloke/Llama-2-7B-Chat-GGUF"
+# Download the the specific gguf model file from the above repo
+model_file = "llama-2-7b-chat.Q4_0.gguf"
+# make sure you are granted to access this model on the Huggingface.
+tokenizer_name = "meta-llama/Llama-2-7b-chat-hf"
+
+prompt = "Once upon a time"
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+```
+
 To enable [StreamingLLM for infinite inference](./docs/infinite_inference.html), here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
