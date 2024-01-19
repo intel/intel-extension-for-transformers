@@ -8,4 +8,3 @@ torch==2.1.0+cpu
 accelerate
 optimum-intel
 gguf
-git+https://github.com/intel/neural-speed.git
