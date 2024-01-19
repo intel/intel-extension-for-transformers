@@ -100,6 +100,7 @@ python run_generation.py \
 python run_generation.py \
     --model bigcode/starcoder \
     --sq \
+    --calib_padding \
     --alpha 1.0 \
     --int8 \
     --accuracy \

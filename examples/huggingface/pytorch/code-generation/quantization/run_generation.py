@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser()
 
 # ============Main configs============
 parser.add_argument(
-    "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
+    "--model", nargs="?", default="bigcode/starcoder", const="bigcode/starcoder"
 )
 parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument("--_commit_hash", default="main", type=str)
@@ -36,6 +36,18 @@ parser.add_argument(
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--calib_iters", default=32, type=int, help="calibration iters.")
+parser.add_argument(
+    "--calib_padding", action="store_true", help="Calibration dataset do padding."
+)
+parser.add_argument(
+    "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
+)
+parser.add_argument(
+    "--calib_len",
+    default=512,
+    type=int,
+    help="Calibration dataset max or padding max length.",
+)
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
@@ -178,6 +190,17 @@ quantization_config = None
 if args.mixed_precision:
     quantization_config = MixedPrecisionConfig(dtype="bfloat16")  # default is bfloat16
 elif args.sq:
+    if config.model_type == "gpt_bigcode":
+        # pdb;pdb.set_trace();
+        input_ids = torch.randint(1, config.vocab_size, [3,5])
+        from intel_extension_for_transformers.transformers.utils.utility import generate_dummy_past_key_values
+        past_key_values = generate_dummy_past_key_values(config, input_ids.shape[0])
+        attention_mask = torch.ones(input_ids.shape[0], input_ids.shape[1]+1)
+        attention_mask[:,0] = 0
+        example_inputs = {"input_ids": input_ids,
+                            "past_key_values": past_key_values,
+                            "attention_mask": attention_mask
+                            }
     quantization_config = SmoothQuantConfig(
         tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
         recipes=recipes,
@@ -185,6 +208,10 @@ elif args.sq:
         excluded_precisions=excluded_precisions,  # default is []
         calib_dataset=args.dataset,
         calib_iters=args.calib_iters,
+        calib_padding=args.calib_padding,
+        calib_len=args.calib_len,
+        calib_pad_val=args.calib_pad_val,
+        example_inputs=example_inputs if config.model_type == "gpt_bigcode" else None
     )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(
