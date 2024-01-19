@@ -5,6 +5,7 @@
 
 *.pyc
 .vscode
+.vs
 .idea
 /venv/
 */__pycache__
@@ -25,6 +26,7 @@ build/
 _build
 dist/
 .cache/
+.eggs
 
 # build / dist files
 /intel_extension_for_transformers/intel_extension_for_transformers[.-]*/
@@ -33,12 +35,10 @@ dist/
 /intel_extension_for_transformers[.-]*
 /neural_engine_py*
 
-/.vs
 
 # CMakeUserPresets.json should be ignored. See: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
 CMakeUserPresets.json
 
-/intel_extension_for_transformers/llm/runtime/.vs
 /intel_extension_for_transformers/llm/runtime/out
 /intel_extension_for_transformers/llm/runtime/graph/out
 /intel_extension_for_transformers/llm/runtime/graph/runtime_outs
@@ -55,5 +55,4 @@ build_tmp
 .DS_Store
 examples/huggingface/pytorch/text-classification/early-exit/wandb
 examples/huggingface/pytorch/text-classification/early-exit/.venv
-/intel_extension_for_transformers/llm/runtime/graph/.vs
 examples/huggingface/pytorch/text-classification/early-exit/test/output_*/
