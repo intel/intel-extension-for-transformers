@@ -190,7 +190,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 
 ### Transformers-based extension APIs
 ITREX enhances the user experience for compressing models by extending the capabilities of Hugging Face transformers APIs.
-Below is the sample code to enable weight-only INT4/INT8 inference. See more [examples](intel_extension_for_transformers/llm/runtime/graph).
+Below is the sample code to enable weight-only INT4/INT8 inference. See more [examples](https://github.com/intel/neural-speed/tree/main).
 
 #### INT4 Inference (CPU only)
 ```python
