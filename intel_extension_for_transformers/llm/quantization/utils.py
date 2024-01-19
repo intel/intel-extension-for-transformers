@@ -133,7 +133,7 @@ def _replace_linear(
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
                         from intel_extension_for_pytorch.nn.utils._quantize_convert \
-                            import WeightOnlyLinear as ipex_linear
+                            import WeightOnlyLinear as ipex_linear  # pylint: disable=E0401
                         model._modules[name] = ipex_linear(
                             in_features,
                             out_features,
@@ -213,7 +213,7 @@ def _replace_linear(
                     gc.collect()
                     is_removed = True
 
-        if not is_removed and len(list(module.children())) > 0:
+        if not is_removed and len(list(module.children())) > 0: # pylint: disable=E1101
             _, is_replaced = _replace_linear(
                 module,
                 modules_to_not_convert,
@@ -371,8 +371,8 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 quantize_config = {
                     "bits": bits,
                     "group_size": config.group_size,
-                    "damp_percent": config.gptq_recipes["percdamp"],
-                    "desc_act": config.gptq_recipes["act_order"],
+                    "damp_percent": config.algorithm_args["percdamp"],
+                    "desc_act": config.algorithm_args["act_order"],
                     "sym": True if config.scheme == "sym" else False,
                     "true_sequential": True,
                     "model_name_or_path": "null",
