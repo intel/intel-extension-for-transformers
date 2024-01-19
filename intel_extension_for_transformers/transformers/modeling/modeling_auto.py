@@ -118,6 +118,27 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        if kwargs.get("model_file", False):
+            from neural_speed import Model
+            from huggingface_hub import hf_hub_download
+
+            logger.info("Using LLM runtime.")
+            
+            model_file = kwargs.get("model_file")
+            gguf_model_file = hf_hub_download(pretrained_model_name_or_path, filename=model_file)
+            model_config = hf_hub_download(pretrained_model_name_or_path, filename="config.json")
+            with open(model_config, "r", encoding="utf-8") as f:
+                hparams = json.load(f)
+                if 'model_type' in hparams:
+                    model_type = hparams['model_type']
+                else:
+                    logger.error("Can't get model_type for this Hugginface repo.")
+                    exit(0)
+
+            model = Model()
+            model.init_from_bin(model_type, gguf_model_file)
+            return model
+
         if os.path.isfile(os.path.join(pretrained_model_name_or_path, QUANT_CONFIG)):
             logger.info("Find quantization_config.json, trying to load quantized low bit model...")
             quantization_config = WeightOnlyQuantConfig.from_pretrained(
