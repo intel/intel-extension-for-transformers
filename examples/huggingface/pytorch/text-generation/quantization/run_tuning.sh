@@ -182,7 +182,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
         extra_cmd=$extra_cmd" --_commit_hash f7bc352f27bb1c02ee371a4576942a7d96c8bb97"
-	pip install transformers==4.35.2
+	    pip install transformers==4.35.2
     elif [ "${topology}" = "mistral_7b" ]; then
         alpha=0.8
         model_name_or_path="Intel/neural-chat-7b-v3"
@@ -195,14 +195,21 @@ function run_tuning {
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-	pip install transformers==4.36.1
+	    pip install transformers==4.36.1
     elif [ "${topology}" = "phi_1_5b" ]; then
         alpha=0.5
         model_name_or_path="susnato/phi-1_5_dev"
         extra_cmd=$extra_cmd" --sq --alpha ${alpha}"
         extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
         extra_cmd=$extra_cmd" --trust_remote_code True"
-	pip install tranformers==4.36.1
+	    pip install tranformers==4.36.1
+    elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+        model_name_or_path="meta-llama/Llama-2-7b-hf"
+        extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
+        extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
+        extra_cmd=$extra_cmd" --output_dir ${tuned_checkpoint}"
+        extra_cmd=$extra_cmd" --trust_remote_code True"
+	    pip install tranformers==4.35.2
     fi
 
     if [ ${script} = "run_generation.py" ];then
