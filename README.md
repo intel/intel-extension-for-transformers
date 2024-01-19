@@ -162,7 +162,7 @@ Below is the sample code to create your chatbot. See more [examples](intel_exten
 
 #### OpenAI-Compatible RESTful APIs
 NeuralChat provides OpenAI-compatible RESTful APIs for LLM inference, so you can use NeuralChat as a drop-in replacement for OpenAI APIs.
-You can start the NeuralChat server either using the shell command or Python code.
+You can start the NeuralChat server either using the Shell command or Python code.
 
 Using Shell Command:
 
