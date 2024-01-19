@@ -33,6 +33,8 @@ ARG ITREX_VER=main
 ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ARG REPO_PATH=""
+ARG SSHD_PORT=22
+ENV SSHD_PORT ${SSHD_PORT}
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
@@ -54,13 +56,18 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && \
     pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
     pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
+
+RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
+    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
+    pip list | grep neural-speed && \
+    python -m pip install --upgrade --force-reinstall torch
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -69,15 +76,18 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
         && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
-        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-EXPOSE 22
+        && echo "Port "$SSHD_PORT"" >> /etc/ssh/sshd_config \
+        && echo "Host *" >> /etc/ssh/ssh_config \
+        && echo "  Port "$SSHD_PORT"" >> /etc/ssh/ssh_config \
+        && echo "  StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+EXPOSE ${SSHD_PORT}
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
 CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.13.0/ubuntu22.04/habanalabs/pytorch-installer-2.1.0:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
@@ -104,16 +114,20 @@ RUN cd /intel-extension-for-transformers && \
     pip install -v .
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard eae1ad0fded9f8b490e2276fd332615f8711ef1d && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard 0dfda27dd0351d0753c35de2abb752309e2383b4 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
     pip install peft einops datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.12 origin/1.12.0 && \
-    git apply /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    git checkout -b v1.13 origin/1.13.0 && \
     pip install -e .
+
+RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
+    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
+    pip list | grep neural-speed && \
+    python -m pip install --upgrade --force-reinstall torch
 
 # Install dependency
 RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
