@@ -186,12 +186,17 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template, link
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template, link
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
                             try:
                                 response = plugin_instance.pre_llm_inference_actions(query)
@@ -199,6 +204,7 @@ class BaseModel(ABC):
                                 if plugin_name == "asr":
                                     if "[ASR ERROR] Audio format not supported" in str(e):
                                         set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:
@@ -230,6 +236,7 @@ class BaseModel(ABC):
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -288,14 +295,25 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
                         if plugin_name == "safety_checker" and response:
                             if response:
                                 return "Your query contains sensitive words, please try another query."
@@ -326,6 +344,7 @@ class BaseModel(ABC):
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
