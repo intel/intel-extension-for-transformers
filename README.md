@@ -12,7 +12,7 @@ Intel® Extension for Transformers
 
 ## 🚀Latest News
 * [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (PVC) and Intel Arc A-Series Graphics (e.g., A770).
-* [2024/01] Demonstrated **Intel Hybrid Copilot** in CES 2024 Great Minds Session "Bringing the Limitless Potential of AI Everywhere".
+* [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "(Bringing the Limitless Potential of AI Everywhere)[https://youtu.be/70J3uO3eLZA?t=1348]".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
 * [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1) and [DPO dataset](https://huggingface.co/datasets/Intel/orca_dpo_pairs). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
 * [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
