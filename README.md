@@ -11,9 +11,9 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
-* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel® Data Center GPU Max Series (PVC) and Intel® Arc™ A-Series Graphics (e.g., A770).
+* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (PVC) and Intel Arc A-Series Graphics (e.g., A770).
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
-* [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
+* [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1) and [DPO dataset](https://huggingface.co/datasets/Intel/orca_dpo_pairs). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
 * [2023/11] Published a **4-bit chatbot demo** (based on NeuralChat) available on [Intel Hugging Face Space](https://huggingface.co/spaces/Intel/NeuralChat-ICX-INT4). Welcome to have a try! To setup the demo locally, please follow the [instructions](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/docs/notebooks/setup_text_chatbot_service_on_spr.ipynb).
 * [2023/11] Our paper [Efficient LLM Inference on CPUs](https://arxiv.org/abs/2311.00502) has been accepted by **NeurIPS'23** on Efficient Natural Language and Speech Processing. Thanks to all the collaborators!
 * [2023/09] NeuralChat has been showcased in [**Intel Innovation’23 Keynote**](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.
@@ -79,15 +79,15 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>Intel Data Center GPU Max Series</td>
-			<td>✔</td>
-			<td>✔</td>
+			<td>WIP </td>
+			<td>WIP </td>
 			<td>WIP (INT8)</td>
 			<td>✔ (INT4)</td>
 		</tr>
 		<tr>
 			<td>Intel Arc A-Series</td>
-			<td>✔</td>
-			<td>✔</td>
+			<td>-</td>
+			<td>-</td>
 			<td>WIP (INT8)</td>
 			<td>✔ (INT4)</td>
 		</tr>
@@ -164,48 +164,45 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 
 > Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
 
-## 🌱Getting  Started
-Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
+## 🌱Getting Started
 
 ### Chatbot
+Below is the sample code to create your chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 
-#### OpenAI-Compatible RESTful APIs
-NeuralChat provides OpenAI-compatible RESTful APIs for LLM inference, so you can use NeuralChat as a drop-in replacement for OpenAI APIs.
-You can start the NeuralChat server either using the Shell command or Python code.
-
-Using Shell Command:
+#### Serving (OpenAI-compatible RESTful APIs)
+NeuralChat provides OpenAI-compatible RESTful APIs for chat, so you can use NeuralChat as a drop-in replacement for OpenAI APIs.
+You can start NeuralChat server either using the Shell command or Python code.
 
 ```shell
+# Shell Command
 neuralchat_server start --config_file ./server/config/neuralchat.yaml
 ```
 
-Using Python Code:
-
 ```python
+# Python Code
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 server_executor = NeuralChatServerExecutor()
 server_executor(config_file="./server/config/neuralchat.yaml", log_file="./neuralchat.log")
 ```
-NeuralChat service can also be accessible through [OpenAI client library](https://github.com/openai/openai-python), `curl` commands, and `requests` library. See more in [NeuralChat](intel_extension_for_transformers/neural_chat/README.md).
 
-#### NeuralChat Python API
+NeuralChat service can be accessible through [OpenAI client library](https://github.com/openai/openai-python), `curl` commands, and `requests` library. See more in [NeuralChat](intel_extension_for_transformers/neural_chat/README.md).
+
+#### Offline
 
 ```python
-# pip install intel-extension-for-transformers
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 ### Transformers-based extension APIs
-ITREX enhances the user experience for compressing models by extending the capabilities of Hugging Face transformers APIs.
-Below is the sample code to enable weight-only INT4/INT8 inference. See more [examples](https://github.com/intel/neural-speed/tree/main).
+Below is the sample code to use the extended Transformers APIs. See more [examples](https://github.com/intel/neural-speed/tree/main).
 
-#### INT4 Inference (CPU only)
+#### INT4 Inference (CPU)
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -216,11 +213,11 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-#### INT8 Inference (CPU only)
+#### INT8 Inference (CPU)
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     # Hugging Face model_id or local model
+model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -232,9 +229,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
 ### Langchain-based extension APIs
-ITREX provides a comprehensive suite of Langchain-based extension APIs, including advanced retrievers, embedding models and vector stores. These enhancements are carefully crafted to expand the capabilities of the original langchain API, ultimately boosting overall performance. This extension is specifically tailored to enhance the functionality and performance of RAG(Retrieval-Augmented Generation).
-
-Below is the sample code to enable enhanced Chroma API. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
+Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
 
 ```python
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
@@ -244,8 +239,6 @@ from intel_extension_for_transformers.langchain.vectorstores import Chroma
 retriever = VectorStoreRetriever(vectorstore=Chroma(...))
 retrievalQA = RetrievalQA.from_llm(llm=HuggingFacePipeline(...), retriever=retriever)
 ```
-
-
 
 ## 🎯Validated  Models
 You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
