@@ -11,7 +11,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
-* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC).
+* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC): [example](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
 * [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
 * [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1) and [DPO dataset](https://huggingface.co/datasets/Intel/orca_dpo_pairs). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
@@ -122,24 +122,24 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>PyTorch</td>
-			<td>2.0.1+cpu</td>
-			<td>2.0.1+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.0.1+cpu, 2.0.1a0 (gpu)</td>
+			<td>2.0.1+cpu, 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu, 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu, 2.0.1a0 (gpu)</td>
 		</tr>
 		<tr>
 			<td>Intel® Extension for PyTorch</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu, 2.0.110+xpu</td>
+			<td>2.1.0+cpu, 2.0.110+xpu</td>
+			<td>2.1.0+cpu, 2.0.110+xpu</td>
+			<td>2.1.0+cpu, 2.0.110+xpu</td>
 		</tr>
 		<tr>
 			<td>Transformers</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
+			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
 		</tr>
 		<tr>
 			<td>Synapse AI</td>
@@ -155,6 +155,14 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>1.13.0-ee32e42</td>
 			<td>1.13.0-ee32e42</td>
 		</tr>
+                <tr>
+                        <td>intel-level-zero-gpu</td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                </tr>
+
 	</tbody>
 </table>
 
