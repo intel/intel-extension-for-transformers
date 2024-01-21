@@ -161,7 +161,7 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 	</tbody>
 </table>
 
-> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-gpu.txt).
 
 ## 🌱Getting Started
 
@@ -220,7 +220,7 @@ from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from transformers import AutoTokenizer
 
 device_map = "xpu"
-model_name ="hf-internal-testing/tiny-random-gptj"
+model_name ="Qwen/Qwen-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "Once upon a time, there existed a little girl,"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
