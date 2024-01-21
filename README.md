@@ -222,7 +222,7 @@ from transformers import AutoTokenizer
 device_map = "xpu"
 model_name ="hf-internal-testing/tiny-random-gptj"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-prompt = "how to test the code?"
+prompt = "Once upon a time, there existed a little girl,"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
 config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
@@ -237,12 +237,8 @@ qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
 output = user_model.generate(
     input_ids, max_new_tokens=32, **generate_kwargs
-)
-gen_text = tokenizer.batch_decode(
-    output, skip_special_tokens=True
 )
 ```
 > Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
