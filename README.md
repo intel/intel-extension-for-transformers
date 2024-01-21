@@ -128,17 +128,17 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>Intel® Extension for PyTorch</td>
-			<td>2.1.0+cpu, 2.0.110+xpu</td>
-			<td>2.1.0+cpu, 2.0.110+xpu</td>
-			<td>2.1.0+cpu, 2.0.110+xpu</td>
-			<td>2.1.0+cpu, 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
 		</tr>
 		<tr>
 			<td>Transformers</td>
-			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
-			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
-			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
-			<td>4.35.2(CPU), 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
 		</tr>
 		<tr>
 			<td>Synapse AI</td>
