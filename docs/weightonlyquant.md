@@ -210,7 +210,8 @@ gen_text = tokenizer.batch_decode(
     output, skip_special_tokens=True
 )
 
-# loading quantized model
+# If your device memory is not enough, please save the model first and load quantized model, then do optimization
+# If your device memory is enough, skip below instruction
 loaded_model = AutoModelForCausalLM.from_pretrained(
     "saved_dir", trust_remote_code=True, device_map=device_map
 )

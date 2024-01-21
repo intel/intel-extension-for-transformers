@@ -100,9 +100,6 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 </table>
 
 
-
-
-
 > In the table above, "-" means not applicable or not started yet.
 
 ## Validated Software
@@ -161,11 +158,8 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
                         <td>1.3.26918.50-736~22.04 </td>
                         <td>1.3.26918.50-736~22.04 </td>
                 </tr>
-
 	</tbody>
 </table>
-
-
 
 > Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
 
@@ -218,22 +212,42 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-#### INT8 Inference (CPU)
-```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     
-prompt = "Once upon a time, there existed a little girl,"
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
-
-model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
-```
-
 #### INT4 Inference (GPU)
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+from transformers import AutoTokenizer
+
+device_map = "xpu"
+model_name ="hf-internal-testing/tiny-random-gptj"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "how to test the code?"
+input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
+                               algorithm="RTN",
+                               group_size=32,
+                               compute_dtype="fp16",
+                               scale_dtype="fp16")
+qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
+                                              device_map=device_map,quantization_config=config,
+                                              trust_remote_code=True, torch_dtype=torchfloat16)
+
+# saving model, it should be executed before ipex.optimize_transformers function is called. 
+qmodel.save_pretrained("saved_dir")
+
+# optimize the model with ipex, it will improve performance.
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
+output = user_model.generate(
+    input_ids, max_new_tokens=32, **generate_kwargs
+)
+gen_text = tokenizer.batch_decode(
+    output, skip_special_tokens=True
+)
+```
 Please refer: [GPU inference doc](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
 
 ### Langchain-based extension APIs
