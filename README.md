@@ -121,10 +121,10 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>PyTorch</td>
-			<td>2.0.1+cpu, 2.0.1a0 (gpu)</td>
-			<td>2.0.1+cpu, 2.0.1a0 (gpu)</td>
-			<td>2.1.0+cpu, 2.0.1a0 (gpu)</td>
-			<td>2.1.0+cpu, 2.0.1a0 (gpu)</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
 		</tr>
 		<tr>
 			<td>Intel® Extension for PyTorch</td>
