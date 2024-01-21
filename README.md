@@ -241,7 +241,7 @@ output = user_model.generate(
     input_ids, max_new_tokens=32, **generate_kwargs
 )
 ```
-> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
+> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). Known issue: If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
 
 ### Langchain-based extension APIs
 Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
