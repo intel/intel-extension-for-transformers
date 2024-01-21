@@ -234,9 +234,6 @@ qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                               device_map=device_map,quantization_config=config,
                                               trust_remote_code=True, torch_dtype=torchfloat16)
 
-# saving model, it should be executed before ipex.optimize_transformers function is called. 
-qmodel.save_pretrained("saved_dir")
-
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
@@ -248,7 +245,7 @@ gen_text = tokenizer.batch_decode(
     output, skip_special_tokens=True
 )
 ```
-> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
+> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
 
 ### Langchain-based extension APIs
 Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
