@@ -39,4 +39,6 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 5.2     | Enabling Fine-tuned Models in Chatbot         | Learn how to customize chatbot using fine-tuned models   | [Notebook](./notebooks/customize_chatbot_with_finetuned_models.ipynb) |
 | 5.3     | Enabling Optimized Models in Chatbot          | Learn how to customize chatbot using optimized models    | [Notebook](./notebooks/customize_chatbot_with_optimized_models.ipynb) |
 | 5.4     | Enabling New LLM Models to Customize Chatbot  | Learn how to use new LLM models to customize chatbot     | [Notebook](./notebooks/customize_chatbot_with_new_llm_models.ipynb) |
-
+| 6       | Extension API                           |                                                          |                                                         |
+| 6.1     | Transformers Extension API         | Learn how to use transformer extension API             | [Notebook](./notebooks/transformers_extension_api.ipynb) |
+| 6.2     | Langchain Extension API         | Learn how to use langchain extension API   | [Notebook](./notebooks/langchain_extension_api.ipynb) |
