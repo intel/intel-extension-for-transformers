@@ -174,16 +174,14 @@ pip install neural-compressor
 pip install intel-extension-for-transformers
 ```
 
-4. Quantization Model and Saving Model
+4. Quantization Model and Inference
 ```python
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from transformers import AutoTokenizer
 
-device_map = "xpu"
-model_name ="Qwen/Qwen-7B"
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B", trust_remote_code=True)
 prompt = "how to test the code?"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
@@ -191,14 +189,9 @@ config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                algorithm="RTN",
                                group_size=32,
                               )
-qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
-                                              device_map=device_map,quantization_config=config,
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", use_llm_runtime=False,
+                                              device_map="xpu",quantization_config=config,
                                               trust_remote_code=True, torch_dtype=torchfloat16)
-
-# If your device memory is not enough, please save the model first, then do optimization.
-# If your device memory is enough, skip below instruction.
-# Please note, saving model should be executed before ipex.optimize_transformers function is called. 
-qmodel.save_pretrained("saved_dir")
 
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
@@ -212,15 +205,30 @@ gen_text = tokenizer.batch_decode(
 )
 ```
 
-5. Loading quantized model
+5. Saving and Loading quantized model
 ```python
-# If you saved the model then you can load quantized model as below instruction, then do optimization.
+# If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model.
+# If your device memory is enough, skip below instruction, just quantization and inference.
+
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+
+
+config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", algorithm="RTN", group_size=32)
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", use_llm_runtime=False,
+                                              device_map="xpu",quantization_config=config,
+                                              trust_remote_code=True, torch_dtype=torchfloat16)
+
+# Please note, saving model should be executed before ipex.optimize_transformers function is called. 
+qmodel.save_pretrained("saved_dir")
+
+# Load model
 loaded_model = AutoModelForCausalLM.from_pretrained(
-    "saved_dir", trust_remote_code=True, device_map=device_map
+    "saved_dir", trust_remote_code=True, device_map="xpu"
 )
 
 # Before executed the loaded model, you can call ipex.optimize_transformers function.
-loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
 ```
 
