@@ -33,10 +33,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         llm_int8_skip_modules=None,
         compute_dtype=None,
         weight_dtype=None,
-        scale_dtype="fp32",
+        scale_dtype=None,
         mse_range=False,  #  only for RTN and AWQ
         use_double_quant=False,
-        double_quant_scale_dtype="fp32",  # reserve for double quant
+        double_quant_scale_dtype=None,  # reserve for double quant
         group_size=32,
         scheme="sym",
         algorithm="RTN",
@@ -56,8 +56,6 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.weight_dtype = weight_dtype
         self.mse_range = mse_range
         self.use_double_quant = use_double_quant
-        self.double_quant_scale_dtype = double_quant_scale_dtype
-        self.scale_dtype = scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
         self.group_size = group_size
@@ -73,15 +71,20 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_llm_runtime = use_llm_runtime
         self.low_bit_model = low_bit_model
 
-        if compute_dtype is None:
-            self.compute_dtype = "fp32"
-        elif isinstance(compute_dtype, str):
-            self.compute_dtype = compute_dtype
-        elif isinstance(compute_dtype, torch.dtype):
+        if isinstance(compute_dtype, torch.dtype):
             self.compute_dtype = convert_dtype_torch2str(compute_dtype)
         else:
-            raise ValueError(
-                "bit4_compute_dtype must be a string or a torch.dtype")
+            self.compute_dtype = compute_dtype
+
+        if isinstance(scale_dtype, torch.dtype):
+            self.scale_dtype = convert_dtype_torch2str(scale_dtype)
+        else:
+            self.scale_dtype = scale_dtype
+
+        if isinstance(double_quant_scale_dtype, torch.dtype):
+            self.double_quant_scale_dtype = convert_dtype_torch2str(double_quant_scale_dtype)
+        else:
+            self.double_quant_scale_dtype = double_quant_scale_dtype
 
     def post_init(self):
         r"""
@@ -92,10 +95,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 self.llm_int8_skip_modules, list):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and self.compute_dtype not in [
-                'fp32', 'bf16', 'int8'
-        ]:
+        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
+        elif self.compute_dtype is None:
+            self.compute_dtype = "fp32"
 
         if self.weight_dtype is None:
             self.weight_dtype = "nf4"
@@ -114,11 +117,13 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1', 'fp8_e5m2, fp8_e4m3'"
             )
 
-        if self.scale_dtype not in ["fp32", "fp8_e8m0"]:
+        if self.scale_dtype is not None and self.scale_dtype not in ["fp32", "fp8_e8m0"]:
             raise ValueError(
                 f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
                 f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
             )
+        elif self.scale_dtype is None:
+            self.scale_dtype = "fp32"
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")
@@ -150,10 +155,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 self.llm_int8_skip_modules, list):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and self.compute_dtype not in [
-                'fp16'
-        ]:
+        if self.compute_dtype is not None and self.compute_dtype not in ["fp16"]:
             raise ValueError("compute_dtype must be 'fp16'.")
+        elif self.compute_dtype is None:
+            self.compute_dtype = "fp16"
 
         if self.algorithm not in [
                 'RTN'
@@ -170,11 +175,10 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 f"'int4_fullrange'."
             )
 
-        if self.scale_dtype not in ["fp16"]:
-            raise ValueError(
-                f"scale_dtype must be a string in 'fp32', 'fp8_e8m0' "
-                f"and fp8_e8m0 only used for weight_dtype 'fp8_e5m2', 'fp8_e4m3'"
-            )
+        if self.scale_dtype is not None and self.scale_dtype not in ["fp16"]:
+            raise ValueError(f"scale_dtype must be a string in 'fp16'")
+        elif self.scale_dtype is None:
+            self.scale_dtype = "fp16"
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")

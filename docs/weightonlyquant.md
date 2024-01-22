@@ -154,7 +154,7 @@ Here are the example codes.
 Weight-only quantization ops only exist in "dev/QLLM" branch on the intel-extension-for-pytorch. It needs to be compiled with the Oneapi DPCPP compiler. Please follow [the link](https://www.intel.com/content/www/us/en/developer/articles/guide/installation-guide-for-oneapi-toolkits.html) to install the OneAPI to "/opt/intel folder".
 
 2. Build and Install PyTorch and Intel-extension-for-pytorch
-```
+```python
 python -m pip install torch==2.1.0a0  -f https://developer.intel.com/ipex-whl-stable-xpu
 
 source /opt/intel/oneapi/setvars.sh
@@ -169,13 +169,13 @@ python setup.py install
 ```
 
 3. Install Intel-extension-for-transformers and Neural-compressor
-```
+```pythpon
 pip install neural-compressor
 pip install intel-extension-for-transformers
 ```
 
-4. Run The Example
-```
+4. Quantization Model and Saving Model
+```python
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
@@ -190,13 +190,14 @@ input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
                                algorithm="RTN",
                                group_size=32,
-                               compute_dtype="fp16",
-                               scale_dtype="fp16")
+                              )
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
                                               device_map=device_map,quantization_config=config,
                                               trust_remote_code=True, torch_dtype=torchfloat16)
 
-# saving model, it should be executed before ipex.optimize_transformers function is called. 
+# If your device memory is not enough, please save the model first, then do optimization.
+# If your device memory is enough, skip below instruction.
+# Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 qmodel.save_pretrained("saved_dir")
 
 # optimize the model with ipex, it will improve performance.
@@ -209,9 +210,11 @@ output = user_model.generate(
 gen_text = tokenizer.batch_decode(
     output, skip_special_tokens=True
 )
+```
 
-# If your device memory is not enough, please save the model first and load quantized model, then do optimization
-# If your device memory is enough, skip below instruction
+5. Loading quantized model
+```python
+# If you saved the model then you can load quantized model as below instruction, then do optimization.
 loaded_model = AutoModelForCausalLM.from_pretrained(
     "saved_dir", trust_remote_code=True, device_map=device_map
 )
@@ -221,7 +224,7 @@ loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torc
 
 ```
 
-5.You can directly use [example script](ransformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
+6. You can directly use [example script](ransformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
 
 >Note:
 > * Saving quantized model should be executed before the optimize_transformers function is called.
