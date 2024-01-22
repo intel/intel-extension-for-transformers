@@ -37,13 +37,13 @@ class TestErrorCodeBuilder(unittest.TestCase):
         chatbot = build_chatbot(config)
         self.assertIsNot(chatbot, None)
 
-    def test_build_chatbot_out_of_storage(self):
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_build_chatbot_out_of_storage(self, mock_from_pretrained):
+        # Simulate out of storage scenario
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        # Mock psutil.disk_usage('/').free to return less available storage
-        with patch('psutil.disk_usage') as mock_disk_usage:
-            mock_disk_usage.return_value.free = 29 * 1024 ** 3  # 29GB
-            chatbot = build_chatbot(config)
-        assert chatbot == None
+        mock_from_pretrained.side_effect = Exception("No space left on device")
+        result = build_chatbot(config)
+        self.assertIsNone(result)
         assert get_latest_error() == ErrorCodes.ERROR_OUT_OF_STORAGE
 
     def test_build_chatbot_unsupported_device(self):
