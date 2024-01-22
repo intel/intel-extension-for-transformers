@@ -498,7 +498,8 @@ def load_model(
     try:
         config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                             if (re.search("chatglm", model_name, re.IGNORECASE) or \
-                                               re.search("qwen", model_name, re.IGNORECASE)) else False)
+                                               re.search("qwen", model_name, re.IGNORECASE) or \
+                                               re.search("internlm", model_name, re.IGNORECASE)) else False)
     except ValueError as e:
         logging.error(f"Exception: {e}")
         if "Unrecognized model in" in str(e):
@@ -527,7 +528,8 @@ def load_model(
                 or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
             use_auth_token=hf_access_token,
             trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-                re.search("chatglm", model_name, re.IGNORECASE)) else False,
+                re.search("chatglm", model_name, re.IGNORECASE) or \
+                re.search("internlm", model_name, re.IGNORECASE)) else False,
         )
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
@@ -586,6 +588,7 @@ def load_model(
             or config.model_type == "mistral"
             or config.model_type == "mixtral"
             or config.model_type == "phi"
+            or config.model_type == "internlm"
         ) and not ipex_int8) or config.model_type == "opt":
             with smart_context_manager(use_deepspeed=use_deepspeed):
                 model = AutoModelForCausalLM.from_pretrained(
@@ -595,7 +598,7 @@ def load_model(
                     low_cpu_mem_usage=True,
                     quantization_config=bitsandbytes_quant_config,
                     trust_remote_code=True if (config.model_type == "qwen" or config.model_type == "phi" or \
-                        re.search("codegen", model_name, re.IGNORECASE)) else False
+                      config.model_type == "internlm" or re.search("codegen", model_name, re.IGNORECASE)) else False
                 )
         elif (
                 (config.model_type == "gpt_bigcode"
@@ -678,12 +681,13 @@ def load_model(
     if (
         hasattr(model.generation_config, "eos_token_id")
         and model.generation_config.eos_token_id is not None
-        and not "chatglm" in model_name
+        and not ("chatglm" in model_name or "internlm" in model_name)
     ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
     if (
         hasattr(model.generation_config, "bos_token_id")
         and model.generation_config.bos_token_id is not None
+        and not "internlm" in model_name
     ):
         tokenizer.bos_token_id = model.generation_config.bos_token_id
 
