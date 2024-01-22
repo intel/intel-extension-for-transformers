@@ -25,6 +25,75 @@ from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
 from .config_logging import configure_logging
 logger = configure_logging()
+import importlib
+
+def check_tts_dependency():
+    try:
+        importlib.import_module('paddlespeech')
+        importlib.import_module('paddlepaddle')
+        importlib.import_module('soundfile')
+        importlib.import_module('pydub')
+        importlib.import_module('python-multipart')
+        importlib.import_module('speechbrain')
+        importlib.import_module('librosa')
+        importlib.import_module('zhconv')
+        return True
+    except ImportError:
+        return False
+
+def check_cache_dependency():
+    try:
+        importlib.import_module('gptcache')
+        return True
+    except ImportError:
+        return False
+
+def check_retrieval_dependency():
+    try:
+        importlib.import_module('PyPDF2')
+        importlib.import_module('langchain')
+        importlib.import_module('langchain_core')
+        importlib.import_module('docx')
+        importlib.import_module('bs4')
+        importlib.import_module('unstructured')
+        importlib.import_module('InstructorEmbedding')
+        importlib.import_module('chromadb')
+        importlib.import_module('openpyxl')
+        return True
+    except ImportError:
+        return False
+
+def check_faceanimation_dependency():
+    try:
+        importlib.import_module('face_alignment')
+        importlib.import_module('imageio')
+        importlib.import_module('resampy')
+        importlib.import_module('kornia')
+        importlib.import_module('tqdm')
+        importlib.import_module('facexlib')
+        importlib.import_module('gfpgan')
+        importlib.import_module('av')
+        importlib.import_module('safetensors')
+        return True
+    except ImportError:
+        return False
+
+def check_ner_dependency():
+    try:
+        importlib.import_module('spacy')
+        importlib.import_module('pymysql')
+        importlib.import_module('deepface')
+        importlib.import_module('exifread')
+        return True
+    except ImportError:
+        return False
+
+def check_image2image_dependency():
+    try:
+        importlib.import_module('diffusers')
+        return True
+    except ImportError:
+        return False
 
 
 def build_chatbot(config: PipelineConfig=None):
@@ -89,6 +158,60 @@ def build_chatbot(config: PipelineConfig=None):
         for plugin_name, plugin_value in config.plugins.items():
             enable_plugin = plugin_value.get('enable', False)
             if enable_plugin:
+                if plugin_name == "tts" or plugin_name == "tts_chinese" or plugin_name == "asr":
+                    if not check_tts_dependency():
+                        logger.warning(
+                            "Unable to initialize 'tts' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.audio'."
+                        )
+                        raise
+                if plugin_name == "cache":
+                    if not check_cache_dependency():
+                        logger.warning(
+                            "Unable to initialize 'cache' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.caching'."
+                        )
+                        raise
+                if plugin_name == "retrieval":
+                    if not check_retrieval_dependency():
+                        logger.warning(
+                            "Unable to initialize 'retrieval' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval'."
+                        )
+                        raise
+                if plugin_name == "face_animation":
+                    if not check_faceanimation_dependency():
+                        logger.warning(
+                            "Unable to initialize 'face_animation' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation'."
+                        )
+                        raise
+                if plugin_name == "ner":
+                    if not check_ner_dependency():
+                        logger.warning(
+                            "Unable to initialize 'ner' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.ner'."
+                        )
+                        raise
+                if plugin_name == "image2image":
+                    if not check_image2image_dependency():
+                        logger.warning(
+                            "Unable to initialize 'image2image' plugin due to missing dependency packages."
+                            "Please run pip install -r requirements.txt to enable."
+                            "Please find the 'requirements.txt' file in the directory"
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image'."
+                        )
+                        raise
                 if plugin_name == "tts":
                     from .pipeline.plugins.audio.tts import TextToSpeech
                     plugins[plugin_name]['class'] = TextToSpeech
