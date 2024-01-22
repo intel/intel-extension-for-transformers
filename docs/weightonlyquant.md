@@ -182,7 +182,7 @@ from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from transformers import AutoTokenizer
 
 device_map = "xpu"
-model_name ="hf-internal-testing/tiny-random-gptj"
+model_name ="Qwen/Qwen-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "how to test the code?"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
