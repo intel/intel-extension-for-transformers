@@ -56,6 +56,11 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
+RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
+    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
+    pip list | grep neural-speed && \
+    python -m pip install --upgrade --force-reinstall torch
+
 RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && \
     pip install -v . && \
@@ -63,11 +68,6 @@ RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.inte
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     pip install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses && \
     pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
-
-RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
-    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
-    pip list | grep neural-speed && \
-    python -m pip install --upgrade --force-reinstall torch
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -106,6 +106,11 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf /intel-extension-for-transformers/* && rm -rf /intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} /intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
+RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
+    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
+    pip list | grep neural-speed && \
+    python -m pip install --upgrade --force-reinstall torch
+
 # Build ITREX
 RUN cd /intel-extension-for-transformers && \
     sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
@@ -123,11 +128,6 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd DeepSpeed && \
     git checkout -b v1.13 origin/1.13.0 && \
     pip install -e .
-
-RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
-    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
-    pip list | grep neural-speed && \
-    python -m pip install --upgrade --force-reinstall torch
 
 # Install dependency
 RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/finetuning/instruction && \
