@@ -205,10 +205,10 @@ gen_text = tokenizer.batch_decode(
 )
 ```
 
+> Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
+
 5. Saving and Loading quantized model
 ```python
-# If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model.
-# If your device memory is enough, skip below instruction, just quantization and inference.
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
