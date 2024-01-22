@@ -232,7 +232,7 @@ loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torc
 
 ```
 
-6. You can directly use [example script](ransformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
+6. You can directly use [example script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
 
 >Note:
 > * Saving quantized model should be executed before the optimize_transformers function is called.
