@@ -1,5 +1,4 @@
 transformers>=4.35.2
-scikit-learn
 peft
 fschat==0.2.32
 shortuuid
@@ -12,8 +11,9 @@ uvicorn
 optimum
 rouge_score
 numpy==1.23.5
-tiktoken==0.4.0
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 neural-compressor
 intel_extension_for_pytorch
 einops
+python-multipart
+python-dotenv

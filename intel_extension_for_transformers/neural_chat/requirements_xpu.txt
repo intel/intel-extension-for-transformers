@@ -9,7 +9,8 @@ yacs
 uvicorn
 rouge_score
 numpy==1.23.5
-tiktoken==0.4.0
 cchardet
 neural-compressor
 einops
+python-multipart
+python-dotenv

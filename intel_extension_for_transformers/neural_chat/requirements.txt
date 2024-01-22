@@ -16,12 +16,13 @@ optimum
 optimum-intel
 rouge_score
 numpy==1.23.5
-tiktoken==0.4.0
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2abed9deb6180fd40e7e2
 accelerate
 cchardet
 tensorflow>=2.13.0
 neural-compressor
 einops
+python-multipart
+python-dotenv
 huggingface_hub
 vllm

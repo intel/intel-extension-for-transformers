@@ -21,3 +21,5 @@ torchaudio==2.1.0
 neural-compressor
 einops
 cchardet
+python-multipart
+python-dotenv

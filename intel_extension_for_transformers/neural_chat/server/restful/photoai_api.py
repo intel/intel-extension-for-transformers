@@ -26,7 +26,7 @@ from ...config import GenerationConfig
 from ...utils.database.mysqldb import MysqlDb
 from fastapi import Request, BackgroundTasks, status, UploadFile, File
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-from .photoai_services import *
+#from .photoai_services import *
 from .photoai_utils import (
     byte64_to_image,
     image_to_byte64,
