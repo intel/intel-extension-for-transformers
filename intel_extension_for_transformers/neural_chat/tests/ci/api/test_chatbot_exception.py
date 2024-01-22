@@ -286,7 +286,7 @@ class TestBuildChatbotExceptions(unittest.TestCase):
         chatbot = build_chatbot(pipeline_config)
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
         if not os.path.exists(audio_path):
-            audio_path = "../assets/video/intel.mp4"
+            audio_path = os.path.abspath("../assets/video/intel.mp4")
         response = chatbot.predict_stream(query=audio_path)
         self.assertIsNone(response)
         plugins.asr.enable = False

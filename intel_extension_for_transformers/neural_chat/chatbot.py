@@ -154,7 +154,12 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
-
+    if config.serving_config and config.serving_config.framework == "vllm":
+        parameters["use_vllm"] = True
+        parameters["vllm_engine_params"] = config.serving_config.framework_config
+    else:
+        parameters["use_vllm"] = False
+        parameters["vllm_engine_params"] = None
     adapter.load_model(parameters)
     if get_latest_error():
         return
