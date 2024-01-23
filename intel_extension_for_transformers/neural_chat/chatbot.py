@@ -29,13 +29,11 @@ import importlib
 def check_tts_dependency():
     try:
         importlib.import_module('paddlespeech')
-        importlib.import_module('paddlepaddle')
+        importlib.import_module('paddle')
         importlib.import_module('soundfile')
         importlib.import_module('pydub')
-        importlib.import_module('python-multipart')
         importlib.import_module('speechbrain')
         importlib.import_module('librosa')
-        importlib.import_module('zhconv')
         return True
     except ImportError:
         return False
