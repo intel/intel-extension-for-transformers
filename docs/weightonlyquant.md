@@ -187,7 +187,7 @@ prompt = "Once upon a time, a little girl"
 inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, device_map=device, load_in_4bit=True)
-# optimize the model with ipex, it will improve performance.
+# We will move optimize into from_pretrained in the future, it will improve performance.
 user_model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
 output = user_model.generate(
