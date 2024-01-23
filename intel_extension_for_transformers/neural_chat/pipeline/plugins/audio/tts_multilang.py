@@ -22,37 +22,80 @@ from .models.bert_vits2.vits_model import SynthesizerTrn
 from .models.bert_vits2.tools.sentence import split_by_language
 from .models.bert_vits2.text.cleaner import clean_text, cleaned_text_to_sequence
 from .models.bert_vits2.commons import intersperse
-from transformers import AutoModelForMaskedLM, AutoTokenizer, DebertaV2Model, DebertaV2Tokenizer
+from transformers import (
+    AutoModelForMaskedLM,
+    AutoTokenizer,
+    DebertaV2Model,
+    DebertaV2Tokenizer,
+)
 
 import numpy as np
 import soundfile as sf
 import time
+import contextlib
 import logging
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
-    level=logging.INFO
+    level=logging.INFO,
 )
 
-class BertVITSModel():
-    def __init__(self, device="cpu"):
+
+class BertVITSModel:
+    def __init__(self, device="cpu", precision="int8"):
+        """Init the Bert and VITS models.
+
+        Args:
+            device: which device to use, should be cpu/cuda
+            prevision: which precision to load with, should be fp32/bf16/int8 for cpu, fp32 for cuda
+        """
         self.device = device
+        self.precision = precision
         # pre-load the models
-        self.cn_bert_model = AutoModelForMaskedLM.from_pretrained("hfl/chinese-roberta-wwm-ext-large").to(device)
-        self.cn_tokenizer = AutoTokenizer.from_pretrained("hfl/chinese-roberta-wwm-ext-large")
-        self.en_bert_model = DebertaV2Model.from_pretrained("microsoft/deberta-v3-large").to(device)
-        self.en_tokenizer = DebertaV2Tokenizer.from_pretrained("microsoft/deberta-v3-large")
-        self.jp_bert_model = AutoModelForMaskedLM.from_pretrained("ku-nlp/deberta-v2-large-japanese-char-wwm") \
-            .to(device)
-        self.jp_tokenizer = AutoTokenizer.from_pretrained("ku-nlp/deberta-v2-large-japanese-char-wwm")
+        if self.precision in ["fp32", "bf16"]:
+            self.cn_bert_model = AutoModelForMaskedLM.from_pretrained(
+                "hfl/chinese-roberta-wwm-ext-large"
+            ).to(device)
+        elif self.precision in ["int8"]:
+            from neural_compressor.utils.pytorch import load
+            from transformers import BertForMaskedLM, AutoConfig
+
+            # load the model without weights
+            bert_cn = BertForMaskedLM(
+                config=AutoConfig.from_pretrained("hfl/chinese-roberta-wwm-ext-large")
+            )
+            ckpt_path = hf_hub_download(
+                repo_id="spycsh/chinese-roberta-wwm-ext-large-int8",
+                filename="bert_cn.pt",
+            )
+            self.cn_bert_model = load(ckpt_path, bert_cn)
+        else:
+            raise Exception("Unspported precision, should be fp32/bf16/int8!")
+
+        self.cn_tokenizer = AutoTokenizer.from_pretrained(
+            "hfl/chinese-roberta-wwm-ext-large"
+        )
+        self.en_bert_model = DebertaV2Model.from_pretrained(
+            "microsoft/deberta-v3-large"
+        ).to(device)
+        self.en_tokenizer = DebertaV2Tokenizer.from_pretrained(
+            "microsoft/deberta-v3-large"
+        )
+        self.jp_bert_model = AutoModelForMaskedLM.from_pretrained(
+            "ku-nlp/deberta-v2-large-japanese-char-wwm"
+        ).to(device)
+        self.jp_tokenizer = AutoTokenizer.from_pretrained(
+            "ku-nlp/deberta-v2-large-japanese-char-wwm"
+        )
         self.vits = SynthesizerTrn(
-            n_vocab=112, # len(symbols)
+            n_vocab=112,  # len(symbols)
             use_spk_conditioned_encoder=True,
             use_noise_scaled_mas=True,
             use_mel_posterior_encoder=False,
             use_duration_discriminator=True,
             n_layers_q=3,
-            use_spectral_norm=False
+            use_spectral_norm=False,
         ).to(device)
         self.vits.eval()
         self.sdp_ratio = 0.2
@@ -60,46 +103,79 @@ class BertVITSModel():
         self.noise_scale_w = 0.8
         self.length_scale = 1
 
-        ckpt_path = hf_hub_download(repo_id="spycsh/bert-vits-thchs-6-8000", filename="G_8000.pth",)
-        # dict_keys(['model', 'iteration', 'optimizer', 'learning_rate'])
-        ckpt_dict = torch.load(ckpt_path, map_location="cpu")
-        iteration = ckpt_dict["iteration"]
-        lr = ckpt_dict["learning_rate"]
+        if self.precision in ["fp32", "bf16"]:
+            ckpt_path = hf_hub_download(
+                repo_id="spycsh/bert-vits-thchs-6-8000",
+                filename="G_8000.pth",
+            )
+            ckpt_dict = torch.load(ckpt_path, map_location="cpu")
+            iteration = ckpt_dict["iteration"]
+            self.vits.load_state_dict(ckpt_dict["model"], strict=False)
+            logging.info(f"VITS checkpoint loaded (iter: {iteration})")
+        elif self.precision in ["int8"]:
+            ckpt_path = hf_hub_download(
+                repo_id="spycsh/bert-vits-thchs-6-8000",
+                filename="G_8000_int8.pt",
+            )
+            from neural_compressor.utils.pytorch import load
 
-        self.vits.load_state_dict(ckpt_dict["model"], strict=False)
-        logging.info(f'VITS checkpoint loaded (iter: {iteration})')
-
+            self.vits = load(ckpt_path, self.vits)
+            logging.info(f"VITS int8 checkpoint loaded.")
+        else:
+            raise Exception("Unspported precision, should be fp32/bf16/int8!")
 
     def tts_fn(self, text, sid=0):
         sentences_list = split_by_language(text, target_languages=["zh", "ja", "en"])
         split_by_language_S = time.time()
-        logging.info(f"**** split_by_language takes: {time.time() - split_by_language_S} sec")
+        logging.info(
+            f"**** split_by_language takes: {time.time() - split_by_language_S} sec"
+        )
         text_to_generate = [[i[0] for i in sentences_list]]
         lang_to_generate = [[i[1] for i in sentences_list]]
 
         audio_list = []
         for idx, piece in enumerate(text_to_generate):
-            audio = self.infer_multilang(
-                piece,
-                language=lang_to_generate[idx],
-                sid=sid
-            )
+            audio = self.infer_multilang(piece, language=lang_to_generate[idx], sid=sid)
             audio_list.append(audio)
 
         audio_concat = np.concatenate(audio_list)
         return audio_concat
 
     def get_bert_feature(self, norm_text, word2ph, language_str):
-        bert_models_map = {"ZH": self.cn_bert_model, "EN": self.en_bert_model, "JP": self.jp_bert_model}
-        tokenizer_map = {"ZH": self.cn_tokenizer, "EN": self.en_tokenizer, "JP": self.jp_tokenizer}
+        bert_models_map = {
+            "ZH": self.cn_bert_model,
+            "EN": self.en_bert_model,
+            "JP": self.jp_bert_model,
+        }
+        tokenizer_map = {
+            "ZH": self.cn_tokenizer,
+            "EN": self.en_tokenizer,
+            "JP": self.jp_tokenizer,
+        }
         with torch.no_grad():
             inputs = tokenizer_map[language_str](norm_text, return_tensors="pt")
             for i in inputs:
                 inputs[i] = inputs[i].to(self.device)
             S = time.time()
             if self.device == "cpu":
-                with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
-                    res = bert_models_map[language_str](**inputs, output_hidden_states=True)
+                if language_str != "ZH":
+                    # currently en/jp DevertaV2Model only support bf16 inference
+                    with torch.cpu.amp.autocast(
+                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    ) if self.precision in [
+                        "int8",
+                        "bf16",
+                    ] else contextlib.nullcontext():
+                        res = bert_models_map[language_str](
+                            **inputs, output_hidden_states=True
+                        )
+                else:
+                    with torch.cpu.amp.autocast(
+                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    ) if self.precision in ["bf16"] else contextlib.nullcontext():
+                        res = bert_models_map[language_str](
+                            **inputs, output_hidden_states=True
+                        )
             else:
                 res = bert_models_map[language_str](**inputs, output_hidden_states=True)
             logging.info(f"**** {language_str} bert infer time: {time.time() - S} sec")
@@ -115,7 +191,6 @@ class BertVITSModel():
 
         return bert_feature
 
-
     def get_text(self, text, language_str):
         norm_text, phone, tone, word2ph = clean_text(text, language_str)
         phone, tone, language = cleaned_text_to_sequence(phone, tone, language_str)
@@ -128,7 +203,9 @@ class BertVITSModel():
             word2ph[i] = word2ph[i] * 2
         word2ph[0] += 1
         # get bert embedding for the current text
-        bert_ori = self.get_bert_feature(norm_text, word2ph, language_str)   # (1024, len(phone))
+        bert_ori = self.get_bert_feature(
+            norm_text, word2ph, language_str
+        )  # (1024, len(phone))
         del word2ph
         assert bert_ori.shape[-1] == len(phone), phone
 
@@ -156,13 +233,9 @@ class BertVITSModel():
         language = torch.LongTensor(language)
         return bert, ja_bert, en_bert, phone, tone, language
 
-    def infer_multilang(self,
-                        text,
-                        language,
-                        sid):
-
+    def infer_multilang(self, text, language, sid):
         bert, ja_bert, en_bert, phones, tones, lang_ids = [], [], [], [], [], []
-        emo = torch.Tensor([0]) # disable emotion for now
+        emo = torch.Tensor([0])  # disable emotion for now
 
         skip_start = False
         skip_end = False
@@ -221,7 +294,7 @@ class BertVITSModel():
             speakers = torch.LongTensor([sid]).to(self.device)
             infer_S = time.time()
             audio = (
-                self.vits.infer(    # net_g.infer
+                self.vits.infer(  # net_g.infer
                     x_tst,
                     x_tst_lengths,
                     speakers,
@@ -246,15 +319,15 @@ class BertVITSModel():
             torch.cuda.empty_cache()
         return audio
 
-class MultilangTextToSpeech():
-    def __init__(self):
-        self.bert_vits_model = BertVITSModel()
+
+class MultilangTextToSpeech:
+    def __init__(self, device="cpu", precision="int8"):
+        self.bert_vits_model = BertVITSModel(device, precision)
 
     def text2speech(self, text, output_audio_path, sid=2):
         "Multilingual text to speech and dump to the output_audio_path."
         logging.info(text)
         all_speech = self.bert_vits_model.tts_fn(text, sid=sid)
-
         sf.write(output_audio_path, all_speech, samplerate=44100)
         return output_audio_path
 

@@ -15,22 +15,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import MultilangTextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts_multilang import (
+    MultilangTextToSpeech,
+)
 import unittest, os, shutil
 
+
 class TestMultilangTextToSpeech(unittest.TestCase):
-    def setUp(self):
-        shutil.rmtree('./tmp_audio', ignore_errors=True)
-        os.mkdir('./tmp_audio')
+    @classmethod
+    def setUpClass(cls):
+        shutil.rmtree("./tmp_audio", ignore_errors=True)
+        os.mkdir("./tmp_audio")
 
-    def tearDown(self) -> None:
+    @classmethod
+    def tearDownClass(cls):
         shutil.rmtree('./tmp_audio', ignore_errors=True)
 
-    def test_pre_llm_inference_actions(self):
+    def test_pre_llm_inference_actions_int8(self):
         text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
-        output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(text, output_audio_path)
+        output_audio_path = MultilangTextToSpeech().post_llm_inference_actions(
+            text, output_audio_path
+        )
         self.assertTrue(os.path.exists(output_audio_path))
+
+    def test_pre_llm_inference_actions_bf16(self):
+        text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/2.wav")
+        output_audio_path = MultilangTextToSpeech(
+            device="cpu", precision="bf16"
+        ).post_llm_inference_actions(text, output_audio_path)
+        self.assertTrue(os.path.exists(output_audio_path))
+
+    def test_pre_llm_inference_actions_fp32(self):
+        text = "欢迎来到英特尔，welcome to Intel。こんにちは！"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/3.wav")
+        output_audio_path = MultilangTextToSpeech(
+            device="cpu", precision="fp32"
+        ).post_llm_inference_actions(text, output_audio_path)
+        self.assertTrue(os.path.exists(output_audio_path))
+
 
 if __name__ == "__main__":
     unittest.main()
