@@ -29,11 +29,21 @@ client = TestClient(app)
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
-        chatbot = build_chatbot(config)
-        router.set_chatbot(chatbot)
+        self.config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        self.chatbot = build_chatbot(self.config)
+        router.set_chatbot(self.chatbot)
 
     def test_text_chat(self):
+        # Create a sample chat completion request object
+        chat_request = ChatCompletionRequest(
+            prompt="Tell me about Intel Xeon processors.",
+        )
+        response = client.post("/v1/chat/completions", json=chat_request.dict())
+        assert response.status_code == 200
+
+    def test_text_chat_with_customized_prompt(self):
+        self.chatbot.set_customized_system_prompts(system_prompts="You cannot tell jokes",
+                                                   model_path=self.chatbot.model_name,)
         # Create a sample chat completion request object
         chat_request = ChatCompletionRequest(
             prompt="Tell me about Intel Xeon processors.",
