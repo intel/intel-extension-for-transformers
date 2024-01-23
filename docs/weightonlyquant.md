@@ -180,17 +180,22 @@ import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
-device = "xpu"
-model_name ="Qwen/Qwen-7B"
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-prompt = "Once upon a time, a little girl"
-inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B")
+prompt = "how to test the code?"
+input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to("xpu")
 
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, device_map=device, load_in_4bit=True)
-# We will move optimize into from_pretrained in the future, it will improve performance.
-user_model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", torch_dtype=torch.float16, )
 
-output = user_model.generate(inputs)
+# optimize the model with ipex, it will improve performance.
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu", trust_remote_code=True)
+
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
+output = user_model.generate(
+    input_ids, max_new_tokens=32, **generate_kwargs
+)
+gen_text = tokenizer.batch_decode(
+    output, skip_special_tokens=True
+)
 ```
 
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -199,6 +204,8 @@ output = user_model.generate(inputs)
 ```python
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", torch_dtype=torch.float16, trust_remote_code=True)
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 model.save_pretrained("saved_dir")
