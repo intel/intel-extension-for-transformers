@@ -209,7 +209,8 @@ if args.accuracy:
         user_model.eval(), device=args.device, inplace=True, woq=True, dtype=torch_dtype)
     results = evaluate(
         model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        model_args='pretrained='+args.model+',tokenizer=' + args.model + \
+            ',dtype=float32, trust_remote_code=' + str(args.trust_remote_code),
         user_model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
