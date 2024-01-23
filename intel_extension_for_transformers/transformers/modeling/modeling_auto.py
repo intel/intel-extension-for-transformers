@@ -299,8 +299,7 @@ class _BaseQBitsAutoModelClass:
                 return model
             else:
                 kwargs["low_cpu_mem_usage"] = True
-                if device_map == "xpu":
-                    kwargs["device_map"] = "auto"
+                kwargs["device_map"] = "cpu"
                 try:
                     model = cls.ORIG_MODEL.from_pretrained(
                         pretrained_model_name_or_path,

@@ -184,17 +184,14 @@ device = "xpu"
 model_name = "Qwen/Qwen-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "Once upon a time, there existed a little girl,"
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 
 qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
-output = user_model.generate(input_ids)
-gen_text = tokenizer.batch_decode(
-    output, skip_special_tokens=True
-)
+output = user_model.generate(inputs)
 ```
 
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -210,9 +207,7 @@ qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True,
 model.save_pretrained("saved_dir")
 
 # Load model
-loaded_model = AutoModelForCausalLM.from_pretrained(
-    "saved_dir", trust_remote_code=True
-)
+loaded_model = AutoModelForCausalLM.from_pretrained("saved_dir", trust_remote_code=True)
 
 # Before executed the loaded model, you can call ipex.optimize_transformers function.
 loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
@@ -222,6 +217,9 @@ output = loaded_model.generate(inputs)
 ```
 
 6. You can directly use [example script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py)
+```python
+python run_generation_gpu_woq.py --woq --benchmark 
+```
 
 >Note:
 > * Saving quantized model should be executed before the optimize_transformers function is called.
