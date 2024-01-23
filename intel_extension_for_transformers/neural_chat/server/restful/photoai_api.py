@@ -27,6 +27,7 @@ from ...config import GenerationConfig
 from ...utils.database.mysqldb import MysqlDb
 from fastapi import Request, BackgroundTasks, status, UploadFile, File
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from .photoai_services import *
 from .photoai_utils import (
     byte64_to_image,
     image_to_byte64,
@@ -83,7 +84,6 @@ router = PhotoAIAPIRouter()
 
 
 def get_current_time() -> str:
-    from .photoai_services import timezone, timedelta, datetime
     SHA_TZ = timezone(
         timedelta(hours=8),
         name='Asia/Shanghai'
@@ -97,7 +97,6 @@ def get_current_time() -> str:
 async def handle_ai_photos_upload_images(request: Request, background_tasks: BackgroundTasks):
     user_id = request.client.host
     logger.info(f'<uploadImages> user id is: {user_id}')
-    from .photoai_services import check_user_ip, get_image_root_path, process_images_in_background, format_image_path
     res = check_user_ip(user_id)
     logger.info("<uploadImages> "+str(res))
 
@@ -157,7 +156,6 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
 def handle_ai_photos_get_all_images(request: Request):
     user_id = request.client.host
     logger.info(f'<getAllImages> user id is: {user_id}')
-    from .photoai_services import check_user_ip, format_image_path
     check_user_ip(user_id)
     origin = request.headers.get("Origin")
     logger.info(f'<getAllImages> origin: {origin}')
@@ -183,8 +181,6 @@ def handle_ai_photos_get_all_images(request: Request):
 def handle_ai_photos_get_type_list(request: Request):
     user_id = request.client.host
     logger.info(f'<getTypeList> user id is: {user_id}')
-    from .photoai_services import check_user_ip, get_type_obj_from_attr, \
-        get_face_list_by_user_id, get_images_by_type, get_address_list, get_process_status
     check_user_ip(user_id)
 
     type_result_dict = {"type_list": {}, "prompt_list": {}}
@@ -228,7 +224,6 @@ def handle_ai_photos_get_type_list(request: Request):
 async def handle_ai_photos_get_image_by_type(request: Request):
     user_id = request.client.host
     logger.info(f'<getImageByType> user id is: {user_id}')
-    from .photoai_services import check_user_ip, get_images_by_type
     check_user_ip(user_id)
 
     params = await request.json()
@@ -246,7 +241,6 @@ async def handle_ai_photos_get_image_by_type(request: Request):
 async def handle_ai_photos_get_image_detail(request: Request):
     user_id = request.client.host
     logger.info(f'<getImageDetail> user id is: {user_id}')
-    from .photoai_services import check_user_ip, format_image_info
     check_user_ip(user_id)
 
     params = await request.json()
@@ -284,7 +278,6 @@ async def handel_ai_photos_delete_Image(request: Request):
 
     user_id = request.client.host
     logger.info(f'<deleteImage> user id is: {user_id}')
-    from .photoai_services import check_user_ip, delete_single_image
     check_user_ip(user_id)
 
     try:
@@ -301,7 +294,6 @@ async def handel_ai_photos_delete_Image(request: Request):
 def handle_ai_photos_delete_user(request: Request):
     user_id = request.client.host
     logger.info(f'<deleteUser> user ip is: {user_id}')
-    from .photoai_services import check_user_ip, delete_user_infos
     check_user_ip(user_id)
 
     try:
@@ -318,7 +310,6 @@ async def handle_ai_photos_update_label(request: Request):
     # check request user
     user_id = request.client.host
     logger.info(f'<updateLabel> user id is: {user_id}')
-    from .photoai_services import check_user_ip
     check_user_ip(user_id)
 
     params = await request.json()
@@ -369,7 +360,6 @@ async def handel_ai_photos_update_tags(request: Request):
     # check request user
     user_id = request.client.host
     logger.info(f'<updateTags> user ip is: {user_id}')
-    from .photoai_services import check_user_ip, update_image_tags
     check_user_ip(user_id)
 
     params = await request.json()
@@ -393,7 +383,6 @@ async def handel_ai_photos_update_caption(request: Request):
     # check request user
     user_id = request.client.host
     logger.info(f'<updateCaption> user ip is: {user_id}')
-    from .photoai_services import check_user_ip, update_image_attr
     check_user_ip(user_id)
 
     params = await request.json()
@@ -413,7 +402,6 @@ async def handel_ai_photos_update_caption(request: Request):
 async def handle_ai_photos_chat_to_image(request: Request):
     user_id = request.client.host
     logger.info(f'<chatWithImage> user ip is: {user_id}')
-    from .photoai_services import check_user_ip, get_image_list_by_ner_query
     check_user_ip(user_id)
 
     params = await request.json()
@@ -449,7 +437,6 @@ async def handle_ai_photos_chat_to_image(request: Request):
 async def handle_image_to_image(request: Request):
     user_id = request.client.host
     logger.info(f'<image2Image> user ip is: {user_id}')
-    from .photoai_services import check_user_ip, get_image_root_path, stable_defusion_func
     check_user_ip(user_id)
 
     params = await request.json()
