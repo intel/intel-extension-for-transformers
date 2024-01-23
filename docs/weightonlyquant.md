@@ -144,7 +144,7 @@ loaded_model = AutoModelForCausalLM.from_pretrained(saved_dir)
 
 > Note: For LLM runtime model loading usage, please refer to [graph readme](../intel_extension_for_transformers/llm/runtime/graph/README.md#2-run-llm-with-transformer-based-api)
 
-## Examples For GPU
+## Examples For Intel GPU
 Intel-extension-for-transformers implement weight-only quantization for intel GPU(PVC and ARC) with [Intel-extension-for-pytorch](https://github.com/intel/intel-extension-for-pytorch). Currently, the Linear op kernel of Weight-only quantization is implemented in the Intel-extension-for-pytorch branch: "dev/QLLM".  
 We support experimental woq inference on intel GPU(PVC and ARC) with replacing Linear op in PyTorch. Validated models: Qwen-7B, GPT-J-6B.  
 Here are the example codes.
@@ -178,30 +178,20 @@ pip install intel-extension-for-transformers
 ```python
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B", trust_remote_code=True)
-prompt = "how to test the code?"
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+device = "xpu"
+model_name ="Qwen/Qwen-7B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, a little girl"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
-config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
-                               algorithm="RTN",
-                               group_size=32,
-                              )
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", use_llm_runtime=False,
-                                              device_map="xpu",quantization_config=config,
-                                              trust_remote_code=True, torch_dtype=torchfloat16)
-
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, device_map=device, load_in_4bit=True)
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+user_model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
 output = user_model.generate(
-    input_ids, max_new_tokens=32, **generate_kwargs
-)
-gen_text = tokenizer.batch_decode(
-    output, skip_special_tokens=True
+    inputs
 )
 ```
 
