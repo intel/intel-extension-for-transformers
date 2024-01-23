@@ -180,19 +180,18 @@ import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B", trust_remote_code=True)
-prompt = "how to test the code?"
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to("xpu")
+device = "xpu"
+model_name = "Qwen/Qwen-7B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", trust_remote_code=True)
+qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu", trust_remote_code=True)
+qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
-generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=args.num_beams)
-output = user_model.generate(
-    input_ids, max_new_tokens=32, **generate_kwargs
-)
+output = user_model.generate(input_ids)
 gen_text = tokenizer.batch_decode(
     output, skip_special_tokens=True
 )

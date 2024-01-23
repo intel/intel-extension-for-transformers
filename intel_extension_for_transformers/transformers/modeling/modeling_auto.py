@@ -174,7 +174,8 @@ class _BaseQBitsAutoModelClass:
             else:
                 logger.info("quantization_config: {}".format(quantization_config.to_json_string()))
                 try:
-                    model = cls.load_low_bit(pretrained_model_name_or_path)
+                    kwargs.pop("device_map")
+                    model = cls.load_low_bit(pretrained_model_name_or_path, *model_args, **kwargs)
                     logger.info("Saved low bit model loading successfully. Other input args "
                                 "will be ignored.")
                     return model
