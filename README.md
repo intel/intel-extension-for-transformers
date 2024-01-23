@@ -216,30 +216,21 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```python
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 from transformers import AutoTokenizer
 
 device_map = "xpu"
 model_name ="Qwen/Qwen-7B"
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "Once upon a time, there existed a little girl,"
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
 
-config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange",
-                               algorithm="RTN",
-                               group_size=32,
-                               compute_dtype="fp16",
-                               scale_dtype="fp16")
-qmodel = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=False,
-                                              device_map=device_map,quantization_config=config,
-                                              trust_remote_code=True, torch_dtype=torchfloat16)
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
 
 # optimize the model with ipex, it will improve performance.
-qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
-output = user_model.generate(
-    input_ids, max_new_tokens=32, **generate_kwargs
-)
+output = model.generate(inputs)
 ```
 > Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). Known issue: If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
 
