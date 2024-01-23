@@ -221,14 +221,6 @@ class _BaseQBitsAutoModelClass:
         quantization_config = kwargs.pop("quantization_config", None)
 
         device_map = kwargs.get("device_map", "cpu")
-        if isinstance(quantization_config, BitsAndBytesConfig):
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path,
-                quantization_config=quantization_config,
-                *model_args,
-                **kwargs,
-            )
-            return model
         use_cpu = (
             True
             if device_map == torch.device("cpu") or device_map == "cpu"
@@ -241,6 +233,14 @@ class _BaseQBitsAutoModelClass:
             else False
         )
         use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
+        if isinstance(quantization_config, BitsAndBytesConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                quantization_config=quantization_config,
+                *model_args,
+                **kwargs,
+            )
+            return model
         if load_in_8bit or load_in_4bit:
             if (
                 is_accelerate_available()
