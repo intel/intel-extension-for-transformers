@@ -180,11 +180,11 @@ import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B")
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-7B", trust_remote_code=True)
 prompt = "how to test the code?"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to("xpu")
 
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", torch_dtype=torch.float16, )
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu", trust_remote_code=True)
@@ -205,7 +205,7 @@ gen_text = tokenizer.batch_decode(
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", torch_dtype=torch.float16, trust_remote_code=True)
+qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", load_in_4bit=True, device_map="xpu", trust_remote_code=True)
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
 model.save_pretrained("saved_dir")
