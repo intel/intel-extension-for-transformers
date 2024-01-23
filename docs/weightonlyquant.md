@@ -190,9 +190,7 @@ model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
 # We will move optimize into from_pretrained in the future, it will improve performance.
 user_model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
 
-output = user_model.generate(
-    inputs
-)
+output = user_model.generate(inputs)
 ```
 
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
@@ -201,24 +199,19 @@ output = user_model.generate(
 ```python
 
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
-
-
-config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", algorithm="RTN", group_size=32)
-qmodel = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-7B", use_llm_runtime=False,
-                                              device_map="xpu",quantization_config=config,
-                                              trust_remote_code=True, torch_dtype=torchfloat16)
 
 # Please note, saving model should be executed before ipex.optimize_transformers function is called. 
-qmodel.save_pretrained("saved_dir")
+model.save_pretrained("saved_dir")
 
 # Load model
 loaded_model = AutoModelForCausalLM.from_pretrained(
-    "saved_dir", trust_remote_code=True, device_map="xpu"
+    "saved_dir", trust_remote_code=True
 )
 
 # Before executed the loaded model, you can call ipex.optimize_transformers function.
 loaded_model = ipex.optimize_transformers(loaded_model, inplace=True, dtype=torch.float16, woq=True, device="xpu")
+
+output = loaded_model.generate(inputs)
 
 ```
 
