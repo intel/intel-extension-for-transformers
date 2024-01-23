@@ -5,9 +5,9 @@ Weight Only Quantization (WOQ)
 
 2. [Supported Framework Model Matrix](#supported-framework-model-matrix)
 
-3. [Examples For CPU](#examples-for-cpu)
+3. [Examples For CPU/CUDA](#examples-for-cpu-and-cuda)
 
-4. [Examples For GPU](#examples-for-gpu)
+4. [Examples For Intel GPU](#examples-for-gpu)
 
 ## Introduction
 
@@ -34,7 +34,7 @@ As large language models (LLMs) become more prevalent, there is a growing need f
 > **TEQ:** A trainable equivalent transformation that preserves the FP32 precision in weight-only quantization. It is inspired by AWQ while providing a new solution to search for the optimal per-channel scaling factor between activations and weights.
 
 
-## Examples For CPU
+## Examples For CPU AND CUDA
 
 Our motivation is improve CPU support for weight only quantization, since `bitsandbytes` only support CUDA GPU device. We have extended the `from_pretrained` function so that `quantization_config` can accept [`WeightOnlyQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L28) to implement conversion on the CPU. We not only support PyTorch but also provide LLM Runtime backend based cpp programming language. Here are the example codes.
 
