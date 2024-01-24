@@ -1170,7 +1170,7 @@ def predict_stream(**params):
         yield {
             "error": True,
             "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
-            "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED]
+            "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
             "logprobs": None,
         }
         return
