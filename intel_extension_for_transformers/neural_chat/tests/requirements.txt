@@ -74,3 +74,4 @@ transformers_stream_generator
 qdrant-client
 huggingface_hub
 vllm
+neural_speed

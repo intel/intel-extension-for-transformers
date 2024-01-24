@@ -15,5 +15,6 @@ git+https://github.com/EleutherAI/lm-evaluation-harness.git@cc9778fbe4fa1a709be2
 neural-compressor
 intel_extension_for_pytorch
 einops
+cchardet
 python-multipart
 python-dotenv
