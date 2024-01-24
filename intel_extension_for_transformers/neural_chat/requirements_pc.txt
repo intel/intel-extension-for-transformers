@@ -45,6 +45,7 @@ pymysql
 deepface
 exifread
 qdrant-client
+neural_speed
 vector_quantize_pytorch
 cn2an
 pypinyin

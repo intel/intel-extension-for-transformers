@@ -82,3 +82,4 @@ inflect
 jieba
 huggingface_hub
 vllm
+neural_speed
