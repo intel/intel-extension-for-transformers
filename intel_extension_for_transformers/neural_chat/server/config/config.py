@@ -37,12 +37,12 @@ class Settings(BaseSettings):
     mysql_db: str = os.getenv("MYSQL_DB", "inc")
     google_oauth_client_id: str = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
     google_oauth_client_secret: str = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
-    github_oauth_client_id: str = os.getenv("FACEBOOK_OAUTH_CLIENT_ID", "")
-    github_oauth_client_secret: str = os.getenv("FACEBOOK_OAUTH_CLIENT_SECRET", "")
-    github_oauth_client_id: str = os.getenv("TWITTER_OAUTH_CLIENT_ID", "")
-    github_oauth_client_secret: str = os.getenv("TWITTER_OAUTH_CLIENT_SECRET", "")
     github_oauth_client_id: str = os.getenv("GITHUB_OAUTH_CLIENT_ID", "")
     github_oauth_client_secret: str = os.getenv("GITHUB_OAUTH_CLIENT_SECRET", "")
+    facebook_oauth_client_id: str = os.getenv("FACEBOOK_OAUTH_CLIENT_ID", "")
+    facebook_oauth_client_secret: str = os.getenv("FACEBOOK_OAUTH_CLIENT_SECRET", "")
+    microsoft_oauth_client_id: str = os.getenv("MICROSOFT_OAUTH_CLIENT_ID", "")
+    microsoft_oauth_client_secret: str = os.getenv("MICROSOFT_OAUTH_CLIENT_SECRET", "")
 
 
 @lru_cache()

@@ -75,3 +75,5 @@ qdrant-client
 huggingface_hub
 vllm
 neural_speed
+fastapi-users[sqlalchemy,oauth]
+aiosqlite

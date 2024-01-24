@@ -18,7 +18,7 @@
 import uuid
 from typing import Optional, Union, Dict, Any
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin, InvalidPasswordException
 from fastapi_users.authentication import (
     AuthenticationBackend,
@@ -29,7 +29,7 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.clients.facebook import FacebookOAuth2
-from httpx_oauth.clients.twitter import TwitterOAuth1
+from httpx_oauth.clients.microsoft import MicrosoftGraphOAuth2
 
 from ..database.user_db import User, get_user_db
 from ..schemas.user import UserCreate
@@ -57,9 +57,9 @@ facebook_oauth_client = FacebookOAuth2(
     global_settings.facebook_oauth_client_secret
 )
 
-twitter_oauth_client = TwitterOAuth1(
-    global_settings.twitter_oauth_client_id,
-    global_settings.twitter_oauth_client_secret
+microsoft_oauth_client = MicrosoftGraphOAuth2(
+    global_settings.microsoft_oauth_client_id,
+    global_settings.microsoft_oauth_client_secret
 )
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -105,6 +105,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         self,
         user: User,
         request: Optional[Request] = None,
+        response: Optional[Response] = None,
     ):
         logger.info(f"User {user.id} logged in.")
 
@@ -134,8 +135,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             return github_oauth_client
         elif provider == "facebook":
             return facebook_oauth_client
-        elif provider == "twitter":
-            return twitter_oauth_client
+        elif provider == "microsoft":
+            return microsoft_oauth_client
         else:
             raise ValueError("Unsupported OAuth provider")
 
@@ -159,36 +160,14 @@ def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
 
-auth_backends = [
-    AuthenticationBackend(
+auth_backend = AuthenticationBackend(
         name="jwt",
         transport=bearer_transport,
         get_strategy=get_jwt_strategy,
-    ),
-    AuthenticationBackend(
-        name="google",
-        transport=bearer_transport,
-        get_strategy=get_jwt_strategy,
-    ),
-    AuthenticationBackend(
-        name="github",
-        transport=bearer_transport,
-        get_strategy=get_jwt_strategy,
-    ),
-    AuthenticationBackend(
-        name="facebook",
-        transport=bearer_transport,
-        get_strategy=get_jwt_strategy,
-    ),
-    AuthenticationBackend(
-        name="twitter",
-        transport=bearer_transport,
-        get_strategy=get_jwt_strategy,
-    ),
-]
+    )
 
 fastapi_users = FastAPIUsers[User, uuid.UUID](
-    get_user_manager, auth_backends
+    get_user_manager, [auth_backend]
 )
 
 current_active_user = fastapi_users.current_user(active=True)

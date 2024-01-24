@@ -50,3 +50,5 @@ zhconv
 urllib3
 langid
 qdrant-client
+fastapi-users[sqlalchemy,oauth]
+aiosqlite

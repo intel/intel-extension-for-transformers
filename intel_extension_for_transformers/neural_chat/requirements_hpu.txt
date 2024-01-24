@@ -45,3 +45,5 @@ urllib3
 langid
 qdrant-client
 neural_speed
+fastapi-users[sqlalchemy,oauth]
+aiosqlite

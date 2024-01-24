@@ -21,13 +21,13 @@ import sys
 import os
 import time
 from typing import List
-
+import asyncio
 
 import uvicorn
 import yaml
 import logging
 from yacs.config import CfgNode
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from .base_executor import BaseCommandExecutor
@@ -39,6 +39,10 @@ from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
 from transformers import BitsAndBytesConfig
+from .user.users import auth_backend, current_active_user, fastapi_users
+from .schemas.user import UserCreate, UserRead, UserUpdate
+from .database.user_db import User, create_db_and_tables
+from .user.users import SECRET, google_oauth_client, github_oauth_client, facebook_oauth_client, microsoft_oauth_client
 
 
 __all__ = ['NeuralChatServerExecutor']
@@ -55,7 +59,11 @@ app.add_middleware(
 
 api_router = APIRouter()
 
-
+@app.on_event("startup")
+async def startup_event():
+    # user database init
+    logging.info("Starting init user database...")
+    await create_db_and_tables()
 
 
 def get_config(config_file: str):
@@ -71,6 +79,55 @@ def get_config(config_file: str):
         config = CfgNode(yaml.safe_load(f))
 
     return config
+
+def setup_authentication_router():
+    app.include_router(
+        fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+    )
+    app.include_router(
+        fastapi_users.get_register_router(UserRead, UserCreate),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_reset_password_router(),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_verify_router(UserRead),
+        prefix="/auth",
+        tags=["auth"],
+    )
+    app.include_router(
+        fastapi_users.get_users_router(UserRead, UserUpdate),
+        prefix="/users",
+        tags=["users"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(google_oauth_client, auth_backend, SECRET),
+        prefix="/auth/google",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(github_oauth_client, auth_backend, SECRET),
+        prefix="/auth/github",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(facebook_oauth_client, auth_backend, SECRET),
+        prefix="/auth/facebook",
+        tags=["auth"],
+    )
+
+    app.include_router(
+        fastapi_users.get_oauth_router(microsoft_oauth_client, auth_backend, SECRET),
+        prefix="/auth/microsoft",
+        tags=["auth"],
+    )
 
 @cli_server_register(name='neuralchat_server.start', description='Start the service')
 class NeuralChatServerExecutor(BaseCommandExecutor):
@@ -90,6 +147,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             action="store",
             help="log file",
             default="./log/neuralchat.log")
+        asyncio.run(create_db_and_tables())
 
     def init(self, config):
         """System initialization.
@@ -212,6 +270,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             api_list = list(task for task in config.tasks_list)
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
+            # include authentication router
+            setup_authentication_router()
             return True
         # chatbot as service
         else:
@@ -307,6 +367,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             # init api
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
+            # include authentication router
+            setup_authentication_router()
             return True
 
 
@@ -332,3 +394,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 uvicorn.run(app, host=config.host, port=config.port)
             except Exception as e:
                 print(f"Error starting uvicorn: {str(e)}")
+
+@app.get("/authenticated-route")
+async def authenticated_route(user: User = Depends(current_active_user)):
+    return {"message": f"Hello {user.email}!"}
