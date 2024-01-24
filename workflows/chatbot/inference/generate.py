@@ -168,6 +168,12 @@ def parse_args():
         default="v2",
         help="the version of return stats format",
     )
+    parser.add_argument(
+        "--system_prompt",
+        type=str,
+        default="None",
+        help="the customized system prompt",
+    )
     args = parser.parse_args()
     return args
 
@@ -226,6 +232,8 @@ def main():
         optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
     chatbot = build_chatbot(config)
+    if args.system_prompt:
+        chatbot.set_customized_system_prompts(system_prompts=args.system_prompt, model_path=base_model_path)
     gen_config = GenerationConfig(
         task=args.task,
         temperature=args.temperature,
