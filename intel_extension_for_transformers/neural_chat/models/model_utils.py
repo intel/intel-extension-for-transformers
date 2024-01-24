@@ -1029,6 +1029,11 @@ def predict_stream(**params):
             However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
         )
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+        yield {
+            "error": True,
+            "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
+            "error_message": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
+        }
         return
 
     generate_kwargs = get_generate_kwargs(
@@ -1162,6 +1167,12 @@ def predict_stream(**params):
             f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
         )
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
+        yield {
+            "error": True,
+            "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
+            "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED]
+            "logprobs": None,
+        }
         return
     output_word_len = 0
 
@@ -1170,16 +1181,29 @@ def predict_stream(**params):
         pass
     else:
         thread_exception = errors_queue.get()
-        raise thread_exception
+        yield {
+            "error": True,
+            "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
+            "error_message": thread_exception
+        }
     # prevent crash if no words are coming out
     first_word_output_time = datetime.now()
+    output = ""
     for new_text in streamer:
         if len(new_text) == 0:
             continue
+        output += new_text
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
-        yield new_text
+        yield {
+            "text": output,
+            "usage": {
+                "prompt_tokens": input_token_len,
+                "completion_tokens": output_word_len,
+                "total_tokens": input_token_len + output_word_len,
+            },
+        }
 
     end_time = datetime.now()
 
@@ -1204,14 +1228,17 @@ def predict_stream(**params):
         )
     if return_stats:
         if format_version == "v1":
-            stats = {
-                "input_token_len": input_token_len,
-                "output_token_len": output_token_len,
-                "duration": duration,
-                "first_token_latency": first_token_latency,
-                "msecond_per_token": msecond_per_token,
+            yield {
+                "text": "",
+                "stats": {
+                    "prompt_tokens": input_token_len,
+                    "duration": duration,
+                    "first_token_latency": first_token_latency,
+                    "msecond_per_token": msecond_per_token,
+                    "completion_tokens": output_token_len,
+                    "total_tokens": input_token_len + output_token_len,
+                },
             }
-            yield "END_OF_STREAM_STATS={}".format(stats)
         else:
             stats = {
                 "input_token_len": str(input_token_len),
