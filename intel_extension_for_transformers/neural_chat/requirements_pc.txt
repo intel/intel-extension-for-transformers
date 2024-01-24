@@ -1,4 +1,4 @@
-transformers==4.32.1
+transformers
 peft
 fschat==0.2.32
 num2words
@@ -11,7 +11,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.354
 langchain_core
 python-docx
 scikit-learn
@@ -26,7 +26,7 @@ yacs
 uvicorn
 optimum
 optimum-intel
-git+https://github.com/UKPLab/sentence-transformers.git
+git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
 unstructured
 markdown
 rouge_score
@@ -43,3 +43,8 @@ einops
 zhconv
 urllib3
 langid
+pymysql
+deepface
+exifread
+qdrant-client
+neural_speed

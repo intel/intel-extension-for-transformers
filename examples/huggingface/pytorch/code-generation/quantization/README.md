@@ -83,7 +83,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 # mixedprecision
 python run_generation.py \
     --model bigcode/starcoder \
@@ -94,7 +94,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 # smoothquant
 # [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 python run_generation.py \
@@ -108,7 +108,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 # weightonlyquant
 python run_generation.py \
     --model bigcode/starcoder \
@@ -120,7 +120,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 # load_in_4bit
 python run_generation.py \
     --model bigcode/starcoder \
@@ -131,7 +131,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 # load_in_8bit
 python run_generation.py \
     --model bigcode/starcoder \
@@ -142,7 +142,7 @@ python run_generation.py \
     --allow_code_execution \
     --temperature 0.2 \
     --do_sample \
-    --tasks "humaneval" \
+    --tasks "humaneval"
 ```
 
 >Note:

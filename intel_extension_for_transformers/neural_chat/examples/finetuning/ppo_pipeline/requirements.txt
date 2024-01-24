@@ -1,4 +1,4 @@
-transformers==4.34.1
+transformers
 peft
 accelerate
 datasets

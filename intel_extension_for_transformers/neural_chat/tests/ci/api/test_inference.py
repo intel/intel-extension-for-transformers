@@ -18,6 +18,7 @@
 import os
 import torch
 import unittest
+import shutil
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig,
@@ -25,12 +26,20 @@ from intel_extension_for_transformers.neural_chat.config import (
 from intel_extension_for_transformers.neural_chat import plugins
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class UnitTest(unittest.TestCase):
     def setUp(self):
         return super().setUp()
 
     def tearDown(self) -> None:
+        if os.path.exists("output"):
+            shutil.rmtree("output")
+        if os.path.exists("check_append"):
+            shutil.rmtree("check_append")
+        for filename in os.listdir("."):
+            if filename.endswith(".wav"):
+                os.remove(filename)
         return super().tearDown()
 
     def test_text_chat(self):
@@ -54,12 +63,28 @@ class UnitTest(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
+
+    def test_retrieval_with_qdrant(self):
+        plugins.retrieval.enable = True
+        input_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/"
+        if os.path.exists(input_path):
+            plugins.retrieval.args["input_path"] = input_path
+        else:
+            plugins.retrieval.args["input_path"] = "../assets/docs/"
+        plugins.retrieval.args["vector_database"] = "Qdrant"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
     
     def test_retrieval_append(self):
         plugins.retrieval.enable = True
         plugins.retrieval.args["append"] = True
         plugins.retrieval.args["input_path"] = "../assets/docs/"
-        plugins.retrieval.args["persist_dir"] = "./check_append"
+        plugins.retrieval.args["persist_directory"] = "./check_append"
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -75,9 +100,34 @@ class UnitTest(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["persist_dir"] = "./output"
+        plugins.retrieval.args["persist_directory"] = "./output"
         plugins.retrieval.enable = False
 
+    def test_retrieval_append_with_qdrant(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["append"] = True
+        plugins.retrieval.args["input_path"] = "../assets/docs/"
+        plugins.retrieval.args["persist_directory"] = "./check_append"
+        plugins.retrieval.args["vector_database"] = "Qdrant"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+        
+        plugins.retrieval.args["append"] = False
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args["append"] = True
+        plugins.retrieval.args["persist_directory"] = "./output"
+        plugins.retrieval.enable = False
+
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_voice_chat(self):
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"] = "./response.wav"
@@ -110,4 +160,17 @@ class UnitTest(unittest.TestCase):
         self.assertIsNotNone(stream_text)
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestSuite()
+
+    suite.addTest(UnitTest('test_text_chat'))
+    suite.addTest(UnitTest('test_retrieval'))
+    suite.addTest(UnitTest('test_retrieval_append'))
+    suite.addTest(UnitTest('test_quantization'))
+    suite.addTest(UnitTest('test_text_chat_stream'))
+    suite.addTest(UnitTest('test_voice_chat'))
+    suite.addTest(UnitTest('test_retrieval_with_qdrant'))
+    suite.addTest(UnitTest('test_retrieval_append_with_qdrant'))
+
+    runner = unittest.TextTestRunner()
+
+    runner.run(suite)

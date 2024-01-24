@@ -22,8 +22,8 @@ import unittest
 
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig, AutoModelForCausalLM
-from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
-from intel_extension_for_transformers.llm.runtime.graph import Model
+from neural_speed.convert import convert_model
+from neural_speed import Model
 
 def cmpData(numa, numb):
     totalErr = ((np.abs(numa - numb))**2).sum()
@@ -74,6 +74,22 @@ class TestLLMRUNTIME(unittest.TestCase):
                                                     use_llm_runtime=True, trust_remote_code=True)
             itrex_logits = itrex_model(inputs.input_ids)
             print(config_type, cmpData(pt_logits.detach().numpy().flatten(), itrex_logits.flatten()))
+
+
+    def test_gguf_api(self):
+        model_name = "TheBloke/Mistral-7B-v0.1-GGUF"
+        model_file = "mistral-7b-v0.1.Q4_0.gguf"
+        tokenizer_name = "/tf_dataset2/models/pytorch/Mistral-7B-v0.1"
+
+        prompt = "Once upon a time"
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, trust_remote_code=True)
+        inputs = tokenizer(prompt, return_tensors="pt").input_ids
+        streamer = TextStreamer(tokenizer)
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = model_file)
+        output = model.generate(inputs, streamer=streamer, max_new_tokens=10)
+        print("output = ", output)
+        assert(output == [[1, 5713, 3714, 264, 727, 28725, 736, 403, 264, 1628, 2746, 693, 6045, 298, 1220, 28723, 985]])
 
 
     def test_beam_search(self):

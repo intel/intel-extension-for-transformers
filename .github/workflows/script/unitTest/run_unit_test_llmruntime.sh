@@ -32,6 +32,11 @@ function llmruntime_test() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh "${WORKING_DIR}"
+    ## install  neuralspeed from source code
+    git clone https://github.com/intel/neural-speed.git
+    cd neural-speed && pip install -r requirements.txt && pip install .
+    cd ..
+    pip list | grep neural-speed
     llmruntime_test
 }
 

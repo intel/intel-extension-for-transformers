@@ -28,13 +28,13 @@ class TestMptModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = MptModel().match(model_path='mosaicml/mpt-7b-chat')
+        result = MptModel().match(model_path='/tf_dataset2/models/nlp_toolkit/mpt-7b-chat')
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = MptModel().get_default_conv_template(model_path='mosaicml/mpt-7b-chat')
+        result = MptModel().get_default_conv_template(model_path='/tf_dataset2/models/nlp_toolkit/mpt-7b-chat')
         self.assertIn("<|im_start|>system", str(result))
-        config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat")
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/mpt-7b-chat")
         chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)

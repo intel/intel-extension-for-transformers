@@ -29,6 +29,8 @@ import importlib
 from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
 import time
 import logging
+from intel_extension_for_transformers.utils.device_utils import is_hpu_available
+
 logger = logging.getLogger(__name__)
 
 def is_peft_available():
@@ -38,11 +40,6 @@ def disable_dropout_in_model(model: torch.nn.Module) -> None:
     for module in model.modules():
         if isinstance(module, torch.nn.Dropout): # pragma: no cover
             module.p = 0
-
-def is_optimum_habana_available():
-    from transformers.utils.import_utils import is_optimum_available
-    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
-
 
 class DPOTrainer(Trainer):
     r"""
@@ -303,7 +300,7 @@ class DPOTrainer(Trainer):
         return super().log(logs)
 
 
-if is_optimum_habana_available(): # pragma: no cover
+if is_hpu_available: # pragma: no cover
     # pylint: disable=E0611
     from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0401
     class GaudiDPOTrainer(DPOTrainer, GaudiTrainer):

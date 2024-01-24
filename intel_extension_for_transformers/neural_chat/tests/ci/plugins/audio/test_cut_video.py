@@ -17,9 +17,9 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.cut_video import cut_video
 import os
 import argparse
-import shlex
 import shutil
 import unittest
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestCutVideo(unittest.TestCase):
     def setUp(self):
@@ -29,6 +29,7 @@ class TestCutVideo(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree('./raw', ignore_errors=True)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_cut_video(self):
             parser = argparse.ArgumentParser(__doc__)
             video_path = \

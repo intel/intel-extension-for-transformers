@@ -22,9 +22,11 @@ import shutil
 import requests
 import torch
 import subprocess
+from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 
 class TestSadTalker(unittest.TestCase):
     @classmethod
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def setUpClass(self):
         self.cur_directory = os.path.dirname(os.path.abspath(__file__))
         p = subprocess.Popen(["bash",
@@ -49,17 +51,20 @@ class TestSadTalker(unittest.TestCase):
         self.sadtalker = SadTalker(device=self.device, checkpoint_dir=self.checkpoint_dir, bf16=True, p_num=4, enhancer=None, output_video_path=self.output_video_path)
 
     @classmethod
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def tearDownClass(self):
-        os.remove(self.output_video_path)
-        os.remove(self.source_image)
-        os.remove(self.driven_audio)
+        os.remove(self.output_video_path) if os.path.exists(self.output_video_path) else None
+        os.remove(self.source_image) if os.path.exists(self.source_image) else None
+        os.remove(self.driven_audio) if os.path.exists(self.driven_audio) else None
         shutil.rmtree(self.checkpoint_dir, ignore_errors=True)
         shutil.rmtree(self.enhancer_dir, ignore_errors=True)
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_sadtalker_without_enhancer(self):
         self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)
         self.assertTrue(os.path.exists(self.output_video_path))
 
+    @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_sadtalker_with_enhancer(self):
         self.sadtalker.enhancer = 'gfpgan'
         self.sadtalker.convert(source_image=self.source_image, driven_audio=self.driven_audio)

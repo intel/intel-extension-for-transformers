@@ -38,7 +38,6 @@ Install neuralchat dependencies
 
 ```bash
 pip install -r ../../../requirements.txt
-# make sure you install the latest version of transformers
 pip install transformers==4.35.2
 ```
 

@@ -389,10 +389,10 @@ class TTSFinetuningConfig:
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.1
-    top_k: int = 1
+    top_k: int = 40
     top_p: float = 0.75
     repetition_penalty: float = 1.1
-    num_beams: int = 0
+    num_beams: int = 1
     max_new_tokens: int = 256
     do_sample: bool = True
     num_return_sequences: int = 1
@@ -406,6 +406,8 @@ class GenerationConfig:
     max_gpu_memory: int = None
     use_fp16: bool = False
     ipex_int8: bool = False
+    return_stats: bool = False
+    format_version: str = "v2"
     task: str = ""
 
 @dataclass
@@ -419,6 +421,29 @@ class LoadingModelConfig:
     ipex_int8: bool = False
     use_llm_runtime: bool = False
 
+@dataclass
+class FrameworkConfig:
+    pass
+
+@dataclass
+class VllmEngineParams(FrameworkConfig):
+    # to use continuous batching during serving, use_async_engine should be set true,
+    # otherwise, serving is offline and synchronous, which means the next batch will only
+    # be queued and processed after the processing of the last batch is finished
+    use_async_engine: bool = True
+    # https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
+    tensor_parallel_size: int = 1
+    quantization: str = None
+    gpu_memory_utilization: float = 0.9
+    swap_space: int = 4
+    enforce_eager: bool = False
+    max_context_len_to_capture: int = 8192
+
+@dataclass
+class ServingConfig:
+    framework: str = "vllm" # vllm/TGI
+    framework_config: FrameworkConfig = None
+
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="Intel/neural-chat-7b-v3-1",
@@ -428,7 +453,8 @@ class PipelineConfig:
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None,
-                 assistant_model=None):
+                 assistant_model=None,
+                 serving_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
@@ -453,3 +479,4 @@ class PipelineConfig:
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         self.assistant_model = assistant_model
+        self.serving_config = serving_config

@@ -3,6 +3,6 @@ datasets
 sentencepiece
 protobuf
 torch
-transformers==4.34.1
+transformers
 wandb
 setfit

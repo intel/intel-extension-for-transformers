@@ -25,12 +25,11 @@ import torch
 
 import transformers
 
-from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig
+from transformers import AutoTokenizer, set_seed, BitsAndBytesConfig, AutoConfig
 from transformers.integrations.deepspeed import is_deepspeed_available
-from intel_extension_for_transformers.transformers.modeling.llava_models import LlavaMistralForCausalLM
 from llava_utils import *
 
-if is_optimum_habana_available():
+if is_hpu_available:
     from optimum.habana import GaudiTrainingArguments as TrainingArguments
 else:
     from transformers import TrainingArguments
@@ -133,19 +132,46 @@ def train():
             low_cpu_mem_usage = False
             device_map = None
 
+    config_kwargs = {
+        "cache_dir": training_args.cache_dir,
+        "trust_remote_code": model_args.trust_remote_code,
+    }
+    config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
 
-    model = LlavaMistralForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-        load_in_4bit=training_args.bits == 4,
-        load_in_8bit=training_args.bits == 8,
-        low_cpu_mem_usage=low_cpu_mem_usage,
-        device_map=device_map,
-        quantization_config=quantization_config,
-        torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
-        trust_remote_code=model_args.trust_remote_code,
-        use_auth_token=model_args.use_auth_token
-    )
+    use_fast = True
+    if config.architectures[0] == "LlamaForCausalLM":
+        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_llama \
+                import LlavaLlamaForCausalLM
+        model = LlavaLlamaForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                cache_dir=training_args.cache_dir,
+                load_in_4bit=training_args.bits == 4,
+                load_in_8bit=training_args.bits == 8,
+                low_cpu_mem_usage=low_cpu_mem_usage,
+                device_map=device_map,
+                quantization_config=quantization_config,
+                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
+                trust_remote_code=model_args.trust_remote_code,
+                use_auth_token=model_args.use_auth_token
+                )
+        use_fast = False
+    elif config.architectures[0] == "MistralForCausalLM":
+        from intel_extension_for_transformers.transformers.modeling.llava_models.llava_mistral \
+                import LlavaMistralForCausalLM
+        model = LlavaMistralForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                cache_dir=training_args.cache_dir,
+                load_in_4bit=training_args.bits == 4,
+                load_in_8bit=training_args.bits == 8,
+                low_cpu_mem_usage=low_cpu_mem_usage,
+                device_map=device_map,
+                quantization_config=quantization_config,
+                torch_dtype=(torch.float32 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32)),
+                trust_remote_code=model_args.trust_remote_code,
+                use_auth_token=model_args.use_auth_token
+                )
+    else:
+        raise ValueError("No llava implemention for the model {}".format(model_args.model_name_or_path))
 
     # for training
     model.config.use_cache = False
@@ -189,7 +215,8 @@ def train():
             cache_dir=training_args.cache_dir,
             model_max_length=training_args.model_max_length,
             padding_side="right",
-            # use_fast=False
+            trust_remote_code=model_args.trust_remote_code,
+            use_fast=use_fast
             )
 
     tokenizer.pad_token = tokenizer.eos_token
@@ -244,7 +271,7 @@ def train():
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
 
-    if is_optimum_habana_available():
+    if is_hpu_available:
         from optimum.habana import GaudiConfig
         gaudi_config = GaudiConfig()
         gaudi_config.use_fused_adam = True
