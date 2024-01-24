@@ -29,5 +29,7 @@ else
     echo "Not found requirements.txt file."
 fi
 
+## workaround for transformers
+pip install transformers==4.36.2
 pip install coverage
 pip install pytest
