@@ -244,9 +244,12 @@ class WeightOnlyQuantConfig(PretrainedConfig):
                 raise ValueError("weight_dtype must be in {}.".format(
                     runtime_supported_weight_dtype))
 
-        if self.scale_dtype not in runtime_supported_scale_dtype:
-            raise ValueError("scale_dtype must be in {}.".format(
-                runtime_supported_scale_dtype))
+        if self.scale_dtype is None:
+            self.scale_dtype = "fp32"
+        else:
+            if self.scale_dtype not in runtime_supported_scale_dtype:
+                raise ValueError("scale_dtype must be in {}.".format(
+                    runtime_supported_scale_dtype))
 
         if self.group_size not in runtime_supported_group_size:
             raise ValueError("group_size must be an integer in {}.".format(
