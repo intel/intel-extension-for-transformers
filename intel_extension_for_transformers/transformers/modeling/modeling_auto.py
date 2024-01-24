@@ -291,6 +291,7 @@ class _BaseQBitsAutoModelClass:
                 return model
             else:
                 if use_xpu:
+                    # TODO: if low_cpu_mem_uasge is True, gptj will have accuracy issue on CPU device.
                     kwargs["low_cpu_mem_usage"] = True
                     kwargs["device_map"] = "auto"
                     try:
