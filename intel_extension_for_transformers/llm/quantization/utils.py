@@ -29,8 +29,7 @@ from neural_compressor.config import PostTrainingQuantConfig
 from ...utils.utils import is_ipex_available
 from transformers import AutoTokenizer
 
-
-if is_ipex_available:
+if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 
