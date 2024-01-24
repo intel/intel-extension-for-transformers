@@ -24,5 +24,6 @@ repos:
           (?x)^(
               docker/third_party_programs_docker.txt|
               intel_extension_for_transformers/llm/evaluation/hf_eval/datasets/cnn_validation.json|
+              examples/huggingface/pytorch/text-generation/inference/prompt.json|
               intel_extension_for_transformers/neural_chat/assets/docs/4th\ Generation\ Intel®\ Xeon®\ Scalable\ Processors\ Product\ Specifications.html
           )$
