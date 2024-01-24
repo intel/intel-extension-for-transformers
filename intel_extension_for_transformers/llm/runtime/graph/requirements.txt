@@ -13,3 +13,5 @@ tiktoken
 py-cpuinfo
 cmake
 gguf
+auto-gptq
+neural-speed
