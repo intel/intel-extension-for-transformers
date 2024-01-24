@@ -1029,11 +1029,12 @@ def predict_stream(**params):
             However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
         )
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
-        yield {
+        ret = {
             "error": True,
             "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
             "error_message": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
         }
+        yield json.dumps(ret).encode() + b"\0"
         return
 
     generate_kwargs = get_generate_kwargs(
@@ -1167,12 +1168,13 @@ def predict_stream(**params):
             f"unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
         )
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        yield {
+        ret = {
             "error": True,
             "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
             "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
             "logprobs": None,
         }
+        yield json.dumps(ret).encode() + b"\0"
         return
     output_word_len = 0
 
@@ -1181,11 +1183,13 @@ def predict_stream(**params):
         pass
     else:
         thread_exception = errors_queue.get()
-        yield {
+        ret = {
             "error": True,
             "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
-            "error_message": thread_exception
+            "error_message": str(thread_exception)
         }
+        yield json.dumps(ret).encode() + b"\0"
+        return
     # prevent crash if no words are coming out
     first_word_output_time = datetime.now()
     output = ""
@@ -1196,14 +1200,15 @@ def predict_stream(**params):
         if output_word_len == 0:
             first_word_output_time = datetime.now()
         output_word_len += 1
-        yield {
+        ret = {
             "text": output,
             "usage": {
                 "prompt_tokens": input_token_len,
                 "completion_tokens": output_word_len,
                 "total_tokens": input_token_len + output_word_len,
-            },
+            }
         }
+        yield json.dumps(ret).encode() + b"\0"
 
     end_time = datetime.now()
 
@@ -1228,7 +1233,7 @@ def predict_stream(**params):
         )
     if return_stats:
         if format_version == "v1":
-            yield {
+            ret = {
                 "text": "",
                 "stats": {
                     "prompt_tokens": input_token_len,
@@ -1239,6 +1244,7 @@ def predict_stream(**params):
                     "total_tokens": input_token_len + output_token_len,
                 },
             }
+            yield json.dumps(ret).encode() + b"\0"
         else:
             stats = {
                 "input_token_len": str(input_token_len),
