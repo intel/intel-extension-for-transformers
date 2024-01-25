@@ -20,6 +20,7 @@ repos:
       - id: codespell
         additional_dependencies:
           - tomli
+        args: [-w]
         exclude: |
           (?x)^(
               docker/third_party_programs_docker.txt|
