@@ -34,6 +34,7 @@ class TestResponseTemplate(unittest.TestCase):
         return super().tearDown()
 
     def test_response_template(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./response_template"
@@ -63,6 +64,7 @@ class TestAccuracyMode(unittest.TestCase):
         return super().tearDown()
 
     def test_accuracy_mode(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./accuracy_mode"
@@ -89,6 +91,7 @@ class TestGeneralMode(unittest.TestCase):
         return super().tearDown()
 
     def test_general_mode(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./general_mode"
@@ -115,6 +118,7 @@ class TestSmallMaxChuckSize(unittest.TestCase):
         return super().tearDown()
 
     def test_small_max_chuck_size(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./small_max_chuck_size"
@@ -142,6 +146,7 @@ class TestLargeMaxChuckSize(unittest.TestCase):
         return super().tearDown()
 
     def test_large_max_chuck_size(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./large_max_chuck_size"
@@ -169,6 +174,7 @@ class TestSmallMinChuckSize(unittest.TestCase):
         return super().tearDown()
 
     def test_small_min_chuck_size(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./small_min_chuck_size"
@@ -196,6 +202,7 @@ class TestLargeMinChuckSize(unittest.TestCase):
         return super().tearDown()
 
     def test_large_min_chuck_size(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./large_min_chuck_size"
@@ -225,6 +232,7 @@ class TestTrueProcess(unittest.TestCase):
         return super().tearDown()
 
     def test_true_process(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./true_process"
@@ -253,6 +261,7 @@ class TestFalseProcess(unittest.TestCase):
         return super().tearDown()
 
     def test_false_process(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample_1.txt"
         plugins.retrieval.args["persist_directory"] = "./false_process"
@@ -281,6 +290,7 @@ class TestMMRSearchTypeK1(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_k_1(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_k_1"
@@ -308,6 +318,7 @@ class TestMMRSearchTypeK2(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_k_2(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_k_2"
@@ -335,6 +346,7 @@ class TestMMRSearchTypeFetchK1(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_fetch_k_1(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_fetch_k_1"
@@ -362,6 +374,7 @@ class TestMMRSearchTypeFetchK2(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_fetch_k_2(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_fetch_k_2"
@@ -389,6 +402,7 @@ class TestMMRSearchTypeLowLambdaMulti(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_low_lambda_multi(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_low_lambda_multi"
@@ -416,6 +430,7 @@ class TestMMRSearchTypeHighLambdaMulti(unittest.TestCase):
         return super().tearDown()
 
     def test_mmr_search_type_low_lambda_multi(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./mmr_search_type_high_lambda_multi"
@@ -443,6 +458,7 @@ class TestSimilarityScoreThresholdSearchTypeLowThreshold(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_score_threshold_search_type_low_threshold(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./similarity_score_threshold_search_type_low_threshold"
@@ -470,6 +486,7 @@ class TestSimilarityScoreThresholdSearchTypeHighThreshold(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_score_threshold_search_type_high_threshold(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/sample.txt"
         plugins.retrieval.args["persist_directory"] = "./similarity_score_threshold_search_type_high_threshold"
@@ -497,6 +514,7 @@ class TestSimilarityScoreThresholdSearchTypeK1(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_score_threshold_search_type_k_1(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./similarity_score_threshold_search_type_k_1"
@@ -524,6 +542,7 @@ class TestSimilarityScoreThresholdSearchTypeK2(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_score_threshold_search_type_k_2(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./similarity_score_threshold_search_type_k_2"
@@ -551,6 +570,7 @@ class TestSimilaritySearchTypeK1(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_search_type_k_1(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./similarity_search_type_k_1"
@@ -578,6 +598,7 @@ class TestSimilaritySearchTypeK2(unittest.TestCase):
         return super().tearDown()
 
     def test_similarity_search_type_k_2(self):
+        plugins.retrieval.args = {}
         plugins.retrieval.enable = True
         plugins.retrieval.args["input_path"] = "../assets/docs/retrieve_multi_doc"
         plugins.retrieval.args["persist_directory"] = "./similarity_search_type_k_2"
