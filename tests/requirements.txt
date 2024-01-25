@@ -25,3 +25,4 @@ tiktoken
 transformers_stream_generator
 einops
 neural-speed
+gguf
