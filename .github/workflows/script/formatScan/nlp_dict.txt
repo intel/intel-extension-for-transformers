@@ -2,6 +2,8 @@ alse
 ans
 bu
 daa
+datas
+dota
 dout
 fo
 followings
@@ -14,12 +16,7 @@ ot
 rouge
 sie
 te
-u
-daa
-inout
-nd
-datas
-dota
+ue
 wya
 ques
 charactor
