@@ -15,9 +15,15 @@ WEIGHT_REDUCE_RANGE = False
 
 class QuantizedLinear(Linear):
     def forward(self, x):
-        return super().forward(
+        ori_dtype = x.dtype
+        if ori_dtype != torch.float32:
+            x = x.type(torch.float32)
+        output = super().forward(
             self.input_quant(x)
         ).dequantize()
+        if ori_dtype != torch.float32:
+            output = output.type(ori_dtype)
+        return output
 
 
 class FakeQuantLinear(torch.nn.Linear):
@@ -29,7 +35,10 @@ class FakeQuantLinear(torch.nn.Linear):
         self.is_lora_layer = True if peft_available and isinstance(module, LoRALinear) else False
 
     def forward(self, x):
-        x = self.activation_pre_process(x)
+        if self.weight.dtype != torch.float32:
+            self.to(torch.float32)
+        ori_dtype = x.dtype
+        x = self.activation_pre_process(x.type(torch.float32))
         weight = self.weight
         if self.is_lora_layer and not self.disable_adapters and self.r[self.active_adapter] > 0:
             lora_weight = transpose(
@@ -39,7 +48,7 @@ class FakeQuantLinear(torch.nn.Linear):
             weight = weight + lora_weight
         x = F.linear(x, self.weight_fake_quant(weight), self.bias)
         x = self.activation_post_process(x)
-        return x
+        return x.type(ori_dtype)
 
     def convert(self):
         if self.is_lora_layer and not self.disable_adapters and self.r[self.active_adapter] > 0:
@@ -58,10 +67,15 @@ class FakeQuantLinear(torch.nn.Linear):
 
 class QuantizedConv2d(Conv2d):
     def forward(self, x):
-        return super().forward(
+        ori_dtype = x.dtype
+        if ori_dtype != torch.float32:
+            x = x.type(torch.float32)
+        output = super().forward(
             self.input_quant(x)
         ).dequantize()
-
+        if ori_dtype != torch.float32:
+            output = output.type(ori_dtype)
+        return output
 
 class FakeQuantConv2d(torch.nn.Conv2d):
     def __init__(self, module: torch.nn.Conv2d):
@@ -71,10 +85,13 @@ class FakeQuantConv2d(torch.nn.Conv2d):
         self.add_module('activation_post_process', default_fake_quant(reduce_range=ACT_REDUCE_RANGE))
 
     def forward(self, x):
-        x = self.activation_pre_process(x)
+        if self.weight.dtype != torch.float32:
+            self.to(torch.float32)
+        ori_dtype = x.dtype
+        x = self.activation_pre_process(x.type(torch.float32))
         x = self._conv_forward(x, self.weight_fake_quant(self.weight), self.bias)
         x = self.activation_post_process(x)
-        return x
+        return x.type(ori_dtype)
 
     def convert(self):
         module = QuantizedConv2d.from_float(self)
@@ -91,7 +108,7 @@ def get_submodules(model, key):
     target = model.get_submodule(key)
     return parent, target, target_name
 
-def find_and_replace(model, fake_quant=True):
+def find_and_replace(model, fake_quant=True, quantize_ops=['conv2d', 'linear']):
     assert isinstance(model, torch.nn.Module), "Only support torch Module."
     key_list = [key for key, _ in model.named_modules()]
     for key in key_list:
@@ -100,14 +117,14 @@ def find_and_replace(model, fake_quant=True):
         except:
             continue
         if fake_quant:
-            if isinstance(target, torch.nn.Linear):
+            if isinstance(target, torch.nn.Linear) and 'linear' in quantize_ops:
                 setattr(parent, target_name, FakeQuantLinear(target))
-            elif isinstance(target, torch.nn.Conv2d):
+            elif isinstance(target, torch.nn.Conv2d) and 'conv2d' in quantize_ops:
                 setattr(parent, target_name, FakeQuantConv2d(target))
         else:
-            if isinstance(target, FakeQuantLinear):
+            if isinstance(target, FakeQuantLinear) and 'linear' in quantize_ops:
                 setattr(parent, target_name, target.convert())
-            elif isinstance(target, FakeQuantConv2d):
+            elif isinstance(target, FakeQuantConv2d) and 'conv2d' in quantize_ops:
                 setattr(parent, target_name, target.convert())
 
 def convert2quantized_model(model):
@@ -133,14 +150,25 @@ def sync_all_observers(model):
             module.scale.copy_(_scale)
             module.zero_point.copy_(_zero_point)
 
-def load_int8_model(fp32_model, int8_model_path, fake_quantize_model=False):
-    find_and_replace(fp32_model)
+def load_checkpoint(model, checkpoint_path):
+    state_dict = torch.load(checkpoint_path)
+    state_dict_keys = set(state_dict.keys())
+    keys_to_delete = state_dict_keys - state_dict_keys.intersection(set(model.state_dict().keys()))
+    for key in keys_to_delete:
+        del state_dict[key]
+    model.load_state_dict(state_dict)
+    return model
+
+def load_int8_model(fp32_model, int8_model_path, fake_quantize_model=False, quantize_ops=['conv2d', 'linear'], convert=True):
+    find_and_replace(fp32_model, quantize_ops=quantize_ops)
     if fake_quantize_model:
-        fp32_model.load_state_dict(torch.load(int8_model_path))
+        fp32_model = load_checkpoint(fp32_model, int8_model_path)
         disable_all_observers(fp32_model)
         sync_all_observers(fp32_model)
+        if not convert:
+            return fp32_model
     int8_model = convert2quantized_model(fp32_model)
     print('Converted to quantized model.')
     if not fake_quantize_model:
-        int8_model.load_state_dict(torch.load(int8_model_path))
+        int8_model = load_checkpoint(int8_model, int8_model_path)
     return int8_model
