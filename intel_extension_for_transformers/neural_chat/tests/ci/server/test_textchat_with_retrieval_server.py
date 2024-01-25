@@ -44,7 +44,7 @@ Offload Support: Information about SYCL*, OpenMP, and parallel processing option
 Latest Standards: Use the latest standards including C++ 20, SYCL, and OpenMP 5.0 and 5.1 for GPU offload.
 """
 
-class TestTextchatWithRetrievalServer(unittest.TestCase):
+class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
         config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
@@ -76,3 +76,4 @@ class TestTextchatWithRetrievalServer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    
