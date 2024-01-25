@@ -47,3 +47,4 @@ pymysql
 deepface
 exifread
 qdrant-client
+neural_speed
