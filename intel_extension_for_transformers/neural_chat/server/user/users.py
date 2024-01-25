@@ -88,11 +88,6 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ):
         logger.info(f"User {user.id} has forgot their password. Reset token: {token}")
 
-    async def on_after_request_verify(
-        self, user: User, token: str, request: Optional[Request] = None
-    ):
-        logger.info(f"Verification requested for user {user.id}. Verification token: {token}")
-
     async def on_after_update(
         self,
         user: User,
