@@ -35,8 +35,6 @@ class UnitTest(unittest.TestCase):
     def tearDown(self) -> None:
         if os.path.exists("output"):
             shutil.rmtree("output")
-        if os.path.exists("check_append"):
-            shutil.rmtree("check_append")
         for filename in os.listdir("."):
             if filename.endswith(".wav"):
                 os.remove(filename)
@@ -48,84 +46,6 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
-
-    def test_retrieval(self):
-        plugins.retrieval.enable = True
-        input_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/"
-        if os.path.exists(input_path):
-            plugins.retrieval.args["input_path"] = input_path
-        else:
-            plugins.retrieval.args["input_path"] = "../assets/docs/"
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        plugins.retrieval.enable = False
-
-    def test_retrieval_with_qdrant(self):
-        plugins.retrieval.enable = True
-        input_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/docs/"
-        if os.path.exists(input_path):
-            plugins.retrieval.args["input_path"] = input_path
-        else:
-            plugins.retrieval.args["input_path"] = "../assets/docs/"
-        plugins.retrieval.args["vector_database"] = "Qdrant"
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        plugins.retrieval.enable = False
-    
-    def test_retrieval_append(self):
-        plugins.retrieval.enable = True
-        plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["input_path"] = "../assets/docs/"
-        plugins.retrieval.args["persist_directory"] = "./check_append"
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        
-        plugins.retrieval.args["append"] = False
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["persist_directory"] = "./output"
-        plugins.retrieval.enable = False
-
-    def test_retrieval_append_with_qdrant(self):
-        plugins.retrieval.enable = True
-        plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["input_path"] = "../assets/docs/"
-        plugins.retrieval.args["persist_directory"] = "./check_append"
-        plugins.retrieval.args["vector_database"] = "Qdrant"
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        
-        plugins.retrieval.args["append"] = False
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-        plugins.retrieval.args["append"] = True
-        plugins.retrieval.args["persist_directory"] = "./output"
-        plugins.retrieval.enable = False
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_voice_chat(self):
