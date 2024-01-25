@@ -2,6 +2,8 @@ alse
 ans
 bu
 daa
+datas
+dota
 dout
 fo
 followings
@@ -15,9 +17,4 @@ rouge
 sie
 te
 ue
-daa
-inout
-nd
-datas
-dota
 wya
