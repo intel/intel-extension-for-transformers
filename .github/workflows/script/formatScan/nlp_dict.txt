@@ -14,10 +14,14 @@ ot
 rouge
 sie
 te
-ue
+u
 daa
 inout
 nd
 datas
 dota
 wya
+ques
+charactor
+parm
+ore

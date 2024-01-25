@@ -271,7 +271,7 @@ class QuantizationConfig(object):
         self._metrics = metrics
         rel_or_abs = {True: "relative", False: "absolute"}
         assert isinstance(metrics[0] if isinstance(metrics, list) else metrics, Metric), \
-            "metric should be a Metric calss!"
+            "metric should be a Metric class!"
         if isinstance(metrics, Metric) or len(metrics) == 1:
             self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]
@@ -767,7 +767,7 @@ class DistillationConfig(object):
     def metrics(self, metrics):
         """Set the metrics."""
         assert isinstance(metrics, Metric), \
-            "metric should be a Metric calss!"
+            "metric should be a Metric class!"
         self._metrics = metrics
 
 
