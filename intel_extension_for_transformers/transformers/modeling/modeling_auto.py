@@ -186,7 +186,8 @@ class _BaseQBitsAutoModelClass:
                     )
                 )
                 try:
-                    model = cls.load_low_bit(pretrained_model_name_or_path)
+                    model = cls.load_low_bit(pretrained_model_name_or_path,
+                                             trust_remote_code=kwargs.get("trust_remote_code", False))
                     logger.info(
                         "Saved low bit model loading successfully. Other input args "
                         "will be ignored."
@@ -219,16 +220,7 @@ class _BaseQBitsAutoModelClass:
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
 
-        use_llm_runtime = kwargs.pop("use_llm_runtime", True)
         device_map = kwargs.get("device_map", "cpu")
-        if isinstance(quantization_config, BitsAndBytesConfig):
-            model = cls.ORIG_MODEL.from_pretrained(
-                pretrained_model_name_or_path,
-                quantization_config=quantization_config,
-                *model_args,
-                **kwargs,
-            )
-            return model
         use_cpu = (
             True
             if device_map == torch.device("cpu") or device_map == "cpu"
@@ -240,6 +232,15 @@ class _BaseQBitsAutoModelClass:
             or device_map == "xpu"
             else False
         )
+        use_llm_runtime = kwargs.pop("use_llm_runtime", True) and not use_xpu
+        if isinstance(quantization_config, BitsAndBytesConfig):
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path,
+                quantization_config=quantization_config,
+                *model_args,
+                **kwargs,
+            )
+            return model
         if load_in_8bit or load_in_4bit:
             if (
                 is_accelerate_available()
@@ -259,7 +260,11 @@ class _BaseQBitsAutoModelClass:
                 return model
             logger.info("{} device is used.".format(device_map))
             if load_in_8bit or load_in_4bit or quantization_config is not None:
-                torch_dtype = kwargs.pop("torch_dtype", torch.float32)
+                torch_dtype = kwargs.get("torch_dtype", torch.float16 if use_xpu else torch.float32)
+                if use_xpu:
+                    assert torch_dtype == torch.float16, \
+                        "Intel GPU only support torch.float16 now, will support other dtype in furture!"
+                    kwargs["torch_dtype"] = torch_dtype
             if load_in_4bit:
                 if quantization_config is None:
                     if use_llm_runtime:
@@ -274,8 +279,8 @@ class _BaseQBitsAutoModelClass:
                 else:
                     assert (
                         "4" in quantization_config.weight_dtype
-                        and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype
-                    ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
+                            and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype
+                            ), "Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
                     f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
             elif load_in_8bit:
                 if quantization_config is None:
@@ -518,7 +523,7 @@ class _BaseQBitsAutoModelClass:
                                 input_ids[: int(calib_len)]
                                 if len(input_ids) > int(calib_len)
                                 else input_ids
-                            )  # no_padding
+                                         )  # no_padding
                         else:
                             pad_len = calib_len - input_ids.shape[0]
                             input_ids = pad(
@@ -828,10 +833,10 @@ class _BaseQBitsAutoModelClass:
             is_local = os.path.isdir(pretrained_model_name_or_path)
             if is_local:
                 if os.path.isfile(
-                    os.path.join(
-                        pretrained_model_name_or_path,
-                        subfolder,
-                        _add_variant(WEIGHTS_NAME, variant),
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(WEIGHTS_NAME, variant),
                     )
                 ):
                     # Load from a PyTorch checkpoint
@@ -841,10 +846,10 @@ class _BaseQBitsAutoModelClass:
                         _add_variant(WEIGHTS_NAME, variant),
                     )
                 elif os.path.isfile(
-                    os.path.join(
-                        pretrained_model_name_or_path,
-                        subfolder,
-                        _add_variant(WEIGHTS_INDEX_NAME, variant),
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(WEIGHTS_INDEX_NAME, variant),
                     )
                 ):
                     # Load from a sharded PyTorch checkpoint
@@ -855,10 +860,10 @@ class _BaseQBitsAutoModelClass:
                     )
                     is_sharded = True
                 elif os.path.isfile(
-                    os.path.join(
-                        pretrained_model_name_or_path,
-                        subfolder,
-                        _add_variant(SAFE_WEIGHTS_NAME, variant),
+                        os.path.join(
+                            pretrained_model_name_or_path,
+                            subfolder,
+                            _add_variant(SAFE_WEIGHTS_NAME, variant),
                     )
                 ):
                     # Load from a safetensors checkpoint
@@ -961,8 +966,8 @@ class _BaseQBitsAutoModelClass:
             loaded_state_dict_keys = sharded_metadata["all_checkpoint_keys"]
         else:
             with open(
-                os.path.join(pretrained_model_name_or_path, "all_checkpoint_keys.json"),
-                "r",
+                    os.path.join(pretrained_model_name_or_path, "all_checkpoint_keys.json"),
+                    "r",
             ) as json_file:
                 loaded_data = json.load(json_file)
             loaded_state_dict_keys = loaded_data["all_checkpoint_keys"]
