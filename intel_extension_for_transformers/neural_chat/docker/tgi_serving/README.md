@@ -17,6 +17,8 @@ docker build . -f Dockerfile_tgi -t neuralchat_tgi:latest --build-arg https_prox
 ### Start NeuralChat Service
 Before starting NeuralChat services, you need to configure `tgi.yaml` according to you read environment.
 Make sure the specified `port` is avaliable, `device` is `cpu` (`auto` will not work).
+Other detailed parameters please refer to `intel_extension_for_transformers/neural_chat/examples/serving/TGI/README.md`
+
 ```bash
 docker run -it --net=host --ipc=host -v /var/run/docker.sock:/var/run/docker.sock -v ./tgi.yaml:/tgi.yaml neuralchat_tgi:latest
 ```
