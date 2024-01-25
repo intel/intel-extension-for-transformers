@@ -63,7 +63,6 @@ You can customize the configuration file 'tgi.yaml' to match your environment se
 | model_name_or_path                | "./neural-chat-7b-v3-1"                 |
 | device                            | "cpu"/"gpu"/"hpu"                                 |
 | serving.framework                  | "tgi"                                   |
-| serving.framework.tgi_engine_params.model_id    | "mistralai/Mistral-7B-Instruct-v0.1"                               |
 | serving.framework.tgi_engine_params.sharded        | true (false only on cpu)                    |
 | serving.framework.tgi_engine_params.num_shard  | 4 (not effective when sharded is false)    |
 | serving.framework.tgi_engine_params.habana_visible_devices      | "0,1" (only on hpu)        |

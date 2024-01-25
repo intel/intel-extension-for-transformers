@@ -28,8 +28,6 @@ device: "cpu"
 
 serving:
     framework: "tgi"
-    tgi_engine_params:
-        model_id: "mistralai/Mistral-7B-Instruct-v0.1"
 
 
 tasks_list: ['textchat', 'tgi']
