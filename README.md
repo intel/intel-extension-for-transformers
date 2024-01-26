@@ -226,10 +226,6 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
 outputs = model.generate(inputs)
 ```
-| Inference Framework |   GPT-Q |  AWQ |  AutoRound |
-|:--------------:|:----------:|:----------:|:----------:|
-|       [Neural Speed](https://github.com/intel/neural-speed/tree/main)      |  &#10004;  |  &#10004;  | &#10004; |
-|       PyTorch      |  &#10004;  | &#10004; | &#10004; |
 
 #### INT4 Inference (GPU)
 ```python
