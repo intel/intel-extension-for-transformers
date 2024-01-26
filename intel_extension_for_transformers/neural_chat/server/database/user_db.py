@@ -41,6 +41,20 @@ class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
 class User(SQLAlchemyBaseUserTableUUID, Base):
     role = Column(String(length=50), default='user', nullable=False)
     is_vipuser = Column(Boolean, default=False, nullable=False)
+    wwid = Column(String(length=50), nullable=True)
+    email_address = Column(String(length=255), nullable=True)
+    account = Column(String(length=50), nullable=True)
+    name = Column(String(length=255), nullable=True)
+    given_name = Column(String(length=255), nullable=True)
+    distinguished_name = Column(String(length=255), nullable=True)
+    idsid = Column(String(length=50), nullable=True)
+    generic = Column(Boolean, default=False, nullable=False)
+    SuperGroup = Column(String(length=50), nullable=True)
+    Group = Column(String(length=50), nullable=True)
+    Division = Column(String(length=50), nullable=True)
+    DivisionLong = Column(String(length=255), nullable=True)
+    CostCenterLong = Column(String(length=255), nullable=True)
+    mgrWWID = Column(String(length=50), nullable=True)
 
     oauth_accounts: Mapped[List[OAuthAccount]] = relationship(
         "OAuthAccount", lazy="joined"

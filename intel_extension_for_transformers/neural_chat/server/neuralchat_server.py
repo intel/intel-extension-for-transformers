@@ -27,7 +27,7 @@ import uvicorn
 import yaml
 import logging
 from yacs.config import CfgNode
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from .base_executor import BaseCommandExecutor
@@ -39,11 +39,10 @@ from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
 from transformers import BitsAndBytesConfig
-from .user.users import auth_backend, current_active_user, fastapi_users
+from .user.users import auth_backend, current_active_user, fastapi_users, UserManager, get_user_manager
 from .schemas.user import UserCreate, UserRead, UserUpdate
 from .database.user_db import User, create_db_and_tables
 from .user.users import SECRET, google_oauth_client, github_oauth_client, facebook_oauth_client, microsoft_oauth_client
-
 
 __all__ = ['NeuralChatServerExecutor']
 
@@ -398,3 +397,26 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
 @app.get("/authenticated-route")
 async def authenticated_route(user: User = Depends(current_active_user)):
     return {"message": f"Hello {user.email}!"}
+
+@app.post("/intel/login")
+async def login(
+    credentials: dict,
+    user_manager: UserManager = Depends(get_user_manager)
+):
+    try:
+        username = credentials.get("account")
+        password = credentials.get("password")
+
+        from LDAPclient import IntelLDAP
+        user_manager.ldap_client = IntelLDAP(user=username, password=password)
+        user = await user_manager.fastapi_users.authenticate(
+            {"email": username, "password": password},
+            user_manager.db
+        )
+        
+        if user is None:
+            raise HTTPException(status_code=401, detail="LDAP authentication failed")
+
+        return {"msg": "Login successful", "user_id": user.id}
+    except HTTPException as e:
+        return {"msg": "Login failed", "error_detail": e.detail}

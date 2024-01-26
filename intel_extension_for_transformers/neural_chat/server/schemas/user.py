@@ -24,14 +24,53 @@ from typing import Optional
 class UserRead(schemas.BaseUser[uuid.UUID]):
     role: str
     is_vipuser: bool = False
-
+    wwid: Optional[str] = None
+    email_address: Optional[str] = None
+    account: Optional[str] = None
+    name: Optional[str] = None
+    given_name: Optional[str] = None
+    distinguished_name: Optional[str] = None
+    idsid: Optional[str] = None
+    generic: bool = False
+    SuperGroup: Optional[str] = None
+    Group: Optional[str] = None
+    Division: Optional[str] = None
+    DivisionLong: Optional[str] = None
+    CostCenterLong: Optional[str] = None
+    mgrWWID: Optional[str] = None
 
 class UserCreate(schemas.BaseUserCreate):
     role: Optional[str] = 'user'
     is_vipuser: bool = False
-
+    wwid: Optional[str] = None
+    email_address: Optional[str] = None
+    account: Optional[str] = None
+    name: Optional[str] = None
+    given_name: Optional[str] = None
+    distinguished_name: Optional[str] = None
+    idsid: Optional[str] = None
+    generic: bool = False
+    SuperGroup: Optional[str] = None
+    Group: Optional[str] = None
+    Division: Optional[str] = None
+    DivisionLong: Optional[str] = None
+    CostCenterLong: Optional[str] = None
+    mgrWWID: Optional[str] = None
 
 class UserUpdate(schemas.BaseUserUpdate):
     role: Optional[str]
     is_vipuser: Optional[bool]
-
+    wwid: Optional[str] = None
+    email_address: Optional[str] = None
+    account: Optional[str] = None
+    name: Optional[str] = None
+    given_name: Optional[str] = None
+    distinguished_name: Optional[str] = None
+    idsid: Optional[str] = None
+    generic: bool = False
+    SuperGroup: Optional[str] = None
+    Group: Optional[str] = None
+    Division: Optional[str] = None
+    DivisionLong: Optional[str] = None
+    CostCenterLong: Optional[str] = None
+    mgrWWID: Optional[str] = None
