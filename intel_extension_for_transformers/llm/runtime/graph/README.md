@@ -60,14 +60,14 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-To directly load a GPTQ model, here is the sample code:
+To directly load a GPTQ/AWQ/AutoRound model, here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
 # Download Hugging Face GPTQ model to local path
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True)
+woq_config = WeightOnlyQuantConfig(use_gptq=True) # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

@@ -212,6 +212,27 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
+You can also load your quantized low bit model(GPTQ/AWQ/RTN/AutoRound) by the below code.
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ/AWQ model or generate model to local
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+```
+| Inference Framework |   GPT-Q |  AWQ |  AutoRound |
+|:--------------:|:----------:|:----------:|:----------:|
+|       [Neural Speed](https://github.com/intel/neural-speed/tree/main)      |  &#10004;  |  &#10004;  | &#10004; |
+|       PyTorch      |  &#10004;  | &#10004; | &#10004; |
+
 #### INT4 Inference (GPU)
 ```python
 import intel_extension_for_pytorch as ipex
