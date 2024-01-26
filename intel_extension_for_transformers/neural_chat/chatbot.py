@@ -162,7 +162,7 @@ def build_chatbot(config: PipelineConfig=None):
         parameters["vllm_engine_params"] = None
     adapter.load_model(parameters)
     if get_latest_error():
-        return
+        return 
     else:
         return adapter
 

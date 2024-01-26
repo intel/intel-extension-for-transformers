@@ -876,6 +876,7 @@ def get_generate_kwargs(
     return generate_kwargs
 
 def is_llm_runtime_model(model):
+    return False
     from neural_speed import Model
     if isinstance(model, Model):
         return True

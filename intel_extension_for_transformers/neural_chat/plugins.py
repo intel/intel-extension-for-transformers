@@ -30,6 +30,7 @@ class GlobalPlugins:
             "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
             "cache": {"enable": False, "class": None, "args": {}, "instance": None},
             "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
+            "toxicity": {"enable": False, "class": None, "args": {}, "instance": None},
             "ner": {"enable": False, "class": None, "args": {}, "instance": None},
             "face_animation": {"enable": False, "class": None, "args": {}, "instance": None},
             "image2image": {"enable": False, "class": None, "args": {}, "instance": None},

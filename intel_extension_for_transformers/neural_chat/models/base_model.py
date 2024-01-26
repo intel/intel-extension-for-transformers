@@ -339,12 +339,12 @@ class BaseModel(ABC):
             query = MAGICODER_PROMPT.format(instruction=query)
 
         # LLM inference
-        try:
-            response = predict(
+        # try:
+        response = predict(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
-        except Exception as e:
-            set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
-            return
+        # except Exception as e:
+            # set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            # return
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
