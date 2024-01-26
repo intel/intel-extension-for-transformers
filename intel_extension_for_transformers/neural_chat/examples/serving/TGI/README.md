@@ -75,3 +75,18 @@ To start the NeuralChat server with TGI framework, run the following command:
 ```shell
 nohup bash run.sh &
 ```
+
+
+# Consume the Services
+After the services are successfully launched, you can consume the HTTP services offered by NeuralChat.
+
+Here is an example of consuming TGI service, remember to substitute your real ip and port.
+
+```bash
+curl ${your_ip}:${your_port}/v1/tgi/generate \
+  -X POST \
+  -d '{"inputs":"What is Deep Learning?","parameters":{"max_new_tokens":17, "do_sample": true}}' \
+  -H 'Content-Type: application/json'
+```
+
+Of course, you can also consume the service via `postman`, `http request`, or other ways.
