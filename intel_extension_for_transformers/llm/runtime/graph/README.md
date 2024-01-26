@@ -60,7 +60,7 @@ model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
-To directly load a GPTQ model, here is the sample code:
+To directly load a GPTQ/AutoRound model, here is the sample code:
 ```python
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
