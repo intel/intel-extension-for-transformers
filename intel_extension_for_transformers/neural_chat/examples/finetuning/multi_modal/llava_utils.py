@@ -315,12 +315,9 @@ def preprocess_v1(
     # Mask targets
     sep = conv.sep + conv.roles[1] + ": "
     for conversation, target in zip(conversations, targets):
-        # total_len = int(target.ne(tokenizer.pad_token_id).sum())
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-
-        total_len = int(target.ne(tokenizer.pad_token_id).sum()) + \
-                len([rou for rou in rounds if rou !=  ""])
 
         cur_len = 1
         target[:cur_len] = IGNORE_INDEX
