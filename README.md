@@ -228,10 +228,10 @@ streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
-
-Inference Framework	GPT-Q	AWQ	AutoRound
-LLM Runtime (use_llm_runtime=True)	✔	✔	✔
-PyTorch (use_llm_runtime=False)	✔	✔	✔
+| Inference Framework |   GPT-Q |  AWQ |  AutoRound |
+|:--------------:|:----------:|:----------:|:----------:|
+|       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  | &#10004; |
+|       PyTorch (use_llm_runtime=False)      |  &#10004;  | &#10004; | &#10004; |
 
 #### INT4 Inference (GPU)
 ```python
