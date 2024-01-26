@@ -217,7 +217,7 @@ You can also load your quantized low bit model(GPTQ/AWQ/RTN/AutoRound) by the be
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-# Download Hugging Face GPTQ/AWQ/AutoRound model to local path
+# Download Hugging Face GPTQ/AWQ model or generate model to local
 model_name = "PATH_TO_MODEL"  # local path to model
 woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
 prompt = "Once upon a time, a little girl"
