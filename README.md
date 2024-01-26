@@ -230,8 +230,8 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 | Inference Framework |   GPT-Q |  AWQ |  AutoRound |
 |:--------------:|:----------:|:----------:|:----------:|
-|       LLM Runtime (use_llm_runtime=True)      |  &#10004;  |  &#10004;  | &#10004; |
-|       PyTorch (use_llm_runtime=False)      |  &#10004;  | &#10004; | &#10004; |
+|       Neural Speed      |  &#10004;  |  &#10004;  | &#10004; |
+|       PyTorch      |  &#10004;  | &#10004; | &#10004; |
 
 #### INT4 Inference (GPU)
 ```python
