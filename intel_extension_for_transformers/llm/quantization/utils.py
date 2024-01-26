@@ -114,7 +114,7 @@ def _replace_linear(
                 with init_empty_weights():
                     in_features = module.in_features
                     out_features = module.out_features
-                    if device == "cpu" or device == torch.device("cpu"):
+                    if device == "cpu" or device == torch.device("cpu") or device == "auto":
                         from .nn.modules import (
                             QuantizedLinearQBits,
                         )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
@@ -171,7 +171,7 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if device == "cpu" or device == torch.device("cpu"):
+                if device == "cpu" or device == torch.device("cpu") or device == "auto":
                     if not empty_weights:
                         if quantization_config.algorithm == "GPTQ":
                             p_func = None

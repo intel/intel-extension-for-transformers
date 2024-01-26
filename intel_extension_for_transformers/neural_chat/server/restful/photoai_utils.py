@@ -16,7 +16,6 @@
 # limitations under the License.
 
 import re
-import exifread
 import time
 import requests
 import base64
@@ -41,6 +40,7 @@ def find_GPS_image(pic_path):
     GPS = {}
     date = ''
     with open(pic_path, 'rb') as f:
+        import exifread
         tags = exifread.process_file(f)
         print(f'====== image metadata ======')
         for tag, value in tags.items():

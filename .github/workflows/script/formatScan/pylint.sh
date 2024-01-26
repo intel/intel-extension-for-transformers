@@ -10,7 +10,7 @@ $BOLD_YELLOW && echo "---------------- install ITREX -------------" && $RESET
 export PYTHONPATH=`pwd`
 pip list
 
-cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests/
 if [ -f "requirements.txt" ]; then
     python -m pip install --default-timeout=100 -r requirements.txt
     pip list
