@@ -219,7 +219,7 @@ from intel_extension_for_transformers.transformers import AutoModelForCausalLM, 
 
 # Download Hugging Face GPTQ/AWQ/AutoRound model to local path
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for awq model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
