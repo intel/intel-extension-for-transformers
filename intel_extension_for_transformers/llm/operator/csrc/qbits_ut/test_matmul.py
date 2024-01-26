@@ -42,7 +42,7 @@ def test(m, n, k, trans_matB, dt, dump_tensor_info=True):
     if dt == "bf16":
         tar_dst = tar_dst.to(torch.bfloat16)
         wei = wei.to(torch.bfloat16)
-    torch.ops.jblasop.matmul(activation, wei, tar_dst, trans_matB)
+    torch.ops.bestlaop.matmul(activation, wei, tar_dst, trans_matB)
     if trans_matB:
         cp_wei = torch.transpose(cp_wei, 0, 1)
     ref_dst = torch.matmul(activation_cp, cp_wei)

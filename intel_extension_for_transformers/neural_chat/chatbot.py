@@ -19,15 +19,78 @@
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
-from .config import DeviceOptions
 from .plugins import plugins
 
-from .errorcode import ErrorCodes, STORAGE_THRESHOLD_GB
-from .utils.error_utils import set_latest_error
-import psutil
-import torch
-from .config_logging import configure_logging
-logger = configure_logging()
+from .errorcode import ErrorCodes
+from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
+from intel_extension_for_transformers.utils.logger import logging
+import importlib
+
+def check_tts_dependency():
+    try:
+        importlib.import_module('paddlespeech')
+        importlib.import_module('paddle')
+        importlib.import_module('soundfile')
+        importlib.import_module('pydub')
+        importlib.import_module('speechbrain')
+        importlib.import_module('librosa')
+        return True
+    except ImportError:
+        return False
+
+def check_cache_dependency():
+    try:
+        importlib.import_module('gptcache')
+        return True
+    except ImportError:
+        return False
+
+def check_retrieval_dependency():
+    try:
+        importlib.import_module('PyPDF2')
+        importlib.import_module('langchain')
+        importlib.import_module('langchain_core')
+        importlib.import_module('docx')
+        importlib.import_module('bs4')
+        importlib.import_module('unstructured')
+        importlib.import_module('InstructorEmbedding')
+        importlib.import_module('chromadb')
+        importlib.import_module('openpyxl')
+        return True
+    except ImportError:
+        return False
+
+def check_faceanimation_dependency():
+    try:
+        importlib.import_module('face_alignment')
+        importlib.import_module('imageio')
+        importlib.import_module('resampy')
+        importlib.import_module('kornia')
+        importlib.import_module('tqdm')
+        importlib.import_module('facexlib')
+        importlib.import_module('gfpgan')
+        importlib.import_module('av')
+        importlib.import_module('safetensors')
+        return True
+    except ImportError:
+        return False
+
+def check_ner_dependency():
+    try:
+        importlib.import_module('spacy')
+        importlib.import_module('pymysql')
+        importlib.import_module('deepface')
+        importlib.import_module('exifread')
+        return True
+    except ImportError:
+        return False
+
+def check_image2image_dependency():
+    try:
+        importlib.import_module('diffusers')
+        return True
+    except ImportError:
+        return False
 
 
 def build_chatbot(config: PipelineConfig=None):
@@ -44,32 +107,13 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
-    # Check for out of storage
-    available_storage = psutil.disk_usage('/').free
-    available_storage_gb = available_storage / (1024 ** 3)
-    if available_storage_gb < STORAGE_THRESHOLD_GB:
-        set_latest_error(ErrorCodes.ERROR_OUT_OF_STORAGE)
-        return
-
     global plugins
+    clear_latest_error()
     if not config:
         config = PipelineConfig()
-    # Validate input parameters
-    if config.device not in [option.name.lower() for option in DeviceOptions]:
-        set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        return
-
-    if config.device == "cuda":
-        if not torch.cuda.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
-    elif config.device == "xpu":
-        if not torch.xpu.is_available():
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-            return
 
     # create model adapter
-    if "llama" in config.model_name_or_path.lower() or "magicoder" in config.model_name_or_path.lower():
+    if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
     elif "mpt" in config.model_name_or_path.lower():
@@ -95,11 +139,15 @@ def build_chatbot(config: PipelineConfig=None):
          "flan-t5" in config.model_name_or_path.lower() or \
          "bloom" in config.model_name_or_path.lower() or \
          "starcoder" in config.model_name_or_path.lower() or \
-         "codegen" in config.model_name_or_path.lower():
+         "codegen" in config.model_name_or_path.lower() or \
+         "magicoder" in config.model_name_or_path.lower() or \
+         "mixtral" in config.model_name_or_path.lower() or \
+         "phi-2" in config.model_name_or_path.lower():
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
+        logging.error("build_chatbot: unknown model")
         return
 
     # register plugin instance in model adaptor
@@ -107,6 +155,54 @@ def build_chatbot(config: PipelineConfig=None):
         for plugin_name, plugin_value in config.plugins.items():
             enable_plugin = plugin_value.get('enable', False)
             if enable_plugin:
+                if plugin_name == "tts" or plugin_name == "tts_chinese" or plugin_name == "asr":
+                    if not check_tts_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'tts' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory " \
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.audio'."
+                        )
+                if plugin_name == "cache":
+                    if not check_cache_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'cache' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory " \
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.caching'."
+                        )
+                if plugin_name == "retrieval":
+                    if not check_retrieval_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'retrieval' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory " \
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval'."
+                        )
+                if plugin_name == "face_animation":
+                    if not check_faceanimation_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'face_animation' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory " \
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation'."
+                        )
+                if plugin_name == "ner":
+                    if not check_ner_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'ner' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory. " \
+                            f"'intel_extension_for_transformers.neural_chat.pipeline.plugins.ner'."
+                        )
+                if plugin_name == "image2image":
+                    if not check_image2image_dependency():
+                        raise ImportError(
+                            f"Unable to initialize 'image2image' plugin due to missing dependency packages.\n" \
+                            f"Please run pip install -r requirements.txt to enable.\n" \
+                            f"Please find the 'requirements.txt' file in the directory " \
+                            "'intel_extension_for_transformers.neural_chat.pipeline.plugins.image2image'."
+                        )
                 if plugin_name == "tts":
                     from .pipeline.plugins.audio.tts import TextToSpeech
                     plugins[plugin_name]['class'] = TextToSpeech
@@ -134,12 +230,25 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "image2image": # pragma: no cover
                     from .pipeline.plugins.image2image.image2image import Image2Image
                     plugins[plugin_name]['class'] = Image2Image
-                else: # pragma: no cover
+                else:
                     set_latest_error(ErrorCodes.ERROR_PLUGIN_NOT_SUPPORTED)
+                    logging.error("build_chatbot: unknown plugin")
                     return
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                try:
+                    plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                except Exception as e:
+                    if "[Rereieval ERROR] Document format not supported" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_RETRIEVAL_DOC_FORMAT_NOT_SUPPORTED)
+                        logging.error("build_chatbot: retrieval plugin init failed")
+                    elif "[SafetyChecker ERROR] Sensitive check file not found" in str(e):
+                        set_latest_error(ErrorCodes.ERROR_SENSITIVE_CHECK_FILE_NOT_FOUND)
+                        logging.error("build_chatbot: safety checker plugin init failed")
+                    else:
+                        set_latest_error(ErrorCodes.ERROR_GENERIC)
+                        logging.error("build_chatbot: plugin init failed")
+                    return
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
     parameters = {}
@@ -159,37 +268,17 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
     parameters["assistant_model"] = config.assistant_model
-
-    try:
-        adapter.load_model(parameters)
-    except RuntimeError as e:
-        if "out of memory" in str(e):
-            set_latest_error(ErrorCodes.ERROR_OUT_OF_MEMORY)
-        elif "devices are busy or unavailable" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_BUSY)
-        elif "tensor does not have a device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
+    if config.serving_config and config.serving_config.framework == "vllm":
+        parameters["use_vllm"] = True
+        parameters["vllm_engine_params"] = config.serving_config.framework_config
+    else:
+        parameters["use_vllm"] = False
+        parameters["vllm_engine_params"] = None
+    adapter.load_model(parameters)
+    if get_latest_error():
         return
-    except ValueError as e:
-        if "load_model: unsupported device" in str(e):
-            set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
-        elif "load_model: unsupported model" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
-        elif "load_model: tokenizer is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_TOKENIZER_NOT_FOUND)
-        elif "load_model: model name or path is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_NOT_FOUND)
-        elif "load_model: model config is not found" in str(e):
-            set_latest_error(ErrorCodes.ERROR_MODEL_CONFIG_NOT_FOUND)
-        else:
-            set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    except Exception as e:
-        set_latest_error(ErrorCodes.ERROR_GENERIC)
-        return
-    return adapter
+    else:
+        return adapter
 
 def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
@@ -197,22 +286,27 @@ def finetune_model(config: BaseFinetuningConfig):
     Args:
         config (BaseFinetuningConfig): Configuration for finetuning the model.
     """
-
+    clear_latest_error()
     assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
     finetuning = Finetuning(config)
     try:
         finetuning.finetune()
     except FileNotFoundError as e:
+        logging.error(f"Exception: {e}")
         if "Couldn't find a dataset script" in str(e):
             set_latest_error(ErrorCodes.ERROR_DATASET_NOT_FOUND)
     except ValueError as e:
+        logging.error(f"Exception: {e}")
         if "--do_eval requires a validation dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_VALIDATION_FILE_NOT_FOUND)
         elif "--do_train requires a train dataset" in str(e):
             set_latest_error(ErrorCodes.ERROR_TRAIN_FILE_NOT_FOUND)
     except Exception as e:
-        if config.finetune_args.peft == "lora":
+        logging.error(f"Exception: {e}")
+        if "Permission denied" in str(e):
+            set_latest_error(ErrorCodes.ERROR_DATASET_CACHE_DIR_NO_WRITE_PERMISSION)
+        elif config.finetune_args.peft == "lora":
             set_latest_error(ErrorCodes.ERROR_LORA_FINETUNE_FAIL)
         elif config.finetune_args.peft == "llama_adapter":
             set_latest_error(ErrorCodes.ERROR_LLAMA_ADAPTOR_FINETUNE_FAIL)
@@ -233,10 +327,12 @@ def optimize_model(model, config, use_llm_runtime=False):
         config (OptimizationConfig): The configuration required for optimizing the model.
         use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
+    clear_latest_error()
     optimization = Optimization(optimization_config=config)
     try:
         model = optimization.optimize(model, use_llm_runtime)
     except Exception as e:
+        logging.error(f"Exception: {e}")
         from intel_extension_for_transformers.transformers import (
             MixedPrecisionConfig,
             WeightOnlyQuantConfig,

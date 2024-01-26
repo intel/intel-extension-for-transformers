@@ -11,6 +11,7 @@ from intel_extension_for_transformers.transformers import (
     AutoModel,
 )
 from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers.utils import str2bool
 from optimum.intel.generation.modeling import TSModelForCausalLM
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
@@ -68,6 +69,12 @@ parser.add_argument(
     "--calib_padding", action="store_true", help="Calibration dataset do padding."
 )
 parser.add_argument(
+    "--calib_shuffle",
+    default=True,
+    type=str2bool,
+    help="Calibration dataset do shuffle.",
+)
+parser.add_argument(
     "--calib_pad_val", default=1, type=int, help="Calibration dataset padding value."
 )
 parser.add_argument(
@@ -88,7 +95,7 @@ parser.add_argument("--woq", action="store_true")
 parser.add_argument(
     "--woq_algo",
     default="RTN",
-    choices=["RTN", "AWQ", "TEQ"],
+    choices=["RTN", "AWQ", "TEQ", "GPTQ"],
     help="Weight-only parameter.",
 )
 parser.add_argument(
@@ -120,22 +127,51 @@ parser.add_argument(
 )
 parser.add_argument("--woq_group_size", type=int, default=32)
 parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument(
+    "--gptq_actorder",
+    action="store_true",
+    help="Whether to apply the activation order GPTQ heuristic.",
+)
+parser.add_argument(
+    "--gptq_percdamp",
+    type=float,
+    default=0.01,
+    help="Percent of the average Hessian diagonal to use for dampening.",
+)
+parser.add_argument(
+    "--gptq_block_size",
+    type=int,
+    default=128,
+    help="Block size. sub weight matrix size to run GPTQ.",
+)
+parser.add_argument(
+    "--gptq_nsamples", type=int, default=128, help="Number of calibration data samples."
+)
+parser.add_argument(
+    "--gptq_use_max_length",
+    action="store_true",
+    help="Set all sequence length to be same length of args.gptq_pad_max_length",
+)
+parser.add_argument(
+    "--gptq_pad_max_length",
+    type=int,
+    default=2048,
+    help="Calibration dataset sequence max length, this should align with your model config",
+)
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
 # ============AutoModel parameters==============
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
 parser.add_argument("--_commit_hash", default="main", type=str)
-parser.add_argument("--trust_remote_code", default=False)
+parser.add_argument("--trust_remote_code", type=bool, default=False)
 parser.add_argument("--use_llm_runtime", action="store_true")
 # =======================================
 args = parser.parse_args()
-
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 # 4.31.0 for ipex.optimize_transformers
 check_min_version("4.31.0")
-
 # get model config
 if args.peft_model_id:
     from peft import PeftConfig
@@ -228,19 +264,40 @@ elif args.sq:
         op_type_dict=op_type_dict,  # default is {}
         excluded_precisions=excluded_precisions,  # default is []
         num_beams=generate_kwargs["num_beams"],
+        calib_shuffle=args.calib_shuffle,
         calib_iters=args.calib_iters,
         calib_padding=args.calib_padding,
         calib_len=args.calib_len,
         calib_pad_val=args.calib_pad_val,
     )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig(
-        compute_dtype=args.woq_compute_dtype,
-        scale_dtype=args.woq_scale_dtype,
-        weight_dtype=args.woq_weight_dtype,
-        scheme=args.woq_scheme,
-        group_size=args.woq_group_size,
-    )  # default is A32W4G32
+    if args.woq_algo == "GPTQ":
+        algorithm_args = {
+            "act_order": args.gptq_actorder,
+            "percdamp": args.gptq_percdamp,
+            "block_size": args.gptq_block_size,
+            "nsamples": args.gptq_nsamples,
+            "use_max_length": args.gptq_use_max_length,
+            "pad_max_length": args.gptq_pad_max_length,
+        }
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.gptq_block_size,
+            algorithm=args.woq_algo,
+            tokenizer=tokenizer,
+            algorithm_args=algorithm_args,
+        )
+    else:
+        quantization_config = WeightOnlyQuantConfig(
+            compute_dtype=args.woq_compute_dtype,
+            scale_dtype=args.woq_scale_dtype,
+            weight_dtype=args.woq_weight_dtype,
+            scheme=args.woq_scheme,
+            group_size=args.woq_group_size,
+        )  # default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -257,7 +314,6 @@ if quantization_config is not None:
         trust_remote_code=args.trust_remote_code,
         _commit_hash=args._commit_hash,
         use_llm_runtime=args.use_llm_runtime,
-
     )
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
@@ -322,7 +378,9 @@ if args.int8 or args.int8_bf16_mixed:
             trust_remote_code=args.trust_remote_code,
         )
 
+
 if args.benchmark:
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -334,7 +392,6 @@ if args.benchmark:
     num_warmup = args.num_warmup
     total_token_num = 0
     eos_token_id = tokenizer.eos_token_id
-
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
             tic = time.time()
@@ -378,6 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )

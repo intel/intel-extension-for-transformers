@@ -17,6 +17,7 @@
 
 """Utils for pytorch framework."""
 
+import argparse
 import os
 from typing import Optional, Tuple
 from neural_compressor.utils import logger
@@ -33,9 +34,19 @@ WEIGHTS_NAME = "pytorch_model.bin"
 WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
 QUANT_CONFIG = "quantization_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
+SAFE_WEIGHTS_NAME = "model.safetensors"
 
 torch = LazyImport("torch")
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def distributed_init(
     backend="gloo",
@@ -46,7 +57,6 @@ def distributed_init(
     master_port="12345",
 ):
     """Init the distibute environment."""
-    torch = LazyImport("torch")
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))
     if init_method is None:

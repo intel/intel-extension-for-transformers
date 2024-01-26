@@ -129,9 +129,11 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_context_memory",
-        system_message="Have a conversation with a human, answer the following questions as best you can." + \
-            " You can refer to the following document and context.\n",
-        roles=("### Question: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""" ,
+        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -143,7 +145,19 @@ register_conv_template(
         name="rag_without_context",
         system_message="Have a conversation with a human. " + \
             "You are required to generate suitable response to the user input.\n",
-        roles=("### Input: ", "### Response: "),
+        roles=("### Input:", "### Response:"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Rag without context template
+register_conv_template(
+    Conversation(
+        name="rag_without_context_memory",
+        system_message="Have a conversation with a human. " + \
+            "You are required to generate suitable response to the user input.\n",
+        roles=("### Input:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -154,10 +168,11 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_with_threshold",
-        system_message="You are served as an AI agent to help the user complete a task." + \
-            " You are required to comprehend the usr query and then use the given context to" + \
-            " generate a suitable response.\n\n",
-        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        system_message="""### You are a helpful, respectful and honest assistant to help the user with questions. \
+         - Please refer to the search results obtained from the local knowledge base. But be careful to not \
+         incorporate the information that you think is not relevant to the question.
+         - If you don't know the answer to a question, please don't share false information.\n""",
+        roles=("### Question:", "### Search Results:", "### Chat History:", "### Response:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
@@ -221,3 +236,12 @@ class PromptTemplate:
 
     def clear_messages(self) -> str:
         self.conv.messages = []
+
+# pylint: disable=C0301
+MAGICODER_PROMPT = """You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.
+
+@@ Instruction
+{instruction}
+
+@@ Response
+"""

@@ -84,7 +84,7 @@ def parse_args():
     parser.add_argument(
         "--num_beams",
         type=int,
-        default=0,
+        default=1,
         help="The number of beams for beam search.",
     )
     parser.add_argument(
@@ -189,8 +189,8 @@ if not 0 <= args.top_k <= 200:
     raise ValueError("Top-k must be between 0 and 200.")
 if not 1.0 <= args.repetition_penalty <= 2.0:
     raise ValueError("Repetition penalty must be between 1 and 2.")
-if not 0 <= args.num_beams <= 8:
-    raise ValueError("Number of beams must be between 0 and 8.")
+if not 1 <= args.num_beams <= 8:
+    raise ValueError("Number of beams must be between 1 and 8.")
 if not 32 <= args.max_new_tokens <= 1024:
     raise ValueError(
         "The maximum number of new tokens must be between 32 and 1024."
@@ -250,31 +250,13 @@ async def chat_completion_endpoint(request: ChatCompletionRequest):
             if attr == "stream":
                 continue
             setattr(gen_config, attr, value)
-        buffered_texts = ""
         if request.stream:
             generator, _ = chatbot.predict_stream(query=request.prompt, config=gen_config)
             if not isinstance(generator, types.GeneratorType):
                 generator = (generator,)
             def stream_generator():
-                nonlocal buffered_texts
                 for output in generator:
-                    if isinstance(output, str):
-                        chunks = output.split()
-                        for chunk in chunks:
-                            ret = {
-                                "text": chunk,
-                                "error_code": 0,
-                            }
-                            buffered_texts += chunk + ' '
-                            yield json.dumps(ret).encode() + b"\0"
-                    else:
-                        ret = {
-                            "text": output,
-                            "error_code": 0,
-                        }
-                        buffered_texts += output + ' '
-                        yield json.dumps(ret).encode() + b"\0"
-                yield f"data: [DONE]\n\n"
+                    yield output + "\0"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
             response = chatbot.predict(query=request.prompt, config=gen_config)

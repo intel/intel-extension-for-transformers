@@ -71,3 +71,5 @@ The URL to access the chatbot frontend is http://{SERVER_IP_ADDRESS}:80. Please 
 You also have the option to update the backend service URL in the `app.py` file.
 
 ![Update backend URL](https://i.imgur.com/gRtZHrJ.png)
+
+>**Note**: Please use Gradio version 3.36.0.

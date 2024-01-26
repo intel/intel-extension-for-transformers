@@ -20,7 +20,14 @@ import inspect
 import time
 import pytest
 from functools import wraps
-torch.ops.load_library("../build/libqbits.so")
+import sys
+
+if sys.platform.startswith("linux"):
+    torch.ops.load_library("../build/libqbits.so")
+elif sys.platform.startswith("win"):
+    torch.ops.load_library("../build/qbits.dll")
+else:
+    sys.exit()
 
 def capture_args(f):
     @wraps(f)

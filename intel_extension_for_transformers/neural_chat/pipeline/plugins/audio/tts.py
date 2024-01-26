@@ -19,7 +19,6 @@ from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, set_seed
 from datasets import load_dataset, Audio, Dataset, Features, ClassLabel
 import os
 import torch
-from speechbrain.pretrained import EncoderClassifier
 from typing import Any, Dict, List, Union
 from transformers import SpeechT5HifiGan
 import soundfile as sf
@@ -59,6 +58,7 @@ class TextToSpeech():
         self.stream_mode = stream_mode
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
         try:
+            from speechbrain.pretrained import EncoderClassifier
             self.speaker_model = EncoderClassifier.from_hparams(
                 source=self.spk_model_name,
                 run_opts={"device": "cpu"},

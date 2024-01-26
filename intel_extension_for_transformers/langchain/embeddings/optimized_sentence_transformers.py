@@ -55,20 +55,29 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
         super().__init__(*args, **kwargs)
 
     def _load_auto_model(
-            self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
+            self, 
+            model_name_or_path: str, 
+            token: Optional[Union[bool, str]], 
+            cache_folder: Optional[str],
+            trust_remote_code: bool = False):
         """
         Creates a simple Transformer + Mean Pooling model and returns the modules
         """
         logger.warning("No sentence-transformers model found with name {}." \
                        "Creating a new one with MEAN pooling.".format(model_name_or_path))
         transformer_model = OptimzedTransformer(
-            model_name_or_path, cache_dir=cache_folder, model_args={"token": token})
+            model_name_or_path, cache_dir=cache_folder, model_args={"token": token, 
+                                                                    "trust_remote_code": trust_remote_code})
         pooling_model = sentence_transformers.models.Pooling(
             transformer_model.get_word_embedding_dimension(), 'mean')
         return [transformer_model, pooling_model]
     
     def _load_sbert_model(
-            self, model_name_or_path: str, token: Optional[Union[bool, str]], cache_folder: Optional[str]):
+            self, 
+            model_name_or_path: str, 
+            token: Optional[Union[bool, str]], 
+            cache_folder: Optional[str], 
+            trust_remote_code: bool = False):
         """
         Loads a full sentence-transformers model
         """
@@ -124,8 +133,9 @@ class OptimizedSentenceTransformer(sentence_transformers.SentenceTransformer):
                         break
                 if "model_args" in kwargs:
                     kwargs["model_args"]["token"] = token
+                    kwargs["model_args"]["trust_remote_code"] = trust_remote_code
                 else:
-                    kwargs["model_args"] = {"token": token}
+                    kwargs["model_args"] = {"token": token, "trust_remote_code": trust_remote_code}
                 module = sentence_transformers.models.Transformer(
                     model_name_or_path, cache_dir=cache_folder, **kwargs)
             else:

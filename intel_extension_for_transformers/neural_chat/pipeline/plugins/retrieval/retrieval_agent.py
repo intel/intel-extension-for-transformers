@@ -26,7 +26,7 @@ from intel_extension_for_transformers.langchain.embeddings import HuggingFaceEmb
     HuggingFaceInstructEmbeddings, HuggingFaceBgeEmbeddings
 from langchain.embeddings import GooglePalmEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from intel_extension_for_transformers.langchain.vectorstores import Chroma
+from intel_extension_for_transformers.langchain.vectorstores import Chroma, Qdrant
 import uuid
 from langchain_core.documents import Document
 import logging
@@ -42,9 +42,14 @@ def document_transfer(data_collection):
     documents = []
     for data, meta in data_collection:
         doc_id = str(uuid.uuid4())
-        metadata = {"source": meta, "doc_id":doc_id}
+        metadata = {"source": meta, "identify_id":doc_id}
         doc = Document(page_content=data, metadata=metadata)
         documents.append(doc)
+    return documents
+
+def document_append_id(documents):
+    for _doc in documents:
+        _doc.metadata["doc_id"] = _doc.metadata["identify_id"]
     return documents
 
 
@@ -123,6 +128,7 @@ class Agent_QA():
                 )
         except Exception as e:
             logging.error("Please selet a proper embedding model.")
+            logging.error(e)
         
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
                                               process=self.process)
@@ -133,10 +139,12 @@ class Agent_QA():
         logging.info("The format of parsed documents is transferred.")
 
         if self.vector_database == "Chroma":
-            self.database = Chroma()
+            self.database = Chroma
+        elif self.vector_database == "Qdrant":
+            self.database = Qdrant
         # elif self.vector_database == "PGVector":
         #     self.database = PGVector()
-      
+
         if self.retrieval_type == 'default':  # Using vector store retriever
             if append:
                 knowledge_base = self.database.from_documents(documents=langchain_documents, embedding=self.embeddings,
@@ -145,8 +153,12 @@ class Agent_QA():
                 knowledge_base = self.database.build(documents=langchain_documents, embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
+            if self.vector_database == "Qdrant" and knowledge_base.is_local():
+               # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+               knowledge_base.client.close()
         elif self.retrieval_type == "child_parent":    # Using child-parent store retriever
             child_documents = self.splitter.split_documents(langchain_documents)
+            langchain_documents = document_append_id(langchain_documents)
             if append:
                 knowledge_base = self.database.from_documents(documents=langchain_documents, embedding=self.embeddings,
                                                               **kwargs)
@@ -158,6 +170,12 @@ class Agent_QA():
                                             sign='child', **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                child_document_store=child_knowledge_base, **kwargs).retriever
+            if self.vector_database == "Qdrant" :
+                # one local storage folder cannot be accessed by multiple instances of Qdrant client simultaneously.
+                if knowledge_base.is_local():
+                    knowledge_base.client.close()
+                if child_knowledge_base.is_local():
+                    child_knowledge_base.client.close()
         logging.info("The retriever is successfully built.")
 
     def reload_localdb(self, local_persist_dir, **kwargs):
@@ -185,13 +203,17 @@ class Agent_QA():
         """
         data_collection = self.document_parser.load(input=input_path, **kwargs)
         langchain_documents = document_transfer(data_collection)
-        knowledge_base = self.database.from_documents(documents=langchain_documents, \
-                                                      embedding=self.embeddings, **kwargs)
+        
         if self.retrieval_type == 'default':
+            knowledge_base = self.database.from_documents(documents=langchain_documents, \
+                                                          embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               **kwargs).retriever
         elif self.retrieval_type == "child_parent":
             child_documents = self.splitter.split_documents(langchain_documents)
+            langchain_documents = document_append_id(langchain_documents)
+            knowledge_base = self.database.from_documents(documents=langchain_documents, \
+                                                          embedding=self.embeddings, **kwargs)
             child_knowledge_base = self.database.from_documents(documents=child_documents, sign='child', \
                                                                 embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
@@ -204,13 +226,18 @@ class Agent_QA():
 
         data_collection = self.document_parser.load(input=append_path, **kwargs)
         langchain_documents = document_transfer(data_collection)
-        knowledge_base = self.database.from_documents(documents=langchain_documents, \
-                                                      embedding=self.embeddings, **kwargs)
+        
         if self.retrieval_type == 'default':
+            knowledge_base = self.database.from_documents(documents=langchain_documents, \
+                                                          embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, \
                                               document_store=knowledge_base, **kwargs).retriever
         elif self.retrieval_type == "child_parent":
-            child_knowledge_base = self.database.from_documents(documents=langchain_documents, sign = 'child', \
+            child_documents = self.splitter.split_documents(langchain_documents)
+            langchain_documents = document_append_id(langchain_documents)
+            knowledge_base = self.database.from_documents(documents=langchain_documents, \
+                                                          embedding=self.embeddings, **kwargs)
+            child_knowledge_base = self.database.from_documents(documents=child_documents, sign = 'child', \
                                                           embedding=self.embeddings, **kwargs)
             self.retriever = RetrieverAdapter(retrieval_type=self.retrieval_type, document_store=knowledge_base, \
                                               child_document_store=child_knowledge_base, **kwargs).retriever
@@ -219,7 +246,11 @@ class Agent_QA():
 
 
     def pre_llm_inference_actions(self, model_name, query):
-        intent = self.intent_detector.intent_detection(model_name, query)
+        try:
+            intent = self.intent_detector.intent_detection(model_name, query)
+        except Exception as e:
+            logging.info(f"intent detection failed, {e}")
+            raise Exception("[Rereieval ERROR] intent detection failed!")
         links = []
         context = ''
         assert self.retriever is not None, logging.info("Please check the status of retriever")

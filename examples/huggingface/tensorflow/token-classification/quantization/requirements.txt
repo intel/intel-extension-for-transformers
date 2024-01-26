@@ -4,3 +4,4 @@ seqeval
 protobuf
 intel-tensorflow
 transformers
+accelerate

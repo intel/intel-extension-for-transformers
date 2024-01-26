@@ -18,6 +18,7 @@
 """The wrapper for Retriever based on langchain"""
 from intel_extension_for_transformers.langchain.retrievers import VectorStoreRetriever, ChildParentRetriever
 import logging
+
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
@@ -33,7 +34,7 @@ class RetrieverAdapter():
         if self.retrieval_type == "default":
             self.retriever = VectorStoreRetriever(vectorstore = document_store, **kwargs)
         elif self.retrieval_type == "child_parent":
-            self.retriever = ChildParentRetriever(vectorstore=child_document_store, parentstore=document_store, \
-                                                  **kwargs)
+            self.retriever = ChildParentRetriever(parentstore=document_store, \
+                                                  vectorstore=child_document_store, **kwargs) # pylint: disable=abstract-class-instantiated
         else:
             logging.error('The chosen retrieval type remains outside the supported scope.')

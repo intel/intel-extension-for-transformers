@@ -103,6 +103,8 @@ function run_benchmark {
         model_name_or_path="bigscience/bloomz-3b"
     elif [ "${topology}" = "llama_7b" ]; then
         model_name_or_path="meta-llama/Llama-2-7b-chat-hf"
+    elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+        model_name_or_path="meta-llama/Llama-2-7b-hf"
     elif [ "${topology}" = "llama_13b" ]; then
         model_name_or_path="meta-llama/Llama-2-13b-chat-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
@@ -165,6 +167,11 @@ function run_benchmark {
             extra_cmd=$extra_cmd" --load_in_8bit True"
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
+        elif [ "${topology}" = "llama2_7b_int4_gptq" ]; then
+            model_name_or_path="meta-llama/Llama-2-7b-hf"
+            extra_cmd=$extra_cmd" --woq --woq_weight_dtype int4_clip --woq_compute_dtype fp32"
+            extra_cmd=$extra_cmd" --woq_algo "GPTQ" --gptq_actorder --gptq_block_size 128 --gptq_pad_max_length 2048 --gptq_use_max_length"
+            pip install tranformers==4.35.2
         else
             extra_cmd=$extra_cmd" --int8"
         fi

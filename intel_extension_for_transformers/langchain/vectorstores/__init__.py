@@ -16,3 +16,4 @@
 # limitations under the License.
 
 from .chroma import Chroma
+from .qdrant import Qdrant

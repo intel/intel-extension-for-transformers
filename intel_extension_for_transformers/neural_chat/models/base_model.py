@@ -24,6 +24,7 @@ from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plu
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import PromptTemplate
+from ..prompts.prompt import MAGICODER_PROMPT
 from ..utils.error_utils import set_latest_error
 from ..errorcode import ErrorCodes
 import logging
@@ -51,6 +52,8 @@ def construct_parameters(query, model_name, device, assistant_model, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["ipex_int8"] = config.ipex_int8
+    params["return_stats"] = config.return_stats
+    params["format_version"] = config.format_version
     params["assistant_model"] = assistant_model
     params["device"] = device
     return params
@@ -108,9 +111,11 @@ class BaseModel(ABC):
             "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
-            "use_deepspeed": False
-            "hf_access_token": "user's huggingface access token"
-            "assistant_model": "assistant model name to speed up inference"
+            "use_deepspeed": False,
+            "hf_access_token": "user's huggingface access token",
+            "assistant_model": "assistant model name to speed up inference",
+            "use_vllm": "whether to use vllm for serving",
+            "vllm_engine_params": "vllm engine parameters if use_vllm is true",
         }
         """
         self.model_name = kwargs["model_name"]
@@ -132,7 +137,9 @@ class BaseModel(ABC):
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
                    use_llm_runtime=kwargs["use_llm_runtime"],
-                   assistant_model=kwargs["assistant_model"])
+                   assistant_model=kwargs["assistant_model"],
+                   use_vllm=kwargs["use_vllm"],
+                   vllm_engine_params=kwargs["vllm_engine_params"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """
@@ -163,7 +170,8 @@ class BaseModel(ABC):
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-              "codegen" in self.model_name.lower():
+              "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
+              "phi-2" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -178,12 +186,17 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text'], link
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template, link
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template, link
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
                             try:
                                 response = plugin_instance.pre_llm_inference_actions(query)
@@ -191,6 +204,7 @@ class BaseModel(ABC):
                                 if plugin_name == "asr":
                                     if "[ASR ERROR] Audio format not supported" in str(e):
                                         set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
                         if plugin_name == "safety_checker":
                             sign1=plugin_instance.pre_llm_inference_actions(my_query)
                             if sign1:
@@ -207,11 +221,22 @@ class BaseModel(ABC):
         if not query_include_prompt and not is_plugin_enabled("retrieval"):
             query = self.prepare_prompt(query, self.model_name, config.task)
 
+        # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
+        if "phind" in self.model_name.lower():
+            conv_template = PromptTemplate(name="phind")
+            conv_template.append_message(conv_template.roles[0], query)
+            conv_template.append_message(conv_template.roles[1], None)
+            query = conv_template.get_prompt()
+
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
         try:
             response = predict_stream(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -256,7 +281,7 @@ class BaseModel(ABC):
         self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
                "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
-               "codegen" in self.model_name.lower():
+               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower():
             query_include_prompt = True
 
         # plugin pre actions
@@ -270,14 +295,25 @@ class BaseModel(ABC):
                             if response:
                                 logging.info("Get response: %s from cache", response)
                                 return response['choices'][0]['text']
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name == "asr" and not os.path.exists(query):
                             continue
                         if plugin_name == "retrieval":
-                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
-                            if response == "Response with template.":
-                                return plugin_instance.response_template
+                            try:
+                                response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                                if response == "Response with template.":
+                                    return plugin_instance.response_template
+                            except Exception as e:
+                                if "[Rereieval ERROR] intent detection failed" in str(e):
+                                    set_latest_error(ErrorCodes.ERROR_INTENT_DETECT_FAIL)
+                                return
                         else:
-                            response = plugin_instance.pre_llm_inference_actions(query)
+                            try:
+                                response = plugin_instance.pre_llm_inference_actions(query)
+                            except Exception as e:
+                                if plugin_name == "asr":
+                                    if "[ASR ERROR] Audio format not supported" in str(e):
+                                        set_latest_error(ErrorCodes.ERROR_AUDIO_FORMAT_NOT_SUPPORTED)
+                                return
                         if plugin_name == "safety_checker" and response:
                             if response:
                                 return "Your query contains sensitive words, please try another query."
@@ -288,7 +324,8 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt and not is_plugin_enabled("retrieval"):
+        if not query_include_prompt and not is_plugin_enabled("retrieval") \
+            and not 'vllm' in str(MODELS[self.model_name]['model']):
             query = self.prepare_prompt(query, self.model_name, config.task)
 
         # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
@@ -298,12 +335,16 @@ class BaseModel(ABC):
             conv_template.append_message(conv_template.roles[1], None)
             query = conv_template.get_prompt()
 
+        if "magicoder" in self.model_name.lower():
+            query = MAGICODER_PROMPT.format(instruction=query)
+
         # LLM inference
         try:
             response = predict(
                 **construct_parameters(query, self.model_name, self.device, self.assistant_model, config))
         except Exception as e:
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
+            return
 
         # plugin post actions
         for plugin_name in get_registered_plugins():

@@ -88,10 +88,6 @@ function main() {
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch
     pip install paddlepaddle==2.4.2 paddlenlp==2.5.2 paddlespeech==1.4.1 paddle2onnx==1.0.6
-    pip install git+https://github.com/UKPLab/sentence-transformers.git
-    pip install git+https://github.com/Muennighoff/sentence-transformers.git@sgpt_poolings_specb
-    pip install --upgrade git+https://github.com/UKPLab/sentence-transformers.git
-    pip install -U sentence-transformers
     cd ${WORKING_DIR} || exit 1
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
