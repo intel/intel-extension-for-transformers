@@ -199,34 +199,32 @@ Below is the sample code to use the extended Transformers APIs. See more [exampl
 
 #### INT4 Inference (CPU)
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
 ```
 
-You can also load your quantized low bit model(GPTQ/AWQ/RTN/AutoRound) by the below code.
+You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-# Download Hugging Face GPTQ/AWQ model or generate model to local
+# Download Hugging Face GPTQ/AWQ model or use local quantize model
 model_name = "PATH_TO_MODEL"  # local path to model
-woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ models, and use_autoround=True for AutoRound models
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
 ```
 | Inference Framework |   GPT-Q |  AWQ |  AutoRound |
 |:--------------:|:----------:|:----------:|:----------:|
