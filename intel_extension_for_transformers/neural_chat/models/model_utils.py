@@ -407,6 +407,7 @@ def load_model(
     assistant_model=None,
     use_vllm=False,
     vllm_engine_params=None,
+    gguf_model_path=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -527,7 +528,7 @@ def load_model(
                 or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
             use_auth_token=hf_access_token,
             trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
-                re.search("chatglm", model_name, re.IGNORECASE)) else False,
+                re.search("chatglm", model_name, re.IGNORECASE) or gguf_model_path) else False,
         )
     except EnvironmentError as e:
         logging.error(f"Exception: {e}")
@@ -557,6 +558,16 @@ def load_model(
         MODELS[model_name]["model"] = model
         MODELS[model_name]["tokenizer"] = tokenizer
         logging.info("Optimized Model loaded.")
+        return
+
+    if gguf_model_path:
+        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+        model = AutoModelForCausalLM.from_pretrained(model_name, model_file = gguf_model_path)
+        if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        MODELS[model_name]["model"] = model
+        MODELS[model_name]["tokenizer"] = tokenizer
+        logging.info("GGUF Model loaded.")
         return
 
     try:
@@ -1026,14 +1037,15 @@ def predict_stream(**params):
             tokenizer, skip_prompt=True, skip_special_tokens=True
         )
 
-    context_len = get_context_length(model.config)
-    length = min(max_new_tokens, context_len - input_token_len)
-    if length <= 0:
-        logging.error(f"This model's maximum context length is {context_len} tokens. \
-            However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
-        )
-        set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
-        return
+    if "gguf" not in model_name.lower():
+        context_len = get_context_length(model.config)
+        length = min(max_new_tokens, context_len - input_token_len)
+        if length <= 0:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
 
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
@@ -1318,7 +1330,7 @@ def predict(**params):
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower() or \
                                             "codegen" in model_name.lower()) else 1024
-
+    breakpoint()
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
@@ -1326,14 +1338,15 @@ def predict(**params):
         assistant_model=assistant_model
     )
 
-    context_len = get_context_length(model.config)
-    length = min(max_new_tokens, context_len - input_token_len)
-    if length <= 0:
-        logging.error(f"This model's maximum context length is {context_len} tokens. \
-            However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
-        )
-        set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
-        return
+    if "gguf" not in model_name.lower():
+        context_len = get_context_length(model.config)
+        length = min(max_new_tokens, context_len - input_token_len)
+        if length <= 0:
+            logging.error(f"This model's maximum context length is {context_len} tokens. \
+                However, your messages resulted in {input_token_len} tokens. Please reduce the length of the messages.",
+            )
+            set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
+            return
 
     if device in ["cpu", "cuda", "xpu"]:
         if device in ["cuda", "xpu"]:
