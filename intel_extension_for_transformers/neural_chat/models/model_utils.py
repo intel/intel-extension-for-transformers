@@ -1330,7 +1330,6 @@ def predict(**params):
                                             "codellama" in model_name.lower() or \
                                             "starcoder" in model_name.lower() or \
                                             "codegen" in model_name.lower()) else 1024
-    breakpoint()
     input_tokens, input_token_len = tokenization(prompt, tokenizer, device)
     generate_kwargs = get_generate_kwargs(
         max_new_tokens, input_token_len, 
