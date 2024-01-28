@@ -1030,7 +1030,6 @@ def predict_stream(**params):
         )
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
         ret = {
-            "error": True,
             "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
             "error_message": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
         }
@@ -1169,7 +1168,6 @@ def predict_stream(**params):
         )
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
         ret = {
-            "error": True,
             "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
             "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
             "logprobs": None,
@@ -1184,7 +1182,6 @@ def predict_stream(**params):
     else:
         thread_exception = errors_queue.get()
         ret = {
-            "error": True,
             "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
             "error_message": str(thread_exception)
         }
@@ -1202,6 +1199,7 @@ def predict_stream(**params):
         output_word_len += 1
         ret = {
             "text": output,
+            "error_code": 0,
             "usage": {
                 "prompt_tokens": input_token_len,
                 "completion_tokens": output_word_len,
@@ -1234,7 +1232,7 @@ def predict_stream(**params):
     if return_stats:
         if format_version == "v1":
             ret = {
-                "text": "",
+                "error_code": 0,
                 "stats": {
                     "prompt_tokens": input_token_len,
                     "duration": duration,
