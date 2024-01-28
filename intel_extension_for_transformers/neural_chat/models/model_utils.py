@@ -1031,7 +1031,7 @@ def predict_stream(**params):
         set_latest_error(ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH)
         ret = {
             "error_code": ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH,
-            "error_message": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
+            "text": ErrorCodes.error_strings[ErrorCodes.WARNING_INPUT_EXCEED_MAX_SEQ_LENGTH]
         }
         yield json.dumps(ret).encode() + b"\0"
         return
@@ -1169,7 +1169,7 @@ def predict_stream(**params):
         set_latest_error(ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED)
         ret = {
             "error_code": ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED,
-            "error_message": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
+            "text": ErrorCodes.error_strings[ErrorCodes.ERROR_DEVICE_NOT_SUPPORTED],
             "logprobs": None,
         }
         yield json.dumps(ret).encode() + b"\0"
@@ -1183,7 +1183,7 @@ def predict_stream(**params):
         thread_exception = errors_queue.get()
         ret = {
             "error_code": ErrorCodes.ERROR_MODEL_INFERENCE_FAIL,
-            "error_message": str(thread_exception)
+            "text": str(thread_exception)
         }
         yield json.dumps(ret).encode() + b"\0"
         return
