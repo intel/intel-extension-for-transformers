@@ -550,8 +550,9 @@ def load_model(
         else:
             optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
-        if not model.config.is_encoder_decoder:
-            tokenizer.padding_side = "left"
+        if hasattr(model, 'config'): 
+            if model.config.is_encoder_decoder:
+                tokenizer.padding_side = "left"
         if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
         MODELS[model_name]["model"] = model
