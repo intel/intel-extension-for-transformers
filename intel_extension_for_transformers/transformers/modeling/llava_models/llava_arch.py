@@ -161,10 +161,9 @@ class LlavaMetaForCausalLM(PreTrainedModel):
         for batch_idx, cur_input_ids in enumerate(input_ids):
             num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
             if num_images == 0:
-                cur_image_features = image_features[cur_image_idx]
-                cur_input_embeds_1 = self.get_model().embed_tokens(cur_input_ids)
-                cur_input_embeds = torch.cat([cur_input_embeds_1, cur_image_features[0:0]], dim=0)
-                new_input_embeds.append(cur_input_embeds)
+                # Concatenating the cur_image_features[0:0], like in the original implementation, 
+                # is removed as it causes the backpropogation to crash on the hpu.
+                new_input_embeds.append(self.get_model().embed_tokens(cur_input_ids))
                 new_labels.append(labels[batch_idx])
                 cur_image_idx += 1
                 continue
