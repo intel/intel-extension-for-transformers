@@ -199,17 +199,32 @@ Below is the sample code to use the extended Transformers APIs. See more [exampl
 
 #### INT4 Inference (CPU)
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
+```
+
+You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
+```python
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+outputs = model.generate(inputs)
 ```
 
 #### INT4 Inference (GPU)
@@ -232,7 +247,7 @@ model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq
 
 output = model.generate(inputs)
 ```
-> Note: Please refer to [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [gpu script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py). Known issue: If your device memory is not enough, please save the model and load again with the code in [gpu example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)
+> Note: Please refer to the [example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py) for more details.
 
 ### Langchain-based extension APIs
 Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).
