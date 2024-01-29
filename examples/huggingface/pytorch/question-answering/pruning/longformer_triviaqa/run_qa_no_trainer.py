@@ -642,7 +642,7 @@ def main():
         model = model_class.from_config(config)
 
     # Preprocessing the datasets.
-    # Preprocessing is slighlty different for training and evaluation.
+    # Preprocessing is slightly different for training and evaluation.
     if args.do_train:
         column_names = raw_datasets["train"].column_names
     elif args.do_eval:

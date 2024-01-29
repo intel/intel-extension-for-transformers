@@ -120,7 +120,7 @@ class ConvReshape(Pattern):
         model, new_node_names, ret_old_nodes = util.pattern_mapping("ConvReshape",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('ConvReshape_1 mathched...')
+            logger.info('ConvReshape_1 matched...')
             logger.debug('ConvReshape = {}'.format(new_node_names))
             for i in range(len(new_node_names)):
                 # the first node

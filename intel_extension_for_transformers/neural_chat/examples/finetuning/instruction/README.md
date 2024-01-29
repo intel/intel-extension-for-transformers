@@ -626,9 +626,9 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
 # Evaluation Metrics
 
-- **train loss:** `--do_train` is setted for training, `train loss` will be logged during training.
+- **train loss:** `--do_train` is set for training, `train loss` will be logged during training.
 
-- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` arguement (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
+- **eval loss:** set `--do_eval`. If dataset path doesn't have the `validation` split, the validation dataset will be split from train dataset with the `validation_split_percentage` argument (default is 0). For example, you can set `--validation_split_percentage 5` to split %5 of train dataset.
 
 - **lm-eval (for finetuning `--task chat` or `--task completion`):** set `--do_lm_eval true` and `--lm_eval_tasks truthfulqa_mc`
 

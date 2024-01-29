@@ -37,7 +37,7 @@ namespace executor {
  *                  ||
  *        ActivationTensor (tensor_memory_name, memory_bytes, dtype, shape, tensor_semantic_name)
  *        The tensors which have same memory name meaning their memory would be inplaced
- *        serialization exmaple (yaml):
+ *        serialization example (yaml):
  *        ActivationDAG:
  *          ActivationOperator:
  *            op_name:

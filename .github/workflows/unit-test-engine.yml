@@ -135,7 +135,7 @@ jobs:
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
         
-      - name: Calculte coverage
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir

@@ -156,7 +156,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             self.compute_dtype = "fp16"
 
         if self.algorithm not in ['RTN']:
-            raise ValueError("algorithm must be 'RTN' now. will wupport 'TEQ', 'AWQ' soon!")
+            raise ValueError("algorithm must be 'RTN' now. will support 'TEQ', 'AWQ' soon!")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"

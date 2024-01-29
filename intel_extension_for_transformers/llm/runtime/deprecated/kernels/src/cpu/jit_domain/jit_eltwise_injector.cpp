@@ -259,7 +259,7 @@ void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm& zmm_src) {
     h->vpermt2ps(zmm_coeff, zmm_pol_idx, coeffs_address(coeff_idx, 16));
   };
 
-  // because tanh(x) = -tanh(-x), we extract sign to make x postive
+  // because tanh(x) = -tanh(-x), we extract sign to make x positive
   // and reapply sign at the end
   h->vmovups(zmm_src_original, zmm_src);
   h->vpandd(zmm_src, zmm_src, table_val(positive_mask));

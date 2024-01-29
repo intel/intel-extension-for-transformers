@@ -35,8 +35,8 @@ class ThreadPool {
   using Task = std::function<void()>;
   // thread container
   std::vector<std::thread> pool;
-  // is each thread stoped
-  std::vector<bool> stoped;
+  // is each thread stopped
+  std::vector<bool> stopped;
   // queue of tasks
   std::queue<Task> tasks;
   // sync of multi stream
@@ -44,13 +44,13 @@ class ThreadPool {
   std::condition_variable task_cond_var, cond_finish_;
   std::atomic<unsigned int> idle_thread_num;
   std::atomic<unsigned int> work_thread_num;
-  // is thread pool stoped
+  // is thread pool stopped
   bool pool_stoped;
 
  private:
   void _initPool_() {
     unsigned int index = pool.size();
-    stoped.emplace_back(false);
+    stopped.emplace_back(false);
     idle_thread_num++;
     pool.emplace_back(std::thread([this, index] {
       while (true) {
@@ -59,9 +59,9 @@ class ThreadPool {
         {
           std::unique_lock<std::mutex> lock(this->tasks_lock);
           this->task_cond_var.wait(lock, [this, index] {
-            return this->stoped[index] || !this->tasks.empty();
-          });  // wait until capature the task
-          if (this->stoped[index]) {
+            return this->stopped[index] || !this->tasks.empty();
+          });  // wait utill capature the task
+          if (this->stopped[index]) {
             idle_thread_num--;
             return;
           }
@@ -91,7 +91,7 @@ class ThreadPool {
   // wait for all threads to finish and stop all threads
   inline ~ThreadPool() {
     std::unique_lock<std::mutex> lock(tasks_lock);
-    for (auto item : stoped) item = true;
+    for (auto item : stopped) item = true;
     task_cond_var.notify_all();  // wake up all thread to run
     lock.unlock();
     for (auto& th : pool) {
@@ -141,7 +141,7 @@ class ThreadPool {
       for (unsigned int s = as; s < sz; s++) _initPool_();
     }
     if (sz < as) {
-      for (auto s : stoped) {
+      for (auto s : stopped) {
         if (!s) {
           s = true;
           task_cond_var.notify_all();
@@ -162,7 +162,7 @@ class ThreadPool {
   void restartTask() { pool_stoped = false; }
   // close thread pool and release resource
   void close() {
-    for (auto a : stoped) a = true;
+    for (auto a : stopped) a = true;
     task_cond_var.notify_all();
     pool_stoped = true;
   }

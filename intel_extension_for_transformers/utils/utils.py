@@ -37,7 +37,7 @@ def get_gpu_family():
     Note, this function need to import intel_extension_for_pytorch
 
 
-    Addtional info (common gpu name):
+    Additional info (common gpu name):
       'Intel(R) Data Center GPU Flex 170'
       'Intel(R) Data Center GPU Max 1100'
       'Intel(R) Arc(TM) A770 Graphics'
@@ -55,10 +55,10 @@ def get_gpu_family():
     elif 'Arc(TM)' in name:
         result = 'arc'
     else:
-        assert False, "Unsupport GPU device: {}".format(name)
+        assert False, "Unsupported GPU device: {}".format(name)
 
     if result not in supported_gpus():
-        assert False, "Unsupport GPU device: {}".format(name)
+        assert False, "Unsupported GPU device: {}".format(name)
     else:
         return result
 

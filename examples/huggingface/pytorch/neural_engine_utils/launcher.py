@@ -15,7 +15,7 @@ import numpy as np
 
 class CPUinfo():
     '''
-    Get CPU inforamation, such as cores list and NUMA information.
+    Get CPU information, such as cores list and NUMA information.
     '''
     def __init__(self):
         self.cores = 0

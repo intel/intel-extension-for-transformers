@@ -256,7 +256,7 @@ def test_all(
     dataset_reorder = 0
     framework = "engine"
     # this reorder and framework change only support for onnx model
-    # tf model you need to use fp32 ir, so you should remvove snippet here
+    # tf model you need to use fp32 ir, so you should remove snippet here
     # when model is tf, but we will not add arg to control, only bert base
     # and bert large use tf now
     if not is_int8 and not is_performance:

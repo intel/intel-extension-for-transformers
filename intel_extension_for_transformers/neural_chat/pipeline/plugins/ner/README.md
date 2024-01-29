@@ -26,7 +26,7 @@ python -m spacy download en_core_web_lg
 
 
 # 🚀Usage
-With different model configurations, the NER plugins of varing precisions have two ways of usage as below.
+With different model configurations, the NER plugins of varying precisions have two ways of usage as below.
 
 ## Inference with FP32/BF16
 

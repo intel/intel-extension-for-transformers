@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from "svelte";
 	import upload from "$lib/assets/home/imgs/upload.png";
-	import Upload from "$lib/assets/handel/Upload.svelte";
+	import Upload from "$lib/assets/handle/Upload.svelte";
 
 
 	const dispatch = createEventDispatcher();

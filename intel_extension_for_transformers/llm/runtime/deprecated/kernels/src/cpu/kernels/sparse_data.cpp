@@ -23,7 +23,7 @@ template <typename T, dim_t group>
 std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t micro_rows, const void* uncoded_ptr) {
   const dim_t blk_row = 16;
   const dim_t blk_col = 1;
-  SPARSE_LOG_IF(FATAL, rows % micro_rows != 0) << "rows should divded by micro_rows";
+  SPARSE_LOG_IF(FATAL, rows % micro_rows != 0) << "rows should divided by micro_rows";
   dim_t num_micro_rows = rows / micro_rows;
   std::vector<bsr_data_t<T>*>* sparse_data = new std::vector<bsr_data_t<T>*>;
   for (int i = 0; i < num_micro_rows; ++i) {

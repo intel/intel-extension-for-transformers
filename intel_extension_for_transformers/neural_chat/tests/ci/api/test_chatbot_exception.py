@@ -256,7 +256,7 @@ class TestBuildChatbotExceptions(unittest.TestCase):
 
     @unittest.skipIf(get_device_type() != 'cpu', "Only run this test on CPU")
     def test_model_doc_format_not_supported_exception(self):
-        # test retrieval doc formate= exception handling
+        # test retrieval doc format= exception handling
         doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4"
         if not os.path.exists(doc_path):
             doc_path = "../assets/video/intel.mp4"
