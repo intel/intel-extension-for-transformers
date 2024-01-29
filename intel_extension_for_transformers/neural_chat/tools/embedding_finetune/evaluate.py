@@ -109,8 +109,7 @@ def evaluate(preds, labels, cutoffs=[1]):
     return metrics
 
 
-
-if __name__ == '__main__':
+def main(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str)
     parser.add_argument("--index_file_jsonl_path", type=str)
@@ -139,3 +138,7 @@ if __name__ == '__main__':
 
     metrics = evaluate(retrieval_results, ground_truths)
     print(metrics)
+    return metrics
+
+if __name__ == '__main__':
+    main()
