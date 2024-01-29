@@ -56,11 +56,6 @@ COPY ${REPO_PATH} /intel-extension-for-transformers
 RUN if [ "$REPO_PATH" == "" ]; then rm -rf intel-extension-for-transformers/* && rm -rf intel-extension-for-transformers/.* ; git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers ; fi
 WORKDIR /intel-extension-for-transformers
 
-RUN cd / && git clone https://github.com/intel/neural-speed.git  && \
-    cd neural-speed && pip install -r requirements.txt && pip install .  &&\
-    pip list | grep neural-speed && \
-    python -m pip install --upgrade --force-reinstall torch
-
 RUN pip install oneccl_bind_pt --extra-index-url  https://pytorch-extension.intel.com/release-whl/stable/cpu/us/ && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && \
     pip install -v . && \
