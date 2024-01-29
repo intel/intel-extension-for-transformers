@@ -219,7 +219,7 @@ def train():
             use_fast=use_fast
             )
 
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.unk_token
 
     # set vision module
     model.get_model().initialize_vision_modules(
