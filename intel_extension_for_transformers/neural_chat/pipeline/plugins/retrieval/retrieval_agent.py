@@ -127,7 +127,7 @@ class Agent_QA():
                     encode_kwargs={"normalize_embeddings": True},
                 )
         except Exception as e:
-            logging.error("Please selet a proper embedding model.")
+            logging.error("Please select a proper embedding model.")
             logging.error(e)
         
         self.document_parser = DocumentParser(max_chuck_size=max_chuck_size, min_chuck_size = min_chuck_size, \
@@ -277,5 +277,5 @@ class Agent_QA():
                     return "Response with template.", links
                 prompt = generate_qa_prompt(query, context)
         else:
-            logging.error("The selcted generation mode is invalid!")
+            logging.error("The selected generation mode is invalid!")
         return prompt, links

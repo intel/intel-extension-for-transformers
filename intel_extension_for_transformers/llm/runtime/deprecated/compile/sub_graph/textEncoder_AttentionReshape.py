@@ -98,7 +98,7 @@ class TextEncoder_AttentionReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_AttentionReshape mathched...')
+                logger.info('TextEncoder_AttentionReshape matched...')
                 logger.debug('TextEncoder_AttentionReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     if len(ret_old_nodes[j]) == 2:

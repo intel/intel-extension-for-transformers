@@ -104,7 +104,7 @@ async def retrieval_upload_link(request: Request):
             instance.append_localdb(append_path=link_list, persist_directory=persist_path)
             print(f"[askdoc - upload_link] kb appended successfully")
         except Exception as e:  # pragma: no cover
-            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return Response(content="Error occurred while uploading links.", status_code=500)
         return {"Succeed"}
     # create new kb with link
@@ -132,7 +132,7 @@ async def retrieval_upload_link(request: Request):
             instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
             print(f"[askdoc - upload_link] kb created successfully")
         except Exception as e:  # pragma: no cover
-            logger.info(f"[askdoc - upload_link] create knowledge base failes! {e}")
+            logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return "Error occurred while uploading files."
         return {"knowledge_base_id": kb_id}
 
@@ -217,7 +217,7 @@ async def retrieval_append(request: Request,
         instance.append_localdb(append_path=save_file_name, persist_directory=persist_path)
         print(f"[askdoc - append] new file successfully appended to kb")
     except Exception as e:  # pragma: no cover
-        logger.info(f"[askdoc - append] create knowledge base failes! {e}")
+        logger.info(f"[askdoc - append] create knowledge base fails! {e}")
         return "Error occurred while uploading files."
     return "Succeed"
 

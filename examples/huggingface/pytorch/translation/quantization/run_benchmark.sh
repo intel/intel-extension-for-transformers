@@ -73,7 +73,7 @@ function run_benchmark {
         model_name_or_path='Helsinki-NLP/opus-mt-en-ro'
         extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en"
     else
-        echo "unsupport topology: ${topology}"
+        echo "unsupported topology: ${topology}"
         exit 1
     fi
 

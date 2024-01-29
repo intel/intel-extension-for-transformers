@@ -127,7 +127,7 @@ class StableDiffusion_QuantizeFusion(Pattern):
                     remove_node_name.append(node.name)
 
         if (len(remove_node_name) != 0):
-            logger.info('StableDiffusion_QuantizeFusion mathched...')
+            logger.info('StableDiffusion_QuantizeFusion matched...')
             logger.debug('StableDiffusion_QuantizeFusion = {}'.format(remove_node_name))
         model.remove_nodes(remove_node_name)
 

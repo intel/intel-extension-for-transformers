@@ -69,7 +69,7 @@ class StableDiffusion_bf16Convert(Pattern):
                     if dest_op and model.get_node_by_name(dest_op[0]).op_type != 'LayerNorm':
                         next_node = model.get_node_by_name(dest_op[0])
                         next_dest_op = next_node.output_tensors[0].dest_op
-                        # when next_dest_op is Ouput op, output_type should be fp32
+                        # when next_dest_op is Output op, output_type should be fp32
                         if not next_dest_op:
                             continue
 

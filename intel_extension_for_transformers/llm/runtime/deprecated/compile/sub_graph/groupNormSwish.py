@@ -66,7 +66,7 @@ class GroupNormSwish(Pattern):
         pattern_dict = pattern_mapping_config['GroupNormSwish'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("GroupNormSwish", pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('GroupNormSwish mathched...')
+            logger.info('GroupNormSwish matched...')
             logger.debug('GroupNormSwish = {}'.format(new_node_names))
             for j in range(len(new_node_names)):
                 attr = OrderedDict()

@@ -56,7 +56,7 @@ text_encoder_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': False,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_QKVPreReshape': False,
         'AttentionBlock_AttentionMaskAddReshape': False,
         'AttentionBlock_ConstantOfShapeWithMul': False,

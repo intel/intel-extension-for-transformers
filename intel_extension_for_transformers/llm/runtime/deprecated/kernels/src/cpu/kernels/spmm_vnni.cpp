@@ -46,7 +46,7 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLI
 /**
  * Entries of op_desc_.attrs:
  *   sparse_ptr: pointer of the sparse data
- *   append_sum: if the kenrel add the result to the destination tensor instead of overwriting it. Set to "true"
+ *   append_sum: if the kernel add the result to the destination tensor instead of overwriting it. Set to "true"
  *               to enable.
  *   tile_n: n-size of a tile in terms of #registers; default is 4
  *   sub_func: use -1 / 0 / 1 / 2 to specify sub_func folding level

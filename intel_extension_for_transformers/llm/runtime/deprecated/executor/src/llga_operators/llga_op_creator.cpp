@@ -40,7 +40,7 @@ vector<float> LLGAGetScales(const void* mins, const void* maxs, const int64_t si
       scales.emplace_back(1.f);
     }
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dst_dtype: " << dtype << " now!";
   }
   return scales;
 }
@@ -410,7 +410,7 @@ bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<Opera
 }
 
 bool LLGAOPCreator::CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
-  // TODO(lzw) boardcast
+  // TODO(lzw) broadcast
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 

@@ -35,7 +35,7 @@ class mha_dense_static_bench : public mha_dense_bench {
   jd::data_type dt_dst, dt_src;
   jd::format_type ft_kv = jd::format_type::undef;
   bool stable_softmax = false;
-  int badd_dim;  // #dimention of the binary_add src tensor; Non-positive number for disabling binary_add
+  int badd_dim;  // #dimension of the binary_add src tensor; Non-positive number for disabling binary_add
   std::unordered_map<std::string, std::string> op_attrs;
 
  public:

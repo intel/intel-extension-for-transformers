@@ -292,7 +292,7 @@ class FinetuningArguments:
     num_virtual_tokens: int = field(
         default=10,
         metadata={
-            "help": "The length of the vitrual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
+            "help": "The length of the virtual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
         },
     )
     ptun_hidden_size: int = field(

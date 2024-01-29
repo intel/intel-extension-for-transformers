@@ -77,7 +77,7 @@ class AttentionBlock_QKVPreReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("AttentionBlock_QKVPreReshape",
                                                                         pattern_dict, model)
 
-            logger.info('AttentionBlock_QKVPreReshape mathched...')
+            logger.info('AttentionBlock_QKVPreReshape matched...')
             logger.debug('AttentionBlock_QKVPreReshape = {}'.format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

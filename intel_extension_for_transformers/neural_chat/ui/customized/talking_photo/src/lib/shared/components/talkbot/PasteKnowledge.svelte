@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button, Helper, Input, Label, Modal } from "flowbite-svelte";
 	import { createEventDispatcher } from "svelte";
-	import Paste from "$lib/assets/handel/Paste.svelte";
+	import Paste from "$lib/assets/handle/Paste.svelte";
 	const dispatch = createEventDispatcher();
 	let formModal = false;
 	let urlValue = "";

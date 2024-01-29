@@ -130,7 +130,7 @@ void mha_dense_dynamic_bench::gen_case() {
   rt_data[io::Q_SCALE] = make_data_obj(ts_descs[io::Q_SCALE], 0.001, 0.01);
   rt_data[io::K_SCALE] = make_data_obj(ts_descs[io::K_SCALE], 0.001, 0.01);
   rt_data[io::V_SCALE] = make_data_obj(ts_descs[io::V_SCALE], 0.001, 0.01);
-  // workspace memory to be allocate just before execuation
+  // workspace memory to be allocate just before execution
   rt_data[io::DST] = make_data_obj(ts_descs[io::DST], -128, 127);  // random dst and scale to be overwrite
   rt_data[io::DST_SCALE] = make_data_obj(ts_descs[io::DST_SCALE], INT32_MIN, INT32_MAX);
   std::vector<const void*> rt_data_cpy(io::SIZE, nullptr);

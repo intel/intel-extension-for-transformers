@@ -52,7 +52,7 @@ class TestWeightOnly(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.workspace = "./woq_tmp"
-        # if workspace not exist, crate it
+        # if workspace not exist, create it
         if not os.path.exists(cls.workspace):
             os.mkdir(cls.workspace)
 
