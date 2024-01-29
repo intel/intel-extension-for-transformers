@@ -642,7 +642,7 @@ def main():
         model = model_class.from_config(config)
 
     # Preprocessing the datasets.
-    # Preprocessing is slighlty different for training and evaluation.
+    # Preprocessing is slightly different for training and evaluation.
     if args.do_train:
         column_names = raw_datasets["train"].column_names
     elif args.do_eval:
@@ -885,7 +885,7 @@ def main():
             raise ValueError("--do_train requires a train dataset")
         train_dataset = raw_datasets["train"]
         if args.max_train_samples is not None:
-            # We will select sample from whole data if agument is specified
+            # We will select sample from whole data if augment is specified
             train_dataset = train_dataset.select(range(args.max_train_samples))
         with accelerator.main_process_first():
             # preprocess

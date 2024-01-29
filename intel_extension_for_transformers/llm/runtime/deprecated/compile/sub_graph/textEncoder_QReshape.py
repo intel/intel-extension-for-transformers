@@ -72,7 +72,7 @@ class TextEncoder_QReshape(Pattern):
                                                                         model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_QReshape mathched...')
+                logger.info('TextEncoder_QReshape matched...')
                 logger.debug('TextEncoder_QReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
 

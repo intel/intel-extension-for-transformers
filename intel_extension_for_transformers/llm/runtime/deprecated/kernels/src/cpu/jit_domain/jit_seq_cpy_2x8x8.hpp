@@ -33,7 +33,7 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
   struct rt_data_t {
     const void* src;
     void* dst;
-    int N;       // inner dim of src: loop dimention
+    int N;       // inner dim of src: loop dimension
     int ld_src;  // leading dim / bytes of src
     int ld_dst;  // leading dim / bytes of dst
   };

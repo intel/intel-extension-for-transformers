@@ -229,7 +229,7 @@ static auto case_func = []() {
   jd::tensor_desc src_desc = {{4, 1024, 384}, jd::data_type::u8, jd::format_type::ab};
   jd::tensor_desc src_desc_2D = {{1024, 1536}, jd::data_type::u8, jd::format_type::ab};
   jd::tensor_desc bia_desc = {{1024, 1}, jd::data_type::s32, jd::format_type::ab};
-  // dst_desc only support fp32 now, can supoort int8 in the future. If jd::data_type(dst_desc) == int8, split_output
+  // dst_desc only support fp32 now, can support int8 in the future. If jd::data_type(dst_desc) == int8, split_output
   // feature can't enable.
   jd::tensor_desc dst_desc = {{4, 1024, 384}, jd::data_type::fp32, jd::format_type::ab};
   jd::tensor_desc dst_desc_2D = {{1024, 1536}, jd::data_type::fp32, jd::format_type::ab};

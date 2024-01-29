@@ -37,7 +37,7 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
 ```bash
 # "--precision provide two options "bf16"/"fp32"
-# "--jit" used to covert model to torchscript mode
+# "--jit" used to convert model to torchscript mode
 # "--ipex" enable intel_extension_for_pytorch
 numactl -m <node N> -C <cpu list> \
     python run_clm_no_trainer.py \

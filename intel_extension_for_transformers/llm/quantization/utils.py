@@ -164,7 +164,7 @@ def _replace_linear(
                             g_idx
                         )
                     else:
-                        raise Exception("{} device Unsupport weight only quantization!".format(device))
+                        raise Exception("{} device Unsupported weight only quantization!".format(device))
 
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
@@ -296,7 +296,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 model(input_ids=input_ids, )
 
         calib_func = default_calib_func
-        logger.info("The default calibration funcation is used, " +
+        logger.info("The default calibration function is used, " +
                     "the calibration dataset is NeelNanda/pile-10k," +
                     "batchsize is 1 and calibration iteration is 100.")
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
@@ -393,7 +393,7 @@ def convert_dtype_str2torch(str_dtype):
     elif str_dtype == "bf16":
         return torch.bfloat16
     else:
-        assert False, "Unsupport str dtype {} to torch dtype".format(str_dtype)
+        assert False, "Unsupported str dtype {} to torch dtype".format(str_dtype)
 
 
 def convert_dtype_torch2str(dtype):
@@ -408,7 +408,7 @@ def convert_dtype_torch2str(dtype):
     elif isinstance(dtype, str) and dtype in ["int8", "fp32", "fp16", "bf16"]:
         return dtype
     else:
-        assert False, "Unsupport pytorch dtype {} to str dtype".format(dtype)
+        assert False, "Unsupported pytorch dtype {} to str dtype".format(dtype)
 
 
 def get_bits(config):
@@ -417,5 +417,5 @@ def get_bits(config):
     elif "int4" in config.weight_dtype:
         bits = 4
     else:
-        assert False, "Unsupport {} for quantize weight only by IPEX backend".format(config.weight_dtype)
+        assert False, "Unsupported {} for quantize weight only by IPEX backend".format(config.weight_dtype)
     return bits

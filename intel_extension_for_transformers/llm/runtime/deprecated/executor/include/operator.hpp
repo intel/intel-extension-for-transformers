@@ -59,7 +59,7 @@ class Operator {
 
   virtual void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) = 0;
 
-  // modify op attrs befor (in) and after (out) Reshape
+  // modify op attrs before (in) and after (out) Reshape
   virtual void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {}
 
   // modify tensors before (in) or after (out) Forward

@@ -364,7 +364,7 @@ def load_model_vllm(
                 if hasattr(eparams, 'max_context_len_to_capture') else 8192,
         )
         llm = AsyncLLMEngine.from_engine_args(async_engine_args)
-        # set an aysnc flag for generating stage
+        # set an async flag for generating stage
         MODELS[model]["vllm_async"] = True
         logging.info("use async vllm")
     else:
@@ -1081,7 +1081,7 @@ def predict_stream(**params):
 
                     else:
                         global output_token_len
-                        if is_llm_runtime_model(model):  # optimized model gerenate
+                        if is_llm_runtime_model(model):  # optimized model generate
                             output_token=model.generate(
                                 input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
                                 streamer=streamer,
@@ -1370,7 +1370,7 @@ def predict(**params):
                             )
                 else:
                     with context:
-                        if is_llm_runtime_model(model):  # optimized model gerenate
+                        if is_llm_runtime_model(model):  # optimized model generate
                             generation_output = model.generate(
                                 input_tokens['input_ids'],
                                 temperature=temperature,
@@ -1433,7 +1433,7 @@ def predict(**params):
             logging.error(f"model.generate exception: {e}")
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
             return
-    if is_llm_runtime_model(model):  # optimized model gerenate
+    if is_llm_runtime_model(model):  # optimized model generate
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
