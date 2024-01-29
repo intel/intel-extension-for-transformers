@@ -232,7 +232,7 @@ class _BaseQBitsAutoModelClass:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
-                                                                    weight_dtype="nf4")
+                                                                    weight_dtype="nf4" if use_cpu else "int4_fullrange")
                 else:
                     assert ("4" in quantization_config.weight_dtype
                             and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype

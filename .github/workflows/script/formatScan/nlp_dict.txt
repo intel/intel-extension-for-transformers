@@ -2447,3 +2447,7 @@ fullrange
 qmodel
 torchfloat
 xpu
+AutoRound
+autoround
+awq
+gptq
