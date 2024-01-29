@@ -75,3 +75,8 @@ qdrant-client
 huggingface_hub
 vllm
 neural_speed
+accelerate>=0.21.0
+sentence_transformers
+datasets
+jsonlines
+faiss-cpu
