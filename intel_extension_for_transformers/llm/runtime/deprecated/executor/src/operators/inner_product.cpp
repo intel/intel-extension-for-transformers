@@ -330,7 +330,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       kernel_type_ = Unsupported;
   }
 
-  DLOG(INFO) << "Innerproduct " << name_ << " execute kenel: " << kernel_type_;
+  DLOG(INFO) << "Innerproduct " << name_ << " execute kernel: " << kernel_type_;
   if (kernel_type_ == Unsupported)
     LOG(ERROR) << "Innerproduct not support: " << src0_->dtype() << " X " << src1_->dtype() << " = " << dst_->dtype();
 

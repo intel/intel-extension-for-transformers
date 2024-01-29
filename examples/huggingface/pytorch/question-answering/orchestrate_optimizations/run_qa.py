@@ -723,7 +723,7 @@ def main():
 
     assert train_dataset.num_rows == teacher_train_dataset.num_rows and \
         eval_dataset.num_rows == teacher_eval_dataset.num_rows, \
-        "Length of train or evaluation dataset of teacher doesnot match that of student."
+        "Length of train or evaluation dataset of teacher does not match that of student."
         
     # get logits of teacher model
     if optim_args.run_teacher_logits:

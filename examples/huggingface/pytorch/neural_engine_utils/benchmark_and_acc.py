@@ -145,7 +145,7 @@ def grab_log(is_performance, path, instance, cores, log_fp):
         print("========please check acc with screen messages=============")
     try:
         if is_performance:
-            log_fp.write("Troughput: {} images/sec\n".format(throughput))
+            log_fp.write("Throughput: {} images/sec\n".format(throughput))
             log_fp.write("Latency: {} ms\n".format(latency))
         log_fp.write("--------------------------------------\n")
     except OSError as ex:

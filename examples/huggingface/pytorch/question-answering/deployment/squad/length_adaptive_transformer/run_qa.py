@@ -822,7 +822,7 @@ def main():
             with torch.no_grad():
                 model = torch.jit.trace(model, example_inputs, strict=False)
                 model = torch.jit.freeze(model)
-                # enable fusion path work(need to run two interation)
+                # enable fusion path work(need to run two iteration)
                 output = model(**sample)
                 output = model(**sample)
             trainer.model = model

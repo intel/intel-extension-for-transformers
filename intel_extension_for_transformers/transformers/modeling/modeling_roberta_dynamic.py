@@ -206,7 +206,7 @@ class RobertaSelfAttention(nn.Module):
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
         """Transpose for scores."""
         # new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
-        # assigne -1 to bypass onnx dynamic batch issue:
+        # assign -1 to bypass onnx dynamic batch issue:
         new_x_shape = (-1,) + x.size()[1:-1] + (self.num_attention_heads, self.attention_head_size) 
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3)
@@ -299,7 +299,7 @@ class RobertaSelfAttention(nn.Module):
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         # new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
-        # assigne -1 to bypass onnx dynamic batch issue:
+        # assign -1 to bypass onnx dynamic batch issue:
         new_context_layer_shape = (-1,) + context_layer.size()[1:-2] + (self.all_head_size,)
         context_layer = context_layer.view(new_context_layer_shape)
 

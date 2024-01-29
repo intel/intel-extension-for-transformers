@@ -320,7 +320,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     pads_ = {0, 0, 0, 0};
     strides_ = {1, 1};
     vector<int64_t> weight_perm;
-    // consider if onednn transpose wight or not
+    // consider if onednn transpose weight or not
     if (weight_->is_transposed()) {
       weight_shape_origin = {weight_shape_origin[1], weight_shape_origin[0], 1, 1};
       // [K, N, 1, 1] -> [N, K, 1, 1]

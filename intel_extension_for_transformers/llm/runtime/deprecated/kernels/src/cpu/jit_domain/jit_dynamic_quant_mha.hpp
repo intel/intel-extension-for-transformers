@@ -106,7 +106,7 @@ class jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
   const int K;
 
   const tile_param_t* const pre_amx_cfg_;  // pointer to assumed amx cfg before executing this jit
-  const tile_param_t required_amx_cfg_;    // required amx cfg for runing AMX instructions in this jit
+  const tile_param_t required_amx_cfg_;    // required amx cfg for running AMX instructions in this jit
   tileconfig_t reqired_tile_cfg_;          // corresponding palette of  required_amx_cfg_
 
   Xbyak::Label L_amx_cfg;
@@ -172,7 +172,7 @@ class jit_mmexp_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
   const int K;
 
   const tile_param_t* const pre_amx_cfg_;  // pointer to assumed amx cfg before executing this jit
-  const tile_param_t required_amx_cfg_;    // required amx cfg for runing AMX instructions in this jit
+  const tile_param_t required_amx_cfg_;    // required amx cfg for running AMX instructions in this jit
   tileconfig_t reqired_tile_cfg_;          // corresponding palette of  required_amx_cfg_
 
   Xbyak::Label L_amx_cfg;

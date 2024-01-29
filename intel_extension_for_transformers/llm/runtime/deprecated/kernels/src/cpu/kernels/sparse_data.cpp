@@ -107,7 +107,7 @@ bsr_data_t<T> reorder_to_bsr_group(dim_t rows, dim_t cols, dim_t blk_row, dim_t 
               padded_data.push_back(uncoded_data[dense_i * cols + dense_j]);
           } else {                                              // padding if no enough blocks left
             if (bi == 0)                                        // colidx only need to be added once for each block
-              padded_indices.push_back(padded_indices.back());  // padd index with last one
+              padded_indices.push_back(padded_indices.back());  // pad index with last one
             for (dim_t bj = 0; bj < blk_col; ++bj) padded_data.push_back(static_cast<T>(0));  // pad data with zeros
           }
         }
@@ -122,8 +122,8 @@ template bsr_data_t<int8_t> reorder_to_bsr_group<int8_t, 4>(dim_t rows, dim_t co
 
 template <typename T>
 bsc_data_t<T> tobsc(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data) {
-  SPARSE_LOG_IF(FATAL, rows % blk_row != 0) << "row should devide by blk_row";
-  SPARSE_LOG_IF(FATAL, cols % blk_col != 0) << "col should devide by blk_col";
+  SPARSE_LOG_IF(FATAL, rows % blk_row != 0) << "row should be divided by by blk_row";
+  SPARSE_LOG_IF(FATAL, cols % blk_col != 0) << "col should be divided by by blk_col";
 
   std::vector<dim_t> colptr;
   std::vector<dim_t> rowidxs;

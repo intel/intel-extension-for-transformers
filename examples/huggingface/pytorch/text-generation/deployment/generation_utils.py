@@ -28,7 +28,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Changes:
-# - overrided beam_search to let ITREX accept past kv caches
+# - overrode beam_search to let ITREX accept past kv caches
 
 import time
 import copy
@@ -1080,7 +1080,7 @@ class GenerationMixin:
     ) -> torch.Tensor:
         """
         Computes the transition scores of sequences given the generation scores (and beam indices, if beam search was
-        used). This is a convenient method to quicky obtain the scores of the selected tokens at generation time.
+        used). This is a convenient method to quickly obtain the scores of the selected tokens at generation time.
 
         Parameters:
             sequences (`torch.LongTensor`):

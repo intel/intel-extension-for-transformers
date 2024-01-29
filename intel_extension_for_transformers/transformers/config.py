@@ -548,7 +548,7 @@ class PruningConfig(object):
         initial_sparsity_ratio: Initial sparsity goal, and not needed if pruner_config argument is defined
         target_sparsity_ratio: Target sparsity goal, and not needed if pruner_config argument is defined
         metrics: Used to evaluate accuracy of tuning model, not needed for NoTrainerOptimizer
-        pruner_config: Defined pruning behavior, if it is None, then NLP wil create a default pruner with
+        pruner_config: Defined pruning behavior, if it is None, then NLP will create a default pruner with
             'BasicMagnitude' pruning typel
         config_file: Path to the config file
     """

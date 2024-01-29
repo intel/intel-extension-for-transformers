@@ -259,7 +259,7 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
     """Input_tensors
 
     Note:
-        each input_tensor has its own soure op, but same dest op
+        each input_tensor has its own source op, but same dest op
         so both have single string
     """
     input_names = []
