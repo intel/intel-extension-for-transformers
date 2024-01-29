@@ -20,7 +20,7 @@ We enable users to check whether the input query/context contains sensitive word
 ```python
 contain = safety_checker.sensitive_check(query)
 ```
-If the input query contains the sensitive, it will return `True`. The user needs to modifiy the input query to avoid the sensitive word.
+If the input query contains the sensitive, it will return `True`. The user needs to modify the input query to avoid the sensitive word.
 
 Additionally, the chatbot can filter sensitive words with customized symbols. Users can access this function via the following method:
 ```python

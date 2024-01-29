@@ -78,7 +78,7 @@ class StaticCompressedBuffer {
  private:
   void* activation_buffer_ = nullptr;
   bool debug_mode_ = false;
-  const int align_size = 64;  // TODO(zhe): make it configable based on different arch?
+  const int align_size = 64;  // TODO(zhe): make it configurable based on different arch?
   unordered_map<string, void*> memory_map_;
   map<string, TensorUsageRecord> tensor_usage_records_;
   size_t low_bound_size_ = 0;

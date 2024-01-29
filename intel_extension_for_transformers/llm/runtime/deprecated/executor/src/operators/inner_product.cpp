@@ -375,7 +375,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       DynamicPrepare(input, output);
       break;
     default:
-      LOG(FATAL) << "Unkown kernrl_type";
+      LOG(FATAL) << "Unknown kernrl_type";
   }
   if (kernel_type_ != Dense) monopolize_dispatcher_ = true;
 }
@@ -1339,9 +1339,9 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   vector<int64_t> dst_shape_origin = {src0_shape[0], src1_->shape()[0]};
 
   // Sub-step3: fused post transpose, notice it's different that
-  // pre transpose will use the tranposed shape and stride, it's straight
+  // pre transpose will use the transposed shape and stride, it's straight
   // forward post transpose will use origin shape and that means the dst buffer
-  // in matmul is a buffer transposed back from dst_perm(understand tranpose to
+  // in matmul is a buffer transposed back from dst_perm(understand transpose to
   // and transpose back) pre_transpose: src0_buffer -> pre_transpose ->
   // target_buffer in matmul post_transpose: target_buffer in matmul<- post
   // transpose <-dst_buffer
@@ -1622,7 +1622,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   if (inner_product_pd_.dst_desc() != dst_m_.get_desc()) {
     dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
-  // gelu seperate
+  // gelu separate
   if ((gelu_split_ && gelu_tanh_) || (gelu_split_ && gelu_erf_)) {
     dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
     gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data));

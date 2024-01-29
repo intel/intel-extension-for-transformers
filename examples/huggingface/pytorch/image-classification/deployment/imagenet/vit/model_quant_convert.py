@@ -412,7 +412,7 @@ def main():
         # Set the validation transforms
         dataset["validation"].set_transform(val_transforms)
 
-    # Initalize our trainer
+    # Initialize our trainer
     trainer = NLPTrainer(
         model=model,
         args=training_args,

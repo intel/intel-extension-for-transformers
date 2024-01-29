@@ -13,7 +13,7 @@ pip install --upgrade pip
 pip install -r requirements-gpu.txt
 pip uninstall torch torchvision -y
 pip install torch==2.0.1a0 torchvision==0.15.2a0 intel_extension_for_pytorch==2.0.110+xpu -f https://developer.intel.com/ipex-whl-stable-xpu
-echo "Run envrionment $ENV_NAME is created"
+echo "Run environment $ENV_NAME is created"
 echo "conda activate $ENV_NAME"
 echo "Build and install ITREX in $ENV_NAME"
 pip install -v .

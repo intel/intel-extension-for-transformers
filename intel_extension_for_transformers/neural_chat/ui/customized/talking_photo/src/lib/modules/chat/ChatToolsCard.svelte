@@ -45,7 +45,7 @@
 				<button
 					type="button"
 					class="w-full text-left text-sm font-semibold tracking-wide focus:outline-none"
-					>Recomended</button
+					>Recommended</button
 				>
 			</li>
 			<li>

@@ -41,7 +41,7 @@ class jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
      * @brief Guaranteed amx config before executing this jit kernel.
      *
      * If pre_amx_cfg fits what the kernel needs or set to nullptr, the kernel will not touch the amx config while
-     * executing. Otherwise, the kernel will temporally reset the amx config while perserving it when exiting.
+     * executing. Otherwise, the kernel will temporally reset the amx config while preserving it when exiting.
      *
      */
     const tile_param_t* pre_amx_cfg;
@@ -123,7 +123,7 @@ class jit_mmexp_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
      * @brief Guaranteed amx config before executing this jit kernel.
      *
      * If pre_amx_cfg fits what the kernel needs or set to nullptr, the kernel will not touch the amx config while
-     * executing. Otherwise, the kernel will temporally reset the amx config while perserving it when exiting.
+     * executing. Otherwise, the kernel will temporally reset the amx config while preserving it when exiting.
      *
      */
     const tile_param_t* pre_amx_cfg;
@@ -192,7 +192,7 @@ class jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x : public jit_generator 
      * @brief Guaranteed amx config before executing this jit kernel.
      *
      * If pre_amx_cfg fits what the kernel needs or set to nullptr, the kernel will not touch the amx config while
-     * executing. Otherwise, the kernel will temporally reset the amx config while perserving it when exiting.
+     * executing. Otherwise, the kernel will temporally reset the amx config while preserving it when exiting.
      *
      */
     const tile_param_t* pre_amx_cfg;
@@ -260,7 +260,7 @@ class jit_scale_mm_amx_u8s8_ab_BA16b_16x : public jit_generator {
      * @brief Guaranteed amx config before executing this jit kernel.
      *
      * If pre_amx_cfg fits what the kernel needs or set to nullptr, the kernel will not touch the amx config while
-     * executing. Otherwise, the kernel will temporally reset the amx config while perserving it when exiting.
+     * executing. Otherwise, the kernel will temporally reset the amx config while preserving it when exiting.
      *
      */
     const tile_param_t* pre_amx_cfg;

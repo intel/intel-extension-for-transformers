@@ -420,7 +420,7 @@ class TFOptimization:
                 assert False, "Please pass calibration dataset to TFNoTrainerOptimizer.calib_dataloader"
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:   # pragma: no cover
             assert False, \
-                "Unsupport quantization aware training for tensorflow framework"
+                "Unsupported quantization aware training for tensorflow framework"
 
         opt_model = self.quantizer.fit()
         opt_model.save(self.args.output_dir)

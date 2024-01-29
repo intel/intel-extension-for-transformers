@@ -113,7 +113,7 @@ void jit_slice_t::copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64
   }
   // tail
   const auto tail_mask = rp->reg<Opmask>();
-  const auto tail = copy_size % BYTES_VMM / dt_size / 2;  // in terms of #elemets in dst
+  const auto tail = copy_size % BYTES_VMM / dt_size / 2;  // in terms of #elements in dst
   const int mask = (1LL << tail) - 1;
   if (tail != 0) {
     const auto src_offset = loops * BYTES_VMM;

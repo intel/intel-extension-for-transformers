@@ -44,7 +44,7 @@ text_encoder_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': False,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_Resize2Gather': False,
         'AttentionBlock_QKVPreReshape': False,
         'AttentionBlock_AttentionMaskAddReshape': False,
@@ -106,7 +106,7 @@ unet_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': True,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
@@ -168,7 +168,7 @@ qat_unet_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': True,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
@@ -238,7 +238,7 @@ vae_decoder_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': True,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,

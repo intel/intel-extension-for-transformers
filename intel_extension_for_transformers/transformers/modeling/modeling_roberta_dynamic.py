@@ -384,7 +384,7 @@ class RobertaAttention(nn.Module):
 
 # Copied from transformers.models.bert.modeling_bert.BertIntermediate
 class RobertaIntermediate(nn.Module):
-    """Roberta intermidiate."""
+    """Roberta intermediate."""
     def __init__(self, config):
         """Init an instance base on config."""
         super().__init__()

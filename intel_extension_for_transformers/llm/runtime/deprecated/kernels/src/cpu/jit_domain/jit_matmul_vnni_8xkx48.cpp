@@ -31,8 +31,8 @@ jit_matmul_vnni_8xkx48_t::jit_matmul_vnni_8xkx48_t(const param_t& param)
   SPARSE_LOG_IF(FATAL,
                 param_.dt_dst != (param_.postop_attrs.size() == 0 ? data_type::fp32 : param_.postop_attrs.back().dt))
       << "Output type must match the last postop if applied!";
-  SPARSE_LOG_IF(FATAL, M_ > 8 || N_ > 48) << "Output dimention too large!";
-  SPARSE_LOG_IF(FATAL, M_ == 0 || N_ == 0) << "Output dimention can not be zero!";
+  SPARSE_LOG_IF(FATAL, M_ > 8 || N_ > 48) << "Output dimension too large!";
+  SPARSE_LOG_IF(FATAL, M_ == 0 || N_ == 0) << "Output dimension can not be zero!";
   eltwise_inj_.eltwise_injector_init(this, param_.postop_attrs);
 }
 

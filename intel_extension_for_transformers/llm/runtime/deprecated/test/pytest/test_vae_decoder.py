@@ -50,7 +50,7 @@ vae_decoder_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': True,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,

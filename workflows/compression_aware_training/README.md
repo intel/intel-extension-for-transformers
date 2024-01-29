@@ -1,9 +1,9 @@
 # Compression Aware Training
 
 ## Introduction
-Learn to use Intel's XPU hardware and Intel optimized software for Model Compression Aware Training on Hugging Face models for tasks related to Natural Language Processing (NLP) with easy to run steps that seemlessly leverage intel Optimizations for Xeon CPU processors using Intel Extension for Tranfomrer Domain toolkit, PyTorch* and Intel® Neural Compressor.
+Learn to use Intel's XPU hardware and Intel optimized software for Model Compression Aware Training on Hugging Face models for tasks related to Natural Language Processing (NLP) with easy to run steps that seamlessly leverage intel Optimizations for Xeon CPU processors using Intel Extension for Tranfomrer Domain toolkit, PyTorch* and Intel® Neural Compressor.
 
-## Solution Techical Overview
+## Solution Technical Overview
 
 The workflow provides a generic way to do model Compression Aware Training supporting the following Compression types specified below.
 

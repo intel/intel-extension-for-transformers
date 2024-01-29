@@ -18,7 +18,7 @@ In Transformers-accelerated Libraries, we will provide a new class named injecto
 ## Framework Features
 <a name="Bu07F"></a>
 ### param_types.hpp
-Follow classes/structs will be introduced. The most important class is `postop_attr`, which indicate the postop's attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), aplha(zero points for quantization), beta, sacle for some operators such as linear&quantize.
+Follow classes/structs will be introduced. The most important class is `postop_attr`, which indicate the postop's attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), alpha(zero points for quantization), beta, sacle for some operators such as linear&quantize.
 ```cpp
 enum class postop_alg : uint8_t { exp, gelu, tanh, gelu, relu, quantize, dequantize, linear, int8_lut };
 
@@ -204,7 +204,7 @@ step1. Gen_case.
                 {bf16_gelu_attr, bf16_exp_attr}),
        false});
 ```
-**NOTE: please add a pair<"postop_list",dt1op1+dt2op2+...> in **`op_attrs`** field for kernel hasing.**
+**NOTE: please add a pair<"postop_list",dt1op1+dt2op2+...> in **`op_attrs`** field for kernel hashing.**
 step2. Check result
 ```cpp
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rf_data) {

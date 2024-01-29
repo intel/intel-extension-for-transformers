@@ -1,6 +1,7 @@
 alse
 ans
 bu
+charactor
 daa
 datas
 dota
@@ -12,13 +13,12 @@ inout
 mata
 matc
 nd
+ore
 ot
+parm
+ques
 rouge
 sie
 te
 ue
 wya
-ques
-charactor
-parm
-ore
