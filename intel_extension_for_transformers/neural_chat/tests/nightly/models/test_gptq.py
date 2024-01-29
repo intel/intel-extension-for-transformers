@@ -33,7 +33,7 @@ class TestLlama2GPTQModel(unittest.TestCase):
             self.skipTest("GTPQ is not supported on HPU.")
         loading_config = LoadingModelConfig(use_llm_runtime=True)
         optimization_config = WeightOnlyQuantConfig(use_gptq=True)
-        config = PipelineConfig(model_name_or_path="/mnt/localdisk/models/Llama-2-7B-Chat-GPTQ/",#"/tf_dataset2/models/nlp_toolkit/Llama-2-7B-Chat-GPTQ"
+        config = PipelineConfig(model_name_or_path="/tf_dataset2/models/nlp_toolkit/Llama-2-7B-Chat-GPTQ",
                                 optimization_config=optimization_config,
                                 loading_config=loading_config)
         chatbot = build_chatbot(config=config)
