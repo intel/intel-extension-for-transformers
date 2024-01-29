@@ -105,7 +105,7 @@ def _replace_linear(
         is_removed = False
 
         if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
-            or (is_ipex_available and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
+            or (is_ipex_available() and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
            and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(
