@@ -26,7 +26,7 @@ from intel_extension_for_transformers.neural_chat.config import (
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
 from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionResponse
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import check_completion_request
+from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import check_requests
 from intel_extension_for_transformers.neural_chat.cli.log import logger
 
 import uvicorn
@@ -272,7 +272,7 @@ print("\n"*3)
 
 @app.post("/v1/code_generation")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
-    ret = check_completion_request(request)
+    ret = check_requests(request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
     try:

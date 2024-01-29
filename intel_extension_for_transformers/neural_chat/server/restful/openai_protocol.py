@@ -181,6 +181,7 @@ class CompletionRequest(BaseModel):
     top_k: Optional[int] = 1
     logprobs: Optional[int] = None
     echo: Optional[bool] = False
+    repetition_penalty: Optional[float] = 1.0
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
