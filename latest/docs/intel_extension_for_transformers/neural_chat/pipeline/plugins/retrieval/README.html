@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -93,7 +93,7 @@
 <div align="left"><section id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
 <p>Large language models (LLMs) have shown exceptional performance in various natural language processing tasks, establishing them as essential tools for understanding and generating language. These models absorb extensive world knowledge from their vast training datasets, enabling them to produce fluent and coherent responses to user queries without external data resources. However, despite the remarkable breadth of knowledge large language models gain during training, they face limitations in accessing up-to-date information and certain domain-specific data. This limitation can lead to a significant concern: the tendency of large language models to ‘hallucinate’ or create fictitious content in their responses.</p>
-<p>This hallucination problem primarily arises from two factors: (1) LLMs are predominantly trained using data from the Internet, which limits their exposure to specific, domain-focused information; and (2) LLMs mainly rely on the training corpus for information extraction. These models remain unaware of events occurring post-training, which can be particularly problematic for topics that change daily. Two methods are recongized as effective method for model hallucination problems, <a class="reference external" href="https://arxiv.org/abs/2311.08401">Finetuning the LLM on task-specific datasets</a> and <a class="reference external" href="https://arxiv.org/abs/2212.10560">Retrieval-Augmented Generation (RAG)</a>. However, finetuning a LLM is impractical for most users due to it requires high-quality datasets, labor-intensive data annotation, and substantial computational resources. Also, it is challenging to collect and maintain an extensive, up-to-date knowledge corpus. Therefore, we propose an economically efficient alternative based on RAG. It retrieves relevant documents from a local database to serve as the reference to enhance the accuracy and reliability of the generated results.</p>
+<p>This hallucination problem primarily arises from two factors: (1) LLMs are predominantly trained using data from the Internet, which limits their exposure to specific, domain-focused information; and (2) LLMs mainly rely on the training corpus for information extraction. These models remain unaware of events occurring post-training, which can be particularly problematic for topics that change daily. Two methods are recognized as effective method for model hallucination problems, <a class="reference external" href="https://arxiv.org/abs/2311.08401">Finetuning the LLM on task-specific datasets</a> and <a class="reference external" href="https://arxiv.org/abs/2212.10560">Retrieval-Augmented Generation (RAG)</a>. However, finetuning a LLM is impractical for most users due to it requires high-quality datasets, labor-intensive data annotation, and substantial computational resources. Also, it is challenging to collect and maintain an extensive, up-to-date knowledge corpus. Therefore, we propose an economically efficient alternative based on RAG. It retrieves relevant documents from a local database to serve as the reference to enhance the accuracy and reliability of the generated results.</p>
 <p>Inspired by the prevent chatbot framework <a class="reference external" href="https://github.com/langchain-ai/langchain">langchain</a>, <a class="reference external" href="https://github.com/run-llama/llama_index">Llama-Index</a> and <a class="reference external" href="https://github.com/deepset-ai/haystack">haystack</a>, our NeuralChat API offers an easy way to create and utilize chatbot models while integrating RAG. Our API provides an easy to use extension for langchain users as well as a convenient deployment code for the general user. Without too much learning effort, the user can build their own RAG-based chatbot with their documents. The details about our langchain extension feature could be see <a class="reference external" href="#langchain-extension">here</a>.</p>
 <p>Currently, we concentrate on <a class="reference external" href="https://medium.com/&#64;aikho/deep-learning-in-information-retrieval-part-ii-dense-retrieval-1f9fecb47de9">dense retrieval</a> to construct the RAG pipeline. The dense retrieval will return the documents that share the similar semantic expression with the candidate queries instead of the keywords expression, which is more suitable for the long-context application scenario.</p>
 <p>The embedding model plays a crucial factor to influence the retrieval accuracy. We have already provided support for a wide range of open-released pre-trained embedding models featured on the <a class="reference external" href="https://huggingface.co/spaces/mteb/leaderboard">HuggingFace text embedding leaderboard</a>. Users can conveniently choose an embedding model in two ways: they can either specify the model by its name on HuggingFace or download a model and save it under the default name. Below is a list of some supported embedding models available in our plugin. Users can select their preferred embedding model based on various factors such as model size, embedding dimensions, maximum sequence length, and average ranking score.
@@ -190,7 +190,7 @@
 <tr>
 <td>response_template</td>
 <td>str</td>
-<td>Default response when there is no available relevent documents for RAG</td>
+<td>Default response when there is no available relevant documents for RAG</td>
 <td>-</td>
 </tr>
 <tr>
@@ -386,7 +386,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f7b8e20> 
+   <jinja2.runtime.BlockReference object at 0x7f6ab1d78e20> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

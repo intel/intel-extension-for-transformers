@@ -1,7 +1,7 @@
 This README is intended to guide you through setting up the server for the AskDoc demo using the NeuralChat framework. You can deploy it on various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU and Client GPU.
 
 # Introduction
-The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy. This example introduce our solution to build a retrieval-based chatbot backend server. Though few lines of code, our api could help the user build a local refernece database to enhance the accuracy of the generation results.
+The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy. This example introduce our solution to build a retrieval-based chatbot backend server. Though few lines of code, our api could help the user build a local reference database to enhance the accuracy of the generation results.
 
 Before deploying this example, please follow the instructions in the [README](../../README.html) to install the necessary dependencies.
 

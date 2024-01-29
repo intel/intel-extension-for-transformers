@@ -29,7 +29,7 @@ Functions
 
 .. py:function:: distributed_init(backend='gloo', world_size=1, rank=-1, init_method=None, master_addr='127.0.0.1', master_port='12345')
 
-   Init the distibute environment.
+   Init the distribute environment.
 
 
 .. py:function:: generate_dummy_past_key_values(config, input_bs)

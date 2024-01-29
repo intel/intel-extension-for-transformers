@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -309,7 +309,7 @@ function returns []</p>
 <li><p><strong>mandatory</strong> (<em>string</em><em> or </em><em>list means the specified op_type are</em>) – </p></li>
 <li><p><strong>optional.</strong> (<em>while tuple stands for</em>) – </p></li>
 <li><p><strong>example</strong> (<em>For</em>) – </p></li>
-<li><p><strong>this</strong> (<em>a input pattern mybe like</em>) – </p></li>
+<li><p><strong>this</strong> (<em>a input pattern maybe like</em>) – </p></li>
 <li><p><strong>[</strong><strong>'Mul'</strong> – </p></li>
 <li><p><strong>'Mul'</strong> – </p></li>
 <li><p><strong>[</strong><strong>'Add'</strong> – </p></li>
@@ -402,7 +402,7 @@ outside op —^
 […, [(idx, ‘Add’),(idx, ‘Mul’),(idx, ‘Sub’)], …]</p></li>
 <li><p>If a node in sub-graph just has one input op and this op is from outside, you should
 use empty tuple () to represents a input op. However, the algorithm doesn’t support
-this kind of pattern completely. Beause the match result can’t make sure the whole
+this kind of pattern completely. Because the match result can’t make sure the whole
 connection. So you had better check the results.</p></li>
 <li><p>For the symmetric pattern, the sub-graph has consecutive same op type as the main chain
 (Y or O shape). So these two search results by DFS are duplicated. The algorithm would
@@ -514,7 +514,7 @@ out_pattern is [[(0, ‘Input’)]]</p>
 </dd>
 <dt>‘node_names’: set node name for each node in pattern after fusion. Key means the node idx,</dt><dd><p>the value must be string or int (idx). If the value is the string, just use it as
 the node’s name. If the value is the idx, use the name of idx-th node in the
-pattern berfore fusion. If the in_pattern has n match_results in the graph, it
+pattern before fusion. If the in_pattern has n match_results in the graph, it
 will add “_n” after the name, for example, the new node name should be
 “embeddings/reshape_0” after mapping of the first match_result.</p>
 </dd>
@@ -527,7 +527,7 @@ means the first new node’s first input_tensor is the tensor and this node has
 total 1 input_tensor. So the first element in the value gives the source info of
 input_tensors, the second gives the dest info of the input_tensors.However,
 sometimes source info has the form like ‘{1:[0], 2:[1,2]}’, the ‘[1,2]’ means the
-idx of tensor is not sure, maybe 1 or 2. It will happens to some sepcial op, like
+idx of tensor is not sure, maybe 1 or 2. It will happens to some special op, like
 ‘BiasAdd’, its ‘bias’ tensor maybe in unfixed location. If some input_tensors only
 can get from other node outside the pattern, you can just specify it by give the
 node name in graph.</p>
@@ -648,7 +648,7 @@ if there’s no available fwk info, then return ‘NA’.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f2db5b0> 
+   <jinja2.runtime.BlockReference object at 0x7f6a98881ae0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

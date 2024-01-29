@@ -28,14 +28,14 @@ ninja
 
 ### FP32 Inference (Baseline)
 
->**Note**: Please donwload the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
+>**Note**: Please download the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command.
 
 
 #### 1. Convert Model
 
 Convert Hugginface model. 
 
-Please make sure you have donwloaded the model into local path
+Please make sure you have downloaded the model into local path
 
 ```shell
 cd intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
@@ -45,7 +45,7 @@ python scripts/convert.py local_model_path --outtype f32 --outfile model_f32.bin
 
 #### 2. Inference
 
-Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about paramters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm)
+Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm)
 
 When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
 
@@ -55,7 +55,7 @@ OMP_NUM_THREADS=48 numactl -m 0 -C 0-<cores-per-instance> ./build/bin/run_<model
 
 ### INT4 Inference
 
->**Note**: Please donwload the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command. For converting models, please see above [Convert Model](#1-convert-model)
+>**Note**: Please download the corresponding AI model from [huggingface hub](https://huggingface.co/models) before executing following command. For converting models, please see above [Convert Model](#1-convert-model)
 
 #### 1. Quantization
 
@@ -69,7 +69,7 @@ Please select `group_size` between 32 or 128. For more details about parameters 
 
 #### 2. Inference
 
-Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about paramters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm)
+Please replace `build/bin/run_<model_name>` with your model name, and fill in `-p <prompt>` with your prompt. We provide several [prompts](../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json) for different input length. For more details about parameters and their meanings, please go to [argument description](../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm)
 
 When running inference, we recommend using `numactl` to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting `cores-per-instance=48` (best performance from our practice). And you can try to find out the best settings on your server.
 

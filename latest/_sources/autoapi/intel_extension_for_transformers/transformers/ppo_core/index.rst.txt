@@ -74,7 +74,7 @@ Functions
 
 .. py:function:: clip_by_value(x, tensor_min, tensor_max)
 
-   Tensor extenstion to torch.clamp
+   Tensor extension to torch.clamp
    https://github.com/pytorch/pytorch/issues/2793#issuecomment-428784713
 
 

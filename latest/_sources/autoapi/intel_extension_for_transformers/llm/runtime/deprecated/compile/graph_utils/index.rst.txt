@@ -150,7 +150,7 @@ Functions
    :param string or list means the specified op_type are mandatory:
    :param while tuple stands for optional.:
    :param For example:
-   :param a input pattern mybe like this:
+   :param a input pattern maybe like this:
    :param ['Mul':
    :param 'Mul':
    :param ['Add':
@@ -231,7 +231,7 @@ Functions
          [..., [(idx, 'Add'),(idx, 'Mul'),(idx, 'Sub')], ...]
       5. If a node in sub-graph just has one input op and this op is from outside, you should
          use empty tuple () to represents a input op. However, the algorithm doesn't support
-         this kind of pattern completely. Beause the match result can't make sure the whole
+         this kind of pattern completely. Because the match result can't make sure the whole
          connection. So you had better check the results.
       6. For the symmetric pattern, the sub-graph has consecutive same op type as the main chain
          (Y or O shape). So these two search results by DFS are duplicated. The algorithm would
@@ -318,7 +318,7 @@ Functions
    'node_names': set node name for each node in pattern after fusion. Key means the node idx,
                the value must be string or int (idx). If the value is the string, just use it as
                the node's name. If the value is the idx, use the name of idx-th node in the
-               pattern berfore fusion. If the in_pattern has n match_results in the graph, it
+               pattern before fusion. If the in_pattern has n match_results in the graph, it
                will add "_n" after the name, for example, the new node name should be
                "embeddings/reshape_0" after mapping of the first match_result.
    'input_tensors': the input_tensors of patterns before or after fusion should be same. The key
@@ -331,7 +331,7 @@ Functions
                total 1 input_tensor. So the first element in the value gives the source info of
                input_tensors, the second gives the dest info of the input_tensors.However,
                sometimes source info has the form like '{1:[0], 2:[1,2]}', the '[1,2]' means the
-               idx of tensor is not sure, maybe 1 or 2. It will happens to some sepcial op, like
+               idx of tensor is not sure, maybe 1 or 2. It will happens to some special op, like
                'BiasAdd', its 'bias' tensor maybe in unfixed location. If some input_tensors only
                can get from other node outside the pattern, you can just specify it by give the
                node name in graph.

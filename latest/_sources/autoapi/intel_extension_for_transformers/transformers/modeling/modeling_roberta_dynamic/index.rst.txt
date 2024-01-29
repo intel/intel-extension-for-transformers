@@ -127,7 +127,7 @@ Functions
 
 
 
-   Roberta intermidiate.
+   Roberta intermediate.
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
 

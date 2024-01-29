@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Element-wise Injector &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Element-wise Injector &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -150,7 +150,7 @@ In Transformers-accelerated Libraries, we will provide a new class named injecto
 <p><a name="Bu07F"></a></p>
 <section id="param-types-hpp">
 <h3>param_types.hpp<a class="headerlink" href="#param-types-hpp" title="Link to this heading"></a></h3>
-<p>Follow classes/structs will be introduced. The most important class is <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code>, which indicate the postop’s attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), aplha(zero points for quantization), beta, sacle for some operators such as linear&amp;quantize.</p>
+<p>Follow classes/structs will be introduced. The most important class is <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code>, which indicate the postop’s attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), alpha(zero points for quantization), beta, scale for some operators such as linear&amp;quantize.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">postop_alg</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">exp</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">tanh</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">relu</span><span class="p">,</span><span class="w"> </span><span class="n">quantize</span><span class="p">,</span><span class="w"> </span><span class="n">dequantize</span><span class="p">,</span><span class="w"> </span><span class="n">linear</span><span class="p">,</span><span class="w"> </span><span class="n">int8_lut</span><span class="w"> </span><span class="p">};</span>
 
 <span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">postop_type</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eltwise</span><span class="w"> </span><span class="p">};</span>
@@ -343,7 +343,7 @@ step1. Gen_case.</p>
 <span class="w">       </span><span class="nb">false</span><span class="p">});</span>
 </pre></div>
 </div>
-<p><strong>NOTE: please add a pair&lt;”postop_list”,dt1op1+dt2op2+…&gt; in <strong><code class="docutils literal notranslate"><span class="pre">op_attrs</span></code></strong> field for kernel hasing.</strong>
+<p><strong>NOTE: please add a pair&lt;”postop_list”,dt1op1+dt2op2+…&gt; in <strong><code class="docutils literal notranslate"><span class="pre">op_attrs</span></code></strong> field for kernel hashing.</strong>
 step2. Check result</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">get_true_data</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">operator_desc</span><span class="o">&amp;</span><span class="w"> </span><span class="n">op_desc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">rf_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">src</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="p">)</span><span class="n">rf_data</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
@@ -380,7 +380,7 @@ step2. Check result</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f64f9a0> 
+   <jinja2.runtime.BlockReference object at 0x7f6a98b45ea0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

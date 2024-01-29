@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   The memory fuction for saving chat history or loading chat history.
+   The memory function for saving chat history or loading chat history.
 
 
 

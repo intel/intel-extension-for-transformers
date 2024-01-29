@@ -27,7 +27,7 @@ Classes
 
 
 
-   The defintion of the neural engine graph.
+   The definition of the neural engine graph.
 
    .. py:method:: add_config_item(key, val)
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Transposed MHA &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Transposed MHA &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -136,7 +136,7 @@ In transformer architecture, MHA’s computing logic is $softmax(Q\times K^T)\ti
 </section>
 <section id="calculation">
 <h3>Calculation<a class="headerlink" href="#calculation" title="Link to this heading"></a></h3>
-<p>In calculating step1, jit kernel takes a sub-matrix of MxN in each iteration. The values of M and N are from prior experience. In each iteraion, the kernels perform the following computational logic:</p>
+<p>In calculating step1, jit kernel takes a sub-matrix of MxN in each iteration. The values of M and N are from prior experience. In each iteration, the kernels perform the following computational logic:</p>
 <ol class="simple">
 <li><p>Calculate the block and execute binary_add(add mask).</p></li>
 <li><p>For each value <code class="docutils literal notranslate"><span class="pre">x</span></code> in the block, use a low-order polynomial approximation to calculate <code class="docutils literal notranslate"><span class="pre">exp(x)</span></code> and col-major to calculate <code class="docutils literal notranslate"><span class="pre">sum(exp(x))</span></code>.</p></li>
@@ -166,7 +166,7 @@ In transformer architecture, MHA’s computing logic is $softmax(Q\times K^T)\ti
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d48a9f820> 
+   <jinja2.runtime.BlockReference object at 0x7f6a98be34f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

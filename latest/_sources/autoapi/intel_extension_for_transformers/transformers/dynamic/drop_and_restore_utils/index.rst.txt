@@ -42,7 +42,7 @@ Functions
 
 .. py:function:: sample_layer_configuration(num_hidden_layers, layer_dropout_prob=None, layer_dropout=None, layer_dropout_bound=None)
 
-   Get sample layers depends on the set paramaters.
+   Get sample layers depends on the set parameters.
 
    :param num_hidden_layers: A number to set the max sequence length.
    :param layer_dropout_prob: Probability to dropout a layer.

@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   Pipline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline
+   Pipeline Modificaiton based from the diffusers 0.12.1 StableDiffusionInstructPix2PixPipeline
 
 
 

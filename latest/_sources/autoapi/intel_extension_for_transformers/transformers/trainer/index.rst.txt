@@ -143,7 +143,7 @@ Classes
 
    .. py:method:: orchestrate_optimizations(config_list, teacher_model: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
 
-      Main entry point for orchestrate optimiztions.
+      Main entry point for orchestrate optimizations.
 
       :param config_list: The list of configs.
       :param teacher_model: The model(torch.nn.Module) transfers knowledge
@@ -320,15 +320,15 @@ Classes
 
    .. py:method:: export_to_onnx(*args, **kwargs)
 
-      The function to tranfer model into onnx model.
+      The function to transfer model into onnx model.
 
-      :param args: defined paramerts.
+      :param args: defined parameters.
       :param kwargs: additional keyword arguments used to hide deprecated arguments.
 
 
    .. py:method:: export_to_fp32_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
 
-      The function to tranfer model into fp32 onnx model.
+      The function to transfer model into fp32 onnx model.
 
       :param save_path: the save path of the exported model.
       :param opset_version: the onnx op version of the exported model.
@@ -338,7 +338,7 @@ Classes
 
    .. py:method:: export_to_bf16_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
 
-      The function to tranfer model into bf16 onnx model.
+      The function to transfer model into bf16 onnx model.
 
       :param save_path: the save path of the exported model.
       :param opset_version: the onnx op version of the exported model.
@@ -348,7 +348,7 @@ Classes
 
    .. py:method:: export_to_int8_onnx(save_path=None, quant_format='QDQ', dtype='S8S8', opset_version=14, sample_size=100, calibrate_method='minmax', scale_mapping=False)
 
-      The function to tranfer model into int8 onnx model.
+      The function to transfer model into int8 onnx model.
 
       :param save_path: the save path of the exported model.
       :param quant_format: quantization format.
@@ -361,7 +361,7 @@ Classes
 
    .. py:method:: export_to_jit()
 
-      The function to tranfer model into jit model.
+      The function to transfer model into jit model.
 
 
    .. py:method:: get_export_args(model)

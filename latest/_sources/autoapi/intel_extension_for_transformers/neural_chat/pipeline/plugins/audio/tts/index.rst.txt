@@ -41,7 +41,7 @@ Classes
 
       text: the input text
       voice: default/male/female/...
-      batch_length: the batch length for spliting long texts into batches to do text to speech
+      batch_length: the batch length for splitting long texts into batches to do text to speech
 
 
    .. py:method:: stream_text2speech(generator, output_audio_path, voice='default')

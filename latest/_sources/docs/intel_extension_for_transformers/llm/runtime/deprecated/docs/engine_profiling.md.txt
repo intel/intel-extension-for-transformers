@@ -1,7 +1,7 @@
 # Profiling
 
 1. [Introduction](#Introduction)  
-2. [Profling API](#Profling-API)  
+2. [Profiling API](#Profiling-API)  
 3. [Profiling Examples](#Profiling-Examples)  
 3.1 [Parts of CSV Profiling](#Parts-of-CSV-Profiling)  
 &ensp;&ensp;3.1.1 [Sparse Ratio Setting Part](#Sparse-Ratio-Setting-Part)  
@@ -13,9 +13,9 @@
 &ensp;&ensp;3.2.3 [Operator Level](#Operator-Level)  
 
 ## Introduction
-In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profling tool in Neural Engine to collect the latency of operators.
+In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profiling tool in Neural Engine to collect the latency of operators.
 
-## Profling API
+## Profiling API
 
 ### You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.
 
@@ -28,7 +28,7 @@ ENGINE_PROFILING=1 python run_executor.py --input_model=./model_and_tokenizer/in
  ```shell
 ENGINE_PROFILING=1 neural_engine --batch_size=<batch_size> --iterations=10 --w=5 --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
  ```
- Of course, you can also **export ENGINE_PROFILING=1** before running. After that, there will be a folder named engine_profliling including profiling_csv and profiling_trace under your current path. The profiling_csv records average latancy of each operator and the whole model. You can also set perf ratio to estimate perfromance improvement automatically. The profiling_trace records the latency of each iteration and more operate details. You can just load it on **chrome://tracing/** and view. If you want to analyze more of performance, you can deal with it as a json format file on your way.
+ Of course, you can also **export ENGINE_PROFILING=1** before running. After that, there will be a folder named engine_profliling including profiling_csv and profiling_trace under your current path. The profiling_csv records average latancy of each operator and the whole model. You can also set perf ratio to estimate performance improvement automatically. The profiling_trace records the latency of each iteration and more operate details. You can just load it on **chrome://tracing/** and view. If you want to analyze more of performance, you can deal with it as a json format file on your way.
  >**Note**: In multiple instances case, you need to tell how many instances will run, just **export INST_NUM=<inst num>**. And as for multiple instances, we will get profiling_<time>_<inst_count>.csv/.json of each instance.
 
 ## Profiling Examples

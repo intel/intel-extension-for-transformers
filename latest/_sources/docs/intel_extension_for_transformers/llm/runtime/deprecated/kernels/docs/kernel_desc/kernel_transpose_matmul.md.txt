@@ -25,7 +25,7 @@ In real computation, we evaluate this equation over multiple heads and over mult
 
 > Note: For BERT base, head_num is 12 and head_size is 64.
 
-As the SpMM kernels of SpareLib [prefer transposed operation](./kernel_vnni.html), the $Q, K, V$ matrices are in `head_num x head_size x batch_size x seq_len` in terms of physical memory format. Therefore, to get the correct matrix shape for multiplication, the axises of the source and destination matrices of matmul kernels are conceptually permuted in the following way:
+As the SpMM kernels of SpareLib [prefer transposed operation](./kernel_vnni.html), the $Q, K, V$ matrices are in `head_num x head_size x batch_size x seq_len` in terms of physical memory format. Therefore, to get the correct matrix shape for multiplication, the axes of the source and destination matrices of matmul kernels are conceptually permuted in the following way:
 
 ```
 Q:                  head_nun   head_size batch_size seq_len ====perm2031===> batch_size head_nun seq_len   head_size

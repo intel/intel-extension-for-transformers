@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -102,12 +102,12 @@
 <span class="n">safety_checker</span> <span class="o">=</span> <span class="n">SafetyChecker</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>There is also a parm names <code class="docutils literal notranslate"><span class="pre">matchType</span></code> in <code class="docutils literal notranslate"><span class="pre">SafetyChecker</span></code>. We defaulty set <code class="docutils literal notranslate"><span class="pre">matchType=2</span></code> to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.</p>
+<p>There is also a parm names <code class="docutils literal notranslate"><span class="pre">matchType</span></code> in <code class="docutils literal notranslate"><span class="pre">SafetyChecker</span></code>. We defaultly set <code class="docutils literal notranslate"><span class="pre">matchType=2</span></code> to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.</p>
 <p>We enable users to check whether the input query/context contains sensitive words using the following function,</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">contain</span> <span class="o">=</span> <span class="n">safety_checker</span><span class="o">.</span><span class="n">sensitive_check</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>If the input query contains the sensitive, it will return <code class="docutils literal notranslate"><span class="pre">True</span></code>. The user needs to modifiy the input query to avoid the sensitive word.</p>
+<p>If the input query contains the sensitive, it will return <code class="docutils literal notranslate"><span class="pre">True</span></code>. The user needs to modify the input query to avoid the sensitive word.</p>
 <p>Additionally, the chatbot can filter sensitive words with customized symbols. Users can access this function via the following method:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">processed_text</span> <span class="o">=</span> <span class="n">safety_checker</span><span class="o">.</span><span class="n">sensitive_filter</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">replaceChar</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
 </pre></div>
@@ -129,7 +129,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f7b95a0> 
+   <jinja2.runtime.BlockReference object at 0x7f6ab1d791e0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

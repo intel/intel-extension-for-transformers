@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Profiling &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Profiling &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -65,7 +65,7 @@
 <li class="toctree-l3"><a class="reference internal" href="onnx_quantize.html">Quantize a ONNX model to engine low precision/int8 IR</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Profiling</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#profling-api">Profling API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#profiling-api">Profiling API</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#profiling-examples">Profiling Examples</a></li>
 </ul>
 </li>
@@ -117,15 +117,15 @@
 <h1>Profiling<a class="headerlink" href="#profiling" title="Link to this heading"></a></h1>
 <ol class="simple">
 <li><p><a class="reference external" href="#Introduction">Introduction</a></p></li>
-<li><p><a class="reference external" href="#Profling-API">Profling API</a></p></li>
+<li><p><a class="reference external" href="#Profiling-API">Profiling API</a></p></li>
 <li><p><a class="reference external" href="#Profiling-Examples">Profiling Examples</a><br />3.1 <a class="reference external" href="#Parts-of-CSV-Profiling">Parts of CSV Profiling</a><br />  3.1.1 <a class="reference external" href="#Sparse-Ratio-Setting-Part">Sparse Ratio Setting Part</a><br />  3.1.2 <a class="reference external" href="#Operator-Profiling-Part">Operator Profiling Part</a><br />  3.1.3 <a class="reference external" href="#Total-Profiling-Part">Total Profiling Part</a><br />3.2 <a class="reference external" href="#Levels-of-JSON-Profiling">Levels of JSON Profiling</a><br />  3.2.1 <a class="reference external" href="#Model-Level">Model Level</a><br />  3.2.2 <a class="reference external" href="#Iteration-Level">Iteration Level</a><br />  3.2.3 <a class="reference external" href="#Operator-Level">Operator Level</a></p></li>
 </ol>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
-<p>In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profling tool in Neural Engine to collect the latency of operators.</p>
+<p>In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profiling tool in Neural Engine to collect the latency of operators.</p>
 </section>
-<section id="profling-api">
-<h2>Profling API<a class="headerlink" href="#profling-api" title="Link to this heading"></a></h2>
+<section id="profiling-api">
+<h2>Profiling API<a class="headerlink" href="#profiling-api" title="Link to this heading"></a></h2>
 <section id="you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api">
 <h3>You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.<a class="headerlink" href="#you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api" title="Link to this heading"></a></h3>
 <p>Let’s take <a class="reference external" href="../../../../examples/huggingface/pytorch/text-classification/deployment/sst2/bert_mini">bert_mini_sst2</a> for example. You can follow the steps in example README.html and just add ENGINE_PROFILING=1 before run executor like this:
@@ -137,7 +137,7 @@ run python</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ENGINE_PROFILING</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>neural_engine<span class="w"> </span>--batch_size<span class="o">=</span>&lt;batch_size&gt;<span class="w"> </span>--iterations<span class="o">=</span><span class="m">10</span><span class="w"> </span>--w<span class="o">=</span><span class="m">5</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span><span class="w"> </span>--config<span class="o">=</span>./ir/conf.yaml<span class="w"> </span>--weight<span class="o">=</span>./ir/model.bin
 </pre></div>
 </div>
-<p>Of course, you can also <strong>export ENGINE_PROFILING=1</strong> before running. After that, there will be a folder named engine_profliling including profiling_csv and profiling_trace under your current path. The profiling_csv records average latancy of each operator and the whole model. You can also set perf ratio to estimate perfromance improvement automatically. The profiling_trace records the latency of each iteration and more operate details. You can just load it on <strong>chrome://tracing/</strong> and view. If you want to analyze more of performance, you can deal with it as a json format file on your way.</p>
+<p>Of course, you can also <strong>export ENGINE_PROFILING=1</strong> before running. After that, there will be a folder named engine_profliling including profiling_csv and profiling_trace under your current path. The profiling_csv records average latancy of each operator and the whole model. You can also set perf ratio to estimate performance improvement automatically. The profiling_trace records the latency of each iteration and more operate details. You can just load it on <strong>chrome://tracing/</strong> and view. If you want to analyze more of performance, you can deal with it as a json format file on your way.</p>
 <blockquote>
 <div><p><strong>Note</strong>: In multiple instances case, you need to tell how many instances will run, just <strong>export INST_NUM=<inst num></strong>. And as for multiple instances, we will get profiling_<time>_&lt;inst_count&gt;.csv/.json of each instance.</p>
 </div></blockquote>
@@ -375,7 +375,7 @@ attributes<span class="w">    </span><span class="s2">&quot;append_op:sum;src1_p
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f64ec80> 
+   <jinja2.runtime.BlockReference object at 0x7f6ab1a83640> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

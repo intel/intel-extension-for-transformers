@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Efficient LLM Inference on CPUs &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Efficient LLM Inference on CPUs &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=eafc0fe6" />
@@ -114,12 +114,12 @@ ninja
 <section id="fp32-inference-baseline">
 <h3>FP32 Inference (Baseline)<a class="headerlink" href="#fp32-inference-baseline" title="Link to this heading"></a></h3>
 <blockquote>
-<div><p><strong>Note</strong>: Please donwload the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command.</p>
+<div><p><strong>Note</strong>: Please download the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command.</p>
 </div></blockquote>
 <section id="convert-model">
 <h4>1. Convert Model<a class="headerlink" href="#convert-model" title="Link to this heading"></a></h4>
 <p>Convert Hugginface model.</p>
-<p>Please make sure you have donwloaded the model into local path</p>
+<p>Please make sure you have downloaded the model into local path</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 python<span class="w"> </span>scripts/convert.py<span class="w"> </span>local_model_path<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>model_f32.bin
@@ -128,7 +128,7 @@ python<span class="w"> </span>scripts/convert.py<span class="w"> </span>local_mo
 </section>
 <section id="inference">
 <h4>2. Inference<a class="headerlink" href="#inference" title="Link to this heading"></a></h4>
-<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about paramters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
+<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about parameters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
 <p>When running inference, we recommend using <code class="docutils literal notranslate"><span class="pre">numactl</span></code> to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting <code class="docutils literal notranslate"><span class="pre">cores-per-instance=48</span></code> (best performance from our practice). And you can try to find out the best settings on your server.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">48</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-&lt;cores-per-instance&gt;<span class="w"> </span>./build/bin/run_&lt;model_name&gt;<span class="w"> </span>-m<span class="w"> </span>model_f32.bin<span class="w">  </span>-p<span class="w"> </span>&lt;prompt&gt;<span class="w"> </span>-n<span class="w"> </span><span class="m">32</span><span class="w"> </span>-t<span class="w"> </span><span class="m">48</span>
 </pre></div>
@@ -138,7 +138,7 @@ python<span class="w"> </span>scripts/convert.py<span class="w"> </span>local_mo
 <section id="int4-inference">
 <h3>INT4 Inference<a class="headerlink" href="#int4-inference" title="Link to this heading"></a></h3>
 <blockquote>
-<div><p><strong>Note</strong>: Please donwload the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command. For converting models, please see above <a class="reference external" href="#1-convert-model">Convert Model</a></p>
+<div><p><strong>Note</strong>: Please download the corresponding AI model from <a class="reference external" href="https://huggingface.co/models">huggingface hub</a> before executing following command. For converting models, please see above <a class="reference external" href="#1-convert-model">Convert Model</a></p>
 </div></blockquote>
 <section id="quantization">
 <h4>1. Quantization<a class="headerlink" href="#quantization" title="Link to this heading"></a></h4>
@@ -150,7 +150,7 @@ python<span class="w"> </span>scripts/convert.py<span class="w"> </span>local_mo
 </section>
 <section id="id1">
 <h4>2. Inference<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
-<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about paramters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
+<p>Please replace <code class="docutils literal notranslate"><span class="pre">build/bin/run_&lt;model_name&gt;</span></code> with your model name, and fill in <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&lt;prompt&gt;</span></code> with your prompt. We provide several <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/scripts/ci/cpp_graph_prompts.json">prompts</a> for different input length. For more details about parameters and their meanings, please go to <a class="reference external" href="../../intel_extension_for_transformers/llm/runtime/graph/README.html#2-inference-llm">argument description</a></p>
 <p>When running inference, we recommend using <code class="docutils literal notranslate"><span class="pre">numactl</span></code> to control CPU cores in instance. In this paper, we use 56 cores/socket Intel(R) Xeon(R) Platinum 8480+ server, and we recommend setting <code class="docutils literal notranslate"><span class="pre">cores-per-instance=48</span></code> (best performance from our practice). And you can try to find out the best settings on your server.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">48</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-47<span class="w"> </span>./build/bin/run_&lt;model_name&gt;<span class="w"> </span>-m<span class="w"> </span>model_q4j128.bin<span class="w">  </span>-p<span class="w"> </span>&lt;prompt&gt;<span class="w"> </span>-n<span class="w"> </span><span class="m">32</span><span class="w"> </span>-t<span class="w"> </span><span class="m">48</span>
 </pre></div>
@@ -222,7 +222,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d48bb4f40> 
+   <jinja2.runtime.BlockReference object at 0x7f6ab1eebbe0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

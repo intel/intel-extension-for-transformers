@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Transposed MatMul &mdash; Intel® Extension for Transformers 0.1.dev1+g6038861 documentation</title>
+  <title>Transposed MatMul &mdash; Intel® Extension for Transformers 0.1.dev1+gefea91f documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -152,7 +152,7 @@ In real computation, we evaluate this equation over multiple heads and over mult
 <blockquote>
 <div><p>Note: For BERT base, head_num is 12 and head_size is 64.</p>
 </div></blockquote>
-<p>As the SpMM kernels of SpareLib <a class="reference external" href="./kernel_vnni.html">prefer transposed operation</a>, the $Q, K, V$ matrices are in <code class="docutils literal notranslate"><span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span> <span class="pre">x</span> <span class="pre">batch_size</span> <span class="pre">x</span> <span class="pre">seq_len</span></code> in terms of physical memory format. Therefore, to get the correct matrix shape for multiplication, the axises of the source and destination matrices of matmul kernels are conceptually permuted in the following way:</p>
+<p>As the SpMM kernels of SpareLib <a class="reference external" href="./kernel_vnni.html">prefer transposed operation</a>, the $Q, K, V$ matrices are in <code class="docutils literal notranslate"><span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span> <span class="pre">x</span> <span class="pre">batch_size</span> <span class="pre">x</span> <span class="pre">seq_len</span></code> in terms of physical memory format. Therefore, to get the correct matrix shape for multiplication, the axes of the source and destination matrices of matmul kernels are conceptually permuted in the following way:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="nl">Q</span><span class="p">:</span><span class="w">                  </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">====</span><span class="n">perm2031</span><span class="o">===&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">head_size</span>
 <span class="nl">K</span><span class="p">:</span><span class="w">                  </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">====</span><span class="n">perm2013</span><span class="o">===&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">head_size</span><span class="w"> </span><span class="n">seq_len</span>
 <span class="n">QK</span><span class="o">^</span><span class="n">T</span><span class="o">:</span><span class="w">               </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w">  </span><span class="n">seq_len</span><span class="w">    </span><span class="n">seq_len</span><span class="w"> </span><span class="o">===============&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">seq_len</span>
@@ -253,7 +253,7 @@ In real computation, we evaluate this equation over multiple heads and over mult
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3d2f4f5f30> 
+   <jinja2.runtime.BlockReference object at 0x7f6ab1bd3130> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

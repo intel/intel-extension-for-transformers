@@ -31,7 +31,7 @@ Functions
    Note, this function need to import intel_extension_for_pytorch
 
 
-   Addtional info (common gpu name):
+   Additional info (common gpu name):
      'Intel(R) Data Center GPU Flex 170'
      'Intel(R) Data Center GPU Max 1100'
      'Intel(R) Arc(TM) A770 Graphics'

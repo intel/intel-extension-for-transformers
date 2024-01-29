@@ -44,7 +44,7 @@ Functions
 
 .. py:function:: store2str(gene, macs, score, method, parents=None)
 
-   Store the parmaters into string.
+   Store the parameters into string.
 
 
 .. py:class:: Evolution(model, max_seq_length, device, evaluate, lower_constraint=0, upper_constraint=None, eval_metric='eval_f1')
