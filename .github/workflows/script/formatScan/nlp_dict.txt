@@ -20,10 +20,6 @@ ques
 rouge
 sie
 te
+tye
 ue
 wya
-ques
-charactor
-parm
-ore
-tye
