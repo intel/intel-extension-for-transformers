@@ -23,7 +23,7 @@ from intel_extension_for_transformers.neural_chat.utils.database.mysqldb import 
 
 class TestMysqlDb(unittest.TestCase):
 
-    @patch('intel_extension_for_transformers.neural_chat.utils.database.mysqldb.connect')
+    @patch('pymysql.connect')
     def test_mysql_db_methods(self, mock_connect):
         mock_conn = MagicMock()
         mock_cursor = MagicMock()

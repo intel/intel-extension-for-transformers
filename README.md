@@ -7,11 +7,11 @@ Intel® Extension for Transformers
 [![](https://dcbadge.vercel.app/api/server/Wxk3J3ZJkU?compact=true&style=flat-square)](https://discord.gg/Wxk3J3ZJkU)
 [![Release Notes](https://img.shields.io/github/v/release/intel/intel-extension-for-transformers)](https://github.com/intel/intel-extension-for-transformers/releases)
 
-[🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference](https://github.com/intel/neural-speed/tree/main)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference on CPU](https://github.com/intel/neural-speed/tree/main)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference  on GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ## 🚀Latest News
-* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC).
+* [2024/01] Supported **INT4 inference on Intel GPUs** including Intel Data Center GPU Max Series (e.g., PVC) and Intel Arc A-Series (e.g., ARC). Check out the [examples](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [scripts](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py).
 * [2024/01] Demonstrated **Intel Hybrid Copilot** in **CES 2024 Great Minds** Session "[Bringing the Limitless Potential of AI Everywhere](https://youtu.be/70J3uO3eLZA?t=1348)".
 * [2023/12] Supported **QLoRA on CPUs** to make fine-tuning on client CPU possible. Check out the [blog](https://medium.com/@NeuralCompressor/creating-your-own-llms-on-your-laptop-a08cc4f7c91b) and [readme](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/qloracpu.md) for more details.
 * [2023/11] Released **top-1 7B-sized LLM** [**NeuralChat-v3-1**](https://huggingface.co/Intel/neural-chat-7b-v3-1) and [DPO dataset](https://huggingface.co/datasets/Intel/orca_dpo_pairs). Check out the [nice video](https://www.youtube.com/watch?v=bWhZ1u_1rlc) published by [WorldofAI](https://www.youtube.com/@intheworldofai).
@@ -100,10 +100,6 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 </table>
 
 
-
-
-
-
 > In the table above, "-" means not applicable or not started yet.
 
 ## Validated Software
@@ -122,24 +118,24 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 		</tr>
 		<tr>
 			<td>PyTorch</td>
-			<td>2.0.1+cpu</td>
-			<td>2.0.1+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.0.1+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
+			<td>2.1.0+cpu,</br> 2.0.1a0 (gpu)</td>
 		</tr>
 		<tr>
 			<td>Intel® Extension for PyTorch</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
-			<td>2.1.0+cpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
+			<td>2.1.0+cpu,</br> 2.0.110+xpu</td>
 		</tr>
 		<tr>
 			<td>Transformers</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
-			<td>4.35.2</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
+			<td>4.35.2(CPU),</br> 4.31.0 (Intel GPU)</td>
 		</tr>
 		<tr>
 			<td>Synapse AI</td>
@@ -155,12 +151,17 @@ Intel® Extension for Transformers is an innovative toolkit designed to accelera
 			<td>1.13.0-ee32e42</td>
 			<td>1.13.0-ee32e42</td>
 		</tr>
+                <tr>
+                        <td>intel-level-zero-gpu</td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                        <td>1.3.26918.50-736~22.04 </td>
+                </tr>
 	</tbody>
 </table>
 
-
-
-> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt).
+> Please refer to the detailed requirements in [CPU](intel_extension_for_transformers/neural_chat/requirements_cpu.txt), [Gaudi2](intel_extension_for_transformers/neural_chat/requirements_hpu.txt), [Intel GPU](https://github.com/intel/intel-extension-for-transformers/blob/main/requirements-gpu.txt).
 
 ## 🌱Getting Started
 
@@ -198,33 +199,55 @@ Below is the sample code to use the extended Transformers APIs. See more [exampl
 
 #### INT4 Inference (CPU)
 ```python
-from transformers import AutoTokenizer, TextStreamer
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 model_name = "Intel/neural-chat-7b-v3-1"     
 prompt = "Once upon a time, there existed a little girl,"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+outputs = model.generate(inputs)
 ```
 
-#### INT8 Inference (CPU)
+You can also load the low-bit model quantized by GPTQ/AWQ/RTN/AutoRound algorithm.
 ```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-model_name = "Intel/neural-chat-7b-v3-1"     
-prompt = "Once upon a time, there existed a little girl,"
+from transformers import AutoTokenizer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+# Download Hugging Face GPTQ/AWQ model or use local quantize model
+model_name = "PATH_TO_MODEL"  # local path to model
+woq_config = WeightOnlyQuantConfig(use_gptq=True)   # use_awq=True for AWQ; use_autoround=True for AutoRound
+prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
-
-model = AutoModelForCausalLM.from_pretrained(model_name, load_in_8bit=True)
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True) 
+outputs = model.generate(inputs)
 ```
+
+#### INT4 Inference (GPU)
+```python
+import intel_extension_for_pytorch as ipex
+from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+from transformers import AutoTokenizer
+
+device_map = "xpu"
+model_name ="Qwen/Qwen-7B"
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+prompt = "Once upon a time, there existed a little girl,"
+inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device_map)
+
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True,
+                                              device_map=device_map, load_in_4bit=True)
+
+# optimize the model with ipex, it will improve performance.
+model = ipex.optimize_transformers(model, inplace=True, dtype=torch.float16, woq=True, device=device_map)
+
+output = model.generate(inputs)
+```
+> Note: Please refer to the [example](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/weightonlyquant.md#examples-for-gpu) and [script](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-generation/quantization/run_generation_gpu_woq.py) for more details.
 
 ### Langchain-based extension APIs
 Below is the sample code to use the extended Langchain APIs. See more [examples](intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md).

@@ -2443,3 +2443,11 @@ retrievalQA
 vectorstore
 vectorstores
 DPO
+fullrange
+qmodel
+torchfloat
+xpu
+AutoRound
+autoround
+awq
+gptq

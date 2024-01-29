@@ -20,7 +20,6 @@ from fastapi.responses import StreamingResponse
 from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile, Form
-from pydub import AudioSegment
 from ...config import GenerationConfig
 from ...plugins import plugins
 import base64
@@ -93,6 +92,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     with open("tmp_audio_bytes", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
@@ -124,6 +124,7 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     with open(f"tmp_spk_{file_name}", 'wb') as fout:
         content = await file.read()
         fout.write(content)
+    from pydub import AudioSegment
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 
