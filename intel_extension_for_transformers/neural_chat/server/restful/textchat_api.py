@@ -16,17 +16,38 @@
 # limitations under the License.
 
 from http import HTTPStatus
+import shortuuid
+import asyncio
 from fastapi.routing import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse, Response
-# pylint: disable=E0611
-from pydantic import BaseModel
-from typing import Optional, AsyncIterator
+from ...models.base_model import BaseModel
+from typing import Generator, Optional, AsyncIterator, Union, Dict, List, Any
 from fastapi import APIRouter
 from ...cli.log import logger
-from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse, ErrorResponse
-from ...server.restful.openai_protocol import ModelCard, ModelList, ModelPermission, ApiErrorCode
+from ...server.restful.openai_protocol import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatCompletionResponseStreamChoice,
+    ChatCompletionStreamResponse,
+    ChatMessage,
+    ChatCompletionResponseChoice,
+    CompletionRequest,
+    CompletionResponse,
+    CompletionResponseChoice,
+    DeltaMessage,
+    CompletionResponseStreamChoice,
+    CompletionStreamResponse,
+    ErrorResponse,
+    LogProbs,
+    ModelCard,
+    ModelList,
+    ModelPermission,
+    UsageInfo,
+    ApiErrorCode,
+)
 from ...config import GenerationConfig
 import json, types
+import tiktoken
 from ...plugins import plugins, is_plugin_enabled
 
 def check_requests(request) -> Optional[JSONResponse]:
@@ -88,6 +109,282 @@ async def check_model(request) -> Optional[JSONResponse]:
         f"The model `{request.model}` does not exist.",
     )
     return ret
+
+def _add_to_set(s, new_stop):
+    if not s:
+        return
+    if isinstance(s, str):
+        new_stop.add(s)
+    else:
+        new_stop.update(s)
+
+async def get_generation_parameters(
+    model_name: str,
+    chatbot: BaseModel,
+    messages: Union[str, List[Dict[str, str]]],
+    *,
+    temperature: float,
+    top_p: float,
+    top_k: Optional[int],
+    repetition_penalty: Optional[float],
+    presence_penalty: Optional[float],
+    frequency_penalty: Optional[float],
+    max_tokens: Optional[int],
+    echo: Optional[bool],
+    logprobs: Optional[int] = None,
+    stop: Optional[Union[str, List[str]]],
+    best_of: Optional[int] = None,
+    use_beam_search: Optional[bool] = None,
+) -> Dict[str, Any]:
+    conv = chatbot.conv_template.conv
+
+    if isinstance(messages, str):
+        prompt = messages
+        images = []
+    else:
+        for message in messages:
+            msg_role = message["role"]
+            if msg_role == "system":
+                conv.set_system_message(message["content"])
+            elif msg_role == "user":
+                if type(message["content"]) == list:
+                    image_list = [
+                        item["image_url"]["url"]
+                        for item in message["content"]
+                        if item["type"] == "image_url"
+                    ]
+                    text_list = [
+                        item["text"]
+                        for item in message["content"]
+                        if item["type"] == "text"
+                    ]
+
+                    text = "\n".join(text_list)
+                    conv.append_message(conv.roles[0], (text, image_list))
+                else:
+                    conv.append_message(conv.roles[0], message["content"])
+            elif msg_role == "assistant":
+                conv.append_message(conv.roles[1], message["content"])
+            else:
+                raise ValueError(f"Unknown role: {msg_role}")
+
+        # Add a blank message for the assistant.
+        conv.append_message(conv.roles[1], None)
+        prompt = conv.get_prompt()
+        images = conv.get_images()
+
+    gen_params = {
+        "prompt": prompt,
+        "temperature": temperature,
+        "top_p": top_p,
+        "top_k": top_k,
+        "repetition_penalty": repetition_penalty,
+        "max_new_tokens": max_tokens,
+    }
+
+    if len(images) > 0:
+        gen_params["images"] = images
+
+    if best_of is not None:
+        gen_params.update({"best_of": best_of})
+    if use_beam_search is not None:
+        gen_params.update({"use_beam_search": use_beam_search})
+
+    new_stop = set()
+    _add_to_set(stop, new_stop)
+    _add_to_set(conv.stop_str, new_stop)
+
+    gen_params["stop"] = list(new_stop)
+
+    logger.debug(f"==== request ====\n{gen_params}")
+    return gen_params
+
+def create_openai_logprobs(logprob_dict):
+    """Create OpenAI-style logprobs."""
+    return LogProbs(**logprob_dict) if logprob_dict is not None else None
+
+def process_input(model_name, inp):
+    if isinstance(inp, str):
+        inp = [inp]
+    elif isinstance(inp, list):
+        if isinstance(inp[0], int):
+            decoding = tiktoken.model.encoding_for_model(model_name)
+            inp = [decoding.decode(inp)]
+        elif isinstance(inp[0], list):
+            decoding = tiktoken.model.encoding_for_model(model_name)
+            inp = [decoding.decode(text) for text in inp]
+
+    return inp
+
+async def chat_completion_stream_generator(
+    model_name: str, gen_params: Dict[str, Any], n: int, chatbot: BaseModel
+) -> Generator[str, Any, None]:
+    """
+    Event stream format:
+    https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format
+    """
+    id = f"chatcmpl-{shortuuid.random()}"
+    finish_stream_events = []
+    for i in range(n):
+        # First chunk with role
+        choice_data = ChatCompletionResponseStreamChoice(
+            index=i,
+            delta=DeltaMessage(role="assistant"),
+            finish_reason=None,
+        )
+        chunk = ChatCompletionStreamResponse(
+            id=id, choices=[choice_data], model=model_name
+        )
+        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+
+        previous_text = ""
+        async for content in generate_completion_stream(gen_params, chatbot):
+            if content["error_code"] != 0:
+                yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            decoded_unicode = content["text"].replace("\ufffd", "")
+            delta_text = decoded_unicode[len(previous_text) :]
+            previous_text = (
+                decoded_unicode
+                if len(decoded_unicode) > len(previous_text)
+                else previous_text
+            )
+
+            if len(delta_text) == 0:
+                delta_text = None
+            choice_data = ChatCompletionResponseStreamChoice(
+                index=i,
+                delta=DeltaMessage(content=delta_text),
+                finish_reason=content.get("finish_reason", None),
+            )
+            chunk = ChatCompletionStreamResponse(
+                id=id, choices=[choice_data], model=model_name
+            )
+            if delta_text is None:
+                if content.get("finish_reason", None) is not None:
+                    finish_stream_events.append(chunk)
+                continue
+            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+    # There is not "content" field in the last delta message, so exclude_none to exclude field "content".
+    for finish_chunk in finish_stream_events:
+        yield f"data: {finish_chunk.json(exclude_none=True, ensure_ascii=False)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
+
+async def generate_completion_stream_generator(
+    request: CompletionRequest, n: int, chatbot: BaseModel
+):
+    model_name = request.model
+    id = f"cmpl-{shortuuid.random()}"
+    finish_stream_events = []
+    for text in request.prompt:
+        for i in range(n):
+            previous_text = ""
+            gen_params = await get_generation_parameters(
+                request.model,
+                chatbot,
+                text,
+                temperature=request.temperature,
+                top_p=request.top_p,
+                top_k=request.top_k,
+                presence_penalty=request.presence_penalty,
+                frequency_penalty=request.frequency_penalty,
+                max_tokens=request.max_tokens,
+                logprobs=request.logprobs,
+                echo=request.echo,
+                stop=request.stop,
+            )
+            async for content in generate_completion_stream(gen_params, chatbot):
+                if content["error_code"] != 0:
+                    yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+                decoded_unicode = content["text"].replace("\ufffd", "")
+                delta_text = decoded_unicode[len(previous_text) :]
+                previous_text = (
+                    decoded_unicode
+                    if len(decoded_unicode) > len(previous_text)
+                    else previous_text
+                )
+                # todo: index is not apparent
+                choice_data = CompletionResponseStreamChoice(
+                    index=i,
+                    text=delta_text,
+                    logprobs=create_openai_logprobs(content.get("logprobs", None)),
+                    finish_reason=content.get("finish_reason", None),
+                )
+                chunk = CompletionStreamResponse(
+                    id=id,
+                    object="text_completion",
+                    choices=[choice_data],
+                    model=model_name,
+                )
+                if len(delta_text) == 0:
+                    if content.get("finish_reason", None) is not None:
+                        finish_stream_events.append(chunk)
+                    continue
+                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+    # There is not "content" field in the last delta message, so exclude_none to exclude field "content".
+    for finish_chunk in finish_stream_events:
+        yield f"data: {finish_chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
+async def generate_completion_stream(payload: Dict[str, Any], chatbot: BaseModel):
+    config = GenerationConfig()
+    for attr, value in payload.__dict__.items():
+        setattr(config, attr, value)
+    config.device = chatbot.device
+    config.task = "chat"
+    if chatbot.device == "hpu":
+        config.use_hpu_graphs = True
+    buffered_texts = ""
+    prompt = payload["prompt"]
+    generator, _ = chatbot.predict_stream(query=prompt, config=config)
+    if not isinstance(generator, types.GeneratorType):
+        generator = (generator,)
+    def stream_generator():
+        nonlocal buffered_texts
+        for output in generator:
+            if isinstance(output, str):
+                chunks = output.split()
+                for chunk in chunks:
+                    ret = {
+                        "text": chunk,
+                        "error_code": 0,
+                    }
+                    buffered_texts += chunk + ' '
+                    yield json.dumps(ret).encode() + b"\0"
+            else:
+                ret = {
+                    "text": output,
+                    "error_code": 0,
+                }
+                buffered_texts += output + ' '
+                yield json.dumps(ret).encode() + b"\0"
+        yield f"data: [DONE]\n\n"
+        if is_plugin_enabled("cache") and \
+            not plugins["cache"]["instance"].pre_llm_inference_actions(prompt):
+            plugins["cache"]["instance"].post_llm_inference_actions(prompt, buffered_texts)
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+
+async def generate_completion(payload: Dict[str, Any], chatbot: BaseModel):
+    config = GenerationConfig()
+    for attr, value in payload.__dict__.items():
+        setattr(config, attr, value)
+    config.device = chatbot.device
+    config.task = "chat"
+    if chatbot.device == "hpu":
+        config.use_hpu_graphs = True
+    prompt = payload["prompt"]
+    response = {
+        "text": chatbot.predict(query=prompt, config=config),
+        "error_code": 0,
+    }
+    return response
 
 class TextChatAPIRouter(APIRouter):
 
@@ -210,13 +507,14 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     chatbot = router.get_chatbot()
 
-    gen_params = await get_gen_params(
+    gen_params = await get_generation_parameters(
         request.model,
-        worker_addr,
+        chatbot,
         request.messages,
         temperature=request.temperature,
         top_p=request.top_p,
         top_k=request.top_k,
+        repetition_penalty=request.repetition_penalty,
         presence_penalty=request.presence_penalty,
         frequency_penalty=request.frequency_penalty,
         max_tokens=request.max_tokens,
@@ -224,33 +522,21 @@ async def create_chat_completion(request: ChatCompletionRequest):
         stop=request.stop,
     )
 
-    max_new_tokens, error_check_ret = await check_length(
-        request,
-        gen_params["prompt"],
-        gen_params["max_new_tokens"],
-        worker_addr,
-    )
-
-    if error_check_ret is not None:
-        return error_check_ret
-
-    gen_params["max_new_tokens"] = max_new_tokens
-
     if request.stream:
         generator = chat_completion_stream_generator(
-            request.model, gen_params, request.n, worker_addr
+            request.model, gen_params, request.n, chatbot
         )
         return StreamingResponse(generator, media_type="text/event-stream")
 
     choices = []
     chat_completions = []
     for i in range(request.n):
-        content = asyncio.create_task(generate_completion(gen_params, worker_addr))
+        content = asyncio.create_task(generate_completion(gen_params, chatbot))
         chat_completions.append(content)
     try:
         all_tasks = await asyncio.gather(*chat_completions)
     except Exception as e:
-        return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
+        return create_error_response(ApiErrorCode.INTERNAL_ERROR, str(e))
     usage = UsageInfo()
     for i, content in enumerate(all_tasks):
         if isinstance(content, str):
@@ -272,63 +558,8 @@ async def create_chat_completion(request: ChatCompletionRequest):
 
     return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
-async def chat_completion_stream_generator(
-    model_name: str, gen_params: Dict[str, Any], n: int, worker_addr: str
-) -> Generator[str, Any, None]:
-    """
-    Event stream format:
-    https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format
-    """
-    id = f"chatcmpl-{shortuuid.random()}"
-    finish_stream_events = []
-    for i in range(n):
-        # First chunk with role
-        choice_data = ChatCompletionResponseStreamChoice(
-            index=i,
-            delta=DeltaMessage(role="assistant"),
-            finish_reason=None,
-        )
-        chunk = ChatCompletionStreamResponse(
-            id=id, choices=[choice_data], model=model_name
-        )
-        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-        previous_text = ""
-        async for content in generate_completion_stream(gen_params, worker_addr):
-            if content["error_code"] != 0:
-                yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-            decoded_unicode = content["text"].replace("\ufffd", "")
-            delta_text = decoded_unicode[len(previous_text) :]
-            previous_text = (
-                decoded_unicode
-                if len(decoded_unicode) > len(previous_text)
-                else previous_text
-            )
-
-            if len(delta_text) == 0:
-                delta_text = None
-            choice_data = ChatCompletionResponseStreamChoice(
-                index=i,
-                delta=DeltaMessage(content=delta_text),
-                finish_reason=content.get("finish_reason", None),
-            )
-            chunk = ChatCompletionStreamResponse(
-                id=id, choices=[choice_data], model=model_name
-            )
-            if delta_text is None:
-                if content.get("finish_reason", None) is not None:
-                    finish_stream_events.append(chunk)
-                continue
-            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
-    # There is not "content" field in the last delta message, so exclude_none to exclude field "content".
-    for finish_chunk in finish_stream_events:
-        yield f"data: {finish_chunk.json(exclude_none=True, ensure_ascii=False)}\n\n"
-    yield "data: [DONE]\n\n"
-
-
-@app.post("/v1/completions", dependencies=[Depends(check_api_key)])
+@router.post("/v1/completions")
 async def create_completion(request: CompletionRequest):
     error_check_ret = await check_model(request)
     if error_check_ret is not None:
@@ -337,30 +568,20 @@ async def create_completion(request: CompletionRequest):
     if error_check_ret is not None:
         return error_check_ret
 
+    chatbot = router.get_chatbot()
     request.prompt = process_input(request.model, request.prompt)
-
-    worker_addr = await get_worker_address(request.model)
-    for text in request.prompt:
-        max_tokens, error_check_ret = await check_length(
-            request, text, request.max_tokens, worker_addr
-        )
-        if error_check_ret is not None:
-            return error_check_ret
-
-        if isinstance(max_tokens, int) and max_tokens < request.max_tokens:
-            request.max_tokens = max_tokens
 
     if request.stream:
         generator = generate_completion_stream_generator(
-            request, request.n, worker_addr
+            request, request.n, chatbot
         )
         return StreamingResponse(generator, media_type="text/event-stream")
     else:
         text_completions = []
         for text in request.prompt:
-            gen_params = await get_gen_params(
+            gen_params = await get_generation_parameters(
                 request.model,
-                worker_addr,
+                chatbot,
                 text,
                 temperature=request.temperature,
                 top_p=request.top_p,
@@ -376,14 +597,14 @@ async def create_completion(request: CompletionRequest):
             )
             for i in range(request.n):
                 content = asyncio.create_task(
-                    generate_completion(gen_params, worker_addr)
+                    generate_completion(gen_params, chatbot)
                 )
                 text_completions.append(content)
 
         try:
             all_tasks = await asyncio.gather(*text_completions)
         except Exception as e:
-            return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
+            return create_error_response(ApiErrorCode.INTERNAL_ERROR, str(e))
 
         choices = []
         usage = UsageInfo()
@@ -405,145 +626,3 @@ async def create_completion(request: CompletionRequest):
         return CompletionResponse(
             model=request.model, choices=choices, usage=UsageInfo.parse_obj(usage)
         )
-
-
-async def generate_completion_stream_generator(
-    request: CompletionRequest, n: int, worker_addr: str
-):
-    model_name = request.model
-    id = f"cmpl-{shortuuid.random()}"
-    finish_stream_events = []
-    for text in request.prompt:
-        for i in range(n):
-            previous_text = ""
-            gen_params = await get_gen_params(
-                request.model,
-                worker_addr,
-                text,
-                temperature=request.temperature,
-                top_p=request.top_p,
-                top_k=request.top_k,
-                presence_penalty=request.presence_penalty,
-                frequency_penalty=request.frequency_penalty,
-                max_tokens=request.max_tokens,
-                logprobs=request.logprobs,
-                echo=request.echo,
-                stop=request.stop,
-            )
-            async for content in generate_completion_stream(gen_params, worker_addr):
-                if content["error_code"] != 0:
-                    yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
-                    yield "data: [DONE]\n\n"
-                    return
-                decoded_unicode = content["text"].replace("\ufffd", "")
-                delta_text = decoded_unicode[len(previous_text) :]
-                previous_text = (
-                    decoded_unicode
-                    if len(decoded_unicode) > len(previous_text)
-                    else previous_text
-                )
-                # todo: index is not apparent
-                choice_data = CompletionResponseStreamChoice(
-                    index=i,
-                    text=delta_text,
-                    logprobs=create_openai_logprobs(content.get("logprobs", None)),
-                    finish_reason=content.get("finish_reason", None),
-                )
-                chunk = CompletionStreamResponse(
-                    id=id,
-                    object="text_completion",
-                    choices=[choice_data],
-                    model=model_name,
-                )
-                if len(delta_text) == 0:
-                    if content.get("finish_reason", None) is not None:
-                        finish_stream_events.append(chunk)
-                    continue
-                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
-    # There is not "content" field in the last delta message, so exclude_none to exclude field "content".
-    for finish_chunk in finish_stream_events:
-        yield f"data: {finish_chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
-    yield "data: [DONE]\n\n"
-
-
-async def generate_completion_stream(payload: Dict[str, Any], worker_addr: str):
-    controller_address = app_settings.controller_address
-    async with httpx.AsyncClient() as client:
-        delimiter = b"\0"
-        async with client.stream(
-            "POST",
-            worker_addr + "/worker_generate_stream",
-            headers=headers,
-            json=payload,
-            timeout=WORKER_API_TIMEOUT,
-        ) as response:
-            # content = await response.aread()
-            buffer = b""
-            async for raw_chunk in response.aiter_raw():
-                buffer += raw_chunk
-                while (chunk_end := buffer.find(delimiter)) >= 0:
-                    chunk, buffer = buffer[:chunk_end], buffer[chunk_end + 1 :]
-                    if not chunk:
-                        continue
-                    yield json.loads(chunk.decode())
-
-
-async def generate_completion(payload: Dict[str, Any], worker_addr: str):
-    return await fetch_remote(worker_addr + "/worker_generate", payload, "")
-
-
-@app.post("/v1/embeddings", dependencies=[Depends(check_api_key)])
-@app.post("/v1/engines/{model_name}/embeddings", dependencies=[Depends(check_api_key)])
-async def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
-    """Creates embeddings for the text"""
-    if request.model is None:
-        request.model = model_name
-    error_check_ret = await check_model(request)
-    if error_check_ret is not None:
-        return error_check_ret
-
-    request.input = process_input(request.model, request.input)
-
-    data = []
-    token_num = 0
-    batch_size = WORKER_API_EMBEDDING_BATCH_SIZE
-    batches = [
-        request.input[i : min(i + batch_size, len(request.input))]
-        for i in range(0, len(request.input), batch_size)
-    ]
-    for num_batch, batch in enumerate(batches):
-        payload = {
-            "model": request.model,
-            "input": batch,
-            "encoding_format": request.encoding_format,
-        }
-        embedding = await get_embedding(payload)
-        if "error_code" in embedding and embedding["error_code"] != 0:
-            return create_error_response(embedding["error_code"], embedding["text"])
-        data += [
-            {
-                "object": "embedding",
-                "embedding": emb,
-                "index": num_batch * batch_size + i,
-            }
-            for i, emb in enumerate(embedding["embedding"])
-        ]
-        token_num += embedding["token_num"]
-    return EmbeddingsResponse(
-        data=data,
-        model=request.model,
-        usage=UsageInfo(
-            prompt_tokens=token_num,
-            total_tokens=token_num,
-            completion_tokens=None,
-        ),
-    ).dict(exclude_none=True)
-
-
-async def get_embedding(payload: Dict[str, Any]):
-    controller_address = app_settings.controller_address
-    model_name = payload["model"]
-    worker_addr = await get_worker_address(model_name)
-
-    embedding = await fetch_remote(worker_addr + "/worker_get_embeddings", payload)
-    return json.loads(embedding)

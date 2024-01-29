@@ -63,11 +63,11 @@ class BaseModel(ABC):
     A base class for LLM.
     """
 
-    def __init__(self):
+    def __init__(self, model_name, task="chat"):
         """
         Initializes the BaseModel class.
         """
-        self.model_name = ""
+        self.model_name = model_name
         self.asr = None
         self.tts = None
         self.face_animation = None
@@ -81,6 +81,7 @@ class BaseModel(ABC):
         self.device = None
         self.conv_template = None
         self.ipex_int8 = None
+        self.get_conv_template(self.model_name, task)
 
     def match(self, model_path: str):
         """
@@ -167,7 +168,6 @@ class BaseModel(ABC):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
         query_include_prompt = False
-        self.get_conv_template(self.model_name, config.task)
         if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
               "starcoder" in self.model_name.lower() or "codellama" in self.model_name.lower() or \
               "codegen" in self.model_name.lower() or "magicoder" in self.model_name.lower() or \
@@ -439,6 +439,7 @@ class BaseModel(ABC):
                 name = "alpaca_without_input"
             elif task == "chat":
                 clear_history = False
+                name = self.get_default_conv_template(model_path).name
             elif task == "summarization":
                 name = "summarization"
             else:
