@@ -48,7 +48,7 @@ MOCK_IMAGE_INFO = {
 }
 
 
-@patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.MysqlDb')
+@patch('intel_extension_for_transformers.neural_chat.utils.database.mysqldb.MysqlDb')
 class UnitTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -193,9 +193,9 @@ class UnitTest(unittest.TestCase):
     
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.transfer_xywh')
-    @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.DeepFace.verify')
-    @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.DeepFace.find')
-    @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.DeepFace.represent')
+    @patch('deepface.DeepFace.verify')
+    @patch('deepface.DeepFace.find')
+    @patch('deepface.DeepFace.represent')
     def test_process_face_for_single_image(self, mock_represent, mock_find, mock_verify, mock_func1, mock_db):
         mock_represent.return_value = [{'facial_area': 'mocked_xywh'}]
         df = pd.DataFrame(data=['./mocked_identity1'],

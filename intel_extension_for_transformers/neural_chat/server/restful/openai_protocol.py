@@ -22,6 +22,7 @@ https://github.com/lm-sys/FastChat/blob/main/fastchat/protocol/openai_api_protoc
 from enum import IntEnum
 from typing import Literal, Optional, List, Dict, Any, Union
 
+from typing import Optional, List, Any, Union
 import time
 
 import shortuuid
@@ -87,6 +88,7 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: Optional[int] = None
     stop: Optional[Union[str, List[str]]] = None
     stream: Optional[bool] = False
+    repetition_penalty: Optional[float] = 1.0
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
@@ -182,8 +184,6 @@ class CompletionRequest(BaseModel):
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
-    use_beam_search: Optional[bool] = False
-    best_of: Optional[int] = None
 
 
 class CompletionResponseChoice(BaseModel):
@@ -239,5 +239,3 @@ class ApiErrorCode(IntEnum):
     CUDA_OUT_OF_MEMORY = 50002
     GRADIO_REQUEST_ERROR = 50003
     GRADIO_STREAM_UNKNOWN_ERROR = 50004
-    CONTROLLER_NO_WORKER = 50005
-    CONTROLLER_WORKER_TIMEOUT = 50006

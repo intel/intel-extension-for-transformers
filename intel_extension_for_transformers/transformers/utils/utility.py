@@ -57,7 +57,6 @@ def distributed_init(
     master_port="12345",
 ):
     """Init the distibute environment."""
-    torch = LazyImport("torch")
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))
     if init_method is None:

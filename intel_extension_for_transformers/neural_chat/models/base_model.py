@@ -111,9 +111,11 @@ class BaseModel(ABC):
             "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
-            "use_deepspeed": False
-            "hf_access_token": "user's huggingface access token"
-            "assistant_model": "assistant model name to speed up inference"
+            "use_deepspeed": False,
+            "hf_access_token": "user's huggingface access token",
+            "assistant_model": "assistant model name to speed up inference",
+            "use_vllm": "whether to use vllm for serving",
+            "vllm_engine_params": "vllm engine parameters if use_vllm is true",
         }
         """
         self.model_name = kwargs["model_name"]
@@ -135,7 +137,9 @@ class BaseModel(ABC):
                    optimization_config=kwargs["optimization_config"],
                    hf_access_token=kwargs["hf_access_token"],
                    use_llm_runtime=kwargs["use_llm_runtime"],
-                   assistant_model=kwargs["assistant_model"])
+                   assistant_model=kwargs["assistant_model"],
+                   use_vllm=kwargs["use_vllm"],
+                   vllm_engine_params=kwargs["vllm_engine_params"])
 
     def predict_stream(self, query, origin_query="", config=None):
         """
@@ -320,7 +324,8 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
-        if not query_include_prompt and not is_plugin_enabled("retrieval"):
+        if not query_include_prompt and not is_plugin_enabled("retrieval") \
+            and not 'vllm' in str(MODELS[self.model_name]['model']):
             query = self.prepare_prompt(query, self.model_name, config.task)
 
         # Phind/Phind-CodeLlama-34B-v2 model accpects Alpaca/Vicuna instruction format.
@@ -433,7 +438,6 @@ class BaseModel(ABC):
             if task == "completion":
                 name = "alpaca_without_input"
             elif task == "chat":
-                name = "neural-chat-7b-v2"
                 clear_history = False
             elif task == "summarization":
                 name = "summarization"

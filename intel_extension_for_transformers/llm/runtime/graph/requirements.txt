@@ -10,3 +10,8 @@ peft
 datasets
 transformers_stream_generator
 tiktoken
+py-cpuinfo
+cmake
+gguf
+auto-gptq
+neural-speed

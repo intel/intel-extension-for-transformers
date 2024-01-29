@@ -28,6 +28,7 @@ import re, os
 from threading import Thread
 import contextlib
 from huggingface_hub import snapshot_download
+import uuid
 import logging
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
@@ -333,6 +334,63 @@ def peft_model(model_name, peft_model, model_dtype, hf_access_token=None):
 
     return model.merge_and_unload()
 
+def load_model_vllm(
+        model,
+        vllm_engine_params,
+    ):
+    eparams = vllm_engine_params
+    MODELS[model] = {}
+    if eparams.use_async_engine:
+        from vllm.engine.async_llm_engine import AsyncLLMEngine
+        from vllm.engine.arg_utils import AsyncEngineArgs
+        # Here we remove uncommon parameters to start a AsyncLLMEngine
+        # refer to https://github.com/vllm-project/vllm/blob/main/vllm/engine/arg_utils.py
+        async_engine_args = AsyncEngineArgs( # pylint: disable=E1123
+            model=model,
+            tokenizer=model,
+            tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
+            trust_remote_code=eparams.trust_remote_code if hasattr(eparams, 'trust_remote_code') else False,
+            tensor_parallel_size=eparams.tensor_parallel_size if hasattr(eparams, 'tensor_parallel_size') else 1,
+            dtype=eparams.dtype if hasattr(eparams, 'dtype') else 'auto',
+            quantization=eparams.quantization if hasattr(eparams, 'quantization') else None,
+            revision=eparams.revision if hasattr(eparams, 'revision') else None,
+            tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
+            seed=eparams.seed if hasattr(eparams, 'seed') else 0,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
+            swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
+            enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
+            max_context_len_to_capture=eparams.max_context_len_to_capture \
+                if hasattr(eparams, 'max_context_len_to_capture') else 8192,
+        )
+        llm = AsyncLLMEngine.from_engine_args(async_engine_args)
+        # set an aysnc flag for generating stage
+        MODELS[model]["vllm_async"] = True
+        logging.info("use async vllm")
+    else:
+        from vllm import LLM
+        llm = LLM(
+            model=model,
+            tokenizer=model,
+            tokenizer_mode=eparams.tokenizer_mode if hasattr(eparams, "tokenizer_mode") else "auto",
+            trust_remote_code=eparams.trust_remote_code if hasattr(eparams, 'trust_remote_code') else False,
+            tensor_parallel_size=eparams.tensor_parallel_size if hasattr(eparams, 'tensor_parallel_size') else 1,
+            dtype=eparams.dtype if hasattr(eparams, 'dtype') else 'auto',
+            quantization=eparams.quantization if hasattr(eparams, 'quantization') else None,
+            revision=eparams.revision if hasattr(eparams, 'revision') else None,
+            tokenizer_revision=eparams.tokenizer_revision if hasattr(eparams, 'tokenizer_revision') else None,
+            seed=eparams.seed if hasattr(eparams, 'seed') else 0,
+            gpu_memory_utilization=eparams.gpu_memory_utilization if hasattr(eparams, 'gpu_memory_utilization') \
+             else 0.9,
+            swap_space=eparams.swap_space if hasattr(eparams, 'swap_space') else 4,
+            enforce_eager=eparams.enforce_eager if hasattr(eparams, 'enforce_eager') else False,
+            max_context_len_to_capture=eparams.max_context_len_to_capture \
+                if hasattr(eparams, 'max_context_len_to_capture') else 8192,
+        )
+        logging.info("use sync vllm")
+    MODELS[model]["model"] = llm
+    logging.info("Model loaded.")
+
 def load_model(
     model_name,
     tokenizer_name,
@@ -346,7 +404,9 @@ def load_model(
     optimization_config=None,
     hf_access_token=None,
     use_llm_runtime=False,
-    assistant_model=None
+    assistant_model=None,
+    use_vllm=False,
+    vllm_engine_params=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -364,6 +424,8 @@ def load_model(
         ValueError
     """
     print("Loading model {}".format(model_name))
+    if use_vllm:
+        return load_model_vllm(model=model_name, vllm_engine_params=vllm_engine_params)
 
     # Validate input parameters
     if device not in [option.name.lower() for option in DeviceOptions]:
@@ -483,6 +545,10 @@ def load_model(
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        if use_llm_runtime:
+            optimization_config.post_init_runtime()
+        else:
+            optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         if not model.config.is_encoder_decoder:
             tokenizer.padding_side = "left"
@@ -556,9 +622,9 @@ def load_model(
         elif (
                 (config.model_type == "llama"
                 or config.model_type == "opt"
-                or re.search("gpt_neox", model_name, re.IGNORECASE)
-                or re.search("gptj", model_name, re.IGNORECASE)
-                or re.search("falcon", model_name, re.IGNORECASE)
+                or config.model_type == "gpt_neox"
+                or config.model_type == "gptj"
+                or config.model_type == "falcon"
                 ) and ipex_int8
         ):
             with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -759,7 +825,7 @@ def load_model(
                 model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    print("Model loaded.")
+    logging.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -1223,6 +1289,24 @@ def predict(**params):
     ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
+    if 'vllm' in str(MODELS[model_name]['model']):
+        from vllm import SamplingParams
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_new_tokens
+        )
+        # vllm may return a AsyncIterator[RequestOutput] with async engine
+        # or a List[RequestOutput] with offline sync engine
+        if "vllm_async" in MODELS[model_name]:
+            request_id = str(uuid.uuid4().hex)
+            output_list_or_generator = model.generate(prompt, sampling_params, request_id)
+            # directly return the async iterator
+            return output_list_or_generator
+        else:
+            output = model.generate(prompt, sampling_params)
+            output = output[0].outputs[0].text
+        return output
     tokenizer = MODELS[model_name]["tokenizer"]
     assistant_model=MODELS[model_name]["assistant_model"]
     if hasattr(model, "device") and model.device.type != device:
