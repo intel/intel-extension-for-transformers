@@ -285,7 +285,9 @@ class _BaseQBitsAutoModelClass:
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
                     use_quant=quantization_config.use_quant,
-                    use_gptq=quantization_config.algorithm.upper() == "GPTQ" or quantization_config.use_autoround,
+                    use_gptq=quantization_config.use_gptq or \
+                            quantization_config.algorithm.upper() == "GPTQ" or \
+                            quantization_config.use_autoround,
                     use_awq=quantization_config.algorithm.upper() == "AWQ",
                 )
                 model.quantization_config = quantization_config
