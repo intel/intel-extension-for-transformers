@@ -54,4 +54,4 @@ class ChatGlmModel(BaseModel):
             return get_conv_template("chatglm2")
         return get_conv_template("chatglm")
 
-register_model_adapter(ChatGlmModel)
+register_model_adapter(ChatGlmModel, model_name="chatglm")

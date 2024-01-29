@@ -51,4 +51,4 @@ class MptModel(BaseModel):
         """
         return get_conv_template("mpt-7b-chat")
 
-register_model_adapter(MptModel)
+register_model_adapter(MptModel, model_name="mpt-7b-chat")

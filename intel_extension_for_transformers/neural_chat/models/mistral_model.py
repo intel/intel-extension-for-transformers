@@ -51,4 +51,4 @@ class MistralModel(BaseModel):
         """
         return get_conv_template("mistral")
 
-register_model_adapter(MistralModel)
+register_model_adapter(MistralModel, model_name="mistral")

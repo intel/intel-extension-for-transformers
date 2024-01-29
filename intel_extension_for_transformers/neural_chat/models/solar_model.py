@@ -65,5 +65,5 @@ class SolarModel(BaseModel):
         """
         return get_conv_template("solar")
 
-register_model_adapter(SolarModel)
+register_model_adapter(SolarModel, model_name="solar")
 

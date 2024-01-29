@@ -51,4 +51,4 @@ class QwenModel(BaseModel):
         """
         return get_conv_template("qwen-7b-chat")
 
-register_model_adapter(QwenModel)
+register_model_adapter(QwenModel, model_name="qwen-7b-chat")

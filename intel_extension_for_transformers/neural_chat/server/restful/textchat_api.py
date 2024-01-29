@@ -140,7 +140,6 @@ async def get_generation_parameters(
 
     if isinstance(messages, str):
         prompt = messages
-        images = []
     else:
         for message in messages:
             msg_role = message["role"]
@@ -171,7 +170,6 @@ async def get_generation_parameters(
         # Add a blank message for the assistant.
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
-        images = conv.get_images()
 
     gen_params = {
         "prompt": prompt,
@@ -181,9 +179,6 @@ async def get_generation_parameters(
         "repetition_penalty": repetition_penalty,
         "max_new_tokens": max_tokens,
     }
-
-    if len(images) > 0:
-        gen_params["images"] = images
 
     if best_of is not None:
         gen_params.update({"best_of": best_of})
@@ -237,19 +232,12 @@ async def chat_completion_stream_generator(
         )
         yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-        previous_text = ""
         async for content in generate_completion_stream(gen_params, chatbot):
             if content["error_code"] != 0:
                 yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
                 yield "data: [DONE]\n\n"
                 return
-            decoded_unicode = content["text"].replace("\ufffd", "")
-            delta_text = decoded_unicode[len(previous_text) :]
-            previous_text = (
-                decoded_unicode
-                if len(decoded_unicode) > len(previous_text)
-                else previous_text
-            )
+            delta_text = content["text"].replace("\ufffd", "")
 
             if len(delta_text) == 0:
                 delta_text = None
@@ -281,7 +269,6 @@ async def generate_completion_stream_generator(
     finish_stream_events = []
     for text in request.prompt:
         for i in range(n):
-            previous_text = ""
             gen_params = await get_generation_parameters(
                 request.model,
                 chatbot,
@@ -301,13 +288,7 @@ async def generate_completion_stream_generator(
                     yield f"data: {json.dumps(content, ensure_ascii=False)}\n\n"
                     yield "data: [DONE]\n\n"
                     return
-                decoded_unicode = content["text"].replace("\ufffd", "")
-                delta_text = decoded_unicode[len(previous_text) :]
-                previous_text = (
-                    decoded_unicode
-                    if len(decoded_unicode) > len(previous_text)
-                    else previous_text
-                )
+                delta_text = content["text"].replace("\ufffd", "")
                 # todo: index is not apparent
                 choice_data = CompletionResponseStreamChoice(
                     index=i,
@@ -334,7 +315,7 @@ async def generate_completion_stream_generator(
 
 async def generate_completion_stream(payload: Dict[str, Any], chatbot: BaseModel):
     config = GenerationConfig()
-    for attr, value in payload.__dict__.items():
+    for attr, value in payload.items():
         setattr(config, attr, value)
     config.device = chatbot.device
     config.task = "chat"
@@ -345,46 +326,44 @@ async def generate_completion_stream(payload: Dict[str, Any], chatbot: BaseModel
     generator, _ = chatbot.predict_stream(query=prompt, config=config)
     if not isinstance(generator, types.GeneratorType):
         generator = (generator,)
-    def stream_generator():
-        nonlocal buffered_texts
-        for output in generator:
-            if isinstance(output, str):
-                chunks = output.split()
-                for chunk in chunks:
-                    ret = {
-                        "text": chunk,
-                        "error_code": 0,
-                    }
-                    buffered_texts += chunk + ' '
-                    yield json.dumps(ret).encode() + b"\0"
-            else:
+
+    for output in generator:
+        if isinstance(output, str):
+            chunks = output.split()
+            for chunk in chunks:
                 ret = {
-                    "text": output,
+                    "text": chunk,
                     "error_code": 0,
                 }
-                buffered_texts += output + ' '
-                yield json.dumps(ret).encode() + b"\0"
-        yield f"data: [DONE]\n\n"
-        if is_plugin_enabled("cache") and \
-            not plugins["cache"]["instance"].pre_llm_inference_actions(prompt):
-            plugins["cache"]["instance"].post_llm_inference_actions(prompt, buffered_texts)
-    return StreamingResponse(stream_generator(), media_type="text/event-stream")
+                buffered_texts += chunk + ' '
+                yield ret
+        else:
+            ret = {
+                "text": output,
+                "error_code": 0,
+            }
+            buffered_texts += output + ' '
+            yield ret
+    if is_plugin_enabled("cache") and \
+        not plugins["cache"]["instance"].pre_llm_inference_actions(prompt):
+        plugins["cache"]["instance"].post_llm_inference_actions(prompt, buffered_texts)
 
 
 async def generate_completion(payload: Dict[str, Any], chatbot: BaseModel):
     config = GenerationConfig()
-    for attr, value in payload.__dict__.items():
+    for attr, value in payload.items():
         setattr(config, attr, value)
     config.device = chatbot.device
     config.task = "chat"
     if chatbot.device == "hpu":
         config.use_hpu_graphs = True
     prompt = payload["prompt"]
-    response = {
-        "text": chatbot.predict(query=prompt, config=config),
+    response = chatbot.predict(query=prompt, config=config)
+    ret = {
+        "text": response,
         "error_code": 0,
     }
-    return response
+    return ret
 
 class TextChatAPIRouter(APIRouter):
 
@@ -517,7 +496,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
         repetition_penalty=request.repetition_penalty,
         presence_penalty=request.presence_penalty,
         frequency_penalty=request.frequency_penalty,
-        max_tokens=request.max_tokens,
+        max_tokens=request.max_tokens if request.max_tokens else 512,
         echo=False,
         stop=request.stop,
     )

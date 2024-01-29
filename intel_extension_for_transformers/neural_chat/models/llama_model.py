@@ -51,4 +51,4 @@ class LlamaModel(BaseModel):
         """
         return get_conv_template("llama-2")
 
-register_model_adapter(LlamaModel)
+register_model_adapter(LlamaModel, model_name="llama-2")

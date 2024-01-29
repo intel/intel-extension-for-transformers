@@ -483,9 +483,9 @@ class BaseModel(ABC):
 model_adapters: List[BaseModel] = []
 
 
-def register_model_adapter(cls):
+def register_model_adapter(cls, model_name):
     """Register a model adapter."""
-    model_adapters.append(cls())
+    model_adapters.append(cls(model_name=model_name))
 
 
 def get_model_adapter(model_name_path: str) -> BaseModel:

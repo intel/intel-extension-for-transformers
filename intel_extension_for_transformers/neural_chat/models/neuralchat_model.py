@@ -56,4 +56,6 @@ class NeuralChatModel(BaseModel):
         else:
             return get_conv_template("neural-chat-7b-v1-1")
 
-register_model_adapter(NeuralChatModel)
+register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v1")
+register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v2")
+register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v3")
