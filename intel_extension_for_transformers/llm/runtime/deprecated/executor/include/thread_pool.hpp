@@ -60,7 +60,7 @@ class ThreadPool {
           std::unique_lock<std::mutex> lock(this->tasks_lock);
           this->task_cond_var.wait(lock, [this, index] {
             return this->stopped[index] || !this->tasks.empty();
-          });  // wait utill capature the task
+          });  // wait until capature the task
           if (this->stopped[index]) {
             idle_thread_num--;
             return;
