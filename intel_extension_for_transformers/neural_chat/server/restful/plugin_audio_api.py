@@ -69,7 +69,7 @@ class AudioPluginAPIRouter(APIRouter):
             torch.save(spk_embedding, f'../../assets/speaker_embeddings/spk_embed_{spk_id}.pt')
             logger.info(f"create spk embedding succeed! {spk_id}")
         except Exception as e:
-            logger.info(f"create spk embedding failes! {e}")
+            logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
         return {"create_spk": "success"}
 

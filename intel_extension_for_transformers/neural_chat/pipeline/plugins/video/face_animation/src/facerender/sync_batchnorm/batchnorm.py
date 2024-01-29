@@ -29,7 +29,7 @@ __all__ = ["SynchronizedBatchNorm1d", "SynchronizedBatchNorm2d", "SynchronizedBa
 
 
 def _sum_ft(tensor):
-    """sum over the first and last dimention"""
+    """sum over the first and last dimension"""
     return tensor.sum(dim=0).sum(dim=-1)
 
 

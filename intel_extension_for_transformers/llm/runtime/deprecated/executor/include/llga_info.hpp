@@ -184,7 +184,7 @@ class LLGAINFO {
       {"s8", data_type::s8},    {"bf16", data_type::bf16},
       {"int32", data_type::s32}};
     if (type_map.count(type) == 0) {
-      LOG(ERROR) << "Can't suppport dtype: " << type << " now!";
+      LOG(ERROR) << "Can't support dtype: " << type << " now!";
       return data_type::undef;
     }
     return type_map[type];
@@ -196,7 +196,7 @@ class LLGAINFO {
       {data_type::f16, "fp16"}, {data_type::u8, "u8"},
       {data_type::s8, "s8"},    {data_type::bf16, "bf16"}};
     if (type_map.count(datatype) == 0) {
-      LOG(ERROR) << "Can't suppport data type now!";
+      LOG(ERROR) << "Can't support data type now!";
       return "";
     }
     return type_map[datatype];

@@ -42,7 +42,7 @@ class Extractor(object):
     """
 
     def __call__(self, model, pattern_config = None):
-        """The __call__ funtion of the base extractor class."""
+        """The __call__ function of the base extractor class."""
         framework = model[1]
         extractor = EXTRACTORS[framework]()
         model = extractor(model[0])

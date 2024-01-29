@@ -35,7 +35,7 @@ class Tensor(object):
         """The __init__ function."""
         self._name = name
         # assume data in tensor should be numpy array
-        # however, we don't assign the data diretly if the tensor is
+        # however, we don't assign the data directly if the tensor is
         # const like weight when parse model
         # otherwise it will make a bloated new graph
         # but it still can be set when using the constructed new graph

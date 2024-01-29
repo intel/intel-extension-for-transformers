@@ -1,10 +1,10 @@
 # Inputs format
-- First non-empty line should starts with 3 `#`s, labeling each input arguments divided by whitespace (lables cannot contain whitespace)
+- First non-empty line should starts with 3 `#`s, labeling each input arguments divided by whitespace (labels cannot contain whitespace)
 - List test cases line by line
     - First argument should always be the number of cores per instance
     - Following arguments will be append to benchmark command after the `kernel_type` (skipping `mode` (both will be run) and `kernel_type` (defined in `run_ci.sh`))
 - Lines starting with `$` are considered as environment variable overwriting, affecting following execution of `benchmark.sh`. e.g. `$it_per_core` will change the number of iterations to be run for following test cases
-- Lines starting with `#` are commited and will be discard during testing
+- Lines starting with `#` are committed and will be discard during testing
 - Benchmarking
     - To run benchmark with a new input file, run 
       ``` bash

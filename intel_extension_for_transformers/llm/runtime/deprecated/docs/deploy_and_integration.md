@@ -93,7 +93,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 
 ### Run the inference by Engine
 
-Parse the yaml and weight bin to Engine Graph throught Python API
+Parse the yaml and weight bin to Engine Graph through Python API
 
 ```python
 from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph

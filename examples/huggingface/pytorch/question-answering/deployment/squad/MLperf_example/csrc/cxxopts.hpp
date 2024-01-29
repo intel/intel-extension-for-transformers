@@ -2469,7 +2469,7 @@ Options::help_one_group(const std::string& g) const
     allowed = m_width - longest - OPTION_DESC_GAP;
   }
 
-  auto fiter = format.begin();
+  auto filter = format.begin();
   for (const auto& o : group->second.options)
   {
     if (m_positional_set.find(o.l) != m_positional_set.end() &&
@@ -2480,8 +2480,8 @@ Options::help_one_group(const std::string& g) const
 
     auto d = format_description(o, longest + OPTION_DESC_GAP, allowed, m_tab_expansion);
 
-    result += fiter->first;
-    if (stringLength(fiter->first) > longest)
+    result += filter->first;
+    if (stringLength(filter->first) > longest)
     {
       result += '\n';
       result += toLocalString(std::string(longest + OPTION_DESC_GAP, ' '));
@@ -2489,13 +2489,13 @@ Options::help_one_group(const std::string& g) const
     else
     {
       result += toLocalString(std::string(longest + OPTION_DESC_GAP -
-        stringLength(fiter->first),
+        stringLength(filter->first),
         ' '));
     }
     result += d;
     result += '\n';
 
-    ++fiter;
+    ++filter;
   }
 
   return result;

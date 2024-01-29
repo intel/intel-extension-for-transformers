@@ -1766,7 +1766,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    limitations under the License.
 
    ======================================================================================
-   BSD Lisence
+   BSD Licence
 
    --------------------------------------------------------------------------------------
    1. FBGEMM from Facebook

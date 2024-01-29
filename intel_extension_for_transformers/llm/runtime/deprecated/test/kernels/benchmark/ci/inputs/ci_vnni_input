@@ -20,7 +20,7 @@
 4 vnni 768 768 256 0.8 128 0 0 -1 -1
 4 vnni 3072 768 256 0.8 -1 0 0 128 -1
 
-# cases for differnt op_attrs
+# cases for different op_attrs
 8 vnni 3072 768 256 0.8 -1 0 0 -1 -1
 8 vnni 3072 768 256 0.8 128 0 0 -1 -1
 8 vnni 3072 768 256 0.8 -1 1 0 -1 -1

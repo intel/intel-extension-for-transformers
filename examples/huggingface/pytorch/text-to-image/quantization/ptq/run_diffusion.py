@@ -59,8 +59,8 @@ def parse_args():
     parser.add_argument(
         "--calib_text",
         type=str,
-        default="Womens Princess Little Deer Native American Costume",
-        help="The calibration data of the model, like: 'Womens Princess Little Deer Native American Costume'.",
+        default="Women's Princess Little Deer Native American Costume",
+        help="The calibration data of the model, like: 'Women's Princess Little Deer Native American Costume'.",
     )
     parser.add_argument(
         "--output_dir",

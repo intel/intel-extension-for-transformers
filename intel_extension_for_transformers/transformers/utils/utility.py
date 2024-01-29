@@ -56,7 +56,7 @@ def distributed_init(
     master_addr="127.0.0.1",
     master_port="12345",
 ):
-    """Init the distibute environment."""
+    """Init the distribute environment."""
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))
     if init_method is None:
