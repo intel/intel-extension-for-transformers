@@ -115,12 +115,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
         if self.bias is not None and self.bias.dtype != x.dtype:
             self.bias.data = self.bias.data.to(x.dtype)
-
-        if getattr(self.weight, "quant_state", None) is None:
-            print(
-                "FP4 quantization state not initialized. Please call .quantize_weights()."
-            )
-
         shape = list(x.size())
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype)
@@ -144,16 +138,19 @@ class QuantizedLinearQBits(torch.nn.Linear):
 
     def set_weights_bias(self, weight_data, bias=None):
         shape = weight_data.shape
-        weight = torch.ops.bestlaop.woq_quantize(
-            weight_data,
-            True,
-            self.blocksize,
-            self.compute_dtype if self.compute_dtype is not None else "fp32",
-            self.weight_dtype,
-            self.scale_dtype if self.scale_dtype is not None else "fp32",
-            False,
-        )
-        weight.resize_(shape)
+        if weight_data.is_meta:
+            weight = torch.ones(shape, dtype=torch.int8)
+        else:
+            weight = torch.ops.bestlaop.woq_quantize(
+                weight_data,
+                True,
+                self.blocksize,
+                self.compute_dtype if self.compute_dtype is not None else "fp32",
+                self.weight_dtype,
+                self.scale_dtype if self.scale_dtype is not None else "fp32",
+                False,
+            )
+            weight.resize_(shape)
         self.weight = ParamsQBits(
             data=weight,
             requires_grad=False,
