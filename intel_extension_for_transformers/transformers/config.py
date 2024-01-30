@@ -177,9 +177,9 @@ class QuantizationConfig(object):
             'first_conv_or_matmul_quantization': whether quantize the first conv or matmul
             'last_conv_or_matmul_quantization': whether quantize the last conv or matmul
             'pre_post_process_quantization': whether quantize the ops in preprocess and postprocess
-            'add_qdq_pair_to_weight': whether add QDQ pair for weights, only vaild for onnxrt_trt_ep
+            'add_qdq_pair_to_weight': whether add QDQ pair for weights, only valid for onnxrt_trt_ep
             'optypes_to_exclude_output_quant': don't quantize output of specified optypes
-            'dedicated_qdq_pair': whether dedicate QDQ pair, only vaild for onnxrt_trt_ep.
+            'dedicated_qdq_pair': whether dedicate QDQ pair, only valid for onnxrt_trt_ep.
     """
     def __init__(
         self,
@@ -271,7 +271,7 @@ class QuantizationConfig(object):
         self._metrics = metrics
         rel_or_abs = {True: "relative", False: "absolute"}
         assert isinstance(metrics[0] if isinstance(metrics, list) else metrics, Metric), \
-            "metric should be a Metric calss!"
+            "metric should be a Metric class!"
         if isinstance(metrics, Metric) or len(metrics) == 1:
             self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]
@@ -290,9 +290,9 @@ class QuantizationConfig(object):
                 assert all(weights), "Please set the weight ratio for all metrics!"
 
             assert all(metric.is_relative == metrics[0].is_relative for metric in metrics), \
-                "Unsupport different is_relative for different metric now, will support soon!"
+                "Unsupported different is_relative for different metric now, will support soon!"
             assert all(metric.criterion == metrics[0].criterion for metric in metrics), \
-                "Unsupport different criterion for different metric now, will support soon!"
+                "Unsupported different criterion for different metric now, will support soon!"
 
             self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]: metrics[0].criterion,
@@ -548,7 +548,7 @@ class PruningConfig(object):
         initial_sparsity_ratio: Initial sparsity goal, and not needed if pruner_config argument is defined
         target_sparsity_ratio: Target sparsity goal, and not needed if pruner_config argument is defined
         metrics: Used to evaluate accuracy of tuning model, not needed for NoTrainerOptimizer
-        pruner_config: Defined pruning behavior, if it is None, then NLP wil create a default pruner with
+        pruner_config: Defined pruning behavior, if it is None, then NLP will create a default pruner with
             'BasicMagnitude' pruning typel
         config_file: Path to the config file
     """
@@ -767,7 +767,7 @@ class DistillationConfig(object):
     def metrics(self, metrics):
         """Set the metrics."""
         assert isinstance(metrics, Metric), \
-            "metric should be a Metric calss!"
+            "metric should be a Metric class!"
         self._metrics = metrics
 
 
@@ -1213,7 +1213,7 @@ class BenchmarkConfig:
 @constructor_register
 class PrunerV2:
     """
-    similiar to torch optimizer's interface
+    similar to torch optimizer's interface
     """
 
     def __init__(self,
@@ -1245,7 +1245,7 @@ class PrunerV2:
 
 
 class WeightPruningConfig:
-    """Similiar to torch optimizer's interface."""
+    """Similar to torch optimizer's interface."""
     def __init__(self, pruning_configs=[{}],  ##empty dict will use global values
                  target_sparsity=0.9, pruning_type="snip_momentum", pattern="4x1", op_names=[],
                  excluded_op_names=[],

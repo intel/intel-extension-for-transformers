@@ -1,6 +1,6 @@
 This README serves as a guide to set up the backend for an assisted generation chatbot based on the assisted_model of transformers utilizing the NeuralChat framework. You can deploy this assisted generation chatbot across various platforms, including Intel XEON Scalable Processors, Habana's Gaudi processors (HPU), Intel Data Center GPU and Client GPU, Nvidia Data Center GPU, and Client GPU.
 
-This assisted generation chatbot example domonstrates how to deploy an assisted chatbot. Make sure your LLM model and the assisted model have the same model architecture.
+This assisted generation chatbot example demonstrates how to deploy an assisted chatbot. Make sure your LLM model and the assisted model have the same model architecture.
 
 
 # Setup Conda

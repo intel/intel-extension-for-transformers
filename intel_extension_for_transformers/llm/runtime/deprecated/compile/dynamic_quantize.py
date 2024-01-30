@@ -68,7 +68,7 @@ def _insert_quantize(graph: Graph, per_token: bool):
                               dtype='fp32')
         weight_perm = node.attr.get('src1_perm', "")
         weight_data = weight_tensor.data
-        assert weight_data is not None, "The graph to be dynamic quantized shold be load with weight"
+        assert weight_data is not None, "The graph to be dynamic quantized should be load with weight"
         if op_type == "Convolution":
             axis = tuple(range(1, len(weight_data.shape)))
             tensor_min.data = weight_data.min(axis, keepdims=True).astype(np.float32)

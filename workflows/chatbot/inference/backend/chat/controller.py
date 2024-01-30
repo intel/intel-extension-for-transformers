@@ -350,7 +350,7 @@ async def get_cache(request: Request):
         return StreamingResponse(stream_results(), media_type="text/event-stream")
 
 STREAM_DELAY = 1  # second
-RETRY_TIMEOUT = 15000  # milisecond
+RETRY_TIMEOUT = 15000  # millisecond
 
 @app.get('/stream')
 async def message_stream(request: Request):

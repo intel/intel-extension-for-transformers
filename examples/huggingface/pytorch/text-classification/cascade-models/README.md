@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ## Running on GLUE tasks
 
 ```bash
-pyhon run_tango.py --task_name TASK-NAME --small_model_name_or_path SMALL-MODEL --big_model_name_or_path BIG-MODEL 
+python run_tango.py --task_name TASK-NAME --small_model_name_or_path SMALL-MODEL --big_model_name_or_path BIG-MODEL 
                   --layer_num TRANSFORMER-LAYERS 
                   [--device_small DEVICE-SMALL] [--device_big DEVICE-BIG]
                   [--per_device_eval_batch_size-big BATCH-SIZE-SMALL] [--per_device_eval_batch_size-big BATCH-SIZE-BIG] 

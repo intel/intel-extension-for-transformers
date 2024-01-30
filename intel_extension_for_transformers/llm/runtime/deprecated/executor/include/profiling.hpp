@@ -354,7 +354,7 @@ class Profiling_ {
           // whether could be sparse
           if (weight_shape.size() == 2 && weight_shape[0] % 4 == 0) {
             op->set_enable_sparse(true);
-            // users can adjust perf ratio accroding to actual situation
+            // users can adjust perf ratio according to actual situation
             weight_map[weight_shape] = 4.f;
           }
         }

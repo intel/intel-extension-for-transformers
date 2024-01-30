@@ -159,7 +159,7 @@ class AnimateFromCoeff:
             try:
                 discriminator.load_state_dict(checkpoint["discriminator"])
             except:
-                print("No discriminator in the state-dict. Dicriminator will be randomly initialized")
+                print("No discriminator in the state-dict. Discriminator will be randomly initialized")
         if optimizer_generator is not None:
             optimizer_generator.load_state_dict(checkpoint["optimizer_generator"])
         if optimizer_discriminator is not None:

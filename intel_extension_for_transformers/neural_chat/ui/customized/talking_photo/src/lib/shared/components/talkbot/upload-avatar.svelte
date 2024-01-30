@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Upload from "$lib/assets/handel/Upload.svelte";
+	import Upload from "$lib/assets/handle/Upload.svelte";
 	import { createEventDispatcher } from "svelte";
 
 	const dispatch = createEventDispatcher();

@@ -69,7 +69,7 @@ class AudioPluginAPIRouter(APIRouter):
             torch.save(spk_embedding, f'../../assets/speaker_embeddings/spk_embed_{spk_id}.pt')
             logger.info(f"create spk embedding succeed! {spk_id}")
         except Exception as e:
-            logger.info(f"create spk embedding failes! {e}")
+            logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
         return {"create_spk": "success"}
 
@@ -98,10 +98,9 @@ async def talkingbot(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]
-    knowledge_id = data["knowledge_id"]
     audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
 
-    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+    logger.info(f'Received prompt: {text}, and use voice: {voice}')
 
     return await router.handle_voice_tts_request(text, voice, audio_output_path)
 

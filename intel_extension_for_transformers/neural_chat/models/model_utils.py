@@ -364,7 +364,7 @@ def load_model_vllm(
                 if hasattr(eparams, 'max_context_len_to_capture') else 8192,
         )
         llm = AsyncLLMEngine.from_engine_args(async_engine_args)
-        # set an aysnc flag for generating stage
+        # set an async flag for generating stage
         MODELS[model]["vllm_async"] = True
         logging.info("use async vllm")
     else:
@@ -545,6 +545,10 @@ def load_model(
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
+        if use_llm_runtime:
+            optimization_config.post_init_runtime()
+        else:
+            optimization_config.post_init()
         model = optimize_model(model_name, optimization_config, use_llm_runtime)
         if not model.config.is_encoder_decoder:
             tokenizer.padding_side = "left"
@@ -1076,7 +1080,7 @@ def predict_stream(**params):
 
                     else:
                         global output_token_len
-                        if is_llm_runtime_model(model):  # optimized model gerenate
+                        if is_llm_runtime_model(model):  # optimized model generate
                             output_token=model.generate(
                                 input_tokens if "chatglm" in model_name.lower() else input_tokens['input_ids'],
                                 streamer=streamer,
@@ -1365,7 +1369,7 @@ def predict(**params):
                             )
                 else:
                     with context:
-                        if is_llm_runtime_model(model):  # optimized model gerenate
+                        if is_llm_runtime_model(model):  # optimized model generate
                             generation_output = model.generate(
                                 input_tokens['input_ids'],
                                 temperature=temperature,
@@ -1428,7 +1432,7 @@ def predict(**params):
             logging.error(f"model.generate exception: {e}")
             set_latest_error(ErrorCodes.ERROR_MODEL_INFERENCE_FAIL)
             return
-    if is_llm_runtime_model(model):  # optimized model gerenate
+    if is_llm_runtime_model(model):  # optimized model generate
         output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     else:
         output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
