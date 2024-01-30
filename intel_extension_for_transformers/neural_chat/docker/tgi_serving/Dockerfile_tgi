@@ -47,7 +47,7 @@ RUN apt update \
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-# install Docker Client and depencencies
+# install Docker Client and dependencies
 RUN apt-get update && apt-get install -y \
     apt-transport-https \
     ca-certificates \
