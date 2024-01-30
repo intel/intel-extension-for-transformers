@@ -1,5 +1,3 @@
-paddlepaddle
-paddlespeech
 transformers
 soundfile
 datasets
@@ -9,3 +7,17 @@ speechbrain
 librosa
 zhconv
 num2words
+zhconv
+urllib3
+langid
+qdrant-client
+vector_quantize_pytorch
+cn2an
+pypinyin
+pyopenjtalk; sys_platform == 'linux'
+openjtalk; sys_platform != 'linux'
+jaconv
+webrtcvad
+g2p_en
+inflect
+jieba
