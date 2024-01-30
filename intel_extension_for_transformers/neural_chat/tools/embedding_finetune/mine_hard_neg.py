@@ -39,7 +39,7 @@ def create_index(embeddings, use_gpu):
     index = faiss.IndexFlatIP(len(embeddings[0]))
     embeddings = np.asarray(embeddings, dtype=np.float32)
     if use_gpu:
-        co = faiss.GpuMultipleClonerOptions()
+        co = faiss.GpuMultipleClonerOptions() # pylint: disable=E1101
         co.shard = True
         co.useFloat16 = True
         index = faiss.index_cpu_to_all_gpus(index, co=co)
