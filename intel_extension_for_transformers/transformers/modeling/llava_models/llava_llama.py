@@ -104,7 +104,7 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                     past_key_values,
                     labels,
                     images,
-                    images_mask
+                    images_mask # pylint: disable=E0602
                 )
 
         # pylint: disable=E1101
