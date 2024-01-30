@@ -107,6 +107,9 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
                     plugins[plugin_name]['class'] = SafetyChecker
+                elif plugin_name == "toxicity":
+                    from .pipeline.plugins.toxicity.toxicity import Toxicity
+                    plugins[plugin_name]['class'] = Toxicity
                 elif plugin_name == "ner":
                     from .pipeline.plugins.ner.ner import NamedEntityRecognition
                     plugins[plugin_name]['class'] = NamedEntityRecognition

@@ -319,6 +319,9 @@ class BaseModel(ABC):
                                 return "Your query contains sensitive words, please try another query."
                             elif origin_query and plugin_instance.pre_llm_inference_actions(origin_query):
                                 return "Your query contains sensitive words, please try another query."
+                        elif plugin_name == "toxicity" and response:
+                            if response[0]['label'] == 'toxic' and plugins.toxicity.allow_input == False:
+                                return f"\nI'm sorry, but your query is TOXIC with an score of {response[0]['score']:.2f} (0-1)!!!\nIf you have any other non-toxic requests, feel free to ask me, and I'll be happy to help!"
                         else:
                             if response != None and response != False:
                                 query = response

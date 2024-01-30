@@ -30,7 +30,7 @@ class GlobalPlugins:
             "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
             "cache": {"enable": False, "class": None, "args": {}, "instance": None},
             "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None},
-            "toxicity": {"enable": False, "class": None, "args": {}, "instance": None},
+            "toxicity": {"enable": False, "class": None, "args": {}, "instance": None, "allow_input": False},
             "ner": {"enable": False, "class": None, "args": {}, "instance": None},
             "face_animation": {"enable": False, "class": None, "args": {}, "instance": None},
             "image2image": {"enable": False, "class": None, "args": {}, "instance": None},
@@ -72,5 +72,5 @@ def get_registered_plugins():
     return registered_plugins
 
 def get_all_plugins():
-    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "ner", "ner_int",
+    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker", "toxicity", "ner", "ner_int",
             "face_animation"]
