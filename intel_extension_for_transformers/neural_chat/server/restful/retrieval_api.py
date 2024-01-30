@@ -123,18 +123,19 @@ async def retrieval_upload_link(request: Request):
         user_persist_dir = Path(path_prefix) / f"{user_id}-{kb_id}/persist_dir"
         user_upload_dir.mkdir(parents=True, exist_ok=True)
         user_persist_dir.mkdir(parents=True, exist_ok=True)
-        print(f"[askdoc - upload_link] upload path: {user_upload_dir}")
+        logger.info(f"[askdoc - upload_link] upload path: {user_upload_dir}")
         
         try:
             # get retrieval instance and reload db with new knowledge base
-            print("[askdoc - upload_link] starting to create local db...")
+            logger.info("[askdoc - upload_link] starting to create local db...")
             instance = plugins['retrieval']["instance"]
             instance.create(input_path=link_list, persist_directory=str(user_persist_dir))
-            print(f"[askdoc - upload_link] kb created successfully")
+            logger.info(f"[askdoc - upload_link] kb created successfully")
         except Exception as e:  # pragma: no cover
             logger.info(f"[askdoc - upload_link] create knowledge base fails! {e}")
             return "Error occurred while uploading files."
         return {"knowledge_base_id": kb_id}
+
 
 @router.post("/v1/aiphotos/askdoc/create")
 async def retrieval_create(request: Request,
@@ -143,7 +144,7 @@ async def retrieval_create(request: Request,
     filename = file.filename
     if '/' in filename:
         filename = filename.split('/')[-1]
-    print(f"[askdoc - create] received file: {filename}")
+    logger.info(f"[askdoc - create] received file: {filename}")
 
     user_id = request.client.host
     logger.info(f'[askdoc - create] user id is: {user_id}')
@@ -161,21 +162,21 @@ async def retrieval_create(request: Request,
     user_upload_dir.mkdir(parents=True, exist_ok=True)
     user_persist_dir.mkdir(parents=True, exist_ok=True)
     cur_time = get_current_beijing_time()
-    print(f"[askdoc - create] upload path: {user_upload_dir}")
+    logger.info(f"[askdoc - create] upload path: {user_upload_dir}")
     
     # save file to local path
     save_file_name = str(user_upload_dir) + '/' + cur_time + '-' + filename
     with open(save_file_name, 'wb') as fout:
         content = await file.read()
         fout.write(content)
-    print(f"[askdoc - create] file saved to local path: {save_file_name}")
+    logger.info(f"[askdoc - create] file saved to local path: {save_file_name}")
 
     try:
         # get retrieval instance and reload db with new knowledge base
-        print("[askdoc - create] starting to create local db...")
+        logger.info("[askdoc - create] starting to create local db...")
         instance = plugins['retrieval']["instance"]
         instance.create(input_path=str(user_upload_dir), persist_directory=str(user_persist_dir))
-        print(f"[askdoc - create] kb created successfully")
+        logger.info(f"[askdoc - create] kb created successfully")
     except Exception as e:  # pragma: no cover
         logger.info(f"[askdoc - create] create knowledge base failed! {e}")
         return "Error occurred while uploading files."
@@ -190,32 +191,42 @@ async def retrieval_append(request: Request,
     filename = file.filename
     if '/' in filename:
         filename = filename.split('/')[-1]
-    print(f"[askdoc - append] received file: {filename}, kb_id: {knowledge_base_id}")
+    logger.info(f"[askdoc - append] received file: {filename}, kb_id: {knowledge_base_id}")
 
     user_id = request.client.host
     logger.info(f'[askdoc - append] user id is: {user_id}')
-    path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
+    if knowledge_base_id == 'default':
+        path_prefix = RETRIEVAL_FILE_PATH + 'default'
+    else:
+        path_prefix = RETRIEVAL_FILE_PATH+user_id+'-'+knowledge_base_id
     upload_path = path_prefix + '/upload_dir'
     persist_path = path_prefix + '/persist_dir'
     if ( not os.path.exists(upload_path) ) or ( not os.path.exists(persist_path) ):
-        return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
-            Please check kb_id and save path again."
+        if knowledge_base_id == 'default':
+            os.makedirs(Path(path_prefix), exist_ok=True)
+            os.makedirs(Path(path_prefix) / 'upload_dir', exist_ok=True)
+            os.makedirs(Path(path_prefix) / 'persist_dir', exist_ok=True)
+            logger.info(f"Default kb {path_prefix} does not exist, create.")
+        else:
+            logger.info(f"kbid [{knowledge_base_id}] does not exist for user {user_id}")
+            return f"Knowledge base id [{knowledge_base_id}] does not exist for user {user_id}, \
+                Please check kb_id and save path again."
     cur_time = get_current_beijing_time()
-    print(f"[askdoc - append] upload path: {upload_path}")
+    logger.info(f"[askdoc - append] upload path: {upload_path}")
 
     # save file to local path
     save_file_name = upload_path + '/' + cur_time + '-' + filename
     with open(save_file_name, 'wb') as fout:
         content = await file.read()
         fout.write(content)
-    print(f"[askdoc - append] file saved to local path: {save_file_name}")
+    logger.info(f"[askdoc - append] file saved to local path: {save_file_name}")
 
     try:
         # get retrieval instance and reload db with new knowledge base
-        print("[askdoc - append] starting to append to local db...")
+        logger.info("[askdoc - append] starting to append to local db...")
         instance = plugins['retrieval']["instance"]
         instance.append_localdb(append_path=save_file_name, persist_directory=persist_path)
-        print(f"[askdoc - append] new file successfully appended to kb")
+        logger.info(f"[askdoc - append] new file successfully appended to kb")
     except Exception as e:  # pragma: no cover
         logger.info(f"[askdoc - append] create knowledge base fails! {e}")
         return "Error occurred while uploading files."
@@ -238,8 +249,11 @@ async def retrieval_chat(request: Request):
     kb_id = params['knowledge_base_id']
     stream = params['stream']
     max_new_tokens = params['max_new_tokens']
+    return_link = params['return_link']
     logger.info(f"[askdoc - chat] kb_id: '{kb_id}', query: '{query}', \
-                stream mode: '{stream}', max_new_tokens: '{max_new_tokens}'")
+                origin_query: '{origin_query}', stream mode: '{stream}', \
+                max_new_tokens: '{max_new_tokens}', \
+                return_link: '{return_link}'")
     config = GenerationConfig(max_new_tokens=max_new_tokens)
 
     path_prefix = RETRIEVAL_FILE_PATH
@@ -279,37 +293,72 @@ async def retrieval_chat(request: Request):
                     "text": output,
                     "error_code": 0,
                 }
+                flag = False
                 if '<' in output and '>' in output:
                     output = output.replace('<', '').replace('>', '').replace(' ', '')
+                    if output.endswith('\n'):
+                        print(f"[!!!] found link endswith \\n")
+                        flag = True
                     if output.endswith('.') or output.endswith('\n'):
                         output = output[:-1]
+                        
                 if '](' in output:
                     output = output.split('](')[-1].replace(')', '')
+                    if output.endswith('\n'):
+                        flag = True
                     if output.endswith('.') or output.endswith('\n'):
                         output = output[:-1]
+
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
                     formatted_link = f'''<a style="color: blue; text-decoration: \
                         underline;"   href="{res.group()}"> {res.group()} </a>'''
                     logger.info(f"[askdoc - chat] in-line link: {formatted_link}")
+                    if flag:
+                        formatted_link += '<br/><br/>'
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    formatted_str = ret['text'].replace('\n', '<br/>')
+                    formatted_str = ret['text'].replace('\n', '<br/><br/>')
+                    formatted_str = formatted_str.replace('**:', '</b>:').replace('**', '<b>')
                     logger.info(f"[askdoc - chat] formatted: {formatted_str}")
                     yield f"data: {formatted_str}\n\n"
+            if return_link and link != []:
+                yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
+                for single_link in link:
+                    # skip empty link
+                    if single_link == None:
+                        continue
+                    logger.info(f"[askdoc - chat] single link: {single_link}")
+                    if isinstance(single_link, str):
+                        raw_link = single_link
+                    elif isinstance(single_link, dict):
+                        raw_link = single_link["source"]
+                    else:
+                        logger.info(f"[askdoc - chat] wrong link format")
+                        continue
+                    # skip local file link
+                    if not raw_link.startswith("http"):
+                        continue
+                    formatted_link = f"""<div style="margin: 0.4rem; padding: 8px 0; \
+                        margin: 8px 0; font-size: 0.7rem;">  <a style="color: blue; \
+                            border: 1px solid #0068B5;padding: 8px; border-radius: 20px;\
+                            background: #fff; white-space: nowrap; width: 10rem;  color: #0077FF;"   \
+                            href="{raw_link}" target="_blank"> {raw_link} </a></div>"""
+                    logger.info(f"[askdoc - chat] link below: {formatted_link}")
+                    yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-@router.post("/v1/askdoc/feedback")
+@router.post("/v1/aiphotos/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     logger.info(f'[askdoc - feedback] fastrag feedback received.')
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
-    question, answer, feedback = request.question, request.answer, request.feedback
+    question, answer, feedback, comments = request.question, request.answer, request.feedback, request.comments
     feedback_str = 'dislike' if int(feedback) else 'like'
     logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
-                answer: [{answer}], feedback: [{feedback_str}]''')
+                answer: [{answer}], feedback: [{feedback_str}], comments: [{comments}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
     SHA_TZ = timezone(
@@ -318,8 +367,8 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     )
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + \
-            answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + \
+        '", "' + answer + '", ' + str(feedback) + ', "' + beijing_time + '", "' + comments + '")'
     logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
@@ -333,7 +382,7 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
         return "Succeed"
 
 
-@router.get("/v1/askdoc/downloadFeedback")
+@router.get("/v1/aiphotos/askdoc/downloadFeedback")
 def get_feedback_from_db():
     mysql_db = MysqlDb()
     mysql_db._set_db("fastrag")
@@ -345,20 +394,34 @@ def get_feedback_from_db():
                         please check the db session and your syntax.""")
     else:
         mysql_db._close()
+        csv_fields = ['feedback_id', 'question', 'answer', 'feedback_result', \
+                            'feedback_time', 'comments']
+        check_boxes = ['This is harmful / unsafe', "This isn't true", \
+                       "This isn't helpful", "The link is invalid"]
+        csv_fields.extend(check_boxes)
         def data_generator():
             output = io.StringIO()
             writer = csv.DictWriter(
                 output, 
-                fieldnames=[
-                    'feedback_id', 
-                    'question', 
-                    'answer', 
-                    'feedback_result', 
-                    'feedback_time']
+                csv_fields
             )
             writer.writeheader()
             for row in feedback_list:
+                if '^' in row['question']:
+                    row['question'] = row['question'].replace('^', "'")
+                if '^' in row['answer']:
+                    row['answer'] = row['answer'].replace('^', "'")
                 row['feedback_result'] = 'like' if ( row['feedback_result'] == 0 ) else 'dislike'
+                comments = row['comments']
+                # clip real comments
+                row['comments'] = comments.split('#%#')[0]
+                # save check box items
+                for item in check_boxes:
+                    if item in comments:
+                        row[item] = 'True'
+                    else:
+                        row[item] = 'False'
+                # write into csv file
                 writer.writerow(row)
                 yield output.getvalue()
                 output.seek(0)
