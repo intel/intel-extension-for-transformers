@@ -74,7 +74,7 @@ class VoiceChatAPIRouter(APIRouter):
             spk_embedding = chatbot.tts.create_speaker_embedding(spk_id)
             torch.save(spk_embedding, f'../../../../speaker_embeddings/spk_embed_{spk_id}.pt')
         except Exception as e:
-            logger.info(f"create spk embedding failes! {e}")
+            logger.info(f"create spk embedding fails! {e}")
             return {"create_spk": "fail"}
         return {"create_spk": "success"}
 

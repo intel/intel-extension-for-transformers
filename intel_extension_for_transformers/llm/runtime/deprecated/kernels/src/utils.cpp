@@ -140,7 +140,7 @@ float get_dequantize(float x, float alpha, float scale) {
   return x;
 }
 
-float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
+float get_linear(float x, float alpha, float beta) { return x * alpha + beta; }
 
 float get_swish(float x, float alpha) { return x / (1.f + get_exp(-1 * alpha * x)); }
 

@@ -91,7 +91,7 @@ class TextEncoder_SoftmaxReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_SoftmaxReshape",
                                                                         pattern_dict, model)
 
-            logger.info('TextEncoder_SoftmaxReshape mathched...')
+            logger.info('TextEncoder_SoftmaxReshape matched...')
             logger.debug('TextEncoder_SoftmaxReshape = {}'.format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

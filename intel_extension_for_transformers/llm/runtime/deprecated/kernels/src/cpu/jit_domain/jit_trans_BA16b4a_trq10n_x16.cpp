@@ -143,7 +143,7 @@ void jit_trans_BA16b4a_trq10n_x16::generate() {
       }
       align(sizeof(void*));
       L(l_mtail_tbl);
-      db(reinterpret_cast<uint64_t>(nullptr), sizeof(void*));  // case 0 should not occour
+      db(reinterpret_cast<uint64_t>(nullptr), sizeof(void*));  // case 0 should not occur
       for (int i = 1; i < 4; ++i) putL(l_mtail_case[i]);
 
       L(l_dequant_epilogue);
@@ -177,7 +177,7 @@ void jit_trans_BA16b4a_trq10n_x16::generate() {
   }
   align(sizeof(void*));
   L(l_nsize_tbl);
-  db(reinterpret_cast<uint64_t>(nullptr), sizeof(void*));  // case 0 should never occour
+  db(reinterpret_cast<uint64_t>(nullptr), sizeof(void*));  // case 0 should never occur
   for (int i = 1; i <= 16; ++i) putL(l_nsize_case[i]);
 
   align(64);

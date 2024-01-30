@@ -190,7 +190,7 @@ class jit_padding_interleave4b_n : public jit_generator {
     vshuff32x4(src_2regs[1], tmp_2reg[0], tmp_2reg[1], 2 | (3 << 2) | (2 << 4) | (3 << 6));
     vshuff32x4(src_2regs[1], src_2regs[1], src_2regs[1], 0 | (2 << 2) | (1 << 4) | (3 << 6));
   }
-  const int NTile;  // in terms of #elemetns
+  const int NTile;  // in terms of #elements
   const int SrcBytes, RowTile;
 };
 

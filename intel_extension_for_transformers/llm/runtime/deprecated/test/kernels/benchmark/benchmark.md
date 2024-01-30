@@ -33,7 +33,7 @@ make -j
 ```shell
 [<environment_variable>...] ./benchmark <mode> <kernel_type> <kernel_configs>
 ```
-+ `mode = {perf,acc}`: `perf` for perfomance test, `acc` for accuracy test, and `perf,acc` for both perfomance test and accuracy test.
++ `mode = {perf,acc}`: `perf` for performance test, `acc` for accuracy test, and `perf,acc` for both performance test and accuracy test.
 + `kernel_type` is one of
     + [sparse_matmul](#sparse_matmul)
     + [transpose_matmul](#transpose_matmul)
@@ -77,7 +77,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul avx512f
 - `micro_bs` is used in [3D_inference](../../../kernels/docs/kernel_desc/3D_inference.md), and set to `-1` to avoid to use it.
 - `output_fp32 = {0,1}` set to `1` to output fp32, while set to 0 to output int8.
 - `has_append_sum = {0,1}`  set to  `1` to append sum on output otherwise set to 0.
-- `micro_oc` is used to specify the data parallel in OC dim, and set to `-1` to automaticlly calculate.
+- `micro_oc` is used to specify the data parallel in OC dim, and set to `-1` to automatically calculate.
 - `sub_func_level` is a positive integer up to `jd::ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
 - `[<post-op>...]` There can be more than one post-op. Please refer to [eltwiseop](#eltwiseop) to see supported `algorithm`.
 
@@ -184,7 +184,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul vnni
 ```shell
 [<environment_variable>...] ./benchmark <mode> softmax <spec_type> <input_shape> <input_dt> <output_dt>
 ```
-Softmax in Kernels only suuport LUT with int8 input and bf16 output.
+Softmax in Kernels only support LUT with int8 input and bf16 output.
 - `spec_type = {lut}`
 - `input_shape = d0xd1x...`: `d0,d1,...` are the dimensions of input, `x` is the delimiter.
 - `input_dt = {u8}`: input data type only support unsigned int8 now.

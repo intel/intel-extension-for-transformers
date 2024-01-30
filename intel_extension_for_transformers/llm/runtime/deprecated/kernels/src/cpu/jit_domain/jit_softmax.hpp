@@ -66,7 +66,7 @@ class jit_softmax_t : public jit_generator {
   Reg64 dst_addr;
   Reg64 dst_addr_volatile;
   Reg64 vec_num;
-  Reg64 vec_offset;  // load/sotre offset
+  Reg64 vec_offset;  // load/store offset
   Reg64 reg_tmp;     // store max/sum
   Opmask bit16_mask;
   Opmask bit32_mask;

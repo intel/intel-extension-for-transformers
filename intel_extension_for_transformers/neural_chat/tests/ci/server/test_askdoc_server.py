@@ -154,7 +154,8 @@ class UnitTest(unittest.TestCase):
             "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": False,
-            "max_new_tokens": 64
+            "max_new_tokens": 64,
+            "return_link": False
         }
         response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
         assert response.status_code == 200
@@ -174,7 +175,8 @@ class UnitTest(unittest.TestCase):
             "translated": "How about the benchmark test of Habana Gaudi2?",
             "knowledge_base_id": gaudi2_kb_id,
             "stream": True,
-            "max_new_tokens": 64
+            "max_new_tokens": 64,
+            "return_link": False
         }
         response = client.post("/v1/aiphotos/askdoc/chat", json=query_params)
         assert response.status_code == 200
@@ -183,21 +185,22 @@ class UnitTest(unittest.TestCase):
         feedback_data = {
             "question": "When is CES 2024?",
             "answer": "CES 2024 taking place Jan. 9-12, in Las Vegas.",
-            "feedback": "1"  # Feedback can be '1' for like or '0' for dislike
+            "feedback": "1",  # Feedback can be '1' for like or '0' for dislike
+            "comments": "Good answer."
         }
         # Mocking the MysqlDb class
         with patch('intel_extension_for_transformers.neural_chat.server.restful.retrieval_api.MysqlDb') as mock_mysql_db:
             mock_instance = mock_mysql_db.return_value
             mock_instance.insert.return_value = None
-            response = client.post("/v1/askdoc/feedback", json=feedback_data)
+            response = client.post("/v1/aiphotos/askdoc/feedback", json=feedback_data)
 
         assert response.status_code == 200
         assert response.json() == "Succeed"
 
     def test_get_feedback_from_db(self):
         feedback_data = [
-            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01'},
-            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02'},
+            {'feedback_id': 1, 'question': 'Question 1', 'answer': 'Answer 1', 'feedback_result': 1, 'feedback_time': '2023-01-01', "comments": "Comments 1"},
+            {'feedback_id': 2, 'question': 'Question 2', 'answer': 'Answer 2', 'feedback_result': 0, 'feedback_time': '2023-01-02', "comments": "Comments 2"},
         ]
 
         # Mocking the MysqlDb class and fetch_all method
@@ -205,7 +208,7 @@ class UnitTest(unittest.TestCase):
             mock_instance = mock_mysql_db.return_value
             mock_instance.fetch_all.return_value = feedback_data
 
-            response = client.get("/v1/askdoc/downloadFeedback")
+            response = client.get("/v1/aiphotos/askdoc/downloadFeedback")
             assert response.status_code == 200
             assert response.headers['content-type'] == 'text/csv; charset=utf-8'
             assert 'attachment;filename=feedback' in response.headers['content-disposition']

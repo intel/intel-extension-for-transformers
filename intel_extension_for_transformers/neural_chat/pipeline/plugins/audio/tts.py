@@ -160,8 +160,8 @@ class TextToSpeech():
                     res.append(text[cur_start:cur_end+1])
                 else:
                     logging.warning(
-                        f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
-                        + f"in each {batch_length} charaters! Try to add batch_length!"
+                        f"[TTS Warning] Check your input text and it should be split by one of {hitted_ends} "
+                        + f"in each {batch_length} characters! Try to add batch_length!"
                     )
                     cur_end = cur_start+batch_length-1
                     res.append(text[cur_start:cur_end+1])
@@ -182,7 +182,7 @@ class TextToSpeech():
 
         text: the input text
         voice: default/male/female/...
-        batch_length: the batch length for spliting long texts into batches to do text to speech
+        batch_length: the batch length for splitting long texts into batches to do text to speech
         """
         logging.info(text)
         if batch_length > 600 or batch_length < 50:

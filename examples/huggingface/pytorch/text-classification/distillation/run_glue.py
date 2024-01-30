@@ -533,7 +533,7 @@ def main():
             teacher_eval_dataset = teacher_eval_dataset.select(range(data_args.max_eval_samples))
         assert train_dataset.num_rows == teacher_train_dataset.num_rows and \
             eval_dataset.num_rows == teacher_eval_dataset.num_rows, \
-            "Length of train or evaluation dataset of teacher doesnot match that of student."
+            "Length of train or evaluation dataset of teacher does not match that of student."
             
         # get logits of teacher model
         def dict_tensor_to_model_device(batch, model):

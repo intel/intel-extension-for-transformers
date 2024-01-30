@@ -26,3 +26,4 @@ python-multipart
 python-dotenv
 huggingface_hub
 vllm
+neural_speed

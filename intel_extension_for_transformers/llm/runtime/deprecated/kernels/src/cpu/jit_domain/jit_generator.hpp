@@ -87,7 +87,7 @@ class jit_generator : public Xbyak::CodeGenerator {
   const int EVEX_max_8b_offt = 0x200;
   const Xbyak::Reg64 reg_EVEX_max_8b_offt = rbp;
 
-  // Set to O0 to avoid undefined behavour of reinterpret_cast
+  // Set to O0 to avoid undefined behaviour of reinterpret_cast
   // Ref: https://stackoverflow.com/questions/25131019/reinterpret-cast-to-function-pointer
   // #pragma GCC push_options
   // #pragma GCC optimize("O0")

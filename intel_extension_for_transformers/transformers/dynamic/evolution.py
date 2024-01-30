@@ -53,7 +53,7 @@ def inverse(x):
 
 
 def store2str(gene, macs, score, method, parents=None):
-    """Store the parmaters into string."""
+    """Store the parameters into string."""
     store_str = f"({', '.join(f'{x:3d}' for x in gene)}):"
     store_str += f" {macs} MACs/latency"
     store_str += f" | score {score}"

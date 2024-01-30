@@ -16,7 +16,7 @@ We aim to make it easy for users to include the memory component. Users can acti
 python chat_with_memory.py --model_path XXX
 ```
 
-Here, `--model_path` is the model id or the local LLM file to triger the interaction. Users have the flexibility to adjust the generation parameters, such as `--temperature`, `--penalty`, and `--max_length`, in order to optimize the generation performance for different application scenarios.
+Here, `--model_path` is the model id or the local LLM file to trigger the interaction. Users have the flexibility to adjust the generation parameters, such as `--temperature`, `--penalty`, and `--max_length`, in order to optimize the generation performance for different application scenarios.
 
 Regarding the memory types, we offer three options: `ConversationBufferMemory`, `ConversationBufferWindowMemory`, and `SpacyEntityMemory`. The choice of memory type depends on the model's inherent capabilities and suitability. Considering that conversation memory adds more information to the input prompt, we recommend using ConversationBufferWindowMemory when dealing with models of around 7B-weight level. Having an excessively long chat history can pose challenges for the language model in understanding the input prompts, resulting in unsatisfactory generation results. Therefore, limiting the length of the conversation history is advisable.
 
