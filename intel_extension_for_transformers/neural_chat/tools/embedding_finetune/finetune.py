@@ -17,7 +17,8 @@
 
 import os
 from pathlib import Path
-from transformers import AutoConfig, AutoTokenizer, set_seed, TrainingArguments, DataCollatorWithPadding, PreTrainedTokenizer, BatchEncoding, AutoModel, HfArgumentParser
+from transformers import AutoConfig, AutoTokenizer, set_seed, TrainingArguments, DataCollatorWithPadding
+from transformers import PreTrainedTokenizer, BatchEncoding, AutoModel, HfArgumentParser
 from transformers.file_utils import ModelOutput
 from transformers.trainer import *
 from dataclasses import dataclass
