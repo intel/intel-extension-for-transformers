@@ -578,7 +578,7 @@ class LazySupervisedDatasetPadding(LazySupervisedDataset):
 
             attn_mask = [1] * len(new_inp)
 
-        if len(new_inp) >= self.tokenizer.model_max_length:
+            if len(new_inp) >= self.tokenizer.model_max_length:
                 new_inp = new_inp[:self.tokenizer.model_max_length]
                 new_tar = new_tar[:self.tokenizer.model_max_length]
                 image_mask = image_mask[:self.tokenizer.model_max_length]
