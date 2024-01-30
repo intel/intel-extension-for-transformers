@@ -72,7 +72,7 @@ class BertVITSModel:
             )
             self.cn_bert_model = load(ckpt_path, bert_cn)
         else:
-            raise Exception("Unspported precision, should be fp32/bf16/int8!")
+            raise Exception("Unsupported precision, should be fp32/bf16/int8!")
 
         self.cn_tokenizer = AutoTokenizer.from_pretrained(
             "hfl/chinese-roberta-wwm-ext-large"
@@ -123,7 +123,7 @@ class BertVITSModel:
             self.vits = load(ckpt_path, self.vits)
             logging.info(f"VITS int8 checkpoint loaded.")
         else:
-            raise Exception("Unspported precision, should be fp32/bf16/int8!")
+            raise Exception("Unsupported precision, should be fp32/bf16/int8!")
 
         spk_id_map = hf_hub_download(
             repo_id="spycsh/bert-vits-thchs-6-8000",
