@@ -29,20 +29,6 @@ class TextGenerationAPIRouter(APIRouter):
     def __init__(self) -> None:
         super().__init__()
         self.endpoint = "http://0.0.0.0:9876/"
-        self.chatbot = None
-
-    def set_chatbot(self, chatbot, use_deepspeed, world_size, host, port) -> None:
-        self.chatbot = chatbot
-        self.use_deepspeed = use_deepspeed
-        self.world_size = world_size
-        self.host = host
-        self.port = port
-
-    def get_chatbot(self):
-        if self.chatbot is None:
-            logger.error("Chatbot instance is not found.")
-            raise RuntimeError("Chatbot instance has not been set.")
-        return self.chatbot
 
     def handle_tgi_request(self, prompt, parameters, stream=False):
         client = InferenceClient(model=self.endpoint)
