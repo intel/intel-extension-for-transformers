@@ -30,10 +30,10 @@ def faiss_retrieval(xb,xq,k):
     quantizer = faiss.IndexFlatL2(d)
     index = faiss.IndexIVFFlat(quantizer, d, nlist, faiss.METRIC_INNER_PRODUCT)
 
-    index.train(xb) 
-    index.add(xb)
+    index.train(xb) # pylint: disable=E1120
+    index.add(xb) # pylint: disable=E1120
 
-    D, I = index.search(xq, k)
+    D, I = index.search(xq, k) # pylint: disable=E1120
     return I
 
 def index_library(index_file_jsonl_path, model_name):
