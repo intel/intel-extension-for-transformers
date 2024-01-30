@@ -25,7 +25,7 @@ jit_mm_exp_vnni_mxkx48_t::jit_mm_exp_vnni_mxkx48_t(const param_t& param)
       binary_add(param.binary_add),
       dt_dst(param.dt_dst),
       dsize_dst(get_data_size(dt_dst)) {
-  SPARSE_LOG_IF(FATAL, N_ <= 0 || N_ > 48) << "Output dimention invalid!";
+  SPARSE_LOG_IF(FATAL, N_ <= 0 || N_ > 48) << "Output dimension invalid!";
 }
 
 Xbyak::Zmm jit_mm_exp_vnni_mxkx48_t::dst_tile_Vmm(int i, int j) {

@@ -26,7 +26,7 @@ static constexpr int cpu_isa_total_bits = sizeof(unsigned) * 8;
 enum cpu_isa_bit_t : unsigned {
   // Fill in features from least significant bit to most significant bit
   // begin from avx512, isa < avx512 will be dsiptached to reference
-  // for more details abount AVX512-ISA supported status in different architectures, pls refer to this
+  // for more details about AVX512-ISA supported status in different architectures, pls refer to this
   // page:https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512
   avx512_vbmi = 1u << 5,
   avx512_core_bit = 1u << 6,

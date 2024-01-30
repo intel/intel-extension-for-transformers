@@ -118,7 +118,7 @@ class BaseTrainer():
         """Initialization function.
         
         Args:
-            args: defined paramerts. 
+            args: defined parameters. 
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         super().__init__(*args, **kwargs)
@@ -356,7 +356,7 @@ class BaseTrainer():
         if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
-            assert False, "Unsupport provider:{}".format(self._provider)
+            assert False, "Unsupported provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
         weights_file = os.path.join(os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME)
@@ -555,7 +555,7 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        """Main entry point for orchestrate optimiztions.
+        """Main entry point for orchestrate optimizations.
 
         Args:
             config_list: The list of configs.
@@ -855,7 +855,7 @@ class BaseTrainer():
         self.state.is_world_process_zero = self.is_world_process_zero()
 
         tr_loss = torch.tensor(0.0).to(args.device)
-        # _total_loss_scalar is updated everytime .item() has to be called on tr_loss and stores the sum of all losses
+        # _total_loss_scalar is updated every time .item() has to be called on tr_loss and stores the sum of all losses
         self._total_loss_scalar = 0.0
         self._globalstep_last_logged = self.state.global_step
         model.zero_grad()
@@ -2002,10 +2002,10 @@ class BaseTrainer():
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
-        """The function to tranfer model into onnx model.
+        """The function to transfer model into onnx model.
         
         Args:
-            args: defined paramerts. 
+            args: defined parameters. 
             kwargs: additional keyword arguments used to hide deprecated arguments.
         """
         if self.enable_bf16:
@@ -2022,7 +2022,7 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into fp32 onnx model.
+        """The function to transfer model into fp32 onnx model.
         
         Args:
             save_path: the save path of the exported model.
@@ -2065,7 +2065,7 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into bf16 onnx model.
+        """The function to transfer model into bf16 onnx model.
         
         Args:
             save_path: the save path of the exported model.
@@ -2127,7 +2127,7 @@ class BaseTrainer():
         calibrate_method='minmax',
         scale_mapping=False,
     ):
-        """The function to tranfer model into int8 onnx model.
+        """The function to transfer model into int8 onnx model.
         
         Args:
             save_path: the save path of the exported model.
@@ -2181,7 +2181,7 @@ class BaseTrainer():
                                  opset_version=opset_version,
                                  do_constant_folding=False,
                                  verbose=False)
-        # Fix onnx accuracy drop when trasformers > 4.21.0
+        # Fix onnx accuracy drop when transformers > 4.21.0
         if version.parse(__version__) > version.parse("4.21.0"):
             from onnx import TensorProto
             model = onnx.load(fp32_path)
@@ -2331,7 +2331,7 @@ class BaseTrainer():
             weight_type = ortq.QuantType.QInt8
         else:  # pragma: no cover
             # Gather requires weight type be the same as activation.
-            # So U8S8(acitvation|weight) option is not workable for best performance.
+            # So U8S8(activation|weight) option is not workable for best performance.
             logger.error("Right now, we don't support dtype: {}, \
                           please use U8U8/U8S8/S8S8.".format(dtype))
             sys.exit(0)
@@ -2445,7 +2445,7 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def export_to_jit(self):
-        """The function to tranfer model into jit model."""
+        """The function to transfer model into jit model."""
         self.model.eval()
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
@@ -2708,7 +2708,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
 
     @property
     def max_length(self):
-        """Getter of the max lenght."""
+        """Getter of the max length."""
         return self._max_length
 
     @max_length.setter
@@ -2717,7 +2717,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
 
     @property
     def num_beams(self):
-        """Getter of the numbert of beams."""
+        """Getter of the number of beams."""
         return self._num_beams
 
     @num_beams.setter

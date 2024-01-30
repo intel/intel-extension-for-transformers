@@ -82,7 +82,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map["batch_dims"] = "0";
   if (append_op == "binary_add") {
     attr_map["append_op"] = "binary_add";
-    shared_ptr<TensorConfig> append_config = std::make_shared<TensorConfig>("appned", input_shape[2]);
+    shared_ptr<TensorConfig> append_config = std::make_shared<TensorConfig>("append", input_shape[2]);
     input_config_vec.push_back(append_config);
   }
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);

@@ -18,7 +18,8 @@
 import time
 import base64
 import asyncio
-from typing import Optional, Dict
+import os
+from typing import Optional, Dict, List
 from fastapi.routing import APIRouter
 from fastapi import APIRouter
 from ...cli.log import logger
@@ -482,7 +483,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     asr_result = talkingbot_asr(file=file)
     res = await asyncio.gather(asr_result)
     res = res[0]['asr_result']
-    # substitude keywords manually
+    # substitute keywords manually
     result_list = []
     words = res.split(" ")
     for word in words:

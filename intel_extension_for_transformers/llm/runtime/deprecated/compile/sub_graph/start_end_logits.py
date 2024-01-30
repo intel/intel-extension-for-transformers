@@ -44,7 +44,7 @@ class StartEndLogits(Pattern):
         
         # tf has reshape operations before split logits, so just remove this split things.
         # But in onnx, MatMul have implicit broadcasting mechanism, like [M K N] * [N K].
-        # So before spliting, it has not reshape operations. We need to insert reshape op 
+        # So before splitting, it has not reshape operations. We need to insert reshape op 
         # when we remove the split pattern in onnx since engine emits tensor of size 
         # [bs*seq_len, hidden_size] like tf.
         for i in range(len(patterns['StartEndLogits'])):

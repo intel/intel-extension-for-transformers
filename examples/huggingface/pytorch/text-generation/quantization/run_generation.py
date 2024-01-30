@@ -380,7 +380,7 @@ if args.int8 or args.int8_bf16_mixed:
 
 
 if args.benchmark:
-    user_model.eval()
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
     input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
@@ -435,7 +435,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    user_model.eval()
+    user_model = user_model.eval() if not (args.int8 or args.int8_bf16_mixed) else user_model
     args.model = (
         peft_config.base_model_name_or_path if args.peft_model_id else args.model
     )

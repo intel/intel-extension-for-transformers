@@ -49,7 +49,7 @@ python -m launcher [launcher_parameters] model_script.py [script_args]
         </tr>
         <tr>
             <td align="center">memory_planning</td>
-            <td>unified_buffer: memory planning by a unified buffer</br>cycle_buffer: memory planning by cycle buffers</br>auto: enable autmatic memory planning tuning</td>
+            <td>unified_buffer: memory planning by a unified buffer</br>cycle_buffer: memory planning by cycle buffers</br>auto: enable automatic memory planning tuning</td>
             <td align="center"><b>cycle_buffer</b></td>
         </tr>
         <tr>

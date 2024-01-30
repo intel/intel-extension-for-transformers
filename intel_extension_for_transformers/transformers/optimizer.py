@@ -305,7 +305,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
-            assert False, "Unsupport provider:{}".format(self._provider)
+            assert False, "Unsupported provider:{}".format(self._provider)
 
     def init_pruner(
         self,

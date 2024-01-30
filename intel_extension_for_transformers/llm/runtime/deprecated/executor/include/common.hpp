@@ -246,7 +246,7 @@ void block_minmax_avx512(const float* Input, size_t N, float* Min, float* Max);
 void block_minmax(const float* Input, size_t N, float* Min, float* Max);
 #endif
 
-/************ hash funtion for primitive cache ************/
+/************ hash function for primitive cache ************/
 template <typename T>
 inline size_t hash_combine(size_t seed, const T& v) {
   return seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);

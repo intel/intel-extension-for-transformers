@@ -84,7 +84,7 @@ function run_benchmark {
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
         approach="PostTrainingStatic"
     else
-        echo "unsupport topology: ${topology}"
+        echo "unsupported topology: ${topology}"
         exit 1
     fi
 

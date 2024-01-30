@@ -1,6 +1,6 @@
 # vllm serving for NeuralChat
 
-vllm is a high-throughput and memory-efficient inference and serving engine for LLMs. It provides efficient management of attention key and value memory with PagedAttention and continous batching of incoming requests. Here we will show you how to deploy a NeuralChat textbot with vllm.
+vllm is a high-throughput and memory-efficient inference and serving engine for LLMs. It provides efficient management of attention key and value memory with PagedAttention and continuous batching of incoming requests. Here we will show you how to deploy a NeuralChat textbot with vllm.
 
 We currently keep the native GPU-only implementation from [vllm](https://github.com/vllm-project/vllm) and may support CPU based optimization in the future.
 

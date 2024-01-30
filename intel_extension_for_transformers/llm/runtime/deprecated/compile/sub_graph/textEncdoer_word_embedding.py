@@ -120,7 +120,7 @@ class TextEncoder_WordEmbedding(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_WordEmbedding mathched...')
+                logger.info('TextEncoder_WordEmbedding matched...')
                 logger.debug('TextEncoder_WordEmbedding = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     gatherv2_node = ret_old_nodes[j][0]

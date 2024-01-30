@@ -73,7 +73,7 @@ def sample_layer_configuration(
     layer_dropout=None,
     layer_dropout_bound=None,
 ):
-    """Get sample layers depends on the set paramaters.
+    """Get sample layers depends on the set parameters.
     
     Args:
         num_hidden_layers: A number to set the max sequence length.

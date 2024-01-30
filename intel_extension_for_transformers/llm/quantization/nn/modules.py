@@ -132,9 +132,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.weight,
             bias,
             out,
-            self.compute_dtype,
+            self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
-            self.scale_dtype,
+            self.scale_dtype if self.scale_dtype is not None else "fp32",
             do_dequant=self.training,
         )
         shape[-1] = self.out_features
@@ -148,9 +148,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
             weight_data,
             True,
             self.blocksize,
-            self.compute_dtype,
+            self.compute_dtype if self.compute_dtype is not None else "fp32",
             self.weight_dtype,
-            self.scale_dtype,
+            self.scale_dtype if self.scale_dtype is not None else "fp32",
             False,
         )
         weight.resize_(shape)

@@ -53,7 +53,7 @@ enum class sparse_scheme : uint8_t {
 enum class subfunc_level : uint8_t {
   none,       // No sub-function
   non_kdims,  // fold all except on K-dimension
-  kdims,      // a whole THxKxTW tile generates a constent size of code
+  kdims,      // a whole THxKxTW tile generates a constant size of code
   subfunc_level_MAX = kdims
 };
 

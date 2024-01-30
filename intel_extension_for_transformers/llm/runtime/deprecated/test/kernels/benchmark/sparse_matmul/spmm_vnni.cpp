@@ -193,7 +193,7 @@ bench_res_t spmm_vnni_bench::set_config(int argc, char** argv) {
     return res;
   }
   int64_t micro_oc = str_to_num<int64_t>(argv[7]);
-  int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/defalut config
+  int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/default config
   if (argc > 9 && strcmp(argv[9], "gelu")) postop_algs.push_back(jd::postop_alg::gelu);
   if (argc > 9 && strcmp(argv[9], "exp")) postop_algs.push_back(jd::postop_alg::exp);
   if (append_sum) op_attrs["post_op"] = "append_sum";

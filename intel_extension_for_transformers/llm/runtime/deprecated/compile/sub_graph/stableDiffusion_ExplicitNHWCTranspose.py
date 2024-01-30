@@ -71,7 +71,7 @@ class ExplicitNHWCTransposeForConv(Pattern):
         pattern_dict = pattern_mapping_config['ExplicitNHWCTransposeForConv'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("ExplicitNHWCTransposeForConv", pattern_dict, model)
         if len(new_node_names) != 0:
-            logger.info('ExplicitNHWCTransposeForConv mathched...')
+            logger.info('ExplicitNHWCTransposeForConv matched...')
             logger.debug('ExplicitNHWCTransposeForConv = {}'.format(new_node_names))
             for i in range(len(new_node_names)):
                 conv_attr = OrderedDict()
@@ -89,7 +89,7 @@ class ExplicitNHWCTransposeForConv(Pattern):
                 attr['dst_perm'] = '0,2,3,1'
                 reorder_pre_node.attr = attr
 
-                # the thrid node
+                # the third node
                 attr_2 = OrderedDict()
                 reorder_post_node = model.get_node_by_name(new_node_names[i][2])
                 attr_2['src_perm'] = '0,1,2,3'

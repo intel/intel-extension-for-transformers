@@ -143,7 +143,7 @@ class regs_pool {
   static constexpr int DefaultFlags = 0;        // All flags off by default
   static constexpr int DisableEpilog = 1 << 0;  // disable epilog generation during deconstruction
   static constexpr int DisableEvex = 1 << 1;    // disable the use of EVEX encoded instructions (including zmm16-31)
-  static constexpr int IgnoreWaste = 1 << 2;    // surpress warnings raised when not all registers applied are used
+  static constexpr int IgnoreWaste = 1 << 2;    // suppress warnings raised when not all registers applied are used
 
   /**
    * @brief RAII based register pool "extended" from Xbyak::util::StackFrame

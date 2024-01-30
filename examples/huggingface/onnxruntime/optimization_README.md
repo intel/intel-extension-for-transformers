@@ -1,6 +1,6 @@
 # Huggingface Examples
 
-Welcome to ONNX Runtime Huggingface examples. The models are from [Huggingface](https://huggingface.co) and model compressor technology is dependend on [Intel® Neural Compressor](https://github.com/intel/neural-compressor). 
+Welcome to ONNX Runtime Huggingface examples. The models are from [Huggingface](https://huggingface.co) and model compressor technology is dependent on [Intel® Neural Compressor](https://github.com/intel/neural-compressor). 
 
 ## Quantization approach
 

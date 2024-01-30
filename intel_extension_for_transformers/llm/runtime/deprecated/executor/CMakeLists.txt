@@ -142,7 +142,7 @@ target_link_libraries(neural_engine_bin
 )
 
 set_target_properties(neural_engine_bin
-        PROPERTIES OUTPUT_NAME neural_engine_bin) #corupt with neuralengine
+        PROPERTIES OUTPUT_NAME neural_engine_bin) #corrupt with neuralengine
 
 set(TARGETS neural_engine neural_engine_bin neural_engine_py)
 
