@@ -272,7 +272,7 @@ if __name__ == "__main__":
     check_args(args)
     set_seed(args.seed)
 
-    chatbot, gen_config = construct_chatbot()
+    chatbot, gen_config = construct_chatbot(args)
     warmup(chatbot, args.local_rank, gen_config)
 
     process_port = args.port + args.local_rank + 1
