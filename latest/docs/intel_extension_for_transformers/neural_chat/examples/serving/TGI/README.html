@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g569c124 documentation</title>
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g4267470 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -166,10 +166,6 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/I
 <td>"tgi"</td>
 </tr>
 <tr>
-<td>serving.framework.tgi_engine_params.model_id</td>
-<td>"mistralai/Mistral-7B-Instruct-v0.1"</td>
-</tr>
-<tr>
 <td>serving.framework.tgi_engine_params.sharded</td>
 <td>true (false only on cpu)</td>
 </tr>
@@ -190,6 +186,18 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/I
 </pre></div>
 </div>
 </section>
+<section id="consume-the-services">
+<h1>Consume the Services<a class="headerlink" href="#consume-the-services" title="Link to this heading"></a></h1>
+<p>After the services are successfully launched, you can consume the HTTP services offered by NeuralChat.</p>
+<p>Here is an example of consuming TGI service, remember to substitute your real ip and port.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span><span class="si">${</span><span class="nv">your_ip</span><span class="si">}</span>:<span class="si">${</span><span class="nv">your_port</span><span class="si">}</span>/v1/tgi/generate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;inputs&quot;:&quot;What is Deep Learning?&quot;,&quot;parameters&quot;:{&quot;max_new_tokens&quot;:17, &quot;do_sample&quot;: true}}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span>
+</pre></div>
+</div>
+<p>Of course, you can also consume the service via <code class="docutils literal notranslate"><span class="pre">postman</span></code>, <code class="docutils literal notranslate"><span class="pre">http</span> <span class="pre">request</span></code>, or other ways.</p>
+</section>
 
 
            </div>
@@ -205,7 +213,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/I
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3bd1da9ea0> 
+   <jinja2.runtime.BlockReference object at 0x7f5f1f793250> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
