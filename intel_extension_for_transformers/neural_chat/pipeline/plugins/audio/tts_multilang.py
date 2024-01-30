@@ -71,7 +71,7 @@ class BertVITSModel:
             )
             self.cn_bert_model = load(ckpt_path, bert_cn)
         else:
-            raise Exception("Unspported precision, should be fp32/bf16/int8!")
+            raise Exception("Unsupported precision, should be fp32/bf16/int8!")
 
         self.cn_tokenizer = AutoTokenizer.from_pretrained(
             "hfl/chinese-roberta-wwm-ext-large"
@@ -122,7 +122,7 @@ class BertVITSModel:
             self.vits = load(ckpt_path, self.vits)
             logging.info(f"VITS int8 checkpoint loaded.")
         else:
-            raise Exception("Unspported precision, should be fp32/bf16/int8!")
+            raise Exception("Unsupported precision, should be fp32/bf16/int8!")
 
     def tts_fn(self, text, sid=0):
         sentences_list = split_by_language(text, target_languages=["zh", "ja", "en"])
