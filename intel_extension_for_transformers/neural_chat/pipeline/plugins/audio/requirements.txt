@@ -10,7 +10,6 @@ num2words
 zhconv
 urllib3
 langid
-qdrant-client
 vector_quantize_pytorch
 cn2an
 pypinyin

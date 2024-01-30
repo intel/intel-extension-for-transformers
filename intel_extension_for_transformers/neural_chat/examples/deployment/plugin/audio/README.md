@@ -65,7 +65,7 @@ You can customize the configuration file 'audio_service.yaml' to match your envi
 | tts_multilang.args.device              | "cpu"                                  |
 | tts_multilang.args.voice               | "default"                              |
 | tts_multilang.args.output_audio_path   | "./output_audio.wav"                   |
-| tts_multilang.args.precision           | "int8"                   |
+| tts_multilang.args.precision           | "bf16"                                 |
 | tasks_list                             | ['plugin_audio']                       |
 
 

@@ -62,7 +62,8 @@ class AudioPluginAPIRouter(APIRouter):
         except Exception as e:
             raise Exception(e)
 
-    async def handle_voice_tts_multilang_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
+    async def handle_voice_tts_multilang_request(
+            self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
 
         plugins.tts_multilang.args['voice'] = voice
         plugins.tts_multilang.args['output_audio_path'] = audio_output_path
@@ -146,7 +147,7 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     return {"spk_id": spk_id}
 
 @router.post("/plugin/audio/tts_multilang")
-async def talkingbot(request: Request):
+async def talkingbot_multilang(request: Request):
     data = await request.json()
     text = data["text"]
     voice = data["voice"]

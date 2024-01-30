@@ -29,7 +29,7 @@ import sys
 
 def check_tts_dependency():
     try:
-        for module in ['soundfile', 'pydub', 'speechbrain', 'librosa', 'zhconv', 'urllib3', 'langid', 'qdrant-client',
+        for module in ['soundfile', 'pydub', 'speechbrain', 'librosa', 'zhconv', 'urllib3', 'langid',
                        'vector_quantize_pytorch', 'cn2an', 'pypinyin', 'jaconv', 'webrtcvad', 'g2p_en', 'inflect',
                         'jieba']:
             importlib.import_module(module)

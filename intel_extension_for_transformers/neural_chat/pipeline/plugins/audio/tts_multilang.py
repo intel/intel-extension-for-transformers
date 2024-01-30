@@ -44,7 +44,7 @@ logging.basicConfig(
 
 
 class BertVITSModel:
-    def __init__(self, device="cpu", precision="int8"):
+    def __init__(self, device="cpu", precision="bf16"):
         """Init the Bert and VITS models.
 
         Args:
@@ -59,6 +59,7 @@ class BertVITSModel:
                 "hfl/chinese-roberta-wwm-ext-large"
             ).to(device)
         elif self.precision in ["int8"]:
+            logging.info("Notice: VITS int8 is still experimental, please be careful to use!")
             from neural_compressor.utils.pytorch import load
             from transformers import BertForMaskedLM, AutoConfig
 
@@ -329,7 +330,7 @@ class BertVITSModel:
 
 
 class MultilangTextToSpeech:
-    def __init__(self, output_audio_path="./response.wav", voice="default", device="cpu", precision="int8"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", device="cpu", precision="bf16"):
         self.output_audio_path = output_audio_path
         self.voice = voice
         self.bert_vits_model = BertVITSModel(device, precision)
