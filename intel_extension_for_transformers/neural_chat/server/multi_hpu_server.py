@@ -17,22 +17,50 @@
 
 import argparse
 import os
-import json, types
+from typing import Optional
+import types
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, LoadingModelConfig
 )
 
 from intel_extension_for_transformers.transformers import MixedPrecisionConfig
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionRequest
-from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import ChatCompletionResponse
-from intel_extension_for_transformers.neural_chat.server.restful.textchat_api import check_requests
+from intel_extension_for_transformers.neural_chat.server.restful.api_protocol import ChatCompletionRequest
+from intel_extension_for_transformers.neural_chat.server.restful.api_protocol import ChatCompletionResponse
 from intel_extension_for_transformers.neural_chat.cli.log import logger
+
+# pylint: disable=E0611
+from pydantic import BaseModel
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 app = FastAPI(title="NeuralChat Gaudi Serving Process", description="Serving", version="0.0.1")
+
+def check_completion_request(request: BaseModel) -> Optional[str]:
+    logger.info(f"Checking parameters of completion request...")
+    if request.temperature is not None and request.temperature < 0:
+        return f"Param Error: {request.temperature} is less than the minimum of 0 --- 'temperature'"
+    
+    if request.temperature is not None and request.temperature > 2:
+        return f"Param Error: {request.temperature} is greater than the maximum of 2 --- 'temperature'"
+
+    if request.top_p is not None and request.top_p < 0:
+        return f"Param Error: {request.top_p} is less than the minimum of 0 --- 'top_p'"
+
+    if request.top_p is not None and request.top_p > 1:
+        return f"Param Error: {request.top_p} is greater than the maximum of 1 --- 'top_p'"
+
+    if request.top_k is not None and (not isinstance(request.top_k, int)):
+        return f"Param Error: {request.top_k} is not valid under any of the given schemas --- 'top_k'"
+
+    if request.top_k is not None and request.top_k < 1:
+        return f"Param Error: {request.top_k} is greater than the minimum of 1 --- 'top_k'"
+
+    if request.max_new_tokens is not None and (not isinstance(request.max_new_tokens, int)):
+        return f"Param Error: {request.max_new_tokens} is not valid under any of the given schemas --- 'max_new_tokens'"
+
+    return None
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -272,7 +300,7 @@ print("\n"*3)
 
 @app.post("/v1/code_generation")
 async def chat_completion_endpoint(request: ChatCompletionRequest):
-    ret = check_requests(request)
+    ret = check_completion_request(request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
     try:

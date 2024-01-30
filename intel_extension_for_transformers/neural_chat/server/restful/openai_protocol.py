@@ -26,6 +26,7 @@ from typing import Optional, List, Any, Union
 import time
 
 import shortuuid
+# pylint: disable=E0611
 from pydantic import BaseModel, Field
 
 
