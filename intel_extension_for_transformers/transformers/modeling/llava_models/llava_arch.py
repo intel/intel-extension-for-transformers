@@ -350,7 +350,8 @@ class LlavaMetaForCausalLM(PreTrainedModel):
 
         # +1 for static padding
         final_input_embeds = torch.zeros(
-            (batch_size, sequence_length + 1, input_embeds.shape[-1]), dtype=input_embeds.dtype, device=input_embeds.device
+            (batch_size, sequence_length + 1, input_embeds.shape[-1]),
+            dtype=input_embeds.dtype, device=input_embeds.device
         )
 
         for idx, image_mask in enumerate(images_mask):
