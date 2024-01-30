@@ -62,7 +62,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     temperature: Optional[float] = 0.02
     fix_position_embedding: bool = False
     sentence_pooling_method: str = 'cls'
-    normlized: bool = True
+    normalized: bool = True
 
 
 class TrainDatasetForEmbedding(Dataset):
@@ -179,7 +179,7 @@ class BiEncoderModel(nn.Module):
 
     def __init__(self,
                  model_name: str = None,
-                 normlized: bool = False,
+                 normalized: bool = False,
                  sentence_pooling_method: str = 'cls',
                  negatives_cross_device: bool = False,
                  temperature: float = 1.0,
@@ -188,12 +188,12 @@ class BiEncoderModel(nn.Module):
         self.model = AutoModel.from_pretrained(model_name)
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
 
-        self.normlized = normlized
+        self.normalized = normalized
         self.sentence_pooling_method = sentence_pooling_method
         self.temperature = temperature
         self.config = self.model.config
 
-        if not normlized:
+        if not normalized:
             self.temperature = 1.0
 
         self.negatives_cross_device = negatives_cross_device
@@ -219,7 +219,7 @@ class BiEncoderModel(nn.Module):
             return None
         psg_out = self.model(**features, return_dict=True)
         p_reps = self.sentence_embedding(psg_out.last_hidden_state, features['attention_mask'])
-        if self.normlized:
+        if self.normalized:
             p_reps = torch.nn.functional.normalize(p_reps, dim=-1)
         return p_reps.contiguous()
 
@@ -280,10 +280,10 @@ class BiEncoderModel(nn.Module):
         self.model.save_pretrained(output_dir, state_dict=state_dict)
 
 
-def save_ckpt_for_sentence_transformers(ckpt_dir, pooling_mode: str = 'cls', normlized: bool=True):
+def save_ckpt_for_sentence_transformers(ckpt_dir, pooling_mode: str = 'cls', normalized: bool=True):
     word_embedding_model = models.Transformer(ckpt_dir)
     pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension(), pooling_mode=pooling_mode)
-    if normlized:
+    if normalized:
         normlize_layer = models.Normalize()
         model = SentenceTransformer(modules=[word_embedding_model, pooling_model, normlize_layer], device='cpu')
     else:
@@ -310,7 +310,7 @@ class BiTrainer(Trainer):
         if self.is_world_process_zero():
             save_ckpt_for_sentence_transformers(output_dir,
                                                 pooling_mode=self.args.sentence_pooling_method,
-                                                normlized=self.args.normlized)
+                                                normalized=self.args.normalized)
 
     def compute_loss(self, model, inputs, return_outputs=False):
         """
@@ -364,7 +364,7 @@ def main():
     )
 
     model = BiEncoderModel(model_name=model_args.model_name_or_path,
-                           normlized=training_args.normlized,
+                           normalized=training_args.normalized,
                            sentence_pooling_method=training_args.sentence_pooling_method,
                            negatives_cross_device=training_args.negatives_cross_device,
                            temperature=training_args.temperature)
