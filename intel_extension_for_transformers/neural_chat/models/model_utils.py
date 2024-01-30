@@ -484,6 +484,7 @@ def load_model(
     # load assistant model
     if assistant_model:
         print("Loading assistant model...")
+        from transformers import AutoModelForCausalLM
         assistant_model_class = AutoModelForCausalLM
         print(f"Loading assistant model via {assistant_model_class}")
         assis_model = assistant_model_class.from_pretrained(
@@ -571,6 +572,7 @@ def load_model(
         return
 
     try:
+        from transformers import AutoModelForCausalLM
         if device == "hpu" and use_deepspeed and load_to_meta:
             with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
                 model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
