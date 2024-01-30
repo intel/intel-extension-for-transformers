@@ -398,6 +398,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
 async def authenticated_route(user: User = Depends(current_active_user)):
     return {"message": f"Hello {user.email}!"}
 
+
 @app.post("/intel/login")
 async def login(
     credentials: dict,
@@ -406,17 +407,32 @@ async def login(
     try:
         username = credentials.get("account")
         password = credentials.get("password")
+        wwid = credentials.get("wwid")
+        idsid = credentials.get("idsid")
 
         from LDAPclient import IntelLDAP
-        user_manager.ldap_client = IntelLDAP(user=username, password=password)
-        user = await user_manager.fastapi_users.authenticate(
-            {"email": username, "password": password},
-            user_manager.db
-        )
-        
+        ldap_client = IntelLDAP(user=username, password=password)
+        user = None
+        if idsid:
+            user = ldap_client.get_user(idsid)
+        elif wwid:
+            user = ldap_client.get_user(wwid, is_wwid=True)
+        else:
+            raise Exception("wwid and idsid cannot both be empty!")
+
         if user is None:
             raise HTTPException(status_code=401, detail="LDAP authentication failed")
 
-        return {"msg": "Login successful", "user_id": user.id}
+        # Authenticate the user with the UserManager
+        user_db_user = await user_manager.get_user(username)
+        if user_db_user:
+            # User exists in the database, no need to register
+            user = User(**user_db_user)
+        else:
+            # Register the user in the database
+            user_create = UserCreate(account=username, password=password, wwid=wwid, idsid=idsid)
+            user = await user_manager.create_user(user_create)
+
+        return {"msg": "Login successful", "user info dict": user.dict()}
     except HTTPException as e:
         return {"msg": "Login failed", "error_detail": e.detail}
