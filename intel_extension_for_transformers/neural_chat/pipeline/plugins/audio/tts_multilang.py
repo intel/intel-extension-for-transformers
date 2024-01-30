@@ -329,9 +329,10 @@ class BertVITSModel:
 
 
 class MultilangTextToSpeech:
-    def __init__(self, device="cpu", voice="default", precision="int8"):
-        self.bert_vits_model = BertVITSModel(device, precision)
+    def __init__(self, output_audio_path="./response.wav", voice="default", device="cpu", precision="int8"):
+        self.output_audio_path = output_audio_path
         self.voice = voice
+        self.bert_vits_model = BertVITSModel(device, precision)
 
     def text2speech(self, text, output_audio_path, voice="default"):
         "Multilingual text to speech and dump to the output_audio_path."
