@@ -34,6 +34,7 @@ import soundfile as sf
 import time
 import contextlib
 import logging
+import json
 
 logging.basicConfig(
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
@@ -123,6 +124,13 @@ class BertVITSModel:
             logging.info(f"VITS int8 checkpoint loaded.")
         else:
             raise Exception("Unspported precision, should be fp32/bf16/int8!")
+
+        spk_id_map = hf_hub_download(
+            repo_id="spycsh/bert-vits-thchs-6-8000",
+            filename="spk_id_map.json",
+        )
+        with open(spk_id_map, 'r') as f:
+            self.spk_id_map = json.load(f)
 
     def tts_fn(self, text, sid=0):
         sentences_list = split_by_language(text, target_languages=["zh", "ja", "en"])
@@ -321,15 +329,21 @@ class BertVITSModel:
 
 
 class MultilangTextToSpeech:
-    def __init__(self, device="cpu", precision="int8"):
+    def __init__(self, device="cpu", voice="default", precision="int8"):
         self.bert_vits_model = BertVITSModel(device, precision)
+        self.voice = voice
 
-    def text2speech(self, text, output_audio_path, sid=2):
+    def text2speech(self, text, output_audio_path, voice="default"):
         "Multilingual text to speech and dump to the output_audio_path."
         logging.info(text)
-        all_speech = self.bert_vits_model.tts_fn(text, sid=sid)
+        all_speech = self.bert_vits_model.tts_fn(text, sid=self.bert_vits_model.spk_id_map[voice])
         sf.write(output_audio_path, all_speech, samplerate=44100)
         return output_audio_path
 
-    def post_llm_inference_actions(self, text, output_audio_path):
-        return self.text2speech(text, output_audio_path)
+    def post_llm_inference_actions(self, text):
+        from intel_extension_for_transformers.neural_chat.plugins import plugins
+        self.voice = plugins.tts_multilang.args["voice"] \
+            if plugins.tts_multilang.args['voice'] in self.bert_vits_model.spk_id_map else "default"
+        self.output_audio_path = plugins.tts_multilang.args['output_audio_path'] \
+            if plugins.tts_multilang.args['output_audio_path'] else "./response.wav"
+        return self.text2speech(text, self.output_audio_path, self.voice)

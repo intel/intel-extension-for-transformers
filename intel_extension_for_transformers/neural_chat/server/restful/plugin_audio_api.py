@@ -39,12 +39,36 @@ class AudioPluginAPIRouter(APIRouter):
             raise Exception(e)
         
     async def handle_voice_tts_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
-        
+
         plugins.tts.args['voice'] = voice
         plugins.tts.args['output_audio_path'] = audio_output_path
         tts = get_plugin_instance("tts")
         try:
             result = tts.post_llm_inference_actions(text)
+            def audio_file_generate(result):
+                if isinstance(result, List):
+                    for path in result:
+                        with open(path,mode="rb") as file:
+                            bytes = file.read()
+                            data = base64.b64encode(bytes)
+                        yield f"data: {data}\n\n"
+                else:
+                    with open(result,mode="rb") as file:
+                        bytes = file.read()
+                        data = base64.b64encode(bytes)
+                    yield f"data: {data}\n\n"
+                yield f"data: [DONE]\n\n"
+            return StreamingResponse(audio_file_generate(result), media_type="text/event-stream")
+        except Exception as e:
+            raise Exception(e)
+
+    async def handle_voice_tts_multilang_request(self, text: str, voice: str, audio_output_path: Optional[str]=None) -> str:
+
+        plugins.tts_multilang.args['voice'] = voice
+        plugins.tts_multilang.args['output_audio_path'] = audio_output_path
+        tts_multilang = get_plugin_instance("tts_multilang")
+        try:
+            result = tts_multilang.post_llm_inference_actions(text)
             def audio_file_generate(result):
                 if isinstance(result, List):
                     for path in result:
@@ -120,3 +144,14 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
 
     await router.handle_create_speaker_embedding(spk_id)
     return {"spk_id": spk_id}
+
+@router.post("/plugin/audio/tts_multilang")
+async def talkingbot(request: Request):
+    data = await request.json()
+    text = data["text"]
+    voice = data["voice"]
+    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio.wav"
+
+    logger.info(f'Received prompt: {text}, and use voice: {voice}')
+
+    return await router.handle_voice_tts_multilang_request(text, voice, audio_output_path)
