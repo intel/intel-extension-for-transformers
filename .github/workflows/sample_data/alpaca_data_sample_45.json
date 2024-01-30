@@ -46,7 +46,7 @@
   },
   {
     "instruction": "Evaluate this sentence for spelling and grammar mistakes",
-    "input": "He finished his meal and left the restaurant",
+    "input": "He finnished his meal and left the resturant",
     "output": "He finished his meal and left the restaurant."
   },
   {
@@ -122,7 +122,7 @@
   {
     "instruction": "Who is the world's most famous painter?",
     "input": "",
-    "output": "The world's most famous painter is generally considered to be the Italian renaissance artist Leonardo da Vinci. His work includes the Mona Lisa and The Last Supper, both of which are considered masterpieces. Da Vinci was also a master of science, inventing the helicopter and the tank, among other inventions. He was also a prolific musician, sculptor, and architect. His work has inspired generations of artists and continues to be reversed today."
+    "output": "The world's most famous painter is generally considered to be the Italian renaissance artist Leonardo da Vinci. His work includes the Mona Lisa and The Last Supper, both of which are considered masterpieces. Da Vinci was also a master of science, inventing the helicopter and the tank, among other inventions. He was also a prolific musician, sculptor, and architect. His work has inspired generations of artists and continues to be revered today."
   },
   {
     "instruction": "Explain the concept of cogging torque.",
