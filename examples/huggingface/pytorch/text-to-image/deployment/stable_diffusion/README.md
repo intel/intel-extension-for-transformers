@@ -95,14 +95,14 @@ python prepare_model.py --input_model=runwayml/stable-diffusion-v1-5 --output_pa
 Export three FP32 onnx sub models of the stable diffusion to Nerual Engine IR.
 
 ```bash
-# running the follow bash comand to get all IR.
+# running the follow bash command to get all IR.
 bash export_model.sh --input_model=model --precision=fp32
 ```
 
 Export three BF16 onnx sub models of the stable diffusion to Nerual Engine IR.
 
 ```bash
-# running the follow bash comand to get all IR.
+# running the follow bash command to get all IR.
 bash export_model.sh --input_model=model --precision=bf16
 ```
 
@@ -160,7 +160,7 @@ python run_executor.py --ir_path=./qat_int8_ir --mode=accuracy --input_model=run
 Try using one sentence to create a picture!
 
 ```python
-# Running FP32 models or BF16 models, just import differnt IR.
+# Running FP32 models or BF16 models, just import different IR.
 # FP32 models
 # Note: 
 # 1. Using --image to set the path of your image, here we use the default download link.
@@ -183,7 +183,7 @@ python run_executor.py --ir_path=./bf16_ir --input_model=CompVis/stable-diffusio
 Try using one image and prompts to create a new picture!
 
 ```python
-# Running FP32 models or BF16 models, just import differnt IR.
+# Running FP32 models or BF16 models, just import different IR.
 # BF16 models
 python run_executor.py --ir_path=./bf16_ir --input_model=instruction-tuning-sd/cartoonizer --pipeline=instruction-tuning-sd --prompts="Cartoonize the following image" --steps=100
 ```
@@ -244,7 +244,7 @@ Performance varies by use, configuration and other factors. See platform configu
   </tr>
   <tr>
     <td>IRQ Balance</td>
-    <td>Eabled</td>
+    <td>Enabled</td>
   </tr>
   <tr>
     <td>CPU Model</td>

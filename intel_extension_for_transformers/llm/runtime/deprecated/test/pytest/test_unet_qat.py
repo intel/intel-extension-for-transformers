@@ -50,7 +50,7 @@ qat_unet_pattern_config = {
         # for unet and vae decoder
         'GroupNorm': True,
 
-        # vae deocder & Transformer2Dmodel
+        # vae decoder & Transformer2Dmodel
         'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,

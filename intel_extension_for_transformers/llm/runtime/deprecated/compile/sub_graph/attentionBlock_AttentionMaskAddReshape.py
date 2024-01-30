@@ -78,7 +78,7 @@ class AttentionBlock_AttentionMaskAddReshape(Pattern):
                 "AttentionBlock_AttentionMaskAddReshape", pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('AttentionBlock_AttentionMaskAddReshape mathched...')
+                logger.info('AttentionBlock_AttentionMaskAddReshape matched...')
                 logger.debug('AttentionBlock_AttentionMaskAddReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node

@@ -223,7 +223,7 @@ class _BaseQBitsAutoModelClass:
                 torch_dtype = kwargs.get("torch_dtype", torch.float16 if use_xpu else torch.float32)
                 if use_xpu:
                     assert torch_dtype == torch.float16, \
-                        "Intel GPU only support torch.float16 now, will support other dtype in furture!"
+                        "Intel GPU only support torch.float16 now, will support other dtype in future!"
                     kwargs["torch_dtype"] = torch_dtype
             if load_in_4bit:
                 if quantization_config is None:
@@ -232,7 +232,7 @@ class _BaseQBitsAutoModelClass:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="nf4")
                     else:
                         quantization_config = WeightOnlyQuantConfig(compute_dtype=convert_dtype_torch2str(torch_dtype),
-                                                                    weight_dtype="nf4")
+                                                                    weight_dtype="nf4" if use_cpu else "int4_fullrange")
                 else:
                     assert ("4" in quantization_config.weight_dtype
                             and convert_dtype_str2torch(quantization_config.compute_dtype) == torch_dtype
@@ -285,7 +285,10 @@ class _BaseQBitsAutoModelClass:
                     compute_dtype=quantization_config.compute_dtype,
                     use_ggml=quantization_config.use_ggml,
                     use_quant=quantization_config.use_quant,
-                    use_gptq=quantization_config.use_gptq,
+                    use_gptq=quantization_config.use_gptq or \
+                            quantization_config.algorithm.upper() == "GPTQ" or \
+                            quantization_config.use_autoround,
+                    use_awq=quantization_config.algorithm.upper() == "AWQ",
                 )
                 model.quantization_config = quantization_config
                 return model
@@ -546,7 +549,7 @@ class _BaseQBitsAutoModelClass:
                                     attention_mask=inputs["attention_mask"],
                                 )
 
-                logger.info("The default calibration funcation is used, " +
+                logger.info("The default calibration function is used, " +
                             "the calibration dataset is NeelNanda/pile-10k, " +
                             "batchsize is 1 and calibration iteration is 100.")
                 calib_func = calib_func

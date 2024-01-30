@@ -68,7 +68,7 @@ class jit_matmul_vnni_noperm_p2031_p1302_t : public jit_generator {
   static constexpr int VREG_NUMS = 32;
   static constexpr int USED_VREGS = 0;
   static constexpr int VNNI_ADJ = 4;                        // reduction dim of VPDPBUSD
-  static constexpr int VNNI_GROUPS = BYTES_ZMM / VNNI_ADJ;  // spacial dim of VPDPBUSD
+  static constexpr int VNNI_GROUPS = BYTES_ZMM / VNNI_ADJ;  // spatial dim of VPDPBUSD
 #ifdef _WIN32
   const Xbyak::Reg64& parambase = rcx;
   const Xbyak::Reg64& reg_dst = rdi;

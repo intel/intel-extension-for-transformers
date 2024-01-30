@@ -11,7 +11,7 @@ cp ../../serving/triton/text_generation/model.py models/text_generation/1/model.
 cp ../../serving/triton/text_generation/config.pbtxt models/text_generation/config.pbtxt
 ```
 
-Then your folder structure under the current `serving` folder shoud be like:
+Then your folder structure under the current `serving` folder should be like:
 
 ```
 serving/

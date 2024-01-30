@@ -48,7 +48,7 @@ docker pull intel/ai-tools:itrex-chatbot
 
 ## 3. Create Docker Container
 
-If you have donwloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
+If you have downloaded model and datasets before, just mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
 docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json ${IMAGE_NAME}:${IMAGE_TAG} /bin/bash

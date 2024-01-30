@@ -193,7 +193,7 @@ def delete_single_image(user_id, image_id):
 
 def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
     try:
-        logger.info(f'[backgroud] ======= processing image list for user {user_id} in background =======')
+        logger.info(f'[background] ======= processing image list for user {user_id} in background =======')
         for i in range(len(image_obj_list)):
             # save image into local path
             image_id = image_obj_list[i]['img_id']
@@ -201,20 +201,20 @@ def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
             image_obj = image_obj_list[i]['img_obj']
             image_exif = image_obj_list[i]['exif']
             image_obj.save(image_path, exif=image_exif)
-            logger.info(f'[backgroud] Image saved into local path {image_path}')
+            logger.info(f'[background] Image saved into local path {image_path}')
             # process image and generate infos
             try:
                 process_single_image(image_id, image_path, user_id)
             except Exception as e:
-                logger.error("[backgroud] "+str(e))
-                logger.error(f'[backgroud] error occurred, delete image.')
+                logger.error("[background] "+str(e))
+                logger.error(f'[background] error occurred, delete image.')
                 delete_single_image(user_id, image_id)
 
     except Exception as e:
         logger.error(e)
         raise ValueError(str(e))
     else:
-        logger.info('[backgroud] Background images process finished.')
+        logger.info('[background] Background images process finished.')
 
 
 def process_single_image(img_id, img_path, user_id):
@@ -384,7 +384,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 face_id = img_face['face_id']
                 face_tag = img_face['face_tag']
         if face_id == -1 and face_tag == None:
-            raise Exception(f'Error occurred when verifing faces for reference image: Inconsistent face infomation.')
+            raise Exception(f'Error occurred when verifying faces for reference image: Inconsistent face information.')
         # insert into image_face
         insert_img_face_sql = f"""INSERT INTO image_face 
         VALUES(null, {image_id}, '{image_path}', {face_id}, '{image_xywh}', '{user_id}', '{face_tag}');"""
@@ -779,7 +779,7 @@ def delete_user_infos(user_id: str):
     except Exception as e:
         raise Exception(e)
     
-    logger.info(f'[delete user] user {user_id} infomation all deleted.')
+    logger.info(f'[delete user] user {user_id} information all deleted.')
 
 
 def forward_req_to_sd_inference_runner(inputs):

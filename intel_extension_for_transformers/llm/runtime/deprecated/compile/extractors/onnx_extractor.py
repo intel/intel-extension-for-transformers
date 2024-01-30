@@ -20,7 +20,7 @@
    Extract all nodes in the input onnx model and convert them to engine python operators.
    All these python operators will compose the engine graph in the order of the original onnx
    calculation graph. Please noticed that the mapping between operators is not one-to-one
-   correspondence. For more related deatils, please refer to 'ops' APIs.
+   correspondence. For more related details, please refer to 'ops' APIs.
 """
 
 from .. import logger

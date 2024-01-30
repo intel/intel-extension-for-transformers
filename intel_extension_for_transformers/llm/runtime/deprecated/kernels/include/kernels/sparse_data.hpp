@@ -174,8 +174,8 @@ template bsr_data_t<float> SPARSE_API_ tobsr<float>(dim_t rows, dim_t cols, dim_
  * @tparam group the number of blocks to form a group
  * @param rows the number of rows of the original matrix
  * @param cols the number of columns of the original matrix
- * @param blk_row the numebr of rows for a BSR block
- * @param blk_col numebr of columns for a BSR block
+ * @param blk_row the number of rows for a BSR block
+ * @param blk_col number of columns for a BSR block
  * @param uncoded_data pointer to the start of the original dense matrix
  * @return bsr_data_t<T> reordered and padded bsr matrix
  */

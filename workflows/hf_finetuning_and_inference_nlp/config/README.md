@@ -8,7 +8,7 @@ dataset:                         Local or Huggingface datasets name.
 
 """ Required only when dataset: 'local' """
 local_dataset:
-    finetune_input :             Input filename incase of local dataset.
+    finetune_input :             Input filename in case of local dataset.
     delimiter:                   File delimiter.
     features:
         class_label:             Label column name.
@@ -44,7 +44,7 @@ dataset:                         Local or Huggingface datasets name.
 
 """ Required only when dataset: 'local' """
 local_dataset:
-    inference_input :            Input filename incase of local dataset.
+    inference_input :            Input filename in case of local dataset.
     delimiter:                   File delimiter.
     features:
         class_label:             Label column name.
@@ -81,7 +81,7 @@ dataset:                         Local or Huggingface datasets name. (Needs to b
 
 """ Required only when dataset: 'local' """
 local_dataset:
-    inference_input :            List of input filenames incase of local dataset.
+    inference_input :            List of input filenames in case of local dataset.
     delimiter:                   File delimiter.
     features:
         class_label:             Label column name.

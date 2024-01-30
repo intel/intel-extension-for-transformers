@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The memory fuction for saving chat history or loading chat history."""
+"""The memory function for saving chat history or loading chat history."""
 
 class Memory:
     def __init__(self):
