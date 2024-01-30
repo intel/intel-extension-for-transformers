@@ -176,6 +176,7 @@ pip install intel-extension-for-transformers
 
 4. Quantization Model and Inference
 ```python
+import torch
 import intel_extension_for_pytorch as ipex
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from transformers import AutoTokenizer
@@ -186,12 +187,12 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 prompt = "Once upon a time, there existed a little girl,"
 inputs = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
 
-qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True)
+qmodel = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True, device_map="xpu", trust_remote_code=True, use_llm_runtime=False)
 
 # optimize the model with ipex, it will improve performance.
 qmodel = ipex.optimize_transformers(qmodel, inplace=True, dtype=torch.float16, woq=True, device="xpu")
 
-output = user_model.generate(inputs)
+output = qmodel.generate(inputs)
 ```
 
 > Note: If your device memory is not enough, please quantize and save the model first, then rerun the example with loading the model as below, If your device memory is enough, skip below instruction, just quantization and inference.
