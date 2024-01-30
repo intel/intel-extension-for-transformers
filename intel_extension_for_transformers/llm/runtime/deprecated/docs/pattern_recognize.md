@@ -20,7 +20,7 @@ Pattern recognition function utilizes general rules to represent and search the 
 ln_pattern = [[(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, ['Add', 'AddV2']), (4, 'Rsqrt'), (5, 'Mul'), (7, 'Mul'), (8, 'Sub'), (9, ['Add', 'AddV2'])], [(5, 'Mul'), (6, 'Mul'), (9, ['Add', 'AddV2'])]]
 ```
 
-First, due to computation order, we set indexs for each node in the `LayerNorm` pattern. These indexes also supply the locations for splicing sub-chains with the main chain. You can set the index number by yourself as long as the calculation order is correct (We recommend the number starts from 0 and grows recursively for conciseness and intuition).
+First, due to computation order, we set indexes for each node in the `LayerNorm` pattern. These indexes also supply the locations for splicing sub-chains with the main chain. You can set the index number by yourself as long as the calculation order is correct (We recommend the number starts from 0 and grows recursively for conciseness and intuition).
 
 Second, define the main chain by choosing the longest one containing head and tail nodes of the pattern, and the rest are the sub-chains whose tail node must be in the main chain for splicing successfully. In the `LayerNorm` pattern, we choose the chain with index `[0,1,2,3,4,5,7,8,9]`(see the image below) as the main chain. And the rest chain with index `[5,6,9]` is a sub-chain attached to the main chain. Of course, you can choose the chain with index `[0,1,2,3,4,5,6,9]` as the main chain, but generally, we recommend and prefer longer ones.
 

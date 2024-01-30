@@ -69,7 +69,7 @@ void jit_softmax_Ab16a::generate() {
   mov(r15d, dword[reg_param + GET_OFF(QK_rescale)]);
   vpbroadcastd(zmm17, r15d);  // zmm17 is vscale
   mov(r15d, bit_cast<uint32_t>(-10000.f));
-  vpbroadcastd(zmm18, r15d);  // zmm18 is -INF (psudo)
+  vpbroadcastd(zmm18, r15d);  // zmm18 is -INF (pseudo)
 
   if (param_.has_badd) mov(r11, qword[reg_param + GET_OFF(src_badd)]);
   if (param_.has_badd) mov(r12d, dword[reg_param + GET_OFF(ld_badd)]);

@@ -75,7 +75,7 @@ class Transformer2Dmodel_AttentionMaskAddReshape(Pattern):
                 "Transformer2Dmodel_AttentionMaskAddReshape", pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_AttentionMaskAddReshape mathched...')
+                logger.info('Transformer2Dmodel_AttentionMaskAddReshape matched...')
                 logger.debug('Transformer2Dmodel_AttentionMaskAddReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     assert ret_old_nodes[j][2].op_type == 'Transpose'

@@ -90,7 +90,7 @@ bool layernorm_ba_ref_k_t::execute(const std::vector<const void*>& rt_data) cons
           var += 1e-5;
           var = sqrt(var);
           float scale = alpha[j] / var;
-          // check whether enable split-output, if true then stroe twice, one time is fp32, the other is dt(quant)
+          // check whether enable split-output, if true then store twice, one time is fp32, the other is dt(quant)
           value = (value - mean_data[i * col + k]) * scale + beta[j];
           if (op_attr["split_output"] == "true") {
             dst_dt = data_type::fp32;

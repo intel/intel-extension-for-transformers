@@ -29,8 +29,7 @@ from neural_compressor.config import PostTrainingQuantConfig
 from ...utils.utils import is_ipex_available
 from transformers import AutoTokenizer
 
-
-if is_ipex_available:
+if is_ipex_available():
     import intel_extension_for_pytorch as ipex
 
 
@@ -106,7 +105,7 @@ def _replace_linear(
         is_removed = False
 
         if (isinstance(module, torch.nn.Linear) or isinstance(module, WeightOnlyLinear)
-            or (is_ipex_available and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
+            or (is_ipex_available() and isinstance(module, ipex.nn.utils._weight_prepack._IPEXLinear))) \
            and (name not in modules_to_not_convert):
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(
@@ -115,7 +114,7 @@ def _replace_linear(
                 with init_empty_weights():
                     in_features = module.in_features
                     out_features = module.out_features
-                    if device == "cpu" or device == torch.device("cpu"):
+                    if device == "cpu" or device == torch.device("cpu") or device == "auto":
                         from .nn.modules import (
                             QuantizedLinearQBits,
                         )  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
@@ -165,14 +164,14 @@ def _replace_linear(
                             g_idx
                         )
                     else:
-                        raise Exception("{} device Unsupport weight only quantization!".format(device))
+                        raise Exception("{} device Unsupported weight only quantization!".format(device))
 
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                if device == "cpu" or device == torch.device("cpu"):
+                if device == "cpu" or device == torch.device("cpu") or device == "auto":
                     if not empty_weights:
                         if quantization_config.algorithm == "GPTQ":
                             p_func = None
@@ -297,7 +296,7 @@ def convert_to_quantized_model(model, config, device="cpu"):
                 model(input_ids=input_ids, )
 
         calib_func = default_calib_func
-        logger.info("The default calibration funcation is used, " +
+        logger.info("The default calibration function is used, " +
                     "the calibration dataset is NeelNanda/pile-10k," +
                     "batchsize is 1 and calibration iteration is 100.")
     if config.weight_dtype in ["fp8_e4m3", "fp8_e5m2"]:
@@ -394,7 +393,7 @@ def convert_dtype_str2torch(str_dtype):
     elif str_dtype == "bf16":
         return torch.bfloat16
     else:
-        assert False, "Unsupport str dtype {} to torch dtype".format(str_dtype)
+        assert False, "Unsupported str dtype {} to torch dtype".format(str_dtype)
 
 
 def convert_dtype_torch2str(dtype):
@@ -409,7 +408,7 @@ def convert_dtype_torch2str(dtype):
     elif isinstance(dtype, str) and dtype in ["int8", "fp32", "fp16", "bf16"]:
         return dtype
     else:
-        assert False, "Unsupport pytorch dtype {} to str dtype".format(dtype)
+        assert False, "Unsupported pytorch dtype {} to str dtype".format(dtype)
 
 
 def get_bits(config):
@@ -418,5 +417,5 @@ def get_bits(config):
     elif "int4" in config.weight_dtype:
         bits = 4
     else:
-        assert False, "Unsupport {} for quantize weight only by IPEX backend".format(config.weight_dtype)
+        assert False, "Unsupported {} for quantize weight only by IPEX backend".format(config.weight_dtype)
     return bits

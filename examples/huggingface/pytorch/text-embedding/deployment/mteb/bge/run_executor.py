@@ -84,7 +84,7 @@ if __name__ == '__main__':
         }
 
         model = EngineBGEModel(model_name_or_path=args.model_name_or_path,
-                        normalize_embeddings=False,  # normlize embedding will harm the performance of classification task
+                        normalize_embeddings=False,  # normalize embedding will harm the performance of classification task
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages: ",
                         ort_model_path=args.ort_model_path,
                         file_name=args.file_name,

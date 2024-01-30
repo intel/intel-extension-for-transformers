@@ -135,7 +135,7 @@ def tf_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
             continue
 
     """ input_tensors
-    each input_tensor has its own soure op, but same dest op
+    each input_tensor has its own source op, but same dest op
     so both have single string
     """
     # name list

@@ -32,7 +32,7 @@ class LayerNorm(Pattern):
     """
     Different model has the different layer_norm pattern,
     which means they have differrnt nodes order even though they all follow the formula.
-    For exmaple:
+    For example:
 
     LayerNorm(src, gamma, beta)
         = gamma * (src-mean) / sqrt(variance+c) + beta  # 1, like transformer_lt

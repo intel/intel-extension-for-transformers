@@ -28,16 +28,16 @@ enum WOQ_TASK {
 };
 
 struct woq_param_base {
-  std::string compute_type;  // determin gemm core template
-  std::string weight_type;   // determin compressed-weight template
-  std::string scale_type;    // determin scale param
+  std::string compute_type;  // determine gemm core template
+  std::string weight_type;   // determine compressed-weight template
+  std::string scale_type;    // determine scale param
   bool asym;
   int blocksize;
 };
 
 struct woq_config_param : public woq_param_base {
-  dispatcher_utils::QBITS_DT src_dt;  // determin activation related template
-  dispatcher_utils::QBITS_DT dst_dt;  // determin write_back template
+  dispatcher_utils::QBITS_DT src_dt;  // determine activation related template
+  dispatcher_utils::QBITS_DT dst_dt;  // determine write_back template
 };
 
 struct woq_packq_param : public woq_param_base {

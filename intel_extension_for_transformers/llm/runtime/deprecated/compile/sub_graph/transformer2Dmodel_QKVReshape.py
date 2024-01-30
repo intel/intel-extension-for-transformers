@@ -89,7 +89,7 @@ class Transformer2Dmodel_QKVReshape(Pattern):
                                                                         pattern_dict, model)
             weight = False
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_QKVReshape mathched...')
+                logger.info('Transformer2Dmodel_QKVReshape matched...')
                 logger.debug('Transformer2Dmodel_QKVReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node

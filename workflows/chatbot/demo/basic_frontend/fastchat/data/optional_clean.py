@@ -53,7 +53,7 @@ if __name__ == "__main__":
         type=str,
         default="all",
         choices=["all", "en"],
-        help="Only keep certain langauges.",
+        help="Only keep certain languages.",
     )
     parser.add_argument("--skip-lang", type=str, help="Skip a specific language.")
     # NOTE: Be careful about reduce_rep which may remove some good data.

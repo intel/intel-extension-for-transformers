@@ -5,3 +5,6 @@ spacy
 neural-compressor
 transformers
 intel_extension_for_pytorch
+pymysql
+deepface
+exifread

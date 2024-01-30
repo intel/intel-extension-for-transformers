@@ -1,5 +1,5 @@
 # Language modeling
-There are two types of language modeling, casual and masked. Causal language models are used for text generation and masked language modeling is great for tasks that require a good contextual understanding of an entire squence. In this example, casual/masked language modeling predicts the next/masked token or word in a sequence and return the accuracy validated on dataset. Please see [text-generation](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/text-generation) if you would like to generate a sentence.
+There are two types of language modeling, casual and masked. Causal language models are used for text generation and masked language modeling is great for tasks that require a good contextual understanding of an entire sequence. In this example, casual/masked language modeling predicts the next/masked token or word in a sequence and return the accuracy validated on dataset. Please see [text-generation](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/huggingface/pytorch/text-generation) if you would like to generate a sentence.
 
 We provide FP32/BF16 inference, INT8 inference, and other advanced compression techniques such as distillation, neural architecture search (NAS) for language modeling task.
 

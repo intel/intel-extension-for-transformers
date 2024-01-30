@@ -202,7 +202,7 @@ def segment_pair_nsp_process(datasets, tokenizer, args, text_column_name='text')
     # Datasets hashing goes wrong when args object is passed into the processing
     # function. Therefore we inference the arguments we need in the function here
     # so that hashing will work properly. Wrong hashing will cause recompute of the
-    # function everytime we run it instead of using cache
+    # function every time we run it instead of using cache
     short_seq_probability = args.short_seq_probability
     nsp_probability = args.nsp_probability
     dataset_seed = args.dataset_seed
@@ -365,7 +365,7 @@ def doc_sentences_process(datasets, tokenizer, args, text_column_name='text'):
         i = 0
         while i < len(document):
             segment = document[i]
-            # Add seperator token if this is not the first sentence
+            # Add separator token if this is not the first sentence
             if current_length > 0:
                 segment = [tokenizer.sep_token_id] + segment
             current_chunk.extend(segment)
@@ -489,7 +489,7 @@ def _data_process_inner(tokenizer, args, text_column_name='text'):
             name, config = name[0], None
         else:
             raise RuntimeError(
-                f"An invalide value was provided in dataset_name_config argument: {v}")
+                f"An invalid value was provided in dataset_name_config argument: {v}")
         data_name_config_list.append((name, config))
     data_list = []
     for name, config in data_name_config_list:

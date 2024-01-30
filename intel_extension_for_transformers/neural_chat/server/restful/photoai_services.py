@@ -20,7 +20,6 @@ import os
 import json
 import requests
 import datetime
-from deepface import DeepFace
 from typing import List, Dict
 from .photoai_utils import (
     find_GPS_image, 
@@ -29,7 +28,6 @@ from .photoai_utils import (
     transfer_xywh
 )
 from ...cli.log import logger
-from ...utils.database.mysqldb import MysqlDb
 from datetime import timedelta, timezone
 
 
@@ -39,6 +37,7 @@ def get_image_root_path():
 
 
 def check_user_ip(user_ip: str) -> bool:
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     user_list = mysql_db.fetch_one(sql=f'select * from user_info where user_id = "{user_ip}";')
     logger.info(f'[Check IP] user list: {user_list}')
@@ -52,6 +51,7 @@ def check_user_ip(user_ip: str) -> bool:
 
 
 def check_image_status(image_id: str):
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     image = mysql_db.fetch_one(
         sql=f'select * from image_info where image_id="{image_id}" and exist_status="active"',
@@ -97,6 +97,7 @@ def update_image_tags(image):
     update_sql_tmp = ','.join(update_sql_list)
     final_sql = update_sql+update_sql_tmp+f' where  image_id={image_id}'
     logger.info(f'[Update Tags] update sql: {final_sql}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     with mysql_db.transaction():
         mysql_db.update(sql=final_sql, params=None)
@@ -104,6 +105,7 @@ def update_image_tags(image):
 
 
 def update_image_attr(image, attr):
+    from ...utils.database.mysqldb import MysqlDb
     image_id = image['image_id']
     check_image_status(image_id)
 
@@ -157,6 +159,7 @@ def format_image_info(image_info: dict) -> dict:
 
 
 def delete_single_image(user_id, image_id):
+    from ...utils.database.mysqldb import MysqlDb
     logger.info(f'[Delete] Deleting image {image_id}')
     mysql_db = MysqlDb()
     image_path = mysql_db.fetch_one(
@@ -190,7 +193,7 @@ def delete_single_image(user_id, image_id):
 
 def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
     try:
-        logger.info(f'[backgroud] ======= processing image list for user {user_id} in background =======')
+        logger.info(f'[background] ======= processing image list for user {user_id} in background =======')
         for i in range(len(image_obj_list)):
             # save image into local path
             image_id = image_obj_list[i]['img_id']
@@ -198,20 +201,20 @@ def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
             image_obj = image_obj_list[i]['img_obj']
             image_exif = image_obj_list[i]['exif']
             image_obj.save(image_path, exif=image_exif)
-            logger.info(f'[backgroud] Image saved into local path {image_path}')
+            logger.info(f'[background] Image saved into local path {image_path}')
             # process image and generate infos
             try:
                 process_single_image(image_id, image_path, user_id)
             except Exception as e:
-                logger.error("[backgroud] "+str(e))
-                logger.error(f'[backgroud] error occurred, delete image.')
+                logger.error("[background] "+str(e))
+                logger.error(f'[background] error occurred, delete image.')
                 delete_single_image(user_id, image_id)
 
     except Exception as e:
         logger.error(e)
         raise ValueError(str(e))
     else:
-        logger.info('[backgroud] Background images process finished.')
+        logger.info('[background] Background images process finished.')
 
 
 def process_single_image(img_id, img_path, user_id):
@@ -293,6 +296,7 @@ def process_single_image(img_id, img_path, user_id):
 
     # update image status
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         with mysql_db.transaction():
             mysql_db.update(sql=f"UPDATE image_info SET process_status='ready' WHERE image_id={img_id}", params=None)
@@ -305,7 +309,7 @@ def process_single_image(img_id, img_path, user_id):
 
 def process_face_for_single_image(image_id, image_path, db_path, user_id):
     logger.info(f'[background - face] ### processing face for {image_path} in background ###')
-
+    from deepface import DeepFace
     # 1. check whether image contains faces
     try:
         face_objs = DeepFace.represent(img_path=image_path, model_name='Facenet512')
@@ -333,6 +337,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
     logger.info(f'[background - face] Finding match faces in image database.')
     assert face_cnt == len(dfs)
     logger.info(f'[background - face] dfs: {dfs}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     for df in dfs:
         logger.info(f'[background - face] current df: {df}')
@@ -379,7 +384,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
                 face_id = img_face['face_id']
                 face_tag = img_face['face_tag']
         if face_id == -1 and face_tag == None:
-            raise Exception(f'Error occurred when verifing faces for reference image: Inconsistent face infomation.')
+            raise Exception(f'Error occurred when verifying faces for reference image: Inconsistent face information.')
         # insert into image_face
         insert_img_face_sql = f"""INSERT INTO image_face 
         VALUES(null, {image_id}, '{image_path}', {face_id}, '{image_xywh}', '{user_id}', '{face_tag}');"""
@@ -440,6 +445,7 @@ def get_type_obj_from_attr(attr, user_id):
     else:
         return {}
 
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     select_list = mysql_db.fetch_all(sql=select_sql)
     select_result = {}
@@ -503,6 +509,7 @@ def get_type_obj_from_attr(attr, user_id):
 
 def get_address_list(user_id) -> list[str]:
     logger.info(f'Getting address list of user {user_id}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     select_sql = f'''SELECT address FROM image_info WHERE 
     user_id="{user_id}" AND exist_status="active" GROUP BY address;'''
@@ -522,6 +529,7 @@ def get_address_list(user_id) -> list[str]:
 
 def get_process_status(user_id):
     logger.info(f'Geting process status of user {user_id}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     total_cnt = mysql_db.fetch_one(
         sql=f"""SELECT COUNT(*) AS cnt FROM image_info WHERE 
@@ -561,6 +569,7 @@ def get_images_by_type(user_id, type, subtype) -> List:
         AND image_face.face_tag='{subtype}'"""
 
     logger.info(f'sql: {sql}')
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     images = mysql_db.fetch_all(sql=sql, params=None)
     mysql_db._close()
@@ -585,6 +594,7 @@ def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     INNER JOIN image_info ON image_info.image_id=image_face.image_id 
     WHERE image_info.user_id = "{user_id}" AND image_info.exist_status="active" GROUP BY face_id;'''
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         query_list = mysql_db.fetch_all(sql=group_by_face_sql)
     except Exception as e:
@@ -610,6 +620,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     logger.info(f'[NER query] start query from ner results')
     query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info "
     query_flag = False
+    from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
 
     # get person name query
@@ -722,6 +733,7 @@ def delete_user_infos(user_id: str):
     logger.info(f'[delete user] start delete user info')
 
     try:
+        from ...utils.database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         with mysql_db.transaction():
             # delete image_face
@@ -767,7 +779,7 @@ def delete_user_infos(user_id: str):
     except Exception as e:
         raise Exception(e)
     
-    logger.info(f'[delete user] user {user_id} infomation all deleted.')
+    logger.info(f'[delete user] user {user_id} information all deleted.')
 
 
 def forward_req_to_sd_inference_runner(inputs):

@@ -51,7 +51,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en"
         approach="PostTrainingDynamic"
     else
-        echo "unsupport topology: ${topology}"
+        echo "unsupported topology: ${topology}"
         exit 1
     fi
     if [ "${topology}" = "t5-small_dynamic" ]; then

@@ -266,7 +266,7 @@ class MultiHeadAttention(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
-                logger.info('MultiHeadAttention mathched...')
+                logger.info('MultiHeadAttention matched...')
                 logger.debug('MultiHeadAttention = {}'.format(new_node_names))
                 if i in [0, 1]:  # entry int8
                     if len(new_node_names) != len(patterns_search_nodes_name):

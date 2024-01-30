@@ -503,7 +503,7 @@ class ItrexOpt(object):
             assert (
                 self.train_dataset.num_rows == teacher_train_dataset.num_rows
                 and self.eval_dataset.num_rows == teacher_eval_dataset.num_rows
-            ), "Length of train or evaluation dataset of teacher doesnot match that of student."
+            ), "Length of train or evaluation dataset of teacher does not match that of student."
 
             self.teacher_train_dataset = teacher_train_dataset
             self.teacher_eval_dataset = teacher_eval_dataset

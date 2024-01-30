@@ -61,7 +61,7 @@ args=parser.parse_args()
 
 if __name__ =='__main__':
     if args.modeltype==0:
-        print("-"*100+"visulize pytorch model"+"-"*100)
+        print("-"*100+"visualize pytorch model"+"-"*100)
         print("model path:"+str(args.path))
         model_file=''
         for root, dirs, files in os.walk(args.path): 
@@ -108,11 +108,11 @@ if __name__ =='__main__':
 
         
     if args.modeltype==1:
-        print("-"*100+"visulize nn model"+"-"*100)
+        print("-"*100+"visualize nn model"+"-"*100)
         print("model path:"+str(args.path))
         ir_path=args.path
         if not os.path.exists(ir_path+"conf.yaml"):
-            assert "your directory must contain confg.yaml file"
+            assert "your directory must contain config.yaml file"
         if not os.path.exists(ir_path+"model.bin"):
             assert "your directory must contain model.bin file"
         offset_path=ir_path+"/nn_model_hotmaps/"
