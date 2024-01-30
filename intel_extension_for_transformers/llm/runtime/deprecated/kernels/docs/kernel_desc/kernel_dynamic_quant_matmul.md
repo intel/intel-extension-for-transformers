@@ -48,7 +48,7 @@ In this jit-path, the calculation of dynamic_quant_matmul will be done by two ke
 
 The `scale_reduce_quantization` kernel can reduce the scales then apply dynamic-quantization. All of the cores will do reduce calculation and store the scales to their private buffer but only one core will write to the real-scale-dst address so we needn't reduce-scale-sync. `scale_reduce_quantization` also promise the data processed by each core in 2nd stage is same as the previous (s8s8bf16 gemm) stage, which make the most cache-friendliness. 
 
-In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large or the M assign to each core is too small in one-stage jit-path. It desides the `M` and `N` that each core is responsible for processing duing initialization. We split N-dim until the size of the weight processed by each core is less than L2-cache meanwhile the M processed by each core is large enough.
+In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large or the M assign to each core is too small in one-stage jit-path. It decides the `M` and `N` that each core is responsible for processing duing initialization. We split N-dim until the size of the weight processed by each core is less than L2-cache meanwhile the M processed by each core is large enough.
 
 The activation, weight and dst that each core is responsible for processing are roughly as follows
 

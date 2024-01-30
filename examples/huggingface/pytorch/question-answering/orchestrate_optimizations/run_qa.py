@@ -413,7 +413,7 @@ def main():
         )
 
     # Preprocessing the datasets.
-    # Preprocessing is slighlty different for training and evaluation.
+    # Preprocessing is slightly different for training and evaluation.
     if training_args.do_train:
         column_names = raw_datasets["train"].column_names
     elif training_args.do_eval:
@@ -723,7 +723,7 @@ def main():
 
     assert train_dataset.num_rows == teacher_train_dataset.num_rows and \
         eval_dataset.num_rows == teacher_eval_dataset.num_rows, \
-        "Length of train or evaluation dataset of teacher doesnot match that of student."
+        "Length of train or evaluation dataset of teacher does not match that of student."
         
     # get logits of teacher model
     if optim_args.run_teacher_logits:

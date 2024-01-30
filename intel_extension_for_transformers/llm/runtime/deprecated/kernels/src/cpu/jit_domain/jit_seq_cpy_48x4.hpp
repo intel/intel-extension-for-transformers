@@ -39,7 +39,7 @@ class jit_seq_cpy_48x4 : public jit_generator {
     void* dst;
     int32_t* dst_sum;
     bool sum_append;  // whether the sum should overwrite or accumulate
-    int N;            // inner dim of src: loop dimention
+    int N;            // inner dim of src: loop dimension
     int ld_src;       // leading dim / bytes of src
     int ld_dst;       // leading dim / bytes of dst
   };

@@ -113,7 +113,7 @@ void kd_info_t::init(kernel_kind kind, std::vector<dim_t> shape) {
       case kernel_kind::undef:
         SPARSE_LOG(FATAL) << "unknown primitive kind";
         break;
-        // deliberately avoid default case so that the compiler gives waring of missing cases
+        // deliberately avoid default case so that the compiler gives warning of missing cases
     }
 #undef CASE
 

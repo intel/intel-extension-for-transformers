@@ -44,6 +44,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         use_ggml=False,
         use_quant=True,
         use_gptq=False,
+        use_autoround=False,
         algorithm_args=None,
         use_llm_runtime=True,
         low_bit_model=False,
@@ -67,6 +68,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
         self.use_ggml = use_ggml
         self.use_quant = use_quant
         self.use_gptq = use_gptq
+        self.use_autoround = use_autoround
         self.algorithm_args = algorithm_args
         self.use_llm_runtime = use_llm_runtime
         self.low_bit_model = low_bit_model
@@ -156,7 +158,7 @@ class WeightOnlyQuantConfig(PretrainedConfig):
             self.compute_dtype = "fp16"
 
         if self.algorithm not in ['RTN']:
-            raise ValueError("algorithm must be 'RTN' now. will wupport 'TEQ', 'AWQ' soon!")
+            raise ValueError("algorithm must be 'RTN' now. will support 'TEQ', 'AWQ' soon!")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4_fullrange"

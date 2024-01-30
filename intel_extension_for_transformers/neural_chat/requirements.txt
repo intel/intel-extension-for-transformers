@@ -28,3 +28,4 @@ huggingface_hub
 vllm
 fastapi-users[sqlalchemy,oauth]
 aiosqlite
+neural_speed

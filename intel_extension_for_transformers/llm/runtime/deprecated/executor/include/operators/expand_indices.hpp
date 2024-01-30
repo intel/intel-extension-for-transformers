@@ -43,7 +43,7 @@ class ExpandIndicesOperator : public Operator {
   vector<int64_t> dst_shape_;
   vector<int64_t> src_strides_;
   vector<int64_t> dst_strides_;
-  vector<int64_t> new2old_;  // negative represent exand dim, and record the related old dim
+  vector<int64_t> new2old_;  // negative represent expand dim, and record the related old dim
   vector<int64_t> old2new_;  // record where the old dim in new shape.
 };
 }  // namespace executor

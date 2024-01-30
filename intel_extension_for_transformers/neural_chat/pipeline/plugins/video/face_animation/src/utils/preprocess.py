@@ -32,7 +32,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_an
 
 from scipy.io import loadmat, savemat
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.video.face_animation.\
-    src.utils.croper import Preprocesser
+    src.utils.croper import Preprocessor
 
 
 import warnings
@@ -69,7 +69,7 @@ def split_coeff(coeffs):
 
 class CropAndExtract:
     def __init__(self, sadtalker_path, device):
-        self.propress = Preprocesser(device)
+        self.propress = Preprocessor(device)
         self.net_recon = networks.define_net_recon(net_recon="resnet50", use_last_fc=False, init_path="").to(device)
 
         if sadtalker_path["use_safetensor"]:
@@ -150,7 +150,7 @@ class CropAndExtract:
             lm = lm.reshape([len(x_full_frames), -1, 2])
 
         if not os.path.isfile(coeff_path):
-            # load 3dmm paramter generator from Deep3DFaceRecon_pytorch
+            # load 3dmm parameter generator from Deep3DFaceRecon_pytorch
             video_coeffs, full_coeffs = [], []
             for idx in tqdm(range(len(frames_pil)), desc="3DMM Extraction In Video:"):
                 frame = frames_pil[idx]

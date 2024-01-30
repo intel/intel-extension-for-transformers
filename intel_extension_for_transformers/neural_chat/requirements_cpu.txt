@@ -25,3 +25,4 @@ python-multipart
 python-dotenv
 fastapi-users[sqlalchemy,oauth]
 aiosqlite
+neural_speed

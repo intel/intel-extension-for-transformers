@@ -98,7 +98,7 @@ void jit_spmm_avx512f_t::generate() {
       }
     }
 
-    add(reg_dense, TH_ * param_.K * F32_BYTES);  // TODO(yi1ding): handel edge cases where desc is not a multiple of TH_
+    add(reg_dense, TH_ * param_.K * F32_BYTES);  // TODO(yi1ding): handle edge cases where desc is not a multiple of TH_
     add(reg_dst, TH_ * param_.N * F32_BYTES);
     cmp(reg_dense, reg_dense_end);
     jl(L_m_loop, T_NEAR);  // End of loop-m: asm loop

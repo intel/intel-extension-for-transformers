@@ -105,7 +105,7 @@ pattern_default_setting = {
     'TextEncoder_AttentionReshape': False,
     'TextEncoder_CasualAttentionMask': False,
 
-    # vae deocder & Transformer2Dmodel
+    # vae decoder & Transformer2Dmodel
     'AttentionBlock_QKVPreReshape': False,
     'AttentionBlock_AttentionMaskAddReshape': False,
     'AttentionBlock_ConstantOfShapeWithMul': False,

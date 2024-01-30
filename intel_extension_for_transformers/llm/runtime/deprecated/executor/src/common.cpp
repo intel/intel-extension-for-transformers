@@ -45,10 +45,10 @@ Args:
     type is for setting the tensor datatype, like 'float32'
     shape is the data shape
     location gives the info of tensor data location in .bin file
-      location[0] is the start idx when sotre the data bytes
+      location[0] is the start idx when store the data bytes
       location[1] is the data bytes length
 Return:
-    void* ptr, points a consecutive memory that sotres the data
+    void* ptr, points a consecutive memory that stores the data
 */
 void* read_file_to_type(const string& root, const string& type, const vector<int64_t>& shape,
                         const vector<int64_t>& location) {
@@ -215,7 +215,7 @@ vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, 
       scales.emplace_back(1.f);
     }
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dst_dtype: " << dtype << " now!";
   }
   return scales;
 }
@@ -240,7 +240,7 @@ vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>&
       rescales.emplace_back(rescale);
     }
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dst_dtype << " now!";
+    LOG(ERROR) << "Can't support dst_dtype: " << dst_dtype << " now!";
   }
   return rescales;
 }
@@ -285,7 +285,7 @@ vector<int> GetZeroPoints(const void* mins, const vector<float>& scales, const s
   } else if (dtype == "s8") {
     for (int i = 0; i < scales.size(); i++) zerops.emplace_back(nearbyint(-128 - mins_p[i] * scales[i]));
   } else {
-    LOG(ERROR) << "Can't suppport dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dtype: " << dtype << " now!";
   }
   return zerops;
 }
@@ -297,7 +297,7 @@ vector<int> GetZeroPoints(const float* mins, const float* scales, const string& 
   } else if (dtype == "s8") {
     for (int i = 0; i < size; i++) zerops.emplace_back(nearbyint(-128 - mins[i] * scales[i]));
   } else {
-    LOG(ERROR) << "Can't suppport dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dtype: " << dtype << " now!";
   }
   return zerops;
 }
@@ -315,7 +315,7 @@ void AddZeroPoints(const int size, const string& dtype, const float* src_data, c
       dst_data[i] = src_data[i] - 128 / scales[0] - range_mins[0];
     }
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dst_dtype: " << dtype << " now!";
   }
   return;
 }
@@ -538,7 +538,7 @@ void Quantize_others(const int size, const string& dtype, const void* src_data, 
       dst_data_[i] = typecast.u >> 16;
     }
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+    LOG(ERROR) << "Can't support dst_dtype: " << dtype << " now!";
   }
   return;
 }

@@ -118,14 +118,14 @@ class Transformer2Dmodel_QKVPreReshape(Pattern):
 
             if len(new_node_names) != 0:
                 if i == 0:
-                    logger.info('Transformer2Dmodel_QKVPreReshape for V2-1 mathched...')
+                    logger.info('Transformer2Dmodel_QKVPreReshape for V2-1 matched...')
                     for node in model.nodes:
                         if node.op_type == 'Softmax':
                             attr = OrderedDict()
                             attr['version'] = 'V2'
                             node.attr = attr
                 else:
-                    logger.info('Transformer2Dmodel_QKVPreReshape mathched...')
+                    logger.info('Transformer2Dmodel_QKVPreReshape matched...')
                 logger.debug('Transformer2Dmodel_QKVPreReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node

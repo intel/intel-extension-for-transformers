@@ -101,7 +101,7 @@ class TextEncoder_KVReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_KVReshape", pattern_dict,
                                                                         model)
 
-            logger.info('TextEncoder_KVReshape mathched...')
+            logger.info('TextEncoder_KVReshape matched...')
             logger.debug('TextEncoder_KVReshape = {}'.format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

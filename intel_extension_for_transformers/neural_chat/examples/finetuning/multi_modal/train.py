@@ -171,7 +171,7 @@ def train():
                 use_auth_token=model_args.use_auth_token
                 )
     else:
-        raise ValueError("No llava implemention for the model {}".format(model_args.model_name_or_path))
+        raise ValueError("No llava implementation for the model {}".format(model_args.model_name_or_path))
 
     # for training
     model.config.use_cache = False
@@ -219,7 +219,7 @@ def train():
             use_fast=use_fast
             )
 
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.unk_token
 
     # set vision module
     model.get_model().initialize_vision_modules(
