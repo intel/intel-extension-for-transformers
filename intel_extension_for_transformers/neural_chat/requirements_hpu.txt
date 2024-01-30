@@ -18,3 +18,4 @@ einops
 cchardet
 python-multipart
 python-dotenv
+neural_speed
