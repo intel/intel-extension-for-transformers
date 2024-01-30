@@ -37,7 +37,7 @@ class TestEmbeddingFinetune(unittest.TestCase):
     def test_finetune(self):
         argv = ['--output_dir', 'BAAI/bge-base-en-v1.5_annual', \
                 '--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
-                '--train_data', '../tools/embedding_finetune/augmented_example.jsonl', \
+                '--train_data', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/augmented_example.jsonl', \
                 '--learning_rate', '1e-5', \
                 '--num_train_epochs', '5', \
                 '--per_device_train_batch_size', '1', \
@@ -57,7 +57,7 @@ class TestEmbeddingFinetune(unittest.TestCase):
     
     def test_mine_hard_neg(self):
         argv = ['--model_name_or_path', 'BAAI/bge-base-en-v1.5', \
-                '--input_file', '../tools/embedding_finetune/example.jsonl', \
+                '--input_file', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl', \
                 '--output_file', 'augmented_example.jsonl', \
                 '--range_for_sampling', '2-10', \
                 '--negative_number', '5']
@@ -67,8 +67,8 @@ class TestEmbeddingFinetune(unittest.TestCase):
 
     def test_evaluate(self):
         argv = ['--model_name', 'BAAI/bge-base-en-v1.5', \
-                '--index_file_jsonl_path', '../tools/embedding_finetune/candidate_context.jsonl', \
-                '--query_file_jsonl_path', '../tools/embedding_finetune/example.jsonl']
+                '--index_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/candidate_context.jsonl', \
+                '--query_file_jsonl_path', '/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tools/embedding_finetune/example.jsonl']
         with patch('sys.argv', ['python evaluate.py'] + argv):
             metrics=evaluate.main()
             self.assertIsNotNone(metrics)
