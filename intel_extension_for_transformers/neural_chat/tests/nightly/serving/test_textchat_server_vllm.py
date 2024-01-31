@@ -50,7 +50,8 @@ class UnitTest(unittest.TestCase):
     def test_text_chat(self):
         # Create a sample chat completion request object
         chat_request = ChatCompletionRequest(
-            prompt="Tell me about Intel Xeon processors.",
+            model="facebook/opt-125m",
+            messages=[{"role": "user", "content": "Tell me about Intel Xeon processors."}],
             temperature=0.8,
             top_p=0.95,
         )

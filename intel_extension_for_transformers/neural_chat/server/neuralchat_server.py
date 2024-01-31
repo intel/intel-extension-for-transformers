@@ -35,7 +35,6 @@ from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
 from ..cli.log import logger
-from .restful.api import setup_router
 from ..config import PipelineConfig, LoadingModelConfig
 from ..chatbot import build_chatbot
 from ..plugins import plugins
@@ -267,6 +266,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                     print(f"plugin parameters: ", plugin_config["args"])
                     plugin_config['instance'] = plugins[plugin_name]['class'](**plugin_config['args'])
             api_list = list(task for task in config.tasks_list)
+            from .restful.api import setup_router
             api_router = setup_router(api_list, enable_llm=False)
             app.include_router(api_router)
             # include authentication router
@@ -319,7 +319,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
                 "assistant_model": assistant_model,
-                "serving_config": serving_config
+                "serving_config": serving_config,
+                "task": "chat"
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:
@@ -364,6 +365,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 pipeline_config = PipelineConfig(**params)
                 self.chatbot = build_chatbot(pipeline_config)
             # init api
+            from .restful.api import setup_router
             api_router = setup_router(api_list, self.chatbot, True, use_deepspeed, world_size, host, port)
             app.include_router(api_router)
             # include authentication router
