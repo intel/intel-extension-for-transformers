@@ -34,4 +34,3 @@ def unpack_weight(qweight, scales, qzeros, q_config):
     torch.bitwise_and(weight, (2**bits) - 1, out=weight)
 
     return weight, scales, zeros
-

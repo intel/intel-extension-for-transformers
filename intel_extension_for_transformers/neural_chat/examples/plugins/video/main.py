@@ -36,4 +36,3 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 sadtalker = SadTalker(device=device, checkpoint_dir=checkpoint_dir, bf16=True, p_num=4, enhancer=None, output_video_path=output_video_path)
 
 sadtalker.convert(source_image=source_image, driven_audio=driven_audio)
-

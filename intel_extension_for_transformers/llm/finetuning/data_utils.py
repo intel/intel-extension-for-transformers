@@ -310,7 +310,7 @@ class SlimOrcaDataPreprocess(ChatDataPreprocess):
                 start = 1
 
             for j in range(start, len(conv) - 1, 2):
-                
+
                 u = conv[j]["value"]
                 ass = conv[j+1]["value"]
                 prompt = prompt + self.user + u + self.end + '\n' + self.assistant
@@ -475,4 +475,3 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         raise NotImplementedError(f'finetune task data preprocessing is not support currently.')
 
     return raw_datasets, preprocess_fn
-

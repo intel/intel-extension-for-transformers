@@ -208,14 +208,14 @@ class LayerNorm(Pattern):
 
         # bert_base layer_norm patterns
         pattern_dict = pattern_mapping_config['LayerNorm'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
                 epsilon = ret_old_nodes[i][0].attr['epsilon']
                 _set_attr(epsilon, new_node_names[i], model)
             pattern_dict = pattern_mapping_config['LayerNorm'][1]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm",
                                                                         pattern_dict, model)
             assert len(new_node_names) != 0
             for i in range(len(new_node_names)):
@@ -226,7 +226,7 @@ class LayerNorm(Pattern):
 
         for i in range(2, len(pattern_mapping_config['LayerNorm'])):
             pattern_dict = pattern_mapping_config['LayerNorm'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("LayerNorm",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):

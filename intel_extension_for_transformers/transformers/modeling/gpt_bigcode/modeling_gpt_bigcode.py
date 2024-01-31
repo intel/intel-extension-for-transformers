@@ -188,9 +188,9 @@ class GPTBigCodeAttention(nn.Module):
             beta = 1
         else:
             beta = 0
-        
+
         attn_weights = scale_factor * torch.matmul(query, key) # + beta * attn_weights (not needed, it is 0)
-        
+
         if upcast:
             # Use a fused kernel to prevent a large overhead from casting and scaling.
             # Sub-optimal when the key length is not a multiple of 8.

@@ -39,20 +39,20 @@ class TestAddEmbeddings(unittest.TestCase):
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
-        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
         add_node = OPERATORS['Add']()
         input_tensors = [Tensor(name='add_src0'), Tensor(name='add_src1')]
         output_tensors = [Tensor(name='add:0', source_op=['add'], dest_op=['transpose'])]
-        add_node.construct('add', 'Add', input_tensors=input_tensors, 
+        add_node.construct('add', 'Add', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
-        
+
         transpose_node = OPERATORS['Transpose']()
         input_tensors = [Tensor(name='add:0', source_op=['add'], dest_op=['transpose'])]
         output_tensors = [Tensor(name='transpose:0', source_op=['transpose'],
                                 dest_op=['layernorm'])]
-        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors, 
+        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors,
                                 output_tensors=output_tensors, attr=OrderedDict({
                                 'src_perm': '0,1,2', 'dst_perm': '1,0,2'}))
 
@@ -65,7 +65,7 @@ class TestAddEmbeddings(unittest.TestCase):
                                 shape=[1024])]
         output_tensors = [Tensor(name='layernorm:0', source_op=['layernorm'],
                                 dest_op=[])]
-        ln_node.construct('layernorm', 'LayerNorm', input_tensors=input_tensors, 
+        ln_node.construct('layernorm', 'LayerNorm', input_tensors=input_tensors,
                           output_tensors=output_tensors, attr=OrderedDict({'epsilon': 0.009}))
 
         graph.insert_nodes(len(graph.nodes), [input_data_node, add_node, transpose_node, ln_node])

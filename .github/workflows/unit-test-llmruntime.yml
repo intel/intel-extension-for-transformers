@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Load environment variables
         run: cat ~/actions-runner2/.env >> $GITHUB_ENV
-      
+
       - name: Docker Clean Up
         run: |
           docker ps -a

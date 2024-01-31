@@ -249,7 +249,7 @@ class TokenTypeEmbeddings(Pattern):
             return model
 
         pattern_dict = pattern_mapping_config['TokenTypeEmbeddings'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -291,7 +291,7 @@ class TokenTypeEmbeddings(Pattern):
 
         # bert_base onehot+matmul embeddings
         pattern_dict = pattern_mapping_config['TokenTypeEmbeddings'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
@@ -315,7 +315,7 @@ class TokenTypeEmbeddings(Pattern):
 
         # geminet
         pattern_dict = pattern_mapping_config['TokenTypeEmbeddings'][2]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
