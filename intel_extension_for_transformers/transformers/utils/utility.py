@@ -258,6 +258,7 @@ IPEX_OPT_LLM_SUPPORTED = {"gptj", "opt", "llama", "falcon", "chatglm", "baichuan
 
 MODEL_TYPES_REQUIRING_POSITION_IDS = {
     "codegen",
+    "falcon",
     "gpt2",
     "gpt-bigcode",
     "gpt-neo",

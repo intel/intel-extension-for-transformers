@@ -234,20 +234,13 @@ class HuggingFaceAutoLM(BaseLM):
         )
 
         self._add_special_tokens = add_special_tokens
-        if self._config.model_type == "baichuan":
-            from intel_extension_for_transformers.transformers.modeling.tokenizer import (
-                BaichuanTokenizer,
-            )
-
-            self.tokenizer = BaichuanTokenizer.from_pretrained(pretrained)
-        else:
-            self.tokenizer = self._create_auto_tokenizer(
-                pretrained=pretrained,
-                revision=revision,
-                subfolder=subfolder,
-                tokenizer=tokenizer,
-                trust_remote_code=trust_remote_code,
-            )
+        self.tokenizer = self._create_auto_tokenizer(
+            pretrained=pretrained,
+            revision=revision,
+            subfolder=subfolder,
+            tokenizer=tokenizer,
+            trust_remote_code=trust_remote_code,
+        )
         self.tokenizer.model_max_length = self.max_length
 
         model_kwargs = {}
@@ -261,23 +254,6 @@ class HuggingFaceAutoLM(BaseLM):
         self._device = device
         self.model_format = model_format
         if model_format == "torch":
-            if self._config.model_type == "baichuan":
-                from intel_extension_for_transformers.transformers.modeling.utils import (
-                    _get_relative_imports,
-                    _gradient_checkpointing_disable,
-                    _gradient_checkpointing_enable,
-                )
-
-                transformers.dynamic_module_utils.get_relative_imports = (
-                    _get_relative_imports
-                )
-                transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_disable = (
-                    _gradient_checkpointing_disable
-                )
-                transformers.modeling_utils.PreTrainedModel.gradient_checkpointing_enable = (
-                    _gradient_checkpointing_enable
-                )
-
             self.model = self._create_auto_model(
                 pretrained=pretrained,
                 quantized=quantized,

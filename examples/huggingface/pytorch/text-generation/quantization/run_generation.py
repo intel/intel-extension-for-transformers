@@ -203,9 +203,6 @@ if config.model_type == "llama":
     from transformers import LlamaTokenizer
 
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
-elif config.model_type == "baichuan":
-    from intel_extension_for_transformers.transformers.modeling.tokenizer import BaichuanTokenizer
-    tokenizer = BaichuanTokenizer.from_pretrained(args.model)
 else:
     tokenizer = AutoTokenizer.from_pretrained(
         args.model, trust_remote_code=args.trust_remote_code
