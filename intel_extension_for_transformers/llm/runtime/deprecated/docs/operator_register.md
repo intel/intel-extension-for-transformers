@@ -127,4 +127,3 @@ After creating the customized operator, finally register it to operator class as
 ```
 REGISTER_OPERATOR_CLASS(Gelu);
 ```
-

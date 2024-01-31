@@ -65,11 +65,11 @@ class TestTorchOP(unittest.TestCase):
         convert_model = convert(prepared_model)
         traced_model = torch.jit.trace(convert_model, (example_in, example_in2))
         print(traced_model.inlined_graph)
-        
+
         torch.jit.freeze(traced_model.eval())
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         ref_out = traced_model(example_in, example_in2).detach().numpy()
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()

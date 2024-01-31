@@ -49,7 +49,7 @@ class QuantizeFusion(Pattern):
             if pre_node.input_tensors[0].name in quant_info and len(pre_node.input_tensors) >= 6 \
                or (pre_node.op_type == "Softmax") \
                or (EXECUTOR_TYPE.get(pre_node.op_type, pre_node.op_type) in \
-                   ["InnerProduct", "Matmul"] and (not quant_info or is_from_quant)): 
+                   ["InnerProduct", "Matmul"] and (not quant_info or is_from_quant)):
                 return (pre_node, True)
             elif pre_node.op_type == "Reshape":
                 return search_quant_fusion(pre_node)
@@ -65,7 +65,7 @@ class QuantizeFusion(Pattern):
         # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
         for node in model.nodes:
             if node.op_type == "Quantize":
-                dtype = node.attr['output_dtype'] 
+                dtype = node.attr['output_dtype']
                 quant_node, can_fuse = search_quant_fusion(node)
                 if can_fuse:
                     if dtype == 'u8' or dtype == 's8':
@@ -113,4 +113,4 @@ class QuantizeFusion(Pattern):
         model.remove_nodes(remove_node_name)
 
         return model
-    
+

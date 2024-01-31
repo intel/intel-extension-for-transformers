@@ -97,7 +97,7 @@ class IntelModel(ChatModel):
     self.model = model
     self.user = user
     self.bot = bot
-  
+
   def prompt(self):
     prompt = ""
     for ctx in self.ctx:
@@ -106,7 +106,7 @@ class IntelModel(ChatModel):
 
   def __headers__(self):
     return {'Content-Type': 'application/json'}
-  
+
   def __data__(self):
     return json.dumps({
       "model": self.model,
@@ -123,7 +123,7 @@ class IntelModel(ChatModel):
 
     if not text.startswith(prompt):
       return ("", True)
-    
+
     word = text.removeprefix(prompt).removeprefix(newctx["content"])
     done =  word.find('\n') != -1
     word = word[:word.find('\n')]

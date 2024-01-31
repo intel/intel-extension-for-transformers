@@ -25,7 +25,7 @@ DATASET:
   COEFF_LEN: 73
   NUM_CLASSES: 46
   DEBUG: True
-  
+
 
 MODEL:
   AUDIOENCODER:
@@ -41,7 +41,7 @@ MODEL:
     LATENT_SIZE: 64
     ENCODER_LAYER_SIZES: [192, 128]
     DECODER_LAYER_SIZES: [128, 192]
-    
+
 
 TRAIN:
   MAX_EPOCH: 150
@@ -59,5 +59,3 @@ TRAIN:
 
 TAG:
   NAME: cvae_UNET_useAudio_usewav2lipAudioEncoder
-
-

@@ -72,6 +72,3 @@ class PrunerConfig(INCPruner):
         self.method = method
         self.names = names
         self.parameters = parameters
-
-
-

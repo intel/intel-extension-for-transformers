@@ -12,5 +12,3 @@ You have to prepare a model.bin file and its conf.yaml file for neural engine mo
 ### 3. Analysis results
 You could see visualization one of results as below hotmap figure after running above command in the same directory, and it could generate JPG format pictures for each weight tensor, the name of pictures corresponding with tensor name.
 ![Sample figure](sample_figure.jpg)
-
-

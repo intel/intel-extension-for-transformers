@@ -16,5 +16,3 @@ Sections
    docs/release.md
    docs/legal.md
    Repo <https://github.com/intel/intel-extension-for-transformers>
-
-

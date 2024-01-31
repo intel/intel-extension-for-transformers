@@ -37,10 +37,10 @@ class ArangewithReciprocal(Pattern):
             'ArangewithReciprocal': [
                 {
                     'patterns': {
-                        'in': [[(0, 'Shape'), (1, 'Arange'), (2, 'Div'), (3, 'Pow'), 
+                        'in': [[(0, 'Shape'), (1, 'Arange'), (2, 'Div'), (3, 'Pow'),
                                 (4, 'Reciprocal'), (5, 'Mul')]
                                 ],
-                        'out': [[(0, 'Range'), (1, 'Div'), (2, 'Pow'), 
+                        'out': [[(0, 'Range'), (1, 'Div'), (2, 'Pow'),
                                 (3, 'Div')]]
                     },
                     'search_mode': 'op_type',
@@ -49,7 +49,7 @@ class ArangewithReciprocal(Pattern):
                         1: 2,
                         2: 3,
                         3: 5
-                        
+
                     },
                     'input_tensors': {
                         0: [[{
@@ -75,16 +75,16 @@ class ArangewithReciprocal(Pattern):
                     },
                     'returns': [0]
                 },
-                
 
-                
+
+
             ]
         }
 
 
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
-                
+
                 slice_node = model.get_node_by_name(ret_old_nodes[i][0].input_tensors[0].source_op[0])
                 fixed_pos_embedding_dim = int(slice_node.attr['ends'])
                 range_node_idx = model.get_node_id(new_node_names[i][0])
@@ -106,10 +106,10 @@ class ArangewithReciprocal(Pattern):
                                      OrderedDict({'algorithm': 'div'})
                 reciprocal_node = model.get_node_by_name(new_node_names[i][3])
                 reciprocal_node.input_tensors[0].data = np.array([1], dtype=np.float32)
-                
+
         if model.framework_modeling_config['framework'] == 'torch':
             pattern_dict = pattern_mapping_config['ArangewithReciprocal'][0]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("ArangewithReciprocal", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("ArangewithReciprocal",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 _set_attr(new_node_names, ret_old_nodes, model)

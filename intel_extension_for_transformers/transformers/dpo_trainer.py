@@ -49,9 +49,9 @@ class DPOTrainer(Trainer):
         model (`transformers.PreTrainedModel`):
             The model to train, preferably an `AutoModelForSequenceClassification`.
         ref_model (`PreTrainedModelWrapper`):
-            Hugging Face transformer model with a casual language modelling head. 
+            Hugging Face transformer model with a casual language modelling head.
             Used for implicit reward computation and loss. If no
-            reference model is provided, the trainer will 
+            reference model is provided, the trainer will
             create a reference model with the same architecture as the model to be optimized.
         beta (`float`, defaults to 0.1):
             The beta factor in DPO loss. Higher beta means less divergence from the initial policy.
@@ -368,4 +368,3 @@ if is_hpu_available: # pragma: no cover
                 from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0611, E0401
                 ref_model = self.accelerator.unwrap_model(self.ref_model)
                 ref_model = wrap_in_hpu_graph(ref_model)
-

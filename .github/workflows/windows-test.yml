@@ -23,11 +23,11 @@ on:
 concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
-  
+
 env:
     SCRIPT_PATH: ${{ github.workspace }}\.github\workflows\script
     WORKING_DIR: ${{ github.workspace }}
-  
+
 jobs:
     Windows-Binary-Test:
       runs-on: 'Windows'
@@ -38,7 +38,7 @@ jobs:
             submodules: "recursive"
             fetch-tags: true
             path: "a"
-  
+
         - name: Binary build
           shell: cmd
           run: |
@@ -47,4 +47,4 @@ jobs:
             cd ${{ github.workspace }}\a\.github\workflows\script
             prepare_env_with_conda.bat
 
-  
+

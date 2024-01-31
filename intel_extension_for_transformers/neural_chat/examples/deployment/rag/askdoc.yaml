@@ -38,4 +38,3 @@ safety_checker:
     enable: true
 
 tasks_list: ['textchat', 'retrieval']
-

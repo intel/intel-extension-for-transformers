@@ -23,7 +23,7 @@ import pandas as pd
 from unittest.mock import patch, MagicMock
 from intel_extension_for_transformers.neural_chat.server.restful.photoai_services import (
     check_user_ip, check_image_status, update_image_tags, update_image_attr, format_image_info,
-    delete_single_image, process_images_in_background, process_single_image, 
+    delete_single_image, process_images_in_background, process_single_image,
     process_face_for_single_image, get_type_obj_from_attr, get_address_list,
     get_process_status, get_images_by_type, get_face_list_by_user_id,
     get_image_list_by_ner_query, delete_user_infos
@@ -32,7 +32,7 @@ from intel_extension_for_transformers.neural_chat.server.restful.photoai_service
 
 MOCK_USER_INFO = {'user_id': '1', 'login_time': None, 'leave_time': None, 'is_active': 1}
 MOCK_IMAGE_INFO = {
-    'image_id': 1, 
+    'image_id': 1,
     'user_id': '1',
     'image_path': 'image1.jpg',
     'captured_time': datetime.datetime.strptime('2022-02-22', '%Y-%m-%d'),
@@ -113,7 +113,7 @@ class UnitTest(unittest.TestCase):
             sql='UPDATE image_info SET captured_time="2022-02-22 00:00:00" WHERE image_id=1',
             params=None
         )
-    
+
 
     def test_format_image_info(self, mock_db):
         image = MOCK_IMAGE_INFO
@@ -135,7 +135,7 @@ class UnitTest(unittest.TestCase):
             sql="UPDATE image_info SET exist_status='deleted' WHERE image_id=1 ;",
             params=None
         )
-        
+
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.process_single_image')
     def test_process_images_in_background(self, mock_func, mock_db):
@@ -154,7 +154,7 @@ class UnitTest(unittest.TestCase):
             process_images_in_background(user_id='1', image_obj_list=image_obj_list)
         except Exception as e:
             raise Exception(e)
-    
+
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.process_face_for_single_image')
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.generate_caption')
@@ -163,7 +163,7 @@ class UnitTest(unittest.TestCase):
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.find_GPS_image')
     def test_process_single_image(self, mock_func1, mock_func2, mock_func3, mock_func4, mock_func5, mock_db):
         mock_func1.return_value = {
-            'date_information': None, 
+            'date_information': None,
             'GPS_information': {
                 'GPSLatitude': '',
                 'GPSLongitude': '',
@@ -190,7 +190,7 @@ class UnitTest(unittest.TestCase):
             sql="UPDATE image_info SET process_status='ready' WHERE image_id=1",
             params=None
         )
-    
+
 
     @patch('intel_extension_for_transformers.neural_chat.server.restful.photoai_services.transfer_xywh')
     @patch('deepface.DeepFace.verify')
@@ -271,9 +271,9 @@ class UnitTest(unittest.TestCase):
         }]
         res = get_image_list_by_ner_query(
             ner_result={
-                'time': ['2022-02-22'], 
-                'period': [{'from': '2022-02-02', 'to': '2023-02-02'}]}, 
-            user_id='1', 
+                'time': ['2022-02-22'],
+                'period': [{'from': '2022-02-02', 'to': '2023-02-02'}]},
+            user_id='1',
             query='photos taken in shanghai')
         self.assertIn('https://test_server_ip/ai_photos/user1/image.jpg', res[0]['imgSrc'])
 
@@ -281,7 +281,7 @@ class UnitTest(unittest.TestCase):
     def test_delete_user_infos(self, mock_db):
         mock_db.return_value.transaction.return_value = MagicMock()
         mock_db.return_value.delete.return_value = True
-        try: 
+        try:
             os.environ['IMAGE_ROOT_PATH'] = './mocked_root_path'
             delete_user_infos(user_id='1')
         except Exception as e:

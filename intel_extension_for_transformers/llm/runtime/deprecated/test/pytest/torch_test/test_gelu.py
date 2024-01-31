@@ -56,10 +56,10 @@ class TestTorchOP(unittest.TestCase):
         n = Net()
         example_in = torch.rand(3, 256)
         traced_model = torch.jit.trace(n, example_in)
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
@@ -74,17 +74,17 @@ class TestTorchOP(unittest.TestCase):
         n = Net2()
         example_in = torch.rand(3, 256)
         traced_model = torch.jit.trace(n, example_in)
-        
+
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
         ref_out = traced_model(example_in).detach().numpy()
-        
+
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
 
-        np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5) 
+        np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
 

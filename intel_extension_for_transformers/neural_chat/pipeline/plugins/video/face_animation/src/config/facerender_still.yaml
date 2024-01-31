@@ -18,20 +18,20 @@
 
 model_params:
   common_params:
-    num_kp: 15 
-    image_channel: 3                    
+    num_kp: 15
+    image_channel: 3
     feature_channel: 32
     estimate_jacobian: False   # True
   kp_detector_params:
      temperature: 0.1
-     block_expansion: 32            
+     block_expansion: 32
      max_features: 1024
      scale_factor: 0.25         # 0.25
      num_blocks: 5
      reshape_channel: 16384  # 16384 = 1024 * 16
      reshape_depth: 16
   he_estimator_params:
-     block_expansion: 64            
+     block_expansion: 64
      max_features: 2048
      num_bins: 66
   generator_params:
@@ -50,7 +50,7 @@ model_params:
       compress: 4
   discriminator_params:
     scales: [1]
-    block_expansion: 32                 
+    block_expansion: 32
     max_features: 512
     num_blocks: 4
     sn: True
@@ -60,4 +60,3 @@ model_params:
       layer: 3
       num_kp: 15
       num_bins: 66
-
