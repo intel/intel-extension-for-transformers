@@ -10,3 +10,24 @@
 
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.openai_protocol.ApiErrorCode
+
+
+
+
+.. py:class:: ApiErrorCode
+
+
+
+
+   https://platform.openai.com/docs/guides/error-codes/api-errors
+
+

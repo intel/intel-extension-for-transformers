@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.server.restful.textchat_api &mdash; Intel® Extension for Transformers 0.1.dev1+g1fdf6f0 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.server.restful.textchat_api &mdash; Intel® Extension for Transformers 0.1.dev1+g2e1c79d documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -90,6 +90,64 @@
              
   <section id="module-intel_extension_for_transformers.neural_chat.server.restful.textchat_api">
 <span id="intel-extension-for-transformers-neural-chat-server-restful-textchat-api"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.server.restful.textchat_api" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.server.restful.textchat_api" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_openai_logprobs" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_openai_logprobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_openai_logprobs</span></code></a>(logprob_dict)</p></td>
+<td><p>Create OpenAI-style logprobs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.chat_completion_stream_generator" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.chat_completion_stream_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">chat_completion_stream_generator</span></code></a>(→ Generator[str, Any, ...)</p></td>
+<td><p>Event stream format:</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.show_available_models" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.show_available_models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_available_models</span></code></a>()</p></td>
+<td><p>Show available models. Right now we only have one model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.health" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.health"><code class="xref py py-obj docutils literal notranslate"><span class="pre">health</span></code></a>(→ fastapi.responses.Response)</p></td>
+<td><p>Health check.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_chat_completion" title="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_chat_completion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_chat_completion</span></code></a>(request)</p></td>
+<td><p>Creates a completion for the chat message.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_openai_logprobs">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api.</span></span><span class="sig-name descname"><span class="pre">create_openai_logprobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logprob_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/textchat_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_openai_logprobs" title="Link to this definition"></a></dt>
+<dd><p>Create OpenAI-style logprobs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.chat_completion_stream_generator">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api.</span></span><span class="sig-name descname"><span class="pre">chat_completion_stream_generator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gen_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chatbot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../../../models/base_model/index.html#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel" title="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel"><span class="pre">intel_extension_for_transformers.neural_chat.models.base_model.BaseModel</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Generator</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/textchat_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.chat_completion_stream_generator" title="Link to this definition"></a></dt>
+<dd><p>Event stream format:
+<a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format">https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.show_available_models">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api.</span></span><span class="sig-name descname"><span class="pre">show_available_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/textchat_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.show_available_models" title="Link to this definition"></a></dt>
+<dd><p>Show available models. Right now we only have one model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.health">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api.</span></span><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">fastapi.responses.Response</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/textchat_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.health" title="Link to this definition"></a></dt>
+<dd><p>Health check.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_chat_completion">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.textchat_api.</span></span><span class="sig-name descname"><span class="pre">create_chat_completion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">intel_extension_for_transformers.neural_chat.server.restful.openai_protocol.ChatCompletionRequest</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/restful/textchat_api.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_chat_completion" title="Link to this definition"></a></dt>
+<dd><p>Creates a completion for the chat message.
+This API mimics the OpenAI ChatCompletion API.</p>
+<p>See  <a class="reference external" href="https://platform.openai.com/docs/api-reference/chat/create">https://platform.openai.com/docs/api-reference/chat/create</a> for the API specification.</p>
+</dd></dl>
+
+</section>
+</section>
 </section>
 
 
@@ -106,7 +164,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f736f921600> 
+   <jinja2.runtime.BlockReference object at 0x7f21b6af4760> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

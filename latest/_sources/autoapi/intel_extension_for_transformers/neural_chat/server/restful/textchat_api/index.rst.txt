@@ -6,3 +6,53 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.server.restful.textchat_api
 
 
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_openai_logprobs
+   intel_extension_for_transformers.neural_chat.server.restful.textchat_api.chat_completion_stream_generator
+   intel_extension_for_transformers.neural_chat.server.restful.textchat_api.show_available_models
+   intel_extension_for_transformers.neural_chat.server.restful.textchat_api.health
+   intel_extension_for_transformers.neural_chat.server.restful.textchat_api.create_chat_completion
+
+
+
+.. py:function:: create_openai_logprobs(logprob_dict)
+
+   Create OpenAI-style logprobs.
+
+
+.. py:function:: chat_completion_stream_generator(model_name: str, gen_params: Dict[str, Any], n: int, chatbot: intel_extension_for_transformers.neural_chat.models.base_model.BaseModel) -> Generator[str, Any, None]
+   :async:
+
+   Event stream format:
+   https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format
+
+
+.. py:function:: show_available_models()
+   :async:
+
+   Show available models. Right now we only have one model.
+
+
+.. py:function:: health() -> fastapi.responses.Response
+   :async:
+
+   Health check.
+
+
+.. py:function:: create_chat_completion(request: intel_extension_for_transformers.neural_chat.server.restful.openai_protocol.ChatCompletionRequest)
+   :async:
+
+   Creates a completion for the chat message.
+   This API mimics the OpenAI ChatCompletion API.
+
+   See  https://platform.openai.com/docs/api-reference/chat/create for the API specification.
+
+

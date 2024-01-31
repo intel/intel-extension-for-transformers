@@ -28,21 +28,18 @@ Functions
 
 
 
-.. py:class:: BaseModel
+.. py:class:: BaseModel(model_name, task='chat')
 
 
 
 
    A base class for LLM.
 
-   .. py:method:: match(model_path: str)
+   .. py:method:: match()
 
-      Check if the provided model_path matches the current model.
+      Check if the provided model_name matches the current model.
 
-      :param model_path: Path to a model.
-      :type model_path: str
-
-      :returns: True if the model_path matches, False otherwise.
+      :returns: True if the model_name matches, False otherwise.
       :rtype: bool
 
 
@@ -107,7 +104,7 @@ Functions
       :param config: Configuration for conversation.
 
 
-   .. py:method:: get_default_conv_template(model_path: str) -> fastchat.conversation.Conversation
+   .. py:method:: get_default_conv_template() -> fastchat.conversation.Conversation
 
       Get the default conversation template for the given model path.
 

@@ -19,14 +19,14 @@ Classes
 
 
 
-.. py:class:: ChatGlmModel
+.. py:class:: ChatGlmModel(model_name, task='chat')
 
 
 
 
    A base class for LLM.
 
-   .. py:method:: match(model_path: str)
+   .. py:method:: match()
 
       Check if the provided model_path matches the current model.
 
@@ -37,7 +37,7 @@ Classes
       :rtype: bool
 
 
-   .. py:method:: get_default_conv_template(model_path: str) -> fastchat.conversation.Conversation
+   .. py:method:: get_default_conv_template() -> fastchat.conversation.Conversation
 
       Get the default conversation template for the given model path.
 
