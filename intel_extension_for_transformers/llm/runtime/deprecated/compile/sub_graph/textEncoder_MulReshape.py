@@ -72,7 +72,7 @@ class TextEncoder_MulReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('TextEncoder_MulReshape mathched...')
+                logger.info('TextEncoder_MulReshape matched...')
                 logger.debug('TextEncoder_MulReshape = {}'.format(new_node_names))
                 # except the reshape_7
                 for j in range(len(new_node_names)):

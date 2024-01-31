@@ -94,7 +94,7 @@ geo_mean_repr = f"<pre>GeoMean:\n{geo_mean_repr}</pre>"
 print(
     f"<div class='summary-wrapper {name_no_ext}'>{table_repr}{geo_mean_repr}</div>")
 
-# ouput regression message via stderr
+# output regression message via stderr
 min_gflops_pct = df_comp.loc[:, ("gflops", PCT_COL_NAME)].min(skipna=True)
 if (min_gflops_pct < THRESHOLD_REGRESSION):
     print(

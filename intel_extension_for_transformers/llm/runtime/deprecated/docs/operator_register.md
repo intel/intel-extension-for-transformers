@@ -44,7 +44,7 @@ GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) :
 }
 ```
 
-The output shape can be dynamic, so we can adjust the shape of the output tensor in the reshape function. We also prepare primitives here, becuase the Gelu operator is based on oneDNN.
+The output shape can be dynamic, so we can adjust the shape of the output tensor in the reshape function. We also prepare primitives here, because the Gelu operator is based on oneDNN.
 ```cpp
 void GeluOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Prepare tensors shape and memory descriptors

@@ -320,7 +320,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     pads_ = {0, 0, 0, 0};
     strides_ = {1, 1};
     vector<int64_t> weight_perm;
-    // consider if onednn transpose wight or not
+    // consider if onednn transpose weight or not
     if (weight_->is_transposed()) {
       weight_shape_origin = {weight_shape_origin[1], weight_shape_origin[0], 1, 1};
       // [K, N, 1, 1] -> [N, K, 1, 1]
@@ -486,9 +486,9 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   }
 
   // Sub-step3: fused post transpose, notice it's different that
-  // pre transpose will use the tranposed shape and stride, it's straight forward
+  // pre transpose will use the transposed shape and stride, it's straight forward
   // post transpose will use origin shape and that means the dst buffer in matmul
-  // is a buffer transposed back from dst_perm(understand tranpose to and transpose back)
+  // is a buffer transposed back from dst_perm(understand transpose to and transpose back)
   // pre_transpose: src_buffer -> pre_transpose -> target_buffer in matmul
   // post_transpose: target_buffer in matmul<- post transpose <-dst_buffer
   vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
@@ -693,7 +693,7 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   if (convolution_pd_.dst_desc() != dst_m_.get_desc()) {
     dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
-  // gelu seperate
+  // gelu separate
   if ((gelu_split_ && gelu_tanh_) || (gelu_split_ && gelu_erf_)) {
     dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
     gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data));

@@ -113,7 +113,7 @@ class StableDiffusion_MHA(Pattern):
                                                                         model)
 
             if len(new_node_names) != 0:
-                logger.info('StableDiffusion_MHA mathched...')
+                logger.info('StableDiffusion_MHA matched...')
                 logger.debug('StableDiffusion_MHA = {}'.format(new_node_names))
                 _set_attr(new_node_names, ret_old_nodes, model)
                 return model

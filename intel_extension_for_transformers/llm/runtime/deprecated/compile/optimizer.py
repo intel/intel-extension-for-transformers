@@ -24,7 +24,7 @@ OPTIMIZED_WEIGHT_FORMAT_TAG = {'FP8': ['ANY', 'INT8', 'FP8_4E3M', 'FP8_5E2M']}
 
 
 class Optimizer:
-    """The defintion of the neural engine optimizer."""
+    """The definition of the neural engine optimizer."""
 
     def __init__(self, graph, input_shape=None, *args, **kwargs):
         """The optimizer initialization.

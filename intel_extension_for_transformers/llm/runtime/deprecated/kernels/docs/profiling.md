@@ -10,7 +10,7 @@ sparselib_verbose,exec,cpu,sparse_matmul,shape_256_256_128,2.56982   # second ke
 ```
 
 ## VTune
-For advanced users we also support vtune profling for kernels execution through [ITT Tasks](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/api-support/instrumentation-and-tracing-technology-apis/basic-usage-and-configuration/viewing-itt-api-task-data.html), to enable it you can follow the instructions:
+For advanced users we also support vtune profiling for kernels execution through [ITT Tasks](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/api-support/instrumentation-and-tracing-technology-apis/basic-usage-and-configuration/viewing-itt-api-task-data.html), to enable it you can follow the instructions:
 
 ```shell
 mkdir build

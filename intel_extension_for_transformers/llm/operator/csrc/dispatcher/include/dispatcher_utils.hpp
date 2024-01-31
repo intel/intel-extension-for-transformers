@@ -15,21 +15,21 @@
 #include <torch/serialize/input-archive.h>
 #include <chrono>
 #include <string>
-#include "jblas/jit_blas_device.h"
-#include "jblas/jit_blas_utils.h"
-#include "jblas/jit_blas_parallel.h"
+#include "bestla/bestla_device.h"
+#include "bestla/bestla_utils.h"
+#include "bestla/bestla_parallel.h"
 namespace dispatcher_utils {
 
-inline bool check_amx() { return jblas::device::CpuDevice::getInstance()->AMX_BF16(); }
-inline bool check_avx512_vnni() { return jblas::device::CpuDevice::getInstance()->AVX512_VNNI(); }
-inline bool check_avx_vnni() { return jblas::device::CpuDevice::getInstance()->AVX_VNNI(); };
-inline bool check_avx512f() { return jblas::device::CpuDevice::getInstance()->AVX512F(); }
-inline bool check_avx2() { return jblas::device::CpuDevice::getInstance()->AVX2(); }
+inline bool check_amx() { return bestla::device::CpuDevice::getInstance()->AMX_BF16(); }
+inline bool check_avx512_vnni() { return bestla::device::CpuDevice::getInstance()->AVX512_VNNI(); }
+inline bool check_avx_vnni() { return bestla::device::CpuDevice::getInstance()->AVX_VNNI(); };
+inline bool check_avx512f() { return bestla::device::CpuDevice::getInstance()->AVX512F(); }
+inline bool check_avx2() { return bestla::device::CpuDevice::getInstance()->AVX2(); }
 
 class env_initer {
  public:
   env_initer() {
-    if (check_amx()) jblas::utils::request_perm_xtile_data();
+    if (check_amx()) bestla::utils::request_perm_xtile_data();
     verbose = std::getenv("QBITS_VERBOSE") != nullptr;
     FLAGS_caffe2_log_level = 0;
   }
@@ -56,7 +56,7 @@ class Timer {
   high_resolution_clock::time_point m_end;
 };
 static Timer timer;
-static jblas::parallel::OMPThreading DefaultThreading(jblas::device::CpuDevice::getInstance()->getThreads());
+static bestla::parallel::OMPThreading DefaultThreading(bestla::device::CpuDevice::getInstance()->getThreads());
 string get_torch_dt_name(torch::Tensor* tensor);
 
 }  // namespace dispatcher_utils

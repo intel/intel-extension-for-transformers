@@ -50,7 +50,7 @@ parser = ArgumentParser()
 parser.add_argument('-m', '--model-id',
     type=str,
     default='bigscience/bloom',
-    help="the huggingface mdoel id"
+    help="the huggingface model id"
 )
 parser.add_argument('--device',
     type=str,
@@ -415,7 +415,7 @@ def run_generate(num_tokens, num_input_tokens, num_beams):
     elif num_input_tokens in prompt_pool[model_type]:
         input_sentences.append(prompt_pool[model_type][num_input_tokens])
     else:
-        raise SystemExit('[ERROR] Plese use --prompt if want to use custom input.')
+        raise SystemExit('[ERROR] Please use --prompt if want to use custom input.')
 
 
     if args.batch_size > len(input_sentences):

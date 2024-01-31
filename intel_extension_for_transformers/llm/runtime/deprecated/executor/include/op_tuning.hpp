@@ -43,7 +43,7 @@ class OpTuning {
   explicit OpTuning(const string& type, const Model* m_ptr) : type_(type), model_(m_ptr) {}
   ~OpTuning() {}
 
-  // call realted tune function by type and kernel_name
+  // call related tune function by type and kernel_name
   // prepare tuning config, like extra tensor life
   void Start(const string& kernel_name, std::shared_ptr<Operator> kernel,
              const vector<Tensor*>& input, const vector<Tensor*>& output,

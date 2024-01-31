@@ -403,9 +403,9 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   dst_shape_origin.back() = src1_shape.back();
 
   // Sub-step3: fused post transpose, notice it's different that
-  // pre transpose will use the tranposed shape and stride, it's straight forward
+  // pre transpose will use the transposed shape and stride, it's straight forward
   // post transpose will use origin shape and that means the dst buffer in matmul
-  // is a buffer transposed back from dst_perm(understand tranpose to and transpose back)
+  // is a buffer transposed back from dst_perm(understand transpose to and transpose back)
   // pre_transpose: src_buffer -> pre_transpose -> target_buffer in matmul
   // post_transpose: target_buffer in matmul<- post transpose <-dst_buffer
   vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
@@ -785,7 +785,7 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
 }
 
 // handle src tensor with SparseLib 3D format
-// SaprseLib Q (output 3d shape)                 SparseLib K (ouput 3d shape)
+// SaprseLib Q (output 3d shape)                 SparseLib K (output 3d shape)
 //        \                                               /
 //     Reshape (output 5d shape)                     Reshape (output 5d shape)
 //            \                                        /

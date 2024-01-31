@@ -130,7 +130,7 @@ inline bool transpose_mha_k_t::execute_vnnib(const std::vector<const void*>& rt_
       const size_t tmp_q_sum_size = seq_pad;
       if (thread_idx == 0) {
         const auto total_size = reinterpret_cast<uint8_t*>(tmp_q_sum + tmp_q_sum_size) - curr_tmp;
-        SPARSE_LOG_IF(FATAL, total_size > Size2M) << "Buffer size too samll";
+        SPARSE_LOG_IF(FATAL, total_size > Size2M) << "Buffer size too small";
       }
 
       // reorder K (left mat) from (head_size x seqlen) to BAb8a4
@@ -278,7 +278,7 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
     const auto reBbuf = reinterpret_cast<int8_t*>(reAbuf + reAbuf_size);  // trans_copied Q
     const size_t reBbuf_size = reAbuf_size;
     if (thread_idx == 0)
-      SPARSE_LOG_IF(FATAL, reinterpret_cast<uint8_t*>(reBbuf + reBbuf_size) - mTmp > Size2M) << "Buffer size too samll";
+      SPARSE_LOG_IF(FATAL, reinterpret_cast<uint8_t*>(reBbuf + reBbuf_size) - mTmp > Size2M) << "Buffer size too small";
 
     const auto abatchptr = matA + ibat * batchk * k * seq_pad;
     const auto bbatchptr = matB + ibat * batchk * k * seq_pad;

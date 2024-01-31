@@ -112,7 +112,7 @@ class jit_eltwiseop_t : public jit_generator {
   size_t process_element_num() {
     auto front_attr = param_.postop_attrs.front();
     if (front_attr.op_alg == postop_alg::eltop_int_lut && front_attr.alpha == 8) return 64;   // special case:bit8_lut
-    if (front_attr.op_alg == postop_alg::eltop_int_lut && front_attr.alpha == 16) return 32;  // sepcial case:bit16_lut
+    if (front_attr.op_alg == postop_alg::eltop_int_lut && front_attr.alpha == 16) return 32;  // special case:bit16_lut
     switch (param_.in_dt) {
       case data_type::fp32:
         return 16;

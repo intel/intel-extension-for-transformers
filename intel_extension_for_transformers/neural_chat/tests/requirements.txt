@@ -1,10 +1,10 @@
-transformers>=4.35.2
+transformers==4.36.2
 peft==0.6.2
 fschat==0.2.32
-torch
+torch==2.1.0
 torchaudio==2.1.0
 torchvision==0.16.0
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
 onnxruntime>=1.16.3
@@ -32,7 +32,7 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-git+https://github.com/UKPLab/sentence-transformers.git
+git+https://github.com/UKPLab/sentence-transformers.git@5c838a705c24c2dfd151a71674c99d09d014c1a9
 unstructured
 markdown
 rouge_score
@@ -69,6 +69,9 @@ urllib3
 langid
 optimum-intel==1.11.0
 zhconv
-diffusers
+diffusers==0.12.1
 transformers_stream_generator
 qdrant-client
+huggingface_hub
+vllm
+neural_speed

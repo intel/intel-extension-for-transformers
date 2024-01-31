@@ -72,7 +72,7 @@ class TSModelCausalLMForITREX(TSModelForCausalLM):
             ):
                 input_ids = input_ids[:, -1:]
 
-        # `past_key_values` may be in the stardard format (e.g. in contrastive search),
+        # `past_key_values` may be in the standard format (e.g. in contrastive search),
         # converts to bloom's format if needed
         if past_key_values is not None and self.config.model_type == "bloom":
             if past_key_values[0][0].shape[0] == input_ids.shape[0]:

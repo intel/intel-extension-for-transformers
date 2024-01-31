@@ -31,7 +31,7 @@ DEFINE_int32(w, 2, "warm up times");
 void run_net() {
   executor::Model bert_model(FLAGS_config, FLAGS_weight);
   DLOG(INFO) << "normal multibatch test begin";
-  // 1. inialize input tensors
+  // 1. initialize input tensors
   vector<executor::Tensor> input_tensors;
   vector<string> input_dtype;
   vector<vector<float>> input_range;

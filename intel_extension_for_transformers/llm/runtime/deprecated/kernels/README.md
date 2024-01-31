@@ -27,7 +27,7 @@ make -j
 
 ### Performance
 We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/kernels/benchmark/benchmark.md) for more details.
-For advanced users, please refer to [profling section](docs/profiling.md).
+For advanced users, please refer to [profiling section](docs/profiling.md).
 
 ## API reference for users
 ### sparse_matmul kernel:

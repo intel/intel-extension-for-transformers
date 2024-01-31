@@ -7,10 +7,10 @@ onnx>=1.10
 onnxruntime
 --find-links https://download.pytorch.org/cpu/whl/torch_stable.html
 torch==2.1.0
-transformers
+transformers==4.36.2
 intel-tensorflow==2.13.0
 torchprofile
-intel-extension-for-pytorch
+intel-extension-for-pytorch==2.1.0
 tokenizers
 sentencepiece != 0.1.92
 accelerate
@@ -24,3 +24,5 @@ bitsandbytes
 tiktoken
 transformers_stream_generator
 einops
+neural-speed
+gguf

@@ -1,6 +1,6 @@
 # Huggingface Examples
 
-Welcome to Pytorch Huggingface examples. The examples is following from [Huggingface transformers with PyTorch backend](https://github.com/huggingface/transformers/tree/main/examples/pytorch) and model compressor technology is dependend on [Intel® Neural Compressor](https://github.com/intel/neural-compressor), including quantization, pruning and distillation. 
+Welcome to Pytorch Huggingface examples. The examples is following from [Huggingface transformers with PyTorch backend](https://github.com/huggingface/transformers/tree/main/examples/pytorch) and model compressor technology is dependent on [Intel® Neural Compressor](https://github.com/intel/neural-compressor), including quantization, pruning and distillation. 
 
 ## Quantization approach
 

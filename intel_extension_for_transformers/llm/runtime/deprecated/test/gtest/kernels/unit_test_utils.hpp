@@ -69,7 +69,7 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
       reinterpret_cast<int8_t*>(ptr)[idx] = (int8_t)val;
       break;
     default:
-      throw std::runtime_error("assign_val: unsupport this dtype.");
+      throw std::runtime_error("assign_val: unsupported this dtype.");
   }
 }
 
@@ -118,7 +118,7 @@ inline typename std::enable_if<!s_is_u8s8<T>::value, float>::type get_err(const 
 }
 template <typename T>
 inline typename std::enable_if<s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
-  // for quantized value, error ratio was calcualted with its data range
+  // for quantized value, error ratio was calculated with its data range
   return fabs(static_cast<float>(a) - static_cast<float>(b)) / UINT8_MAX;
 }
 
@@ -369,7 +369,7 @@ float get_dequantize(float x, float alpha, float scale) {
   return x;
 }
 
-float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
+float get_linear(float x, float alpha, float beta) { return x * alpha + beta; }
 
 float get_swish(float x, float alpha) { return x / (1.f + get_exp(-1 * alpha * x)); }
 
@@ -430,9 +430,9 @@ class aligned_allocator_t {
 
   inline ~aligned_allocator_t() throw() {}
 
-  inline pointer adress(reference r) { return &r; }
+  inline pointer address(reference r) { return &r; }
 
-  inline const_pointer adress(const_reference r) const { return &r; }
+  inline const_pointer address(const_reference r) const { return &r; }
 
   inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
 

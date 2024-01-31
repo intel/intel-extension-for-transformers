@@ -158,7 +158,7 @@ Discrimination labels given by Neural Engine model:
 | text | a Chinese sentence with a tag '[MASK]' when using generator or without a tag '[MASK]' when only using discriminator | 其实了解一个人并不代[MASK]什么，人是会变的，今天他喜欢凤梨，明天他可以喜欢别的 |
 
 ## Performance
-You can also test the IR performace with different batch_size and sequence length.
+You can also test the IR performance with different batch_size and sequence length.
 ```shell
 # use numactl to bind cores for better performance
 # support single socket and multiple sockets

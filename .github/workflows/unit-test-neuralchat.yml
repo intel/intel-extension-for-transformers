@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/unit-test-neuralchat.yml'
+      - '.github/workflows/script/unitTest/run_unit_test_neuralchat.sh'
       - 'intel_extension_for_transformers/neural_chat/**'
       - 'requirements.txt'
       - 'setup.py'
@@ -32,6 +33,7 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
+  CONTAINER_SCAN: "codeScan"
 
 jobs:
   unit-test:
@@ -119,6 +121,14 @@ jobs:
     runs-on: itrex-node-spell
     needs: [unit-test]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_SCAN }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_SCAN }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_SCAN }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
         
@@ -130,7 +140,7 @@ jobs:
       - name: Display structure of downloaded files
         run: cd ${{ github.workspace }}/log_dir && ls -R
         
-      - name: Calculte coverage
+      - name: Calculate coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
           /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir

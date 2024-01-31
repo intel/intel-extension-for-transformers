@@ -1,6 +1,6 @@
 # Separating Weights for Early-Exit Transformers (SWEET) for Text Classification with BERT or DeBERTa
 
-This code implements SWEET Early-Exit fine-tuning method described in the paper [**Finding the SWEET spot:** Improvement and Anlysis of Adaptive Inference in Low Resource Settings](https://arxiv.org/abs/2306.02307) and is based on [SWEET repo](https://github.com/schwartz-lab-NLP/SWEET).
+This code implements SWEET Early-Exit fine-tuning method described in the paper [**Finding the SWEET spot:** Improvement and Analysis of Adaptive Inference in Low Resource Settings](https://arxiv.org/abs/2306.02307) and is based on [SWEET repo](https://github.com/schwartz-lab-NLP/SWEET).
 
 
 Below is an illustration of Early-Exit and Multi-Model adaptive inference approaches. In both methods, multiple classifiers of increasing sizes are run serially, until a confident prediction is made. In Early-Exit (left), a single model with multiple classifiers is used, such that early computations are reused by later classifiers. In Multi-Model (right), a sequence of independent models is used, allowing each classifier to decouple its parameters from other classifiers.

@@ -44,7 +44,7 @@ class jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b : public jit_generator {
      * @brief Guaranteed amx config before executing this jit kernel.
      *
      * If pre_amx_cfg fits what the kernel needs or set to nullptr, the kernel will not touch the amx config while
-     * executing. Otherwise, the kernel will temporally reset the amx config while perserving it when exiting.
+     * executing. Otherwise, the kernel will temporally reset the amx config while preserving it when exiting.
      *
      */
     const tile_param_t* pre_amx_cfg;

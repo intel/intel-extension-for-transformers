@@ -34,6 +34,7 @@ WEIGHTS_NAME = "pytorch_model.bin"
 WEIGHTS_INDEX_NAME = "pytorch_model.bin.index.json"
 QUANT_CONFIG = "quantization_config.json"
 SPARSITY_CONFIG = "sparsity_config.json"
+SAFE_WEIGHTS_NAME = "model.safetensors"
 
 torch = LazyImport("torch")
 
@@ -55,8 +56,7 @@ def distributed_init(
     master_addr="127.0.0.1",
     master_port="12345",
 ):
-    """Init the distibute environment."""
-    torch = LazyImport("torch")
+    """Init the distribute environment."""
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))
     if init_method is None:
