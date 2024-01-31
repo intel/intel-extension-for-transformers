@@ -28,13 +28,12 @@ class TestNeuralChatModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = NeuralChatModel().match(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1')
+        result = NeuralChatModel(model_name='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1').match()
         self.assertTrue(result)
 
     def test_get_default_conv_template_v1(self):
-        result = NeuralChatModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1')
+        result = NeuralChatModel(
+            model_name='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1').get_default_conv_template()
         self.assertIn("<|im_start|>system", str(result))
         config = PipelineConfig(
             model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v1")
@@ -45,8 +44,8 @@ class TestNeuralChatModel(unittest.TestCase):
         self.assertIn('Intel® Xeon® Scalable processors', str(result))
 
     def test_get_default_conv_template_v2(self):
-        result = NeuralChatModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v2')
+        result = NeuralChatModel(
+            model_name='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v2').get_default_conv_template()
         self.assertIn("### System:", str(result))
         config = PipelineConfig(
             model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v2")
@@ -56,8 +55,8 @@ class TestNeuralChatModel(unittest.TestCase):
         self.assertIn('The Intel Xeon Scalable Processor', str(result))
 
     def test_get_default_conv_template_v3(self):
-        result = NeuralChatModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3')
+        result = NeuralChatModel(
+            model_name='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3').get_default_conv_template()
         self.assertIn("### System:", str(result))
         config = PipelineConfig(
             model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3")
@@ -67,8 +66,8 @@ class TestNeuralChatModel(unittest.TestCase):
         self.assertIn('The Intel Xeon Scalable Processors', str(result))
 
     def test_get_default_conv_template_v3_1(self):
-        result = NeuralChatModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1')
+        result = NeuralChatModel(
+            model_name='/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1').get_default_conv_template()
         self.assertIn("### System:", str(result))
         config = PipelineConfig(
             model_name_or_path="/tf_dataset2/models/nlp_toolkit/neural-chat-7b-v3-1")

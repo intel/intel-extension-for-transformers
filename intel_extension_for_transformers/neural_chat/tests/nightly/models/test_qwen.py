@@ -29,15 +29,14 @@ class TestQwenModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = QwenModel().match(
-            model_path='/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat')
+        result = QwenModel(model_name='/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat').match()
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
         if self.device == "hpu":
             self.skipTest("Qwen is not supported on HPU.")
-        result = QwenModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat')
+        result = QwenModel(
+            model_name='/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat').get_default_conv_template()
         self.assertIn('im_start', str(result))
         config = PipelineConfig(
             model_name_or_path="/tf_dataset2/models/nlp_toolkit/Qwen-7B-Chat")

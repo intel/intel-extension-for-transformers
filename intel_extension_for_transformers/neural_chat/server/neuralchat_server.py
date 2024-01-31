@@ -260,7 +260,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 "loading_config": loading_config,
                 "optimization_config": optimization_config,
                 "assistant_model": assistant_model,
-                "serving_config": serving_config
+                "serving_config": serving_config,
+                "task": "chat"
             }
             api_list = list(task for task in config.tasks_list)
             if use_deepspeed:

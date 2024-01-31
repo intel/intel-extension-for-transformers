@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel, register_model_adapter
+from .base_model import BaseModel
 import logging
 from fastchat.conversation import get_conv_template, Conversation
 
@@ -27,35 +27,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class NeuralChatModel(BaseModel):
-    def match(self, model_path: str):
+    def match(self):
         """
         Check if the provided model_path matches the current model.
-
-        Args:
-            model_path (str): Path to a model.
 
         Returns:
             bool: True if the model_path matches, False otherwise.
         """
-        return "neural-chat" in model_path.lower()
+        return "neural-chat" in self.model_name.lower()
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
+    def get_default_conv_template(self) -> Conversation:
         """
         Get the default conversation template for the given model path.
-
-        Args:
-            model_path (str): Path to the model.
 
         Returns:
             Conversation: A default conversation template.
         """
-        if "neural-chat-7b-v2" in model_path.lower():
+        if "neural-chat-7b-v2" in self.model_name.lower():
             return get_conv_template("neural-chat-7b-v2")
-        elif "neural-chat-7b-v3" in model_path.lower():
+        elif "neural-chat-7b-v3" in self.model_name.lower():
             return get_conv_template("neural-chat-7b-v3")
         else:
             return get_conv_template("neural-chat-7b-v1-1")
-
-register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v1")
-register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v2")
-register_model_adapter(NeuralChatModel, model_name="neural-chat-7b-v3")

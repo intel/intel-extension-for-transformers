@@ -23,6 +23,7 @@ from .plugins import plugins
 
 from .errorcode import ErrorCodes
 from .utils.error_utils import set_latest_error, get_latest_error, clear_latest_error
+from .models.base_model import register_model_adapter
 from intel_extension_for_transformers.utils.logger import logging
 import importlib
 
@@ -149,7 +150,7 @@ def build_chatbot(config: PipelineConfig=None):
         set_latest_error(ErrorCodes.ERROR_MODEL_NOT_SUPPORTED)
         logging.error("build_chatbot: unknown model")
         return
-
+    register_model_adapter(adapter)
     # register plugin instance in model adaptor
     if config.plugins:
         for plugin_name, plugin_value in config.plugins.items():

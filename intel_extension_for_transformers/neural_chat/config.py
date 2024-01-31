@@ -450,7 +450,7 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
-                 task="chat",
+                 task="",
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None,
