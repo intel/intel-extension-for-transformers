@@ -376,7 +376,7 @@ def preprocess_plain(
         tokenized_len = len(tokenizer_image_token(source[0]['value'], tokenizer))
         target[:tokenized_len] = IGNORE_INDEX
 
-    return dict(input_ids=input_ids, labels=targets)
+    return dict(input_ids=torch.stack(input_ids, dim=0), labels=torch.stack(targets, dim=0))
 
 
 def preprocess(
