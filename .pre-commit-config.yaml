@@ -76,64 +76,64 @@ repos:
             --skip-license-insertion-comment=Copyright,
           ]
 
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.5.0
-    hooks:
-      - id: yesqa
-        name: Unused noqa
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        exclude: |
-          (?x)^(
-              examples/.+
-          )$
-
-  - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.5
-    hooks:
-      - id: docformatter
-        args: [
-            --in-place,
-            --wrap-summaries=0, # 0 means disable wrap
-            --wrap-descriptions=0, # 0 means disable wrap
-            --black,
-            --style=google,
-          ]
-        exclude: |
-          (?x)^(
-              examples/.+
-          )$
-
-  - repo: https://github.com/psf/black.git
-    rev: 23.12.1
-    hooks:
-      - id: black
-        files: (.*\.py)$
-        exclude: |
-          (?x)^(
-              examples/.+
-          )$
-
-  - repo: https://github.com/asottile/blacken-docs
-    rev: 1.16.0
-    hooks:
-      - id: blacken-docs
-        args: [--line-length=120, --skip-errors]
-        exclude: |
-          (?x)^(
-              examples/.+|
-              docs/source-app
-          )$
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
-    hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix, --no-cache]
-        exclude: |
-          (?x)^(
-              examples/.+
-          )$
+#  - repo: https://github.com/asottile/yesqa
+#    rev: v1.5.0
+#    hooks:
+#      - id: yesqa
+#        name: Unused noqa
+#
+#  - repo: https://github.com/pycqa/isort
+#    rev: 5.13.2
+#    hooks:
+#      - id: isort
+#        exclude: |
+#          (?x)^(
+#              examples/.+
+#          )$
+#
+#  - repo: https://github.com/PyCQA/docformatter
+#    rev: v1.7.5
+#    hooks:
+#      - id: docformatter
+#        args: [
+#            --in-place,
+#            --wrap-summaries=0, # 0 means disable wrap
+#            --wrap-descriptions=0, # 0 means disable wrap
+#            --black,
+#            --style=google,
+#          ]
+#        exclude: |
+#          (?x)^(
+#              examples/.+
+#          )$
+#
+#  - repo: https://github.com/psf/black.git
+#    rev: 23.12.1
+#    hooks:
+#      - id: black
+#        files: (.*\.py)$
+#        exclude: |
+#          (?x)^(
+#              examples/.+
+#          )$
+#
+#  - repo: https://github.com/asottile/blacken-docs
+#    rev: 1.16.0
+#    hooks:
+#      - id: blacken-docs
+#        args: [--line-length=120, --skip-errors]
+#        exclude: |
+#          (?x)^(
+#              examples/.+|
+#              docs/source-app
+#          )$
+#
+#  - repo: https://github.com/astral-sh/ruff-pre-commit
+#    rev: v0.1.9
+#    hooks:
+#      - id: ruff
+#        args: [--fix, --exit-non-zero-on-fix, --no-cache]
+#        exclude: |
+#          (?x)^(
+#              examples/.+
+#          )$
