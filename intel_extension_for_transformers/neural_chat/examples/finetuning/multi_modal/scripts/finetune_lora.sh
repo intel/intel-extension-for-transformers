@@ -17,6 +17,7 @@
 
 PT_HPU_MAX_COMPOUND_OP_SIZE=10 DEEPSPEED_HPU_ZERO3_SYNC_MARK_STEP_REQUIRED=1 \
 python3 ./gaudi_spawn.py --use_deepspeed --world_size 4 \
+    train.py \
     --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
