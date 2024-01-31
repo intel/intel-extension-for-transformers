@@ -1,0 +1,13 @@
+PyPDF2
+langchain==0.0.354
+langchain_core
+python-docx
+beautifulsoup4
+unstructured
+InstructorEmbedding
+chromadb==0.4.15
+openpyxl
+scikit-learn
+markdown
+qdrant-client
+langid
