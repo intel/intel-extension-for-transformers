@@ -34,5 +34,3 @@ curl ${your_ip}:${your_port}/v1/tgi/generate \
   -d '{"inputs":"What is Deep Learning?","parameters":{"max_new_tokens":17, "do_sample": true}}' \
   -H 'Content-Type: application/json'
 ```
-
-

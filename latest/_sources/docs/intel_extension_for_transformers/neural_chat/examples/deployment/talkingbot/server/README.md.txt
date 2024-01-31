@@ -4,4 +4,3 @@ Welcome to Talkingbot! This example introduces how to deploy the Talkingbot syst
 | ---------------------| --------------------------|
 | Backend Setup        | [Backend README](./backend/README.html) |
 | Frontend Setup       | [Frontend README](../../../../ui/customized/talkingbot/README.html) |
-

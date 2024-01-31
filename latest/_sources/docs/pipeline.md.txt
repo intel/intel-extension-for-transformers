@@ -60,4 +60,3 @@ For executor, we only accept ONNX model now for pipeline. Users can get ONNX mod
     )
     # output: [{'label': 'POSITIVE', 'score': 0.9998886585235596}]
     ```
-

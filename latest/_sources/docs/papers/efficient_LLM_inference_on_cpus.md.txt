@@ -126,4 +126,3 @@ python run_generation.py \
            --batch_size 56 \
            --tasks "lambada_openai", "piqa", "hellaswag", "winogrande"
 ```
-
