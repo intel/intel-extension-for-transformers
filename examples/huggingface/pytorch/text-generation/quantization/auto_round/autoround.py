@@ -53,7 +53,7 @@ if __name__ == '__main__':
                         help="whether to use the output of quantized block to tune the next block")
 
     parser.add_argument("--lr", default=None, type=float,
-                        help="learning rate, if None, it will be set to 1.0/iters automatially")
+                        help="learning rate, if None, it will be set to 1.0/iters automatically")
 
     parser.add_argument("--minmax_lr", default=None, type=float,
                         help="minmax learning rate, if None,it will beset to be the same with lr")
