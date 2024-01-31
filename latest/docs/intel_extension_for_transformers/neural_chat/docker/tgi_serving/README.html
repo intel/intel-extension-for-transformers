@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Start NeuralChat and TGI serving with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g4267470 documentation</title>
+  <title>Start NeuralChat and TGI serving with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g8ebff39 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=eafc0fe6" />
@@ -107,7 +107,7 @@
 <section id="start-neuralchat-service">
 <h3>Start NeuralChat Service<a class="headerlink" href="#start-neuralchat-service" title="Link to this heading"></a></h3>
 <p>Before starting NeuralChat services, you need to configure <code class="docutils literal notranslate"><span class="pre">tgi.yaml</span></code> according to you read environment.
-Make sure the specified <code class="docutils literal notranslate"><span class="pre">port</span></code> is avaliable, <code class="docutils literal notranslate"><span class="pre">device</span></code> is <code class="docutils literal notranslate"><span class="pre">cpu</span></code> (<code class="docutils literal notranslate"><span class="pre">auto</span></code> will not work).
+Make sure the specified <code class="docutils literal notranslate"><span class="pre">port</span></code> is available, <code class="docutils literal notranslate"><span class="pre">device</span></code> is <code class="docutils literal notranslate"><span class="pre">cpu</span></code> (<code class="docutils literal notranslate"><span class="pre">auto</span></code> will not work).
 Other detailed parameters please refer to <code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers/neural_chat/examples/serving/TGI/README.html</span></code></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--net<span class="o">=</span>host<span class="w"> </span>--ipc<span class="o">=</span>host<span class="w"> </span>-v<span class="w"> </span>/var/run/docker.sock:/var/run/docker.sock<span class="w"> </span>-v<span class="w"> </span>./tgi.yaml:/tgi.yaml<span class="w"> </span>neuralchat_tgi:latest
 </pre></div>
@@ -141,7 +141,7 @@ Other detailed parameters please refer to <code class="docutils literal notransl
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5f1c4d8580> 
+   <jinja2.runtime.BlockReference object at 0x7f52496a8be0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
