@@ -23,9 +23,10 @@ repos:
       - id: check-yaml
         exclude: |
           (?x)^(
-            conda_meta/|
-            docker/|
-            intel_extension_for_transformers/neural_chat/docker/|
+            conda_meta/meta.yaml|
+            docker/chart/templates/pytorchjob.yaml|
+            docker/chart/templates/pvc.yaml|
+            workflows/compression_aware_training/chart/templates/workflowTemplate.yaml|
             .gitpod.yml
           )$
       - id: requirements-txt-fixer
