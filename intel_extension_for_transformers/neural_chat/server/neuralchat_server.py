@@ -189,7 +189,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             # TGI serving
             elif serving_framework == "tgi":
                 tgi_params = serving.get("tgi_engine_params", None)
-                tgi_model_id = tgi_params.get('model_id', "mistralai/Mistral-7B-Instruct-v0.1")
                 tgi_sharded = tgi_params.get('sharded', False)
                 tgi_num_shard = tgi_params.get('num_shard', 1)
                 tgi_habana_visible_devices = tgi_params.get('habana_visible_devices', "all")
@@ -224,7 +223,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
                 else:
                     logger.error(f"Supported device: [cpu, gpu, hpu]. Your device: {device}")
                     raise Exception("Please specify device for tgi.")
-                tgi_cmd += f" --model-id {tgi_model_id}"
+                tgi_cmd += f" --model-id {model_name_or_path}"
                 if tgi_sharded and tgi_num_shard > 1:
                     tgi_cmd += " --sharded {tgi_sharded} --num-shard {tgi_num_shard}"
                 # start tgi service
