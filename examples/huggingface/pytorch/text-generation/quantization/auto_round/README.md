@@ -36,7 +36,6 @@ The transformers version required varies across different types of models. Here,
 The dataset will be downloaded automatically from the datasets Hub.
 See more about loading [huggingface dataset](https://huggingface.co/docs/datasets/loading_datasets.html)
 
-<br />
 
 ## 3. Usage
 ```python
@@ -281,7 +280,7 @@ For wikitext2/ptb-new/c4-new ppl, we follow the code of gptq and set the sequenc
 </table>
 
 
-We provide a [comparative analysis](docs/autoround_comparative_analysis.md) with other methods in our accuracy data section. Notably, our approach has outperformed GPTQ with a score of 30/32 and AWQ with a score of 27/32 across llamv1/llamav2/mistral-7b on W4G-1, W4G128, W3G128, W2G128.  And the tuning costs are comparable.
+We provide a [comparative analysis](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/autoround_comparative_analysis.md) with other methods in our accuracy data section. Notably, our approach has outperformed GPTQ with a score of 30/32 and AWQ with a score of 27/32 across llamv1/llamav2/mistral-7b on W4G-1, W4G128, W3G128, W2G128.  And the tuning costs are comparable.
 
 
 ## 6. Known Issues
