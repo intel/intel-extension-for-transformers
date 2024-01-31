@@ -477,7 +477,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
     """Creates a completion for the chat message.
     This API mimics the OpenAI ChatCompletion API.
 
-    See  https://platform.openai.com/docs/api-reference/chat/create for the API specification. 
+    See  https://platform.openai.com/docs/api-reference/chat/create for the API specification.
     """
     error_check_ret = await check_model(request)
     if error_check_ret is not None:

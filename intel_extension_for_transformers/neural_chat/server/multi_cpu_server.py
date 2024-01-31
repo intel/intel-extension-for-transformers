@@ -40,7 +40,7 @@ def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
     if request.temperature is not None and request.temperature < 0:
         return f"Param Error: {request.temperature} is less than the minimum of 0 --- 'temperature'"
-    
+
     if request.temperature is not None and request.temperature > 2:
         return f"Param Error: {request.temperature} is greater than the maximum of 2 --- 'temperature'"
 
