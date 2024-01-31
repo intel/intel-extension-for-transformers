@@ -137,20 +137,17 @@ class QuantizedLinearQBits(torch.nn.Linear):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
-        shape = weight_data.shape
         if weight_data.is_meta:
-            weight = torch.ones(shape, dtype=torch.int8)
-        else:
-            weight = torch.ops.bestlaop.woq_quantize(
-                weight_data,
-                True,
-                self.blocksize,
-                self.compute_dtype if self.compute_dtype is not None else "fp32",
-                self.weight_dtype,
-                self.scale_dtype if self.scale_dtype is not None else "fp32",
-                False,
-            )
-            weight.resize_(shape)
+            weight_data = torch.ones(weight_data.shape, dtype=torch.float)
+        weight = torch.ops.bestlaop.woq_quantize(
+            weight_data,
+            True,
+            self.blocksize,
+            self.compute_dtype if self.compute_dtype is not None else "fp32",
+            self.weight_dtype,
+            self.scale_dtype if self.scale_dtype is not None else "fp32",
+            False,
+        )
         self.weight = ParamsQBits(
             data=weight,
             requires_grad=False,
