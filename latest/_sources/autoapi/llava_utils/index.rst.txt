@@ -15,6 +15,7 @@ Classes
 .. autoapisummary::
 
    llava_utils.LazySupervisedDataset
+   llava_utils.LazySupervisedDatasetPadding
    llava_utils.DataCollatorForSupervisedDataset
 
 
@@ -55,6 +56,14 @@ Functions
 
 
 .. py:class:: LazySupervisedDataset(data_path: str, tokenizer: transformers.PreTrainedTokenizer, data_args, conversation_template)
+
+
+
+
+   Dataset for supervised fine-tuning.
+
+
+.. py:class:: LazySupervisedDatasetPadding(data_path: str, tokenizer: transformers.PreTrainedTokenizer, data_args, conversation_template)
 
 
 
