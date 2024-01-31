@@ -46,7 +46,7 @@ def _gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
     gradient_checkpointing_func = functools.partial(checkpoint, **gradient_checkpointing_kwargs)
 
     # For old GC format (transformers < 4.35.0) for models that live on the Hub
-    # we will fall back to the overwritten `_set_gradient_checkpointing` methid
+    # we will fall back to the overwritten `_set_gradient_checkpointing` method
     _is_using_old_format = "value" in inspect.signature(self._set_gradient_checkpointing).parameters
 
     if not _is_using_old_format:
@@ -70,7 +70,7 @@ def _gradient_checkpointing_disable(self):
     """
     if self.supports_gradient_checkpointing:
         # For old GC format (transformers < 4.35.0) for models that live on the Hub
-        # we will fall back to the overwritten `_set_gradient_checkpointing` methid
+        # we will fall back to the overwritten `_set_gradient_checkpointing` method
         _is_using_old_format = "value" in inspect.signature(self._set_gradient_checkpointing).parameters
         if not _is_using_old_format:
             self._set_gradient_checkpointing(enable=False)
