@@ -50,4 +50,3 @@ def configure_logging(log_file="app.log", log_level=logging.INFO):
     logger.addHandler(console_handler)
 
     return logger
-

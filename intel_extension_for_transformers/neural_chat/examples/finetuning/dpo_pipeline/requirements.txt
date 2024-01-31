@@ -1,10 +1,10 @@
 datasets
+einops
+evaluate
+fire
+nltk
+peft
+rouge_score
+sentencepiece
 torch
 transformers
-sentencepiece
-peft
-evaluate
-nltk
-rouge_score
-einops
-fire

@@ -67,6 +67,7 @@ def check_requests(request) -> Optional[JSONResponse]:
             ApiErrorCode.PARAM_OUT_OF_RANGE,
             f"{request.temperature} is less than the minimum of 0 - 'temperature'",
         )
+
     if request.temperature is not None and request.temperature > 2:
         return create_error_response(
             ApiErrorCode.PARAM_OUT_OF_RANGE,

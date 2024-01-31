@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os, re
 from langchain.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
@@ -26,7 +40,7 @@ def inference(args, query, memory):
             template=prompt_template, input_variables=["entities", "question"]
         )
     else:
-        prompt_template = """The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. 
+        prompt_template = """The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context.
         AI should revise the answer according to the human feedback.
 
         {chat_history}

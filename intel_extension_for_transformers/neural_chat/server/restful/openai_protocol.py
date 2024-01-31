@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-Code source from FastChat's OpenAI protocol: 
+Code source from FastChat's OpenAI protocol:
 https://github.com/lm-sys/FastChat/blob/main/fastchat/protocol/openai_api_protocol.py
 """
 from enum import IntEnum

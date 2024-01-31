@@ -161,7 +161,7 @@ class LlavaMetaForCausalLM(PreTrainedModel):
         for batch_idx, cur_input_ids in enumerate(input_ids):
             num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
             if num_images == 0:
-                # Concatenating the cur_image_features[0:0], like in the original implementation, 
+                # Concatenating the cur_image_features[0:0], like in the original implementation,
                 # is removed as it causes the backpropogation to crash on the hpu.
                 new_input_embeds.append(self.get_model().embed_tokens(cur_input_ids))
                 new_labels.append(labels[batch_idx])

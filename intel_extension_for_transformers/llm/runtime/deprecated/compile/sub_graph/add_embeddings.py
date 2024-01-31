@@ -231,7 +231,7 @@ class AddEmbeddings(Pattern):
           # shape = [bs, seq_len, hidden_size] after embeddings
           for i in range(len(pattern_mapping_config['AddEmbeddings']) - 1):
               pattern_dict = pattern_mapping_config['AddEmbeddings'][i]
-              model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings", 
+              model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings",
                                                                           pattern_dict, model)
               if len(new_node_names) != 0:
                   for j in range(len(new_node_names)):
@@ -246,9 +246,9 @@ class AddEmbeddings(Pattern):
                       if len(pattern_dict['patterns']['in'][0]) == 2:
                           binary_add_node_idx = model.get_node_id(new_node_names[j][0])
                           model.nodes[binary_add_node_idx].attr = OrderedDict()
-  
+
                   return model
-  
+
           # shape = [seq_len, bs, hidden_size] after embeddings
           for pattern_dict in pattern_mapping_config['AddEmbeddings'][-1:]:
               model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings",

@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 args:
   model_name_or_path: "bert-base-uncased" # input the fine-tuned model path
   tokenizer_name: "bert-base-uncased" # input the fine-tuned model path
@@ -12,12 +26,12 @@ args:
       data_column: "symptoms"
       id: "Patient_ID"
     label_list: ["Malignant", "Normal", "Benign"]
-  
+
   # Add the Inference configurations below
-  pipeline: "inference"   
+  pipeline: "inference"
   infer_impl: "trainer" # Use trainer for default stock PT Huggingface NLP Trainer
-  dtype_inf: "fp32" # bf16 is ineffective for stockPTtrainer: Use infer_impl=itrex & use_ipex=true. 
-  use_ipex: false # No effect / Not valid when using trainer 
+  dtype_inf: "fp32" # bf16 is ineffective for stockPTtrainer: Use infer_impl=itrex & use_ipex=true.
+  use_ipex: false # No effect / Not valid when using trainer
   use_onednn: false # No effect / not valid when using trainer
   max_seq_len: 64
   smoke_test: false

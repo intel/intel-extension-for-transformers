@@ -6,4 +6,4 @@ tasks:
   - name: Main terminal
     before: echo 'start intel extension for transformers'
     init: echo 'install requirements.txt'
-    command: pip install -r requirements.txt 
+    command: pip install -r requirements.txt

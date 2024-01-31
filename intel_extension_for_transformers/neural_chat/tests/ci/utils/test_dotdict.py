@@ -41,21 +41,21 @@ class TestServerCommand(unittest.TestCase):
         test_dotdict2 = DotDict( {'person':{'name':{'first':'John'}}})
         test_dotdict2.__setitem__(key='person2', value=[{'sex': 'male'}])
         self.assertEqual(
-            test_dotdict2, 
+            test_dotdict2,
             {'person': {'name': {'first': 'John'}}, 'person2': {'sex': 'male'}})
 
         test_dotdict2.__setitem__(key='person3', value=[{'sex': 'male'},{'age': 20}])
         self.assertEqual(
-            test_dotdict2, 
+            test_dotdict2,
             {
-                'person': {'name': {'first': 'John'}}, 
-                'person2': {'sex': 'male'}, 
+                'person': {'name': {'first': 'John'}},
+                'person2': {'sex': 'male'},
                 'person3': {'sex': 'male', 'age': 20}})
-        
+
         test_dotdict2.__setstate__({'test_state': 'active'})
         res = test_dotdict2.__getstate__()
         self.assertEqual(res, {'test_state': 'active'})
-        
+
 
 
 if __name__ == "__main__":

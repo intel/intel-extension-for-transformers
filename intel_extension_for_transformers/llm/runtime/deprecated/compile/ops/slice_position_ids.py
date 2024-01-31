@@ -38,4 +38,3 @@ class SlicePositionIds(Operator):
             self._attr['starts'] = node.inputsAt(2).toIValue()
             self._attr['ends_with_tensor'] = 1
             self._attr['steps'] = node.inputsAt(4).toIValue()
-

@@ -43,22 +43,22 @@ class RemoveRange(Pattern):
                         ],
                     },
                 },
-                
+
                 {
                     'patterns': {
-                        'in': [[(0, 'Cos'), (1, 'Reshape'), (2, 'Gather'), (3, 'Reshape'), 
+                        'in': [[(0, 'Cos'), (1, 'Reshape'), (2, 'Gather'), (3, 'Reshape'),
                                 (4, 'Slice')]
                         ],
                     },
                 },
                 {
                     'patterns': {
-                        'in': [[(0, 'Sin'), (1, 'Reshape'), (2, 'Gather'), (3, 'Reshape'), 
+                        'in': [[(0, 'Sin'), (1, 'Reshape'), (2, 'Gather'), (3, 'Reshape'),
                                 (4, 'Slice')]
                         ],
                     },
-                },   
-                
+                },
+
             ],
         }
 
@@ -77,11 +77,11 @@ class RemoveRange(Pattern):
                 if not (isinstance(node, list)):
                     remove_list.append(node)
             model.remove_nodes(remove_list)
-            
+
         pattern = pattern_mapping_config['RemoveRange'][1]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
         once_flag2 = False
-        
+
         keep_list = []
         for pattern_nodes_name in patterns_nodes_name:
             if once_flag2 == False :
@@ -90,18 +90,18 @@ class RemoveRange(Pattern):
                 continue
             remove = model.get_node_by_name(pattern_nodes_name[-2])
             keep = model.get_node_by_name(keep_list[-2])
-            
+
             next_node = model.get_node_by_name(remove.output_tensors[0].dest_op[0])
             keep.output_tensors[0].dest_op.append(next_node.name)
             next_node.input_tensors[1] = keep.output_tensors[0]
             for node_name in pattern_nodes_name:
                 if node_name not in keep_list and not (isinstance(node_name, list)):
                     model.remove_nodes([node_name])
-            
+
         pattern = pattern_mapping_config['RemoveRange'][2]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
         once_flag2 = False
-        
+
         keep_list = []
         for pattern_nodes_name in patterns_nodes_name:
             if once_flag2 == False :
@@ -110,12 +110,12 @@ class RemoveRange(Pattern):
                 continue
             remove = model.get_node_by_name(pattern_nodes_name[-2])
             keep = model.get_node_by_name(keep_list[-2])
-            
+
             next_node = model.get_node_by_name(remove.output_tensors[0].dest_op[0])
             keep.output_tensors[0].dest_op.append(next_node.name)
             next_node.input_tensors[1] = keep.output_tensors[0]
             for node_name in pattern_nodes_name:
                 if node_name not in keep_list and not (isinstance(node_name, list)):
                     model.remove_nodes([node_name])
-            
+
         return model

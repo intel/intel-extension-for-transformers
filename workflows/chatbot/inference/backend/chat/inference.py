@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Inference for LLM models."""
 import abc
 import torch
@@ -71,7 +85,7 @@ class IpexWrapper(nn.Module):
         # print("ipex-bf16")
         with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
             out = self.model(
-                input_ids, 
+                input_ids,
                 attention_mask=attention_mask,
                 past_key_values=past_key_values,
                 use_cache=True)
@@ -254,7 +268,7 @@ def generate_stream(model, model_name, tokenizer, params, device,
 
             # torch.manual_seed(100)
             token = int(torch.multinomial(probabilities, 1))
-            
+
         output_ids.append(token)
 
 

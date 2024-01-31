@@ -28,7 +28,7 @@ class Optimizer:
 
     def __init__(self, graph, input_shape=None, *args, **kwargs):
         """The optimizer initialization.
-        
+
         Args:
             graph: neural engine Graph class
             input_shape: list of list, model input data shape list
