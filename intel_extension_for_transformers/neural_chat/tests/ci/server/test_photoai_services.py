@@ -234,7 +234,7 @@ class UnitTest(unittest.TestCase):
         res = get_address_list(user_id='1')
         self.assertIn('Shanghai', res)
         mock_db.return_value.fetch_all.assert_called_once_with(
-            sql='''SELECT address FROM image_info WHERE \n    user_id="1" AND exist_status="active" GROUP BY address;''')
+            sql='''SELECT address FROM image_info WHERE\n    user_id="1" AND exist_status="active" GROUP BY address;''')
 
 
     def test_get_process_status(self, mock_db):

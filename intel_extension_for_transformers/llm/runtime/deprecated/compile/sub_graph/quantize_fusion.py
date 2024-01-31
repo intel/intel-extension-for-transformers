@@ -113,4 +113,3 @@ class QuantizeFusion(Pattern):
         model.remove_nodes(remove_node_name)
 
         return model
-

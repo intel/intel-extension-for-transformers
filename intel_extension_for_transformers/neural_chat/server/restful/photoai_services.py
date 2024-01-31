@@ -437,11 +437,11 @@ def get_type_obj_from_attr(attr, user_id):
     logger.info(f'Geting image type of {attr}')
 
     if attr == 'time':
-        select_sql = f'''SELECT DATE(captured_time) AS date FROM image_info WHERE user_id=
-        "{user_id}" AND exist_status="active" GROUP BY date ORDER BY date;'''
+        select_sql = f'''SELECT DATE(captured_time) AS date FROM image_info
+        WHERE user_id = "{user_id}" AND exist_status="active" GROUP BY date ORDER BY date;'''
     elif attr == 'address':
-        select_sql = f'''SELECT address FROM image_info WHERE user_id=
-        "{user_id}" AND exist_status="active" GROUP BY address;'''
+        select_sql = f'''SELECT address FROM image_info
+        WHERE user_id="{user_id}" AND exist_status="active" GROUP BY address;'''
     else:
         return {}
 
@@ -511,8 +511,8 @@ def get_address_list(user_id) -> list[str]:
     logger.info(f'Getting address list of user {user_id}')
     from ...utils.database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
-    select_sql = f'''SELECT address FROM image_info WHERE user_id=
-    "{user_id}" AND exist_status="active" GROUP BY address;'''
+    select_sql = f'''SELECT address FROM image_info WHERE
+    user_id="{user_id}" AND exist_status="active" GROUP BY address;'''
     select_list = mysql_db.fetch_all(sql=select_sql)
     result_list = []
     for item in select_list:

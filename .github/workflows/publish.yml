@@ -25,4 +25,3 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build_tmp/gh-pages
         publish_branch: gh-pages
-

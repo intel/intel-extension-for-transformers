@@ -238,4 +238,3 @@ class Chroma(Chroma_origin):
             collection_metadata=collection_metadata,
         )
         return chroma_collection
-

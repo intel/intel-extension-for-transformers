@@ -34,4 +34,3 @@ class GatherElements(Operator):
             for attribute in node.attribute:
                 if attribute.name == 'axis':
                     self._attr['axis'] = attribute.i
-
