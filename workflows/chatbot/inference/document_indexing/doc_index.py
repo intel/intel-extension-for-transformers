@@ -296,4 +296,3 @@ if __name__ == "__main__":
             document_store.save(index_path="my_index.faiss")
         else:
             print("in memory db is done")
-

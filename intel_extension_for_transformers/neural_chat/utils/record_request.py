@@ -44,4 +44,3 @@ def record_request(request_url: str, request_body: Dict, user_id: str):
     except Exception as e:
         raise Exception(f"[record request] Exception occurred: {e}")
     mysqldb._close()
-

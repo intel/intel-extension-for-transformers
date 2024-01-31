@@ -46,5 +46,3 @@ jobs:
             SET HTTPS_PROXY=${{ vars.HTTP_PROXY_WINDOWS }}
             cd ${{ github.workspace }}\a\.github\workflows\script
             prepare_env_with_conda.bat
-
-
