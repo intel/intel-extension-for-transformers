@@ -17,7 +17,6 @@
 
 from intel_extension_for_transformers.neural_chat.models.llama_model import LlamaModel
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
-from intel_extension_for_transformers.neural_chat.utils.common import get_device_type
 import unittest
 
 class TestLlamaModel(unittest.TestCase):
@@ -28,15 +27,16 @@ class TestLlamaModel(unittest.TestCase):
         return super().tearDown()
 
     def test_match(self):
-        result = LlamaModel().match(
-            model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf')
+        result = LlamaModel(model_name='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf').match()
         self.assertTrue(result)
 
     def test_get_default_conv_template(self):
-        result = LlamaModel().get_default_conv_template(
-            model_path='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf')
+        result = LlamaModel(
+          model_name='/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf').get_default_conv_template()
         self.assertIn("[INST] <<SYS>>", str(result))
-        chatbot = build_chatbot()
+        config = PipelineConfig(
+            model_name_or_path="/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat/Llama-2-7b-chat-hf")
+        chatbot = build_chatbot(config=config)
         result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(result)
         self.assertIn('Intel Xeon Scalable Processors', str(result))
