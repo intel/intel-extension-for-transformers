@@ -1,10 +1,10 @@
 transformers==4.36.2
 peft==0.6.2
 fschat==0.2.32
-torch
+torch==2.1.0
 torchaudio==2.1.0
 torchvision==0.16.0
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
 onnxruntime>=1.16.3
