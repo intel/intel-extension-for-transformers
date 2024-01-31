@@ -25,7 +25,6 @@ class UserRead(schemas.BaseUser[uuid.UUID]):
     role: str
     is_vipuser: bool = False
     wwid: Optional[str] = None
-    email_address: Optional[str] = None
     account: Optional[str] = None
     name: Optional[str] = None
     given_name: Optional[str] = None
@@ -43,7 +42,6 @@ class UserCreate(schemas.BaseUserCreate):
     role: Optional[str] = 'user'
     is_vipuser: bool = False
     wwid: Optional[str] = None
-    email_address: Optional[str] = None
     account: Optional[str] = None
     name: Optional[str] = None
     given_name: Optional[str] = None
@@ -61,7 +59,6 @@ class UserUpdate(schemas.BaseUserUpdate):
     role: Optional[str]
     is_vipuser: Optional[bool]
     wwid: Optional[str] = None
-    email_address: Optional[str] = None
     account: Optional[str] = None
     name: Optional[str] = None
     given_name: Optional[str] = None

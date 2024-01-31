@@ -29,6 +29,7 @@ import logging
 from yacs.config import CfgNode
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi import APIRouter
+from fastapi_users import exceptions
 from starlette.middleware.cors import CORSMiddleware
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
@@ -408,6 +409,7 @@ async def login(
         password = credentials.get("password")
         wwid = credentials.get("wwid")
         idsid = credentials.get("idsid")
+        email_address = credentials.get("email_address")
 
         from LDAPclient import IntelLDAP
         ldap_client = IntelLDAP(user=username, password=password)
@@ -423,15 +425,33 @@ async def login(
             raise HTTPException(status_code=401, detail="LDAP authentication failed")
 
         # Authenticate the user with the UserManager
-        user_db_user = await user_manager.get_user(username)
-        if user_db_user:
-            # User exists in the database, no need to register
-            user = User(**user_db_user)
-        else:
-            # Register the user in the database
-            user_create = UserCreate(account=username, password=password, wwid=wwid, idsid=idsid)
-            user = await user_manager.create_user(user_create)
+        try:
+            # Authenticate the user with the UserManager
+            user = await user_manager.get_by_email(email_address)
+        except exceptions.UserNotExists:
+            user_create = UserCreate(account=username, password=password, wwid=wwid,
+                                     email=email_address)
+            user = await user_manager.create(user_create)
 
-        return {"msg": "Login successful", "user info dict": user.dict()}
+        user_dict = {
+            "id": str(user.id),
+            "role": user.role,
+            "is_vipuser": user.is_vipuser,
+            "wwid": user.wwid,
+            "email_address": user.email,
+            "account": user.account,
+            "name": user.name,
+            "given_name": user.given_name,
+            "distinguished_name": user.distinguished_name,
+            "idsid": user.idsid,
+            "generic": user.generic,
+            "SuperGroup": user.SuperGroup,
+            "Group": user.Group,
+            "Division": user.Division,
+            "DivisionLong": user.DivisionLong,
+            "CostCenterLong": user.CostCenterLong,
+            "mgrWWID": user.mgrWWID,
+        }
+        return {"msg": "Login successful", "user info dict": user_dict}
     except HTTPException as e:
         return {"msg": "Login failed", "error_detail": e.detail}

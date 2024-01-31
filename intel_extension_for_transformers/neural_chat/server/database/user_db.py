@@ -42,7 +42,6 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     role = Column(String(length=50), default='user', nullable=False)
     is_vipuser = Column(Boolean, default=False, nullable=False)
     wwid = Column(String(length=50), nullable=True)
-    email_address = Column(String(length=255), nullable=True)
     account = Column(String(length=50), nullable=True)
     name = Column(String(length=255), nullable=True)
     given_name = Column(String(length=255), nullable=True)
