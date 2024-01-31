@@ -67,6 +67,15 @@ from typing import Union
 torch = LazyImport("torch")
 
 
+def convert_model_to_public(model):
+    from intel_extension_for_pytorch.nn.utils._quantize_convert import WeightOnlyLinear
+    for _, module in model.named_modules():
+        if isinstance(module, WeightOnlyLinear) and module.weight_transposed:
+            module.qweight.data = module.qweight.t_().contiguous()
+            module.scales.data = module.scales.t_().contiguous()
+            module.weight_transposed = False
+
+
 def save_low_bit(
     self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs
 ):
@@ -79,6 +88,9 @@ def save_low_bit(
             f"Provided path ({save_directory}) should be a directory, not a file"
         )
         return
+
+    # reorder weight and scales if they have been transposed
+    convert_model_to_public(self)
 
     os.makedirs(save_directory, exist_ok=True)
     # use transformers original `save_pretrained` function
@@ -174,7 +186,8 @@ class _BaseQBitsAutoModelClass:
                     logger.info("Saved low bit model loading successfully. Other input args "
                                 "will be ignored.")
                     return model
-                except:
+                except Exception as e:
+                    logger.error(e)
                     logger.error("Saved low bit model loading failed, please check your model.")
                     exit(0)
 
