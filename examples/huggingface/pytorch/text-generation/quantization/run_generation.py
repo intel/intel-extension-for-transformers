@@ -346,7 +346,6 @@ if args.output_dir:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
     elif args.mixed_precision or args.woq:
-        #user_model.save_pretrained(args.output_dir, safe_serialization=False)
         user_model.save_pretrained(args.output_dir)
 
 
