@@ -43,7 +43,7 @@ class DistillationCriterionMode(Enum):
     """Criterion mode class for distillation."""
     KNOWLEDGELOSS = "KnowledgeDistillationLoss"
     INTERMEDIATELAYERSLOSS = "IntermediateLayersKnowledgeDistillationLoss"
-    
+
 
 
 SUPPORTED_DISTILLATION_CRITERION_MODE = \

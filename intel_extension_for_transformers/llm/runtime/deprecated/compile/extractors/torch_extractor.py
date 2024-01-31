@@ -170,7 +170,7 @@ class TorchExtractor(object):
         fuse_position_ids(graph)
         fuse_view(graph)
         fuse_gather_indices(graph)
-        
+
         new_graph = Graph()
         new_graph.framework_modeling_config['framework'] = 'torch'
         graph_nodes_dict = {}

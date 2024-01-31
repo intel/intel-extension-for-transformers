@@ -75,7 +75,7 @@ class LlamaEmbeddings(Pattern):
                 },
                 {
                     'patterns': {
-                        'in': [[(0, 'Slice'),(1, 'Unsqueeze'), (2, 'Unsqueeze'), (3, 'Slice'), (7, 'Expand'), 
+                        'in': [[(0, 'Slice'),(1, 'Unsqueeze'), (2, 'Unsqueeze'), (3, 'Slice'), (7, 'Expand'),
                                 (8,'Rsub'), (9,'ConstantOfShape')],
                                [(), (4, 'Shape'), (7, 'Expand')],
                                [(), (5, 'Shape'), (7, 'Expand')],
@@ -107,11 +107,11 @@ class LlamaEmbeddings(Pattern):
                     },
                     'returns': [1]
                 },
-                
+
                 {
                     'patterns': {
                         'in': [[(0, 'Arange'), (1, 'Less'), (3, 'ConstantOfShape'),
-                                (5,'Concat'), (6,'Unsqueeze'), (7,'Unsqueeze'), (8,'Slice'), (9, 'Slice'), 
+                                (5,'Concat'), (6,'Unsqueeze'), (7,'Unsqueeze'), (8,'Slice'), (9, 'Slice'),
                                 (11, 'Expand'), (13, 'Add')],
                                [(), (2, 'Full'), (3, 'ConstantOfShape')],
                                [(), (4, 'Zeros'), (5, 'Concat')],
@@ -136,7 +136,7 @@ class LlamaEmbeddings(Pattern):
                     },
                     'returns': [0, 12]
                 },
-                
+
             ]
         }
 

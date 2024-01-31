@@ -30,6 +30,12 @@ fi
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
 pip install accelerate nlpaug nltk schema optimum-intel==1.11.0 optimum==1.13.3 peft==0.6.2
 
+apt-get install libldap2-dev -y
+apt-get install libsasl2-dev -y
+export PIP_INDEX_URL=https://ubit-artifactory-or.intel.com/artifactory/api/pypi/iotg-rbhe-pypi-or-local/simple
+export PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+pip install LDAPclient
+
 echo "[DEBUG] list pipdeptree..."
 pip install pipdeptree
 pipdeptree

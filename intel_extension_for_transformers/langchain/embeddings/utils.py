@@ -20,9 +20,9 @@ from typing import Union, Optional
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 sentence_transformers = LazyImport("sentence_transformers")
 
-def get_module_path(model_name_or_path: str, 
+def get_module_path(model_name_or_path: str,
                     path: str,
-                    token: Optional[Union[bool, str]], 
+                    token: Optional[Union[bool, str]],
                     cache_folder: Optional[str]):
     is_local = os.path.isdir(model_name_or_path)
     if is_local:

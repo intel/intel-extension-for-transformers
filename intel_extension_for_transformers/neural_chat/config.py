@@ -366,7 +366,7 @@ class TTSModelArguments:
     step: int = field(default=0, metadata={"help": "TTS model step."})
     warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
     learning_rate: float = field(default=1e-5, metadata={"help": "Learning rate."})
- 
+
 @dataclass
 class BaseFinetuningConfig:
     model_args: ModelArguments

@@ -1,3 +1,17 @@
+# Copyright (c) 2024 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import shutil
 import unittest
@@ -90,7 +104,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             model=model, tokenizer_name="t5-small", batch_size=1, limit=5
         )
         self.assertEqual(results["rouge2"], 9.5858)
-    
+
     def test_evaluate_for_ort_Seq2SeqLM(self):
         from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5-past/'
@@ -184,7 +198,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
             model_format="onnx"
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
-        
+
         # test evaluate model exported with optimum >= 1.14.0
         if Version(optimum.version.__version__) >= OPTIMUM114_VERSION:
             cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'

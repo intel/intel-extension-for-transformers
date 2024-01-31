@@ -38,7 +38,7 @@ EXECUTOR_TYPE = {
     "Conv": "Convolution",
     "QuantizedMatMulWithBiasAndDequantize": "InnerProduct",
     "TransposeBatchMatMul": "Matmul",
-    "MatmulwithTranspose" : "Matmul", 
+    "MatmulwithTranspose" : "Matmul",
     "BatchMatMul": "Matmul",
     "BatchMatMulV2": "Matmul",
     "Add": "BinaryAdd",
@@ -136,7 +136,7 @@ pattern_default_setting = {
     'StableDiffusion_InsertQuantNode': False,
     'StableDiffusion_CollectQuantInfo': False,
     'StableDiffusion_QuantizeFusion': False,
-    
+
     #GPT-J
     'TorchEmbedding': True,
     'InnerproductReshapeFusion': True,
@@ -150,7 +150,7 @@ pattern_default_setting = {
     'RemoveSlice': True,
     'RemoveRange': True,
     'RemoveLastView': True,
-    
+
     'MatMulWithTransposeScaleAdd': True,
     'EmbeddingsTo2DBeforeInnerProduct': True,
     'QuantGatherToBF16': False,
@@ -158,7 +158,7 @@ pattern_default_setting = {
     'MultiHeadAttention': True,
     'Int8BF16MixedPrecisionChecker': False,
     'QuantizedGraphDtypeRefactor': True,
-    
+
     #LLAMA
     'LlamaEmbeddings': False,
     'LlamaMatMulWithTranspose': False,
@@ -174,7 +174,7 @@ class SubGraphMatcher(object):
     """The SubGraphMatcher class."""
     def __call__(self, model, tune = False, pattern_config = None):
         """The __call__ function of SubGraphMatcher class."""
-        logger.info('Start to implement Sub-Graph matching and replacing...') 
+        logger.info('Start to implement Sub-Graph matching and replacing...')
         if tune:
             model = self._tune_patterns(model)
         else:
@@ -185,7 +185,7 @@ class SubGraphMatcher(object):
     def _fuse_patterns(self, model, supported_patterns=supported_patterns, pattern_mask=None, pattern_config=None):
         pattern_mask = [True for _ in range(len(supported_patterns))] \
                 if pattern_mask == None else pattern_mask
-        
+
         for index in range(len(supported_patterns)):
             pattern_name = supported_patterns[index]
             if pattern_name in pattern_default_setting:
@@ -207,7 +207,7 @@ class SubGraphMatcher(object):
         return model
 
     def _tune_patterns(self, model, iterations = 10, warm_up = 5):
-        # pattern tuning strategy(for superbert): 
+        # pattern tuning strategy(for superbert):
         #    1. only one pattern off/on each time (pruning)
         #    2. check accuracy with framework
         #    3. and only save min latency config
@@ -239,8 +239,8 @@ class SubGraphMatcher(object):
             if off_latency < on_latency and off_latency < min_latency:
                 min_latency = off_latency
                 pattern_mask = off_pattern_mask
-        
-        # generate model according pattern mask 
+
+        # generate model according pattern mask
         self._fuse_patterns(model, all_patterns, pattern_mask)
         logger.info('End tuning pattern...')
         return model
@@ -257,9 +257,8 @@ class SubGraphMatcher(object):
                     if node.op_type == "Cos":
                         node.attr = OrderedDict({'algorithm': 'cos'})
                     if node.op_type == "Sin":
-                        node.attr = OrderedDict({'algorithm': 'sin'})                           
+                        node.attr = OrderedDict({'algorithm': 'sin'})
                     op_type = EXECUTOR_TYPE[node.op_type]
                     model.nodes[i].op_type = op_type
         model.remove_nodes(rm_node_names)
         return model
-

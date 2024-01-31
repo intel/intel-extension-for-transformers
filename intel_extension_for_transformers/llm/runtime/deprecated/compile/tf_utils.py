@@ -166,8 +166,8 @@ def tf_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
             input_tensors.append(input_tensor)
 
     """ output_tensors
-    Almost every op generate one tensor in deep learning, so we just give one tensor in 
-    output_tensors (list). However, this tensor maybe delivered to several nodes, so the 
+    Almost every op generate one tensor in deep learning, so we just give one tensor in
+    output_tensors (list). However, this tensor maybe delivered to several nodes, so the
     dest_op should have several strings.
     """
     if node.op not in MULTI_OUTPUT_OP.keys():

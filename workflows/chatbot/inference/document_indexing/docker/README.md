@@ -38,5 +38,3 @@ Users have the flexibility to choose their preferred pretrained encoder model fo
 ```
 python doc_index.py --file_path "xxx" --output_path "xxx" --embedding_model hkunlp/instructor-large --embedding_method dense --store Chroma
 ```
-
-
