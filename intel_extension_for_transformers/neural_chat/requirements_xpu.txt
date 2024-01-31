@@ -1,14 +1,14 @@
+aiosqlite
 cchardet
 einops
 evaluate
 fastapi==0.103.2
+fastapi-users[sqlalchemy,oauth]
 fschat==0.2.32
 neural-compressor
 numpy==1.23.5
 pydantic==1.10.13
 python-dotenv
-fastapi-users[sqlalchemy,oauth]
-aiosqlite
 python-multipart
 rouge_score
 shortuuid

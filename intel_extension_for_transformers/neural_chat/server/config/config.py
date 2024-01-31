@@ -46,4 +46,3 @@ class Settings(BaseSettings):
 def get_settings() -> BaseSettings:
     logger.info("Loading config settings from the environment...")
     return Settings()
-
