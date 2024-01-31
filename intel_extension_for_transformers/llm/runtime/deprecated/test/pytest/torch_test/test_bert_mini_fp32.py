@@ -53,7 +53,7 @@ class TestTorchModel(unittest.TestCase):
         example_in = torch.rand(8, 128)
         # TODO: enable check accuracy
         ref_out = traced_model(ids, tok, att, ids)[0].detach().numpy()
-        
+
         graph = compile(pt_file)
         graph.save(file_name)
         newgraph = Graph()

@@ -27,7 +27,7 @@ DATASET:
   DEBUG: True
   NUM_REPEATS: 2
   T: 40
-  
+
 
 MODEL:
   FRAMEWORK: V2
@@ -44,7 +44,7 @@ MODEL:
     LATENT_SIZE: 256
     ENCODER_LAYER_SIZES: [192, 1024]
     DECODER_LAYER_SIZES: [1024, 192]
-    
+
 
 TRAIN:
   MAX_EPOCH: 300
@@ -67,5 +67,3 @@ TRAIN:
 
 TAG:
   NAME:  small_dataset
-
-

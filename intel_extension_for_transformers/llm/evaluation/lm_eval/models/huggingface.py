@@ -351,7 +351,7 @@ class HuggingFaceAutoLM(BaseLM):
                             load_in_8bit=load_in_8bit,
                             trust_remote_code=trust_remote_code,
                             torch_dtype=torch_dtype
-                        )   
+                        )
             else:
                 if load_in_4bit:
                     assert (
@@ -468,7 +468,7 @@ class HuggingFaceAutoLM(BaseLM):
         elif self.model_format == "runtime":
             return True
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
-            return False 
+            return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModel:
             return False
         elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
@@ -624,7 +624,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
             from transformers import AutoTokenizer, TextStreamer
             from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             self.runtime_model = AutoModelForCausalLM.from_pretrained(pretrained, quantization_config=self.woq_config)
-            
+
         if self.model_format == "onnx":
             if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
                not os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")) and \

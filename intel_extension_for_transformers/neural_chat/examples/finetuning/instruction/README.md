@@ -635,4 +635,3 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 - **rouge related metrics:** the metrics will be calculated when the finetuning task is summarization `--task summarization`
 
 - **human eval (code generation metric):** the metric will be calculated when the finetuning task is code-generation `--task code-generation`
-

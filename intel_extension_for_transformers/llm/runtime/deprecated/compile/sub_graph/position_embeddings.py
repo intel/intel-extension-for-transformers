@@ -271,7 +271,7 @@ class PositionEmbeddings(Pattern):
 
         for i in range(0, len(pattern_mapping_config['PositionEmbeddings'])-1):
             pattern_dict = pattern_mapping_config['PositionEmbeddings'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("PositionEmbeddings", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("PositionEmbeddings",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
@@ -287,7 +287,7 @@ class PositionEmbeddings(Pattern):
 
         # bert_base_mrpc
         pattern_dict = pattern_mapping_config['PositionEmbeddings'][-1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("PositionEmbeddings", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("PositionEmbeddings",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):

@@ -37,7 +37,7 @@ class TestQKVMerge(unittest.TestCase):
     def test_qkv_merge_1(self):
         model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
         content = "pattern_switch:\n  'QKVMerge': True\n  'MultiHeadAttention': False"
-        pattern_config = "qkv_merge_pattern_config" 
+        pattern_config = "qkv_merge_pattern_config"
         with open("qkv_merge_pattern_config", "w") as file:
             file.write(content)
         if is_win():

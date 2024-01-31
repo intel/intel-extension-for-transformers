@@ -92,7 +92,7 @@ class AttentionReshape(Pattern):
                 # Lat_int8
                 {
                     'patterns': {
-                        'in': [ [(0, 'Shape'), (1, 'Gather'), (2, 'Gather'), (3, 'Unsqueeze'), 
+                        'in': [ [(0, 'Shape'), (1, 'Gather'), (2, 'Gather'), (3, 'Unsqueeze'),
                                 (4, 'Concat'), (6, 'Reshape'),(7, 'MatMulWithBias')],
                                 [(),(5, 'Transpose'), (6, 'Reshape')]],
                         'out': [[(0, 'Transpose'), (1, 'Reshape'), (2, 'MatMulWithBias')]]

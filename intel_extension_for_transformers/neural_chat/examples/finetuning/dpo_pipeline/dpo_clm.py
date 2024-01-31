@@ -269,7 +269,7 @@ if __name__ == "__main__":
     # model config
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
     torch_dtype = (
-            model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
+            model_args.torch_dtype if model_args.torch_dtype in ["auto", None]
             else getattr(torch, model_args.torch_dtype)
             )
 

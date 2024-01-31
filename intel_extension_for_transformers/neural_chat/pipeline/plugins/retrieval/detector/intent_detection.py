@@ -36,4 +36,3 @@ class IntentDetector:
         params["max_new_tokens"] = 10
         intent = predict(**params)
         return intent
-

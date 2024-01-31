@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Clean Up Working Directory
         run: sudo rm -rf ~/itrex-actions-runner/_work/intel-extension-for-transformers/intel-extension-for-transformers/*
-        
+
       - uses: actions/checkout@v3
         with:
           submodules: "recursive"
@@ -59,8 +59,8 @@ jobs:
             --device hpu \
             --use_habana \
             --use_lazy_mode "
-          
-          docker exec "chatbotfinetune-hpu-s0" bash -c "$cmd"       
+
+          docker exec "chatbotfinetune-hpu-s0" bash -c "$cmd"
 
       - name: Stop Container
         if: success() || failure()

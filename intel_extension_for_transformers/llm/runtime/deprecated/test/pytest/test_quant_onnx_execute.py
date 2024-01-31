@@ -47,7 +47,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
             'ONNX QLinear model is not found, please set your own model path!')
         qlinear_model = compile(qlinear_model_path)
         qlinear_output_dict = qlinear_model.inference([input_0, input_1, input_2])
-        qlinear_output = copy.deepcopy(list(qlinear_output_dict.values())[0])       
+        qlinear_output = copy.deepcopy(list(qlinear_output_dict.values())[0])
         # compile and execute qdq model
         qdq_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qdq.onnx"
         if is_win():

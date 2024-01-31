@@ -36,7 +36,7 @@ class InnerproductWithBiasGelu(Pattern):
             'InnerproductWithBiasGelu': [
                 {
                     'patterns': {
-                        'in': [[(0, 'InnerProduct'), (1, 'Pow'), (3, 'Mul'), 
+                        'in': [[(0, 'InnerProduct'), (1, 'Pow'), (3, 'Mul'),
                                 (4, 'Add'), (5, 'Mul'),(6, 'Tanh'), (7, 'Add'), (8, 'Mul')],
                                [(0, 'InnerProduct'), (2, 'Mul'), (8, 'Mul')]
                                 ],
@@ -74,7 +74,7 @@ class InnerproductWithBiasGelu(Pattern):
                 #attr['src1_perm'] = '1, 0'
                 model.nodes[mat_node_idx].attr = attr
         pattern_dict = pattern_mapping_config['InnerproductWithBiasGelu'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductWithBiasGelu", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductWithBiasGelu",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
