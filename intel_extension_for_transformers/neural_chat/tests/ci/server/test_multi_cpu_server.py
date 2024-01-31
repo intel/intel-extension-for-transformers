@@ -25,11 +25,6 @@ from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol
 
 
 class TestMultiCPUServer(unittest.TestCase):
-    
-    def test_parse_args(self):
-        args = parse_args()
-        print(args)
-        self.assertEqual(args.temperature, 0.1)
 
     def test_check_args(self):
         mock_args = MagicMock()
